@@ -1,10 +1,14 @@
 package bridgeagg
 
-import "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+)
 
 type StateEnvBuilder interface {
-	BuildUnshieldActions([]string) StateEnvBuilder
-	BuildShieldActions([][]string) StateEnvBuilder
+	BuildAccumulatedValues(*metadata.AccumulatedValues) StateEnvBuilder
+	BuildUnshieldActions([]UnshieldAction) StateEnvBuilder
+	BuildShieldActions([]ShieldAction) StateEnvBuilder
 	BuildConvertActions([]string) StateEnvBuilder
 	BuildModifyListTokenActions([]string) StateEnvBuilder
 	BuildStateDBs(map[int]*statedb.StateDB) StateEnvBuilder
@@ -16,19 +20,25 @@ func NewStateEnvBuilder() StateEnvBuilder {
 }
 
 type stateEnvironment struct {
-	unshieldActions         []string
-	shieldActions           [][]string
+	accumulatedValues       *metadata.AccumulatedValues
+	unshieldActions         []UnshieldAction
+	shieldActions           []ShieldAction
 	convertActions          []string
 	modifyListTokensActions []string
 	stateDBs                map[int]*statedb.StateDB
 }
 
-func (env *stateEnvironment) BuildUnshieldActions(actions []string) StateEnvBuilder {
+func (env *stateEnvironment) BuildAccumulatedValues(accumulatedValues *metadata.AccumulatedValues) StateEnvBuilder {
+	env.accumulatedValues = accumulatedValues
+	return env
+}
+
+func (env *stateEnvironment) BuildUnshieldActions(actions []UnshieldAction) StateEnvBuilder {
 	env.unshieldActions = actions
 	return env
 }
 
-func (env *stateEnvironment) BuildShieldActions(actions [][]string) StateEnvBuilder {
+func (env *stateEnvironment) BuildShieldActions(actions []ShieldAction) StateEnvBuilder {
 	env.shieldActions = actions
 	return env
 }
@@ -53,18 +63,23 @@ func (env *stateEnvironment) Build() StateEnvironment {
 }
 
 type StateEnvironment interface {
-	UnshieldActions() []string
-	ShieldActions() [][]string
+	AccumulatedValues() *metadata.AccumulatedValues
+	UnshieldActions() []UnshieldAction
+	ShieldActions() []ShieldAction
 	ConvertActions() []string
 	ModifyListTokensActions() []string
 	StateDBs() map[int]*statedb.StateDB
 }
 
-func (env *stateEnvironment) UnshieldActions() []string {
+func (env *stateEnvironment) AccumulatedValues() *metadata.AccumulatedValues {
+	return env.accumulatedValues
+}
+
+func (env *stateEnvironment) UnshieldActions() []UnshieldAction {
 	return env.unshieldActions
 }
 
-func (env *stateEnvironment) ShieldActions() [][]string {
+func (env *stateEnvironment) ShieldActions() []ShieldAction {
 	return env.shieldActions
 }
 

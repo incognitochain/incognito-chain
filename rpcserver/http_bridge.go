@@ -408,7 +408,9 @@ func processBurningReq(
 		burningMetaType,
 		httpServer.GetBlockchain(),
 		httpServer.GetBlockchain().BeaconChain.CurrentHeight(),
-		txVersion)
+		txVersion,
+		common.DefaultNetworkID,
+	)
 	if err != nil {
 		return nil, err
 	}

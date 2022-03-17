@@ -17,11 +17,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
 // build instructions at beacon chain before syncing to shards
-func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, shardID byte, shardBlockInstructions [][]string, beaconHeight uint64) ([][]string, error) {
+func (blockchain *BlockChain) buildBridgeInstructions(curView *BeaconBestState, shardID byte, shardBlockInstructions [][]string, beaconHeight uint64) ([][]string, error) {
+	stateDB := curView.GetBeaconFeatureStateDB()
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
 		if len(inst) < 2 {
@@ -43,32 +45,32 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight, "")
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningConfirmMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight, "")
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPBSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningBSCConfirmMeta, inst, beaconHeight, common.BSCPrefix)
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningBSCConfirmMeta, inst, beaconHeight, common.BSCPrefix)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPBSCForDepositToSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPBSCConfirmForDepositToSCMeta, inst, beaconHeight, common.BSCPrefix)
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningPBSCConfirmForDepositToSCMeta, inst, beaconHeight, common.BSCPrefix)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningForDepositToSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight, "")
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningForDepositToSCRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight, "")
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPRVERC20RequestMeta:
@@ -83,12 +85,12 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 
 		case metadata.BurningPLGRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmMeta, inst, beaconHeight, common.PLGPrefix)
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningPLGConfirmMeta, inst, beaconHeight, common.PLGPrefix)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPLGForDepositToSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmForDepositToSCMeta, inst, beaconHeight, common.PLGPrefix)
+			burningConfirm, _, err = buildBurningConfirmInst(curView, stateDB, metadata.BurningPLGConfirmForDepositToSCMeta, inst, beaconHeight, common.PLGPrefix)
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -108,50 +110,63 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
 func buildBurningConfirmInst(
+	curView *BeaconBestState,
 	stateDB *statedb.StateDB,
 	burningMetaType int,
 	inst []string,
 	height uint64,
 	prefix string,
-) ([]string, error) {
+) ([]string, uint, error) {
 	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
 	err := decodeContent(inst[1], &burningReqAction)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid BurningRequest")
+		return nil, 0, errors.Wrap(err, "invalid BurningRequest")
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
 	shardID := byte(common.BridgeShardID)
 
+	incTokenID := md.TokenID
+	if burningMetaType == metadataCommon.BurningUnifiedTokenRequestMeta {
+		if md.NetworkID != common.DefaultNetworkID {
+			incTokenID, prefix, err = curView.bridgeAggState.GetUnshieldInfo(md.TokenID, md.NetworkID)
+			if err != nil {
+				return nil, 0, err
+			}
+		}
+	}
+
 	// Convert to external tokenID
-	tokenID, err := findExternalTokenID(stateDB, &md.TokenID)
+	tokenID, err := findExternalTokenID(stateDB, &incTokenID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if len(tokenID) < common.ExternalBridgeTokenLength {
-		return nil, errors.New("invalid external token id")
+		return nil, 0, errors.New("invalid external token id")
 	}
 
 	prefixLen := len(prefix)
 	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
 		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
+		return nil, 0, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
 	}
 
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
 	if bytes.Equal(tokenID, append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...)) {
 		// Convert Gwei to Wei for Ether
-		amount = amount.Mul(amount, big.NewInt(1000000000))
+		if burningMetaType != metadataCommon.BurningUnifiedTokenRequestMeta {
+			amount = amount.Mul(amount, big.NewInt(1000000000))
+		}
 	}
 
 	// Convert height to big.Int to get bytes later
 	h := big.NewInt(0).SetUint64(height)
 
-	return []string{
+	res := []string{
 		strconv.Itoa(burningMetaType),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(tokenID, 0x00),
@@ -160,7 +175,9 @@ func buildBurningConfirmInst(
 		txID.String(),
 		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
 		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
-	}, nil
+	}
+
+	return res, md.NetworkID, nil
 }
 
 // buildBurningPRVEVMConfirmInst builds on beacon an instruction confirming a tx burning PRV-EVM-token

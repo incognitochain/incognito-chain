@@ -200,6 +200,8 @@ const (
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
 	IssuingUnifiedTokenRequestMeta                  = 343
 	IssuingUnifiedTokenResponseMeta                 = 344
+	BurningUnifiedTokenRequestMeta                  = 345
+	BurningUnifiedTokenResponseMeta                 = 345
 )
 
 var minerCreatedMetaTypes = []int{

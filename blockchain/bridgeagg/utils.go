@@ -79,3 +79,25 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64) (uint64, error) {
 	return 0, nil
 }
+
+func GetVault(unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID common.Hash, networkID uint) (*Vault, error) {
+	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
+		if vault, found := vaults[networkID]; found {
+			return vault, nil
+		} else {
+			return nil, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Not found networkID"))
+		}
+	} else {
+		return nil, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, errors.New("Not found unifiedTokenID"))
+	}
+}
+
+type ShieldAction struct {
+	Content []string
+	UniqTx  []byte
+}
+
+type UnshieldAction struct {
+	Content   []string
+	NetworkID uint
+}

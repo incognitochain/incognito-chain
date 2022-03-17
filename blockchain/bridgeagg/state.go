@@ -14,7 +14,7 @@ import (
 )
 
 type State struct {
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault // unifiedTokenID -> tokenID -> vault
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault // unifiedTokenID -> networkID -> vault
 	producer          stateProducer
 	processor         stateProcessor
 }
@@ -52,9 +52,14 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	res := [][]string{}
 	var err error
 
-	/*for _, action := range env.UnshieldActions() {*/
-
-	/*}*/
+	for _, action := range env.UnshieldActions() {
+		inst := [][]string{}
+		inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos)
+		if err != nil {
+			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+		}
+		res = append(res, inst...)
+	}
 
 	for _, action := range env.ConvertActions() {
 		inst := []string{}
@@ -67,7 +72,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	for _, action := range env.ShieldActions() {
 		inst := []string{}
-		inst, s.unifiedTokenInfos, err = s.producer.shield(action, s.unifiedTokenInfos)
+		inst, s.unifiedTokenInfos, err = s.producer.shield(action, s.unifiedTokenInfos, env.AccumulatedValues())
 		if err != nil {
 			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 		}
@@ -234,16 +239,36 @@ func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.Issuin
 	default:
 		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, errors.New("Cannot detect networkID")
 	}
-
-	if vaults, found := s.unifiedTokenInfos[md.IncTokenID]; found {
-		if vault, found := vaults[md.NetworkID]; found {
-			tokenID = vault.tokenID
-		} else {
-			return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Not found networkID"))
-		}
-	} else {
-		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, errors.New("Not found unifiedTokenID"))
+	vault, err := GetVault(s.unifiedTokenInfos, md.IncTokenID, md.NetworkID)
+	if err != nil {
+		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(OtherError, err)
 	}
+	tokenID = vault.tokenID
 
 	return listTxUsed, contractAddress, prefix, isTxHashIssued, tokenID, nil
+}
+
+func (s *State) GetUnshieldInfo(unifiedTokenID common.Hash, networkID uint) (common.Hash, string, error) {
+	var prefix string
+	var tokenID common.Hash
+
+	switch networkID {
+	case common.ETHNetworkID:
+		prefix = utils.EmptyString
+	case common.BSCNetworkID:
+		prefix = common.BSCPrefix
+	case common.PLGNetworkID:
+		prefix = common.PLGPrefix
+	case common.DefaultNetworkID:
+		return tokenID, prefix, errors.New("Cannot get info from default networkID")
+	default:
+		return tokenID, prefix, errors.New("Cannot detect networkID")
+	}
+	vault, err := GetVault(s.unifiedTokenInfos, unifiedTokenID, networkID)
+	if err != nil {
+		return tokenID, prefix, NewBridgeAggErrorWithValue(OtherError, err)
+	}
+	tokenID = vault.tokenID
+
+	return tokenID, prefix, nil
 }

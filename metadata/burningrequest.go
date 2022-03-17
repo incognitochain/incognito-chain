@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -23,6 +24,7 @@ type BurningRequest struct {
 	TokenID       common.Hash
 	TokenName     string
 	RemoteAddress string
+	NetworkID     uint `json:"NetworkID,omitempty"`
 	MetadataBase
 }
 
@@ -32,6 +34,7 @@ func NewBurningRequest(
 	tokenID common.Hash,
 	tokenName string,
 	remoteAddress string,
+	networkID uint,
 	metaType int,
 ) (*BurningRequest, error) {
 	metadataBase := MetadataBase{
@@ -43,6 +46,7 @@ func NewBurningRequest(
 		TokenID:       tokenID,
 		TokenName:     tokenName,
 		RemoteAddress: remoteAddress,
+		NetworkID:     networkID,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil
@@ -91,8 +95,12 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 		(bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 ||
 			bReq.Type == BurningPBSCRequestMeta || bReq.Type == BurningPRVERC20RequestMeta ||
 			bReq.Type == BurningPRVBEP20RequestMeta || bReq.Type == BurningPBSCForDepositToSCRequestMeta ||
-			bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta) {
+			bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
+	}
+
+	if bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta && bReq.NetworkID == common.DefaultNetworkID {
+		return false, false, fmt.Errorf("networkID %d is not supported", bReq.NetworkID)
 	}
 
 	if (bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
@@ -109,7 +117,8 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta ||
 		bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta ||
 		bReq.Type == BurningPBSCForDepositToSCRequestMeta ||
-		bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta
+		bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

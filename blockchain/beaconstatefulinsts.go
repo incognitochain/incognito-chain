@@ -87,7 +87,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
 			metadataCommon.BridgeAggModifyListTokenMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
-			metadataCommon.IssuingUnifiedTokenRequestMeta:
+			metadataCommon.IssuingUnifiedTokenRequestMeta,
+			metadataCommon.BurningUnifiedTokenRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -163,8 +164,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	sort.Ints(keys)
 
 	// bridge agg actions collector
-	unshieldActions := []string{}
-	shieldActions := [][]string{}
+	unshieldActions := []bridgeagg.UnshieldAction{}
+	shieldActions := []bridgeagg.ShieldAction{}
 	convertActions := []string{}
 	modifyListTokensActions := []string{}
 	var sDBs map[int]*statedb.StateDB
@@ -306,7 +307,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadataCommon.BridgeAggModifyListTokenMeta:
 				sDBs, err = blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 				if err != nil {
-					return utils.EmptyStringMatrix, err
+					Logger.log.Error(err)
+					continue
 				}
 				modifyListTokensActions = append(modifyListTokensActions, contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
@@ -327,11 +329,28 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					temp,
 					false,
 				)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
 				if uniqTx != nil {
 					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
-					shieldActions = append(shieldActions, newInst...)
+					shieldActions = append(shieldActions, bridgeagg.ShieldAction{
+						Content: newInst[0],
+						UniqTx:  uniqTx,
+					})
 					newInst = [][]string{}
 				}
+			case metadataCommon.BurningUnifiedTokenRequestMeta:
+				burningConfirm, networkID, err := buildBurningConfirmInst(beaconBestState, featureStateDB, metadataCommon.BurningUnifiedTokenRequestMeta, action, beaconHeight, utils.EmptyString)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				unshieldActions = append(unshieldActions, bridgeagg.UnshieldAction{
+					Content:   burningConfirm,
+					NetworkID: networkID,
+				})
 			default:
 				continue
 			}
@@ -390,6 +409,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildModifyListTokenActions(modifyListTokensActions).
 		BuildShieldActions(shieldActions).
 		BuildUnshieldActions(unshieldActions).
+		BuildAccumulatedValues(accumulatedValues).
 		BuildStateDBs(sDBs).
 		Build()
 	bridgeAggInsts, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)

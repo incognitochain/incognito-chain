@@ -262,6 +262,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &IssuingEVMRequest{}
 	case metadataCommon.IssuingUnifiedTokenResponseMeta:
 		md = &IssuingEVMResponse{}
+	case metadataCommon.BurningUnifiedTokenRequestMeta:
+		md = &BurningRequest{}
 
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)

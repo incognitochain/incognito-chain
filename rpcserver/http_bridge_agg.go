@@ -378,13 +378,99 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 }
 
 func (httpServer *HttpServer) handleBridgeAggUnshield(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.createBridgeAggConvertTransaction(params)
+	data, err := httpServer.createBridgeAggUnshieldTransaction(params)
 	if err != nil {
 		return nil, err
 	}
 	createTxResult := []interface{}{data.Base58CheckData}
 	// send tx
 	return sendCreatedTransaction(httpServer, createTxResult, false, closeChan)
+}
+
+func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interface{}) (
+	*jsonresult.CreateTransactionResult, *rpcservice.RPCError,
+) {
+	arrayParams := common.InterfaceSlice(params)
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+	privacyDetect, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("privacy detection param need to be int"))
+	}
+	if int(privacyDetect) <= 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
+	}
+
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
+	}
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
+	}
+
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		metadata.BurningRequest
+	}{}
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
+	}
+
+	md, err := metadata.NewBurningRequest(
+		mdReader.BurnerAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
+		mdReader.RemoteAddress, mdReader.NetworkID, metadataCommon.BurningUnifiedTokenRequestMeta,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	paramSelect.SetTokenID(mdReader.TokenID)
+	paramSelect.SetMetadata(md)
+
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+
+	// burn selling amount for order, plus fee
+	burnPayments := []*privacy.PaymentInfo{
+		{
+			PaymentAddress: burnAddr,
+			Amount:         md.BurningAmount,
+		},
+	}
+	paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+	paramSelect.SetTokenReceivers(burnPayments)
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
+	}
+
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	res := &jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -404,7 +490,7 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggConvertStatusPrefix(),
+		statedb.BridgeAggListShieldStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {
@@ -435,7 +521,7 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListShieldStatusPrefix(),
+		statedb.BridgeAggListUnshieldStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {

@@ -97,6 +97,7 @@ var (
 	bridgeAggListTokenModifyingStatusPrefix = []byte("bridgeagg-listtokenmodifyingstatus-")
 	bridgeAggConvertStatusPrefix            = []byte("bridgeagg-convertstatus-")
 	bridgeAggShieldStatusPrefix             = []byte("bridgeagg-shieldStatus-")
+	bridgeAggUnshieldStatusPrefix           = []byte("bridgeagg-unshieldStatus-")
 	bridgeAggUnifiedTokenprefix             = []byte("bridgeagg-unifiedtoken-")
 	bridgeAggConvertedTokenPrefix           = []byte("bridgeagg-convertedtoken-")
 	bridgeAggVaultPrefix                    = []byte("bridgeagg-vault-")
@@ -853,6 +854,10 @@ func BridgeAggConvertStatusPrefix() []byte {
 
 func BridgeAggListShieldStatusPrefix() []byte {
 	return bridgeAggShieldStatusPrefix
+}
+
+func BridgeAggListUnshieldStatusPrefix() []byte {
+	return bridgeAggUnshieldStatusPrefix
 }
 
 func GetBridgeAggUnifiedTokenPrefix() []byte {
