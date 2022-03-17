@@ -2,7 +2,10 @@ package flatfile
 
 import (
 	"fmt"
+	"math/rand"
+	_ "net/http/pprof"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -39,6 +42,60 @@ import (
 //	}
 //
 //}
+
+func TestNewFlatFileBenchmark(t *testing.T) {
+	//go http.ListenAndServe(":10000", nil)
+
+	os.RemoveAll("/tmp/ffbm")
+	defer os.RemoveAll("/tmp/ffbm")
+	ff, _ := NewFlatFile("/tmp/ffbm", 2)
+
+	var size = uint64(0)
+	var err error
+	go func() {
+		i := uint64(0)
+		for {
+			i++
+			size, err = ff.Append([]byte(fmt.Sprintf("%v", i)))
+			if err != nil {
+				panic(err)
+			}
+			time.Sleep(time.Microsecond * 1)
+		}
+	}()
+
+	for {
+		time.Sleep(5 * time.Millisecond)
+		if size != 0 {
+			h := size
+			b, err := ff.Read(h - 1)
+			if err != nil {
+				panic(err)
+			}
+			getValue, _ := strconv.Atoi(string(b))
+			if uint64(getValue) != h {
+				fmt.Println(getValue, h)
+				panic(1)
+			}
+
+			n := rand.Int31n(int32(h))
+			b, err = ff.Read(uint64(n))
+			if err != nil {
+				panic(err)
+			}
+			getValue1, _ := strconv.Atoi(string(b))
+			if int32(getValue1) != n+1 {
+				fmt.Println("rand", getValue1, n)
+				panic(1)
+			}
+
+			if h%uint64(1000) == 0 {
+				fmt.Println(string(b), h)
+			}
+
+		}
+	}
+}
 
 func TestNewFlatFile(t *testing.T) {
 	os.RemoveAll("./tmp")

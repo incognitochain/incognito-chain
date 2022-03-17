@@ -3,13 +3,14 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"net"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jessevdk/go-flags"
@@ -119,7 +120,8 @@ type config struct {
 	IndexerAccessTokens string    `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
 	UseOutcoinDatabase  []bool    `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 	GethParam           gethParam `mapstructure:"geth_param"`
-	SyncMode            string    `mapstructure:"sync_mode" long:"syncmode" description:"archive,batchcommit,lite"`
+	SyncMode            string    `mapstructure:"sync_mode" long:"syncmode" description:"smart contract of prv bep20"`
+	EnableFFStorage     bool      `mapstructure:"enable_ffstorage" long:"ffstorage" description:"enable_ffstorage"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses

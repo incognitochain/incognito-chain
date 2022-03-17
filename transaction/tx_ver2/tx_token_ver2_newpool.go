@@ -64,31 +64,7 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 	if txn == nil {
 		return false, errors.Errorf("Can not get tx normal for tx %v", txToken.Hash().String())
 	}
-	proof := txn.GetProof()
-	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
-		if metaData == nil {
-			utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", txToken.Hash().String())
-		} else {
-			metaType := metaData.GetType()
-			if !metadata.NoInputNoOutput(metaType) {
-				utils.Logger.Log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is invalid, metadata type %v", txToken.Hash().String(), metaType)
-			}
-		}
-	} else {
-		if len(proof.GetInputCoins()) == 0 {
-			if (metaData == nil) && (txn.GetValidationEnv().TxAction() != common.TxActInit) && (txn.GetType() != common.TxTokenConversionType) {
-				return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", txToken.Hash().String()))
-			}
-			if metaData != nil {
-				metaType := metaData.GetType()
-				if !metadata.NoInputHasOutput(metaType) {
-					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", txToken.Hash().String(), metaType))
-				}
-			}
-
-		}
-	}
-	proof = txToken.Tx.GetProof()
+	proof := txToken.Tx.GetProof()
 	if proof != nil {
 		if (len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) != 0) {
 			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("This tx %v for pay fee for tx %v, can not be mint tx", txToken.Tx.Hash().String(), txToken.Hash().String()))

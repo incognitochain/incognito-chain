@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 type TrieCommitEnvironment struct {
@@ -29,8 +30,7 @@ func NewForceTrieCommitEnvironment(shardID byte, rawDB incdb.KeyValueWriter, new
 }
 
 var (
-	splitter              = []byte("-[-]-")
-	fullSyncPivotBlockKey = []byte("Full-Sync-Latest-Pivot-Block-")
+	fullSyncPivotBlockKey = []byte("LiteStateDB-Pivot-BlockHash-")
 )
 
 func GetCommitPivotKey(name string) []byte {
@@ -74,16 +74,17 @@ func StoreLatestPivotCommit(writer incdb.KeyValueWriter, pivotName, pivotInfo st
 }
 
 func (stateDB *StateDB) GetStateObjectFromBranch(
-	ffIndex int64,
-	pivotIndex int64,
+	ffIndex uint64,
+	pivotIndex int,
 ) ([]map[common.Hash]StateObject, error) {
 
 	stateObjectSeries := []map[common.Hash]StateObject{}
-	if ffIndex <= pivotIndex {
-		return stateObjectSeries, nil
-	}
+
 	for {
-		data, err := stateDB.batchCommitConfig.flatFile.Read(int(ffIndex))
+		if ffIndex == uint64(pivotIndex) {
+			break
+		}
+		data, err := stateDB.batchCommitConfig.flatFile.Read(ffIndex)
 		if err != nil {
 			return nil, err
 		}
@@ -100,11 +101,11 @@ func (stateDB *StateDB) GetStateObjectFromBranch(
 		tmp := []map[common.Hash]StateObject{}
 		tmp = append(tmp, stateObjects)
 		stateObjectSeries = append(tmp, stateObjectSeries...)
-
-		if ffIndex == 0 || ffIndex <= pivotIndex {
+		// ffIndex = prevIndex
+		if ffIndex == 0 {
 			break
 		}
-		ffIndex = prevIndex
+		ffIndex = uint64(prevIndex)
 	}
 
 	return stateObjectSeries, nil

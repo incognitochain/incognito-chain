@@ -4,18 +4,18 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/prque"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/incdb"
-	"log"
 	"math/big"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common/prque"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
@@ -71,7 +71,7 @@ type StateDB struct {
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
 	dbErr  error
-	logger dataaccessobject.DAOLogger
+	logger dataaccessobject.STATEDBLogger
 
 	// Measurements gathered during execution for debugging purposes
 	StateObjectReads   time.Duration
@@ -80,7 +80,7 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, int, error) {
+func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, uint64, error) {
 	rebuildRootInfo := strings.Split(rebuildRoot, "-")
 	rootHash, err := common.Hash{}.NewHashFromStr(rebuildRootInfo[0])
 	if err != nil {
@@ -91,10 +91,10 @@ func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, int, error) {
 	if len(rebuildRootInfo) > 1 {
 		mode = rebuildRootInfo[1]
 	}
-	ffIndex := 0
+	ffIndex := uint64(0)
 	if len(rebuildRootInfo) == 3 {
 		var err error
-		ffIndex, err = strconv.Atoi(rebuildRootInfo[2])
+		ffIndex, err = strconv.ParseUint(rebuildRootInfo[2], 10, 64)
 		if err != nil {
 			return common.Hash{}, "", 0, err
 		}
@@ -124,10 +124,8 @@ func NewBatchCommitStateDB(rootDir string, dbName string, db incdb.Database, roo
 
 // New return a new statedb attach with a state root
 // input the rebuildRootData (commit hash, ffindex)
-func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataByte []byte, pivotState *StateDB) (*StateDB, error) {
-	log.Println("init ", dbName, mode)
-	rebuildRootData := NewEmptyRebuildInfo("")
-	rebuildRootData.FromBytes(rebuildRootDataByte)
+func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData RebuildInfo, pivotState *StateDB) (*StateDB, error) {
+	dataaccessobject.Logger.Log.Info("Init database", dbName, rebuildRootData)
 	rootDir := db.GetPath()
 	trieDBWrapper := NewDatabaseAccessWarper(db)
 	metrics.EnabledExpensive = true
@@ -141,7 +139,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 			return nil, errors.New("Data is not compatible! Litemode is used")
 		}
 		if rebuildMode == common.STATEDB_BATCH_COMMIT_MODE {
-			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootDataByte, pivotState)
+			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootData, pivotState)
 			if stateDB != nil {
 				stateDB.mode = common.STATEDB_ARCHIVE_MODE
 				stateDB.curRebuildInfo = rebuildRootData.Copy()
@@ -167,6 +165,7 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
@@ -178,6 +177,8 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 			if returnStateDB != nil {
 				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
 				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
 			}
 			return returnStateDB, err
 		}
@@ -193,19 +194,21 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 				return nil, err
 			}
 		} else {
-			pivotIndex = pivotState.curRebuildInfo.pivotFFIndex
+			pivotIndex = pivotState.curRebuildInfo.rebuildFFIndex //need to rebuild from this pivot rebuild ff index
 		}
 
 		//replay state object to rebuild to expected state
-		log.Println("rebuild ", rebuildRootData.String())
-		stateSeries, err := pivotState.GetStateObjectFromBranch(rebuildFFIndex, pivotIndex)
+		buildTime := time.Now()
+		stateSeries, err := pivotState.GetStateObjectFromBranch(uint64(rebuildFFIndex), int(pivotIndex))
 		if err != nil {
 			return nil, err
 		}
 		newState := pivotState.Copy()
 		for i, stateObjects := range stateSeries {
-			//newStateRoot, _ := newState.IntermediateRoot(true)
-			fmt.Println("replay", i, len(stateObjects))
+			if i > 0 && i%1000 == 0 {
+				dataaccessobject.Logger.Log.Infof("DB %v Building root: %v / %v commits", dbName, i, len(stateSeries))
+			}
+			//TODO: count size of object, it size > threshold then we call commit (cap node/image)
 			for objKey, obj := range stateObjects {
 				if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 					return nil, err
@@ -216,12 +219,16 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 			}
 		}
 		newStateRoot, _ := newState.IntermediateRoot(true)
+		newState.db.TrieDB().Reference(newStateRoot, common.Hash{})
+		newState.batchCommitConfig.triegc.Push(newStateRoot, -rebuildFFIndex)
+
 		if err != nil {
 			return nil, err
 		}
 
 		//check if we have expect rebuild root
-		fmt.Println("==================> compare", newStateRoot.String(), rebuildRootHash.String())
+		dataaccessobject.Logger.Log.Infof("DB %v Build root: %v (%v commits in %v) .Expected root %v", dbName, newStateRoot, len(stateSeries),
+			time.Since(buildTime).Seconds(), rebuildRootHash)
 		if newStateRoot.String() != rebuildRootHash.String() {
 			return nil, errors.New("Cannot rebuild correct root")
 		}
@@ -233,7 +240,18 @@ func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootDataB
 		if rebuildMode != common.STATEDB_LITE_MODE {
 			return nil, errors.New("Must run with lite mode")
 		}
-		return NewLiteStateDB(rootDir, dbName, rebuildRootHash.String(), db)
+
+		stateDB, err := NewLiteStateDB(rootDir, dbName, rebuildRootData, db)
+		if err != nil {
+			return nil, err
+		}
+		stateDB.curRebuildInfo = rebuildRootData.Copy()
+
+		if stateDB.liteStateDB.headStateNode == nil {
+			return nil, errors.New("Cannot rebuild root, head root not found")
+		}
+
+		return stateDB, nil
 	default:
 		return nil, errors.New("Cannot recognize statedb mode")
 	}
@@ -370,36 +388,51 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 
 		//if force write (stop node) or reach #commit threshold => write to disk
 		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
-		//log.Println("check write", forceWrite, stateDB.curRebuildInfo.pivotFFIndex+stateDB.batchCommitConfig.blockTrieInMemory, finalViewIndex)
+		//pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
 		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
 			//write the current roothash commit nodes to disk
 			rootHash := stateDB.curRebuildInfo.rebuildRootHash
 			rootIndex := stateDB.curRebuildInfo.rebuildFFIndex
-			//if rootIndex == 0 { //when first commit
-			//	rootHash, _ = stateDB.IntermediateRoot(true)
-			//}
-
 			if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
 				return err
 			}
-			log.Println("finalized", forceWrite, rootHash.String(), rootIndex, finalViewIndex)
+			if stateDB.curRebuildInfo.pivotFFIndex > 0 {
+				batchCommitConfig.flatFile.Truncate(uint64(stateDB.curRebuildInfo.pivotFFIndex))
+			}
 			stateDB.curRebuildInfo.pivotRootHash = rootHash
 			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
-
-			//dereference roothash before pivot point, for GC reduce memory
-			for !batchCommitConfig.triegc.Empty() {
-				oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-				if uint64(-number) >= uint64(finalViewIndex) {
-					batchCommitConfig.triegc.Push(oldRootHash, number)
-					break
-				}
-				stateDB.logger.Log.Debugf("StateDB %v Try Dereference, finalIndex %+v, deref block %+v", stateDB.dbName, finalViewIndex, number)
-				trieDB.Dereference(oldRootHash.(common.Hash))
+		}
+		//dereference roothash of finalized commit, for GC reduce memory
+		for !batchCommitConfig.triegc.Empty() {
+			oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
+			if -number >= finalViewIndex {
+				batchCommitConfig.triegc.Push(oldRootHash, number)
+				break
 			}
+			trieDB.Dereference(oldRootHash.(common.Hash))
 		}
 		return nil
 	case common.STATEDB_LITE_MODE:
-		return stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
+		//finalstate is not defined (=> when init state)
+		if finalViewRebuildInfo.rebuildRootHash.IsEqual(&common.EmptyRoot) {
+			return nil
+		}
+
+		//finalized and update rebuild info
+		err := stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
+		if err != nil {
+			return err
+		}
+		stateDB.curRebuildInfo.pivotRootHash = finalViewRebuildInfo.rebuildRootHash
+		stateDB.curRebuildInfo.pivotFFIndex = finalViewRebuildInfo.rebuildFFIndex
+
+		//truncate already finalized index
+		err = stateDB.liteStateDB.flatfile.Truncate(uint64(finalViewRebuildInfo.rebuildFFIndex))
+		if err != nil {
+			stateDB.logger.Log.Error("Truncate error")
+		}
+		return nil
+
 	default:
 		return errors.New("Cannot recognized mode")
 	}
@@ -475,18 +508,22 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 	case common.STATEDB_LITE_MODE:
 		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
 			if stateDB.liteStateDB.headStateNode.previousLink == nil {
-				return common.EmptyRoot, nil, nil
+				return stateDB.curRebuildInfo.rebuildRootHash, NewRebuildInfo(common.STATEDB_LITE_MODE, stateDB.curRebuildInfo.rebuildRootHash,
+					stateDB.curRebuildInfo.pivotRootHash, stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex), nil
 			}
 			root := *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash
-			curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, root, root, stateDB.liteStateDB.headStateNode.previousLink.ffIndex, 0)
+			curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, root, stateDB.curRebuildInfo.pivotRootHash,
+				stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex)
+			stateDB.curRebuildInfo = curRebuildInfo.Copy()
 			return root, curRebuildInfo, nil
 		}
-		h, err := stateDB.liteStateDB.Commit()
+
+		h, newRebuildIndex, err := stateDB.liteStateDB.Commit()
 		if err != nil {
 			return common.Hash{}, nil, err
 		}
 		stateDB.liteStateDB.NewStateNode()
-		curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, h, h, stateDB.liteStateDB.headStateNode.previousLink.ffIndex, 0)
+		curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, h, stateDB.curRebuildInfo.pivotRootHash, int64(newRebuildIndex), stateDB.curRebuildInfo.pivotFFIndex)
 		stateDB.curRebuildInfo = curRebuildInfo.Copy()
 		return h, curRebuildInfo, nil
 	default:
@@ -497,22 +534,23 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildIn
 
 // Copy duplicate statedb and return new statedb instance
 func (stateDB *StateDB) Copy() *StateDB {
+	curRebuildInfo := stateDB.curRebuildInfo
+	if stateDB.curRebuildInfo == nil {
+		curRebuildInfo = nil
+	}
+
 	if stateDB.liteStateDB != nil {
 		return &StateDB{
 			mode:                stateDB.mode,
 			dbName:              stateDB.dbName,
 			liteStateDB:         stateDB.liteStateDB.Copy(),
-			curRebuildInfo:      stateDB.curRebuildInfo.Copy(),
+			curRebuildInfo:      curRebuildInfo,
 			stateObjects:        make(map[common.Hash]StateObject),
 			stateObjectsPending: make(map[common.Hash]struct{}),
 			stateObjectsDirty:   make(map[common.Hash]struct{}),
 		}
 	}
 
-	curRebuildInfo := stateDB.curRebuildInfo
-	if stateDB.curRebuildInfo == nil {
-		curRebuildInfo = nil
-	}
 	return &StateDB{
 		db:                  stateDB.db,
 		dbName:              stateDB.dbName,
@@ -609,11 +647,7 @@ func (stateDB *StateDB) createStateObjectWithValue(objectType int, hash common.H
 
 // SetStateObject add new stateobject into statedb
 func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) error {
-	obj, err := stateDB.getOrNewStateObjectWithValue(objectType, key, value)
-	if err != nil {
-		return err
-	}
-	err = obj.SetValue(value)
+	obj, _, err := stateDB.createStateObjectWithValue(objectType, key, value)
 	if err != nil {
 		return err
 	}
@@ -672,9 +706,9 @@ func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common
 func (stateDB *StateDB) setStateObject(object StateObject) {
 	if stateDB.liteStateDB != nil {
 		stateDB.liteStateDB.SetStateObject(object)
+		return
 	}
-	key := object.GetHash()
-	stateDB.stateObjects[key] = object
+	stateDB.stateObjects[object.GetHash()] = object
 }
 
 // getStateObject retrieves a state object given by the address, returning nil if

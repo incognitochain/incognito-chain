@@ -165,13 +165,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
 
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
-	if err != nil {
-		return nil, err
-	}
-
-	beaconBlock := types.BeaconBlock{}
-	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(*beaconHash)
 	if err != nil {
 		return nil, err
 	}

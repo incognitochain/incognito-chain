@@ -168,7 +168,7 @@ func (blockchain *BlockChain) PrivacyTokenIDExistedInNetwork(curView *BeaconBest
 		if err != nil {
 			return false, err
 		}
-		stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash,
+		stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash.GetRootHash(),
 			statedb.NewDatabaseAccessWarper(db))
 		if err != nil {
 			return false, err

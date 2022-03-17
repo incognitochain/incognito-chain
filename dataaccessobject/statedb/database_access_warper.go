@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
@@ -9,16 +10,16 @@ import (
 
 type FlatFile interface {
 	//append item into flat file, return item index
-	Append([]byte) (int, error)
+	Append([]byte) (uint64, error)
 
 	//read item in flatfile with specific index (return from append)
-	Read(index int) ([]byte, error)
+	Read(index uint64) ([]byte, error)
 
 	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently(index uint64) (chan []byte, chan int, func())
+	ReadRecently(index uint64) (chan []byte, chan uint64, func())
 
 	//truncate flat file system
-	Truncate(lastIndex int) error
+	Truncate(lastIndex uint64) error
 
 	Size() uint64
 }

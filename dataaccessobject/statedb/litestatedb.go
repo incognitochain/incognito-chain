@@ -3,12 +3,13 @@ package statedb
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"path"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/pkg/errors"
-	"log"
-	"path"
 )
 
 type LiteStateDB struct {
@@ -19,16 +20,14 @@ type LiteStateDB struct {
 	stateDB       *StateDB
 }
 
-func NewLiteStateDB(rootDir string, dbName string, rebuildRoot string, db incdb.Database) (*StateDB, error) {
-	rebuildRootHash, _, rebuildRootIndex, err := getRebuildRootInfo(rebuildRoot)
+func NewLiteStateDB(rootDir string, dbName string, rebuildRoot RebuildInfo, db incdb.Database) (*StateDB, error) {
 	stateDB := &StateDB{
 		mode:                common.STATEDB_LITE_MODE,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}
-	stateNode := NewStateNode()
-	stateNode.aggregateHash = nil
+
 	ffDir := path.Join(rootDir, fmt.Sprintf("lite_%v", dbName))
 
 	ff, err := flatfile.NewFlatFile(ffDir, 5000)
@@ -41,16 +40,20 @@ func NewLiteStateDB(rootDir string, dbName string, rebuildRoot string, db incdb.
 		ff,
 		db,
 		dbPrefix,
-		stateNode,
+		nil,
 		stateDB,
 	}
 
 	//if init from empty root
-	if rebuildRoot == "" || rebuildRootHash.String() == common.EmptyRoot.String() {
+	if rebuildRoot.rebuildRootHash.String() == common.EmptyRoot.String() {
+		stateNode := NewStateNode()
+		stateNode.aggregateHash = &common.EmptyRoot
+		stateDB.liteStateDB.headStateNode = stateNode
+		stateDB.liteStateDB.NewStateNode()
 		return stateDB, nil
 	}
 	//else rebuild
-	err = stateDB.liteStateDB.restoreStateNode(rebuildRootHash, rebuildRootIndex)
+	err = stateDB.liteStateDB.restoreStateNode(rebuildRoot)
 
 	return stateDB, err
 }
@@ -73,9 +76,9 @@ func (stateDB *LiteStateDB) Copy() *LiteStateDB {
 	}
 }
 
-func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
+func (stateDB *LiteStateDB) Commit() (common.Hash, uint64, error) {
 	if stateDB.headStateNode.aggregateHash != nil {
-		return common.Hash{}, errors.New("Cannot commit twice")
+		return common.Hash{}, 0, errors.New("Cannot commit twice")
 	}
 
 	h, err := stateDB.headStateNode.Commit()
@@ -83,35 +86,38 @@ func (stateDB *LiteStateDB) Commit() (common.Hash, error) {
 	if h != nil {
 		data, err := stateDB.headStateNode.Serialize()
 		if err != nil {
-			return common.Hash{}, err
+			return common.Hash{}, 0, err
 		}
 		ffIndex, err := stateDB.flatfile.Append(data)
 		if err != nil {
-			return common.Hash{}, err
+			return common.Hash{}, 0, err
 		}
-		stateDB.headStateNode.ffIndex = int64(ffIndex)
-		return *h, nil
+		return *h, ffIndex, nil
 	}
 
-	return common.Hash{}, err
+	return common.Hash{}, 0, err
 
 }
 
 func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 
 	//write finalize Key Value to disk
-	stateNode := stateDB.headStateNode.previousLink //current headstatenode dont have aggregatehash, as soon as we commit to calculate agghash, we create new head
+	// current head node is not commit yet! (When commit,it create new node, and we finalizd the old node)
+	if stateDB.headStateNode.aggregateHash != nil {
+		return errors.New("Not expected. Head node must not commit yet!")
+	}
+
+	stateNode := stateDB.headStateNode.previousLink
 	for {
 		if stateNode == nil {
 			break
 		}
 		if stateNode.aggregateHash.String() == stateNodeHash.String() {
 			err := stateNode.FlushFinalizedToDisk(stateDB.db, stateDB)
+			stateNode.previousLink = nil
 			if err != nil {
 				return err
 			}
-			stateNode.previousLink = nil
-			err = StoreLatestPivotCommit(stateDB.db, stateDB.dbPrefix, fmt.Sprintf("%v-%v", stateNodeHash.String(), stateNode.ffIndex))
 			return err
 		}
 		stateNode = stateNode.previousLink
@@ -120,29 +126,33 @@ func (stateDB *LiteStateDB) Finalized(stateNodeHash common.Hash) error {
 	return errors.New("Cannot find finalized hash!")
 }
 
-func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex int) error {
+func (stateDB *LiteStateDB) restoreStateNode(rebuildInfo RebuildInfo) error {
+	root := rebuildInfo.rebuildRootHash
+	ffIndex := rebuildInfo.rebuildFFIndex
 	//get final commit
-	pivotRootHash, pivotRootIndex, err := GetLatestPivotCommitInfo(stateDB.db, stateDB.dbPrefix)
-	if err != nil {
-		return err
-	}
+	pivotRootHash := rebuildInfo.pivotRootHash
+	pivotRootIndex := rebuildInfo.pivotFFIndex
 
-	if ffIndex < int(pivotRootIndex) {
+	if ffIndex < pivotRootIndex {
 		return errors.New("Rebuild from root that before pivot point")
 	}
 
+	fmt.Println("Rebuild lite stateDB", ffIndex, pivotRootIndex, root.String(), pivotRootHash.String())
 	dataChan, errChan, cancelReadStateNode := stateDB.flatfile.ReadRecently(uint64(ffIndex))
 	stateNodeMap := map[common.Hash]*StateNode{}
 	prevMap := map[common.Hash]*common.Hash{}
 	for {
+		if ffIndex < pivotRootIndex {
+			break
+		}
 		select {
 		case stateByte := <-dataChan:
 			if len(stateByte) == 0 {
-				e := common.Hash{}
-				if pivotRootHash.String() == e.String() {
+				if pivotRootHash.String() == common.EmptyRoot.String() {
+					cancelReadStateNode()
 					goto RESTORE_SUCCESS
 				} else {
-					return errors.New("Cannot rebuild")
+					return errors.New("Cannot rebuild " + root.String())
 				}
 			}
 
@@ -150,7 +160,6 @@ func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex int) erro
 			if err != nil {
 				return err
 			}
-
 			stateNodeMap[stateNode.GetHash()] = stateNode
 			prevMap[stateNode.GetHash()] = prevHash
 
@@ -158,10 +167,10 @@ func (stateDB *LiteStateDB) restoreStateNode(root common.Hash, ffIndex int) erro
 				cancelReadStateNode()
 				goto RESTORE_SUCCESS
 			}
+
 		case <-errChan:
 			return errors.New("Read data return err")
 		}
-
 	}
 RESTORE_SUCCESS:
 	for hash, stateNode := range stateNodeMap {
@@ -177,10 +186,10 @@ RESTORE_SUCCESS:
 			break
 		}
 	}
-
-	if stateDB.headStateNode == nil {
-		return errors.New("Cannot find root head")
+	if stateDB.headStateNode == nil || stateDB.headStateNode.aggregateHash.String() != root.String() {
+		return errors.New("Cannot find root head " + rebuildInfo.String())
 	}
+
 	stateDB.headStateNode = stateNodeMap[root]
 	stateDB.NewStateNode()
 	return nil
@@ -221,7 +230,6 @@ func (stateDB *LiteStateDB) GetStateObject(objectType int, addr common.Hash) (St
 }
 
 func (stateDB *LiteStateDB) SetStateObject(object StateObject) {
-	log.Println("Insert key", object.GetHash().String())
 	if stateDB.headStateNode.aggregateHash != nil {
 		log.Println("Warning: set state object after commit, will not calculate aggregate hash again, could break logic")
 		panic("Set key after commit")

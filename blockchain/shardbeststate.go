@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -29,21 +29,22 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-type ShardRootHash struct {
-	ConsensusStateDBRootHash   common.Hash
-	TransactionStateDBRootHash common.Hash
-	FeatureStateDBRootHash     common.Hash
-	RewardStateDBRootHash      common.Hash
-	SlashStateDBRootHash       common.Hash
-}
+//type ShardRootHash struct {
+//	ConsensusStateDBRootHash   common.Hash
+//	TransactionStateDBRootHash common.Hash
+//	FeatureStateDBRootHash     common.Hash
+//	RewardStateDBRootHash      common.Hash
+//	SlashStateDBRootHash       common.Hash
+//}
 
 //[]byte = string help rebuild from multiple mode
+// it must compatible with old code
 type ShardRootHashv2 struct {
-	ConsensusStateDBRootHash   []byte
-	TransactionStateDBRootHash []byte
-	FeatureStateDBRootHash     []byte
-	RewardStateDBRootHash      []byte
-	SlashStateDBRootHash       []byte
+	ConsensusStateDBRootHash   statedb.RebuildInfo
+	TransactionStateDBRootHash statedb.RebuildInfo
+	FeatureStateDBRootHash     statedb.RebuildInfo
+	RewardStateDBRootHash      statedb.RebuildInfo
+	SlashStateDBRootHash       statedb.RebuildInfo
 }
 
 type ShardBestState struct {
@@ -183,11 +184,11 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, pivot
 	}
 
 	rebuildSRH := &ShardRootHashv2{
-		ConsensusStateDBRootHash:   []byte(common.EmptyRoot.String()),
-		TransactionStateDBRootHash: []byte(common.EmptyRoot.String()),
-		FeatureStateDBRootHash:     []byte(common.EmptyRoot.String()),
-		RewardStateDBRootHash:      []byte(common.EmptyRoot.String()),
-		SlashStateDBRootHash:       []byte(common.EmptyRoot.String()),
+		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(""),
+		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(""),
+		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(""),
+		RewardStateDBRootHash:      *statedb.NewEmptyRebuildInfo(""),
+		SlashStateDBRootHash:       *statedb.NewEmptyRebuildInfo(""),
 	}
 	json.Unmarshal(sRHBytes, &rebuildSRH)
 	mode := config.Config().SyncMode
@@ -732,26 +733,27 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 		forceWrite = true
 	}
 
-	commitToDisk := func(stateDB *statedb.StateDB, finalViewRootInfoByte []byte) (common.Hash, []byte, error) {
+	commitToDisk := func(stateDB *statedb.StateDB, finalViewRebuildInfo statedb.RebuildInfo) (common.Hash, statedb.RebuildInfo, error) {
 		rootHash, _, err := stateDB.Commit(true)
-		finalViewRebuildInfo := statedb.NewEmptyRebuildInfo("")
-		finalViewRebuildInfo.FromBytes(finalViewRootInfoByte)
+		if err != nil {
+			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
+		}
 		//log.Println("=========> ", forceWrite, shardBestState.ShardID)
-		if err := stateDB.Finalized(forceWrite, *finalViewRebuildInfo); err != nil {
-			return common.Hash{}, nil, err
+		if err := stateDB.Finalized(forceWrite, finalViewRebuildInfo); err != nil {
+			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
 		}
 		//return latest rebuild root (after finalized)
-		return rootHash, stateDB.GetRebuildRoot().ToBytes(), err
+		return rootHash, stateDB.GetRebuildRoot(), err
 	}
 
 	//get final sHRv2 (detail rebuild info: commit hash , ffindex)
-	emptyInfo := statedb.NewEmptyRebuildInfo("").ToBytes()
+	mode := config.Config().SyncMode
 	finalViewRH := &ShardRootHashv2{
-		ConsensusStateDBRootHash:   emptyInfo,
-		TransactionStateDBRootHash: emptyInfo,
-		FeatureStateDBRootHash:     emptyInfo,
-		RewardStateDBRootHash:      emptyInfo,
-		SlashStateDBRootHash:       emptyInfo,
+		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(common.STATEDB_ARCHIVE_MODE),
+		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(mode),
+		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(mode),
+		RewardStateDBRootHash:      *statedb.NewEmptyRebuildInfo(mode),
+		SlashStateDBRootHash:       *statedb.NewEmptyRebuildInfo(mode),
 	}
 
 	//get finalview shard root hash (bypass first block)
@@ -801,38 +803,16 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 		RewardStateDBRootHash:      rewardRebuildRoot,
 		SlashStateDBRootHash:       slashRebuildRoot,
 	}
-	s := statedb.NewEmptyRebuildInfo("")
-	s.FromBytes(txRebuildRoot)
 
-	Logger.log.Debugf("Store ShardRootHashV2, ShardID %+v, BlockHash %+v, RebuildInfo %+v"+
-		"", shardBestState.ShardID, shardBestState.BestBlockHash, s.String())
+	//Logger.log.Infof("Store ShardRootHashV2, ShardID %+v, BlockHash %+v, RebuildInfo %+v"+
+	//	"", shardBestState.ShardID, shardBestState.BestBlockHash, s)
 
 	if err := rawdbv2.StoreShardRootsHash(db, shardBestState.ShardID, shardBestState.BestBlockHash, newSRH); err != nil {
+		panic(err)
 		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
 
 	return nil
-}
-
-func truncateLastIndex(flatFileManager *flatfile.FlatFileManager, indexes []int) {
-	// truncate old files
-	lastIndex := -1
-	for i, v := range indexes {
-		if i == 0 {
-			lastIndex = v
-		} else {
-			if lastIndex < v {
-				lastIndex = v
-			}
-		}
-	}
-
-	if lastIndex != -1 {
-		err := flatFileManager.Truncate(lastIndex)
-		if err != nil {
-			Logger.log.Errorf("StoreShardBlockError, truncate flatfile with last index %+v, error %+v", lastIndex, err)
-		}
-	}
 }
 
 func (curView *ShardBestState) GetProposerLength() int {

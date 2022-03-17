@@ -5,13 +5,16 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
-	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
+	"github.com/incognitochain/incognito-chain/proto"
+	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -85,7 +88,7 @@ func NewBlockChain(isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
-	bc.beaconViewCache, _ = lru.New(400)
+	bc.beaconViewCache, _ = lru.New(50)
 	bc.cQuitSync = make(chan struct{})
 	return bc
 }
@@ -101,8 +104,14 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
-	blockchain.beaconViewCache, _ = lru.New(400)
-	blockchain.committeeByEpochCache, _ = lru.New(100)
+	blockchain.beaconViewCache, _ = lru.New(50)
+	blockchain.committeeByEpochCache, _ = lru.New(50)
+	err := wallet.InitPublicKeyBurningAddressByte()
+	if err != nil {
+		Logger.log.Error(err)
+		panic(err)
+	}
+	types.CommitteeProvider = blockchain
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
@@ -233,7 +242,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		txDB := sBestState.GetCopiedTransactionStateDB()
 
 		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
-		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
+		Logger.log.Infof("Init Shard View shardID %+v, final height %+v, best height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight(), blockchain.ShardChain[shardID].GetBestViewHeight())
 	}
 	return nil
 }
@@ -328,7 +337,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
-	if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
+	// if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
+	// 	Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
+	// 	return err
+	// }
+	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
 	}
@@ -361,9 +374,9 @@ func (bc *BlockChain) Stop() {
 	Logger.log.Info("Blockchain Stop")
 	if config.Config().SyncMode == common.STATEDB_BATCH_COMMIT_MODE {
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
+		bc.BeaconChain.insertLock.Lock()
 		for i, shardChain := range bc.ShardChain {
 			bc.ShardChain[i].insertLock.Lock()
-			defer bc.ShardChain[i].insertLock.Unlock()
 			shardBestState := shardChain.GetBestState()
 			shardID := shardBestState.ShardID
 			Logger.log.Infof("Blockchain Stop, start commit shard %+v, best height %+v in fast sync mode", i, shardBestState.ShardHeight)
@@ -373,9 +386,9 @@ func (bc *BlockChain) Stop() {
 				if err != nil {
 					Logger.log.Error("Cannot write current stateDB to disk")
 				}
+				break
 			}
 		}
-
 		Logger.log.Info("Blockchain Stop, successfully commit for fast sync mode")
 	}
 }
@@ -719,13 +732,13 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBlockByHash error %+v", shardID, err)
-			continue
+			return errors.New("RestoreShardBestState error")
 		}
 		v.BestBlock = block
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), allViews[0])
 		if err != nil {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, InitStateRootHash error %+v", shardID, err)
-			continue
+			return errors.New("RestoreShardBestState error")
 		}
 
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
@@ -754,6 +767,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			return errors.New("Restart shard views fail")
 		}
+		Logger.log.Info("Restore shard view", shardID, v.ShardHeight, v.Hash().String())
 	}
 
 	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {
@@ -792,17 +806,9 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 			if err != nil { //no transaction in this node
 				continue
 			}
-			shardBlockBytes, err := rawdbv2.GetShardBlockByHash(sdb, blockHash)
-			if err != nil { //no transaction in this node
-				panic("Have transaction but cannot found block")
-			}
-			shardBlock := types.NewShardBlock()
-			err = json.Unmarshal(shardBlockBytes, shardBlock)
-			if err != nil {
-				panic("Cannot unmarshal shardblock")
-			}
+			shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
 			if shardBlock.GetShardID() != int(shardID) {
-				continue
+				panic("Database is broken")
 			}
 			txData := shardBlock.Body.Transactions[txindex]
 			committeePk := txData.GetMetadata().(*metadata.StakingMetadata).CommitteePublicKey
@@ -1223,4 +1229,152 @@ func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePubli
 	}
 
 	return m
+}
+
+func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
+	epoch uint64,
+	cID byte,
+) (
+	res []incognitokey.CommitteePublicKey,
+	err error,
+) {
+	key := getCommitteeCacheKeyByEpoch(epoch, cID)
+	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
+		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
+			return committees, nil
+		} else {
+			return nil, errors.Errorf("Can not convert data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
+		}
+	}
+	return nil, errors.Errorf("Can not found data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
+}
+
+func (blockchain *BlockChain) getBeaconValidators(
+	epoch uint64,
+	prevHash common.Hash,
+) (
+	res []incognitokey.CommitteePublicKey,
+	err error,
+) {
+	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, common.BeaconChainSyncID)
+	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		return res, err
+	}
+	if v := blockchain.BeaconChain.GetViewByHash(prevHash); v != nil {
+		res = v.GetCommittee()
+
+		blockchain.committeeByEpochCache.Add(key, res)
+		return res, nil
+	}
+	consensusDB, err := getBeaconConsensusStateDB(blockchain.GetBeaconChainDatabase(), prevHash)
+	if err != nil {
+		return nil, err
+	}
+	res = statedb.GetBeaconCommittee(consensusDB)
+	blockchain.committeeByEpochCache.Add(key, res)
+	return res, nil
+}
+
+func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
+	epoch uint64,
+	prevHash common.Hash,
+	cID byte,
+) (
+	res []incognitokey.CommitteePublicKey,
+	err error,
+) {
+	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, cID)
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		return res, err
+	}
+	key := getCommitteeCacheKeyByEpoch(epoch, cID)
+	if v := blockchain.ShardChain[cID].GetViewByHash(prevHash); v != nil {
+		res = v.GetCommittee()
+		blockchain.committeeByEpochCache.Add(key, res)
+		return res, nil
+	}
+	consensusDB, err := getShardConsensusStateDB(blockchain.GetShardChainDatabase(cID), cID, prevHash)
+	if err != nil {
+		return nil, err
+	}
+	res = statedb.GetOneShardCommittee(consensusDB, cID)
+	blockchain.committeeByEpochCache.Add(key, res)
+	return res, nil
+}
+
+func (blockchain *BlockChain) getShardValidators(
+	epoch uint64,
+	beaconHash common.Hash,
+	prevHash common.Hash,
+	cID byte,
+) (
+	res []incognitokey.CommitteePublicKey,
+	err error,
+) {
+	if beaconHash.IsZeroValue() {
+		return blockchain.getShardValidatorsFromPrevHash(epoch, prevHash, cID)
+	}
+	return blockchain.GetShardCommitteeFromBeaconHash(beaconHash, cID)
+}
+
+func (blockchain *BlockChain) GetValidatorIndex(
+	valdatorPk string,
+	cID byte,
+	beaconHash common.Hash,
+	prevHash common.Hash,
+	epoch uint64,
+) (int, error) {
+	var cList []incognitokey.CommitteePublicKey
+	var err error = nil
+	if cID == common.BeaconChainSyncID {
+		cList, err = blockchain.getBeaconValidators(epoch, prevHash)
+	} else {
+		cList, err = blockchain.getShardValidators(epoch, beaconHash, prevHash, cID)
+	}
+
+	if err != nil {
+		return 0, err
+	}
+	for id, cPK := range cList {
+		if cPKStr, err := cPK.ToBase58(); err == nil {
+			if valdatorPk == cPKStr {
+				return id, nil
+			}
+		} else {
+			return 0, err
+		}
+	}
+	return 0, errors.Errorf("Can not found validator pk %v in committee from beacon hash %v, epoch %v", valdatorPk, beaconHash.String(), epoch)
+}
+
+func (blockchain *BlockChain) GetValidatorFromIndex(
+	valdatorIdx int,
+	cID byte,
+	beaconHash common.Hash,
+	prevHash common.Hash,
+	epoch uint64,
+) (string, error) {
+	var cList []incognitokey.CommitteePublicKey
+	var err error = nil
+	if cID == common.BeaconChainSyncID {
+		cList, err = blockchain.getBeaconValidators(epoch, prevHash)
+	} else {
+		cList, err = blockchain.getShardValidators(epoch, beaconHash, prevHash, cID)
+	}
+	if err != nil {
+		return "", err
+	}
+	if (valdatorIdx < 0) || (valdatorIdx >= len(cList)) {
+		return "", errors.Errorf("validatorIdx %v out of range 0..%v, beacon hash %v", valdatorIdx, len(cList), beaconHash.String())
+	}
+	if cPKStr, err := cList[valdatorIdx].ToBase58(); err == nil {
+		return cPKStr, nil
+	} else {
+		return "", err
+	}
 }

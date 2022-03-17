@@ -1,0 +1,17 @@
+syntax = "proto3";
+option go_package="./proto";
+
+message PortalSigBytes {
+    string TokenID = 1;
+    string TxHash = 2;
+    repeated bytes Sigs = 3;
+}
+
+message ValidationDataBytes {
+    bytes BLSSig = 1;
+    bytes BriSig = 2;
+    repeated int32 ValIdx = 3;
+    bytes AggSig = 4;
+    repeated bytes AllBriSig = 5;
+    repeated PortalSigBytes PortalSig = 6;
+}

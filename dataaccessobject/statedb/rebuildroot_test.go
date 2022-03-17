@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"testing"
@@ -10,10 +11,13 @@ func TestNewRebuildInfo(t *testing.T) {
 	h1 := common.Hash{}.NewHashFromStr2("123")
 	h2 := common.Hash{}.NewHashFromStr2("456")
 	info1 := NewRebuildInfo(common.STATEDB_BATCH_COMMIT_MODE, h1, h2, 1800, 900)
-	fmt.Println(info1.ToBytes())
+	b, err := json.Marshal(info1)
+	fmt.Println("marshal ====>", info1.String(), string(b), len(b), err)
 
-	info2 := NewEmptyRebuildInfo(0)
-	info2.FromBytes(info1.ToBytes())
+	info2 := NewEmptyRebuildInfo("")
+	json.Unmarshal(b, &info2)
+
+	fmt.Println("===>", info1, info2)
 
 	if info1.mode != info2.mode {
 		t.Fatal("!= mode")
