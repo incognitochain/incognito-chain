@@ -958,9 +958,9 @@ func TestBeaconBestState_GetFinishSyncingValidators(t *testing.T) {
 
 func TestGetMaxCommitteeSize(t *testing.T) {
 	type args struct {
-		currentMaxCommitteeSize  int
-		increaseMaxCommitteeSize map[uint64]int
-		beaconHeight             uint64
+		currentMaxCommitteeSize int
+		triggerFeature          map[string]uint64
+		beaconHeight            uint64
 	}
 	tests := []struct {
 		name string
@@ -970,9 +970,9 @@ func TestGetMaxCommitteeSize(t *testing.T) {
 		{
 			name: "empty increase max committee size",
 			args: args{
-				currentMaxCommitteeSize:  10,
-				increaseMaxCommitteeSize: make(map[uint64]int),
-				beaconHeight:             100,
+				currentMaxCommitteeSize: 10,
+				triggerFeature:          make(map[string]uint64),
+				beaconHeight:            100,
 			},
 			want: 10,
 		},
@@ -980,8 +980,8 @@ func TestGetMaxCommitteeSize(t *testing.T) {
 			name: "beacon height < increase max committee size break point",
 			args: args{
 				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					102: 12,
+				triggerFeature: map[string]uint64{
+					MAX_COMMITTEE_SIZE_48_FEATURE: 103,
 				},
 				beaconHeight: 101,
 			},
@@ -991,81 +991,28 @@ func TestGetMaxCommitteeSize(t *testing.T) {
 			name: "beacon height = increase max committee size break point",
 			args: args{
 				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					102: 12,
+				triggerFeature: map[string]uint64{
+					MAX_COMMITTEE_SIZE_48_FEATURE: 102,
 				},
 				beaconHeight: 102,
 			},
-			want: 12,
+			want: 48,
 		},
 		{
 			name: "beacon height > increase max committee size break point",
 			args: args{
 				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					102: 12,
+				triggerFeature: map[string]uint64{
+					MAX_COMMITTEE_SIZE_48_FEATURE: 102,
 				},
 				beaconHeight: 103,
 			},
-			want: 12,
-		},
-		{
-			name: "get biggest max committee size",
-			args: args{
-				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					100: 12,
-					200: 14,
-					301: 16,
-				},
-				beaconHeight: 301,
-			},
-			want: 16,
-		},
-		{
-			name: "get correct max committee size 1",
-			args: args{
-				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					100: 12,
-					200: 14,
-					301: 16,
-				},
-				beaconHeight: 300,
-			},
-			want: 14,
-		},
-		{
-			name: "get correct max committee size 2",
-			args: args{
-				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					100: 12,
-					200: 14,
-					301: 16,
-				},
-				beaconHeight: 199,
-			},
-			want: 12,
-		},
-		{
-			name: "get correct max committee size 3",
-			args: args{
-				currentMaxCommitteeSize: 10,
-				increaseMaxCommitteeSize: map[uint64]int{
-					100: 12,
-					200: 14,
-					301: 16,
-					401: 18,
-				},
-				beaconHeight: 200,
-			},
-			want: 14,
+			want: 48,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetMaxCommitteeSize(tt.args.currentMaxCommitteeSize, tt.args.increaseMaxCommitteeSize, tt.args.beaconHeight); got != tt.want {
+			if got := GetMaxCommitteeSize(tt.args.currentMaxCommitteeSize, tt.args.triggerFeature, tt.args.beaconHeight); got != tt.want {
 				t.Errorf("GetMaxCommitteeSize() = %v, want %v", got, tt.want)
 			}
 		})

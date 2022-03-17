@@ -114,6 +114,7 @@ const (
 	WrongEpochError
 	GenerateInstructionHashError
 	GetShardBlocksForBeaconProcessError
+	GetDequeueInstructionError
 	ShardStateHeightError
 	ShardStateCrossShardBitMapError
 	ShardBlockSignatureError
@@ -195,6 +196,8 @@ const (
 	ShardBlockAlreadyExist
 	PDEStateDBError
 	UpdateBFTV3StatsError
+	FinishSyncInstructionError
+	OutdatedCodeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -369,6 +372,7 @@ var ErrCodeMessage = map[int]struct {
 	CommitteeFromBlockNotFoundError:                   {-1163, "Committee From Beacon Block Not Found Error"},
 	ShardSyncValidatorHashError:                       {-1164, "Shard Sync Validator Hash Error"},
 	CommitTrieToDiskError:                             {-1165, "Commit Trie to disk Error"},
+	FinishSyncInstructionError:                        {-1165, "Checking finish sync instruction error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	GetListDecryptedOutputCoinsByKeysetError:          {-2100, "Get List Output Coins By Keyset Error"},

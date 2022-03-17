@@ -104,3 +104,8 @@ batch_commit_sync_mode_param:
   block_trie_in_memory: 2000
   trie_node_limit: 1e9
   trie_img_limit: 4e6
+auto_enable_feature:
+  - maxcommitteesize48:
+      min_trigger: 3965040
+      force_trigger: 1000000000
+      require_percentage: 90

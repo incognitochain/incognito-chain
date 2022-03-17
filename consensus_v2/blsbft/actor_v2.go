@@ -773,6 +773,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	}
 
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
+	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
 
 	if !proposeBlockInfo.IsCommitted {
 		a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
@@ -801,7 +802,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
+	v.block.(BlockValidation).AddValidationField(validationData)
 
 	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
@@ -821,8 +822,8 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
 	isInsertWithPreviousData := false
+	v.block.(BlockValidation).AddValidationField(validationData)
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -836,7 +837,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		if err != nil {
 			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
 		} else {
-			previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
+			previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
 			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
 				return err
 			}
@@ -879,7 +880,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 		return "", err
 	}
 
-	aggSig, brigSigs, validatorIdx, portalSigs, err := a.combineVotes(votes, committeeBLSString)
+	aggSig, brigSigs, validatorIdx, portalSigs, err := CombineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
 	}
@@ -1064,7 +1065,7 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 	validationData.PortalSig = portalSigs
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
-	block.(blockValidation).AddValidationField(validationDataString)
+	block.(BlockValidation).AddValidationField(validationDataString)
 
 	return block, nil
 }
@@ -1552,7 +1553,7 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	return nil
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
+func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {
