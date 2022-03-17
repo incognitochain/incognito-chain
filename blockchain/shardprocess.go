@@ -178,7 +178,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	previousBeaconHeight := curView.BeaconHeight
 	checkPoint := time.Now()
 WAITFORBEACON:
-	_, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), shardBlock.Header.BeaconHeight)
+	_, err = rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), shardBlock.Header.BeaconHeight)
 	if err != nil {
 		if time.Since(checkPoint).Seconds() > 10 {
 			return NewBlockChainError(FetchBeaconBlocksError, err)

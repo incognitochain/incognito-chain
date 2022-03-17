@@ -28,18 +28,6 @@ func GetAllProposeHistory(db incdb.Database, chainID int) (map[int64]struct{}, e
 	return res, nil
 }
 
-func GetProposeHistoryByKey(db incdb.Database, chainID int, currentTimeSlot int64) (interface{}, error) {
-
-	key := GetProposeHistoryKey(chainID, uint64(currentTimeSlot))
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
-}
-
 func StoreProposeHistory(db incdb.Database, chainID int, currentTimeSlot int64) error {
 
 	key := GetProposeHistoryKey(chainID, uint64(currentTimeSlot))
@@ -88,18 +76,6 @@ func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]by
 	}
 
 	return res, res2, nil
-}
-
-func GetReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) ([]byte, error) {
-
-	key := GetReceiveBlockByHeightKey(chainID, height)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
 }
 
 func StoreReceiveBlockByHeight(db incdb.Database, chainID int, height uint64, numberOfBlock int, value []byte) error {
@@ -152,19 +128,6 @@ func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte
 	return res, nil
 }
 
-func GetReceiveBlockByHash(db incdb.Database, chainID int, blockHash string) ([]byte, error) {
-
-	key := GetReceiveBlockByHashKey(chainID, blockHash)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
-
-}
-
 func StoreReceiveBlockByHash(db incdb.Database, chainID int, blockHash string, value []byte) error {
 
 	key := GetReceiveBlockByHashKey(chainID, blockHash)
@@ -206,18 +169,6 @@ func GetAllVoteHistory(db incdb.Database, chainID int) (map[uint64][]byte, error
 		value := make([]byte, len(it.Value()))
 		copy(value, it.Value())
 		res[height] = value
-	}
-
-	return res, nil
-}
-
-func GetVoteHistory(db incdb.Database, chainID int, height uint64) (interface{}, error) {
-
-	key := GetVoteHistoryKey(chainID, height)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
 	}
 
 	return res, nil
