@@ -54,25 +54,25 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	for _, action := range env.UnshieldActions() {
 		inst := [][]string{}
-		inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos)
+		inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight())
 		if err != nil {
 			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 		}
 		res = append(res, inst...)
 	}
 
-	for _, action := range env.ConvertActions() {
+	for _, action := range env.ShieldActions() {
 		inst := []string{}
-		inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs())
+		inst, s.unifiedTokenInfos, err = s.producer.shield(action, s.unifiedTokenInfos, env.AccumulatedValues())
 		if err != nil {
 			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 		}
 		res = append(res, inst)
 	}
 
-	for _, action := range env.ShieldActions() {
+	for _, action := range env.ConvertActions() {
 		inst := []string{}
-		inst, s.unifiedTokenInfos, err = s.producer.shield(action, s.unifiedTokenInfos, env.AccumulatedValues())
+		inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs())
 		if err != nil {
 			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 		}
@@ -120,6 +120,11 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 			}
 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
 			s.unifiedTokenInfos, err = s.processor.shield(*inst, s.unifiedTokenInfos, sDB)
+			if err != nil {
+				return err
+			}
+		case metadataCommon.BurningUnifiedTokenRequestMeta:
+			s.unifiedTokenInfos, err = s.processor.unshield(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
 			}
@@ -224,11 +229,22 @@ func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.Issuin
 		contractAddress = config.Param().EthContractAddressStr
 		prefix = utils.EmptyString
 		isTxHashIssued = statedb.IsETHTxHashIssued
+		if md.IncTokenID == common.PRVCoinID {
+			contractAddress = config.Param().PRVERC20ContractAddressStr
+			listTxUsed = ac.UniqPRVEVMTxsUsed
+			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
+		}
 	case common.BSCNetworkID:
 		listTxUsed = ac.UniqBSCTxsUsed
 		contractAddress = config.Param().BscContractAddressStr
 		prefix = common.BSCPrefix
 		isTxHashIssued = statedb.IsBSCTxHashIssued
+		if md.IncTokenID == common.PRVCoinID {
+			contractAddress = config.Param().PRVBEP20ContractAddressStr
+			listTxUsed = ac.UniqPRVEVMTxsUsed
+			prefix = utils.EmptyString
+			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
+		}
 	case common.PLGNetworkID:
 		listTxUsed = ac.UniqPLGTxsUsed
 		contractAddress = config.Param().PlgContractAddressStr
@@ -248,27 +264,29 @@ func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.Issuin
 	return listTxUsed, contractAddress, prefix, isTxHashIssued, tokenID, nil
 }
 
-func (s *State) GetUnshieldInfo(unifiedTokenID common.Hash, networkID uint) (common.Hash, string, error) {
-	var prefix string
+func (s *State) GetUnshieldInfo(unifiedTokenID common.Hash, networkID uint) (common.Hash, string, string, error) {
+	var prefix, contractAddress string
 	var tokenID common.Hash
 
 	switch networkID {
 	case common.ETHNetworkID:
 		prefix = utils.EmptyString
+		contractAddress = config.Param().PRVERC20ContractAddressStr
 	case common.BSCNetworkID:
 		prefix = common.BSCPrefix
+		contractAddress = config.Param().PRVBEP20ContractAddressStr
 	case common.PLGNetworkID:
 		prefix = common.PLGPrefix
 	case common.DefaultNetworkID:
-		return tokenID, prefix, errors.New("Cannot get info from default networkID")
+		return tokenID, prefix, contractAddress, errors.New("Cannot get info from default networkID")
 	default:
-		return tokenID, prefix, errors.New("Cannot detect networkID")
+		return tokenID, prefix, contractAddress, errors.New("Cannot detect networkID")
 	}
 	vault, err := GetVault(s.unifiedTokenInfos, unifiedTokenID, networkID)
 	if err != nil {
-		return tokenID, prefix, NewBridgeAggErrorWithValue(OtherError, err)
+		return tokenID, prefix, contractAddress, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 	tokenID = vault.tokenID
 
-	return tokenID, prefix, nil
+	return tokenID, prefix, contractAddress, nil
 }

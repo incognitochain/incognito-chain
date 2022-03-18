@@ -152,12 +152,10 @@ func (sp *stateProcessor) shield(
 			return unifiedTokenInfos, err
 		}
 		vault := unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkID] // check available before
-		Logger.log.Info("[bridgeagg] acceptedInst.Reward:", acceptedInst.Reward)
 		err = vault.decreaseCurrentRewardReserve(acceptedInst.Reward)
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		Logger.log.Info("[bridgeagg] acceptedInst.IssuingAmount:", acceptedInst.IssuingAmount)
 		err = vault.increaseReserve(acceptedInst.IssuingAmount - acceptedInst.Reward)
 		if err != nil {
 			return unifiedTokenInfos, err
@@ -183,6 +181,60 @@ func (sp *stateProcessor) shield(
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggListShieldStatusPrefix(),
+		txReqID.Bytes(),
+		contentBytes,
+	)
+}
+
+func (sp *stateProcessor) unshield(
+	inst metadataCommon.Instruction,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	sDB *statedb.StateDB,
+) (map[common.Hash]map[uint]*Vault, error) {
+	var status byte
+	var txReqID common.Hash
+	var errorCode uint
+	switch inst.Status {
+	case common.AcceptedStatusStr:
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		acceptedInst := metadata.AcceptedUnshieldRequest{}
+		err = json.Unmarshal(contentBytes, &acceptedInst)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		vault := unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] // check available before
+		err = vault.increaseCurrentRewardReserve(acceptedInst.Fee)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		err = vault.decreaseReserve(acceptedInst.Amount)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] = vault
+		txReqID = acceptedInst.TxReqID
+		status = common.AcceptedStatusByte
+	case common.RejectedStatusStr:
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			return unifiedTokenInfos, err
+		}
+		txReqID = rejectContent.TxReqID
+		status = common.RejectedStatusByte
+	default:
+		return unifiedTokenInfos, errors.New("Can not recognize status")
+	}
+	shieldStatus := ShieldStatus{
+		Status:    status,
+		ErrorCode: errorCode,
+	}
+	contentBytes, _ := json.Marshal(shieldStatus)
+	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggListUnshieldStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)

@@ -2,9 +2,12 @@ package bridgeagg
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type ShieldStatus struct {
@@ -77,7 +80,51 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 }
 
 func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64) (uint64, error) {
-	return 0, nil
+	if y == 0 {
+		return burntAmount, nil
+	}
+	X := big.NewInt(0).SetUint64(x)
+	Y := big.NewInt(0).SetUint64(y)
+	Z := big.NewInt(0).SetUint64(burntAmount)
+	t1 := big.NewInt(0).Add(X, Y)
+	t1 = t1.Add(t1, Z)
+	t2 := big.NewInt(0).Mul(X, X)
+	temp := big.NewInt(0).Sub(Y, Z)
+	temp = temp.Mul(temp, X)
+	temp = temp.Mul(temp, big.NewInt(2))
+	t2 = t2.Add(t2, temp)
+	temp = big.NewInt(0).Add(Y, Z)
+	temp = temp.Mul(temp, temp)
+	t2 = t2.Add(t2, temp)
+	t2 = big.NewInt(0).Sqrt(t2)
+
+	A1 := big.NewInt(0).Add(t1, t2)
+	A1 = A1.Div(A1, big.NewInt(2))
+	A2 := big.NewInt(0).Sub(t1, t2)
+	A2 = A2.Div(A2, big.NewInt(2))
+	var a1, a2 uint64
+
+	if A1.IsUint64() {
+		a1 = A1.Uint64()
+	}
+	if A2.IsUint64() {
+		a2 = A2.Uint64()
+	}
+	if a1 > burntAmount {
+		a1 = 0
+	}
+	if a2 > burntAmount {
+		a2 = 0
+	}
+	if a1 == 0 && a2 == 0 {
+		return 0, fmt.Errorf("x %d y %d z %d cannot find solutions", x, y, burntAmount)
+	}
+	a := a1
+	if a < a2 {
+		a = a2
+	}
+
+	return a, nil
 }
 
 func GetVault(unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID common.Hash, networkID uint) (*Vault, error) {
@@ -98,6 +145,19 @@ type ShieldAction struct {
 }
 
 type UnshieldAction struct {
-	Content   []string
-	NetworkID uint
+	Content         metadata.BurningRequest
+	TxReqID         common.Hash
+	ExternalTokenID []byte
+}
+
+func GetInsertTxHashIssuedByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
+	switch networkID {
+	case common.PLGNetworkID:
+		return statedb.InsertPLGTxHashIssued
+	case common.BSCNetworkID:
+		return statedb.InsertBSCTxHashIssued
+	case common.ETHNetworkID:
+		return statedb.InsertETHTxHashIssued
+	}
+	return nil
 }

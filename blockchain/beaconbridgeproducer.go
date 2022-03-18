@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 
@@ -75,12 +76,12 @@ func (blockchain *BlockChain) buildBridgeInstructions(curView *BeaconBestState, 
 
 		case metadata.BurningPRVERC20RequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVERC20ConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
+			burningConfirm, _, err = buildBurningPRVEVMConfirmInst(curView, metadata.BurningPRVERC20ConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPRVBEP20RequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
+			burningConfirm, _, err = buildBurningPRVEVMConfirmInst(curView, metadata.BurningPRVBEP20ConfirmMeta, inst, beaconHeight, config.Param().PRVBEP20ContractAddressStr)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPLGRequestMeta:
@@ -116,13 +117,13 @@ func buildBurningConfirmInst(
 	inst []string,
 	height uint64,
 	prefix string,
-) ([]string, uint, error) {
+) ([]string, bridgeagg.UnshieldAction, error) {
 	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
 	err := decodeContent(inst[1], &burningReqAction)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "invalid BurningRequest")
+		return nil, bridgeagg.UnshieldAction{}, errors.Wrap(err, "invalid BurningRequest")
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
@@ -131,9 +132,9 @@ func buildBurningConfirmInst(
 	incTokenID := md.TokenID
 	if burningMetaType == metadataCommon.BurningUnifiedTokenRequestMeta {
 		if md.NetworkID != common.DefaultNetworkID {
-			incTokenID, prefix, err = curView.bridgeAggState.GetUnshieldInfo(md.TokenID, md.NetworkID)
+			incTokenID, prefix, _, err = curView.bridgeAggState.GetUnshieldInfo(md.TokenID, md.NetworkID)
 			if err != nil {
-				return nil, 0, err
+				return nil, bridgeagg.UnshieldAction{}, err
 			}
 		}
 	}
@@ -141,17 +142,17 @@ func buildBurningConfirmInst(
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(stateDB, &incTokenID)
 	if err != nil {
-		return nil, 0, err
+		return nil, bridgeagg.UnshieldAction{}, err
 	}
 
 	if len(tokenID) < common.ExternalBridgeTokenLength {
-		return nil, 0, errors.New("invalid external token id")
+		return nil, bridgeagg.UnshieldAction{}, errors.New("invalid external token id")
 	}
 
 	prefixLen := len(prefix)
 	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
 		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, 0, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
+		return nil, bridgeagg.UnshieldAction{}, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
 	}
 
 	// Convert amount to big.Int to get bytes later
@@ -177,27 +178,41 @@ func buildBurningConfirmInst(
 		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 	}
 
-	return res, md.NetworkID, nil
+	return res, bridgeagg.UnshieldAction{
+		Content:         md,
+		TxReqID:         *txID,
+		ExternalTokenID: tokenID[:],
+	}, nil
 }
 
 // buildBurningPRVEVMConfirmInst builds on beacon an instruction confirming a tx burning PRV-EVM-token
 func buildBurningPRVEVMConfirmInst(
+	curView *BeaconBestState,
 	burningMetaType int,
 	inst []string,
 	height uint64,
 	tokenIDStr string,
-) ([]string, error) {
+) ([]string, bridgeagg.UnshieldAction, error) {
 	BLogger.log.Infof("PRV EVM: Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
 	err := decodeContent(inst[1], &burningReqAction)
 	if err != nil {
-		return nil, errors.Wrap(err, "PRV EVM: invalid BurningRequest")
+		return nil, bridgeagg.UnshieldAction{}, errors.Wrap(err, "PRV EVM: invalid BurningRequest")
 	}
 
 	md := burningReqAction.Meta
 	if md.TokenID.String() != common.PRVIDStr {
-		return nil, errors.New("PRV EVM: invalid PRV token ID")
+		return nil, bridgeagg.UnshieldAction{}, errors.New("PRV EVM: invalid PRV token ID")
+	}
+
+	if burningMetaType == metadataCommon.BurningUnifiedTokenRequestMeta {
+		if md.NetworkID != common.DefaultNetworkID {
+			_, _, tokenIDStr, err = curView.bridgeAggState.GetUnshieldInfo(md.TokenID, md.NetworkID)
+			if err != nil {
+				return nil, bridgeagg.UnshieldAction{}, err
+			}
+		}
 	}
 
 	tokenID := rCommon.HexToAddress(tokenIDStr)
@@ -210,15 +225,19 @@ func buildBurningPRVEVMConfirmInst(
 	h := big.NewInt(0).SetUint64(height)
 
 	return []string{
-		strconv.Itoa(burningMetaType),
-		strconv.Itoa(int(shardID)),
-		base58.Base58Check{}.Encode(tokenID[:], 0x00),
-		md.RemoteAddress,
-		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
-		txID.String(),
-		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
-		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
-	}, nil
+			strconv.Itoa(burningMetaType),
+			strconv.Itoa(int(shardID)),
+			base58.Base58Check{}.Encode(tokenID[:], 0x00),
+			md.RemoteAddress,
+			base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+			txID.String(),
+			base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
+			base58.Base58Check{}.Encode(h.Bytes(), 0x00),
+		}, bridgeagg.UnshieldAction{
+			Content:         md,
+			TxReqID:         *txID,
+			ExternalTokenID: tokenID[:],
+		}, nil
 }
 
 // findExternalTokenID finds the external tokenID for a bridge token from database

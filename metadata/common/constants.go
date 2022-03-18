@@ -201,7 +201,7 @@ const (
 	IssuingUnifiedTokenRequestMeta                  = 343
 	IssuingUnifiedTokenResponseMeta                 = 344
 	BurningUnifiedTokenRequestMeta                  = 345
-	BurningUnifiedTokenResponseMeta                 = 345
+	BurningUnifiedTokenResponseMeta                 = 346
 )
 
 var minerCreatedMetaTypes = []int{
@@ -250,6 +250,7 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3WithdrawStakingRewardResponseMeta,
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 	IssuingUnifiedTokenResponseMeta,
+	BurningUnifiedTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

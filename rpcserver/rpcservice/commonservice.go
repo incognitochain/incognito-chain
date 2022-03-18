@@ -167,6 +167,8 @@ func NewBurningRequestMetadata(
 	beaconHeight uint64,
 	version int8,
 	networkID uint,
+	expectedAmount uint64,
+	isDepositToSC *bool,
 ) (*metadata.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
@@ -194,6 +196,8 @@ func NewBurningRequestMetadata(
 		tokenName,
 		remoteAddress,
 		networkID,
+		expectedAmount,
+		isDepositToSC,
 		burningMetaType,
 	)
 	if err != nil {

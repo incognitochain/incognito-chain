@@ -410,6 +410,8 @@ func processBurningReq(
 		httpServer.GetBlockchain().BeaconChain.CurrentHeight(),
 		txVersion,
 		common.DefaultNetworkID,
+		0,
+		nil,
 	)
 	if err != nil {
 		return nil, err

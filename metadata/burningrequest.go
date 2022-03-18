@@ -19,12 +19,14 @@ import (
 
 // whoever can send this type of tx
 type BurningRequest struct {
-	BurnerAddress privacy.PaymentAddress
-	BurningAmount uint64 // must be equal to vout value
-	TokenID       common.Hash
-	TokenName     string
-	RemoteAddress string
-	NetworkID     uint `json:"NetworkID,omitempty"`
+	BurnerAddress  privacy.PaymentAddress
+	BurningAmount  uint64 // must be equal to vout value
+	TokenID        common.Hash
+	TokenName      string
+	RemoteAddress  string
+	NetworkID      uint   `json:"NetworkID,omitempty"`
+	ExpectedAmount uint64 `json:"ExpectedAmount,omitempty"`
+	IsDepositToSC  *bool  `json:"IsDepositToSC,omitempty"`
 	MetadataBase
 }
 
@@ -35,18 +37,22 @@ func NewBurningRequest(
 	tokenName string,
 	remoteAddress string,
 	networkID uint,
+	expectedAmount uint64,
+	isDepositToSC *bool,
 	metaType int,
 ) (*BurningRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	burningReq := &BurningRequest{
-		BurnerAddress: burnerAddress,
-		BurningAmount: burningAmount,
-		TokenID:       tokenID,
-		TokenName:     tokenName,
-		RemoteAddress: remoteAddress,
-		NetworkID:     networkID,
+		BurnerAddress:  burnerAddress,
+		BurningAmount:  burningAmount,
+		TokenID:        tokenID,
+		TokenName:      tokenName,
+		RemoteAddress:  remoteAddress,
+		NetworkID:      networkID,
+		ExpectedAmount: expectedAmount,
+		IsDepositToSC:  isDepositToSC,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil
@@ -107,6 +113,12 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	} else if (bReq.Type != BurningPRVERC20RequestMeta && bReq.Type != BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
+	}
+
+	if bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta {
+		if bReq.ExpectedAmount > bReq.BurningAmount {
+			return false, false, fmt.Errorf("ExpectedAmount %v is > than BurningAmount %v", bReq.ExpectedAmount, bReq.BurningAmount)
+		}
 	}
 
 	return true, true, nil

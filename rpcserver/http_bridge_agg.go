@@ -427,7 +427,8 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	md, err := metadata.NewBurningRequest(
 		mdReader.BurnerAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
-		mdReader.RemoteAddress, mdReader.NetworkID, metadataCommon.BurningUnifiedTokenRequestMeta,
+		mdReader.RemoteAddress, mdReader.NetworkID, mdReader.ExpectedAmount, mdReader.IsDepositToSC,
+		metadataCommon.BurningUnifiedTokenRequestMeta,
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

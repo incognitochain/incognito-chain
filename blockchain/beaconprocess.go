@@ -912,7 +912,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 	// execute, store
-	err = blockchain.processBridgeInstructions(newBestState.featureStateDB, beaconBlock)
+	err = blockchain.processBridgeInstructions(newBestState, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}

@@ -12,6 +12,7 @@ const (
 	NotFoundNetworkIDError
 	InvalidRewardReserveError
 	CalculateShieldAmountError
+	CalculateUnshieldAmountError
 	InvalidConvertAmountError
 	FailToBuildModifyListTokenError
 )
@@ -25,7 +26,8 @@ var ErrCodeMessage = map[int]struct {
 	NotFoundNetworkIDError:          {1001, "Not found networkID"},
 	InvalidRewardReserveError:       {1003, "Invalid reward reserve"},
 	CalculateShieldAmountError:      {1004, "Calculate shield amount"},
-	InvalidConvertAmountError:       {1004, "Invalid convert amount"},
+	CalculateUnshieldAmountError:    {1005, "Calculate unshield amount"},
+	InvalidConvertAmountError:       {1006, "Invalid convert amount"},
 	FailToBuildModifyListTokenError: {1100, "Fail to build modify list token instruction"},
 }
 

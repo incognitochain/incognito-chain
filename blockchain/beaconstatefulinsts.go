@@ -342,15 +342,22 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					newInst = [][]string{}
 				}
 			case metadataCommon.BurningUnifiedTokenRequestMeta:
-				burningConfirm, networkID, err := buildBurningConfirmInst(beaconBestState, featureStateDB, metadataCommon.BurningUnifiedTokenRequestMeta, action, beaconHeight, utils.EmptyString)
+				var burningReqAction BurningReqAction
+				var unshieldAction bridgeagg.UnshieldAction
+				err := decodeContent(action[1], &burningReqAction)
+				if err != nil {
+					return utils.EmptyStringMatrix, err
+				}
+				if burningReqAction.Meta.TokenID == common.PRVCoinID {
+					_, unshieldAction, err = buildBurningPRVEVMConfirmInst(beaconBestState, metadataCommon.BurningUnifiedTokenRequestMeta, action, beaconHeight, utils.EmptyString)
+				} else {
+					_, unshieldAction, err = buildBurningConfirmInst(beaconBestState, featureStateDB, metadataCommon.BurningUnifiedTokenRequestMeta, action, beaconHeight, utils.EmptyString)
+				}
 				if err != nil {
 					Logger.log.Error(err)
 					continue
 				}
-				unshieldActions = append(unshieldActions, bridgeagg.UnshieldAction{
-					Content:   burningConfirm,
-					NetworkID: networkID,
-				})
+				unshieldActions = append(unshieldActions, unshieldAction)
 			default:
 				continue
 			}
@@ -410,6 +417,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildShieldActions(shieldActions).
 		BuildUnshieldActions(unshieldActions).
 		BuildAccumulatedValues(accumulatedValues).
+		BuildBeaconHeight(beaconHeight).
 		BuildStateDBs(sDBs).
 		Build()
 	bridgeAggInsts, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)

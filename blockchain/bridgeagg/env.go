@@ -12,6 +12,7 @@ type StateEnvBuilder interface {
 	BuildConvertActions([]string) StateEnvBuilder
 	BuildModifyListTokenActions([]string) StateEnvBuilder
 	BuildStateDBs(map[int]*statedb.StateDB) StateEnvBuilder
+	BuildBeaconHeight(uint64) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -25,7 +26,13 @@ type stateEnvironment struct {
 	shieldActions           []ShieldAction
 	convertActions          []string
 	modifyListTokensActions []string
+	beaconHeight            uint64
 	stateDBs                map[int]*statedb.StateDB
+}
+
+func (env *stateEnvironment) BuildBeaconHeight(beaconHeight uint64) StateEnvBuilder {
+	env.beaconHeight = beaconHeight
+	return env
 }
 
 func (env *stateEnvironment) BuildAccumulatedValues(accumulatedValues *metadata.AccumulatedValues) StateEnvBuilder {
@@ -63,12 +70,17 @@ func (env *stateEnvironment) Build() StateEnvironment {
 }
 
 type StateEnvironment interface {
+	BeaconHeight() uint64
 	AccumulatedValues() *metadata.AccumulatedValues
 	UnshieldActions() []UnshieldAction
 	ShieldActions() []ShieldAction
 	ConvertActions() []string
 	ModifyListTokensActions() []string
 	StateDBs() map[int]*statedb.StateDB
+}
+
+func (env *stateEnvironment) BeaconHeight() uint64 {
+	return env.beaconHeight
 }
 
 func (env *stateEnvironment) AccumulatedValues() *metadata.AccumulatedValues {
