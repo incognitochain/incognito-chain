@@ -969,6 +969,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	// update bridge aggreator state
+	newBestState.bridgeAggState.ClearCache()
 	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)

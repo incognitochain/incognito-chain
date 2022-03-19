@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -58,13 +57,13 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 			updatingInfoByTokenID, err = blockchain.processContractingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView.featureStateDB, inst, updatingInfoByTokenID, "")
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, "")
 
 		case strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView.featureStateDB, inst, updatingInfoByTokenID, common.BSCPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.BSCPrefix)
 
 		case strconv.Itoa(metadata.BurningPLGConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView.featureStateDB, inst, updatingInfoByTokenID, common.PLGPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.PLGPrefix)
 
 		}
 		if err != nil {
@@ -125,18 +124,9 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 		return updatingInfoByTokenID, nil
 	}
 
-	tokenID := issuingEVMAcceptedInst.IncTokenID
-	if issuingEVMAcceptedInst.NetworkID != common.DefaultNetworkID {
-		if issuingEVMAcceptedInst.IncTokenID == common.PRVCoinID {
-			isPRV = true
-		}
-		insertEVMTxHashIssued = bridgeagg.GetInsertTxHashIssuedByNetworkID(issuingEVMAcceptedInst.NetworkID)
-		vault, _ := bridgeagg.GetVault(
-			curView.bridgeAggState.UnifiedTokenInfos(),
-			issuingEVMAcceptedInst.IncTokenID,
-			issuingEVMAcceptedInst.NetworkID,
-		)
-		tokenID = vault.TokenID()
+	var externalTokenID []byte
+	if issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
+		externalTokenID = issuingEVMAcceptedInst.ExternalTokenID
 	}
 
 	err = insertEVMTxHashIssued(curView.featureStateDB, issuingEVMAcceptedInst.UniqTx)
@@ -153,8 +143,8 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 			updatingInfo = metadata.UpdatingInfo{
 				CountUpAmt:      issuingEVMAcceptedInst.IssuingAmount,
 				DeductAmt:       0,
-				TokenID:         tokenID,
-				ExternalTokenID: issuingEVMAcceptedInst.ExternalTokenID,
+				TokenID:         issuingEVMAcceptedInst.IncTokenID,
+				ExternalTokenID: externalTokenID,
 				IsCentralized:   false,
 			}
 		}
@@ -261,7 +251,7 @@ func (blockchain *BlockChain) processContractingReq(
 }
 
 func (blockchain *BlockChain) processBurningReq(
-	bridgeStateDB *statedb.StateDB,
+	curView *BeaconBestState,
 	instruction []string,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 	prefix string,
@@ -286,9 +276,19 @@ func (blockchain *BlockChain) processBurningReq(
 	}
 
 	incTokenID := &common.Hash{}
-	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
+	txReqID, err := common.Hash{}.NewHashFromStr(instruction[5])
+	if err != nil {
+		return updatingInfoByTokenID, err
+	}
+	unifiedTokenID, err := curView.bridgeAggState.UnifiedTokenIDCached(*txReqID)
+	if err != nil {
+		incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
+	} else {
+		incTokenID = &unifiedTokenID
+		externalTokenID = nil
+	}
 
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bridgeStateDB, *incTokenID, false)
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, *incTokenID, false)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while checking whether token (%s) existed in decentralized bridge token list: %+v", incTokenID.String(), err)
 		return updatingInfoByTokenID, nil

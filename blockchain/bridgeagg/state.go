@@ -2,6 +2,7 @@ package bridgeagg
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -289,4 +290,16 @@ func (s *State) GetUnshieldInfo(unifiedTokenID common.Hash, networkID uint) (com
 	tokenID = vault.tokenID
 
 	return tokenID, prefix, contractAddress, nil
+}
+
+func (s *State) ClearCache() {
+	s.processor.clearCache()
+}
+
+func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
+	if res, found := s.processor.UnshieldTxsCache[txReqID]; found {
+		return res, nil
+	} else {
+		return common.Hash{}, fmt.Errorf("txID %s not found in cache", txReqID.String())
+	}
 }

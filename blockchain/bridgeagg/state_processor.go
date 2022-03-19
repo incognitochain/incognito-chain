@@ -13,6 +13,7 @@ import (
 )
 
 type stateProcessor struct {
+	UnshieldTxsCache map[common.Hash]common.Hash
 }
 
 func (sp *stateProcessor) modifyListTokens(
@@ -217,6 +218,7 @@ func (sp *stateProcessor) unshield(
 		unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] = vault
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
+		sp.UnshieldTxsCache[txReqID] = acceptedInst.TokenID
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
@@ -238,4 +240,8 @@ func (sp *stateProcessor) unshield(
 		txReqID.Bytes(),
 		contentBytes,
 	)
+}
+
+func (sp *stateProcessor) clearCache() {
+	sp.UnshieldTxsCache = make(map[common.Hash]common.Hash)
 }
