@@ -205,8 +205,11 @@ func NewBurningRequestMetadata(
 }
 
 func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
-	gethParam := config.Config().GethParam
-	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)
+	gethParam := config.Param().GethParam
+	if len(gethParam.Host) < 1 {
+		return nil, errors.New("Invalid param geth")
+	}
+	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), "", gethParam.Host[0], "")
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string

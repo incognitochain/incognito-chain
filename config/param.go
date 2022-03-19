@@ -60,6 +60,7 @@ type param struct {
 	EnableFeatureFlags               map[string]uint64            `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64                       `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                          `mapstructure:"tx_pool_version"`
+	GethParam                        gethParam                    `mapstructure:"geth_param"`
 	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
 	PLGParam                         plgParam                     `mapstructure:"plg_param"`
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
@@ -302,7 +303,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 }
 
 type bscParam struct {
-	Host string `mapstructure:"host"`
+	Host []string `mapstructure:"host"`
 }
 
 type pdexParam struct {
@@ -324,16 +325,16 @@ type pdexParam struct {
 
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
-		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
+		bschParam.Host = []string{utils.GetEnv(BSCHostKey, utils.EmptyString)}
 	}
 }
 
 type plgParam struct {
-	Host string `mapstructure:"host"`
+	Host []string `mapstructure:"host"`
 }
 
 func (plgParam *plgParam) GetFromEnv() {
 	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
-		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
+		plgParam.Host = []string{utils.GetEnv(PLGHostKey, utils.EmptyString)}
 	}
 }

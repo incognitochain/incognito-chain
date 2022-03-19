@@ -19,8 +19,11 @@ import (
 )
 
 func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
-	gethParam := config.Config().GethParam
-	ethHeader, err := GetEVMHeader(blockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
+	gethParam := config.Param().GethParam
+	if len(gethParam.Host) < 1 {
+		return nil, errors.New("Invalid param geth")
+	}
+	ethHeader, err := GetEVMHeader(blockHash, "", gethParam.Host[0], "")
 	if err != nil {
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
@@ -29,7 +32,7 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", blockHash.String()))
 	}
 
-	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
+	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight("", gethParam.Host[0], "")
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
@@ -106,4 +109,45 @@ func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{
 		return nil, NewMetadataTxError(UnexpectedError, err)
 	}
 	return dataMap, nil
+}
+
+func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, error) {
+	var hosts []string
+	var networkPrefix string
+	minConfirmationBlocks := EVMConfirmationBlocks
+
+	switch metadataType {
+	case IssuingETHRequestMeta, IssuingPRVERC20RequestMeta:
+		{
+			evmParam := config.Param().GethParam
+			evmParam.GetFromEnv()
+			hosts = evmParam.Host
+
+			// Ethereum network with default prefix (empty string)
+			networkPrefix = ""
+		}
+	case IssuingBSCRequestMeta, IssuingPRVBEP20RequestMeta:
+		{
+			evmParam := config.Param().BSCParam
+			evmParam.GetFromEnv()
+			hosts = evmParam.Host
+
+			networkPrefix = common.BSCPrefix
+		}
+	case IssuingPLGRequestMeta:
+		{
+			evmParam := config.Param().PLGParam
+			evmParam.GetFromEnv()
+			hosts = evmParam.Host
+
+			minConfirmationBlocks = PLGConfirmationBlocks
+			networkPrefix = common.PLGPrefix
+		}
+	default:
+		{
+			return nil, "", 0, fmt.Errorf("Invalid metadata tyep for EVM shielding request %v", metadataType)
+		}
+	}
+
+	return hosts, networkPrefix, minConfirmationBlocks, nil
 }

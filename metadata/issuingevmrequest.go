@@ -16,8 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -218,49 +218,32 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 }
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
-	var protocol, host, port string
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta {
-		evmParam := config.Param().BSCParam
-		evmParam.GetFromEnv()
-		host = evmParam.Host
-	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta {
-		evmParam := config.Config().GethParam
-		evmParam.GetFromEnv()
-		protocol = evmParam.Protocol
-		host = evmParam.Host
-		port = evmParam.Port
-	} else if iReq.Type == IssuingPLGRequestMeta {
-		evmParam := config.Param().PLGParam
-		evmParam.GetFromEnv()
-		host = evmParam.Host
-	} else {
-		return nil, errors.New("[verifyProofAndParseReceipt] invalid metatype")
-	}
-	evmHeader, err := GetEVMHeader(iReq.BlockHash, protocol, host, port)
+	// get hosts, minEVMConfirmationBlocks, networkPrefix depend iReq.Type
+	hosts, networkPrefix, minEVMConfirmationBlocks, err := GetEVMInfoByMetadataType(iReq.Type)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
-	}
-	if evmHeader == nil {
-		Logger.log.Warn("WARNING: Could not find out the EVM block header with the hash: ", iReq.BlockHash)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", iReq.BlockHash.String()))
-	}
-
-	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(protocol, host, port)
-	if err != nil {
-		Logger.log.Warn("WARNING: Could not find the most recent block height on Ethereum")
+		Logger.log.Errorf("Can not get EVM info - Error: %+v", err)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	minEVMConfirmationBlocks := EVMConfirmationBlocks
-	if iReq.Type == IssuingPLGRequestMeta {
-		minEVMConfirmationBlocks = PLGConfirmationBlocks
+	// get evm header result
+	evmHeaderResult, err := evmcaller.GetEVMHeaderResult(iReq.BlockHash, hosts, minEVMConfirmationBlocks, networkPrefix)
+	if err != nil {
+		Logger.log.Errorf("Can not get EVM header result - Error: %+v", err)
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
-	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(int64(minEVMConfirmationBlocks)))) == -1 {
-		errMsg := fmt.Sprintf("WARNING: It needs %v confirmation blocks for the process, "+
-			"the requested block (%s) but the latest block (%s)", minEVMConfirmationBlocks,
-			evmHeader.Number.String(), mostRecentBlkNum.String())
-		Logger.log.Warn(errMsg)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New(errMsg))
+
+	// check fork
+	if evmHeaderResult.IsForked {
+		Logger.log.Errorf("EVM Block hash %s is not in main chain", iReq.BlockHash.String())
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt,
+			fmt.Errorf("EVM Block hash %s is not in main chain", iReq.BlockHash.String()))
+	}
+
+	// check min confirmation blocks
+	if !evmHeaderResult.IsFinalized {
+		Logger.log.Errorf("EVM block hash %s is not enough confirmation blocks %v", iReq.BlockHash.String(), minEVMConfirmationBlocks)
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt,
+			fmt.Errorf("EVM block hash %s is not enough confirmation blocks %v", iReq.BlockHash.String(), minEVMConfirmationBlocks))
 	}
 
 	keybuf := new(bytes.Buffer)
@@ -276,7 +259,7 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		nodeList.Put([]byte{}, proofBytes)
 	}
 	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(evmHeader.ReceiptHash, keybuf.Bytes(), proof)
+	val, _, err := trie.VerifyProof(evmHeaderResult.Header.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
 		Logger.log.Warn(errMsg)
