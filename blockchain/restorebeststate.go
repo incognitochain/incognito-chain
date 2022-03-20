@@ -8,7 +8,7 @@ import (
 
 //RestoreBeaconViewStateFromHash ...
 func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
-	blockchain *BlockChain, includeCommittee, includePdexv3 bool,
+	blockchain *BlockChain, includeCommittee, includePdexv3, includeBridgeAgg bool,
 ) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
 	if err != nil {
@@ -58,6 +58,8 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 			beaconBestState.pdeStates = beaconViewCached.(*BeaconBestState).pdeStates
 		}
 	}
-	beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
+	if includeBridgeAgg {
+		beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
+	}
 	return err
 }
