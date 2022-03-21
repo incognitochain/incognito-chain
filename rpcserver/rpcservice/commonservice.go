@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -209,7 +210,11 @@ func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
 	if len(gethParam.Host) < 1 {
 		return nil, errors.New("Invalid param geth")
 	}
-	return metadata.GetEVMHeader(rCommon.HexToHash(ethBlockHash), "", gethParam.Host[0], "")
+	res, err := evmcaller.GetEVMHeaderResultMultipleHosts(rCommon.HexToHash(ethBlockHash), gethParam.Host, metadata.EVMConfirmationBlocks)
+	if err != nil {
+		return nil, err
+	}
+	return &res.Header, nil
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string

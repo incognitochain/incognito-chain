@@ -39,10 +39,10 @@ func NewEVMHeaderResult() *EVMHeaderResult {
 	}
 }
 
-func GetEVMHeader(
+func GetEVMHeaderByHash(
 	evmBlockHash rCommon.Hash,
 	host string,
-) (*types.Header, bool, error) {
+) (*types.Header, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	getEVMHeaderByHashParams := []interface{}{evmBlockHash, false}
 	var getEVMHeaderByHashRes GetEVMHeaderByHashRes
@@ -56,23 +56,25 @@ func GetEVMHeader(
 	)
 	if err != nil {
 		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: %s", err)
-		return nil, false, NewEVMCallerError(GetEVMHeaderByHashError, fmt.Errorf("An error occured during calling eth_getBlockByHash: %s", err))
+		return nil, NewEVMCallerError(GetEVMHeaderByHashError, fmt.Errorf("An error occured during calling eth_getBlockByHash: %s", err))
 	}
 	if getEVMHeaderByHashRes.RPCError != nil {
 		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message)
-		return nil, false, NewEVMCallerError(GetEVMHeaderByHashError, fmt.Errorf("An error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message))
+		return nil, NewEVMCallerError(GetEVMHeaderByHashError, fmt.Errorf("An error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message))
 	}
 	if getEVMHeaderByHashRes.Result == nil {
 		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
-		return nil, false, NewEVMCallerError(GetEVMHeaderByHashError, fmt.Errorf("An error occured during calling eth_getBlockByHash: result is nil"))
+		return nil, NewEVMCallerError(GetEVMHeaderByHashError, fmt.Errorf("An error occured during calling eth_getBlockByHash: result is nil"))
 	}
 
-	evmHeaderByHash := getEVMHeaderByHashRes.Result
-	headerNum := evmHeaderByHash.Number
+	return getEVMHeaderByHashRes.Result, nil
+}
 
-	getEVMHeaderByNumberParams := []interface{}{fmt.Sprintf("0x%x", headerNum), false}
+func GetEVMHeaderByNumber(blockNumber *big.Int, host string) (*types.Header, error) {
+	rpcClient := rpccaller.NewRPCClient()
+	getEVMHeaderByNumberParams := []interface{}{fmt.Sprintf("0x%x", blockNumber), false}
 	var getEVMHeaderByNumberRes GetEVMHeaderByNumberRes
-	err = rpcClient.RPCCall(
+	err := rpcClient.RPCCall(
 		"",
 		host,
 		"",
@@ -81,29 +83,22 @@ func GetEVMHeader(
 		&getEVMHeaderByNumberRes,
 	)
 	if err != nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: %v", err)
-		return nil, false, NewEVMCallerError(GetEVMHeaderByHeightError, fmt.Errorf("An error occured during calling eth_getBlockByNumber: %v", err))
+		return nil, err
 	}
 	if getEVMHeaderByNumberRes.RPCError != nil {
 		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message)
-		return nil, false, NewEVMCallerError(GetEVMHeaderByHeightError, fmt.Errorf("An error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message))
+		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message))
 	}
 
 	if getEVMHeaderByNumberRes.Result == nil {
 		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
-		return nil, false, NewEVMCallerError(GetEVMHeaderByHeightError, fmt.Errorf("An error occured during calling eth_getBlockByNumber: result is nil"))
+		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: result is nil"))
 	}
-
-	evmHeaderByNum := getEVMHeaderByNumberRes.Result
-	if evmHeaderByNum.Hash().String() != evmHeaderByHash.Hash().String() {
-		Logger.log.Warnf("WARNING: The requested eth BlockHash is being on fork branch, rejected!")
-		return nil, true, nil
-	}
-	return evmHeaderByHash, false, nil
+	return getEVMHeaderByNumberRes.Result, nil
 }
 
-// getMostRecentEVMBlockHeight get most recent block height on Ethereum/BSC/PLG
-func getMostRecentEVMBlockHeight(host string) (*big.Int, error) {
+// GetMostRecentEVMBlockHeight get most recent block height on Ethereum/BSC/PLG
+func GetMostRecentEVMBlockHeight(host string) (*big.Int, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	params := []interface{}{}
 	var getEVMBlockNumRes GetEVMBlockNumRes
@@ -137,14 +132,28 @@ func getMostRecentEVMBlockHeight(host string) (*big.Int, error) {
 	return blockNumber, nil
 }
 
-func checkBlockFinality(
+func CheckBlockFinality(
 	evmBlockHeight *big.Int,
+	evmBlockHash rCommon.Hash,
 	hosts []string,
 	minConfirmationBlocks int,
-) (bool, error) {
+) (bool, bool, error) {
+	isFinalized := false
+	isForked := false
 	// try with multiple hosts
 	for _, host := range hosts {
-		currentBlockHeight, err := getMostRecentEVMBlockHeight(host)
+		// re-check fork, because the unfinalized blocks still have possibility of fork
+		evmHeader, err := GetEVMHeaderByNumber(evmBlockHeight, host)
+		if err != nil {
+			continue
+		}
+		if evmHeader.Hash().String() != evmBlockHash.String() {
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch, rejected!", evmBlockHash.String())
+			isForked = true
+			return isFinalized, isForked, nil
+		}
+
+		currentBlockHeight, err := GetMostRecentEVMBlockHeight(host)
 		if err != nil {
 			continue
 		}
@@ -152,14 +161,15 @@ func checkBlockFinality(
 			Logger.log.Warnf("WARNING: It needs %v confirmation blocks for the process, "+
 				"the requested block (%s) but the latest block (%s)", minConfirmationBlocks,
 				evmBlockHeight.String(), currentBlockHeight.String())
-			return false, nil
+		} else {
+			isFinalized = true
 		}
-		return true, nil
+		return isFinalized, isForked, nil
 	}
-	return false, NewEVMCallerError(GetEVMBlockHeightError, errors.New("Can not get latest EVM block height from multiple hosts"))
+	return isFinalized, isForked, NewEVMCallerError(GetEVMBlockHeightError, errors.New("Can not get latest EVM block height from multiple hosts"))
 }
 
-func getEVMHeaderResultMultipleHosts(
+func GetEVMHeaderResultMultipleHosts(
 	evmBlockHash rCommon.Hash,
 	hosts []string,
 	minConfirmationBlocks int,
@@ -168,19 +178,26 @@ func getEVMHeaderResultMultipleHosts(
 	// try with multiple hosts
 	for _, host := range hosts {
 		Logger.log.Infof("EVMHeader Call request with host: %v", host)
-		// get evm header and check fork
-		evmHeader, isForked, err := GetEVMHeader(evmBlockHash, host)
+		// get evm header
+		evmHeader, err := GetEVMHeaderByHash(evmBlockHash, host)
 		if err != nil {
 			continue
 		}
-		if isForked {
+
+		// check fork
+		evmHeaderByNumber, err := GetEVMHeaderByNumber(evmHeader.Number, host)
+		if err != nil {
+			continue
+		}
+		if evmHeaderByNumber.Hash().String() != evmBlockHash.String() {
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch, rejected!", evmBlockHash.String())
 			evmHeaderResult.IsForked = true
 			return evmHeaderResult, nil
 		}
 		evmHeaderResult.Header = *evmHeader
 
 		// check finality
-		currentBlockHeight, err := getMostRecentEVMBlockHeight(host)
+		currentBlockHeight, err := GetMostRecentEVMBlockHeight(host)
 		if err != nil {
 			continue
 		}
@@ -204,7 +221,7 @@ func GetEVMHeaderResult(
 	networkPrefix string,
 ) (*EVMHeaderResult, error) {
 	var err error
-	// check EVM header is existed from DB or not
+	// check EVM header is existed from cache
 	evmHeaderRes, isExisted := handleGetEVMHeaderResult(networkPrefix, evmBlockHash.String())
 
 	isReplaceCache := false
@@ -214,19 +231,21 @@ func GetEVMHeaderResult(
 			return evmHeaderRes, nil
 		}
 
-		isFinalized, err := checkBlockFinality(evmHeaderRes.Header.Number, hosts, minConfirmationBlocks)
+		isFinalized, isForked, err := CheckBlockFinality(evmHeaderRes.Header.Number, evmBlockHash, hosts, minConfirmationBlocks)
 		if err != nil {
 			Logger.log.Errorf("An error occured during re-checking block finality: %v", err)
 			return evmHeaderRes, NewEVMCallerError(GetEVMHeaderResultFromDBError, fmt.Errorf("An error occured during re-checking block finality: %v", err))
 		}
-		if !isFinalized {
+		if isFinalized || isForked {
+			evmHeaderRes.IsFinalized = isFinalized
+			evmHeaderRes.IsForked = isForked
+			isReplaceCache = true
+		} else {
 			return evmHeaderRes, nil
 		}
-		evmHeaderRes.IsFinalized = isFinalized
-		isReplaceCache = true
 	} else {
 		// if not existed, call RPC to EVM's node to get EVM block
-		evmHeaderRes, err = getEVMHeaderResultMultipleHosts(evmBlockHash, hosts, minConfirmationBlocks)
+		evmHeaderRes, err = GetEVMHeaderResultMultipleHosts(evmBlockHash, hosts, minConfirmationBlocks)
 		if err != nil {
 			Logger.log.Errorf("An error occured during getting evm header result from APIs : %v", err)
 			return nil, NewEVMCallerError(GetEVMHeaderResultFromDBError, fmt.Errorf("An error occured during getting evm header result from APIs : %v", err))

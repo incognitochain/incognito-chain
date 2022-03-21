@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -15,33 +14,38 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/pkg/errors"
 )
 
-func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
-	gethParam := config.Param().GethParam
-	if len(gethParam.Host) < 1 {
-		return nil, errors.New("Invalid param geth")
-	}
-	ethHeader, err := GetEVMHeader(blockHash, "", gethParam.Host[0], "")
+func VerifyProofAndParseEVMReceipt(
+	blockHash eCommon.Hash,
+	txIndex uint,
+	proofStrs []string,
+	hosts []string,
+	minEVMConfirmationBlocks int,
+	networkPrefix string,
+	checkEVMHarkFork bool,
+) (*types.Receipt, error) {
+	// get evm header result
+	evmHeaderResult, err := evmcaller.GetEVMHeaderResult(blockHash, hosts, minEVMConfirmationBlocks, networkPrefix)
 	if err != nil {
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
-	}
-	if ethHeader == nil {
-		Logger.log.Info("WARNING: Could not find out the EVM block header with the hash: ", blockHash)
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", blockHash.String()))
+		Logger.log.Errorf("Can not get EVM header result - Error: %+v", err)
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight("", gethParam.Host[0], "")
-	if err != nil {
-		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
+	// check fork
+	if evmHeaderResult.IsForked {
+		Logger.log.Errorf("EVM Block hash %s is not in main chain", blockHash.String())
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt,
+			fmt.Errorf("EVM Block hash %s is not in main chain", blockHash.String()))
 	}
 
-	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(EVMConfirmationBlocks))) == -1 {
-		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", ethHeader.Number.String(), mostRecentBlkNum.String())
-		Logger.log.Info(errMsg)
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.New(errMsg))
+	// check min confirmation blocks
+	if !evmHeaderResult.IsFinalized {
+		Logger.log.Errorf("EVM block hash %s is not enough confirmation blocks %v", blockHash.String(), minEVMConfirmationBlocks)
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt,
+			fmt.Errorf("EVM block hash %s is not enough confirmation blocks %v", blockHash.String(), minEVMConfirmationBlocks))
 	}
 
 	keybuf := new(bytes.Buffer)
@@ -57,20 +61,34 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 		nodeList.Put([]byte{}, proofBytes)
 	}
 	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
+	val, _, err := trie.VerifyProof(evmHeaderResult.Header.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
-		fmt.Printf("WARNING: ETH proof verification failed: %v", err)
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
+		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
+		Logger.log.Warn(errMsg)
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
+
+	// if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPLGRequestMeta {
+	if checkEVMHarkFork {
+		if len(val) == 0 {
+			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
+		}
+
+		// hardfork london with new transaction type => 0x02 || RLP([...SenderPayload, ...SenderSignature, ...GasPayerPayload, ...GasPayerSignature])
+		if val[0] == AccessListTxType || val[0] == DynamicFeeTxType {
+			val = val[1:]
+		}
+	}
+
 	// Decode value from VerifyProof into Receipt
 	constructedReceipt := new(types.Receipt)
 	err = rlp.DecodeBytes(val, constructedReceipt)
 	if err != nil {
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
 	if constructedReceipt.Status != types.ReceiptStatusSuccessful {
-		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.New("The constructedReceipt's status is not success"))
+		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("The constructedReceipt's status is not success"))
 	}
 
 	return constructedReceipt, nil
