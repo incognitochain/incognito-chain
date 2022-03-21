@@ -886,6 +886,9 @@ func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3ExtendedAccessID
 			if order.Id() == checker.OrderID {
 				index = i
 				accessOTA = order.AccessOTA()
+				if order.NftID().String() != checker.AccessID.String() {
+					return false, fmt.Errorf("Expect accessID %s of order not %s", order.NftID().String(), checker.AccessID.String())
+				}
 				break
 			}
 		}
