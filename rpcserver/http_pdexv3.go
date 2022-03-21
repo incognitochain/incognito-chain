@@ -527,6 +527,10 @@ func (httpServer *HttpServer) createPdexv3WithdrawLPFeeTransaction(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
 
+	if mdReader.IsEmpty() {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
+	}
+
 	receivers := make(map[common.Hash]privacy.OTAReceiver)
 	beaconBestView, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
@@ -805,6 +809,10 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
+	if mdReader.IsEmpty() {
+		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
+	}
+
 	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, mdReader.NftID, mdReader.AccessID)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.TokenID)
 	if err != nil {
@@ -975,6 +983,10 @@ func (httpServer *HttpServer) createPdexv3WithdrawLiquidityTransaction(
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
+	}
+
+	if mdReader.IsEmpty() {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
 	}
 
 	otaReceivers := make(map[string]string)
@@ -1509,6 +1521,11 @@ func createPdexv3AddOrderRequestTransaction(
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
+
+	if mdReader.IsEmpty() {
+		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
+	}
+
 	err = httpServer.pdexTxService.ValidateTokenIDs(&mdReader.TokenToSell, &mdReader.TokenToBuy)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1605,6 +1622,11 @@ func createPdexv3WithdrawOrderRequestTransaction(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
+
+	if mdReader.IsEmpty() {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
+	}
+
 	// sanity check for withdrawing token IDs
 	for _, tokenID := range mdReader.WithdrawTokenIDs {
 		if tokenID.IsZeroValue() {
@@ -1955,6 +1977,11 @@ func (httpServer *HttpServer) createPdexv3UnstakingRequestTransaction(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
 	}
+
+	if mdReader.IsEmpty() {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
+	}
+
 	otaReceivers := make(map[string]string)
 	tokenList := []string{}
 	if mdReader.NftID == nil {
@@ -2250,6 +2277,10 @@ func (httpServer *HttpServer) createPdexv3WithdrawStakingRewardTransaction(param
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
+	}
+
+	if mdReader.IsEmpty() {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
 	}
 
 	beaconBestView, err := httpServer.blockService.GetBeaconBestState()

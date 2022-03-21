@@ -56,11 +56,15 @@ func BuildMatchAndReturnAddLiquidityInstructions(
 	shareAmount, returnedToken0ContributionAmount, actualToken0ContributionAmount,
 	returnedToken1ContributionAmount, actualToken1ContributionAmount uint64,
 	txReqID common.Hash, shardID byte, otaReceivers map[common.Hash]string,
-	accessOTA []byte, shouldMintAccessCoin bool,
+	accessOTA []byte, shouldMintAccessCoin bool, accessID common.Hash,
 ) ([][]string, error) {
 	res := [][]string{}
 	token0Contribution := token0ContributionState.Value()
 	token1Contribution := token1ContributionState.Value()
+	token0Contribution.SetNftID(accessID)
+	token1Contribution.SetNftID(accessID)
+	token0ContributionState.SetValue(token0Contribution)
+	token1ContributionState.SetValue(token1Contribution)
 	matchAndReturnInst0, err := instruction.NewMatchAndReturnAddLiquidityWithValue(
 		token0ContributionState, shareAmount, returnedToken0ContributionAmount,
 		actualToken1ContributionAmount, returnedToken1ContributionAmount,

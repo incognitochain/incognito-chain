@@ -208,7 +208,24 @@ func (a *AccessOption) IsValid(
 }
 
 func (a *AccessOption) IsEmpty() bool {
-	return a.NftID.IsZeroValue() && a.BurntOTA == nil && a.AccessID.IsZeroValue()
+	isEmptyNftID := true
+	isEmptyBurntOTA := true
+	isEmptyAccessID := true
+
+	if a.NftID != nil {
+		if !a.NftID.IsZeroValue() {
+			isEmptyNftID = false
+		}
+	}
+	if a.AccessID != nil {
+		if !a.AccessID.IsZeroValue() {
+			isEmptyAccessID = false
+		}
+	}
+	if a.BurntOTA != nil && len(a.BurntOTA.ToBytesS()) > 0 {
+		isEmptyBurntOTA = false
+	}
+	return isEmptyAccessID && isEmptyBurntOTA && isEmptyNftID
 }
 
 func (a *AccessOption) UseNft() bool {

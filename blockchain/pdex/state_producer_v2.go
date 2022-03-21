@@ -221,6 +221,7 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.TxReqID(),
 			waitingContribution.ShardID(), waitingContribution.OtaReceivers(), accessOTA,
 			waitingContribution.AccessOTA() != nil && waitingContribution.OtaReceiver() == utils.EmptyString,
+			waitingContribution.NftID(),
 		)
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
