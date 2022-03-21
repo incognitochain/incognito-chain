@@ -1439,8 +1439,7 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	for h, proposeBlk := range a.receiveBlockByHash {
-		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute {
-			//delete(a.votedTimeslot, proposeBlk.block.GetProposeTime())
+		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && (proposeBlk.block == nil || proposeBlk.block.GetHeight() <= a.chain.GetFinalView().GetHeight()) {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}
