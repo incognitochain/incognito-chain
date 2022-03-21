@@ -426,7 +426,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	}
 
 	md, err := metadata.NewBurningRequest(
-		mdReader.BurnerAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
+		keyWallet.KeySet.PaymentAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
 		mdReader.RemoteAddress, mdReader.NetworkID, mdReader.ExpectedAmount, mdReader.IsDepositToSC,
 		metadataCommon.BurningUnifiedTokenRequestMeta,
 	)

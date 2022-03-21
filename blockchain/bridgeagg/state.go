@@ -89,6 +89,8 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		res = append(res, inst)
 	}
 
+	Logger.log.Info("bridgeagg instructions:", res)
+
 	return res, nil
 }
 

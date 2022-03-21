@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -124,9 +125,16 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 		return updatingInfoByTokenID, nil
 	}
 
+	if issuingEVMAcceptedInst.IncTokenID.String() == common.PRVIDStr {
+		isPRV = true
+	}
+
 	var externalTokenID []byte
 	if issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
 		externalTokenID = issuingEVMAcceptedInst.ExternalTokenID
+	} else {
+		insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(issuingEVMAcceptedInst.NetworkID, isPRV)
+		externalTokenID = []byte(common.UnifiedTokenPrefix)
 	}
 
 	err = insertEVMTxHashIssued(curView.featureStateDB, issuingEVMAcceptedInst.UniqTx)

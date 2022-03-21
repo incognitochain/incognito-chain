@@ -47,6 +47,12 @@ func NewStateChange() *StateChange {
 }
 
 func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
+	if operator != SubOperator && operator != AddOperator {
+		return 0, errors.New("Cannot recognize operator")
+	}
+	if deltaX == 0 {
+		return 0, errors.New("Cannot process with deltaX = 0")
+	}
 	if y == 0 {
 		return deltaX, nil
 	}
@@ -80,7 +86,13 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 }
 
 func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64) (uint64, error) {
+	if burntAmount == 0 {
+		return 0, errors.New("Cannot process with burntAmount = 0")
+	}
 	if y == 0 {
+		if burntAmount > x {
+			return 0, fmt.Errorf("BurntAmount %d is > x %d", burntAmount, x)
+		}
 		return burntAmount, nil
 	}
 	X := big.NewInt(0).SetUint64(x)
@@ -123,6 +135,9 @@ func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64) (uint64, error)
 	if a < a2 {
 		a = a2
 	}
+	if a > x {
+		return 0, fmt.Errorf("a %d is > x %d", a, x)
+	}
 
 	return a, nil
 }
@@ -150,7 +165,10 @@ type UnshieldAction struct {
 	ExternalTokenID []byte
 }
 
-func GetInsertTxHashIssuedByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
+func InsertTxHashIssuedByNetworkID(networkID uint, isPRV bool) func(*statedb.StateDB, []byte) error {
+	if isPRV {
+		return statedb.InsertPRVEVMTxHashIssued
+	}
 	switch networkID {
 	case common.PLGNetworkID:
 		return statedb.InsertPLGTxHashIssued

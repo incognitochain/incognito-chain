@@ -334,7 +334,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					continue
 				}
 				if uniqTx != nil {
-					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
 					shieldActions = append(shieldActions, bridgeagg.ShieldAction{
 						Content: newInst[0],
 						UniqTx:  uniqTx,

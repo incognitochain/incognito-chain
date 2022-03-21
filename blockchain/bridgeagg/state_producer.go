@@ -204,6 +204,7 @@ func (sp *stateProducer) shield(
 	// build instruction content
 	content.Reward = actualAmount - content.IssuingAmount
 	content.IssuingAmount = actualAmount
+	content.UniqTx = action.UniqTx
 
 	contentBytes, err = json.Marshal(content)
 	if err != nil {
