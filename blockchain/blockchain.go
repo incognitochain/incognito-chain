@@ -377,6 +377,8 @@ func (bc *BlockChain) Stop() {
 	Logger.log.Info("Blockchain Stop")
 	if config.Config().SyncMode == common.STATEDB_BATCH_COMMIT_MODE {
 		Logger.log.Info("Blockchain Stop, begin commit for fast sync mode")
+		// NOTICE: Only LOCK NO UNLOCK
+		// after blockchain is stopped, lock the beacon chain and shard chain to avoid futher insertion from synker
 		bc.BeaconChain.insertLock.Lock()
 		for i, shardChain := range bc.ShardChain {
 			bc.ShardChain[i].insertLock.Lock()

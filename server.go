@@ -491,7 +491,6 @@ func (serverObj *Server) NewServer(
 			Consensus:  serverObj.consensusEngine,
 			MiningKey:  serverObj.miningKeys,
 			CQuit:      serverObj.cQuit,
-			Wg:         serverObj.wg,
 		})
 
 	// Start up persistent peers.
@@ -654,8 +653,10 @@ func (serverObj *Server) Stop() error {
 
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
-	serverObj.blockChain.Stop()
 	serverObj.wg.Wait()
+	// Wait for the consensus engine stop then invoke blockchain.Stop()
+	serverObj.blockChain.Stop()
+	// after blockchain is stopped, lock the beacon chain and shard chain to avoid futher insertion from synker
 	return nil
 }
 

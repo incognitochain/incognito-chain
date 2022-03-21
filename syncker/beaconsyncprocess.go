@@ -41,7 +41,7 @@ type BeaconSyncProcess struct {
 	wg                  *sync.WaitGroup
 }
 
-func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface, cQuit chan struct{}, wg *sync.WaitGroup) *BeaconSyncProcess {
+func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface, cQuit chan struct{}) *BeaconSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -61,7 +61,6 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 		actionCh:            make(chan func()),
 		lastCrossShardState: make(map[byte]map[byte]uint64),
 		cQuit:               cQuit,
-		wg:                  wg,
 	}
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()

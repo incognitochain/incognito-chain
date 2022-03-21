@@ -30,7 +30,6 @@ type SynckerManagerConfig struct {
 	Consensus  peerv2.ConsensusData
 	MiningKey  string
 	CQuit      chan struct{}
-	Wg         *sync.WaitGroup
 }
 
 type SynckerManager struct {
@@ -70,26 +69,22 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	}
 
 	//init beacon sync process
-	config.Wg.Add(1)
 	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(
 		synckerManager.config.Network,
 		synckerManager.config.Blockchain,
 		synckerManager.config.Blockchain.BeaconChain,
 		config.CQuit,
-		config.Wg,
 	)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
 
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
-		config.Wg.Add(1)
 		sid := chain.GetShardID()
 		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(
 			sid, synckerManager.config.Network,
 			synckerManager.config.Blockchain,
 			synckerManager.config.Blockchain.BeaconChain,
 			chain, synckerManager.config.Consensus, config.CQuit,
-			config.Wg,
 		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
@@ -132,7 +127,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
 
 	if beaconChain, ok := chainValidator[-1]; ok {
-		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
+		synckerManager.BeaconSyncProcess.isCommittee = beaconChain.State.Role == common.CommitteeRole
 	}
 
 	preloadAddr := configpkg.Config().PreloadAddress
@@ -148,7 +143,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 
 	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
-	for chainID, _ := range chainValidator {
+	for chainID := range chainValidator {
 		wantedShard[byte(chainID)] = struct{}{}
 	}
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
@@ -253,7 +248,7 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- peerState
 	}
 	//shard
-	for sid, _ := range peerState.Shards {
+	for sid := range peerState.Shards {
 		if synckerManager.ShardSyncProcess[int(sid)] != nil {
 			// b, _ := json.Marshal(peerState)
 			// fmt.Println("[debugshard]: receive peer state", string(b))

@@ -54,7 +54,6 @@ func NewShardSyncProcess(
 	chain ShardChainInterface,
 	consensus peerv2.ConsensusData,
 	cQuit chan struct{},
-	wg *sync.WaitGroup,
 ) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -75,7 +74,6 @@ func NewShardSyncProcess(
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
 		cQuit:            cQuit,
-		wg:               wg,
 		actionCh:         make(chan func()),
 	}
 	s.crossShardSyncProcess = NewCrossShardSyncProcess(network, bc, s, beaconChain)
