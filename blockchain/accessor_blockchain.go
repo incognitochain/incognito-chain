@@ -164,12 +164,6 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	if err != nil {
 		return nil, err
 	}
-	if blkhash == nil {
-		blkhash, err = rawdbv2.GetFinalizedShardBlockHashByIndex(sChain.GetChainDatabase(), shardID, height)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(*blkhash, shardID)
 	if err != nil {

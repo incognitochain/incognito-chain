@@ -1229,10 +1229,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		prevHash := storeBlock.GetPrevHash()
 		prevView := blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
 		if prevView == nil {
-			if existed, err := blockchain.ShardChain[shardID].blkManager.CheckBlockByHash(&prevHash); (!existed) || (err != nil) {
-				panic(fmt.Sprintf("%v %v", "Database is corrupt", err.Error()))
+			//multiview is disconnected to the last final view, we must retrieve block instead
+			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+			if err != nil {
+				return err
 			}
-			break
 		} else {
 			storeBlock = prevView.GetBlock()
 		}
