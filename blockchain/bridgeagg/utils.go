@@ -2,6 +2,7 @@ package bridgeagg
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -195,11 +196,19 @@ func buildInstruction(
 		utils.EmptyString,
 	)
 	if err != nil {
-		rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, 0, nil)
+		var md metadata.Metadata
+		err := json.Unmarshal(content, &md)
+		if err != nil {
+			return []string{}, err
+		}
+		rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, 0, md)
 		rejectContent.ErrorCode = ErrCodeMessage[errorType].Code
 		inst.Status = common.RejectedStatusStr
 		temp, e := inst.StringSliceWithRejectContent(rejectContent)
-		return temp, NewBridgeAggErrorWithValue(errorType, e)
+		if e != nil {
+			return temp, NewBridgeAggErrorWithValue(errorType, e)
+		}
+		return temp, nil
 	} else {
 		inst.Content = base64.StdEncoding.EncodeToString(content)
 		return inst.StringSlice(), nil

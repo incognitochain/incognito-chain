@@ -341,4 +341,5 @@ func (plgParam *plgParam) GetFromEnv() {
 
 type bridgeAggParam struct {
 	AdminAddress string `mapstructure:"admin_address"`
+	BaseDecimal  uint   `mapstructure:"base_decimal"`
 }

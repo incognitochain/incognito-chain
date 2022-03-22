@@ -50,6 +50,7 @@ func (sp *stateProcessor) modifyListTokens(
 					v.SetLastUpdatedRewardReserve(vault.RewardReserve)
 					v.SetCurrentRewardReserve(vault.RewardReserve)
 					v.tokenID = vault.TokenID()
+					v.SetDecimal(vault.Decimal)
 					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 				}
 			}

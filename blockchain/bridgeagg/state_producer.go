@@ -84,6 +84,7 @@ func (sp *stateProducer) modifyListTokens(
 				v.SetLastUpdatedRewardReserve(vault.RewardReserve)
 				v.SetCurrentRewardReserve(vault.RewardReserve)
 				v.tokenID = vault.TokenID()
+				v.SetDecimal(vault.Decimal)
 				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 			}
 		}
@@ -185,6 +186,12 @@ func (sp *stateProducer) shield(
 	md := action.Meta
 	defer func() {
 		if shouldContinue {
+			if err != nil {
+				content, err = json.Marshal(action.Meta)
+				if err != nil {
+					return
+				}
+			}
 			resInst, err = buildInstruction(
 				metadataCommon.IssuingUnifiedTokenRequestMeta,
 				errorType, content, action.TxReqID, shardID, err,
@@ -254,6 +261,18 @@ func (sp *stateProducer) shield(
 		errorType = FailToVerifyTokenPairError
 		return
 	}
+
+	if md.IncTokenID != common.PRVCoinID {
+		tmpAmount := big.NewInt(0).SetUint64(amount)
+		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
+		if !tmpAmount.IsUint64() {
+			errorType = OtherError
+			return
+		}
+		amount = tmpAmount.Uint64()
+	}
+
 	actualAmount, err := vault.shield(amount)
 	if err != nil {
 		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, action.TxReqID.String())
@@ -317,6 +336,12 @@ func (sp *stateProducer) unshield(
 	shouldContinue := true
 	defer func() {
 		if shouldContinue {
+			if err != nil {
+				content, err = json.Marshal(action.Meta)
+				if err != nil {
+					return
+				}
+			}
 			inst, err := buildInstruction(
 				metadataCommon.BurningUnifiedTokenRequestMeta,
 				errorType, content, action.TxReqID, shardID, err,
@@ -410,6 +435,14 @@ func (sp *stateProducer) unshield(
 		incTokenID = common.PRVCoinID
 	}
 	if md.TokenID != common.PRVCoinID {
+		amount.Mul(amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
+		amount.Div(amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+		if !amount.IsUint64() {
+			Logger.log.Warnf("Calculate actual unshield amount is out of range uint64")
+			errorType = OtherError
+			return
+		}
+
 		if bytes.Equal(externalTokenID, append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...)) {
 			amount = amount.Mul(amount, big.NewInt(1000000000))
 		}
