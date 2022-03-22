@@ -249,6 +249,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		rands[i] = new(operation.Scalar).FromUint64(0)
 	}
 
+	// Pedersen commitments: V = g^v * h^r
 	proof.cmsValue = make([]*operation.Point, numValue)
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(values[i]), rands[i], operation.PedersenValueIndex)
@@ -269,8 +270,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		}
 	}
 	// LINE 40-50
-	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
-	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
+	// Commitment to aL, aR:  A = h^alpha * G^aL * H^aR
+	// Commitment to sL, sR : S = h^rho   * G^sL * H^sR
 	var alpha, rho *operation.Scalar
 	alpha = operation.RandomScalar()
 	rho = operation.RandomScalar()
@@ -280,14 +281,14 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 	mbuilder.AppendSingle(alpha, operation.HBase)
-	proof.a = mbuilder.Eval()
-
+	proof.a = mbuilder.Eval() // evaluate & clear builder
 	_, err = encodeVectors(sL, sR, aggParam.g, aggParam.h, mbuilder)
 	if err != nil {
 		return nil, err
 	}
 	mbuilder.AppendSingle(rho, operation.HBase)
 	proof.s = mbuilder.Eval()
+
 	// challenge y, z
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
@@ -296,7 +297,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	twoNumber := new(operation.Scalar).FromUint64(2)
 	twoVectorN := powerVector(twoNumber, maxExp)
 
-	// HPrime = H^(y^(1-i)
+	// HPrime = H^(y^(1-i))
 	HPrime := computeHPrime(y, N, aggParam.h)
 
 	// l(X) = (aL -z*1^n) + sL*X; r(X) = y^n hada (aR +z*1^n + sR*X) + z^2 * 2^n
@@ -370,7 +371,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	// blinding value for tHat: tauX = tau2*x^2 + tau1*x + z^2*rand
+	// blinding value for tHat (agg): tauX = tau2 * x^2 + tau1 * x + <z^(1+m), rands>
 	proof.tauX = new(operation.Scalar).Mul(tau2, xSquare)
 	proof.tauX.Add(proof.tauX, new(operation.Scalar).Mul(tau1, x))
 	zTmp = new(operation.Scalar).Set(z)
@@ -381,15 +382,17 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// alpha, rho blind A, S
-	// mu = alpha + rho*x
+	// mu = alpha + rho * x
 	proof.mu = new(operation.Scalar).Add(alpha, new(operation.Scalar).Mul(rho, x))
 
 	// instead of sending left vector and right vector, we use inner sum argument to reduce proof size from 2*n to 2(log2(n)) + 2
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
+	// u' = u^x
 	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
 
+	// for inner-product proof, compute P = g^l * h^r * u ^ (l*r); subsitute h <- h', u <- u'
 	_, err = encodeVectors(lVector, rVector, aggParam.g, HPrime, mbuilder)
 	if err != nil {
 		return nil, err
@@ -516,6 +519,7 @@ func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation
 	aggParam := setAggregateParams(N)
 	twoVectorN := powerVector(new(operation.Scalar).FromUint64(2), maxExp)
 
+	// pad commitment list to have power of 2 for length
 	cmsValue := proof.cmsValue
 	for i := numValue; i < numValuePad; i++ {
 		cmsValue = append(cmsValue, operation.NewIdentityPoint())
@@ -530,30 +534,32 @@ func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation
 	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
 	xSquare := new(operation.Scalar).Mul(x, x)
 
-	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
+	// compute delta(y,z) = (z-z^2) * <1, y^N> - z^3 * <1, 2^N>
 	yVector := powerVector(y, N)
 	deltaYZ, err := computeDeltaYZ(z, zSquare, yVector, N)
 	if err != nil {
 		return nil, err
 	}
 
+	// Verify eq (65) (agg): g^tHat * h^tauX = V^(z^2 * z^m) * g^delta(y,z) * T1^x * T2^(x^2)
 	eq65Builder := operation.NewMultBuilder(true)
 	eq65Builder.WithStaticPoints(AggParam.precomps)
-	// Verify eq (65)
+	// set builder to V^(z^2 * z^m) * T1^x * T2^(x^2)
 	eq65Builder.AppendSingle(xSquare, proof.t2)
 	eq65Builder.AppendSingle(x, proof.t1)
-
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	eq65Builder.MustAppend(expVector, cmsValue)
 
+	// g <- gval. Unite terms to RHS
 	if gval != nil {
 		eq65Builder.AppendSingle(operation.NewScalar().Sub(deltaYZ, proof.tHat), gval)
 	} else {
 		eq65Builder.MustSetStatic(precompPedGValIndex, operation.NewScalar().Sub(deltaYZ, proof.tHat))
 	}
 	eq65Builder.MustSetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.tauX))
+	// identity check will be combined
 
-	// Verify eq (66)
+	// Verify eq (67): A * S^x * g^(-z) * h' ^ (z * y^n + z^2 * 2^n) = h^mu * g^l * h'^r
 	eq66Builder := operation.NewMultBuilder(true)
 	eq66Builder.WithStaticPoints(AggParam.precomps)
 
@@ -566,20 +572,24 @@ func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation
 			vectorSum[j*maxExp+i].Add(vectorSum[j*maxExp+i], new(operation.Scalar).Mul(z, yVector[j*maxExp+i]))
 		}
 	}
-	// HPrime = H^(y^(1-i)
+	// add h' ^ vector_sum to builder by substituting h' = h^(y^(1-i)) and using h as bases
 	mulPowerVector(vectorSum, operation.NewScalar().Invert(y))
 	eq66Builder.MustSetStatic(precompHIndex(aggParamNMax), vectorSum...)
+	// g^(-z)
 	for i := 0; i < N; i++ {
 		eq66Builder.MustSetStatic(precompGIndex+i, zNeg)
 	}
 
 	eq66Builder.MustAppend([]*operation.Scalar{operation.NewScalar().FromUint64(1), x}, []*operation.Point{proof.a, proof.s}) // AS^x
-	eq66Builder.MustSetStatic(precompUIndex, operation.NewScalar().Mul(proof.tHat, operation.HashToScalar(x.ToBytesS())))     // tHat.U'
-
+	// add u' ^ t_hat to both sides
+	// RHS is then simplified using g^l * h'^r * u' ^ t_hat = P (of inner product proof)
+	eq66Builder.MustSetStatic(precompUIndex, operation.NewScalar().Mul(proof.tHat, operation.HashToScalar(x.ToBytesS()))) // tHat.U'
+	// unite terms to LHS
 	eq66Builder.MustSetStatic(precompPedGRandIndex, operation.NewScalar().Negate(proof.mu))
 	eq66Builder.AppendSingle(operation.NewScalar().Set(operation.ScMinusOne), proof.innerProductProof.p)
+	// identity check will be combined
 
-	// Verify eq (68)
+	// Verify eq (68): inner product proof for t_hat = l * r
 	hashCache := x.ToBytesS()
 	L := proof.innerProductProof.l
 	R := proof.innerProductProof.r
@@ -612,16 +622,16 @@ func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation
 		}
 	}
 
+	// LHS = g^s * h' ^ s_inv * u' ^ c, substituting h' = h^(y^(1-i))
 	ippBuilder := operation.NewMultBuilder(true)
 	ippBuilder.WithStaticPoints(AggParam.precomps)
 	ippBuilder.MustSetStatic(precompGIndex, s...)
-
 	mulPowerVector(sInverse, operation.NewScalar().Invert(y))
 	ippBuilder.MustSetStatic(precompHIndex(aggParamNMax), sInverse...)
-
 	c := new(operation.Scalar).Mul(proof.innerProductProof.a, proof.innerProductProof.b)
-	ippBuilder.MustSetStatic(precompUIndex, operation.NewScalar().Mul(c, operation.HashToScalar(x.ToBytesS()))) // cU'
+	ippBuilder.MustSetStatic(precompUIndex, operation.NewScalar().Mul(c, operation.HashToScalar(x.ToBytesS())))
 
+	// compute RHS = L ^ (v^2) * P * R * (v^-2)
 	rhsBuilder := operation.NewMultBuilder(true)
 	rhsBuilder.MustAppend(vSquareList, L)
 	rhsBuilder.MustAppend(vInverseSquareList, R)
@@ -631,7 +641,7 @@ func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation
 	if err != nil {
 		return nil, err
 	}
-	// perform identity checks simultaneously by multplying each one with a random scalar
+	// perform many identity checks simultaneously by multplying each one with a random scalar
 	check := eq65Builder
 	err = check.ConcatScaled(eq66Builder, operation.RandomScalar())
 	if err != nil {
@@ -657,6 +667,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof, gvalLst []*operation.Point) (bo
 		if check == nil {
 			check = multBuilder
 		} else {
+			// perform many identity checks simultaneously by multplying each one with a random scalar
 			err := check.ConcatScaled(multBuilder, operation.RandomScalar())
 			if err != nil {
 				return false, err
