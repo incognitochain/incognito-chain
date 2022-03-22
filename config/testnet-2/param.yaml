@@ -44,6 +44,7 @@ epoch_param:
 eth_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 bsc_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 plg_contract_address: "0x4fF5c88cD1FD773436C2aBcFE175fe4ba6a2eB68"
+ftm_contract_address: "0x9cb4baf1b60DaBB6B22BcFf07cc0e10395423aed"
 prv_erc20_contract_address: "0xaE61fEFD69BacF3951F1C86c9A4D3F006810Ac21"
 prv_bep20_contract_address: "0xB49E8844a72CF1ce885aEf13F82BeeAEEFc01527"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -82,6 +83,8 @@ bsc_param:
   host: "https://data-seed-prebsc-2-s2.binance.org:8545"
 plg_param:
   host: "https://polygon-mumbai.g.alchemy.com/v2/CBQ1SQRLf3eQGbTXd_aA3LU7hvmwR33K"
+ftm_param:
+  host: "https://rpc.testnet.fantom.network"
 pdex_param:
   pdex_v3_break_point_height: 3603596
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
@@ -99,3 +102,8 @@ pdex_param:
     auto_withdraw_order_limit_amount: 100
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
+auto_enable_feature:
+  - maxcommitteesize48:
+      min_trigger: 3965040
+      force_trigger: 1000000000
+      require_percentage: 90

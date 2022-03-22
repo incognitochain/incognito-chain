@@ -18,7 +18,7 @@ type vote struct {
 	Confirmation []byte
 }
 
-type blockValidation interface {
+type BlockValidation interface {
 	types.BlockInterface
 	AddValidationField(validationData string)
 }
