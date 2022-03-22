@@ -42,7 +42,7 @@ func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operatio
 func mulPowerVector(scLst []*operation.Scalar, base *operation.Scalar) {
 	pow := new(operation.Scalar).FromUint64(1)
 	for _, sc := range scLst {
-		sc.Mul(sc, pow) //nolint:errcheck
+		sc.Mul(sc, pow)
 		pow.Mul(pow, base)
 	}
 }

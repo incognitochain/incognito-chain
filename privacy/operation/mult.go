@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation/edwards25519"
 )
 
-// MultiScalarMultBuilder is a helper struct to make best use of MultiScalarMult functions. The idea is to delay the invocation Point multiplications 
+// MultiScalarMultBuilder is a helper struct to make best use of MultiScalarMult functions. The idea is to delay the invocation of Point multiplications
 // so we can combine them into 1 large `MultiScalarMult` operation, which is faster.
 //
 // MultiScalarMultBuilder keeps track of lists of scalars & points of guaranteed matching length; it evaluates to
@@ -81,7 +81,7 @@ func (b *MultiScalarMultBuilder) AppendSingle(sc *Scalar, p *Point) {
 // ConcatScaled first scales the evaluation of `b1` by `n`, then concatenates it to the fields of b.
 //
 // Dynamic members are appended, while static members are summed by-column.
-// 
+//
 // This adds `sum(scalars_1[i] * points_1[i]) + sum(static_scalars_1[i] * static_points_1[i])` to the evaluation of b.
 func (b *MultiScalarMultBuilder) ConcatScaled(b1 *MultiScalarMultBuilder, n *Scalar) error {
 	if len(b1.StaticScalars) > 0 {
@@ -129,17 +129,18 @@ func (b *MultiScalarMultBuilder) Eval() (result *Point) {
 }
 
 func (b MultiScalarMultBuilder) Debug() {
-	fmt.Printf("multbuilder of value %v, sizes %d %d %d %d\n", b.Clone().Eval, len(b.scalars), len(b.points), len(b.StaticScalars), len(b.StaticPoints))
+	fmt.Printf("multbuilder of value %v, sizes %d %d %d %d\n", b.Clone().Eval(), len(b.scalars), len(b.points), len(b.StaticScalars), len(b.StaticPoints))
 }
 
 // PrecomputedPoint wraps the struct edwards25519.PrecomputedPoint which stores precomputed field elements to speed up computation
 type PrecomputedPoint struct {
-	p edwards25519.PrecomputedPoint
+	p *edwards25519.PrecomputedPoint
 }
 
-// From populates thsi PrecomputedPoint to the value of Point p
-func (pp *PrecomputedPoint) From(p *Point) *PrecomputedPoint {
-	pp.p.FromP3(&p.p)
+// From populates this PrecomputedPoint to the value of Point p
+func (pp *PrecomputedPoint) From(q *Point) *PrecomputedPoint {
+	pp.p = &edwards25519.PrecomputedPoint{}
+	pp.p.FromP3(&q.p)
 	return pp
 }
 

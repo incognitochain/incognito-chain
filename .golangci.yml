@@ -24,7 +24,9 @@ linters:
 run:
     tests: false
     skip-dirs:
-        - privacy/operation
+        - privacy/operation/edwards25519
+        - privacy/operation/v1
+        - privacy/privacy_v2/bulletproofs/v1
         - privacy/privacy_v1
         - transaction/benchmark
         - transaction/tx_ver1
@@ -181,10 +183,9 @@ linters-settings:
             disabled: false
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unhandled-error
           - name: unhandled-error
-            disabled: false
+            disabled: true
             arguments:
               - "fmt.Printf"
-              - "myFunction"
           # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unnecessary-stmt
           - name: unnecessary-stmt
             disabled: false

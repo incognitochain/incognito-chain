@@ -183,7 +183,7 @@ func (p *Point) MixedVarTimeMultiScalarMult(scalarLs []*Scalar, pointLs []*Point
 	}
 
 	ssLst := make([]*edwards25519.Scalar, l1)
-	ppLst := make([]edwards25519.PrecomputedPoint, l1)
+	ppLst := make([]*edwards25519.PrecomputedPoint, l1)
 	for i := 0; i < len(staticScalarLs); i++ {
 		ssLst[i] = &staticScalarLs[i].sc
 		ppLst[i] = staticPointLs[i].p
@@ -221,6 +221,7 @@ func (p *Point) Sub(pa, pb *Point) *Point {
 	return p
 }
 
+//nolint:gocritic // using capitalized variable name
 // AddPedersen computes a Pedersen commitment; it sets `p = aA + bB`, then returns `p`
 func (p *Point) AddPedersen(a *Scalar, A *Point, b *Scalar, B *Point) *Point {
 	return p.MultiScalarMult([]*Scalar{a, b}, []*Point{A, B})
@@ -243,6 +244,6 @@ func HashToPointFromIndex(index int32, padStr string) *Point {
 func HashToPoint(b []byte) *Point {
 	temp := v1.HashToPoint(b)
 	result := &Point{}
-	result.FromBytesS(temp.ToBytesS())
+	result.FromBytesS(temp.ToBytesS()) //nolint // legacy Point marshals to valid bytes
 	return result
 }

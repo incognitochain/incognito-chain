@@ -38,8 +38,8 @@ func randMult(useVarTime bool) (*MultiScalarMultBuilder, []*Point) {
 
 	b := MultiScalarMultBuilder{
 		useVarTime: useVarTime,
-		Scalars:    scLst,
-		Points:     pLst,
+		scalars:    scLst,
+		points:     pLst,
 	}
 	b.StaticScalars = ssMap
 	b.StaticPoints = staticPointsPrecompute
@@ -55,10 +55,11 @@ func TestMultBuilder(t *testing.T) {
 		allScalars[i] = sc
 	}
 	allScalars = append(append([]*Scalar{}, b.scalars...), allScalars...)
-	allPoints := append(append([]*Point{}, b.Points...), spLst...)
 	expected1 := NewIdentityPoint().MultiScalarMult(allScalars, allPoints)
+	allPoints := append(append([]*Point{}, b.points...), spLst...)
 	expected2 := NewIdentityPoint().VarTimeMultiScalarMult(allScalars, allPoints)
 
+	fmt.Println(expected)
 	b.Debug()
 	actualResult := b.Eval()
 
