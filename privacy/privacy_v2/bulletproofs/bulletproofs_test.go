@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -15,12 +16,65 @@ import (
 )
 
 var _ = func() (_ struct{}) {
+	// seed the rng for test, not production
+	rand.Seed(time.Now().UnixNano())
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
-var rangeProof1 *AggregatedRangeProof
-var rangeProof2 *bulletproofsV1.AggregatedRangeProof
+var (
+	batchLen   = []int{2, 4, 8, 16, 32}[rand.Int()%5]
+	batchLenCA = batchLen / 2
+	batchBases = func() []*operation.Point {
+		result := make([]*operation.Point, batchLen)
+		for i := range result {
+			if i < batchLenCA {
+				result[i] = operation.RandomPoint()
+			} else {
+				result[i] = nil
+			}
+		}
+		return result
+	}()
+	rangeProof   *AggregatedRangeProof
+	rangeProofV1 *bulletproofsV1.AggregatedRangeProof
+
+	batchedProofs, batchedProofsV1 = func() ([]*AggregatedRangeProof, []*bulletproofsV1.AggregatedRangeProof) {
+		result := make([]*AggregatedRangeProof, batchLen)
+		resultV1 := make([]*bulletproofsV1.AggregatedRangeProof, batchLen)
+		fmt.Printf("batch %d with %d CA proofs\n", batchLen, batchLenCA)
+		for i := 0; i < batchLen; i++ {
+			numOutputs := []int{1, 2, 4}[rand.Int()%3] // can use other distribution
+			// fmt.Printf("%d outputs\n", numOutputs)
+			values := make([]uint64, numOutputs)
+			rands := make([]*operation.Scalar, numOutputs)
+			for i := range values {
+				values[i] = uint64(rand.Uint64())
+				rands[i] = operation.RandomScalar()
+			}
+			wit := new(AggregatedRangeWitness)
+			wit.Set(values, rands)
+			var err error
+			if batchBases[i] == nil {
+				result[i], err = wit.Prove()
+				if err != nil {
+					panic(err)
+				}
+			} else {
+				result[i], err = wit.ProveUsingBase(batchBases[i])
+				if err != nil {
+					panic(err)
+				}
+			}
+			resultV1[i] = new(bulletproofsV1.AggregatedRangeProof)
+			err = resultV1[i].SetBytes(result[i].Bytes())
+			if err != nil {
+				panic(err)
+			}
+		}
+		return result, resultV1
+	}()
+)
 
 type fnProve = func(values []uint64, rands []*operation.Scalar, rands2 []*operationV1.Scalar)
 
@@ -32,7 +86,7 @@ var provers = map[string]fnProve{
 		if err != nil {
 			panic(err)
 		}
-		rangeProof2 = proof
+		rangeProofV1 = proof
 	},
 	"Go&new-curve-impl": func(values []uint64, rands []*operation.Scalar, rands2 []*operationV1.Scalar) {
 		wit := new(AggregatedRangeWitness)
@@ -41,7 +95,7 @@ var provers = map[string]fnProve{
 		if err != nil {
 			panic(err)
 		}
-		rangeProof1 = proof
+		rangeProof = proof
 	},
 }
 
@@ -49,13 +103,33 @@ type fnProveVerify = func()
 
 var pverifiers = map[string]fnProveVerify{
 	"Go&old-curve-impl": func() {
-		valid, err := rangeProof2.Verify()
+		valid, err := rangeProofV1.Verify()
 		if !valid || err != nil {
 			panic(err)
 		}
 	},
 	"Go&new-curve-impl": func() {
-		valid, err := rangeProof1.Verify()
+		valid, err := rangeProof.Verify()
+		if !valid || err != nil {
+			panic(err)
+		}
+	},
+	"batch-old": func() {
+		valid, err, _ := bulletproofsV1.VerifyBatch(batchedProofsV1[batchLenCA:])
+		if !valid || err != nil {
+			panic(err)
+		}
+
+		for i, proof := range batchedProofsV1[:batchLenCA] {
+			tmpbase, _ := new(operationV1.Point).FromBytesS(batchBases[i].ToBytesS())
+			valid, err := proof.VerifyUsingBase(tmpbase)
+			if !valid || err != nil {
+				panic(err)
+			}
+		}
+	},
+	"batch-new": func() {
+		valid, err := VerifyBatch(batchedProofs, batchBases)
 		if !valid || err != nil {
 			panic(err)
 		}
@@ -200,7 +274,7 @@ func BenchmarkBPProve(b *testing.B) {
 
 func BenchmarkBPVerify(b *testing.B) {
 	benchmarks := []struct {
-		prover     string
+		verifier   string
 		numOutputs int
 	}{
 		{"Go&old-curve-impl", 1},
@@ -231,9 +305,27 @@ func BenchmarkBPVerify(b *testing.B) {
 		provers["Go&new-curve-impl"](values, rands, rands2)
 
 		b.ResetTimer()
-		b.Run(fmt.Sprintf("%s verify %d outputs", bm.prover, bm.numOutputs), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%s verify %d outputs", bm.verifier, bm.numOutputs), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				pverifiers[bm.prover]()
+				pverifiers[bm.verifier]()
+			}
+		})
+	}
+}
+
+func BenchmarkBPBatchVerify(b *testing.B) {
+	benchmarks := []struct {
+		verifier string
+	}{
+		{"batch-old"},
+		{"batch-new"},
+	}
+
+	for _, bm := range benchmarks {
+		b.ResetTimer()
+		b.Run(fmt.Sprintf("%s batch-verify outputs", bm.verifier), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				pverifiers[bm.verifier]()
 			}
 		})
 	}
@@ -579,6 +671,10 @@ func testAggregatedRangeProofTampered(proof *AggregatedRangeProof, t *testing.T)
 func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 	count := 10
 	proofs := make([]*AggregatedRangeProof, 0)
+	bases := make([]*operation.Point, count)
+	for i := range bases[:count/2] {
+		bases[i] = operation.RandomPoint()
+	}
 
 	for i := 0; i < count; i++ {
 		//prepare witness for Aggregated range protocol
@@ -592,23 +688,26 @@ func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 			rands[i] = operation.RandomScalar()
 		}
 		wit.Set(values, rands)
-
-		// proving
-		proof, err := wit.Prove()
-		Equal(t, nil, err)
-
-		res, err := proof.Verify()
-		Equal(t, true, res)
-		Equal(t, nil, err)
-
-		res, err = proof.Verify()
-		Equal(t, true, res)
-		Equal(t, nil, err)
+		var proof *AggregatedRangeProof
+		var err error
+		if bases[i] == nil {
+			proof, err = wit.Prove()
+			Equal(t, nil, err)
+			res, err := proof.Verify()
+			Equal(t, true, res)
+			Equal(t, nil, err)
+		} else {
+			proof, err = wit.ProveUsingBase(bases[i])
+			Equal(t, nil, err)
+			res, err := proof.VerifyUsingBase(bases[i])
+			Equal(t, true, res)
+			Equal(t, nil, err)
+		}
 
 		proofs = append(proofs, proof)
 	}
 	// verify the proof faster
-	res, err := VerifyBatch(proofs)
+	res, err := VerifyBatch(proofs, bases)
 	Equal(t, true, res)
 	Equal(t, nil, err)
 }

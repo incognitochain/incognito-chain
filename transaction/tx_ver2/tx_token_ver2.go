@@ -672,6 +672,7 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 (token) with tx hash %s: %+v", txToken.Hash().String(), err)
 		return false, nil, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
+	var resultProofs []privacy.Proof
 
 	// validate for pToken
 	tokenIdOnTx := txToken.TokenData.PropertyID
@@ -701,13 +702,13 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 				}
 			}
 
-			// for CA, bulletproof batching is not supported
-			boolParams["isBatch"] = false
 			boolParams["hasPrivacy"] = true
-			resToken, _, err = txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenIdOnTx)
+			var tempProofs []privacy.Proof
+			resToken, tempProofs, err = txn.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenIdOnTx)
 			if err != nil {
 				return resToken, nil, err
 			}
+			resultProofs = append(resultProofs, tempProofs...)
 		}
 
 		// validate the fee-paying sub-transaction. The signature part has been verified above, so we skip it here.
@@ -719,7 +720,6 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 		boolParams["hasConfidentialAsset"] = false // we are validating the PRV part, so `hasConfidentialAsset` must be false.
 		// when batch-verifying for PRV, bulletproof will be skipped here & verified with the whole batch
 		resTxFee, err := txFeeProof.Verify(boolParams, txToken.Tx.GetSigPubKey(), 0, shardID, &common.PRVCoinID, nil)
-		resultProofs := make([]privacy.Proof, 0)
 		if isBatch {
 			resultProofs = append(resultProofs, txFeeProof)
 		}

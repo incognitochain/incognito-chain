@@ -494,7 +494,7 @@ func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
 // Verify this Bulletproof using an optimized algorithm.
 // No view into chain data is needed.
 func (proof AggregatedRangeProof) Verify() (bool, error) {
-	multBuilder, err := proof.BuildVerify(nil)
+	multBuilder, err := proof.buildVerify(nil)
 	if err != nil {
 		return false, err
 	}
@@ -505,7 +505,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	return true, nil
 }
 
-func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation.MultiScalarMultBuilder, error) {
+func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation.MultiScalarMultBuilder, error) {
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
 		return nil, fmt.Errorf("output count exceeds MaxOutputCoin")
@@ -633,7 +633,6 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 	}
 	// perform identity checks simultaneously by multplying each one with a random scalar
 	check := eq65Builder
-	// DEBUG
 	err = check.ConcatScaled(eq66Builder, operation.RandomScalar())
 	if err != nil {
 		return nil, err
@@ -648,10 +647,10 @@ func (proof AggregatedRangeProof) BuildVerify(gval *operation.Point) (*operation
 
 // VerifyBatch verifies a list of Bulletproofs in batched fashion.
 // It saves time by using a multi-exponent operation.
-func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error) {
+func VerifyBatch(proofs []*AggregatedRangeProof, gvalLst []*operation.Point) (bool, error) {
 	var check *operation.MultiScalarMultBuilder = nil
-	for _, pr := range proofs {
-		multBuilder, err := pr.BuildVerify(nil)
+	for i := range proofs {
+		multBuilder, err := proofs[i].buildVerify(gvalLst[i])
 		if err != nil {
 			return false, err
 		}

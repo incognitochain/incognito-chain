@@ -205,7 +205,7 @@ func (proof AggregatedRangeProof) VerifyUsingBase(gval *operation.Point) (bool, 
 	if gval == nil {
 		return false, fmt.Errorf("verify-using-base cannot take nil base")
 	}
-	multBuilder, err := proof.BuildVerify(gval)
+	multBuilder, err := proof.buildVerify(gval)
 	if err != nil {
 		return false, err
 	}

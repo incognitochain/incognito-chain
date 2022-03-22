@@ -46,12 +46,13 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	}
 	var bulletProofListVer1 []*privacy.AggregatedRangeProofV1
 	var bulletProofListVer2 []*privacy.AggregatedRangeProofV2
+	var bpBases []*privacy.Point
 
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		boolParams["hasPrivacy"] = tx.IsPrivacy()
 
-		ok, batchableProofs, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
+		ok, batchedProofs, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 		if !ok {
 			return false, err, i
 		}
@@ -62,16 +63,21 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			}
 		}
 
-		for _, batchableProof := range batchableProofs {
-			bulletproof := batchableProof.GetAggregatedRangeProof()
+		for _, batchedProof := range batchedProofs {
+			bulletproof := batchedProof.GetAggregatedRangeProof()
 			if bulletproof == nil {
 				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("privacy TX Proof missing at index %d", i)), -1
+			}
+			outputCoins := batchedProof.GetOutputCoins()
+			if len(outputCoins) == 0 {
+				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("privacy TX Proof without output coin at index %d", i)), -1
 			}
 			switch proof_specific := bulletproof.(type) {
 			case *privacy.AggregatedRangeProofV1:
 				bulletProofListVer1 = append(bulletProofListVer1, proof_specific)
 			case *privacy.AggregatedRangeProofV2:
 				bulletProofListVer2 = append(bulletProofListVer2, proof_specific)
+				bpBases = append(bpBases, outputCoins[0].GetAssetTag())
 			}
 		}
 	}
@@ -100,7 +106,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 	}
 
-	ok, err = bulletproofs.VerifyBatch(bulletProofListVer2)
+	ok, err = bulletproofs.VerifyBatch(bulletProofListVer2, bpBases)
 	if !ok {
 		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %v", err)
 		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("batch-verify payment v2 failed - %v", err)), -1
