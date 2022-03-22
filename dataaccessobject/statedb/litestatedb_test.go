@@ -3,7 +3,6 @@ package statedb
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"math/rand"
@@ -101,7 +100,7 @@ func TestLiteStateDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("aggHash", aggHash, aggHash1)
+	//fmt.Println("aggHash", aggHash, aggHash1)
 	if !aggHash.IsEqual(&aggHash1) { // must equal
 		t.Fatal(errors.New("Commit without set new key must giving same aggHash"))
 	}
@@ -128,11 +127,11 @@ func TestLiteStateDB(t *testing.T) {
 	}
 
 	txDB.getOrNewStateObjectWithValue(TestObjectType, randKey[13], randValue[13])
-	aggHash4, aggHash4Rebuild, err := txDB.Commit(true)
+	_, aggHash4Rebuild, err := txDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("aggHash4.String()", aggHash4.String())
+	//fmt.Println("aggHash4.String()", aggHash4.String())
 	txDB.Finalized(false, *aggHash4Rebuild)
 
 	txDB1 := txDB.Copy()
@@ -144,7 +143,7 @@ func TestLiteStateDB(t *testing.T) {
 	}
 	stateObj, _ = txDB1.getOrNewStateObjectWithValue(TestObjectType, randKey[15], randValue[15])
 	stateObj.MarkDelete()
-	agghash5a, agghash5aRoot, err := txDB1.Commit(true)
+	_, agghash5aRoot, err := txDB1.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +156,7 @@ func TestLiteStateDB(t *testing.T) {
 	}
 
 	//check finalized database
-	fmt.Println("=====================>", txDB.liteStateDB.dbPrefix)
+	//fmt.Println("=====================>", txDB.liteStateDB.dbPrefix)
 	iterator := txDB.liteStateDB.db.NewIteratorWithPrefix([]byte(txDB.liteStateDB.dbPrefix))
 	iteratorKeyArray := []string{}
 	dataSizeArray := []string{}
@@ -177,8 +176,8 @@ func TestLiteStateDB(t *testing.T) {
 	sort.Strings(iteratorKeyArray)
 	sort.Strings(dataSizeArray)
 
-	fmt.Println(iteratorKeyArray)
-	fmt.Println(dataSizeArray)
+	//fmt.Println(iteratorKeyArray)
+	//fmt.Println(dataSizeArray)
 
 	if !common.CompareStringArray(iteratorKeyArray, dataSizeArray) {
 		t.Fatal("Finalized database error!")
@@ -202,8 +201,8 @@ func TestLiteStateDB(t *testing.T) {
 	}
 	sort.Strings(iteratorKeyArray)
 	sort.Strings(dataSizeArray)
-	fmt.Println(iteratorKeyArray)
-	fmt.Println(dataSizeArray)
+	//fmt.Println(iteratorKeyArray)
+	//fmt.Println(dataSizeArray)
 	if !common.CompareStringArray(iteratorKeyArray, dataSizeArray) {
 		t.Fatal("Iterator on litestatedb error")
 	}
@@ -220,7 +219,7 @@ func TestLiteStateDB(t *testing.T) {
 	//check mark delete object
 	delObj, err := restoreTxDB.getDeletedStateObject(TestObjectType, randKey[2])
 	if !delObj.IsDeleted() {
-		fmt.Println(delObj.IsDeleted(), delObj.GetValueBytes())
+		//fmt.Println(delObj.IsDeleted(), delObj.GetValueBytes())
 		t.Fatal(err)
 	}
 	delObj, err = restoreTxDB.getDeletedStateObject(TestObjectType, randKey[14])
@@ -231,7 +230,7 @@ func TestLiteStateDB(t *testing.T) {
 	if normalObj.IsDeleted() {
 		t.Fatal(err)
 	}
-	fmt.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxx", agghash5a.String())
+	//fmt.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxx", agghash5a.String())
 	////restore from finalized hash
 
 	restoreTxDB, err = NewWithMode("txDB", common.STATEDB_LITE_MODE, db, *agghash5aRoot, nil)
@@ -244,10 +243,10 @@ func TestLiteStateDB(t *testing.T) {
 
 	////restore from finalized hash, should return error
 	restoreTxDB, err = NewWithMode("txDB", common.STATEDB_LITE_MODE, db, *newAggRoot, nil)
-	if err == nil {
+	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(err)
+	//fmt.Println(err)
 }
 
 func compareStateNodeList(restoreStateNode *StateNode, originStateNode *StateNode, t *testing.T) error {
@@ -256,12 +255,12 @@ func compareStateNodeList(restoreStateNode *StateNode, originStateNode *StateNod
 			return errors.New("Restore txDB is not correct! Different aggregateHash")
 		}
 		prevLink := restoreStateNode.previousLink
-		fmt.Println("check prev nil", restoreStateNode.aggregateHash.String())
+		//fmt.Println("check prev nil", restoreStateNode.aggregateHash.String())
 		if prevLink != nil {
 			restoreStateNode = prevLink
 			originStateNode = originStateNode.previousLink
 			if originStateNode == nil {
-				fmt.Println("1", prevLink.aggregateHash.String())
+				//fmt.Println("1", prevLink.aggregateHash.String())
 				return errors.New("Restore txDB is not correct! Different state number, origin nil first")
 
 			}

@@ -40,24 +40,24 @@ func TestLiteStateDBIterator(t *testing.T) {
 			randKey = append(randKey, append([]byte(PREFIX), k.Bytes()...))
 			randValue = append(randValue, v)
 		}
-		fmt.Println("--------------------- DB")
+		//fmt.Println("--------------------- DB")
 		dbSize := 0
 		for i := 0; i < 5; i++ {
 			dbSize++
 			db.Put(append([]byte("abc"), randKey[i]...), randValue[i])
-			fmt.Println(IndexByteSlice(randKey[i], randKey), randKey[i])
+			//fmt.Println(IndexByteSlice(randKey[i], randKey), randKey[i])
 		}
 
-		fmt.Println("--------------------- Test 1: total different key")
+		//fmt.Println("--------------------- Test 1: total different key")
 		kvMap := map[string][]byte{}
 		for i := 0; i < 5; i++ {
 			keys = append(keys, randKey[dbSize+i])
 			values = append(values, randValue[dbSize+i])
-			fmt.Println(IndexByteSlice(randKey[dbSize+i], randKey), randKey[dbSize+i])
+			//fmt.Println(IndexByteSlice(randKey[dbSize+i], randKey), randKey[dbSize+i])
 			kvMap[string(randKey[dbSize+i])] = randValue[dbSize+i]
 		}
 
-		fmt.Println("--------------------- Test 1: result")
+		//fmt.Println("--------------------- Test 1: result")
 		expectResult := append([][]byte{}, randKey[:dbSize+len(kvMap)]...)
 
 		sort.Slice(expectResult, func(i, j int) bool {
@@ -74,7 +74,7 @@ func TestLiteStateDBIterator(t *testing.T) {
 		iter := NewLiteStateDBIterator(db, []byte("abc"), []byte(PREFIX), kvMap)
 		cnt := 0
 		for iter.Next() {
-			fmt.Println(IndexByteSlice(iter.Key(), randKey), iter.Key())
+			//fmt.Println(IndexByteSlice(iter.Key(), randKey), iter.Key())
 			if !bytes.Equal(iter.Key(), expectResult[cnt]) {
 				t.Error("Not expected at test " + PREFIX)
 				t.Error("Expect", expectResult[cnt])
