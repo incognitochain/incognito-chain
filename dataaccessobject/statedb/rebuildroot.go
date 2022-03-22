@@ -81,13 +81,11 @@ func (r *RebuildInfo) MarshalJSON() ([]byte, error) {
 
 func (r *RebuildInfo) UnmarshalJSON(byteArr []byte) (err error) {
 
-	if len(byteArr) == 32 || len(byteArr) == 0 { //legacy shard root hash (only root hash of archive mode)
+	if len(byteArr) == 66 { //legacy shard root hash (only root hash of archive mode)
 		r.mode = common.STATEDB_ARCHIVE_MODE
-		err = r.rebuildRootHash.SetBytes(byteArr)
-		if err != nil {
-			return err
-		}
-		return nil
+		hash, err := common.Hash{}.NewHashFromStr(string(byteArr[1:65]))
+		r.rebuildRootHash = *hash
+		return err
 	}
 
 	byteArr = byteArr[1 : len(byteArr)-1]

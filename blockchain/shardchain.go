@@ -56,7 +56,7 @@ func NewShardChain(
 	if err != nil {
 		panic(err)
 	}
-	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk)
+	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk, shardID)
 	return &ShardChain{
 		shardID:   shardID,
 		multiView: multiView,
@@ -385,8 +385,8 @@ func (chain *ShardChain) GetBlockByHash(hash common.Hash) (types.BlockInterface,
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := chain.blkManager.CheckBlockByHash(blkHash)
-	return err == nil
+	exist, _ := chain.blkManager.CheckBlockByHash(blkHash)
+	return exist
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {

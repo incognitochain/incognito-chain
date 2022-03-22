@@ -14,7 +14,6 @@ import (
 type BlockService interface {
 	GetBlockByHash(
 		hash *common.Hash,
-		cID byte,
 	) (
 		[]byte,
 		error,
@@ -38,14 +37,16 @@ type BlockInfor struct {
 }
 
 type BlockManager struct {
-	rDB    incdb.Database
-	fDB    flatfile.FlatFile
-	cacher common.Cacher
+	chainID int
+	rDB     incdb.Database
+	fDB     flatfile.FlatFile
+	cacher  common.Cacher
 }
 
 func NewBlockService(
 	rawDB incdb.Database,
 	flatfileManager flatfile.FlatFile,
+	chainID int,
 ) (
 	BlockService,
 	error,
@@ -55,9 +56,10 @@ func NewBlockService(
 		return nil, err
 	}
 	res := &BlockManager{
-		rDB:    rawDB,
-		fDB:    flatfileManager,
-		cacher: mCache,
+		chainID: chainID,
+		rDB:     rawDB,
+		fDB:     flatfileManager,
+		cacher:  mCache,
 	}
 	return res, nil
 }
@@ -68,18 +70,25 @@ func (blkM *BlockManager) CheckBlockByHash(
 	bool,
 	error,
 ) {
-	keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
-	_, err := blkM.rDB.Get(keyIdx)
-	if err != nil {
-		return false, err
+	if config.Config().EnableFFStorage {
+		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
+		_, err := blkM.rDB.Get(keyIdx)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 
-	return true, nil
+	//else
+	if blkM.chainID == common.BeaconChainID {
+		return rawdbv2.HasBeaconBlock(blkM.rDB, *hash)
+	} else {
+		return rawdbv2.HasShardBlock(blkM.rDB, *hash)
+	}
 }
 
 func (blkM *BlockManager) GetBlockByHash(
 	hash *common.Hash,
-	cID byte,
 ) (
 	[]byte,
 	error,
@@ -101,7 +110,7 @@ func (blkM *BlockManager) GetBlockByHash(
 		}
 		return blkM.fDB.Read(blkID)
 	}
-	if cID == common.BeaconChainSyncID {
+	if blkM.chainID == common.BeaconChainID {
 		return rawdbv2.GetBeaconBlockByHash(blkM.rDB, *hash)
 	}
 	return rawdbv2.GetShardBlockByHash(blkM.rDB, *hash)
