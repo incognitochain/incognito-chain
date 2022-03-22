@@ -355,7 +355,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, instructions)
 	}
 	bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
-		curView,
+		curView.GetBeaconFeatureStateDB(),
 		shardID,
 		instructions,
 		newBeaconHeight,

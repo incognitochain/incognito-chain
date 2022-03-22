@@ -1,6 +1,7 @@
 package bridgeagg
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/big"
@@ -8,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type ShieldStatus struct {
@@ -178,4 +181,27 @@ func InsertTxHashIssuedByNetworkID(networkID uint, isPRV bool) func(*statedb.Sta
 		return statedb.InsertETHTxHashIssued
 	}
 	return nil
+}
+
+func buildInstruction(
+	metaType int, errorType int,
+	content []byte, txReqID common.Hash,
+	shardID byte, err error,
+) ([]string, error) {
+	inst := metadataCommon.NewInstructionWithValue(
+		metaType,
+		common.AcceptedStatusStr,
+		shardID,
+		utils.EmptyString,
+	)
+	if err != nil {
+		rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, 0, nil)
+		rejectContent.ErrorCode = ErrCodeMessage[errorType].Code
+		inst.Status = common.RejectedStatusStr
+		temp, e := inst.StringSliceWithRejectContent(rejectContent)
+		return temp, NewBridgeAggErrorWithValue(errorType, e)
+	} else {
+		inst.Content = base64.StdEncoding.EncodeToString(content)
+		return inst.StringSlice(), nil
+	}
 }

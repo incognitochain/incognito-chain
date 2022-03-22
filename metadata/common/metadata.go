@@ -451,7 +451,7 @@ func (i *Instruction) StringSliceWithRejectContent(rejectContent *RejectContent)
 type RejectContent struct {
 	TxReqID   common.Hash `json:"TxReqID"`
 	ErrorCode uint        `json:"ErrorCode,omitempty"`
-	Meta      Metadata    `json:"Meta"`
+	Meta      Metadata    `json:"Meta,omitempty"`
 }
 
 func NewRejectContent() *RejectContent { return &RejectContent{} }

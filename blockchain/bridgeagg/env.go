@@ -7,8 +7,8 @@ import (
 
 type StateEnvBuilder interface {
 	BuildAccumulatedValues(*metadata.AccumulatedValues) StateEnvBuilder
-	BuildUnshieldActions([]UnshieldAction) StateEnvBuilder
-	BuildShieldActions([]ShieldAction) StateEnvBuilder
+	BuildUnshieldActions([][]string) StateEnvBuilder
+	BuildShieldActions([][]string) StateEnvBuilder
 	BuildConvertActions([]string) StateEnvBuilder
 	BuildModifyListTokenActions([]string) StateEnvBuilder
 	BuildStateDBs(map[int]*statedb.StateDB) StateEnvBuilder
@@ -22,8 +22,8 @@ func NewStateEnvBuilder() StateEnvBuilder {
 
 type stateEnvironment struct {
 	accumulatedValues       *metadata.AccumulatedValues
-	unshieldActions         []UnshieldAction
-	shieldActions           []ShieldAction
+	unshieldActions         [][]string
+	shieldActions           [][]string
 	convertActions          []string
 	modifyListTokensActions []string
 	beaconHeight            uint64
@@ -40,12 +40,12 @@ func (env *stateEnvironment) BuildAccumulatedValues(accumulatedValues *metadata.
 	return env
 }
 
-func (env *stateEnvironment) BuildUnshieldActions(actions []UnshieldAction) StateEnvBuilder {
+func (env *stateEnvironment) BuildUnshieldActions(actions [][]string) StateEnvBuilder {
 	env.unshieldActions = actions
 	return env
 }
 
-func (env *stateEnvironment) BuildShieldActions(actions []ShieldAction) StateEnvBuilder {
+func (env *stateEnvironment) BuildShieldActions(actions [][]string) StateEnvBuilder {
 	env.shieldActions = actions
 	return env
 }
@@ -72,8 +72,8 @@ func (env *stateEnvironment) Build() StateEnvironment {
 type StateEnvironment interface {
 	BeaconHeight() uint64
 	AccumulatedValues() *metadata.AccumulatedValues
-	UnshieldActions() []UnshieldAction
-	ShieldActions() []ShieldAction
+	UnshieldActions() [][]string
+	ShieldActions() [][]string
 	ConvertActions() []string
 	ModifyListTokensActions() []string
 	StateDBs() map[int]*statedb.StateDB
@@ -87,11 +87,11 @@ func (env *stateEnvironment) AccumulatedValues() *metadata.AccumulatedValues {
 	return env.accumulatedValues
 }
 
-func (env *stateEnvironment) UnshieldActions() []UnshieldAction {
+func (env *stateEnvironment) UnshieldActions() [][]string {
 	return env.unshieldActions
 }
 
-func (env *stateEnvironment) ShieldActions() []ShieldAction {
+func (env *stateEnvironment) ShieldActions() [][]string {
 	return env.shieldActions
 }
 

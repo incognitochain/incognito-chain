@@ -6,12 +6,9 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type State struct {
@@ -53,22 +50,28 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	res := [][]string{}
 	var err error
 
-	for _, action := range env.UnshieldActions() {
-		inst := [][]string{}
-		inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight())
-		if err != nil {
-			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+	for shardID, actions := range env.UnshieldActions() {
+		for _, action := range actions {
+			inst := [][]string{}
+			inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
+			if err != nil {
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+			}
+			res = append(res, inst...)
 		}
-		res = append(res, inst...)
 	}
 
-	for _, action := range env.ShieldActions() {
-		inst := []string{}
-		inst, s.unifiedTokenInfos, err = s.producer.shield(action, s.unifiedTokenInfos, env.AccumulatedValues())
-		if err != nil {
-			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+	for shardID, actions := range env.ShieldActions() {
+		for _, action := range actions {
+			inst := []string{}
+			inst, s.unifiedTokenInfos, err = s.producer.shield(
+				action, s.unifiedTokenInfos, env.AccumulatedValues(), byte(shardID), env.StateDBs(),
+			)
+			if err != nil {
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+			}
+			res = append(res, inst)
 		}
-		res = append(res, inst)
 	}
 
 	for _, action := range env.ConvertActions() {
@@ -216,82 +219,6 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 		}
 	}
 	return res, stateChange, nil
-}
-
-func (s *State) GetShieldInfo(ac *metadata.AccumulatedValues, md metadata.IssuingEVMRequest) (
-	[][]byte, string, string, func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error), common.Hash, error,
-) {
-	var listTxUsed [][]byte
-	var contractAddress, prefix string
-	var isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
-	var tokenID common.Hash
-
-	switch md.NetworkID {
-	case common.ETHNetworkID:
-		listTxUsed = ac.UniqETHTxsUsed
-		contractAddress = config.Param().EthContractAddressStr
-		prefix = utils.EmptyString
-		isTxHashIssued = statedb.IsETHTxHashIssued
-		if md.IncTokenID == common.PRVCoinID {
-			contractAddress = config.Param().PRVERC20ContractAddressStr
-			listTxUsed = ac.UniqPRVEVMTxsUsed
-			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
-		}
-	case common.BSCNetworkID:
-		listTxUsed = ac.UniqBSCTxsUsed
-		contractAddress = config.Param().BscContractAddressStr
-		prefix = common.BSCPrefix
-		isTxHashIssued = statedb.IsBSCTxHashIssued
-		if md.IncTokenID == common.PRVCoinID {
-			contractAddress = config.Param().PRVBEP20ContractAddressStr
-			listTxUsed = ac.UniqPRVEVMTxsUsed
-			prefix = utils.EmptyString
-			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
-		}
-	case common.PLGNetworkID:
-		listTxUsed = ac.UniqPLGTxsUsed
-		contractAddress = config.Param().PlgContractAddressStr
-		prefix = common.PLGPrefix
-		isTxHashIssued = statedb.IsPLGTxHashIssued
-	case common.DefaultNetworkID:
-		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, errors.New("Cannot get info from default networkID")
-	default:
-		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, errors.New("Cannot detect networkID")
-	}
-	vault, err := GetVault(s.unifiedTokenInfos, md.IncTokenID, md.NetworkID)
-	if err != nil {
-		return nil, utils.EmptyString, utils.EmptyString, nil, common.Hash{}, NewBridgeAggErrorWithValue(OtherError, err)
-	}
-	tokenID = vault.tokenID
-
-	return listTxUsed, contractAddress, prefix, isTxHashIssued, tokenID, nil
-}
-
-func (s *State) GetUnshieldInfo(unifiedTokenID common.Hash, networkID uint) (common.Hash, string, string, error) {
-	var prefix, contractAddress string
-	var tokenID common.Hash
-
-	switch networkID {
-	case common.ETHNetworkID:
-		prefix = utils.EmptyString
-		contractAddress = config.Param().PRVERC20ContractAddressStr
-	case common.BSCNetworkID:
-		prefix = common.BSCPrefix
-		contractAddress = config.Param().PRVBEP20ContractAddressStr
-	case common.PLGNetworkID:
-		prefix = common.PLGPrefix
-	case common.DefaultNetworkID:
-		return tokenID, prefix, contractAddress, errors.New("Cannot get info from default networkID")
-	default:
-		return tokenID, prefix, contractAddress, errors.New("Cannot detect networkID")
-	}
-	vault, err := GetVault(s.unifiedTokenInfos, unifiedTokenID, networkID)
-	if err != nil {
-		return tokenID, prefix, contractAddress, NewBridgeAggErrorWithValue(OtherError, err)
-	}
-	tokenID = vault.tokenID
-
-	return tokenID, prefix, contractAddress, nil
 }
 
 func (s *State) ClearCache() {

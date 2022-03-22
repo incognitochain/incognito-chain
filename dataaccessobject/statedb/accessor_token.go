@@ -1,6 +1,8 @@
 package statedb
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 )
@@ -69,6 +71,15 @@ func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
 		panic("same key wrong value")
 	}
 	return has
+}
+
+func CheckTokenIDExisted(sDBs map[int]*StateDB, tokenID common.Hash) (bool, error) {
+	for _, sDB := range sDBs {
+		if PrivacyTokenIDExisted(sDB, tokenID) {
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("Cannot find tokenID %s in network", tokenID.String())
 }
 
 func GetPrivacyTokenState(stateDB *StateDB, tokenID common.Hash) (*TokenState, bool, error) {

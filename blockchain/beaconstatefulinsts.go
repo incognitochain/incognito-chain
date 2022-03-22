@@ -164,11 +164,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	sort.Ints(keys)
 
 	// bridge agg actions collector
-	unshieldActions := []bridgeagg.UnshieldAction{}
-	shieldActions := []bridgeagg.ShieldAction{}
+	unshieldActions := [][]string{}
+	shieldActions := [][]string{}
 	convertActions := []string{}
 	modifyListTokensActions := []string{}
-	var sDBs map[int]*statedb.StateDB
+	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
+	if err != nil {
+		Logger.log.Error(err)
+		return utils.EmptyStringMatrix, err
+	}
 
 	for _, value := range keys {
 		shardID := byte(value)
@@ -204,8 +208,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingETHRequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -222,8 +225,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingBSCRequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -240,8 +242,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingPRVERC20RequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -258,8 +259,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingPRVBEP20RequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -276,8 +276,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingPLGRequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -305,58 +304,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
 			case metadataCommon.BridgeAggModifyListTokenMeta:
-				sDBs, err = blockchain.getStateDBsForVerifyTokenID(beaconBestState)
-				if err != nil {
-					Logger.log.Error(err)
-					continue
-				}
 				modifyListTokensActions = append(modifyListTokensActions, contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions = append(convertActions, contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
-				var uniqTx []byte
-				var temp func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
-					contentStr,
-					shardID,
-					metaType,
-					accumulatedValues,
-					[][]byte{},
-					utils.EmptyString,
-					utils.EmptyString,
-					temp,
-					false,
-				)
-				if err != nil {
-					Logger.log.Error(err)
-					continue
-				}
-				if uniqTx != nil {
-					shieldActions = append(shieldActions, bridgeagg.ShieldAction{
-						Content: newInst[0],
-						UniqTx:  uniqTx,
-					})
-					newInst = [][]string{}
-				}
+				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
 			case metadataCommon.BurningUnifiedTokenRequestMeta:
-				var burningReqAction BurningReqAction
-				var unshieldAction bridgeagg.UnshieldAction
-				err := decodeContent(action[1], &burningReqAction)
-				if err != nil {
-					return utils.EmptyStringMatrix, err
-				}
-				if burningReqAction.Meta.TokenID == common.PRVCoinID {
-					_, unshieldAction, err = buildBurningPRVEVMConfirmInst(beaconBestState, metadataCommon.BurningUnifiedTokenRequestMeta, action, beaconHeight, utils.EmptyString)
-				} else {
-					_, unshieldAction, err = buildBurningConfirmInst(beaconBestState, featureStateDB, metadataCommon.BurningUnifiedTokenRequestMeta, action, beaconHeight, utils.EmptyString)
-				}
-				if err != nil {
-					Logger.log.Error(err)
-					continue
-				}
-				unshieldActions = append(unshieldActions, unshieldAction)
+				unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
 			default:
 				continue
 			}

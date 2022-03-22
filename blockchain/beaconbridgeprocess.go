@@ -129,12 +129,8 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 		isPRV = true
 	}
 
-	var externalTokenID []byte
-	if issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
-		externalTokenID = issuingEVMAcceptedInst.ExternalTokenID
-	} else {
+	if issuingEVMAcceptedInst.NetworkID != common.DefaultNetworkID {
 		insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(issuingEVMAcceptedInst.NetworkID, isPRV)
-		externalTokenID = []byte(common.UnifiedTokenPrefix)
 	}
 
 	err = insertEVMTxHashIssued(curView.featureStateDB, issuingEVMAcceptedInst.UniqTx)
@@ -152,7 +148,7 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 				CountUpAmt:      issuingEVMAcceptedInst.IssuingAmount,
 				DeductAmt:       0,
 				TokenID:         issuingEVMAcceptedInst.IncTokenID,
-				ExternalTokenID: externalTokenID,
+				ExternalTokenID: issuingEVMAcceptedInst.ExternalTokenID,
 				IsCentralized:   false,
 			}
 		}

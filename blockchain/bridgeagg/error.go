@@ -14,6 +14,8 @@ const (
 	CalculateShieldAmountError
 	CalculateUnshieldAmountError
 	InvalidConvertAmountError
+	FailToExtractDataError
+	FailToVerifyTokenPairError
 	FailToBuildModifyListTokenError
 )
 
@@ -28,6 +30,8 @@ var ErrCodeMessage = map[int]struct {
 	CalculateShieldAmountError:      {1004, "Calculate shield amount"},
 	CalculateUnshieldAmountError:    {1005, "Calculate unshield amount"},
 	InvalidConvertAmountError:       {1006, "Invalid convert amount"},
+	FailToExtractDataError:          {1007, "Fail to extract data"},
+	FailToVerifyTokenPairError:      {1008, "Fail to verify token pair"},
 	FailToBuildModifyListTokenError: {1100, "Fail to build modify list token instruction"},
 }
 
