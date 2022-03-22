@@ -8,7 +8,6 @@ import (
 	"path"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common/prque"
@@ -80,27 +79,6 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-func getRebuildRootInfo(rebuildRoot string) (common.Hash, string, uint64, error) {
-	rebuildRootInfo := strings.Split(rebuildRoot, "-")
-	rootHash, err := common.Hash{}.NewHashFromStr(rebuildRootInfo[0])
-	if err != nil {
-		return common.Hash{}, "", 0, err
-	}
-	mode := common.STATEDB_ARCHIVE_MODE
-
-	if len(rebuildRootInfo) > 1 {
-		mode = rebuildRootInfo[1]
-	}
-	ffIndex := uint64(0)
-	if len(rebuildRootInfo) == 3 {
-		var err error
-		ffIndex, err = strconv.ParseUint(rebuildRootInfo[2], 10, 64)
-		if err != nil {
-			return common.Hash{}, "", 0, err
-		}
-	}
-	return *rootHash, mode, ffIndex, nil
-}
 func NewBatchCommitStateDB(rootDir string, dbName string, db incdb.Database, rootHash common.Hash) (*StateDB, error) {
 	//create ff manager
 	ffDir := path.Join(rootDir, fmt.Sprintf("state_%v", dbName))

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/config"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
-	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
@@ -706,4 +706,8 @@ func Test_BatchStateDB(t *testing.T) {
 	if !bytes.Equal(getData, randValue[12]) { // must return equal
 		t.Fatal(errors.New("Cannot store live object to newStateDB"))
 	}
+}
+
+func TestBatchCommitFinalizeNoRebuild(t *testing.T) {
+	
 }
