@@ -129,10 +129,11 @@ func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{
 	return dataMap, nil
 }
 
-func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, error) {
+func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, bool, error) {
 	var hosts []string
 	var networkPrefix string
 	minConfirmationBlocks := EVMConfirmationBlocks
+	checkEVMHardFork := false
 
 	switch metadataType {
 	case IssuingETHRequestMeta, IssuingPRVERC20RequestMeta:
@@ -143,6 +144,7 @@ func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, error) {
 
 			// Ethereum network with default prefix (empty string)
 			networkPrefix = ""
+			checkEVMHardFork = true
 		}
 	case IssuingBSCRequestMeta, IssuingPRVBEP20RequestMeta:
 		{
@@ -160,12 +162,23 @@ func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, error) {
 
 			minConfirmationBlocks = PLGConfirmationBlocks
 			networkPrefix = common.PLGPrefix
+			checkEVMHardFork = true
+		}
+	case IssuingFantomRequestMeta:
+		{
+			evmParam := config.Param().FTMParam
+			evmParam.GetFromEnv()
+			hosts = evmParam.Host
+
+			minConfirmationBlocks = FantomConfirmationBlocks
+			networkPrefix = common.FTMPrefix
+			checkEVMHardFork = true
 		}
 	default:
 		{
-			return nil, "", 0, fmt.Errorf("Invalid metadata tyep for EVM shielding request %v", metadataType)
+			return nil, "", 0, false, fmt.Errorf("Invalid metadata type for EVM shielding request %v", metadataType)
 		}
 	}
 
-	return hosts, networkPrefix, minConfirmationBlocks, nil
+	return hosts, networkPrefix, minConfirmationBlocks, checkEVMHardFork, nil
 }

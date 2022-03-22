@@ -150,7 +150,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingETHRequestMeta && iReq.Type != IssuingBSCRequestMeta &&
 		iReq.Type != IssuingPRVERC20RequestMeta && iReq.Type != IssuingPRVBEP20RequestMeta &&
-		iReq.Type != IssuingPLGRequestMeta {
+		iReq.Type != IssuingPLGRequestMeta && iReq.Type != IssuingFantomRequestMeta {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -210,14 +210,10 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	// get hosts, minEVMConfirmationBlocks, networkPrefix depend iReq.Type
-	hosts, networkPrefix, minEVMConfirmationBlocks, err := GetEVMInfoByMetadataType(iReq.Type)
+	hosts, networkPrefix, minEVMConfirmationBlocks, checkEVMHardFork, err := GetEVMInfoByMetadataType(iReq.Type)
 	if err != nil {
 		Logger.log.Errorf("Can not get EVM info - Error: %+v", err)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
-	}
-	checkEVMHardFork := false
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPLGRequestMeta {
-		checkEVMHardFork = true
 	}
 
 	return VerifyProofAndParseEVMReceipt(iReq.BlockHash, iReq.TxIndex, iReq.ProofStrs, hosts, minEVMConfirmationBlocks, networkPrefix, checkEVMHardFork)

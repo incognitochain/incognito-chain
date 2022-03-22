@@ -77,6 +77,9 @@ const (
 	// Polygon bridge
 	BridgePLGTxObjectType = 66
 
+	// Fantom bridge
+	BridgeFTMTxObjectType = 70
+
 	// pDex v3
 	Pdexv3StatusObjectType                    = 48
 	Pdexv3ParamsObjectType                    = 49
