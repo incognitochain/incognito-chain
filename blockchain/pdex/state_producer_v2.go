@@ -134,15 +134,15 @@ func (sp *stateProducerV2) addLiquidity(
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
 					accessCoinReceiver,
 					waitingContribution.AccessOTA() != nil && waitingContribution.OtaReceiver() == utils.EmptyString,
+					waitingContribution.NftID(),
 				)
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
 				}
-				Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
 				res = append(res, insts...)
 				continue
 			} else {
-				Logger.log.Warnf("tx %v init a pool pair with poolPairID is not null", tx.Hash().String())
+				Logger.log.Warnf("tx %v init a pool pair with poolPairID is not empty", tx.Hash().String())
 				res = append(res, refundInsts...)
 				continue
 			}

@@ -29,9 +29,12 @@ func BuildRefundAddLiquidityInstructions(
 func BuildMatchAddLiquidityInstructions(
 	waitingContributionState statedb.Pdexv3ContributionState,
 	poolPairID string, txReqID common.Hash, shardID byte,
-	otaReceiver string, shouldMintAccessCoin bool,
+	otaReceiver string, shouldMintAccessCoin bool, accessID common.Hash,
 ) ([][]string, error) {
 	res := [][]string{}
+	contributionState := waitingContributionState.Value()
+	contributionState.SetNftID(accessID)
+	waitingContributionState.SetValue(contributionState)
 	inst0, err := instruction.NewMatchAddLiquidityWithValue(
 		waitingContributionState, poolPairID,
 	).StringSlice()

@@ -809,10 +809,6 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	if mdReader.IsEmpty() {
-		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
-	}
-
 	accessOption := metadataPdexv3.NewAccessOptionWithValue(nil, mdReader.NftID, mdReader.AccessID)
 	tokenHash, err := common.Hash{}.NewHashFromStr(mdReader.TokenID)
 	if err != nil {
@@ -1520,10 +1516,6 @@ func createPdexv3AddOrderRequestTransaction(
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
 		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters"))
-	}
-
-	if mdReader.IsEmpty() {
-		return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Access option data can not be empty"))
 	}
 
 	err = httpServer.pdexTxService.ValidateTokenIDs(&mdReader.TokenToSell, &mdReader.TokenToBuy)
