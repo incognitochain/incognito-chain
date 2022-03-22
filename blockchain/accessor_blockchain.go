@@ -148,7 +148,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash, common.BeaconChainSyncID)
+	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -271,7 +271,7 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
-	shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, shardID)
+	shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash)
 	if err != nil {
 		return nil, 0, NewBlockChainError(GetShardBlockByHashError, errors.Errorf("Can not get block %v, error %v ", hash.String(), err))
 	}

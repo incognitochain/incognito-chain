@@ -43,7 +43,7 @@ func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, bl
 	if err != nil {
 		panic(err)
 	}
-	blkM, err := blockstorage.NewBlockService(blockchain.GetBeaconChainDatabase(), ffFinalBlk)
+	blkM, err := blockstorage.NewBlockService(blockchain.GetBeaconChainDatabase(), ffFinalBlk, common.BeaconChainID)
 	return &BeaconChain{
 		multiView:           multiView,
 		BlockGen:            blockGen,

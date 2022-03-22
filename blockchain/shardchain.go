@@ -56,7 +56,7 @@ func NewShardChain(
 	if err != nil {
 		panic(err)
 	}
-	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk)
+	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk, shardID)
 	return &ShardChain{
 		shardID:   shardID,
 		multiView: multiView,
