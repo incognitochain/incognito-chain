@@ -30,6 +30,7 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 			receiverPaymentAddressStructs[0],
 			true,
 			txHashes[0],
+			0,
 		)
 		m1[key1] = stakerInfo
 	}
@@ -361,7 +362,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 				prevWantMStateByShardID[key] = committeeState
 			}
 			count := 0
-			for key, _ := range prevWantMStateByShardID {
+			for key := range prevWantMStateByShardID {
 				ok := sDB.MarkDeleteStateObject(CommitteeObjectType, key)
 				if sDB.Error() != nil {
 					t.Fatal(sDB.Error())
@@ -687,7 +688,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 				prevWantMStateByShardID[key] = committeeState
 			}
 			count := 0
-			for key, _ := range prevWantMStateByShardID {
+			for key := range prevWantMStateByShardID {
 				ok := sDB.MarkDeleteStateObject(CommitteeObjectType, key)
 				if sDB.Error() != nil {
 					t.Fatal(sDB.Error())
