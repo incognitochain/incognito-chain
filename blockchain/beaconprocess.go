@@ -1040,16 +1040,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
-		if (storeBlock.GetHeight() == 1) || ((finalView != nil) && (storeBlock.GetHeight() == finalView.GetHeight()+1)) {
+		if storeBlock.GetHeight() == 1 {
 			break
 		}
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
 		prevView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
 		if prevView == nil {
+			//multiview is disconnected to the last final view, we must retrieve block instead
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
-				// panic("Database is corrupt")
 				return err
 			}
 		} else {

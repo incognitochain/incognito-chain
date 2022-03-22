@@ -44,8 +44,9 @@ type FlatFileManager struct {
 	currentFile     uint64
 	currentFileSize uint64
 
-	cache *lru.Cache
-	lock  *sync.RWMutex
+	parseCache *lru.Cache
+	itemCache  *lru.Cache
+	lock       *sync.RWMutex
 }
 
 type ReadInfo struct {
@@ -121,19 +122,27 @@ func (f *FlatFileManager) PasreFile(fileID uint64) (map[uint64]ReadInfo, error) 
 		size++
 	}
 
-	f.cache.Add(fileID, readInfos)
+	f.parseCache.Add(fileID, readInfos)
 
 	return readInfos, nil
 }
 
 func (f FlatFileManager) Read(index uint64) ([]byte, error) {
+
+	//get from cache byte firm
+	cacheByte, ok := f.itemCache.Get(index)
+	if ok {
+		return cacheByte.([]byte), nil
+	}
+
+	//else, parse and read
 	fileID := index / f.fileSizeLimit
 	itemFileIndex := index % f.fileSizeLimit
 	var readInfo map[uint64]ReadInfo
 	var err error
 
 	//find parse info in cache first
-	v, ok := f.cache.Get(fileID)
+	v, ok := f.parseCache.Get(fileID)
 	if ok {
 		if int(itemFileIndex) < len(v.(map[uint64]ReadInfo)) {
 			readInfo = v.(map[uint64]ReadInfo)
@@ -291,17 +300,20 @@ func (f *FlatFileManager) Append(data []byte) (uint64, error) {
 	if f.currentFileSize >= f.fileSizeLimit {
 		f.newNextFile()
 	}
+	f.itemCache.Add(addedItemIndex, data)
 	return addedItemIndex, err
 }
 
 func NewFlatFile(dir string, fileBound uint64) (*FlatFileManager, error) {
-	cache, _ := lru.New(100)
+	cache, _ := lru.New(50)
+	itemCache, _ := lru.New(50)
 	ff := &FlatFileManager{
 		dataDir:       dir,
 		fileSizeLimit: fileBound,
 		folderMap:     make(map[uint64]bool),
 		lock:          new(sync.RWMutex),
-		cache:         cache,
+		parseCache:    cache,
+		itemCache:     itemCache,
 	}
 
 	//read all file has number  in folder -> uint64o folderMap, sortedFolder
