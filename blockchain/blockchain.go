@@ -689,7 +689,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				v.NumberOfShardBlock[shardID] = 0
 			}
 		}
-
+		if len(v.beaconCommitteeState.GetBeaconCommittee()) == 0 {
+			return errors.New("Something wrong with committee")
+		}
 		//check config
 		for feature, height := range v.TriggeredFeature {
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
