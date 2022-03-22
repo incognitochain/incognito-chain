@@ -213,8 +213,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 	for {
 		select {
 		case <-s.cQuit:
-			Logger.Logger.Info(">>>>>>>>>>>>>>>> shard ", s.shardID)
-			s.wg.Done()
+			Logger.Logger.Info(">>>>>>>>>>>>>>>> stop shard ", s.shardID)
 			return
 		default:
 		}
