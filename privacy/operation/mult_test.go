@@ -55,11 +55,12 @@ func TestMultBuilder(t *testing.T) {
 		allScalars[i] = sc
 	}
 	allScalars = append(append([]*Scalar{}, b.scalars...), allScalars...)
-	expected1 := NewIdentityPoint().MultiScalarMult(allScalars, allPoints)
 	allPoints := append(append([]*Point{}, b.points...), spLst...)
+	expected1 := NewIdentityPoint().MultiScalarMult(allScalars, allPoints)
 	expected2 := NewIdentityPoint().VarTimeMultiScalarMult(allScalars, allPoints)
 
-	fmt.Println(expected)
+	fmt.Println(expected1)
+	fmt.Println(expected2)
 	b.Debug()
 	actualResult := b.Eval()
 
