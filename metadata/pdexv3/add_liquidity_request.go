@@ -16,7 +16,7 @@ import (
 type AddLiquidityRequest struct {
 	poolPairID   string // only "" for the first contribution of pool
 	pairHash     string
-	otaReceiver  string                              // refund pToken
+	otaReceiver  string                              // receive refunded token or accessToken
 	otaReceivers map[common.Hash]privacy.OTAReceiver // receive tokens
 	tokenID      string
 	AccessOption
@@ -73,7 +73,8 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash)
+	isNewLpRequest := request.otaReceiver != utils.EmptyString && len(request.otaReceiver) != 0
+	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash, isNewLpRequest)
 	if err != nil {
 		return false, err
 	}
@@ -246,17 +247,6 @@ func (request *AddLiquidityRequest) Amplifier() uint {
 
 func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	if request.otaReceiver != utils.EmptyString {
-		currentTokenID := common.ConfidentialAssetID
-		if request.TokenID() == common.PRVIDStr {
-			currentTokenID = common.PRVCoinID
-		}
-		otaReceiver := privacy.OTAReceiver{}
-		otaReceiver.FromString(request.otaReceiver)
-		result = append(result, metadataCommon.OTADeclaration{
-			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
-		})
-	}
 	if request.otaReceivers != nil {
 		for tokenID, val := range request.otaReceivers {
 			if tokenID != common.PRVCoinID {
@@ -266,6 +256,17 @@ func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADec
 				PublicKey: val.PublicKey.ToBytes(), TokenID: tokenID,
 			})
 		}
+	}
+	if request.otaReceiver != utils.EmptyString && len(request.otaReceiver) == 0 {
+		currentTokenID := common.ConfidentialAssetID
+		if request.TokenID() == common.PRVIDStr {
+			currentTokenID = common.PRVCoinID
+		}
+		otaReceiver := privacy.OTAReceiver{}
+		otaReceiver.FromString(request.otaReceiver)
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
 	}
 	return result
 }

@@ -133,7 +133,7 @@ func (sp *stateProducerV2) addLiquidity(
 					incomingContributionState, poolPairID,
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
 					accessCoinReceiver,
-					waitingContribution.AccessOTA() != nil && waitingContribution.OtaReceiver() == utils.EmptyString,
+					waitingContribution.UseAccessOTANewLP(),
 					waitingContribution.NftID(),
 				)
 				if err != nil {
@@ -163,7 +163,7 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, refundInsts...)
 			continue
 		}
-		if waitingContribution.AccessOTA() == nil && waitingContribution.OtaReceiver() == utils.EmptyString {
+		if waitingContribution.UseAccessOTAOldLP() {
 			if !rootPoolPair.existLP(waitingContribution.NftID().String()) {
 				Logger.log.Warnf("tx %v accessID %v is not in poolPair %v",
 					tx.Hash().String(), waitingContribution.NftID().String(), waitingContribution.PoolPairID())
@@ -220,7 +220,7 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken1ContributionAmount,
 			waitingContribution.TxReqID(),
 			waitingContribution.ShardID(), waitingContribution.OtaReceivers(), accessOTA,
-			waitingContribution.AccessOTA() != nil && waitingContribution.OtaReceiver() == utils.EmptyString,
+			waitingContribution.UseAccessOTANewLP(),
 			waitingContribution.NftID(),
 		)
 		if err != nil {

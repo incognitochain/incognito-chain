@@ -64,7 +64,7 @@ func (request *StakingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash)
+	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash, false)
 	if err != nil {
 		return false, err
 	}

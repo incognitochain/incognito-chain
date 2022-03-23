@@ -235,15 +235,15 @@ func (a *AccessOption) UseNft() bool {
 func (a *AccessOption) ValidateOtaReceivers(
 	tx metadataCommon.Transaction, otaReceiver string,
 	otaReceivers map[common.Hash]privacy.OTAReceiver,
-	tokenHash common.Hash,
+	tokenHash common.Hash, isNewLpRequest bool,
 ) error {
 	if (otaReceivers == nil || len(otaReceivers) == 0) && otaReceiver == utils.EmptyString {
 		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not be null at the same time"))
 	}
-	if otaReceivers != nil && otaReceiver != utils.EmptyString {
-		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
-	}
 	if a.UseNft() {
+		if otaReceivers != nil && otaReceiver != utils.EmptyString {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
+		}
 		receiver := privacy.OTAReceiver{}
 		err := receiver.FromString(otaReceiver)
 		if err != nil {
@@ -256,6 +256,20 @@ func (a *AccessOption) ValidateOtaReceivers(
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 		}
 	} else {
+		if !isNewLpRequest {
+			if otaReceivers != nil && otaReceiver != utils.EmptyString {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
+			}
+		} else {
+			o := privacy.OTAReceiver{}
+			err := o.FromString(otaReceiver)
+			if err != nil {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+			}
+			if o.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shard id and tx shard id need to be the same"))
+			}
+		}
 		if otaReceivers == nil || len(otaReceivers) == 0 {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers can not be null or empty"))
 		}
