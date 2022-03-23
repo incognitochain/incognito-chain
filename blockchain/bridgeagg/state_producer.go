@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -143,9 +144,9 @@ func (sp *stateProducer) convert(
 			return temp, unifiedTokenInfos, nil
 
 		}
-		err = vault.convert(md.Amount)
+		err = vault.convert(md.Amount, md.UnifiedTokenID == common.PRVCoinID)
 		if err != nil {
-			Logger.log.Warnf("Invalid shield amount error: %v tx %s", err, action.TxReqID.String())
+			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			rejectContent.ErrorCode = ErrCodeMessage[InvalidConvertAmountError].Code
 			temp, e := inst.StringSliceWithRejectContent(rejectContent)
 			if e != nil {
@@ -267,7 +268,8 @@ func (sp *stateProducer) shield(
 		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
 		if !tmpAmount.IsUint64() {
-			errorType = OtherError
+			errorType = OutOfRangeUni64Error
+			err = fmt.Errorf("Out of range uint64")
 			return
 		}
 		amount = tmpAmount.Uint64()
@@ -439,7 +441,8 @@ func (sp *stateProducer) unshield(
 		amount.Div(amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 		if !amount.IsUint64() {
 			Logger.log.Warnf("Calculate actual unshield amount is out of range uint64")
-			errorType = OtherError
+			errorType = OutOfRangeUni64Error
+			err = fmt.Errorf("Out of range uint64")
 			return
 		}
 

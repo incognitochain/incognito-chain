@@ -16,6 +16,7 @@ const (
 	InvalidConvertAmountError
 	FailToExtractDataError
 	FailToVerifyTokenPairError
+	OutOfRangeUni64Error
 	FailToBuildModifyListTokenError
 )
 
@@ -32,6 +33,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidConvertAmountError:       {1006, "Invalid convert amount"},
 	FailToExtractDataError:          {1007, "Fail to extract data"},
 	FailToVerifyTokenPairError:      {1008, "Fail to verify token pair"},
+	OutOfRangeUni64Error:            {1009, "Out of range uint64"},
 	FailToBuildModifyListTokenError: {1100, "Fail to build modify list token instruction"},
 }
 
