@@ -101,7 +101,7 @@ func HashToScalar(data []byte) *Scalar {
 // FromUint64 sets the value of `sc` to that of `i`
 func (sc *Scalar) FromUint64(i uint64) *Scalar {
 	bn := big.NewInt(0).SetUint64(i)
-	bSlice := bn.FillBytes(make([]byte, 32))
+	bSlice := common.AddPaddingBigInt(bn, Ed25519KeySize)
 	var b [32]byte
 	copy(b[:], bSlice)
 	rev := Reverse(b)

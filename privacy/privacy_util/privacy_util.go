@@ -4,6 +4,7 @@ package privacy_util
 import (
 	"math/big"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
@@ -14,7 +15,7 @@ func ScalarToBigInt(sc *operation.Scalar) *big.Int {
 }
 
 func BigIntToScalar(bn *big.Int) *operation.Scalar {
-	bSlice := bn.FillBytes(make([]byte, operation.Ed25519KeySize))
+	bSlice := common.AddPaddingBigInt(bn, operation.Ed25519KeySize)
 	var b [32]byte
 	copy(b[:], bSlice)
 	rev := operation.Reverse(b)
