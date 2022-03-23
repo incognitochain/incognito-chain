@@ -47,8 +47,9 @@ type BlockChain struct {
 
 	IsTest bool
 
-	beaconViewCache       *lru.Cache
-	committeeByEpochCache *lru.Cache
+	beaconViewCache             *lru.Cache
+	committeeByEpochCache       *lru.Cache
+	committeeByEpochProcessLock sync.Mutex
 }
 
 // Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
@@ -84,7 +85,7 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
-	bc.beaconViewCache, _ = lru.New(100)
+	bc.beaconViewCache, _ = lru.New(10)
 	bc.cQuitSync = make(chan struct{})
 	return bc
 }
@@ -100,7 +101,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
-	blockchain.beaconViewCache, _ = lru.New(100)
+	blockchain.beaconViewCache, _ = lru.New(10)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
 
 	// Initialize the chain state from the passed database.  When the db
@@ -111,6 +112,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	} else {
 		blockchain.config.usingNewPool = true
 	}
+
+	//initialize feature statistic
+	blockchain.InitFeatureStat()
 
 	if err := blockchain.InitChainState(); err != nil {
 		return err
@@ -649,6 +653,18 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				v.NumberOfShardBlock[shardID] = 0
 			}
 		}
+
+		//check config
+		for feature, height := range v.TriggeredFeature {
+			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
+				return errors.New("No config in triggered feature")
+			} else {
+				if height < uint64(value.MinTriggerBlockHeight) {
+					return errors.New("Feature is trigger before checkpoint")
+				}
+			}
+		}
+
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
 			panic("Restart beacon views fail")
@@ -1110,7 +1126,42 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 		validCommitteePublicKeys,
 		syncPool,
 		shardID,
+		blockchain.GetBeaconBestState().BeaconHeight,
 	)
+
+}
+
+//receive feature report from other node, add to list feature stat if node is
+func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
+	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	signBytes := []byte{}
+
+	cpk := blockchain.GetBeaconBestState().beaconCommitteeState.GetAllCandidateSubstituteCommittee()
+	for _, v := range features {
+		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
+	}
+
+	timestampStr := fmt.Sprintf("%v", timestamp)
+	signBytes = append(signBytes, []byte(timestampStr)...)
+	for i, key := range committeePublicKeyStructs {
+		//not in staker
+		if common.IndexOfStr(committeePublicKeys[i], cpk) == -1 {
+			continue
+		}
+
+		dataSign := signBytes[:]
+		isValid, err := bridgesig.Verify(key.MiningPubKey[common.BridgeConsensus], append(dataSign, []byte(committeePublicKeys[i])...), signatures[i])
+
+		if err != nil {
+			Logger.log.Error("Verify feature stat Sign failed, err", committeePublicKeys[i], signatures[i], err)
+			continue
+		}
+		if !isValid {
+			Logger.log.Error("Verify feature stat Sign failed", committeePublicKeys[i], signatures[i], timestampStr)
+			continue
+		}
+		DefaultFeatureStat.addNode(timestamp, committeePublicKeys[i], features)
+	}
 
 }
 
@@ -1167,11 +1218,15 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoSlashingVersion(epoch uint64) (map
 	}
 	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
 		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
+			bc.committeeByEpochProcessLock.Lock()
+			defer bc.committeeByEpochProcessLock.Unlock()
 			return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, result), nil
 		}
 	}
 	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
 	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
+	bc.committeeByEpochProcessLock.Lock()
+	defer bc.committeeByEpochProcessLock.Unlock()
 	return statedb.GetAllCommitteeStakeInfoSlashingVersion(beaconConsensusStateDB, allCommitteeState), nil
 }
 
@@ -1195,4 +1250,11 @@ func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePubli
 	}
 
 	return m
+}
+
+func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
+	if cid == -1 {
+		return blockchain.BeaconChain
+	}
+	return blockchain.ShardChain[cid]
 }

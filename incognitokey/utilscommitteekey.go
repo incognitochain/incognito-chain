@@ -2,6 +2,7 @@ package incognitokey
 
 import (
 	"encoding/json"
+	lru "github.com/hashicorp/golang-lru"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -45,6 +46,8 @@ func CommitteeKeyListToString(keyList []CommitteePublicKey) ([]string, error) {
 	return result, nil
 }
 
+var keyStructCache, _ = lru.New(3000)
+
 func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, error) {
 	if len(strKeyList) == 0 {
 		return []CommitteePublicKey{}, nil
@@ -54,11 +57,16 @@ func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, 
 	}
 	result := []CommitteePublicKey{}
 	for _, key := range strKeyList {
-		var keyStruct CommitteePublicKey
-		if err := keyStruct.FromString(key); err != nil {
-			return nil, err
+		if v, ok := keyStructCache.Get(key); !ok {
+			var keyStruct CommitteePublicKey
+			if err := keyStruct.FromString(key); err != nil {
+				return nil, err
+			}
+			result = append(result, keyStruct)
+			keyStructCache.Add(key, keyStruct)
+		} else {
+			result = append(result, v.(CommitteePublicKey))
 		}
-		result = append(result, keyStruct)
 	}
 	return result, nil
 }

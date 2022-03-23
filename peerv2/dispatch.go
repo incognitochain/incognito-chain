@@ -198,7 +198,10 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 		if d.MessageListeners.OnFinishSync != nil {
 			d.MessageListeners.OnFinishSync(peerConn, message.(*wire.MessageFinishSync))
 		}
-
+	case reflect.TypeOf(&wire.MessageFeature{}):
+		if d.MessageListeners.OnFeatureMsg != nil {
+			d.MessageListeners.OnFeatureMsg(peerConn, message.(*wire.MessageFeature))
+		}
 	// case reflect.TypeOf(&wire.MessageMsgCheck{}):
 	// 	err1 := peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 	// 	if err1 != nil {
@@ -233,4 +236,5 @@ type MessageListeners struct {
 	OnBFTMsg     func(p *peer.PeerConn, msg wire.Message)
 	OnPeerState  func(p *peer.PeerConn, msg *wire.MessagePeerState)
 	OnFinishSync func(p *peer.PeerConn, msg *wire.MessageFinishSync)
+	OnFeatureMsg func(p *peer.PeerConn, msg *wire.MessageFeature)
 }
