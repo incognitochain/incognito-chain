@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -417,7 +416,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadata.BurningRequest
+		metadataBridgeAgg.BurningRequest
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -425,7 +424,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	md, err := metadata.NewBurningRequest(
+	md, err := metadataBridgeAgg.NewBurningRequest(
 		keyWallet.KeySet.PaymentAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
 		mdReader.RemoteAddress, mdReader.NetworkID, mdReader.ExpectedAmount, mdReader.IsDepositToSC,
 		metadataCommon.BurningUnifiedTokenRequestMeta,

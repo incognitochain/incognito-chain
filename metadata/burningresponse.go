@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -130,7 +131,7 @@ func (response *BurningResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			if err := rejectContent.FromString(tempInst.Content); err != nil {
 				return false, err
 			}
-			mdData, _ := rejectContent.Meta.(*BurningRequest)
+			mdData, _ := rejectContent.Meta.(*metadataBridgeAgg.BurningRequest)
 			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = rejectContent.TxReqID
 			receivingTokenID = mdData.TokenID

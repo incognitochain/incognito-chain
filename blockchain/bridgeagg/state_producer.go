@@ -324,7 +324,7 @@ func (sp *stateProducer) unshield(
 	stateDB *statedb.StateDB,
 ) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
 	action := metadataCommon.NewAction()
-	md := &metadata.BurningRequest{}
+	md := &metadataBridgeAgg.BurningRequest{}
 	action.Meta = md
 	err = action.FromString(contentStr)
 	if err != nil {

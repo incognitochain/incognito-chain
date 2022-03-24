@@ -61,23 +61,23 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 	case BurningRequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningRequestMetaV2:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningPBSCRequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningPRVBEP20RequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningPRVERC20RequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case IssuingPLGRequestMeta:
 		md = &metadataBridgeAgg.IssuingEVMRequest{}
 	case IssuingPLGResponseMeta:
 		md = &metadataBridgeAgg.IssuingEVMResponse{}
 	case BurningPLGRequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningPLGForDepositToSCRequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
@@ -163,11 +163,11 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case PortalCustodianTopupResponseMeta:
 		md = &PortalLiquidationCustodianDepositResponse{}
 	case BurningForDepositToSCRequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningPBSCForDepositToSCRequestMeta:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case BurningForDepositToSCRequestMetaV2:
-		md = &BurningRequest{}
+		md = &metadataBridgeAgg.BurningRequest{}
 	case PortalPortingResponseMeta:
 		md = &PortalFeeRefundResponse{}
 	case PortalReqMatchingRedeemMeta:
