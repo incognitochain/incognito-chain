@@ -121,18 +121,10 @@ func (sp *stateProducerV2) addLiquidity(
 					res = append(res, refundInsts...)
 					continue
 				}
-				accessCoinReceiver := utils.EmptyString
-				if waitingContribution.OtaReceivers() != nil {
-					if value, found := waitingContribution.OtaReceivers()[common.PdexAccessCoinID]; found {
-						accessCoinReceiver = value
-					}
-				}
-
 				poolPairs[poolPairID] = newPoolPair
 				insts, err := v2utils.BuildMatchAddLiquidityInstructions(
 					incomingContributionState, poolPairID,
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
-					accessCoinReceiver,
 					waitingContribution.UseAccessOTANewLP(),
 					waitingContribution.NftID(),
 				)
@@ -219,7 +211,7 @@ func (sp *stateProducerV2) addLiquidity(
 			returnedToken1ContributionAmount,
 			actualToken1ContributionAmount,
 			waitingContribution.TxReqID(),
-			waitingContribution.ShardID(), waitingContribution.OtaReceivers(), accessOTA,
+			waitingContribution.ShardID(), accessOTA,
 			waitingContribution.UseAccessOTANewLP(),
 			waitingContribution.NftID(),
 		)

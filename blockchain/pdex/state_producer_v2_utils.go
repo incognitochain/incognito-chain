@@ -3,7 +3,6 @@ package pdex
 import (
 	"errors"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
@@ -25,13 +24,6 @@ func (sp *stateProducerV2) validateContributions(
 			return errors.New("contribution 0 and contribution 1 need to be same nftID")
 		}
 	} else if contribution0.UseAccessOTANewLP() && contribution1.UseAccessOTANewLP() {
-		if accessOTAReceiver, found := contribution0.OtaReceivers()[common.PdexAccessCoinID]; found {
-			if accessOTAReceiver != contribution0.OtaReceiver() {
-				return errors.New("otaReceiver need to be in otaReceivers")
-			}
-		} else {
-			return errors.New("otaReceivers need to have pdexAccessCoin receiver")
-		}
 		if contribution0.OtaReceiver() != contribution1.OtaReceiver() {
 			return errors.New("contribution 0 and contribution 1 need to be same otaReceiver")
 		}
