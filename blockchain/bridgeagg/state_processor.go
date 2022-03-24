@@ -101,7 +101,7 @@ func (sp *stateProcessor) convert(
 		}
 		if vaults, found := unifiedTokenInfos[acceptedInst.UnifiedTokenID]; found {
 			if vault, found := vaults[acceptedInst.NetworkID]; found {
-				vault.convert(acceptedInst.Amount)
+				vault.convert(acceptedInst.Amount, acceptedInst.UnifiedTokenID == common.PRVCoinID)
 				unifiedTokenInfos[acceptedInst.UnifiedTokenID][acceptedInst.NetworkID] = vault
 			} else {
 				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
