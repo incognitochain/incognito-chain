@@ -1,4 +1,4 @@
-package metadata
+package bridgeagg
 
 import (
 	"bytes"
@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	rCommon "github.com/ethereum/go-ethereum/common"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -29,7 +30,7 @@ type IssuingEVMRequest struct {
 	ProofStrs  []string
 	IncTokenID common.Hash
 	NetworkID  uint `json:"NetworkID,omitempty"`
-	MetadataBase
+	metadataCommon.MetadataBase
 }
 
 type IssuingEVMReqAction struct {
@@ -74,12 +75,12 @@ const (
 func ParseEVMIssuingInstContent(instContentStr string) (*IssuingEVMReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestDecodeInstructionError, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestDecodeInstructionError, err)
 	}
 	var issuingEVMReqAction IssuingEVMReqAction
 	err = json.Unmarshal(contentBytes, &issuingEVMReqAction)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestUnmarshalJsonError, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestUnmarshalJsonError, err)
 	}
 	return &issuingEVMReqAction, nil
 }
@@ -87,12 +88,12 @@ func ParseEVMIssuingInstContent(instContentStr string) (*IssuingEVMReqAction, er
 func ParseEVMIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingEVMAcceptedInst, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestDecodeInstructionError, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestDecodeInstructionError, err)
 	}
 	var issuingETHAcceptedInst IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestUnmarshalJsonError, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestUnmarshalJsonError, err)
 	}
 	return &issuingETHAcceptedInst, nil
 }
@@ -105,7 +106,7 @@ func NewIssuingEVMRequest(
 	networkID uint,
 	metaType int,
 ) (*IssuingEVMRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := metadataCommon.MetadataBase{
 		Type: metaType,
 	}
 	issuingEVMReq := &IssuingEVMRequest{
@@ -134,7 +135,7 @@ func NewIssuingEVMRequestFromMap(
 
 	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TokenID incorrect"))
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TokenID incorrect"))
 	}
 
 	req, _ := NewIssuingEVMRequest(
@@ -148,35 +149,35 @@ func NewIssuingEVMRequestFromMap(
 	return req, nil
 }
 
-func (iReq IssuingEVMRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iReq IssuingEVMRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	return true, nil
 }
 
-func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
-		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
 
-	if (iReq.Type == IssuingPRVBEP20RequestMeta || iReq.Type == IssuingPRVERC20RequestMeta) && iReq.IncTokenID.String() != common.PRVIDStr {
-		return false, false, NewMetadataTxError(IssuingEvmRequestValidateSanityDataError, errors.New("Invalid token id"))
+	if (iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta) && iReq.IncTokenID.String() != common.PRVIDStr {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, errors.New("Invalid token id"))
 	}
 
 	return true, true, nil
 }
 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
-	if iReq.Type != IssuingETHRequestMeta && iReq.Type != IssuingBSCRequestMeta &&
-		iReq.Type != IssuingPRVERC20RequestMeta && iReq.Type != IssuingPRVBEP20RequestMeta &&
-		iReq.Type != IssuingPLGRequestMeta && iReq.Type != metadataCommon.IssuingUnifiedTokenRequestMeta {
+	if iReq.Type != metadataCommon.IssuingETHRequestMeta && iReq.Type != metadataCommon.IssuingBSCRequestMeta &&
+		iReq.Type != metadataCommon.IssuingPRVERC20RequestMeta && iReq.Type != metadataCommon.IssuingPRVBEP20RequestMeta &&
+		iReq.Type != metadataCommon.IssuingPLGRequestMeta && iReq.Type != metadataCommon.IssuingUnifiedTokenRequestMeta {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
-		Logger.log.Error(NewMetadataTxError(IssuingEvmRequestValidateTxWithBlockChainError, err))
+		metadataCommon.Logger.Log.Error(metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateTxWithBlockChainError, err))
 		return false
 	}
 	if evmReceipt == nil {
-		Logger.log.Error(errors.Errorf("The evm proof's receipt could not be null."))
+		metadataCommon.Logger.Log.Error(errors.Errorf("The evm proof's receipt could not be null."))
 		return false
 	}
 	return true
@@ -197,13 +198,13 @@ func (iReq IssuingEVMRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingEVMRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (iReq *IssuingEVMRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
-		return [][]string{}, NewMetadataTxError(IssuingEvmRequestBuildReqActionsError, err)
+		return [][]string{}, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestBuildReqActionsError, err)
 	}
 	if evmReceipt == nil {
-		return [][]string{}, NewMetadataTxError(IssuingEvmRequestBuildReqActionsError, errors.Errorf("The evm proof's receipt could not be null."))
+		return [][]string{}, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestBuildReqActionsError, errors.Errorf("The evm proof's receipt could not be null."))
 	}
 	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
@@ -213,7 +214,7 @@ func (iReq *IssuingEVMRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
-		return [][]string{}, NewMetadataTxError(IssuingEvmRequestBuildReqActionsError, err)
+		return [][]string{}, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestBuildReqActionsError, err)
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(iReq.Type), actionContentBase64Str}
@@ -222,7 +223,7 @@ func (iReq *IssuingEVMRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 }
 
 func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
-	return calculateSize(iReq)
+	return metadataCommon.CalculateSize(iReq)
 }
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
@@ -231,13 +232,13 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	isBSCNetwork := false
 	IsPLGNetwork := false
 
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta || (iReq.NetworkID == common.BSCNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == metadataCommon.IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta || (iReq.NetworkID == common.BSCNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
 		isBSCNetwork = true
 	}
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || (iReq.NetworkID == common.ETHNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == metadataCommon.IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta || (iReq.NetworkID == common.ETHNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
 		isETHNetwork = true
 	}
-	if iReq.Type == IssuingPLGRequestMeta || (iReq.NetworkID == common.PLGNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == metadataCommon.IssuingPLGRequestMeta || (iReq.NetworkID == common.PLGNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
 		IsPLGNetwork = true
 	}
 
@@ -256,33 +257,33 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		evmParam.GetFromEnv()
 		host = evmParam.Host
 	} else {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: [verifyProofAndParseReceipt] invalid metatype with the hash: %s", iReq.BlockHash.String()))
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: [verifyProofAndParseReceipt] invalid metatype with the hash: %s", iReq.BlockHash.String()))
 	}
 	evmHeader, err := GetEVMHeader(iReq.BlockHash, protocol, host, port)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 	if evmHeader == nil {
-		Logger.log.Warn("WARNING: Could not find out the EVM block header with the hash: ", iReq.BlockHash)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", iReq.BlockHash.String()))
+		metadataCommon.Logger.Log.Warn("WARNING: Could not find out the EVM block header with the hash: ", iReq.BlockHash)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", iReq.BlockHash.String()))
 	}
 
 	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(protocol, host, port)
 	if err != nil {
-		Logger.log.Warn("WARNING: Could not find the most recent block height on Ethereum")
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
+		metadataCommon.Logger.Log.Warn("WARNING: Could not find the most recent block height on Ethereum")
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	minEVMConfirmationBlocks := EVMConfirmationBlocks
-	if iReq.Type == IssuingPLGRequestMeta {
-		minEVMConfirmationBlocks = PLGConfirmationBlocks
+	minEVMConfirmationBlocks := metadataCommon.EVMConfirmationBlocks
+	if iReq.Type == metadataCommon.IssuingPLGRequestMeta {
+		minEVMConfirmationBlocks = metadataCommon.PLGConfirmationBlocks
 	}
 	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(int64(minEVMConfirmationBlocks)))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs %v confirmation blocks for the process, "+
 			"the requested block (%s) but the latest block (%s)", minEVMConfirmationBlocks,
 			evmHeader.Number.String(), mostRecentBlkNum.String())
-		Logger.log.Warn(errMsg)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New(errMsg))
+		metadataCommon.Logger.Log.Warn(errMsg)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.New(errMsg))
 	}
 
 	keybuf := new(bytes.Buffer)
@@ -301,13 +302,13 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	val, _, err := trie.VerifyProof(evmHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
-		Logger.log.Warn(errMsg)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
+		metadataCommon.Logger.Log.Warn(errMsg)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
 	if isETHNetwork || IsPLGNetwork {
 		if len(val) == 0 {
-			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
+			return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
 		}
 
 		// hardfork london with new transaction type => 0x02 || RLP([...SenderPayload, ...SenderSignature, ...GasPayerPayload, ...GasPayerSignature])
@@ -320,11 +321,11 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	constructedReceipt := new(types.Receipt)
 	err = rlp.DecodeBytes(val, constructedReceipt)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
 	if constructedReceipt.Status != types.ReceiptStatusSuccessful {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("The constructedReceipt's status is not success"))
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("The constructedReceipt's status is not success"))
 	}
 
 	return constructedReceipt, nil
@@ -337,7 +338,7 @@ func ParseEVMLogData(data []byte) (map[string]interface{}, error) {
 	}
 	dataMap := map[string]interface{}{}
 	if err = abiIns.UnpackIntoMap(dataMap, "Deposit", data); err != nil {
-		return nil, NewMetadataTxError(UnexpectedError, err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, err)
 	}
 	return dataMap, nil
 }
@@ -363,12 +364,12 @@ func GetEVMHeader(
 		return nil, err
 	}
 	if getEVMHeaderByHashRes.RPCError != nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message)
+		metadataCommon.Logger.Log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message))
 	}
 
 	if getEVMHeaderByHashRes.Result == nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
+		metadataCommon.Logger.Log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: result is nil"))
 	}
 
@@ -389,12 +390,12 @@ func GetEVMHeader(
 		return nil, err
 	}
 	if getEVMHeaderByNumberRes.RPCError != nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message)
+		metadataCommon.Logger.Log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message))
 	}
 
 	if getEVMHeaderByNumberRes.Result == nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
+		metadataCommon.Logger.Log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: result is nil"))
 	}
 
@@ -441,7 +442,7 @@ func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, contractAd
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
-		Logger.log.Warn("WARNING: LOG data is invalid.")
+		metadataCommon.Logger.Log.Warn("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {

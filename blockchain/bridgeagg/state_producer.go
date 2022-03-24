@@ -27,6 +27,7 @@ func (sp *stateProducer) modifyListTokens(
 	contentStr string,
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	sDBs map[int]*statedb.StateDB,
+	shardID byte,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	action := metadataCommon.NewAction()
 	md := &metadataBridgeAgg.ModifyListToken{}
@@ -103,7 +104,7 @@ func (sp *stateProducer) modifyListTokens(
 }
 
 func (sp *stateProducer) convert(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault, sDBs map[int]*statedb.StateDB,
+	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault, sDBs map[int]*statedb.StateDB, shardID byte,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	action := metadataCommon.NewAction()
 	md := &metadataBridgeAgg.ConvertTokenToUnifiedTokenRequest{}
@@ -142,7 +143,6 @@ func (sp *stateProducer) convert(
 				return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 			}
 			return temp, unifiedTokenInfos, nil
-
 		}
 		err = vault.convert(md.Amount, md.UnifiedTokenID == common.PRVCoinID)
 		if err != nil {
@@ -325,7 +325,7 @@ func (sp *stateProducer) unshield(
 	stateDB *statedb.StateDB,
 ) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
 	action := metadataCommon.NewAction()
-	md := &metadata.BurningRequest{}
+	md := &metadataBridgeAgg.BurningRequest{}
 	action.Meta = md
 	err = action.FromString(contentStr)
 	if err != nil {

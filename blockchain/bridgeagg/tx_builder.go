@@ -116,7 +116,7 @@ func buildBurningUnifiedTokenResponse(
 			return nil, err
 		}
 		txReqID = rejectContent.TxReqID
-		mdData, _ := rejectContent.Meta.(*metadata.BurningRequest)
+		mdData, _ := rejectContent.Meta.(*metadataBridgeAgg.BurningRequest)
 		amount = mdData.BurningAmount
 		tokenID = mdData.TokenID
 		address = mdData.BurnerAddress

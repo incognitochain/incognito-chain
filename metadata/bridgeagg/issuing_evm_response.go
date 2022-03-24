@@ -1,4 +1,4 @@
-package metadata
+package bridgeagg
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 type IssuingEVMResponse struct {
-	MetadataBase
+	metadataCommon.MetadataBase
 	RequestedTxID   common.Hash `json:"RequestedTxID"`
 	UniqTx          []byte      `json:"UniqETHTx"`
 	ExternalTokenID []byte      `json:"ExternalTokenID"`
@@ -33,7 +33,7 @@ func NewIssuingEVMResponse(
 	externalTokenID []byte,
 	metaType int,
 ) *IssuingEVMResponse {
-	metadataBase := MetadataBase{
+	metadataBase := metadataCommon.MetadataBase{
 		Type: metaType,
 	}
 	return &IssuingEVMResponse{
@@ -44,17 +44,17 @@ func NewIssuingEVMResponse(
 	}
 }
 
-func (iRes IssuingEVMResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes IssuingEVMResponse) CheckTransactionFee(tr metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes IssuingEVMResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iRes IssuingEVMResponse) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (iRes IssuingEVMResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iRes IssuingEVMResponse) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -75,10 +75,10 @@ func (iRes IssuingEVMResponse) Hash() *common.Hash {
 }
 
 func (iRes *IssuingEVMResponse) CalculateSize() uint64 {
-	return calculateSize(iRes)
+	return metadataCommon.CalculateSize(iRes)
 }
 
-func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadataCommon.MintData, shardID byte, tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, ac *metadataCommon.AccumulatedValues, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not IssuingEVMRequest instruction
@@ -86,26 +86,26 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		}
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
-			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta) &&
-				instMetaType != strconv.Itoa(IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(IssuingPRVBEP20RequestMeta) &&
-				instMetaType != strconv.Itoa(IssuingPLGRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta)) {
+			(instMetaType != strconv.Itoa(metadataCommon.IssuingETHRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingBSCRequestMeta) &&
+				instMetaType != strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta) &&
+				instMetaType != strconv.Itoa(metadataCommon.IssuingPLGRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta)) {
 			continue
 		}
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 		var issuingEVMAcceptedInst IssuingEVMAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
 		if instMetaType == strconv.Itoa(metadataCommon.IssuingUnifiedTokenResponseMeta) && issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
-			Logger.log.Error("WARNING - VALIDATION: Wrong networkID expected not %v", common.DefaultNetworkID)
+			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: Wrong networkID expected not %v", common.DefaultNetworkID)
 			continue
 		}
 
@@ -119,7 +119,7 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		addressStr := issuingEVMAcceptedInst.ReceiverAddrStr
 		key, err := wallet.Base58CheckDeserialize(addressStr)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			metadataCommon.Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
 

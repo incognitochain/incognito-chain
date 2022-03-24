@@ -158,17 +158,6 @@ func GetVault(unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID 
 	}
 }
 
-type ShieldAction struct {
-	Content []string
-	UniqTx  []byte
-}
-
-type UnshieldAction struct {
-	Content         metadata.BurningRequest
-	TxReqID         common.Hash
-	ExternalTokenID []byte
-}
-
 func InsertTxHashIssuedByNetworkID(networkID uint, isPRV bool) func(*statedb.StateDB, []byte) error {
 	if isPRV {
 		return statedb.InsertPRVEVMTxHashIssued

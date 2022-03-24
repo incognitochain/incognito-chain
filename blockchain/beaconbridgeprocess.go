@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
@@ -21,8 +22,8 @@ import (
 // NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
 type BurningReqAction struct {
-	Meta          metadata.BurningRequest `json:"meta"`
-	RequestedTxID *common.Hash            `json:"RequestedTxID"`
+	Meta          metadataBridgeAgg.BurningRequest `json:"meta"`
+	RequestedTxID *common.Hash                     `json:"RequestedTxID"`
 }
 
 func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState, block *types.BeaconBlock) error {
@@ -363,7 +364,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
 			metaType == metadata.IssuingPLGResponseMeta {
-			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
+			meta := tx.GetMetadata().(*metadataBridgeAgg.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {
