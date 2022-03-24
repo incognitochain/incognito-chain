@@ -257,6 +257,9 @@ func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADec
 			})
 		}
 	}
+	// request.otaReceiver now will store receiver for nftID
+	// and define which receiver will receive accessOTA (no need to declare OTA in this case)
+	// receiver has been declared in block code above
 	if request.otaReceiver != utils.EmptyString && len(request.otaReceivers) == 0 {
 		currentTokenID := common.ConfidentialAssetID
 		if request.TokenID() == common.PRVIDStr {
