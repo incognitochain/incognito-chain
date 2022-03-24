@@ -256,6 +256,9 @@ func (a *AccessOption) ValidateOtaReceivers(
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shardID is different from txShardID"))
 		}
 	} else {
+		if otaReceivers == nil || len(otaReceivers) == 0 {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers can not be null or empty"))
+		}
 		if !isNewLpRequest {
 			if otaReceivers != nil && otaReceiver != utils.EmptyString {
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
@@ -269,9 +272,6 @@ func (a *AccessOption) ValidateOtaReceivers(
 			if o.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shard id and tx shard id need to be the same"))
 			}
-		}
-		if otaReceivers == nil || len(otaReceivers) == 0 {
-			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers can not be null or empty"))
 		}
 		if _, found := otaReceivers[tokenHash]; !found {
 			return errors.New("Can not find otaReceiver for burnt tokenID")

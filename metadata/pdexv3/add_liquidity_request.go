@@ -73,7 +73,7 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	isNewLpRequest := request.otaReceiver != utils.EmptyString && len(request.otaReceiver) != 0
+	isNewLpRequest := request.otaReceiver != utils.EmptyString && len(request.otaReceivers) != 0
 	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash, isNewLpRequest)
 	if err != nil {
 		return false, err
@@ -257,7 +257,7 @@ func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADec
 			})
 		}
 	}
-	if request.otaReceiver != utils.EmptyString && len(request.otaReceiver) == 0 {
+	if request.otaReceiver != utils.EmptyString && len(request.otaReceivers) == 0 {
 		currentTokenID := common.ConfidentialAssetID
 		if request.TokenID() == common.PRVIDStr {
 			currentTokenID = common.PRVCoinID

@@ -205,11 +205,9 @@ func buildRefundContributionTxv2(
 	)
 
 	otaReceiver := privacy.OTAReceiver{}
-	var otaReceiverStr string
+	otaReceiverStr := refundContributionValue.OtaReceiver()
 	if len(refundContributionValue.OtaReceivers()) != 0 {
 		otaReceiverStr = refundContributionValue.OtaReceivers()[refundContributionValue.TokenID()]
-	} else {
-		otaReceiverStr = refundContributionValue.OtaReceiver()
 	}
 	err = otaReceiver.FromString(otaReceiverStr)
 	if err != nil {
@@ -384,11 +382,9 @@ func buildMatchAndReturnContributionTxv2(
 		matchAndReturnContributionValue.TxReqID().String(),
 	)
 	refundAddress := privacy.OTAReceiver{}
-	var refundAddressStr string
+	refundAddressStr := matchAndReturnContributionValue.OtaReceiver()
 	if len(matchAndReturnContributionValue.OtaReceivers()) != 0 {
 		refundAddressStr = matchAndReturnContributionValue.OtaReceivers()[matchAndReturnContributionValue.TokenID()]
-	} else {
-		refundAddressStr = matchAndReturnContributionValue.OtaReceiver()
 	}
 	err = refundAddress.FromString(refundAddressStr)
 	if err != nil {
