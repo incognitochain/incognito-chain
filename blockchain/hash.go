@@ -323,6 +323,6 @@ func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash co
 	if err != nil {
 		return false
 	}
-	Logger.log.Debugf("verifyHashFromShardState, byteResult", res)
+	Logger.log.Debugf("verifyHashFromShardState, byteResult=%+v", res)
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
