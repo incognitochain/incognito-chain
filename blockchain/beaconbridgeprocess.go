@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
@@ -363,7 +364,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
 			metaType == metadata.IssuingPLGResponseMeta {
-			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
+			meta := tx.GetMetadata().(*metadataBridgeAgg.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {

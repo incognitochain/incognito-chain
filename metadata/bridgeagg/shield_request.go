@@ -6,14 +6,14 @@ import (
 )
 
 type ShieldData struct {
-	BlockHash  []byte      `json:"BlockHash"`
-	TxIndex    uint        `json:"TxIndex"`
-	Proof      []byte      `json:"Proof"`
-	IncTokenID common.Hash `json:"IncTokenID"`
-	NetworkID  uint        `json:"NetworkID"`
+	BlockHash []byte `json:"BlockHash"`
+	TxIndex   uint   `json:"TxIndex"`
+	Proof     []byte `json:"Proof"`
+	NetworkID uint   `json:"NetworkID"`
 }
 
 type ShieldRequest struct {
 	ShieldDatas []ShieldData `json:"ShieldDatas"`
+	IncTokenID  common.Hash  `json:"IncTokenID"`
 	metadataCommon.MetadataBase
 }

@@ -43,21 +43,21 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
 	case IssuingETHRequestMeta:
-		md = &IssuingEVMRequest{}
+		md = &metadataBridgeAgg.IssuingEVMRequest{}
 	case IssuingBSCRequestMeta:
-		md = &IssuingEVMRequest{}
+		md = &metadataBridgeAgg.IssuingEVMRequest{}
 	case IssuingPRVERC20RequestMeta:
-		md = &IssuingEVMRequest{}
+		md = &metadataBridgeAgg.IssuingEVMRequest{}
 	case IssuingPRVBEP20RequestMeta:
-		md = &IssuingEVMRequest{}
+		md = &metadataBridgeAgg.IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
-		md = &IssuingEVMResponse{}
+		md = &metadataBridgeAgg.IssuingEVMResponse{}
 	case IssuingBSCResponseMeta:
-		md = &IssuingEVMResponse{}
+		md = &metadataBridgeAgg.IssuingEVMResponse{}
 	case IssuingPRVERC20ResponseMeta:
-		md = &IssuingEVMResponse{}
+		md = &metadataBridgeAgg.IssuingEVMResponse{}
 	case IssuingPRVBEP20ResponseMeta:
-		md = &IssuingEVMResponse{}
+		md = &metadataBridgeAgg.IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 	case BurningRequestMeta:
@@ -71,9 +71,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BurningPRVERC20RequestMeta:
 		md = &BurningRequest{}
 	case IssuingPLGRequestMeta:
-		md = &IssuingEVMRequest{}
+		md = &metadataBridgeAgg.IssuingEVMRequest{}
 	case IssuingPLGResponseMeta:
-		md = &IssuingEVMResponse{}
+		md = &metadataBridgeAgg.IssuingEVMResponse{}
 	case BurningPLGRequestMeta:
 		md = &BurningRequest{}
 	case BurningPLGForDepositToSCRequestMeta:
