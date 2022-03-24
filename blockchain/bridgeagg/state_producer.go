@@ -142,7 +142,6 @@ func (sp *stateProducer) convert(
 				return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 			}
 			return temp, unifiedTokenInfos, nil
-
 		}
 		err = vault.convert(md.Amount, md.UnifiedTokenID == common.PRVCoinID)
 		if err != nil {

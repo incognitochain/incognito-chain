@@ -202,6 +202,10 @@ const (
 	IssuingUnifiedTokenResponseMeta                 = 344
 	BurningUnifiedTokenRequestMeta                  = 345
 	BurningUnifiedTokenResponseMeta                 = 346
+	ShieldUnifiedTokenRequestMeta                   = 343
+	ShieldUnifiedTokenResponseMeta                  = 344
+	UnshieldUnifiedTokenRequestMeta                 = 345
+	UnshieldUnifiedTokenResponseMeta                = 346
 )
 
 var minerCreatedMetaTypes = []int{

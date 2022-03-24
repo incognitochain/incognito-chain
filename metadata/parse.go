@@ -258,15 +258,16 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridgeAgg.ConvertTokenToUnifiedTokenResponse{}
 	case metadataCommon.BridgeAggModifyListTokenMeta:
 		md = &metadataBridgeAgg.ModifyListToken{}
-	case metadataCommon.IssuingUnifiedTokenRequestMeta:
-		md = &IssuingEVMRequest{}
-	case metadataCommon.IssuingUnifiedTokenResponseMeta:
-		md = &IssuingEVMResponse{}
-	case metadataCommon.BurningUnifiedTokenRequestMeta:
-		md = &BurningRequest{}
-
+	case metadataCommon.ShieldUnifiedTokenRequestMeta:
+		md = &metadataBridgeAgg.ShieldRequest{}
+	case metadataCommon.ShieldUnifiedTokenResponseMeta:
+		md = &metadataBridgeAgg.ShieldResponse{}
+	case metadataCommon.UnshieldUnifiedTokenRequestMeta:
+		md = &metadataBridgeAgg.UnshieldRequest{}
+	case metadataCommon.UnshieldUnifiedTokenResponseMeta:
+		md = &metadataBridgeAgg.UnshieldResponse{}
 	default:
-		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
+		Logger.log.Debug("parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
 	}
 
