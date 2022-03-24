@@ -9,8 +9,8 @@ type StateEnvBuilder interface {
 	BuildAccumulatedValues(*metadata.AccumulatedValues) StateEnvBuilder
 	BuildUnshieldActions([][]string) StateEnvBuilder
 	BuildShieldActions([][]string) StateEnvBuilder
-	BuildConvertActions([]string) StateEnvBuilder
-	BuildModifyListTokenActions([]string) StateEnvBuilder
+	BuildConvertActions([][]string) StateEnvBuilder
+	BuildModifyListTokenActions([][]string) StateEnvBuilder
 	BuildStateDBs(map[int]*statedb.StateDB) StateEnvBuilder
 	BuildBeaconHeight(uint64) StateEnvBuilder
 	Build() StateEnvironment
@@ -24,8 +24,8 @@ type stateEnvironment struct {
 	accumulatedValues       *metadata.AccumulatedValues
 	unshieldActions         [][]string
 	shieldActions           [][]string
-	convertActions          []string
-	modifyListTokensActions []string
+	convertActions          [][]string
+	modifyListTokensActions [][]string
 	beaconHeight            uint64
 	stateDBs                map[int]*statedb.StateDB
 }
@@ -50,12 +50,12 @@ func (env *stateEnvironment) BuildShieldActions(actions [][]string) StateEnvBuil
 	return env
 }
 
-func (env *stateEnvironment) BuildConvertActions(actions []string) StateEnvBuilder {
+func (env *stateEnvironment) BuildConvertActions(actions [][]string) StateEnvBuilder {
 	env.convertActions = actions
 	return env
 }
 
-func (env *stateEnvironment) BuildModifyListTokenActions(actions []string) StateEnvBuilder {
+func (env *stateEnvironment) BuildModifyListTokenActions(actions [][]string) StateEnvBuilder {
 	env.modifyListTokensActions = actions
 	return env
 }
@@ -74,8 +74,8 @@ type StateEnvironment interface {
 	AccumulatedValues() *metadata.AccumulatedValues
 	UnshieldActions() [][]string
 	ShieldActions() [][]string
-	ConvertActions() []string
-	ModifyListTokensActions() []string
+	ConvertActions() [][]string
+	ModifyListTokensActions() [][]string
 	StateDBs() map[int]*statedb.StateDB
 }
 
@@ -95,11 +95,11 @@ func (env *stateEnvironment) ShieldActions() [][]string {
 	return env.shieldActions
 }
 
-func (env *stateEnvironment) ConvertActions() []string {
+func (env *stateEnvironment) ConvertActions() [][]string {
 	return env.convertActions
 }
 
-func (env *stateEnvironment) ModifyListTokensActions() []string {
+func (env *stateEnvironment) ModifyListTokensActions() [][]string {
 	return env.modifyListTokensActions
 }
 

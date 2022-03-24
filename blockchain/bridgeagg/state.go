@@ -74,22 +74,26 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
-	for _, action := range env.ConvertActions() {
-		inst := []string{}
-		inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs())
-		if err != nil {
-			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+	for shardID, actions := range env.ConvertActions() {
+		for _, action := range actions {
+			inst := []string{}
+			inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
+			if err != nil {
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+			}
+			res = append(res, inst)
 		}
-		res = append(res, inst)
 	}
 
-	for _, action := range env.ModifyListTokensActions() {
-		inst := []string{}
-		inst, s.unifiedTokenInfos, err = s.producer.modifyListTokens(action, s.unifiedTokenInfos, env.StateDBs())
-		if err != nil {
-			return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+	for shardID, actions := range env.ModifyListTokensActions() {
+		for _, action := range actions {
+			inst := []string{}
+			inst, s.unifiedTokenInfos, err = s.producer.modifyListTokens(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
+			if err != nil {
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+			}
+			res = append(res, inst)
 		}
-		res = append(res, inst)
 	}
 
 	Logger.log.Info("bridgeagg instructions:", res)

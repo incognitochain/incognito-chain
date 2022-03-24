@@ -353,9 +353,9 @@ func ConvertPrivacyTokenToNativeToken(
 }
 
 type Action struct {
-	Meta    Metadata    `json:"Meta"`
-	TxReqID common.Hash `json:"TxReqID"`
-	ShardID byte        `json:"ShardID"`
+	Meta      Metadata    `json:"Meta"`
+	TxReqID   common.Hash `json:"TxReqID"`
+	ExtraData [][]byte    `json:"ExtraData,omitempty"`
 }
 
 func NewAction() *Action {
@@ -363,12 +363,12 @@ func NewAction() *Action {
 }
 
 func NewActionWithValue(
-	meta Metadata, txReqID common.Hash, shardID byte,
+	meta Metadata, txReqID common.Hash, extraData [][]byte,
 ) *Action {
 	return &Action{
-		Meta:    meta,
-		TxReqID: txReqID,
-		ShardID: shardID,
+		Meta:      meta,
+		TxReqID:   txReqID,
+		ExtraData: extraData,
 	}
 }
 

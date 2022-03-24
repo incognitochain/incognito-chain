@@ -166,8 +166,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	// bridge agg actions collector
 	unshieldActions := [][]string{}
 	shieldActions := [][]string{}
-	convertActions := []string{}
-	modifyListTokensActions := []string{}
+	convertActions := [][]string{}
+	modifyListTokensActions := [][]string{}
 	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 	if err != nil {
 		Logger.log.Error(err)
@@ -304,9 +304,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
 			case metadataCommon.BridgeAggModifyListTokenMeta:
-				modifyListTokensActions = append(modifyListTokensActions, contentStr)
+				modifyListTokensActions[shardID] = append(modifyListTokensActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-				convertActions = append(convertActions, contentStr)
+				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
 			case metadataCommon.BurningUnifiedTokenRequestMeta:

@@ -27,6 +27,7 @@ func (sp *stateProducer) modifyListTokens(
 	contentStr string,
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	sDBs map[int]*statedb.StateDB,
+	shardID byte,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	action := metadataCommon.NewAction()
 	md := &metadataBridgeAgg.ModifyListToken{}
@@ -103,7 +104,7 @@ func (sp *stateProducer) modifyListTokens(
 }
 
 func (sp *stateProducer) convert(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault, sDBs map[int]*statedb.StateDB,
+	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault, sDBs map[int]*statedb.StateDB, shardID byte,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	action := metadataCommon.NewAction()
 	md := &metadataBridgeAgg.ConvertTokenToUnifiedTokenRequest{}

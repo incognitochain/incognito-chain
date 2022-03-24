@@ -128,6 +128,6 @@ func (request *ModifyListToken) CalculateSize() uint64 {
 }
 
 func (request *ModifyListToken) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), shardID).StringSlice(metadataCommon.BridgeAggModifyListTokenMeta)
+	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), nil).StringSlice(metadataCommon.BridgeAggModifyListTokenMeta)
 	return [][]string{content}, err
 }
