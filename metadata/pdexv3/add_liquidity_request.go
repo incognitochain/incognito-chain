@@ -65,7 +65,8 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.IsValid(tx, request.otaReceivers, beaconViewRetriever, transactionStateDB, false)
+	isNewAccessOTALpRequest := request.otaReceiver != utils.EmptyString && len(request.otaReceivers) != 0
+	err := request.AccessOption.IsValid(tx, request.otaReceivers, beaconViewRetriever, transactionStateDB, false, isNewAccessOTALpRequest, request.otaReceiver)
 	if err != nil {
 		return false, err
 	}
@@ -73,8 +74,7 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	isNewLpRequest := request.otaReceiver != utils.EmptyString && len(request.otaReceivers) != 0
-	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash, isNewLpRequest)
+	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash, isNewAccessOTALpRequest)
 	if err != nil {
 		return false, err
 	}

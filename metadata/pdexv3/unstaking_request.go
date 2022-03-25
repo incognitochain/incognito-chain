@@ -55,7 +55,7 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.IsValid(tx, request.getParsedOtaReceivers(), beaconViewRetriever, transactionStateDB, true)
+	err := request.AccessOption.IsValid(tx, request.getParsedOtaReceivers(), beaconViewRetriever, transactionStateDB, true, false, "")
 	if err != nil {
 		return false, err
 	}

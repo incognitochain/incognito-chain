@@ -48,7 +48,7 @@ func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 	if !ok {
 		return ok, fmt.Errorf("PoolPairID %s is not valid", req.PoolPairID)
 	}
-	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, true)
+	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, true, false, "")
 	if err != nil {
 		return false, err
 	}

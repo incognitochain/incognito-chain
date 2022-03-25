@@ -201,7 +201,7 @@ func TestAccessOption_ValidateOtaReceivers(t *testing.T) {
 		{
 			name: "Add request - Valid input",
 			fields: fields{
-				AccessID: nftID,
+				AccessID: nil,
 			},
 			args: args{
 				otaReceiver: validOTAReceiver0,
@@ -256,11 +256,13 @@ func TestAccessOption_IsValid(t *testing.T) {
 		AccessID *common.Hash
 	}
 	type args struct {
-		tx                  metadataCommon.Transaction
-		receivers           map[common.Hash]privacy.OTAReceiver
-		beaconViewRetriever metadataCommon.BeaconViewRetriever
-		transactionStateDB  *statedb.StateDB
-		isWithdrawalRequest bool
+		tx                      metadataCommon.Transaction
+		receivers               map[common.Hash]privacy.OTAReceiver
+		beaconViewRetriever     metadataCommon.BeaconViewRetriever
+		transactionStateDB      *statedb.StateDB
+		isWithdrawalRequest     bool
+		isNewAccessOTALpRequest bool
+		accessReceiverStr       string
 	}
 	tests := []struct {
 		name    string
@@ -401,7 +403,7 @@ func TestAccessOption_IsValid(t *testing.T) {
 				BurntOTA: tt.fields.BurntOTA,
 				AccessID: tt.fields.AccessID,
 			}
-			if err := a.IsValid(tt.args.tx, tt.args.receivers, tt.args.beaconViewRetriever, tt.args.transactionStateDB, tt.args.isWithdrawalRequest); (err != nil) != tt.wantErr {
+			if err := a.IsValid(tt.args.tx, tt.args.receivers, tt.args.beaconViewRetriever, tt.args.transactionStateDB, tt.args.isWithdrawalRequest, tt.args.isNewAccessOTALpRequest, tt.args.accessReceiverStr); (err != nil) != tt.wantErr {
 				t.Errorf("AccessOption.IsValid() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
