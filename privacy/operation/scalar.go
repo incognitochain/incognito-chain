@@ -25,7 +25,7 @@ var ScZero = NewScalar()
 var ScOne = NewScalar().FromUint64(1)
 var ScMinusOne = NewScalar().Negate(ScOne)
 
-// // String returns the hex string representation of `sc`
+// String returns the hex string representation of `sc`
 func (sc Scalar) String() string {
 	return hex.EncodeToString(sc.ToBytesS())
 }
@@ -82,7 +82,7 @@ func (sc *Scalar) Set(a *Scalar) *Scalar {
 	return sc
 }
 
-// RandomPoint returns a random Scalar, generated using `crypto/`'s randomness
+// RandomScalar returns a random Scalar, generated using `crypto/`'s randomness
 func RandomScalar() *Scalar {
 	b := make([]byte, 64)
 	rand.Read(b) //nolint // no recover from RNG error
