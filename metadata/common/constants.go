@@ -198,10 +198,6 @@ const (
 	BridgeAggModifyListTokenMeta                    = 340
 	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
-	IssuingUnifiedTokenRequestMeta                  = 343
-	IssuingUnifiedTokenResponseMeta                 = 344
-	BurningUnifiedTokenRequestMeta                  = 345
-	BurningUnifiedTokenResponseMeta                 = 346
 	ShieldUnifiedTokenRequestMeta                   = 343
 	ShieldUnifiedTokenResponseMeta                  = 344
 	UnshieldUnifiedTokenRequestMeta                 = 345

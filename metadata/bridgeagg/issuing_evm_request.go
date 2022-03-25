@@ -168,7 +168,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever metadataCommon.C
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != metadataCommon.IssuingETHRequestMeta && iReq.Type != metadataCommon.IssuingBSCRequestMeta &&
 		iReq.Type != metadataCommon.IssuingPRVERC20RequestMeta && iReq.Type != metadataCommon.IssuingPRVBEP20RequestMeta &&
-		iReq.Type != metadataCommon.IssuingPLGRequestMeta && iReq.Type != metadataCommon.IssuingUnifiedTokenRequestMeta {
+		iReq.Type != metadataCommon.IssuingPLGRequestMeta {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -232,13 +232,13 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	isBSCNetwork := false
 	IsPLGNetwork := false
 
-	if iReq.Type == metadataCommon.IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta || (iReq.NetworkID == common.BSCNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == metadataCommon.IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
 		isBSCNetwork = true
 	}
-	if iReq.Type == metadataCommon.IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta || (iReq.NetworkID == common.ETHNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == metadataCommon.IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta {
 		isETHNetwork = true
 	}
-	if iReq.Type == metadataCommon.IssuingPLGRequestMeta || (iReq.NetworkID == common.PLGNetworkID && iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta) {
+	if iReq.Type == metadataCommon.IssuingPLGRequestMeta {
 		IsPLGNetwork = true
 	}
 

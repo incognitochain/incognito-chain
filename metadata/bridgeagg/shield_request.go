@@ -1,12 +1,14 @@
 package bridgeagg
 
 import (
+	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
-type ShieldData struct {
+type ShieldRequestData struct {
 	BlockHash []byte `json:"BlockHash"`
 	TxIndex   uint   `json:"TxIndex"`
 	Proof     []byte `json:"Proof"`
@@ -14,8 +16,8 @@ type ShieldData struct {
 }
 
 type ShieldRequest struct {
-	ShieldDatas []ShieldData `json:"ShieldDatas"`
-	IncTokenID  common.Hash  `json:"IncTokenID"`
+	Data       []ShieldRequestData `json:"Data"`
+	IncTokenID common.Hash         `json:"IncTokenID"`
 	metadataCommon.MetadataBase
 }
 
@@ -28,11 +30,11 @@ func NewShieldRequest() *ShieldRequest {
 }
 
 func NewShieldRequestWithValue(
-	shieldDatas []ShieldData, incTokenID common.Hash,
+	data []ShieldRequestData, incTokenID common.Hash,
 ) *ShieldRequest {
 	return &ShieldRequest{
-		ShieldDatas: shieldDatas,
-		IncTokenID:  incTokenID,
+		Data:       data,
+		IncTokenID: incTokenID,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.ShieldUnifiedTokenRequestMeta,
 		},
@@ -49,11 +51,13 @@ func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.C
 }
 
 func (request *ShieldRequest) ValidateMetadataByItself() bool {
-	return true
+	return request.Type == metadataCommon.ShieldUnifiedTokenRequestMeta
 }
 
 func (request *ShieldRequest) Hash() *common.Hash {
-	return nil
+	rawBytes, _ := json.Marshal(&request)
+	hash := common.HashH([]byte(rawBytes))
+	return &hash
 }
 
 func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {

@@ -87,8 +87,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
 			metadataCommon.BridgeAggModifyListTokenMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
-			metadataCommon.IssuingUnifiedTokenRequestMeta,
-			metadataCommon.BurningUnifiedTokenRequestMeta:
+			metadataCommon.ShieldUnifiedTokenRequestMeta,
+			metadataCommon.UnshieldUnifiedTokenRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:

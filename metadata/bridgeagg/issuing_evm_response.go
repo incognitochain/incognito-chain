@@ -88,7 +88,7 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(metadataCommon.IssuingETHRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingBSCRequestMeta) &&
 				instMetaType != strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta) &&
-				instMetaType != strconv.Itoa(metadataCommon.IssuingPLGRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta)) {
+				instMetaType != strconv.Itoa(metadataCommon.IssuingPLGRequestMeta)) {
 			continue
 		}
 
@@ -104,7 +104,7 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 
-		if instMetaType == strconv.Itoa(metadataCommon.IssuingUnifiedTokenResponseMeta) && issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
+		if issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
 			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: Wrong networkID expected not %v", common.DefaultNetworkID)
 			continue
 		}
