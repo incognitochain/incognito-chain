@@ -15,7 +15,6 @@ import (
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type TxBuilderV2 struct {
@@ -204,9 +203,10 @@ func buildRefundContributionTxv2(
 		common.PDEContributionRefundChainStatus,
 		refundContributionValue.TxReqID().String(),
 	)
+
 	otaReceiver := privacy.OTAReceiver{}
 	otaReceiverStr := refundContributionValue.OtaReceiver()
-	if otaReceiverStr == utils.EmptyString {
+	if len(refundContributionValue.OtaReceivers()) != 0 {
 		otaReceiverStr = refundContributionValue.OtaReceivers()[refundContributionValue.TokenID()]
 	}
 	err = otaReceiver.FromString(otaReceiverStr)
@@ -383,7 +383,7 @@ func buildMatchAndReturnContributionTxv2(
 	)
 	refundAddress := privacy.OTAReceiver{}
 	refundAddressStr := matchAndReturnContributionValue.OtaReceiver()
-	if refundAddressStr == utils.EmptyString {
+	if len(matchAndReturnContributionValue.OtaReceivers()) != 0 {
 		refundAddressStr = matchAndReturnContributionValue.OtaReceivers()[matchAndReturnContributionValue.TokenID()]
 	}
 	err = refundAddress.FromString(refundAddressStr)

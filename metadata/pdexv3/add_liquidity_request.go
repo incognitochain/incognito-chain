@@ -16,7 +16,7 @@ import (
 type AddLiquidityRequest struct {
 	poolPairID   string // only "" for the first contribution of pool
 	pairHash     string
-	otaReceiver  string                              // refund pToken
+	otaReceiver  string                              // receive refunded token or accessToken
 	otaReceivers map[common.Hash]privacy.OTAReceiver // receive tokens
 	tokenID      string
 	AccessOption
@@ -65,7 +65,8 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := request.AccessOption.IsValid(tx, request.otaReceivers, beaconViewRetriever, transactionStateDB, false)
+	isNewAccessOTALpRequest := request.otaReceiver != utils.EmptyString && len(request.otaReceivers) != 0
+	err := request.AccessOption.IsValid(tx, request.otaReceivers, beaconViewRetriever, transactionStateDB, false, isNewAccessOTALpRequest, request.otaReceiver)
 	if err != nil {
 		return false, err
 	}
@@ -73,7 +74,7 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash)
+	err = request.AccessOption.ValidateOtaReceivers(tx, request.otaReceiver, request.otaReceivers, *tokenHash, isNewAccessOTALpRequest)
 	if err != nil {
 		return false, err
 	}
@@ -246,17 +247,6 @@ func (request *AddLiquidityRequest) Amplifier() uint {
 
 func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	if request.otaReceiver != utils.EmptyString {
-		currentTokenID := common.ConfidentialAssetID
-		if request.TokenID() == common.PRVIDStr {
-			currentTokenID = common.PRVCoinID
-		}
-		otaReceiver := privacy.OTAReceiver{}
-		otaReceiver.FromString(request.otaReceiver)
-		result = append(result, metadataCommon.OTADeclaration{
-			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
-		})
-	}
 	if request.otaReceivers != nil {
 		for tokenID, val := range request.otaReceivers {
 			if tokenID != common.PRVCoinID {
@@ -266,6 +256,20 @@ func (request *AddLiquidityRequest) GetOTADeclarations() []metadataCommon.OTADec
 				PublicKey: val.PublicKey.ToBytes(), TokenID: tokenID,
 			})
 		}
+	}
+	// request.otaReceiver now will store receiver for nftID
+	// and define which receiver will receive accessOTA (no need to declare OTA in this case)
+	// receiver has been declared in block code above
+	if request.otaReceiver != utils.EmptyString && len(request.otaReceivers) == 0 {
+		currentTokenID := common.ConfidentialAssetID
+		if request.TokenID() == common.PRVIDStr {
+			currentTokenID = common.PRVCoinID
+		}
+		otaReceiver := privacy.OTAReceiver{}
+		otaReceiver.FromString(request.otaReceiver)
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: otaReceiver.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
 	}
 	return result
 }

@@ -159,6 +159,8 @@ func (a *AccessOption) IsValid(
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
 	transactionStateDB *statedb.StateDB,
 	isWithdrawalRequest bool,
+	isNewAccessOTALpRequest bool,
+	accessReceiverStr string,
 ) error {
 	if a.NftID != nil {
 		if a.NftID.IsZeroValue() {
@@ -193,9 +195,18 @@ func (a *AccessOption) IsValid(
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("OTA receivers missing")))
 		}
 		if shouldValidateAccessReceiver {
-			accessReceiver, exists := receivers[common.PdexAccessCoinID]
-			if !exists {
-				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("accessReceiver missing")))
+			accessReceiver := privacy.OTAReceiver{}
+			if isNewAccessOTALpRequest {
+				err := accessReceiver.FromString(accessReceiverStr)
+				if err != nil {
+					return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", err))
+				}
+			} else {
+				var exists bool
+				accessReceiver, exists = receivers[common.PdexAccessCoinID]
+				if !exists {
+					return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("%v", errors.New("accessReceiver missing")))
+				}
 			}
 			valid, err := ValidPdexv3Access(a.BurntOTA, accessReceiver.PublicKey, tx, transactionStateDB)
 			if !valid {
@@ -235,15 +246,15 @@ func (a *AccessOption) UseNft() bool {
 func (a *AccessOption) ValidateOtaReceivers(
 	tx metadataCommon.Transaction, otaReceiver string,
 	otaReceivers map[common.Hash]privacy.OTAReceiver,
-	tokenHash common.Hash,
+	tokenHash common.Hash, isNewAccessOTALpRequest bool,
 ) error {
 	if (otaReceivers == nil || len(otaReceivers) == 0) && otaReceiver == utils.EmptyString {
 		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not be null at the same time"))
 	}
-	if otaReceivers != nil && otaReceiver != utils.EmptyString {
-		return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
-	}
 	if a.UseNft() {
+		if otaReceivers != nil && otaReceiver != utils.EmptyString {
+			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
+		}
 		receiver := privacy.OTAReceiver{}
 		err := receiver.FromString(otaReceiver)
 		if err != nil {
@@ -258,6 +269,23 @@ func (a *AccessOption) ValidateOtaReceivers(
 	} else {
 		if otaReceivers == nil || len(otaReceivers) == 0 {
 			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceivers can not be null or empty"))
+		}
+		if !isNewAccessOTALpRequest {
+			if otaReceivers != nil && otaReceiver != utils.EmptyString {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers can not exist at the same time"))
+			}
+		} else {
+			if a.AccessID != nil {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("AccessID need to be null"))
+			}
+			o := privacy.OTAReceiver{}
+			err := o.FromString(otaReceiver)
+			if err != nil {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+			}
+			if o.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shard id and tx shard id need to be the same"))
+			}
 		}
 		if _, found := otaReceivers[tokenHash]; !found {
 			return errors.New("Can not find otaReceiver for burnt tokenID")
@@ -274,8 +302,18 @@ func (a *AccessOption) ValidateOtaReceivers(
 				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver shard id and tx shard id need to be the same"))
 			}
 		}
-		if !isExistedPdexAccessToken && a.AccessID == nil {
-			return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("is not existed pdex access token in otaReceivers"))
+
+		if isNewAccessOTALpRequest {
+			if isExistedPdexAccessToken {
+				temp, _ := otaReceivers[common.PdexAccessCoinID].String() // otaReceiver valid above
+				if temp != otaReceiver {
+					return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("otaReceiver and otaReceivers[PdexAccessCoinID] need to be the same"))
+				}
+			}
+		} else {
+			if !isExistedPdexAccessToken && a.AccessID == nil {
+				return metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("is not existed pdex access token in otaReceivers"))
+			}
 		}
 	}
 	return nil

@@ -802,6 +802,7 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		PairHash          string       `json:"PairHash"`
 		ContributedAmount Uint64Reader `json:"ContributedAmount"`
 		Amplifier         Uint64Reader `json:"Amplifier"`
+		AccessOTAReceiver string       `json:"AccessOTAReceiver"`
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -830,7 +831,16 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		otaReceivers = make(map[common.Hash]privacy.OTAReceiver)
 		tokenList := []common.Hash{}
 		if mdReader.AccessID == nil {
-			tokenList = append(tokenList, common.PdexAccessCoinID)
+			if mdReader.AccessOTAReceiver != utils.EmptyString {
+				otaReceiver := privacy.OTAReceiver{}
+				err := otaReceiver.FromString(mdReader.AccessOTAReceiver)
+				if err != nil {
+					return nil, false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+				}
+				otaReceiverStr = mdReader.AccessOTAReceiver
+			} else {
+				tokenList = append(tokenList, common.PdexAccessCoinID)
+			}
 		}
 		tokenList = append(tokenList, *tokenHash)
 		recv, err := httpServer.pdexTxService.GenerateOTAReceivers(
@@ -840,6 +850,9 @@ func (httpServer *HttpServer) createPdexv3AddLiquidityTransaction(params interfa
 		}
 		for k, v := range recv {
 			otaReceivers[k] = v
+		}
+		if mdReader.AccessID == nil && mdReader.AccessOTAReceiver == utils.EmptyString {
+			otaReceiverStr, _ = otaReceivers[common.PdexAccessCoinID].String()
 		}
 	}
 

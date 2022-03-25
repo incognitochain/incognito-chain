@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 //Pdexv3Contribution Real data store to statedb
@@ -161,6 +162,21 @@ func NewPdexv3ContributionWithValue(
 		accessOTA:    accessOTA,
 		otaReceivers: otaReceivers,
 	}
+}
+
+// This contribution use nftID to contribute
+func (contribution *Pdexv3Contribution) UseNft() bool {
+	return len(contribution.accessOTA) == 0 && len(contribution.otaReceivers) == 0 && contribution.otaReceiver != utils.EmptyString
+}
+
+// This contribution use accessOTA to contribute for creating new LP
+func (contribution *Pdexv3Contribution) UseAccessOTANewLP() bool {
+	return len(contribution.accessOTA) != 0 && contribution.otaReceiver != utils.EmptyString
+}
+
+// This contribution use accessOTA to contribute for adding liquidity to old LP
+func (contribution *Pdexv3Contribution) UseAccessOTAOldLP() bool {
+	return len(contribution.accessOTA) == 0 && len(contribution.otaReceivers) != 0 && contribution.otaReceiver == utils.EmptyString
 }
 
 type Pdexv3PoolPair struct {

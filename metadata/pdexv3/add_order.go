@@ -56,7 +56,7 @@ func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transactio
 	if !ok {
 		return ok, fmt.Errorf("PoolPairID %s is not valid", req.PoolPairID)
 	}
-	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, false)
+	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, false, false, "")
 	if err != nil {
 		return false, err
 	}
