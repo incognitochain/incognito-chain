@@ -31,6 +31,7 @@ func (v *ValidationData) ToBytes() ([]byte, error) {
 	vBytes := proto.ValidationDataBytes{}
 	vBytes.BLSSig = v.ProducerBLSSig
 	vBytes.BriSig = v.ProducerBriSig
+	vBytes.AllBriSig = v.BridgeSig
 	vBytes.AggSig = v.AggSig
 	for _, idx := range v.ValidatiorsIdx {
 		vBytes.ValIdx = append(vBytes.ValIdx, int32(idx))
@@ -62,14 +63,17 @@ func (v *ValidationData) FromBytes(vDataBytes []byte) error {
 	}
 	v.AggSig = protoVData.AggSig
 	v.BridgeSig = protoVData.AllBriSig
-	v.PortalSig = []*portalprocessv4.PortalSig{}
-	for _, sigBytes := range protoVData.PortalSig {
-		sig := portalprocessv4.PortalSig{}
-		err = sig.FromPortalSigBytes(sigBytes)
-		if err != nil {
-			return err
+	v.PortalSig = nil
+	if len(protoVData.PortalSig) > 0 {
+		v.PortalSig = []*portalprocessv4.PortalSig{}
+		for _, sigBytes := range protoVData.PortalSig {
+			sig := portalprocessv4.PortalSig{}
+			err = sig.FromPortalSigBytes(sigBytes)
+			if err != nil {
+				return err
+			}
+			v.PortalSig = append(v.PortalSig, &sig)
 		}
-		v.PortalSig = append(v.PortalSig, &sig)
 	}
 	v.ProducerBLSSig = protoVData.BLSSig
 	v.ProducerBriSig = protoVData.BriSig
