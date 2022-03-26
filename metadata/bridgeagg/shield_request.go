@@ -8,6 +8,21 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
+type AcceptedShieldRequest struct {
+	Receiver   string                      `json:"Receiver"`
+	IncTokenID common.Hash                 `json:"IncTokenID"`
+	TxReqID    common.Hash                 `json:"TxReqID"`
+	IsReward   bool                        `json:"IsReward"`
+	Data       []AcceptedShieldRequestData `json:"Data"`
+}
+
+type AcceptedShieldRequestData struct {
+	IssuingAmount   uint64 `json:"IssuingAmount"`
+	UniqTx          []byte `json:"UniqTx"`
+	ExternalTokenID []byte `json:"ExternalTokenID"`
+	NetworkID       uint   `json:"NetworkID"`
+}
+
 type ShieldRequestData struct {
 	BlockHash []byte `json:"BlockHash"`
 	TxIndex   uint   `json:"TxIndex"`

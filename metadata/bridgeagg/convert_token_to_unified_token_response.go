@@ -123,12 +123,16 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 			if err := rejectContent.FromString(tempInst.Content); err != nil {
 				return false, err
 			}
-			mdData, _ := rejectContent.Meta.(*ConvertTokenToUnifiedTokenRequest)
+			var rejectedData RejectedConvertTokenToUnifiedToken
+			if err := json.Unmarshal(rejectContent.Data, &rejectedData); err != nil {
+				return false, err
+			}
+
 			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = rejectContent.TxReqID
-			otaReceiver = mdData.Receivers[mdData.TokenID]
-			receivingTokenID = mdData.TokenID
-			receivingAmtFromInst = mdData.Amount
+			otaReceiver = rejectedData.Receiver
+			receivingTokenID = rejectedData.TokenID
+			receivingAmtFromInst = rejectedData.Amount
 		case common.AcceptedStatusStr:
 			contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
 			if err != nil {

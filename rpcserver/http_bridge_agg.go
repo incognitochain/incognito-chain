@@ -349,7 +349,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 
 	md, err := metadataBridgeAgg.NewIssuingEVMRequest(
 		mdReader.BlockHash, mdReader.TxIndex, mdReader.ProofStrs, mdReader.IncTokenID, mdReader.NetworkID,
-		metadataCommon.IssuingUnifiedTokenRequestMeta,
+		metadataCommon.ShieldUnifiedTokenRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -426,8 +426,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	md, err := metadataBridgeAgg.NewBurningRequest(
 		keyWallet.KeySet.PaymentAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
-		mdReader.RemoteAddress, mdReader.NetworkID, mdReader.ExpectedAmount, mdReader.IsDepositToSC,
-		metadataCommon.BurningUnifiedTokenRequestMeta,
+		mdReader.RemoteAddress, metadataCommon.UnshieldUnifiedTokenRequestMeta,
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

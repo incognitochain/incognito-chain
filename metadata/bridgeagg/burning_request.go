@@ -18,14 +18,11 @@ import (
 
 // whoever can send this type of tx
 type BurningRequest struct {
-	BurnerAddress  privacy.PaymentAddress
-	BurningAmount  uint64 // must be equal to vout value
-	TokenID        common.Hash
-	TokenName      string
-	RemoteAddress  string
-	NetworkID      uint   `json:"NetworkID,omitempty"`
-	ExpectedAmount uint64 `json:"ExpectedAmount,omitempty"`
-	IsDepositToSC  *bool  `json:"IsDepositToSC,omitempty"`
+	BurnerAddress privacy.PaymentAddress
+	BurningAmount uint64 // must be equal to vout value
+	TokenID       common.Hash
+	TokenName     string
+	RemoteAddress string
 	metadataCommon.MetadataBase
 }
 
@@ -35,23 +32,17 @@ func NewBurningRequest(
 	tokenID common.Hash,
 	tokenName string,
 	remoteAddress string,
-	networkID uint,
-	expectedAmount uint64,
-	isDepositToSC *bool,
 	metaType int,
 ) (*BurningRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metaType,
 	}
 	burningReq := &BurningRequest{
-		BurnerAddress:  burnerAddress,
-		BurningAmount:  burningAmount,
-		TokenID:        tokenID,
-		TokenName:      tokenName,
-		RemoteAddress:  remoteAddress,
-		NetworkID:      networkID,
-		ExpectedAmount: expectedAmount,
-		IsDepositToSC:  isDepositToSC,
+		BurnerAddress: burnerAddress,
+		BurningAmount: burningAmount,
+		TokenID:       tokenID,
+		TokenName:     tokenName,
+		RemoteAddress: remoteAddress,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil
@@ -100,24 +91,14 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		(bReq.Type == metadataCommon.BurningRequestMetaV2 || bReq.Type == metadataCommon.BurningForDepositToSCRequestMetaV2 ||
 			bReq.Type == metadataCommon.BurningPBSCRequestMeta || bReq.Type == metadataCommon.BurningPRVERC20RequestMeta ||
 			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
-			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta) {
+			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
-	}
-
-	if bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta && bReq.NetworkID == common.DefaultNetworkID {
-		return false, false, fmt.Errorf("networkID %d is not supported", bReq.NetworkID)
 	}
 
 	if (bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	} else if (bReq.Type != metadataCommon.BurningPRVERC20RequestMeta && bReq.Type != metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
-	}
-
-	if bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta {
-		if bReq.ExpectedAmount > bReq.BurningAmount {
-			return false, false, fmt.Errorf("ExpectedAmount %v is > than BurningAmount %v", bReq.ExpectedAmount, bReq.BurningAmount)
-		}
 	}
 
 	return true, true, nil
@@ -128,8 +109,7 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == metadataCommon.BurningForDepositToSCRequestMetaV2 || bReq.Type == metadataCommon.BurningPBSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta ||
 		bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningUnifiedTokenRequestMeta
+		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

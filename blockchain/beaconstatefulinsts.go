@@ -307,9 +307,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				modifyListTokensActions[shardID] = append(modifyListTokensActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
-			case metadataCommon.IssuingUnifiedTokenRequestMeta:
+			case metadataCommon.ShieldUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
-			case metadataCommon.BurningUnifiedTokenRequestMeta:
+			case metadataCommon.UnshieldUnifiedTokenRequestMeta:
 				unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
 			default:
 				continue

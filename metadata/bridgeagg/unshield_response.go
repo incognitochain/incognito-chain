@@ -19,32 +19,33 @@ type UnshieldResponse struct {
 	SharedRandom []byte      `json:"SharedRandom,omitempty"`
 }
 
-func NewBuringResponse() *BurningResponse {
-	return &BurningResponse{
+func NewUnshieldResponse() *UnshieldResponse {
+	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.BurningUnifiedTokenResponseMeta,
+			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
 		},
 	}
 }
 
-func NewBuringResponseWithValue(
-	status string, txReqID common.Hash,
-) *BurningResponse {
-	return &BurningResponse{
+func NewUnshieldResponseWithValue(
+	status string, txReqID common.Hash, sharedRandom []byte,
+) *UnshieldResponse {
+	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.BurningUnifiedTokenResponseMeta,
+			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
 		},
-		Status:  status,
-		TxReqID: txReqID,
+		Status:       status,
+		TxReqID:      txReqID,
+		SharedRandom: sharedRandom,
 	}
 }
 
-func (response *BurningResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (response *UnshieldResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (response *BurningResponse) ValidateTxWithBlockChain(
+func (response *UnshieldResponse) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -56,7 +57,7 @@ func (response *BurningResponse) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (response *BurningResponse) ValidateSanityData(
+func (response *UnshieldResponse) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
@@ -69,21 +70,21 @@ func (response *BurningResponse) ValidateSanityData(
 	return true, true, nil
 }
 
-func (response *BurningResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.BurningUnifiedTokenResponseMeta
+func (response *UnshieldResponse) ValidateMetadataByItself() bool {
+	return response.Type == metadataCommon.UnshieldUnifiedTokenResponseMeta
 }
 
-func (response *BurningResponse) Hash() *common.Hash {
+func (response *UnshieldResponse) Hash() *common.Hash {
 	rawBytes, _ := json.Marshal(&response)
 	hash := common.HashH([]byte(rawBytes))
 	return &hash
 }
 
-func (response *BurningResponse) CalculateSize() uint64 {
+func (response *UnshieldResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
-func (response *BurningResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,
 	tx metadataCommon.Transaction,
@@ -101,7 +102,7 @@ func (response *BurningResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.BurningUnifiedTokenResponseMeta) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.UnshieldUnifiedTokenRequestMeta) {
 			continue
 		}
 		tempInst := metadataCommon.NewInstruction()
@@ -121,12 +122,11 @@ func (response *BurningResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			if err := rejectContent.FromString(tempInst.Content); err != nil {
 				return false, err
 			}
-			mdData, _ := rejectContent.Meta.(*metadataBridgeAgg.BurningRequest)
 			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = rejectContent.TxReqID
-			receivingTokenID = mdData.TokenID
-			receivingAmtFromInst = mdData.BurningAmount
-			address = mdData.BurnerAddress
+			/*receivingTokenID = mdData.TokenID*/
+			/*receivingAmtFromInst = mdData.BurningAmount*/
+			/*address = mdData.BurnerAddress*/
 		default:
 			return false, errors.New("Not find status")
 		}
@@ -169,6 +169,6 @@ func (response *BurningResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	return true, nil
 }
 
-func (response *BurningResponse) SetSharedRandom(r []byte) {
+func (response *UnshieldResponse) SetSharedRandom(r []byte) {
 	response.SharedRandom = r
 }

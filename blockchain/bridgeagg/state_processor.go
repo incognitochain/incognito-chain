@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
@@ -148,7 +147,7 @@ func (sp *stateProcessor) shield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		acceptedInst := metadata.IssuingEVMAcceptedInst{}
+		acceptedInst := metadataBridgeAgg.IssuingEVMAcceptedInst{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return unifiedTokenInfos, err
@@ -198,28 +197,28 @@ func (sp *stateProcessor) unshield(
 	var errorCode uint
 	switch inst.Status {
 	case common.AcceptedStatusStr:
-		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		acceptedInst := metadata.AcceptedUnshieldRequest{}
-		err = json.Unmarshal(contentBytes, &acceptedInst)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		vault := unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] // check available before
-		err = vault.increaseCurrentRewardReserve(acceptedInst.Fee)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		err = vault.decreaseReserve(acceptedInst.Amount)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] = vault
-		txReqID = acceptedInst.TxReqID
-		status = common.AcceptedStatusByte
-		sp.UnshieldTxsCache[txReqID] = acceptedInst.TokenID
+		/*contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)*/
+		/*if err != nil {*/
+		/*return unifiedTokenInfos, err*/
+		/*}*/
+		/*acceptedInst := metadataBridgeAgg.AcceptedUnshieldRequest{}*/
+		/*err = json.Unmarshal(contentBytes, &acceptedInst)*/
+		/*if err != nil {*/
+		/*return unifiedTokenInfos, err*/
+		/*}*/
+		/*vault := unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] // check available before*/
+		/*err = vault.increaseCurrentRewardReserve(acceptedInst.Fee)*/
+		/*if err != nil {*/
+		/*return unifiedTokenInfos, err*/
+		/*}*/
+		/*err = vault.decreaseReserve(acceptedInst.Amount)*/
+		/*if err != nil {*/
+		/*return unifiedTokenInfos, err*/
+		/*}*/
+		/*unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] = vault*/
+		/*txReqID = acceptedInst.TxReqID*/
+		/*status = common.AcceptedStatusByte*/
+		/*sp.UnshieldTxsCache[txReqID] = acceptedInst.TokenID*/
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {

@@ -6,21 +6,37 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+type RejectedUnshieldRequest struct {
+	TokenID       common.Hash `json:"TokenID"`
+	BurningAmount uint64      `json:"BurningAmount"`
+}
+
+type AcceptedUnshieldRequest struct {
+	TokenID common.Hash                   `json:"TokenID"`
+	TxReqID common.Hash                   `json:"TxReqID"`
+	Data    []AcceptedUnshieldRequestData `json:"data"`
+}
+
+type AcceptedUnshieldRequestData struct {
+	Amount        uint64 `json:"BurningAmount"`
+	NetworkID     uint   `json:"NetworkID,omitempty"`
+	Fee           uint64 `json:"Fee"`
+	IsDepositToSC bool   `json:"IsDepositToSC"`
+}
+
 type UnshieldRequestData struct {
-	BurningAmount  uint64      `json:"BurningAmount"` // must be equal to vout value
-	TokenID        common.Hash `json:"TokenID"`
-	RemoteAddress  string      `json:"RemoteAddress"`
-	IsDepositToSC  bool        `json:"IsDepositToSC"`
-	NetworkID      uint        `json:"NetworkID"`
-	ExpectedAmount uint64      `json:"ExpectedAmount"`
+	BurningAmount  uint64 `json:"BurningAmount"`
+	RemoteAddress  string `json:"RemoteAddress"`
+	IsDepositToSC  bool   `json:"IsDepositToSC"`
+	NetworkID      uint   `json:"NetworkID"`
+	ExpectedAmount uint64 `json:"ExpectedAmount"`
 }
 
 type UnshieldRequest struct {
-	BurnerAddress privacy.PaymentAddress `json:"BurnerAddress"`
-	Data          []UnshieldRequestData  `json:"Data"`
+	TokenID common.Hash           `json:"TokenID"`
+	Data    []UnshieldRequestData `json:"Data"`
 	metadataCommon.MetadataBase
 }
 
@@ -33,11 +49,10 @@ func NewUnshieldRequest() *UnshieldRequest {
 }
 
 func NewUnshieldRequestWithValue(
-	data []UnshieldRequestData, burnerAddress privacy.PaymentAddress,
+	data []UnshieldRequestData,
 ) *UnshieldRequest {
 	return &UnshieldRequest{
-		Data:          data,
-		BurnerAddress: burnerAddress,
+		Data: data,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
 		},

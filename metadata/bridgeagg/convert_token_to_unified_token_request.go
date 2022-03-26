@@ -21,6 +21,12 @@ type ConvertTokenToUnifiedTokenRequest struct {
 	metadataCommon.MetadataBase
 }
 
+type RejectedConvertTokenToUnifiedToken struct {
+	TokenID  common.Hash         `json:"TokenID"`
+	Amount   uint64              `json:"Amount"`
+	Receiver privacy.OTAReceiver `json:"Receiver"`
+}
+
 type AcceptedConvertTokenToUnifiedToken struct {
 	ConvertTokenToUnifiedTokenRequest
 	TxReqID common.Hash `json:"TxReqID"`

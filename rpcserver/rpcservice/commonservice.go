@@ -196,9 +196,6 @@ func NewBurningRequestMetadata(
 		*tokenIDHash,
 		tokenName,
 		remoteAddress,
-		networkID,
-		expectedAmount,
-		isDepositToSC,
 		burningMetaType,
 	)
 	if err != nil {

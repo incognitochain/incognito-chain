@@ -48,7 +48,7 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 
 		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
-		case strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta):
+		case strconv.Itoa(metadataCommon.ShieldUnifiedTokenRequestMeta):
 			var temp func(*statedb.StateDB, []byte) error
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, temp, false)
 
@@ -119,7 +119,7 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
-	var issuingEVMAcceptedInst metadata.IssuingEVMAcceptedInst
+	var issuingEVMAcceptedInst metadataBridgeAgg.IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)

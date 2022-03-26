@@ -194,7 +194,7 @@ const (
 	BurningPLGForDepositToSCRequestMeta = 330
 	BurningPLGConfirmForDepositToSCMeta = 154
 
-	// UnifiedToken
+	// bridgeagg
 	BridgeAggModifyListTokenMeta                    = 340
 	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
@@ -249,8 +249,8 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3UnstakingResponseMeta,
 	Pdexv3WithdrawStakingRewardResponseMeta,
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
-	IssuingUnifiedTokenResponseMeta,
-	BurningUnifiedTokenResponseMeta,
+	ShieldUnifiedTokenResponseMeta,
+	UnshieldUnifiedTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

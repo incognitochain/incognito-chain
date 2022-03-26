@@ -15,12 +15,13 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	"github.com/pkg/errors"
 )
 
 func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
 	gethParam := config.Config().GethParam
-	ethHeader, err := GetEVMHeader(blockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
+	ethHeader, err := metadataBridgeAgg.GetEVMHeader(blockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
@@ -29,7 +30,7 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", blockHash.String()))
 	}
 
-	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
+	mostRecentBlkNum, err := metadataBridgeAgg.GetMostRecentEVMBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)

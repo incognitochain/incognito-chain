@@ -483,9 +483,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPLGResponseMeta, false)
 				}
-			case metadataCommon.IssuingUnifiedTokenRequestMeta:
+			case metadataCommon.ShieldUnifiedTokenRequestMeta:
 				if len(inst) >= 4 && inst[2] == common.AcceptedStatusStr {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.IssuingUnifiedTokenResponseMeta, false)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.ShieldUnifiedTokenResponseMeta, false)
 				}
 
 			// portal

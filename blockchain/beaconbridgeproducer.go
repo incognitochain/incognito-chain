@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
 	"github.com/pkg/errors"
 )
 
@@ -122,7 +123,7 @@ func buildBurningConfirmInst(
 	shardID := byte(common.BridgeShardID)
 
 	// Convert to external tokenID
-	tokenID, err := metadata.FindExternalTokenID(stateDB, md.TokenID, prefix, burningMetaType)
+	tokenID, err := metadataBridgeAgg.FindExternalTokenID(stateDB, md.TokenID, prefix, burningMetaType)
 	if err != nil {
 		return nil, err
 	}
