@@ -370,6 +370,10 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 }
 
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+	if hasBlock := chain.CheckExistedBlkHash(previousBlockHash); !hasBlock {
+		// This block is not inserted yet, no need to replace
+		return nil
+	}
 	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
 		Logger.log.Error(err)
 		return err
@@ -386,6 +390,11 @@ func (chain *ShardChain) GetBlockByHash(hash common.Hash) (types.BlockInterface,
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	exist, _ := chain.blkManager.CheckBlockByHash(blkHash)
+	return exist
+}
+
+func (chain *ShardChain) CheckExistedBlkHash(blkHash common.Hash) bool {
+	exist, _ := chain.blkManager.CheckBlockByHash(&blkHash)
 	return exist
 }
 
