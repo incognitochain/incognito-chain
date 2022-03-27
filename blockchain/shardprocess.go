@@ -24,7 +24,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
@@ -1492,7 +1492,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
 				metadata.IssuingPLGRequestMeta, metadataCommon.ShieldUnifiedTokenRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
-					acceptedContent, err := metadataBridgeAgg.ParseEVMIssuingInstAcceptedContent(l[3])
+					acceptedContent, err := metadataBridge.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {
 						Logger.log.Errorf("ParseEVMIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
 						return err

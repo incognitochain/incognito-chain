@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -74,10 +74,10 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
-	newList := make(map[common.Hash][]metadataBridgeAgg.Vault)
+	newList := make(map[common.Hash][]metadataBridge.Vault)
 	for k, v := range mdReader.NewList {
 		for _, value := range v {
-			newList[k] = append(newList[k], metadataBridgeAgg.Vault{
+			newList[k] = append(newList[k], metadataBridge.Vault{
 				RewardReserve: value.RewardReserve,
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
 					value.TokenID, value.NetworkID,
@@ -86,7 +86,7 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 		}
 	}
 
-	md := metadataBridgeAgg.NewModifyListTokenWithValue(newList)
+	md := metadataBridge.NewModifyListTokenWithValue(newList)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -234,7 +234,7 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridgeAgg.ConvertTokenToUnifiedTokenRequest
+		metadataBridge.ConvertTokenToUnifiedTokenRequest
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -248,7 +248,7 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 	}
 	mdReader.Receivers = recv
 
-	md := metadataBridgeAgg.NewConvertTokenToUnifiedTokenRequestWithValue(
+	md := metadataBridge.NewConvertTokenToUnifiedTokenRequestWithValue(
 		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, mdReader.Receivers,
 	)
 	paramSelect.SetTokenID(mdReader.TokenID)
@@ -339,7 +339,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridgeAgg.IssuingEVMRequest
+		metadataBridge.IssuingEVMRequest
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -347,7 +347,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	md, err := metadataBridgeAgg.NewIssuingEVMRequest(
+	md, err := metadataBridge.NewIssuingEVMRequest(
 		mdReader.BlockHash, mdReader.TxIndex, mdReader.ProofStrs, mdReader.IncTokenID, mdReader.NetworkID,
 		metadataCommon.ShieldUnifiedTokenRequestMeta,
 	)
@@ -416,7 +416,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridgeAgg.BurningRequest
+		metadataBridge.BurningRequest
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -424,7 +424,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	md, err := metadataBridgeAgg.NewBurningRequest(
+	md, err := metadataBridge.NewBurningRequest(
 		keyWallet.KeySet.PaymentAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
 		mdReader.RemoteAddress, metadataCommon.UnshieldUnifiedTokenRequestMeta,
 	)

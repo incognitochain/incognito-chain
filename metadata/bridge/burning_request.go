@@ -1,4 +1,4 @@
-package bridgeagg
+package bridge
 
 import (
 	"bytes"

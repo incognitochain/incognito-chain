@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
@@ -110,7 +110,7 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 		if err != nil {
 			continue // Not error, just not bridgeagg instructions
 		}
-		if !metadataBridgeAgg.IsBridgeAggMetaType(metaType) {
+		if !metadataBridge.IsBridgeAggMetaType(metaType) {
 			continue // Not error, just not bridgeagg instructions
 		}
 		inst := metadataCommon.NewInstruction()

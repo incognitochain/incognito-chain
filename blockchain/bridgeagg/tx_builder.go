@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -64,7 +64,7 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		if err != nil {
 			return nil, err
 		}
-		acceptedInst := metadataBridgeAgg.AcceptedConvertTokenToUnifiedToken{}
+		acceptedInst := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return nil, err
@@ -79,12 +79,12 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		/*return nil, err*/
 		/*}*/
 		/*txReqID = rejectContent.TxReqID*/
-		/*mdData, _ := rejectContent.Meta.(*metadataBridgeAgg.ConvertTokenToUnifiedTokenRequest)*/
+		/*mdData, _ := rejectContent.Meta.(*metadataBridge.ConvertTokenToUnifiedTokenRequest)*/
 		/*amount = mdData.Amount*/
 		/*tokenID = mdData.TokenID*/
 		/*otaReceiver = mdData.Receivers[tokenID]*/
 	}
-	md := metadataBridgeAgg.NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(inst.Status, txReqID)
+	md := metadataBridge.NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(inst.Status, txReqID)
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: &otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
@@ -116,14 +116,14 @@ func buildUnshieldUnifiedTokenResponse(
 			return nil, err
 		}
 		txReqID = rejectContent.TxReqID
-		//mdData, _ := rejectContent.Meta.(*metadataBridgeAgg.BurningRequest)
+		//mdData, _ := rejectContent.Meta.(*metadataBridge.BurningRequest)
 		/*amount = mdData.BurningAmount*/
 		/*tokenID = mdData.TokenID*/
 		/*address = mdData.BurnerAddress*/
 	default:
 		return nil, nil
 	}
-	md := metadataBridgeAgg.NewUnshieldResponseWithValue(inst.Status, txReqID, nil)
+	md := metadataBridge.NewUnshieldResponseWithValue(inst.Status, txReqID, nil)
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &address, TokenID: &tokenID}
 	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {

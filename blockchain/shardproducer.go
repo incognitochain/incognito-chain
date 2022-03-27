@@ -23,7 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -580,7 +580,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						curView.GetCopiedTransactionStateDB(),
 						beaconBlock.Header.Height,
 					)
-				} else if metadataBridgeAgg.IsBridgeAggMetaType(metaType) {
+				} else if metadataBridge.IsBridgeAggMetaType(metaType) {
 					newTx, err = bridgeagg.TxBuilder{}.Build(
 						metaType, inst, producerPrivateKey, shardID, curView.GetCopiedTransactionStateDB(),
 					)

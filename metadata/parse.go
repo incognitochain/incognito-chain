@@ -3,7 +3,7 @@ package metadata
 import (
 	"encoding/json"
 
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/pkg/errors"
@@ -43,41 +43,41 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
 	case IssuingETHRequestMeta:
-		md = &metadataBridgeAgg.IssuingEVMRequest{}
+		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingBSCRequestMeta:
-		md = &metadataBridgeAgg.IssuingEVMRequest{}
+		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingPRVERC20RequestMeta:
-		md = &metadataBridgeAgg.IssuingEVMRequest{}
+		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingPRVBEP20RequestMeta:
-		md = &metadataBridgeAgg.IssuingEVMRequest{}
+		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingETHResponseMeta:
-		md = &metadataBridgeAgg.IssuingEVMResponse{}
+		md = &metadataBridge.IssuingEVMResponse{}
 	case IssuingBSCResponseMeta:
-		md = &metadataBridgeAgg.IssuingEVMResponse{}
+		md = &metadataBridge.IssuingEVMResponse{}
 	case IssuingPRVERC20ResponseMeta:
-		md = &metadataBridgeAgg.IssuingEVMResponse{}
+		md = &metadataBridge.IssuingEVMResponse{}
 	case IssuingPRVBEP20ResponseMeta:
-		md = &metadataBridgeAgg.IssuingEVMResponse{}
+		md = &metadataBridge.IssuingEVMResponse{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 	case BurningRequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningRequestMetaV2:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningPBSCRequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningPRVBEP20RequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningPRVERC20RequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case IssuingPLGRequestMeta:
-		md = &metadataBridgeAgg.IssuingEVMRequest{}
+		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingPLGResponseMeta:
-		md = &metadataBridgeAgg.IssuingEVMResponse{}
+		md = &metadataBridge.IssuingEVMResponse{}
 	case BurningPLGRequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningPLGForDepositToSCRequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
@@ -163,11 +163,11 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case PortalCustodianTopupResponseMeta:
 		md = &PortalLiquidationCustodianDepositResponse{}
 	case BurningForDepositToSCRequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningPBSCForDepositToSCRequestMeta:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case BurningForDepositToSCRequestMetaV2:
-		md = &metadataBridgeAgg.BurningRequest{}
+		md = &metadataBridge.BurningRequest{}
 	case PortalPortingResponseMeta:
 		md = &PortalFeeRefundResponse{}
 	case PortalReqMatchingRedeemMeta:
@@ -253,19 +253,19 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case metadataCommon.Pdexv3WithdrawStakingRewardResponseMeta:
 		md = &metadataPdexv3.WithdrawalStakingRewardResponse{}
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-		md = &metadataBridgeAgg.ConvertTokenToUnifiedTokenRequest{}
+		md = &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:
-		md = &metadataBridgeAgg.ConvertTokenToUnifiedTokenResponse{}
+		md = &metadataBridge.ConvertTokenToUnifiedTokenResponse{}
 	case metadataCommon.BridgeAggModifyListTokenMeta:
-		md = &metadataBridgeAgg.ModifyListToken{}
+		md = &metadataBridge.ModifyListToken{}
 	case metadataCommon.ShieldUnifiedTokenRequestMeta:
-		md = &metadataBridgeAgg.ShieldRequest{}
+		md = &metadataBridge.ShieldRequest{}
 	case metadataCommon.ShieldUnifiedTokenResponseMeta:
-		md = &metadataBridgeAgg.ShieldResponse{}
+		md = &metadataBridge.ShieldResponse{}
 	case metadataCommon.UnshieldUnifiedTokenRequestMeta:
-		md = &metadataBridgeAgg.UnshieldRequest{}
+		md = &metadataBridge.UnshieldRequest{}
 	case metadataCommon.UnshieldUnifiedTokenResponseMeta:
-		md = &metadataBridgeAgg.UnshieldResponse{}
+		md = &metadataBridge.UnshieldResponse{}
 	default:
 		Logger.log.Debug("parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

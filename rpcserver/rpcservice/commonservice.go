@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -170,7 +170,7 @@ func NewBurningRequestMetadata(
 	networkID uint,
 	expectedAmount uint64,
 	isDepositToSC *bool,
-) (*metadataBridgeAgg.BurningRequest, *RPCError) {
+) (*metadataBridge.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -190,7 +190,7 @@ func NewBurningRequestMetadata(
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
-	meta, err := metadataBridgeAgg.NewBurningRequest(
+	meta, err := metadataBridge.NewBurningRequest(
 		paymentAddr,
 		uint64(voutsAmount),
 		*tokenIDHash,
@@ -210,7 +210,7 @@ func NewBurningRequestMetadata(
 
 func GetETHHeaderByHash(ethBlockHash string) (*types.Header, error) {
 	gethParam := config.Config().GethParam
-	return metadataBridgeAgg.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)
+	return metadataBridge.GetEVMHeader(rCommon.HexToHash(ethBlockHash), gethParam.Protocol, gethParam.Host, gethParam.Port)
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string

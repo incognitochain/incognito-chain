@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
@@ -29,7 +29,7 @@ func (sp *stateProcessor) modifyListTokens(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		acceptedInst := metadataBridgeAgg.AcceptedModifyListToken{}
+		acceptedInst := metadataBridge.AcceptedModifyListToken{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return unifiedTokenInfos, err
@@ -93,7 +93,7 @@ func (sp *stateProcessor) convert(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		acceptedInst := metadataBridgeAgg.AcceptedConvertTokenToUnifiedToken{}
+		acceptedInst := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return unifiedTokenInfos, err
@@ -147,7 +147,7 @@ func (sp *stateProcessor) shield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		acceptedInst := metadataBridgeAgg.IssuingEVMAcceptedInst{}
+		acceptedInst := metadataBridge.IssuingEVMAcceptedInst{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return unifiedTokenInfos, err
@@ -201,7 +201,7 @@ func (sp *stateProcessor) unshield(
 		/*if err != nil {*/
 		/*return unifiedTokenInfos, err*/
 		/*}*/
-		/*acceptedInst := metadataBridgeAgg.AcceptedUnshieldRequest{}*/
+		/*acceptedInst := metadataBridge.AcceptedUnshieldRequest{}*/
 		/*err = json.Unmarshal(contentBytes, &acceptedInst)*/
 		/*if err != nil {*/
 		/*return unifiedTokenInfos, err*/

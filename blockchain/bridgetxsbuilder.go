@@ -10,7 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -133,7 +133,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	isPRV bool,
 ) ([][]string, []byte, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
-	issuingEVMBridgeReqAction, err := metadataBridgeAgg.ParseEVMIssuingInstContent(contentStr)
+	issuingEVMBridgeReqAction, err := metadataBridge.ParseEVMIssuingInstContent(contentStr)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
 		return nil, nil, nil
@@ -149,7 +149,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	)
 	rejectedInst := inst.StringSlice()
 
-	amount, receivingShardID, addressStr, token, uniqTx, err := metadataBridgeAgg.ExtractIssueEVMData(
+	amount, receivingShardID, addressStr, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
 		stateDBs[common.BeaconChainID], shardID, listTxUsed, contractAddress, prefix, isTxHashIssued, issuingEVMBridgeReqAction,
 	)
 	if err != nil {
@@ -157,14 +157,14 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return [][]string{rejectedInst}, nil, nil
 	}
 	if !isPRV {
-		err := metadataBridgeAgg.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
+		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
 		if err != nil {
 			Logger.log.Warnf(err.Error())
 			return [][]string{rejectedInst}, nil, nil
 		}
 	}
 
-	issuingAcceptedInst := metadataBridgeAgg.IssuingEVMAcceptedInst{
+	issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
 		ShardID:         receivingShardID,
 		IssuingAmount:   amount,
 		ReceiverAddrStr: addressStr,
@@ -250,7 +250,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of EVM accepted issuance instruction: ", err)
 		return nil, nil
 	}
-	var issuingEVMAcceptedInst metadataBridgeAgg.IssuingEVMAcceptedInst
+	var issuingEVMAcceptedInst metadataBridge.IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while unmarshaling EVM accepted issuance instruction: ", err)
@@ -271,7 +271,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		PaymentAddress: key.KeySet.PaymentAddress,
 	}
 
-	issuingEVMRes := metadataBridgeAgg.NewIssuingEVMResponse(
+	issuingEVMRes := metadataBridge.NewIssuingEVMResponse(
 		issuingEVMAcceptedInst.TxReqID,
 		issuingEVMAcceptedInst.UniqTx,
 		issuingEVMAcceptedInst.ExternalTokenID,

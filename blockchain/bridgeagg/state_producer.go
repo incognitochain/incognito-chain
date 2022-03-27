@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -26,7 +26,7 @@ func (sp *stateProducer) modifyListTokens(
 	shardID byte,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	action := metadataCommon.NewAction()
-	md := &metadataBridgeAgg.ModifyListToken{}
+	md := &metadataBridge.ModifyListToken{}
 	action.Meta = md
 	err := action.FromString(contentStr)
 	if err != nil {
@@ -87,7 +87,7 @@ func (sp *stateProducer) modifyListTokens(
 			}
 		}
 	}
-	acceptedContent := metadataBridgeAgg.AcceptedModifyListToken{
+	acceptedContent := metadataBridge.AcceptedModifyListToken{
 		ModifyListToken: *md,
 		TxReqID:         action.TxReqID,
 	}
@@ -107,14 +107,14 @@ func (sp *stateProducer) convert(
 	shouldContinue := true
 	resUnifiedTokenInfos = unifiedTokenInfos
 	action := metadataCommon.NewAction()
-	md := &metadataBridgeAgg.ConvertTokenToUnifiedTokenRequest{}
+	md := &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
 	action.Meta = md
 	err = action.FromString(contentStr)
 	if err != nil {
 		err = NewBridgeAggErrorWithValue(OtherError, err)
 		return
 	}
-	rejectedConvertRequest := metadataBridgeAgg.RejectedConvertTokenToUnifiedToken{
+	rejectedConvertRequest := metadataBridge.RejectedConvertTokenToUnifiedToken{
 		TokenID:  md.TokenID,
 		Amount:   md.Amount,
 		Receiver: md.Receivers[md.TokenID],
@@ -158,7 +158,7 @@ func (sp *stateProducer) convert(
 			return
 		}
 		resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID] = vault
-		acceptedContent := metadataBridgeAgg.AcceptedConvertTokenToUnifiedToken{
+		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{
 			ConvertTokenToUnifiedTokenRequest: *md,
 			TxReqID:                           action.TxReqID,
 		}
@@ -180,7 +180,7 @@ func (sp *stateProducer) shield(
 	var content []byte
 	shouldContinue := true
 	resUnifiedTokenInfos = unifiedTokenInfos
-	action, err := metadataBridgeAgg.ParseEVMIssuingInstContent(contentStr)
+	action, err := metadataBridge.ParseEVMIssuingInstContent(contentStr)
 	if err != nil {
 		err = NewBridgeAggErrorWithValue(OtherError, err)
 		return
@@ -245,14 +245,14 @@ func (sp *stateProducer) shield(
 		errorType = NotFoundTokenIDInNetworkError
 		return
 	}
-	amount, receivingShardID, addressStr, token, uniqTx, err := metadataBridgeAgg.ExtractIssueEVMData(
+	amount, receivingShardID, addressStr, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
 		stateDBs[common.BeaconChainID], shardID, listTxUsed, contractAddress, prefix, isTxHashIssued, action,
 	)
 	if err != nil {
 		errorType = FailToExtractDataError
 		return
 	}
-	err = metadataBridgeAgg.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
 	if err != nil {
 		errorType = FailToVerifyTokenPairError
 		return
@@ -295,7 +295,7 @@ func (sp *stateProducer) shield(
 	case common.PLGNetworkID:
 		ac.UniqPLGTxsUsed = append(ac.UniqPLGTxsUsed, uniqTx)
 	}
-	issuingAcceptedInst := metadataBridgeAgg.IssuingEVMAcceptedInst{
+	issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
 		ShardID:         receivingShardID,
 		IssuingAmount:   amount,
 		ReceiverAddrStr: addressStr,
@@ -320,7 +320,7 @@ func (sp *stateProducer) unshield(
 	stateDB *statedb.StateDB,
 ) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
 	action := metadataCommon.NewAction()
-	md := &metadataBridgeAgg.BurningRequest{}
+	md := &metadataBridge.BurningRequest{}
 	action.Meta = md
 	err = action.FromString(contentStr)
 	if err != nil {

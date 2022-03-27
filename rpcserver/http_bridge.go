@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridgeAgg "github.com/incognitochain/incognito-chain/metadata/bridgeagg"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -185,7 +185,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingEVMReq(params interfac
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	meta, err := metadataBridgeAgg.NewIssuingEVMRequestFromMap(data, common.DefaultNetworkID, metatype)
+	meta, err := metadataBridge.NewIssuingEVMRequestFromMap(data, common.DefaultNetworkID, metatype)
 	if err != nil {
 		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		Logger.log.Error(rpcErr)
