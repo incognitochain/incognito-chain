@@ -190,7 +190,8 @@ func GetEVMHeaderResultMultipleHosts(
 			continue
 		}
 		if evmHeaderByNumber.Hash().String() != evmBlockHash.String() {
-			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch, rejected!", evmBlockHash.String())
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch, rejected, evm BlockHash by number %v!",
+				evmBlockHash.String(), evmHeaderByNumber.Hash().String())
 			evmHeaderResult.IsForked = true
 			return evmHeaderResult, nil
 		}
