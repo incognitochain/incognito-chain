@@ -133,7 +133,7 @@ func GetMostRecentEVMBlockHeight(host string) (*big.Int, error) {
 }
 
 func CheckBlockFinality(
-	evmBlockHeight *big.Int,
+	evmHeader types.Header,
 	evmBlockHash rCommon.Hash,
 	hosts []string,
 	minConfirmationBlocks int,
@@ -143,12 +143,12 @@ func CheckBlockFinality(
 	// try with multiple hosts
 	for _, host := range hosts {
 		// re-check fork, because the unfinalized blocks still have possibility of fork
-		evmHeader, err := GetEVMHeaderByNumber(evmBlockHeight, host)
+		evmHeaderByNumber, err := GetEVMHeaderByNumber(evmHeader.Number, host)
 		if err != nil {
 			continue
 		}
-		if evmHeader.Hash().String() != evmBlockHash.String() {
-			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch, rejected!", evmBlockHash.String())
+		if evmHeaderByNumber.Hash().String() != evmHeader.Hash().String() {
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch!", evmBlockHash.String())
 			isForked = true
 			return isFinalized, isForked, nil
 		}
@@ -157,10 +157,10 @@ func CheckBlockFinality(
 		if err != nil {
 			continue
 		}
-		if currentBlockHeight.Cmp(big.NewInt(0).Add(evmBlockHeight, big.NewInt(int64(minConfirmationBlocks)))) == -1 {
+		if currentBlockHeight.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(int64(minConfirmationBlocks)))) == -1 {
 			Logger.log.Warnf("WARNING: It needs %v confirmation blocks for the process, "+
 				"the requested block (%s) but the latest block (%s)", minConfirmationBlocks,
-				evmBlockHeight.String(), currentBlockHeight.String())
+				evmHeader.Number.String(), currentBlockHeight.String())
 		} else {
 			isFinalized = true
 		}
@@ -177,7 +177,7 @@ func GetEVMHeaderResultMultipleHosts(
 	evmHeaderResult := NewEVMHeaderResult()
 	// try with multiple hosts
 	for _, host := range hosts {
-		Logger.log.Infof("EVMHeader Call request with host: %v", host)
+		Logger.log.Infof("EVMHeader Call request with host: %v for block hash %v", host, evmBlockHash)
 		// get evm header
 		evmHeader, err := GetEVMHeaderByHash(evmBlockHash, host)
 		if err != nil {
@@ -189,9 +189,8 @@ func GetEVMHeaderResultMultipleHosts(
 		if err != nil {
 			continue
 		}
-		if evmHeaderByNumber.Hash().String() != evmBlockHash.String() {
-			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch, rejected, evm BlockHash by number %v!",
-				evmBlockHash.String(), evmHeaderByNumber.Hash().String())
+		if evmHeaderByNumber.Hash().String() != evmHeader.Hash().String() {
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch!", evmBlockHash.String())
 			evmHeaderResult.IsForked = true
 			return evmHeaderResult, nil
 		}
@@ -232,7 +231,7 @@ func GetEVMHeaderResult(
 			return evmHeaderRes, nil
 		}
 
-		isFinalized, isForked, err := CheckBlockFinality(evmHeaderRes.Header.Number, evmBlockHash, hosts, minConfirmationBlocks)
+		isFinalized, isForked, err := CheckBlockFinality(evmHeaderRes.Header, evmBlockHash, hosts, minConfirmationBlocks)
 		if err != nil {
 			Logger.log.Errorf("An error occured during re-checking block finality: %v", err)
 			return evmHeaderRes, NewEVMCallerError(GetEVMHeaderResultFromDBError, fmt.Errorf("An error occured during re-checking block finality: %v", err))
