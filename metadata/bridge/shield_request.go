@@ -51,11 +51,12 @@ func NewShieldRequest() *ShieldRequest {
 }
 
 func NewShieldRequestWithValue(
-	data []ShieldRequestData, incTokenID common.Hash,
+	data []ShieldRequestData, incTokenID common.Hash, paymentAddress privacy.PaymentAddress,
 ) *ShieldRequest {
 	return &ShieldRequest{
-		Data:       data,
-		IncTokenID: incTokenID,
+		Data:           data,
+		IncTokenID:     incTokenID,
+		PaymentAddress: paymentAddress,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.ShieldUnifiedTokenRequestMeta,
 		},

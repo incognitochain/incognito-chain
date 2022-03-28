@@ -339,7 +339,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridge.IssuingEVMRequest
+		metadataBridge.ShieldRequest
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -347,9 +347,8 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	md, err := metadataBridge.NewIssuingEVMRequest(
-		mdReader.BlockHash, mdReader.TxIndex, mdReader.ProofStrs, mdReader.IncTokenID, mdReader.NetworkID,
-		metadataCommon.ShieldUnifiedTokenRequestMeta,
+	md := metadataBridge.NewShieldRequestWithValue(
+		mdReader.Data, mdReader.IncTokenID, keyWallet.KeySet.PaymentAddress,
 	)
 
 	// create new param to build raw tx from param interface
