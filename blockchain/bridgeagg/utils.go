@@ -58,22 +58,21 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 	if y == 0 {
 		return deltaX, nil
 	}
-	k := big.NewInt(0).Mul(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(y))
 	newX := big.NewInt(0) // x'
 	actualAmount := big.NewInt(0)
 	switch operator {
 	case AddOperator:
 		newX.Add(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(deltaX))
-		newY := big.NewInt(0).Div(k, newX) // y'
-		reward := big.NewInt(0).Sub(big.NewInt(0).SetUint64(y), newY)
+		temp := big.NewInt(0).Mul(big.NewInt(0).SetUint64(y), big.NewInt(0).SetUint64(deltaX))
+		reward := temp.Div(temp, newX)
 		actualAmount = big.NewInt(0).Add(big.NewInt(0).SetUint64(deltaX), reward)
 		if actualAmount.Cmp(big.NewInt(0).SetUint64(deltaX)) < 0 {
 			return 0, errors.New("actualAmount < deltaX")
 		}
 	case SubOperator:
 		newX.Sub(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(deltaX))
-		newY := big.NewInt(0).Div(k, newX) // y'
-		fee := big.NewInt(0).Sub(newY, big.NewInt(0).SetUint64(y))
+		temp := big.NewInt(0).Mul(big.NewInt(0).SetUint64(y), big.NewInt(0).SetUint64(deltaX))
+		fee := temp.Div(temp, newX)
 		actualAmount = big.NewInt(0).Sub(big.NewInt(0).SetUint64(deltaX), fee)
 		if actualAmount.Cmp(big.NewInt(0).SetUint64(deltaX)) > 0 {
 			return 0, errors.New("actualAmount > deltaX")

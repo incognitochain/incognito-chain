@@ -62,7 +62,7 @@ func TestCalculateActualAmount(t *testing.T) {
 				x:        1000,
 				operator: AddOperator,
 			},
-			want:    110,
+			want:    109,
 			wantErr: false,
 		},
 	}
@@ -135,6 +135,16 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				burntAmount: 300,
 			},
 			want:    294,
+			wantErr: false,
+		},
+		{
+			name: "y != 0, burntAmount > x - valid",
+			args: args{
+				x:           1000,
+				y:           100,
+				burntAmount: 1050,
+			},
+			want:    750,
 			wantErr: false,
 		},
 	}
