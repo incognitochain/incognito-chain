@@ -46,9 +46,8 @@ type IssuingEVMAcceptedInst struct {
 	IncTokenID      common.Hash `json:"incTokenId"`
 	TxReqID         common.Hash `json:"txReqId"`
 	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
+	NetworkID       uint        `json:"NetworkID,omitempty"`
 	ExternalTokenID []byte      `json:"externalTokenId"`
-	NetworkID       uint        `json:"networkID,omitempty"`
-	Reward          uint64      `json:"reward,omitempty"`
 }
 
 type GetEVMHeaderByHashRes struct {
@@ -168,7 +167,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever metadataCommon.C
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != metadataCommon.IssuingETHRequestMeta && iReq.Type != metadataCommon.IssuingBSCRequestMeta &&
 		iReq.Type != metadataCommon.IssuingPRVERC20RequestMeta && iReq.Type != metadataCommon.IssuingPRVBEP20RequestMeta &&
-		iReq.Type != metadataCommon.IssuingPLGRequestMeta {
+		iReq.Type != metadataCommon.IssuingPLGRequestMeta && !(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.NetworkID != common.DefaultNetworkID) {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -232,13 +231,15 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	isBSCNetwork := false
 	IsPLGNetwork := false
 
-	if iReq.Type == metadataCommon.IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta {
+	if iReq.Type == metadataCommon.IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta ||
+		(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.Type == common.BSCNetworkID) {
 		isBSCNetwork = true
 	}
-	if iReq.Type == metadataCommon.IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta {
+	if iReq.Type == metadataCommon.IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta ||
+		(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.Type == common.ETHNetworkID) {
 		isETHNetwork = true
 	}
-	if iReq.Type == metadataCommon.IssuingPLGRequestMeta {
+	if iReq.Type == metadataCommon.IssuingPLGRequestMeta || (iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.Type == common.PLGNetworkID) {
 		IsPLGNetwork = true
 	}
 

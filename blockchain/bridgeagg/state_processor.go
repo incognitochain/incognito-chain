@@ -147,21 +147,26 @@ func (sp *stateProcessor) shield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		acceptedInst := metadataBridge.IssuingEVMAcceptedInst{}
+		acceptedInst := metadataBridge.AcceptedShieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		vault := unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkID] // check available before
-		err = vault.decreaseCurrentRewardReserve(acceptedInst.Reward)
-		if err != nil {
-			return unifiedTokenInfos, err
+		for _, data := range acceptedInst.Data {
+			vault := unifiedTokenInfos[acceptedInst.IncTokenID][data.NetworkID] // check available before
+			if acceptedInst.IsReward {
+				err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
+				if err != nil {
+					return unifiedTokenInfos, err
+				}
+			} else {
+				err = vault.increaseReserve(data.IssuingAmount)
+				if err != nil {
+					return unifiedTokenInfos, err
+				}
+			}
+			unifiedTokenInfos[acceptedInst.IncTokenID][data.NetworkID] = vault
 		}
-		err = vault.increaseReserve(acceptedInst.IssuingAmount - acceptedInst.Reward)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		unifiedTokenInfos[acceptedInst.IncTokenID][acceptedInst.NetworkID] = vault
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
 	case common.RejectedStatusStr:

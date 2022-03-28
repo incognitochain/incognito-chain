@@ -2,10 +2,13 @@ package bridge
 
 import (
 	"encoding/json"
+	"fmt"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type AcceptedShieldRequest struct {
@@ -13,26 +16,29 @@ type AcceptedShieldRequest struct {
 	IncTokenID common.Hash                 `json:"IncTokenID"`
 	TxReqID    common.Hash                 `json:"TxReqID"`
 	IsReward   bool                        `json:"IsReward"`
+	ShardID    byte                        `json:"ShardID"`
 	Data       []AcceptedShieldRequestData `json:"Data"`
 }
 
 type AcceptedShieldRequestData struct {
 	IssuingAmount   uint64 `json:"IssuingAmount"`
-	UniqTx          []byte `json:"UniqTx"`
-	ExternalTokenID []byte `json:"ExternalTokenID"`
+	UniqTx          []byte `json:"UniqTx,omitempty"`
+	ExternalTokenID []byte `json:"ExternalTokenID,omitempty"`
 	NetworkID       uint   `json:"NetworkID"`
 }
 
 type ShieldRequestData struct {
-	BlockHash []byte `json:"BlockHash"`
-	TxIndex   uint   `json:"TxIndex"`
-	Proof     []byte `json:"Proof"`
-	NetworkID uint   `json:"NetworkID"`
+	BlockHash   []byte   `json:"BlockHash"`
+	TxIndex     uint     `json:"TxIndex"`
+	Proof       []string `json:"Proof"`
+	NetworkType uint     `json:"NetworkType"`
+	NetworkID   uint     `json:"NetworkID"`
 }
 
 type ShieldRequest struct {
-	Data       []ShieldRequestData `json:"Data"`
-	IncTokenID common.Hash         `json:"IncTokenID"`
+	Data           []ShieldRequestData    `json:"Data"`
+	IncTokenID     common.Hash            `json:"IncTokenID"`
+	PaymentAddress privacy.PaymentAddress `json:"PaymentAddress,omitempty"`
 	metadataCommon.MetadataBase
 }
 
@@ -61,12 +67,35 @@ func (request *ShieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Transac
 }
 
 func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-
+	if len(request.Data) == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Data can not be null"))
+	}
 	return true, true, nil
 }
 
 func (request *ShieldRequest) ValidateMetadataByItself() bool {
-	return request.Type == metadataCommon.ShieldUnifiedTokenRequestMeta
+	if request.Type != metadataCommon.ShieldUnifiedTokenRequestMeta {
+		return false
+	}
+	for _, data := range request.Data {
+		switch data.NetworkType {
+		case common.EVMNetworkType:
+			blockHash := rCommon.Hash{}
+			err := blockHash.UnmarshalText(data.BlockHash)
+			if err != nil {
+				return false
+			}
+
+			evmShieldRequest, _ := NewIssuingEVMRequest(
+				blockHash, data.TxIndex, data.Proof, request.IncTokenID, data.NetworkID,
+				metadataCommon.ShieldUnifiedTokenRequestMeta,
+			) // error always null
+			return evmShieldRequest.ValidateMetadataByItself()
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func (request *ShieldRequest) Hash() *common.Hash {

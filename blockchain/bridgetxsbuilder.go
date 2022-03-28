@@ -150,7 +150,11 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	rejectedInst := inst.StringSlice()
 
 	amount, receivingShardID, addressStr, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
-		stateDBs[common.BeaconChainID], shardID, listTxUsed, contractAddress, prefix, isTxHashIssued, issuingEVMBridgeReqAction,
+		stateDBs[common.BeaconChainID], shardID, listTxUsed,
+		contractAddress, prefix, isTxHashIssued,
+		issuingEVMBridgeReqAction.EVMReceipt,
+		issuingEVMBridgeReqAction.Meta.BlockHash,
+		issuingEVMBridgeReqAction.Meta.TxIndex,
 	)
 	if err != nil {
 		Logger.log.Warnf(err.Error())

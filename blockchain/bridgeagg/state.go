@@ -63,25 +63,25 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	for shardID, actions := range env.ShieldActions() {
 		for _, action := range actions {
-			inst := []string{}
-			inst, s.unifiedTokenInfos, err = s.producer.shield(
+			insts := [][]string{}
+			insts, s.unifiedTokenInfos, err = s.producer.shield(
 				action, s.unifiedTokenInfos, env.AccumulatedValues(), byte(shardID), env.StateDBs(),
 			)
 			if err != nil {
 				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 			}
-			res = append(res, inst)
+			res = append(res, insts...)
 		}
 	}
 
 	for shardID, actions := range env.ConvertActions() {
 		for _, action := range actions {
-			inst := []string{}
-			inst, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
+			insts := [][]string{}
+			insts, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
 			if err != nil {
 				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
 			}
-			res = append(res, inst)
+			res = append(res, insts...)
 		}
 	}
 

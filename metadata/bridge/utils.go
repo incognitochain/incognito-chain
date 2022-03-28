@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -102,22 +103,17 @@ func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
 }
 
 func ExtractIssueEVMData(
-	stateDB *statedb.StateDB,
-	shardID byte,
-	listTxUsed [][]byte,
-	contractAddress string,
-	prefix string,
+	stateDB *statedb.StateDB, shardID byte, listTxUsed [][]byte, contractAddress string, prefix string,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
-	action *IssuingEVMReqAction,
+	txReceipt *types.Receipt, blockHash rCommon.Hash, txIndex uint,
 ) (uint64, byte, string, []byte, []byte, error) {
-	txReceipt := action.EVMReceipt
 	if txReceipt == nil {
 		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: bridge tx receipt is null")
 	}
 
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
-	uniqTx := append(action.Meta.BlockHash[:], []byte(strconv.Itoa(int(action.Meta.TxIndex)))...)
+	uniqTx := append(blockHash[:], []byte(strconv.Itoa(int(txIndex)))...)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
 		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in current block: ", uniqTx)

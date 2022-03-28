@@ -2,13 +2,19 @@ package bridgeagg
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/utils"
 )
 
@@ -172,32 +178,184 @@ func InsertTxHashIssuedByNetworkID(networkID uint, isPRV bool) func(*statedb.Sta
 
 func buildInstruction(
 	metaType int, errorType int,
-	content []byte, txReqID common.Hash,
+	contents [][]byte, txReqID common.Hash,
 	shardID byte, err error,
-) ([]string, error) {
-	inst := metadataCommon.NewInstructionWithValue(
-		metaType,
-		common.AcceptedStatusStr,
-		shardID,
-		utils.EmptyString,
+) ([][]string, error) {
+	res := [][]string{}
+	for _, content := range contents {
+		inst := metadataCommon.NewInstructionWithValue(
+			metaType,
+			common.AcceptedStatusStr,
+			shardID,
+			utils.EmptyString,
+		)
+		if err != nil {
+			rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, 0, content)
+			rejectContent.ErrorCode = ErrCodeMessage[errorType].Code
+			inst.Status = common.RejectedStatusStr
+			rejectedInst := []string{}
+			if content == nil {
+				inst.Content = txReqID.String()
+				rejectedInst = inst.StringSlice()
+			} else {
+				rejectedInst, err = inst.StringSliceWithRejectContent(rejectContent)
+				if err != nil {
+					return res, NewBridgeAggErrorWithValue(errorType, err)
+				}
+			}
+			res = append(res, rejectedInst)
+		} else {
+			inst.Content = base64.StdEncoding.EncodeToString(content)
+			res = append(res, inst.StringSlice())
+		}
+	}
+	return res, nil
+}
+
+func CloneVaults(
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID common.Hash,
+) (map[uint]*Vault, error) {
+	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
+		res := make(map[uint]*Vault)
+		for networkID, vault := range vaults {
+			res[networkID] = vault.Clone()
+		}
+		return res, nil
+	} else {
+		return nil, fmt.Errorf("Can't find unifiedTokenID %s", unifiedTokenID.String())
+	}
+}
+
+func shieldEVM(
+	incTokenID common.Hash, networkID uint, ac *metadataCommon.AccumulatedValues,
+	shardID byte, txReqID common.Hash,
+	vaults map[uint]*Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
+	blockHash rCommon.Hash, txIndex uint,
+) (uint64, uint64, byte, []byte, []byte, int, error) {
+	var txReceipt *types.Receipt
+	err := json.Unmarshal(extraData, &txReceipt)
+	if err != nil {
+		return 0, 0, 0, nil, nil, OtherError, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestUnmarshalJsonError, err)
+	}
+	var listTxUsed [][]byte
+	var contractAddress, prefix string
+	var isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
+
+	switch networkID {
+	case common.ETHNetworkID:
+		listTxUsed = ac.UniqETHTxsUsed
+		contractAddress = config.Param().EthContractAddressStr
+		prefix = utils.EmptyString
+		isTxHashIssued = statedb.IsETHTxHashIssued
+		if incTokenID == common.PRVCoinID {
+			contractAddress = config.Param().PRVERC20ContractAddressStr
+			listTxUsed = ac.UniqPRVEVMTxsUsed
+			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
+		}
+	case common.BSCNetworkID:
+		listTxUsed = ac.UniqBSCTxsUsed
+		contractAddress = config.Param().BscContractAddressStr
+		prefix = common.BSCPrefix
+		isTxHashIssued = statedb.IsBSCTxHashIssued
+		if incTokenID == common.PRVCoinID {
+			contractAddress = config.Param().PRVBEP20ContractAddressStr
+			listTxUsed = ac.UniqPRVEVMTxsUsed
+			prefix = utils.EmptyString
+			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
+		}
+	case common.PLGNetworkID:
+		listTxUsed = ac.UniqPLGTxsUsed
+		contractAddress = config.Param().PlgContractAddressStr
+		prefix = common.PLGPrefix
+		isTxHashIssued = statedb.IsPLGTxHashIssued
+	case common.DefaultNetworkID:
+		return 0, 0, 0, nil, nil, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
+	default:
+		return 0, 0, 0, nil, nil, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
+	}
+	vault, found := vaults[networkID]
+	if !found {
+		return 0, 0, 0, nil, nil, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
+	}
+	amount, receivingShardID, _, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
+		stateDBs[common.BeaconChainID], shardID, listTxUsed,
+		contractAddress, prefix, isTxHashIssued, txReceipt, blockHash, txIndex,
 	)
 	if err != nil {
-		rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, 0, content)
-		rejectContent.ErrorCode = ErrCodeMessage[errorType].Code
-		inst.Status = common.RejectedStatusStr
-		rejectedInst := []string{}
-		if content == nil {
-			inst.Content = txReqID.String()
-			rejectedInst = inst.StringSlice()
-		} else {
-			rejectedInst, err = inst.StringSliceWithRejectContent(rejectContent)
-			if err != nil {
-				return rejectedInst, NewBridgeAggErrorWithValue(errorType, err)
-			}
-		}
-		return rejectedInst, nil
-	} else {
-		inst.Content = base64.StdEncoding.EncodeToString(content)
-		return inst.StringSlice(), nil
+		return 0, 0, 0, nil, nil, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
 	}
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
+	if err != nil {
+		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
+	}
+
+	if incTokenID != common.PRVCoinID {
+		tmpAmount := big.NewInt(0).SetUint64(amount)
+		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
+		if !tmpAmount.IsUint64() {
+			return 0, 0, 0, nil, nil, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, errors.New("Out of range uint64"))
+		}
+		amount = tmpAmount.Uint64()
+	}
+
+	actualAmount, err := vault.shield(amount)
+	if err != nil {
+		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, txReqID)
+		return 0, 0, 0, nil, nil, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
+	}
+	vaults[networkID] = vault
+	reward := actualAmount - amount
+
+	switch networkID {
+	case common.ETHNetworkID:
+		if incTokenID == common.PRVCoinID {
+			ac.UniqPRVEVMTxsUsed = append(ac.UniqPRVEVMTxsUsed, uniqTx)
+		} else {
+			ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqTx)
+		}
+	case common.BSCNetworkID:
+		if incTokenID == common.PRVCoinID {
+			ac.UniqPRVEVMTxsUsed = append(ac.UniqPRVEVMTxsUsed, uniqTx)
+		} else {
+			ac.UniqBSCTxsUsed = append(ac.UniqBSCTxsUsed, uniqTx)
+		}
+	case common.PLGNetworkID:
+		ac.UniqPLGTxsUsed = append(ac.UniqPLGTxsUsed, uniqTx)
+	}
+	ac.DBridgeTokenPair[vault.tokenID.String()] = token
+	return actualAmount, reward, receivingShardID, token, uniqTx, 0, nil
+}
+
+func buildAcceptedShieldContents(
+	shieldData, rewardData []metadataBridge.AcceptedShieldRequestData,
+	paymentAddress privacy.PaymentAddress, incTokenID, txReqID common.Hash, shardID byte,
+) ([][]byte, error) {
+	contents := [][]byte{}
+	acceptedContent := metadataBridge.AcceptedShieldRequest{
+		Receiver:   paymentAddress.String(),
+		IncTokenID: incTokenID,
+		TxReqID:    txReqID,
+		ShardID:    shardID,
+		Data:       shieldData,
+	}
+	content, err := json.Marshal(acceptedContent)
+	if err != nil {
+		return contents, err
+	}
+	contents = append(contents, content)
+	acceptedRewardContent := metadataBridge.AcceptedShieldRequest{
+		Receiver:   paymentAddress.String(),
+		IncTokenID: incTokenID,
+		TxReqID:    txReqID,
+		ShardID:    shardID,
+		IsReward:   true,
+		Data:       rewardData,
+	}
+	content, err = json.Marshal(acceptedRewardContent)
+	if err != nil {
+		return contents, err
+	}
+	contents = append(contents, content)
+	return contents, nil
 }
