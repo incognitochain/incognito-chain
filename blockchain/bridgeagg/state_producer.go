@@ -62,7 +62,9 @@ func (sp *stateProducer) modifyListTokens(
 			}
 			if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
 				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVaultWithValue(
-					*statedb.NewBridgeAggVaultState(), []byte{}, vault.TokenID(),
+					*statedb.NewBridgeAggVaultStateWithValue(
+						0, vault.RewardReserve, vault.RewardReserve, vault.Decimal,
+					), vault.TokenID(),
 				)
 			} else {
 				newRewardReserve := vault.RewardReserve

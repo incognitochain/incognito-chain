@@ -67,6 +67,7 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 			TokenID       common.Hash `json:"TokenID"`
 			NetworkID     uint        `json:"NetworkID"`
 			RewardReserve uint64      `json:"RewardReserve"`
+			Decimal       uint        `json:"Decimal"`
 		} `json:"NewList"`
 	}{}
 	// parse params & metadata
@@ -82,6 +83,7 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
 					value.TokenID, value.NetworkID,
 				),
+				Decimal: value.Decimal,
 			})
 		}
 	}

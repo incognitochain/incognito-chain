@@ -22,7 +22,7 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 			if err != nil {
 				state = statedb.NewBridgeAggVaultState()
 			}
-			vault := NewVaultWithValue(*state, nil, convertToken.TokenID()) // TODO: find externalTokenID here
+			vault := NewVaultWithValue(*state, convertToken.TokenID())
 			unifiedTokenInfos[unifiedTokenState.TokenID()][convertToken.NetworkID()] = vault
 		}
 	}

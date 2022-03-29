@@ -24,7 +24,7 @@ func NewVault() *Vault {
 	return &Vault{}
 }
 
-func NewVaultWithValue(state statedb.BridgeAggVaultState, externalTokenID []byte, tokenID common.Hash) *Vault {
+func NewVaultWithValue(state statedb.BridgeAggVaultState, tokenID common.Hash) *Vault {
 	return &Vault{
 		BridgeAggVaultState: state,
 		tokenID:             tokenID,
@@ -62,11 +62,11 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 
 func (v *Vault) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		ReserveState *statedb.BridgeAggVaultState `json:"ReserveState"`
-		TokenID      common.Hash                  `json:"TokenID"`
+		State   *statedb.BridgeAggVaultState `json:"State"`
+		TokenID common.Hash                  `json:"TokenID"`
 	}{
-		ReserveState: &v.BridgeAggVaultState,
-		TokenID:      v.tokenID,
+		State:   &v.BridgeAggVaultState,
+		TokenID: v.tokenID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -76,15 +76,15 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 
 func (v *Vault) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		ReserveState *statedb.BridgeAggVaultState `json:"ReserveState"`
-		TokenID      common.Hash                  `json:"TokenID"`
+		State   *statedb.BridgeAggVaultState `json:"State"`
+		TokenID common.Hash                  `json:"TokenID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	if temp.ReserveState != nil {
-		v.BridgeAggVaultState = *temp.ReserveState
+	if temp.State != nil {
+		v.BridgeAggVaultState = *temp.State
 	}
 	v.tokenID = temp.TokenID
 	return nil
