@@ -244,8 +244,3 @@ const (
 	BSCNetworkID
 	PLGNetworkID
 )
-
-// Add to the end of the list. DO NOT edit the order
-const (
-	EVMNetworkType = iota + 1
-)

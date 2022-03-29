@@ -28,11 +28,10 @@ type AcceptedShieldRequestData struct {
 }
 
 type ShieldRequestData struct {
-	BlockHash   []byte   `json:"BlockHash"`
-	TxIndex     uint     `json:"TxIndex"`
-	Proof       []string `json:"Proof"`
-	NetworkType uint     `json:"NetworkType"`
-	NetworkID   uint     `json:"NetworkID"`
+	BlockHash []byte   `json:"BlockHash"`
+	TxIndex   uint     `json:"TxIndex"`
+	Proof     []string `json:"Proof"`
+	NetworkID uint     `json:"NetworkID"`
 }
 
 type ShieldRequest struct {
@@ -79,8 +78,8 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 		return false
 	}
 	for _, data := range request.Data {
-		switch data.NetworkType {
-		case common.EVMNetworkType:
+		switch data.NetworkID {
+		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID:
 			blockHash := rCommon.Hash{}
 			err := blockHash.UnmarshalText(data.BlockHash)
 			if err != nil {
@@ -92,6 +91,8 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 				metadataCommon.ShieldUnifiedTokenRequestMeta,
 			) // error always null
 			return evmShieldRequest.ValidateMetadataByItself()
+		case common.DefaultNetworkID:
+			return false
 		default:
 			return false
 		}

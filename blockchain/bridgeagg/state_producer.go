@@ -220,8 +220,8 @@ func (sp *stateProducer) shield(
 		if shouldSkip {
 			break
 		}
-		switch data.NetworkType {
-		case common.EVMNetworkType:
+		switch data.NetworkID {
+		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID:
 			blockHash := rCommon.Hash{}
 			e := blockHash.UnmarshalText(data.BlockHash)
 			if e != nil {
@@ -248,12 +248,22 @@ func (sp *stateProducer) shield(
 			acceptedShieldRequestData[index].NetworkID = data.NetworkID
 			acceptedShieldRequestRewardData[index].NetworkID = data.NetworkID
 			receiveShardID = receivingShardID
+		case common.DefaultNetworkID:
+			errorType = OtherError
+			err = errors.New("Invalid networkID")
+			shouldSkip = true
+			return
 		default:
+			errorType = OtherError
 			err = errors.New("Invalid network type")
+			shouldSkip = true
 			return
 		}
 	}
 	if shouldSkip {
+		if errorType == OtherError {
+			shouldContinue = false
+		}
 		return
 	}
 	contents, err = buildAcceptedShieldContents(
