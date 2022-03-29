@@ -104,11 +104,6 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 
-		if issuingEVMAcceptedInst.NetworkID == common.DefaultNetworkID {
-			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: Wrong networkID expected not %v", common.DefaultNetworkID)
-			continue
-		}
-
 		if !bytes.Equal(iRes.RequestedTxID[:], issuingEVMAcceptedInst.TxReqID[:]) ||
 			!bytes.Equal(iRes.UniqTx, issuingEVMAcceptedInst.UniqTx) ||
 			!bytes.Equal(iRes.ExternalTokenID, issuingEVMAcceptedInst.ExternalTokenID) ||

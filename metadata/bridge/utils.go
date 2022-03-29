@@ -206,9 +206,8 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 	}
 
 	prefixLen := len(prefix)
-	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
-		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", metaType, tokenID))
+	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
+		return nil, errors.New(fmt.Sprintf("metadata type %v with invalid external tokenID %v", metaType, tokenID))
 	}
 	return tokenID, nil
 }

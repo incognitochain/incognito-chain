@@ -38,28 +38,30 @@ func (sp *stateProducer) modifyListTokens(
 	rejectContent := metadataCommon.NewRejectContentWithValue(action.TxReqID, 0, nil)
 
 	for unifiedTokenID, vaults := range md.NewListTokens {
-		if ok, err := statedb.CheckTokenIDExisted(sDBs, unifiedTokenID); err != nil || !ok {
-			rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
-			temp, err := inst.StringSliceWithRejectContent(rejectContent)
-			if err != nil {
-				return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
-			}
-			return temp, unifiedTokenInfos, nil
-		}
 		_, found := unifiedTokenInfos[unifiedTokenID]
 		if !found {
 			unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 		}
 		for _, vault := range vaults {
-			if ok, err := statedb.CheckTokenIDExisted(sDBs, vault.TokenID()); err != nil || !ok {
-				rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
-				temp, err := inst.StringSliceWithRejectContent(rejectContent)
-				if err != nil {
-					return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
-				}
-				return temp, unifiedTokenInfos, nil
-			}
 			if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
+				var prefix string
+				switch vault.NetworkID() {
+				case common.ETHNetworkID:
+					prefix = ""
+				case common.BSCNetworkID:
+					prefix = common.BSCPrefix
+				case common.PLGNetworkID:
+					prefix = common.PLGPrefix
+				}
+				if _, err := metadataBridge.FindExternalTokenID(sDBs[common.BeaconChainID], vault.TokenID(), prefix, metadataCommon.ShieldUnifiedTokenRequestMeta); err != nil {
+					Logger.log.Warnf("tx %s Cannot find externalTokenID with tokenID %s err %v", action.TxReqID.String(), vault.TokenID().String(), err)
+					rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
+					temp, err := inst.StringSliceWithRejectContent(rejectContent)
+					if err != nil {
+						return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
+					}
+					return temp, unifiedTokenInfos, nil
+				}
 				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVaultWithValue(
 					*statedb.NewBridgeAggVaultStateWithValue(
 						0, vault.RewardReserve, vault.RewardReserve, vault.Decimal,
@@ -71,6 +73,7 @@ func (sp *stateProducer) modifyListTokens(
 				lastUpdatedRewardReserve := v.LastUpdatedRewardReserve()
 				currentRewardReserve := v.CurrentRewardReserve()
 				if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
+					Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid", action.TxReqID.String())
 					rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
 					temp, err := inst.StringSliceWithRejectContent(rejectContent)
 					if err != nil {
@@ -193,6 +196,7 @@ func (sp *stateProducer) shield(
 	defer func() {
 		if shouldContinue {
 			if err != nil {
+				Logger.log.Warnf("tx %s shield with err %v", action.TxReqID.String(), err)
 				contents = append(contents, action.TxReqID.Bytes())
 			}
 			resInst, err = buildInstruction(

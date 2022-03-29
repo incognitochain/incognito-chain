@@ -106,4 +106,4 @@ auto_enable_feature:
       require_percentage: 100
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
-  base_decimal: 3
+  base_decimal: 6

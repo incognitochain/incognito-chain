@@ -49,8 +49,7 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
 		case strconv.Itoa(metadataCommon.ShieldUnifiedTokenRequestMeta):
-			var temp func(*statedb.StateDB, []byte) error
-			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, temp, false)
+			updatingInfoByTokenID, err = blockchain.processIssuingUnifiedToken(curView, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
@@ -124,14 +123,6 @@ func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, 
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
-	}
-
-	if issuingEVMAcceptedInst.IncTokenID.String() == common.PRVIDStr {
-		isPRV = true
-	}
-
-	if issuingEVMAcceptedInst.NetworkID != common.DefaultNetworkID {
-		insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(issuingEVMAcceptedInst.NetworkID, isPRV)
 	}
 
 	err = insertEVMTxHashIssued(curView.featureStateDB, issuingEVMAcceptedInst.UniqTx)
@@ -388,4 +379,65 @@ func decodeContent(content string, action interface{}) error {
 		return err
 	}
 	return json.Unmarshal(contentBytes, &action)
+}
+
+func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestState, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo) (map[common.Hash]metadata.UpdatingInfo, error) {
+	if len(instruction) != 4 {
+		return updatingInfoByTokenID, nil // skip the instruction
+	}
+	inst := metadataCommon.NewInstruction()
+	if err := inst.FromStringSlice(instruction); err != nil {
+		return updatingInfoByTokenID, err
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
+		return updatingInfoByTokenID, err
+	}
+	if inst.Status == common.AcceptedStatusStr {
+		var acceptedShieldRequest metadataBridge.AcceptedShieldRequest
+		err = json.Unmarshal(contentBytes, &acceptedShieldRequest)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+			return updatingInfoByTokenID, err
+		}
+
+		var isPRV bool
+		if acceptedShieldRequest.IncTokenID == common.PRVCoinID {
+			isPRV = true
+		}
+
+		for _, data := range acceptedShieldRequest.Data {
+
+			var insertEVMTxHashIssued func(*statedb.StateDB, []byte) error
+
+			if data.NetworkID != common.DefaultNetworkID {
+				insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(data.NetworkID, isPRV)
+			}
+
+			err = insertEVMTxHashIssued(curView.featureStateDB, data.UniqTx)
+			if err != nil {
+				Logger.log.Warn("WARNING: an error occured while inserting EVM tx hash issued to leveldb: ", err)
+				return updatingInfoByTokenID, err
+			}
+
+			if !isPRV {
+				updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.IncTokenID]
+				if found {
+					updatingInfo.CountUpAmt += data.IssuingAmount
+				} else {
+					updatingInfo = metadata.UpdatingInfo{
+						CountUpAmt:      data.IssuingAmount,
+						DeductAmt:       0,
+						TokenID:         acceptedShieldRequest.IncTokenID,
+						ExternalTokenID: data.ExternalTokenID,
+						IsCentralized:   false,
+					}
+				}
+				updatingInfoByTokenID[acceptedShieldRequest.IncTokenID] = updatingInfo
+			}
+		}
+	}
+
+	return updatingInfoByTokenID, nil
 }

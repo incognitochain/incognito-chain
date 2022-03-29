@@ -63,6 +63,7 @@ func (sp *stateProcessor) modifyListTokens(
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			return unifiedTokenInfos, err
 		}
+		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 	default:
@@ -117,6 +118,7 @@ func (sp *stateProcessor) convert(
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			return unifiedTokenInfos, err
 		}
+		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 	default:
@@ -176,6 +178,7 @@ func (sp *stateProcessor) shield(
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			return unifiedTokenInfos, err
 		}
+		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 	default:
@@ -231,6 +234,7 @@ func (sp *stateProcessor) unshield(
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			return unifiedTokenInfos, err
 		}
+		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 	default:
