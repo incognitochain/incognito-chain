@@ -11,7 +11,7 @@ func (sp *stateProducerV2) validateContributions(
 	contribution0, contribution1 rawdbv2.Pdexv3Contribution, // waiting and incoming contributions
 ) error {
 	if contribution0.TokenID().String() == contribution1.TokenID().String() {
-		return errors.New("contribution 0 and contribution 1 need to be same tokenID")
+		return errors.New("contribution 0 and contribution 1 cannot be same tokenID")
 	}
 	if contribution0.Amplifier() != contribution1.Amplifier() {
 		return errors.New("contribution 0 and contribution 1 need to be same amplifier")
