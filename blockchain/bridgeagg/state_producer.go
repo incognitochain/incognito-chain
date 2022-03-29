@@ -3,7 +3,6 @@ package bridgeagg
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -193,6 +192,9 @@ func (sp *stateProducer) shield(
 	}
 	defer func() {
 		if shouldContinue {
+			if err != nil {
+				contents = append(contents, action.TxReqID.Bytes())
+			}
 			resInst, err = buildInstruction(
 				metadataCommon.ShieldUnifiedTokenRequestMeta,
 				errorType, contents, action.TxReqID, shardID, err,
@@ -223,7 +225,7 @@ func (sp *stateProducer) shield(
 		switch data.NetworkID {
 		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID:
 			blockHash := rCommon.Hash{}
-			e := blockHash.UnmarshalText(data.BlockHash)
+			e := blockHash.UnmarshalText([]byte(data.BlockHash))
 			if e != nil {
 				shouldSkip = true
 				errorType = OtherError
@@ -250,12 +252,10 @@ func (sp *stateProducer) shield(
 			receiveShardID = receivingShardID
 		case common.DefaultNetworkID:
 			errorType = OtherError
-			err = errors.New("Invalid networkID")
 			shouldSkip = true
 			return
 		default:
 			errorType = OtherError
-			err = errors.New("Invalid network type")
 			shouldSkip = true
 			return
 		}

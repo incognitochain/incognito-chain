@@ -143,7 +143,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 
 	inst := metadataCommon.NewInstructionWithValue(
 		metaType,
-		common.AcceptedStatusStr,
+		common.RejectedStatusStr,
 		shardID,
 		issuingEVMBridgeReqAction.TxReqID.String(),
 	)
@@ -184,6 +184,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return [][]string{rejectedInst}, nil, nil
 	}
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = token
+	inst.Status = common.AcceptedStatusStr
 	inst.Content = base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes)
 	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
 	return [][]string{inst.StringSlice()}, uniqTx, nil

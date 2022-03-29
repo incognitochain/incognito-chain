@@ -190,18 +190,12 @@ func buildInstruction(
 			utils.EmptyString,
 		)
 		if err != nil {
-			rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, 0, content)
-			rejectContent.ErrorCode = ErrCodeMessage[errorType].Code
+			rejectContent := metadataCommon.NewRejectContentWithValue(txReqID, ErrCodeMessage[errorType].Code, content)
 			inst.Status = common.RejectedStatusStr
 			rejectedInst := []string{}
-			if content == nil {
-				inst.Content = txReqID.String()
-				rejectedInst = inst.StringSlice()
-			} else {
-				rejectedInst, err = inst.StringSliceWithRejectContent(rejectContent)
-				if err != nil {
-					return res, NewBridgeAggErrorWithValue(errorType, err)
-				}
+			rejectedInst, err = inst.StringSliceWithRejectContent(rejectContent)
+			if err != nil {
+				return res, NewBridgeAggErrorWithValue(errorType, err)
 			}
 			res = append(res, rejectedInst)
 		} else {
@@ -286,6 +280,7 @@ func shieldEVM(
 	}
 	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
 	if err != nil {
+		Logger.log.Info("[bridgeagg] 4")
 		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
 

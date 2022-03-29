@@ -46,8 +46,8 @@ type IssuingEVMAcceptedInst struct {
 	IncTokenID      common.Hash `json:"incTokenId"`
 	TxReqID         common.Hash `json:"txReqId"`
 	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
-	NetworkID       uint        `json:"NetworkID,omitempty"`
 	ExternalTokenID []byte      `json:"externalTokenId"`
+	NetworkID       uint        `json:"NetworkID,omitempty"`
 }
 
 type GetEVMHeaderByHashRes struct {
@@ -148,6 +148,20 @@ func NewIssuingEVMRequestFromMap(
 	return req, nil
 }
 
+func NewIssuingEVMRequestWithShieldRequest(data ShieldRequestData, incTokenID common.Hash) (*IssuingEVMRequest, error) {
+	blockHash := rCommon.Hash{}
+	err := blockHash.UnmarshalText([]byte(data.BlockHash))
+	if err != nil {
+		return nil, err
+	}
+
+	evmShieldRequest, _ := NewIssuingEVMRequest(
+		blockHash, data.TxIndex, data.Proof, incTokenID, data.NetworkID,
+		metadataCommon.ShieldUnifiedTokenRequestMeta,
+	) // error always null
+	return evmShieldRequest, nil
+}
+
 func (iReq IssuingEVMRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	return true, nil
 }
@@ -172,6 +186,7 @@ func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
+		metadataCommon.Logger.Log.Info("[bridgeagg] err:", err)
 		metadataCommon.Logger.Log.Error(metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateTxWithBlockChainError, err))
 		return false
 	}
@@ -232,14 +247,14 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	IsPLGNetwork := false
 
 	if iReq.Type == metadataCommon.IssuingBSCRequestMeta || iReq.Type == metadataCommon.IssuingPRVBEP20RequestMeta ||
-		(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.Type == common.BSCNetworkID) {
+		(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.NetworkID == common.BSCNetworkID) {
 		isBSCNetwork = true
 	}
 	if iReq.Type == metadataCommon.IssuingETHRequestMeta || iReq.Type == metadataCommon.IssuingPRVERC20RequestMeta ||
-		(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.Type == common.ETHNetworkID) {
+		(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.NetworkID == common.ETHNetworkID) {
 		isETHNetwork = true
 	}
-	if iReq.Type == metadataCommon.IssuingPLGRequestMeta || (iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.Type == common.PLGNetworkID) {
+	if iReq.Type == metadataCommon.IssuingPLGRequestMeta || (iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.NetworkID == common.PLGNetworkID) {
 		IsPLGNetwork = true
 	}
 

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/pkg/errors"
 )
 
 type AcceptedShieldRequest struct {
@@ -28,7 +28,7 @@ type AcceptedShieldRequestData struct {
 }
 
 type ShieldRequestData struct {
-	BlockHash []byte   `json:"BlockHash"`
+	BlockHash string   `json:"BlockHash"`
 	TxIndex   uint     `json:"TxIndex"`
 	Proof     []string `json:"Proof"`
 	NetworkID uint     `json:"NetworkID"`
@@ -80,16 +80,10 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 	for _, data := range request.Data {
 		switch data.NetworkID {
 		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID:
-			blockHash := rCommon.Hash{}
-			err := blockHash.UnmarshalText(data.BlockHash)
+			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
 			if err != nil {
 				return false
 			}
-
-			evmShieldRequest, _ := NewIssuingEVMRequest(
-				blockHash, data.TxIndex, data.Proof, request.IncTokenID, data.NetworkID,
-				metadataCommon.ShieldUnifiedTokenRequestMeta,
-			) // error always null
 			return evmShieldRequest.ValidateMetadataByItself()
 		case common.DefaultNetworkID:
 			return false
@@ -107,7 +101,33 @@ func (request *ShieldRequest) Hash() *common.Hash {
 }
 
 func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), nil).StringSlice(metadataCommon.ShieldUnifiedTokenRequestMeta)
+	extraData := [][]byte{}
+	for _, data := range request.Data {
+		switch data.NetworkID {
+		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID:
+			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
+			if err != nil {
+				return [][]string{}, err
+			}
+			evmReceipt, err := evmShieldRequest.verifyProofAndParseReceipt()
+			if err != nil {
+				return [][]string{}, err
+			}
+			if evmReceipt == nil {
+				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
+			}
+			content, err := json.Marshal(evmReceipt)
+			if err != nil {
+				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
+			}
+			extraData = append(extraData, content)
+		case common.DefaultNetworkID:
+			return [][]string{}, errors.New("NetworkID cannot be default")
+		default:
+			return [][]string{}, errors.New("Invalid networkID")
+		}
+	}
+	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), extraData).StringSlice(metadataCommon.ShieldUnifiedTokenRequestMeta)
 	return [][]string{content}, err
 }
 
