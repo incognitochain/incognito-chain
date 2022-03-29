@@ -164,10 +164,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	sort.Ints(keys)
 
 	// bridge agg actions collector
-	unshieldActions := [][]string{}
-	shieldActions := [][]string{}
-	convertActions := [][]string{}
-	modifyListTokensActions := [][]string{}
+	unshieldActions := make([][]string, beaconBestState.ActiveShards)
+	shieldActions := make([][]string, beaconBestState.ActiveShards)
+	convertActions := make([][]string, beaconBestState.ActiveShards)
+	modifyListTokensActions := make([][]string, beaconBestState.ActiveShards)
 	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 	if err != nil {
 		Logger.log.Error(err)
