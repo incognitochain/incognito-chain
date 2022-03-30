@@ -21,7 +21,7 @@ type PortalSig struct {
 	Sigs      [][]byte // array of sigs for all TxIn
 }
 
-func (pSig *PortalSig) ToPortalSigBytes() *proto.PortalSigBytes {
+func (pSig PortalSig) ToPortalSigBytes() *proto.PortalSigBytes {
 	return &proto.PortalSigBytes{
 		TokenID: pSig.TokenID,
 		TxHash:  pSig.RawTxHash,
@@ -32,7 +32,11 @@ func (pSig *PortalSig) ToPortalSigBytes() *proto.PortalSigBytes {
 func (pSig *PortalSig) FromPortalSigBytes(data *proto.PortalSigBytes) error {
 	pSig.TokenID = data.TokenID
 	pSig.RawTxHash = data.TxHash
-	pSig.Sigs = data.Sigs
+	for _, sig := range data.Sigs {
+		copySig := make([]byte, len(sig))
+		copy(copySig, sig)
+		pSig.Sigs = append(pSig.Sigs, copySig)
+	}
 	return nil
 }
 

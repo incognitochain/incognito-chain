@@ -120,10 +120,14 @@ func NewShardState(validationData string,
 	}
 }
 
-func (sState *ShardState) ToProtoShardState() (*proto.ShardStateBytes, error) {
-	res := &proto.ShardStateBytes{}
+func (sState ShardState) ToProtoShardState() (*proto.ShardStateBytes, error) {
+	res := &proto.ShardStateBytes{
+		CommitteeFromBlock: make([]byte, common.HashSize),
+		Hash:               make([]byte, common.HashSize),
+		CrossShard:         make([]byte, len(sState.CrossShard)),
+	}
 	res.CommitteeFromBlock = sState.CommitteeFromBlock[:]
-	res.CrossShard = sState.CrossShard
+	copy(res.CrossShard, sState.CrossShard)
 	res.Hash = sState.Hash[:]
 	res.Height = sState.Height
 	if len(sState.ValidationData) != 0 {
@@ -144,9 +148,12 @@ func (sState *ShardState) ToProtoShardState() (*proto.ShardStateBytes, error) {
 }
 
 func (sState *ShardState) FromProtoShardState(protoData *proto.ShardStateBytes) error {
+	sState.CommitteeFromBlock = common.Hash{}
+	sState.Hash = common.Hash{}
+	sState.CrossShard = make([]byte, len(protoData.CrossShard))
 	copy(sState.CommitteeFromBlock[:], protoData.CommitteeFromBlock)
 	copy(sState.Hash[:], protoData.Hash)
-	sState.CrossShard = protoData.CrossShard
+	copy(sState.CrossShard, protoData.CrossShard)
 	sState.Height = protoData.Height
 	if len(protoData.ValidationData) != 0 {
 		vData := &consensustypes.ValidationData{}
@@ -178,7 +185,7 @@ func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
 }
 
-func (beaconBlock *BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, error) {
+func (beaconBlock BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, error) {
 	res := &proto.BeaconBlockBytes{}
 	var err error
 	if beaconBlock.GetHeight() > 1 {
@@ -377,7 +384,7 @@ func (beaconBody BeaconBody) Hash() common.Hash {
 	return common.HashH([]byte(beaconBody.toString()))
 }
 
-func (beaconBody *BeaconBody) ToProtoBeaconBody() (*proto.BeaconBodyBytes, error) {
+func (beaconBody BeaconBody) ToProtoBeaconBody() (*proto.BeaconBodyBytes, error) {
 	res := &proto.BeaconBodyBytes{}
 	for _, ins := range beaconBody.Instructions {
 		insTmp := &proto.InstrucstionTmp{}
@@ -462,7 +469,7 @@ func (header *BeaconHeader) Hash() common.Hash {
 	return common.Keccak256(combined)
 }
 
-func (header *BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, error) {
+func (header BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, error) {
 	var err error
 	res := &proto.BeaconHeaderBytes{}
 	res.Version = int32(header.Version)

@@ -259,7 +259,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	return true, nil
 }
 
-func (sHeader *ShardHeader) ToProtoShardHeader() (*proto.ShardHeaderBytes, error) {
+func (sHeader ShardHeader) ToProtoShardHeader() (*proto.ShardHeaderBytes, error) {
 	res := &proto.ShardHeaderBytes{}
 	var err error
 	producerIdx := -1
@@ -297,7 +297,8 @@ func (sHeader *ShardHeader) ToProtoShardHeader() (*proto.ShardHeaderBytes, error
 	res.Height = sHeader.Height
 	res.Round = int32(sHeader.Round)
 	res.Epoch = sHeader.Epoch
-	res.CrossShardBitMap = sHeader.CrossShardBitMap
+	res.CrossShardBitMap = make([]byte, len(sHeader.CrossShardBitMap))
+	copy(res.CrossShardBitMap, sHeader.CrossShardBitMap)
 	res.BeaconHeight = sHeader.BeaconHeight
 	res.BeaconHash = sHeader.BeaconHash[:]
 	res.TotalTxsFee = map[string]uint64{}
@@ -360,7 +361,8 @@ func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderByt
 	sHeader.Height = protoData.Height
 	sHeader.Round = int(protoData.Round)
 	sHeader.Epoch = protoData.Epoch
-	sHeader.CrossShardBitMap = protoData.CrossShardBitMap
+	sHeader.CrossShardBitMap = make([]byte, len(protoData.CrossShardBitMap))
+	copy(sHeader.CrossShardBitMap, protoData.CrossShardBitMap)
 	sHeader.BeaconHeight = protoData.BeaconHeight
 	copy(sHeader.BeaconHash[:], protoData.BeaconHash)
 	sHeader.TotalTxsFee = make(map[common.Hash]uint64)
@@ -383,7 +385,7 @@ func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderByt
 	return nil
 }
 
-func (sBody *ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
+func (sBody ShardBody) ToProtoShardBody() *proto.ShardBodyBytes {
 	res := &proto.ShardBodyBytes{}
 	res.CrossTransactions = map[int32]*proto.CrossTransactionTmp{}
 	for k, v := range sBody.CrossTransactions {
@@ -450,7 +452,7 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 	return nil
 }
 
-func (sBlock *ShardBlock) ToProtoShardBlock() (*proto.ShardBlockBytes, error) {
+func (sBlock ShardBlock) ToProtoShardBlock() (*proto.ShardBlockBytes, error) {
 	res := &proto.ShardBlockBytes{}
 	var err error
 	if sBlock.GetHeight() > 1 {

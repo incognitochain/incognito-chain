@@ -27,7 +27,7 @@ func DecodeValidationData(data string) (*ValidationData, error) {
 	return &valData, nil
 }
 
-func (v *ValidationData) ToBytes() ([]byte, error) {
+func (v ValidationData) ToBytes() ([]byte, error) {
 	vBytes := proto.ValidationDataBytes{}
 	vBytes.BLSSig = v.ProducerBLSSig
 	vBytes.BriSig = v.ProducerBriSig
@@ -63,7 +63,6 @@ func (v *ValidationData) FromBytes(vDataBytes []byte) error {
 	}
 	v.AggSig = protoVData.AggSig
 	v.BridgeSig = protoVData.AllBriSig
-	v.PortalSig = nil
 	if len(protoVData.PortalSig) > 0 {
 		v.PortalSig = []*portalprocessv4.PortalSig{}
 		for _, sigBytes := range protoVData.PortalSig {
