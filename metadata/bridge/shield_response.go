@@ -1,13 +1,18 @@
 package bridge
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type ShieldResponseData struct {
@@ -71,6 +76,65 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 	idx := -1
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not shieldRequest instruction
+			continue
+		}
+		instMetaType := inst[0]
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.ShieldUnifiedTokenRequestMeta) {
+			continue
+		}
+
+		tempInst := metadataCommon.NewInstruction()
+		err := tempInst.FromStringSlice(inst)
+		if err != nil {
+			continue
+		}
+
+		var shardIDFromInst byte
+		var txReqIDFromInst common.Hash
+		var address privacy.PaymentAddress
+		var receivingAmtFromInst uint64
+		var receivingTokenID common.Hash
+
+		if tempInst.Status == common.AcceptedStatusStr {
+			contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
+			if err != nil {
+				return false, err
+			}
+			acceptedContent := AcceptedShieldRequest{}
+			err = json.Unmarshal(contentBytes, &acceptedContent)
+			if err != nil {
+				return false, err
+			}
+			shardIDFromInst = tempInst.ShardID
+			txReqIDFromInst = acceptedContent.TxReqID
+			receivingTokenID = acceptedContent.IncTokenID
+			key, err := wallet.Base58CheckDeserialize(acceptedContent.Receiver)
+			if err != nil {
+				metadataCommon.Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+				continue
+			}
+			address = key.KeySet.PaymentAddress
+			for index, data := range acceptedContent.Data {
+				if !bytes.Equal(data.UniqTx, response.Data[index].UniqTx) {
+					continue
+				}
+				if !bytes.Equal(data.ExternalTokenID, response.Data[index].ExternalTokenID) {
+					continue
+				}
+				receivingAmtFromInst += data.IssuingAmount
+			}
+		} else {
+			continue
+		}
+		if !bytes.Equal(response.TxReqID[:], txReqIDFromInst[:]) || shardID != shardIDFromInst {
+			continue
+		}
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != receivingTokenID.String() {
+			continue
+		}
+		if ok := mintCoin.CheckCoinValid(address, response.SharedRandom, receivingAmtFromInst); !ok {
 			continue
 		}
 

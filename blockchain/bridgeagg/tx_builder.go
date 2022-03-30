@@ -12,6 +12,7 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type TxBuilder struct {
@@ -161,19 +162,31 @@ func buildShieldUnifiedTokenResponse(
 		return nil, nil
 	}
 	switch inst.Status {
-	case common.RejectedStatusStr:
-		rejectContent := metadataCommon.NewRejectContent()
-		if err := rejectContent.FromString(inst.Content); err != nil {
+	case common.AcceptedStatusStr:
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
 			return nil, err
 		}
-		txReqID = rejectContent.TxReqID
-		//mdData, _ := rejectContent.Meta.(*metadataBridge.BurningRequest)
-		/*amount = mdData.BurningAmount*/
-		/*tokenID = mdData.TokenID*/
-		/*address = mdData.BurnerAddress*/
+		acceptedInst := metadataBridge.AcceptedShieldRequest{}
+		err = json.Unmarshal(contentBytes, &acceptedInst)
+		if err != nil {
+			return nil, err
+		}
+		key, err := wallet.Base58CheckDeserialize(acceptedInst.Receiver)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
+			return nil, err
+		}
+		address = key.KeySet.PaymentAddress
+		for _, data := range acceptedInst.Data {
+			amount += data.IssuingAmount
+		}
+		tokenID = acceptedInst.IncTokenID
+		txReqID = acceptedInst.TxReqID
 	default:
 		return nil, nil
 	}
+
 	md := metadataBridge.NewUnshieldResponseWithValue(inst.Status, txReqID, nil)
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &address, TokenID: &tokenID}
 	makeMD := func(c privacy.Coin) metadata.Metadata {
