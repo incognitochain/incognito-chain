@@ -142,17 +142,7 @@ func CheckBlockFinality(
 	isForked := false
 	// try with multiple hosts
 	for _, host := range hosts {
-		// re-check fork, because the unfinalized blocks still have possibility of fork
-		evmHeaderByNumber, err := GetEVMHeaderByNumber(evmHeader.Number, host)
-		if err != nil {
-			continue
-		}
-		if evmHeaderByNumber.Hash().String() != evmHeader.Hash().String() {
-			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch!", evmBlockHash.String())
-			isForked = true
-			return isFinalized, isForked, nil
-		}
-
+		// re-check finality
 		currentBlockHeight, err := GetMostRecentEVMBlockHeight(host)
 		if err != nil {
 			continue
@@ -161,8 +151,18 @@ func CheckBlockFinality(
 			Logger.log.Warnf("WARNING: It needs %v confirmation blocks for the process, "+
 				"the requested block (%s) but the latest block (%s)", minConfirmationBlocks,
 				evmHeader.Number.String(), currentBlockHeight.String())
-		} else {
-			isFinalized = true
+			return isFinalized, isForked, nil
+		}
+		isFinalized = true
+
+		// re-check fork, because the unfinalized blocks still have possibility of fork
+		evmHeaderByNumber, err := GetEVMHeaderByNumber(evmHeader.Number, host)
+		if err != nil {
+			continue
+		}
+		if evmHeaderByNumber.Hash().String() != evmHeader.Hash().String() {
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch!", evmBlockHash.String())
+			isForked = true
 		}
 		return isFinalized, isForked, nil
 	}
@@ -183,17 +183,6 @@ func GetEVMHeaderResultMultipleHosts(
 		if err != nil {
 			continue
 		}
-
-		// check fork
-		evmHeaderByNumber, err := GetEVMHeaderByNumber(evmHeader.Number, host)
-		if err != nil {
-			continue
-		}
-		if evmHeaderByNumber.Hash().String() != evmHeader.Hash().String() {
-			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch!", evmBlockHash.String())
-			evmHeaderResult.IsForked = true
-			return evmHeaderResult, nil
-		}
 		evmHeaderResult.Header = *evmHeader
 
 		// check finality
@@ -206,8 +195,20 @@ func GetEVMHeaderResultMultipleHosts(
 				"the requested block (%s) but the latest block (%s)", minConfirmationBlocks,
 				evmHeaderResult.Header.Number.String(), currentBlockHeight.String())
 			evmHeaderResult.IsFinalized = false
+			return evmHeaderResult, nil
+		}
+		evmHeaderResult.IsFinalized = true
+
+		// check fork
+		evmHeaderByNumber, err := GetEVMHeaderByNumber(evmHeader.Number, host)
+		if err != nil {
+			continue
+		}
+		if evmHeaderByNumber.Hash().String() != evmHeader.Hash().String() {
+			Logger.log.Errorf("The requested evm BlockHash %v is being on fork branch!", evmBlockHash.String())
+			evmHeaderResult.IsForked = true
 		} else {
-			evmHeaderResult.IsFinalized = true
+			evmHeaderResult.IsForked = false
 		}
 		return evmHeaderResult, nil
 	}
