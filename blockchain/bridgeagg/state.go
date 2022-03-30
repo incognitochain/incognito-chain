@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -55,7 +56,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			inst := [][]string{}
 			inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
 			}
 			res = append(res, inst...)
 		}
@@ -68,7 +69,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				action, s.unifiedTokenInfos, env.AccumulatedValues(), byte(shardID), env.StateDBs(),
 			)
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToShieldError, err)
 			}
 			res = append(res, insts...)
 		}
@@ -79,7 +80,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			insts := [][]string{}
 			insts, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
 			}
 			res = append(res, insts...)
 		}
@@ -139,6 +140,32 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 				return err
 			}
 		}
+	}
+	if !config.ReadUnifiedToken {
+		configedUnifiedToken := config.Param().UnifiedToken
+		for unifiedTokenIDStr, unifiedToken := range configedUnifiedToken {
+			unifiedTokenID, err := common.Hash{}.NewHashFromStr(unifiedTokenIDStr)
+			if err != nil {
+				return err
+			}
+			if _, found := s.unifiedTokenInfos[*unifiedTokenID]; !found {
+				s.unifiedTokenInfos[*unifiedTokenID] = make(map[uint]*Vault)
+				for networkID, vault := range unifiedToken {
+					state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.State.Decimal)
+					tokenID, err := common.Hash{}.NewHashFromStr(vault.TokenID)
+					if err != nil {
+						return err
+					}
+					vault := NewVaultWithValue(*state, *tokenID)
+					id, err := strconv.Atoi(networkID)
+					if err != nil {
+						return err
+					}
+					s.unifiedTokenInfos[*unifiedTokenID][uint(id)] = vault
+				}
+			}
+		}
+		config.ReadUnifiedToken = true
 	}
 	return nil
 }

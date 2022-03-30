@@ -41,17 +41,11 @@ func (sp *stateProcessor) modifyListTokens(
 			}
 			for _, vault := range vaults {
 				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
-					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVaultWithValue(
-						*statedb.NewBridgeAggVaultStateWithValue(
-							0, vault.RewardReserve, vault.RewardReserve, vault.Decimal,
-						), vault.TokenID(),
-					)
+					return unifiedTokenInfos, errors.New("Cannot find vault")
 				} else {
 					v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
 					v.SetLastUpdatedRewardReserve(vault.RewardReserve)
 					v.SetCurrentRewardReserve(vault.RewardReserve)
-					v.tokenID = vault.TokenID()
-					v.SetDecimal(vault.Decimal)
 					unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 				}
 			}
@@ -106,7 +100,7 @@ func (sp *stateProcessor) convert(
 				vault.convert(acceptedInst.Amount, acceptedInst.UnifiedTokenID == common.PRVCoinID)
 				unifiedTokenInfos[acceptedInst.UnifiedTokenID][acceptedInst.NetworkID] = vault
 			} else {
-				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
+				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 			}
 		} else {
 			return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)

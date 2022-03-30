@@ -1,7 +1,10 @@
 package bridge
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -49,10 +52,11 @@ func NewUnshieldRequest() *UnshieldRequest {
 }
 
 func NewUnshieldRequestWithValue(
-	data []UnshieldRequestData,
+	tokenID common.Hash, data []UnshieldRequestData,
 ) *UnshieldRequest {
 	return &UnshieldRequest{
-		Data: data,
+		TokenID: tokenID,
+		Data:    data,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
 		},
@@ -64,7 +68,48 @@ func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 }
 
 func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-
+	if len(request.Data) == 0 {
+		return false, false, fmt.Errorf("list data cannot be null")
+	}
+	totalBurningAmount := uint64(0)
+	for _, data := range request.Data {
+		if _, err := hex.DecodeString(data.RemoteAddress); err != nil {
+			return false, false, err
+		}
+		if data.BurningAmount == 0 {
+			return false, false, fmt.Errorf("wrong request info's burned amount")
+		}
+		if data.NetworkID != common.BSCNetworkID && data.NetworkID != common.ETHNetworkID && data.NetworkID != common.PLGNetworkID {
+			return false, false, fmt.Errorf("Invalid networkID")
+		}
+		if data.BurningAmount < data.ExpectedAmount {
+			return false, false, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount)
+		}
+		totalBurningAmount += data.BurningAmount
+	}
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, fmt.Errorf("it is not transaction burn. Error %v", err)
+	}
+	if !bytes.Equal(burnedTokenID[:], request.TokenID[:]) {
+		return false, false, fmt.Errorf("wrong request info's token id and token burned")
+	}
+	burnAmount := burnCoin.GetValue()
+	if burnAmount != totalBurningAmount || burnAmount == 0 {
+		return false, false, fmt.Errorf("burn amount is incorrect %v", burnAmount)
+	}
+	switch tx.GetType() {
+	case common.TxNormalType:
+		if request.TokenID != common.PRVCoinID {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, fmt.Errorf("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
+		}
+	case common.TxCustomTokenPrivacyType:
+		if request.TokenID == common.PRVCoinID {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, fmt.Errorf("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
+		}
+	default:
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, fmt.Errorf("Not recognize tx type"))
+	}
 	return true, true, nil
 }
 

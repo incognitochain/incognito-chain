@@ -44,49 +44,30 @@ func (sp *stateProducer) modifyListTokens(
 		}
 		for _, vault := range vaults {
 			if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
-				var prefix string
-				switch vault.NetworkID() {
-				case common.ETHNetworkID:
-					prefix = ""
-				case common.BSCNetworkID:
-					prefix = common.BSCPrefix
-				case common.PLGNetworkID:
-					prefix = common.PLGPrefix
+				rejectContent.ErrorCode = ErrCodeMessage[NotFoundNetworkIDError].Code
+				temp, err := inst.StringSliceWithRejectContent(rejectContent)
+				if err != nil {
+					return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 				}
-				if _, err := metadataBridge.FindExternalTokenID(sDBs[common.BeaconChainID], vault.TokenID(), prefix, metadataCommon.ShieldUnifiedTokenRequestMeta); err != nil {
-					Logger.log.Warnf("tx %s Cannot find externalTokenID with tokenID %s err %v", action.TxReqID.String(), vault.TokenID().String(), err)
-					rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
-					temp, err := inst.StringSliceWithRejectContent(rejectContent)
-					if err != nil {
-						return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
-					}
-					return temp, unifiedTokenInfos, nil
-				}
-				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = NewVaultWithValue(
-					*statedb.NewBridgeAggVaultStateWithValue(
-						0, vault.RewardReserve, vault.RewardReserve, vault.Decimal,
-					), vault.TokenID(),
-				)
-			} else {
-				newRewardReserve := vault.RewardReserve
-				v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
-				lastUpdatedRewardReserve := v.LastUpdatedRewardReserve()
-				currentRewardReserve := v.CurrentRewardReserve()
-				if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
-					Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid", action.TxReqID.String())
-					rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
-					temp, err := inst.StringSliceWithRejectContent(rejectContent)
-					if err != nil {
-						return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(InvalidRewardReserveError, err)
-					}
-					return temp, unifiedTokenInfos, nil
-				}
-				v.SetLastUpdatedRewardReserve(vault.RewardReserve)
-				v.SetCurrentRewardReserve(vault.RewardReserve)
-				v.tokenID = vault.TokenID()
-				v.SetDecimal(vault.Decimal)
-				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
+				return temp, unifiedTokenInfos, nil
+
 			}
+			newRewardReserve := vault.RewardReserve
+			v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
+			lastUpdatedRewardReserve := v.LastUpdatedRewardReserve()
+			currentRewardReserve := v.CurrentRewardReserve()
+			if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
+				Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid", action.TxReqID.String())
+				rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
+				temp, err := inst.StringSliceWithRejectContent(rejectContent)
+				if err != nil {
+					return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(InvalidRewardReserveError, err)
+				}
+				return temp, unifiedTokenInfos, nil
+			}
+			v.SetLastUpdatedRewardReserve(vault.RewardReserve)
+			v.SetCurrentRewardReserve(vault.RewardReserve)
+			unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 		}
 	}
 	acceptedContent := metadataBridge.AcceptedModifyListToken{
@@ -106,7 +87,6 @@ func (sp *stateProducer) convert(
 ) (resInst [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
 	var errorType int
 	var contents [][]byte
-	shouldContinue := true
 	resUnifiedTokenInfos = unifiedTokenInfos
 	action := metadataCommon.NewAction()
 	md := &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
@@ -123,23 +103,23 @@ func (sp *stateProducer) convert(
 	}
 
 	defer func() {
-		if shouldContinue {
+		if err != nil {
+			Logger.log.Warnf("Convert token with tx %s err %v", action.TxReqID.String(), err)
+			content, err := json.Marshal(rejectedConvertRequest)
 			if err != nil {
-				content, err := json.Marshal(rejectedConvertRequest)
-				if err != nil {
-					return
-				}
-				contents = append(contents, content)
-			}
-			resInst, err = buildInstruction(
-				metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
-				errorType, contents, action.TxReqID, shardID, err,
-			)
-			if err != nil {
+				errorType = OtherError
 				return
 			}
-			err = nil
+			contents = append(contents, content)
 		}
+		resInst, err = buildInstruction(
+			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
+			errorType, contents, action.TxReqID, shardID, err,
+		)
+		if err != nil {
+			Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), err)
+		}
+		err = nil
 	}()
 
 	if _, found := resUnifiedTokenInfos[md.UnifiedTokenID]; !found {
@@ -165,10 +145,10 @@ func (sp *stateProducer) convert(
 			ConvertTokenToUnifiedTokenRequest: *md,
 			TxReqID:                           action.TxReqID,
 		}
-		content, e := json.Marshal(acceptedContent)
-		if e != nil {
-			shouldContinue = false
-			err = e
+		var content []byte
+		content, err = json.Marshal(acceptedContent)
+		if err != nil {
+			errorType = OtherError
 			return
 		}
 		contents = append(contents, content)
@@ -183,7 +163,6 @@ func (sp *stateProducer) shield(
 ) (resInst [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
 	var errorType int
 	var contents [][]byte
-	shouldContinue := true
 	resUnifiedTokenInfos = unifiedTokenInfos
 	action := metadataCommon.NewAction()
 	md := &metadataBridge.ShieldRequest{}
@@ -194,20 +173,18 @@ func (sp *stateProducer) shield(
 		return
 	}
 	defer func() {
-		if shouldContinue {
-			if err != nil {
-				Logger.log.Warnf("tx %s shield with err %v", action.TxReqID.String(), err)
-				contents = append(contents, action.TxReqID.Bytes())
-			}
-			resInst, err = buildInstruction(
-				metadataCommon.ShieldUnifiedTokenRequestMeta,
-				errorType, contents, action.TxReqID, shardID, err,
-			)
-			if err != nil {
-				return
-			}
-			err = nil
+		if err != nil {
+			Logger.log.Warnf("tx %s shield with err %v", action.TxReqID.String(), err)
+			contents = append(contents, action.TxReqID.Bytes())
 		}
+		resInst, err = buildInstruction(
+			metadataCommon.ShieldUnifiedTokenRequestMeta,
+			errorType, contents, action.TxReqID, shardID, err,
+		)
+		if err != nil {
+			Logger.log.Warnf("Cannot build tx %s with err %v", action.TxReqID.String(), err)
+		}
+		err = nil
 	}()
 
 	vaults, err := CloneVaults(resUnifiedTokenInfos, md.IncTokenID)
@@ -265,9 +242,6 @@ func (sp *stateProducer) shield(
 		}
 	}
 	if shouldSkip {
-		if errorType == OtherError {
-			shouldContinue = false
-		}
 		return
 	}
 	contents, err = buildAcceptedShieldContents(
@@ -275,7 +249,7 @@ func (sp *stateProducer) shield(
 		md.PaymentAddress, md.IncTokenID, action.TxReqID, receiveShardID,
 	)
 	if err != nil {
-		shouldContinue = false
+		errorType = OtherError
 		return
 	}
 	resUnifiedTokenInfos[md.IncTokenID] = vaults

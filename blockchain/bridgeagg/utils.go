@@ -64,6 +64,13 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 	if y == 0 {
 		return deltaX, nil
 	}
+	if x == 0 {
+		temp := deltaX + y - 1
+		if temp < deltaX {
+			return 0, errors.New("Out of range uint64")
+		}
+		return temp, nil
+	}
 	newX := big.NewInt(0) // x'
 	actualAmount := big.NewInt(0)
 	switch operator {

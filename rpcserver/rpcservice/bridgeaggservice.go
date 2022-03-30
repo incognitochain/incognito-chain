@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
@@ -50,6 +51,7 @@ func getBridgeAggState(
 	res := &jsonresult.BridgeAggState{
 		BeaconTimeStamp:   beaconTimeStamp,
 		UnifiedTokenInfos: bridgeAggState.UnifiedTokenInfos(),
+		BaseDecimal:       config.Param().BridgeAggParam.BaseDecimal,
 	}
 	return res, nil
 }

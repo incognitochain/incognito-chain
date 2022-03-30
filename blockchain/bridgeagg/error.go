@@ -18,6 +18,9 @@ const (
 	FailToVerifyTokenPairError
 	OutOfRangeUni64Error
 	FailToBuildModifyListTokenError
+	FailToConvertTokenError
+	FailToShieldError
+	FailToUnshieldError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -35,6 +38,9 @@ var ErrCodeMessage = map[int]struct {
 	FailToVerifyTokenPairError:      {1008, "Fail to verify token pair"},
 	OutOfRangeUni64Error:            {1009, "Out of range uint64"},
 	FailToBuildModifyListTokenError: {1100, "Fail to build modify list token instruction"},
+	FailToConvertTokenError:         {1200, "Fail to convert token instruction"},
+	FailToShieldError:               {1100, "Fail to shield instruction"},
+	FailToUnshieldError:             {1100, "Fail to unshield instruction"},
 }
 
 type BridgeAggError struct {

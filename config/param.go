@@ -67,8 +67,9 @@ type param struct {
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool
-	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
-	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	PRVERC20ContractAddressStr       string                      `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+	PRVBEP20ContractAddressStr       string                      `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	UnifiedToken                     map[string]map[string]Vault `mapstructure:"unified_token" description:"unified token config"`
 }
 
 type genesisParam struct {

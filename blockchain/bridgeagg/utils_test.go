@@ -51,7 +51,7 @@ func TestCalculateActualAmount(t *testing.T) {
 				deltaX:   100,
 				operator: AddOperator,
 			},
-			want:    200,
+			want:    199,
 			wantErr: false,
 		},
 		{

@@ -32,7 +32,12 @@ func (txBuilder TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildBridgeAggConvertTokenUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
-	case metadataCommon.UnshieldUnifiedTokenResponseMeta:
+	case metadataCommon.ShieldUnifiedTokenRequestMeta:
+		if len(inst) != 4 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
+		}
+		tx, err = buildShieldUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
+	case metadataCommon.UnshieldUnifiedTokenRequestMeta:
 		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
@@ -74,15 +79,18 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		otaReceiver = acceptedInst.Receivers[tokenID]
 		txReqID = acceptedInst.TxReqID
 	case common.RejectedStatusStr:
-		/*rejectContent := metadataCommon.NewRejectContent()*/
-		/*if err := rejectContent.FromString(inst.Content); err != nil {*/
-		/*return nil, err*/
-		/*}*/
-		/*txReqID = rejectContent.TxReqID*/
-		/*mdData, _ := rejectContent.Meta.(*metadataBridge.ConvertTokenToUnifiedTokenRequest)*/
-		/*amount = mdData.Amount*/
-		/*tokenID = mdData.TokenID*/
-		/*otaReceiver = mdData.Receivers[tokenID]*/
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			return nil, err
+		}
+		txReqID = rejectContent.TxReqID
+		var rejectedConvertTokenToUnifiedToken metadataBridge.RejectedConvertTokenToUnifiedToken
+		if err := json.Unmarshal(rejectContent.Data, &rejectedConvertTokenToUnifiedToken); err != nil {
+			return nil, err
+		}
+		amount = rejectedConvertTokenToUnifiedToken.Amount
+		tokenID = rejectedConvertTokenToUnifiedToken.TokenID
+		otaReceiver = rejectedConvertTokenToUnifiedToken.Receiver
 	}
 	md := metadataBridge.NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(inst.Status, txReqID)
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: &otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
@@ -93,6 +101,49 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 }
 
 func buildUnshieldUnifiedTokenResponse(
+	content []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	var txReqID, tokenID common.Hash
+	var amount uint64
+	var address privacy.PaymentAddress
+	inst := metadataCommon.NewInstruction()
+	if err := inst.FromStringSlice(content); err != nil {
+		return tx, err
+	}
+	if inst.ShardID != shardID {
+		return nil, nil
+	}
+	switch inst.Status {
+	case common.RejectedStatusStr:
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			return nil, err
+		}
+		txReqID = rejectContent.TxReqID
+		//mdData, _ := rejectContent.Meta.(*metadataBridge.BurningRequest)
+		/*amount = mdData.BurningAmount*/
+		/*tokenID = mdData.TokenID*/
+		/*address = mdData.BurnerAddress*/
+	default:
+		return nil, nil
+	}
+	md := metadataBridge.NewUnshieldResponseWithValue(inst.Status, txReqID, nil)
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &address, TokenID: &tokenID}
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			md.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return md
+	}
+
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, makeMD)
+}
+
+func buildShieldUnifiedTokenResponse(
 	content []string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,

@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -67,7 +66,6 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 			TokenID       common.Hash `json:"TokenID"`
 			NetworkID     uint        `json:"NetworkID"`
 			RewardReserve uint64      `json:"RewardReserve"`
-			Decimal       uint        `json:"Decimal"`
 		} `json:"NewList"`
 	}{}
 	// parse params & metadata
@@ -83,7 +81,6 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
 					value.TokenID, value.NetworkID,
 				),
-				Decimal: value.Decimal,
 			})
 		}
 	}
@@ -417,7 +414,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridge.BurningRequest
+		metadataBridge.UnshieldRequest
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -425,10 +422,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	md, err := metadataBridge.NewBurningRequest(
-		keyWallet.KeySet.PaymentAddress, mdReader.BurningAmount, mdReader.TokenID, mdReader.TokenName,
-		mdReader.RemoteAddress, metadataCommon.UnshieldUnifiedTokenRequestMeta,
-	)
+	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.TokenID, mdReader.Data)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -444,12 +438,16 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	temp := bc.GetBurningAddress(bestState.BeaconHeight)
 	w, _ := wallet.Base58CheckDeserialize(temp)
 	burnAddr := w.KeySet.PaymentAddress
+	burningAmount := uint64(0)
+	for _, data := range md.Data {
+		burningAmount += data.BurningAmount
+	}
 
 	// burn selling amount for order, plus fee
 	burnPayments := []*privacy.PaymentInfo{
 		{
 			PaymentAddress: burnAddr,
-			Amount:         md.BurningAmount,
+			Amount:         burningAmount,
 		},
 	}
 	paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
