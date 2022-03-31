@@ -781,7 +781,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
-							if ord.AccessOTA() == nil || len(ord.AccessOTA()) == 0 {
+							if len(ord.AccessOTA()) == 0 {
 								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
 							}
 						}
@@ -798,7 +798,7 @@ func (sp *stateProcessorV2) withdrawOrder(
 						pair.orderbook.RemoveOrder(index)
 						if orderReward != nil && found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
-							if ord.AccessOTA() == nil || len(ord.AccessOTA()) == 0 {
+							if len(ord.AccessOTA()) == 0 {
 								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
 							}
 						}
@@ -926,6 +926,9 @@ func (sp *stateProcessorV2) withdrawLPFee(
 			delete(orderReward.uncollectedRewards, actionData.TokenID)
 			if orderReward.isEmpty() {
 				delete(poolPair.orderRewards, accessID)
+				for tokenID := range poolPair.makingVolume {
+					delete(poolPair.makingVolume[tokenID].volume, accessID)
+				}
 			}
 		}
 

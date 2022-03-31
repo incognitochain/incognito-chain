@@ -859,7 +859,7 @@ TransactionLoop:
 					if ord.IsEmpty() {
 						if orderReward, found := pair.orderRewards[ord.NftID().String()]; found {
 							orderReward.withdrawnStatus = WithdrawnOrderReward
-							if ord.AccessOTA() == nil || len(ord.AccessOTA()) == 0 {
+							if len(ord.AccessOTA()) == 0 {
 								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
 							}
 							pair.orderRewards[ord.NftID().String()] = orderReward
@@ -1004,11 +1004,13 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 				var shardID byte
 				for k, v := range orderReward.uncollectedRewards {
-					receiversInfo[k] = metadataPdexv3.ReceiverInfo{
-						Address: v.receiver,
-						Amount:  v.amount,
+					if v.amount != 0 {
+						receiversInfo[k] = metadataPdexv3.ReceiverInfo{
+							Address: v.receiver,
+							Amount:  v.amount,
+						}
+						shardID = v.receiver.GetShardID()
 					}
-					shardID = v.receiver.GetShardID()
 				}
 				accessHash, err := common.Hash{}.NewHashFromStr(accessID)
 				if err != nil {
@@ -1029,6 +1031,9 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 				numberTxsPerShard[shardID] += uint(len(inst))
 				res = append(res, inst...)
 				delete(poolPair.orderRewards, accessID)
+				for tokenID := range poolPair.makingVolume {
+					delete(poolPair.makingVolume[tokenID].volume, accessID)
+				}
 			}
 		}
 	}
