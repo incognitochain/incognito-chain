@@ -120,12 +120,13 @@ func (blkM *BlockManager) StoreBlock(
 	blkType proto.BlkType,
 	blkData types.BlockInterface,
 ) error {
-	blkBytes, err := blkData.ToBytes()
-	if err != nil {
-		return err
-	}
+	var err error
 	blkHash := blkData.Hash()
 	if config.Config().EnableFFStorage {
+		blkBytes, err := blkData.ToBytes()
+		if err != nil {
+			return err
+		}
 		blkIndex, err := blkM.fDB.Append(blkBytes)
 		if err != nil {
 			return err
@@ -135,6 +136,7 @@ func (blkM *BlockManager) StoreBlock(
 		if err != nil {
 			return err
 		}
+		blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
 	} else {
 		if blkType == proto.BlkType_BlkShard {
 			err = rawdbv2.StoreShardBlock(blkM.rDB, *blkHash, blkData)
@@ -145,6 +147,6 @@ func (blkM *BlockManager) StoreBlock(
 			return err
 		}
 	}
-	blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
+
 	return nil
 }
