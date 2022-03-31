@@ -8,5 +8,6 @@ import (
 type BridgeAggState struct {
 	BeaconTimeStamp   int64                                     `json:"BeaconTimeStamp"`
 	UnifiedTokenInfos map[common.Hash]map[uint]*bridgeagg.Vault `json:"UnifiedTokenInfos"`
-	BaseDecimal       uint                                      `json:"BaseDecimal"`
+	BaseUpperDecimal  uint                                      `json:"BaseUpperDecimal"`
+	BaseLowerDecimal  uint                                      `json:"BaseLowerDecimal"`
 }

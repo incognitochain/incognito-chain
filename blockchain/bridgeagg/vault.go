@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -127,13 +125,10 @@ func (v *Vault) increaseReserve(amount uint64) error {
 }
 
 func (v *Vault) convert(amount uint64) error {
-	tmpAmount := big.NewInt(0).SetUint64(amount)
-	tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
-	tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(v.Decimal())), nil))
-	if !tmpAmount.IsUint64() {
-		return errors.New("Out of range uni64")
+	amount, err := CalculateAmountByDecimal(amount, v.Decimal())
+	if err != nil {
+		return err
 	}
-	amount = tmpAmount.Uint64()
 	return v.increaseReserve(amount)
 }
 

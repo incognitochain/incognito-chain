@@ -315,80 +315,66 @@ func VerifyProofAndParseEVMReceipt(
 	return constructedReceipt, nil
 }
 
-func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, bool, error) {
+func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, string, int, bool, error) {
 	var hosts []string
 	var networkPrefix string
 	minConfirmationBlocks := metadataCommon.EVMConfirmationBlocks
 	checkEVMHardFork := false
-	/*isETHNetwork := false*/
-	/*isBSCNetwork := false*/
-	/*isPLGNetwork := false*/
-	/*isFTMNetwork := false*/
+	isETHNetwork := false
+	isBSCNetwork := false
+	isPLGNetwork := false
+	isFTMNetwork := false
 
-	switch metadataType {
-	case metadataCommon.IssuingETHRequestMeta, metadataCommon.IssuingPRVERC20RequestMeta:
-		{
-			evmParam := config.Param().GethParam
-			evmParam.GetFromEnv()
-			hosts = evmParam.Host
-
-			// Ethereum network with default prefix (empty string)
-			networkPrefix = ""
-			checkEVMHardFork = true
-		}
-	case metadataCommon.IssuingBSCRequestMeta, metadataCommon.IssuingPRVBEP20RequestMeta:
-		{
-			evmParam := config.Param().BSCParam
-			evmParam.GetFromEnv()
-			hosts = evmParam.Host
-
-			networkPrefix = common.BSCPrefix
-		}
-	case metadataCommon.IssuingPLGRequestMeta:
-		{
-			evmParam := config.Param().PLGParam
-			evmParam.GetFromEnv()
-			hosts = evmParam.Host
-
-			minConfirmationBlocks = metadataCommon.PLGConfirmationBlocks
-			networkPrefix = common.PLGPrefix
-			checkEVMHardFork = true
-		}
-	case metadataCommon.IssuingFantomRequestMeta:
-		{
-			evmParam := config.Param().FTMParam
-			evmParam.GetFromEnv()
-			hosts = evmParam.Host
-
-			minConfirmationBlocks = metadataCommon.FantomConfirmationBlocks
-			networkPrefix = common.FTMPrefix
-			checkEVMHardFork = true
-		}
-	default:
-		{
-			return nil, "", 0, false, fmt.Errorf("Invalid metadata type for EVM shielding request %v", metadataType)
-		}
+	if metadataType == metadataCommon.IssuingETHRequestMeta || metadataType == metadataCommon.IssuingPRVERC20RequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.ETHNetworkID) {
+		isETHNetwork = true
+	}
+	if metadataType == metadataCommon.IssuingBSCRequestMeta || metadataType == metadataCommon.IssuingPRVBEP20RequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.BSCNetworkID) {
+		isBSCNetwork = true
+	}
+	if metadataType == metadataCommon.IssuingPLGRequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.PLGNetworkID) {
+		isPLGNetwork = true
+	}
+	if metadataType == metadataCommon.IssuingFantomRequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.FTMNetworkID) {
+		isFTMNetwork = true
 	}
 
-	/*if isBSCNetwork {*/
-	/*evmParam := config.Param().BSCParam*/
-	/*evmParam.GetFromEnv()*/
-	/*host = evmParam.Host*/
-	/*} else if isETHNetwork {*/
-	/*evmParam := config.Config().GethParam*/
-	/*evmParam.GetFromEnv()*/
-	/*protocol = evmParam.Protocol*/
-	/*host = evmParam.Host*/
-	/*port = evmParam.Port*/
-	/*} else if isPLGNetwork {*/
-	/*evmParam := config.Param().PLGParam*/
-	/*evmParam.GetFromEnv()*/
-	/*host = evmParam.Host*/
-	/*} else if isFTMNetwork {*/
+	if isBSCNetwork {
+		evmParam := config.Param().BSCParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
 
-	/*} else {*/
-	/*return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: [verifyProofAndParseReceipt] invalid metatype with the hash: %s", iReq.BlockHash.String()))*/
-	/*}*/
+		networkPrefix = common.BSCPrefix
+
+	} else if isETHNetwork {
+		evmParam := config.Param().GethParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		// Ethereum network with default prefix (empty string)
+		networkPrefix = ""
+		checkEVMHardFork = true
+
+	} else if isPLGNetwork {
+		evmParam := config.Param().PLGParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		minConfirmationBlocks = metadataCommon.PLGConfirmationBlocks
+		networkPrefix = common.PLGPrefix
+		checkEVMHardFork = true
+
+	} else if isFTMNetwork {
+		evmParam := config.Param().FTMParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		minConfirmationBlocks = metadataCommon.FantomConfirmationBlocks
+		networkPrefix = common.FTMPrefix
+		checkEVMHardFork = true
+
+	} else {
+		return nil, "", 0, false, fmt.Errorf("Invalid metadata type for EVM shielding request metaType %v networkID %v", metadataType, networkID)
+	}
 
 	return hosts, networkPrefix, minConfirmationBlocks, checkEVMHardFork, nil
 }

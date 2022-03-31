@@ -351,7 +351,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
 			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
-			metaType == metadata.IssuingFantomRequestMeta {
+			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.ShieldUnifiedTokenRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -360,7 +360,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
-			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta {
+			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta ||
+			metaType == metadataCommon.UnshieldUnifiedTokenResponseMeta {
 			meta := tx.GetMetadata().(*metadataBridge.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
@@ -395,12 +396,12 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 	if err := inst.FromStringSlice(instruction); err != nil {
 		return updatingInfoByTokenID, err
 	}
-	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
-		return updatingInfoByTokenID, err
-	}
 	if inst.Status == common.AcceptedStatusStr {
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
+			return updatingInfoByTokenID, err
+		}
 		var acceptedShieldRequest metadataBridge.AcceptedShieldRequest
 		err = json.Unmarshal(contentBytes, &acceptedShieldRequest)
 		if err != nil {
@@ -408,17 +409,10 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 			return updatingInfoByTokenID, err
 		}
 
-		var isPRV bool
-		if acceptedShieldRequest.IncTokenID == common.PRVCoinID {
-			isPRV = true
-		}
-
 		for _, data := range acceptedShieldRequest.Data {
-
 			var insertEVMTxHashIssued func(*statedb.StateDB, []byte) error
-
 			if data.NetworkID != common.DefaultNetworkID {
-				insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(data.NetworkID, isPRV)
+				insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(data.NetworkID)
 			}
 
 			err = insertEVMTxHashIssued(curView.featureStateDB, data.UniqTx)
@@ -427,21 +421,28 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 				return updatingInfoByTokenID, err
 			}
 
-			if !isPRV {
-				updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.IncTokenID]
-				if found {
-					updatingInfo.CountUpAmt += data.IssuingAmount
-				} else {
-					updatingInfo = metadata.UpdatingInfo{
-						CountUpAmt:      data.IssuingAmount,
-						DeductAmt:       0,
-						TokenID:         acceptedShieldRequest.IncTokenID,
-						ExternalTokenID: data.ExternalTokenID,
-						IsCentralized:   false,
-					}
+			updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.IncTokenID]
+			if found {
+				updatingInfo.CountUpAmt += data.IssuingAmount
+			} else {
+				updatingInfo = metadata.UpdatingInfo{
+					CountUpAmt:      data.IssuingAmount,
+					DeductAmt:       0,
+					TokenID:         acceptedShieldRequest.IncTokenID,
+					ExternalTokenID: data.ExternalTokenID,
+					IsCentralized:   false,
 				}
-				updatingInfoByTokenID[acceptedShieldRequest.IncTokenID] = updatingInfo
 			}
+			updatingInfoByTokenID[acceptedShieldRequest.IncTokenID] = updatingInfo
+		}
+	} else if inst.Status == common.RejectedStatusStr {
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			return nil, err
+		}
+		err := statedb.TrackBridgeReqWithStatus(curView.featureStateDB, rejectContent.TxReqID, common.BridgeRequestRejectedStatus)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while tracking bridge request with rejected status to leveldb: ", err)
 		}
 	}
 

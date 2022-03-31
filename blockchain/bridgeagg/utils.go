@@ -168,10 +168,7 @@ func GetVault(unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID 
 	}
 }
 
-func InsertTxHashIssuedByNetworkID(networkID uint, isPRV bool) func(*statedb.StateDB, []byte) error {
-	if isPRV {
-		return statedb.InsertPRVEVMTxHashIssued
-	}
+func InsertTxHashIssuedByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
 	switch networkID {
 	case common.PLGNetworkID:
 		return statedb.InsertPLGTxHashIssued
@@ -287,18 +284,11 @@ func shieldEVM(
 	}
 	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
 	if err != nil {
-		Logger.log.Info("[bridgeagg] 4")
 		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
-
-	if incTokenID != common.PRVCoinID {
-		tmpAmount := big.NewInt(0).SetUint64(amount)
-		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
-		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
-		if !tmpAmount.IsUint64() {
-			return 0, 0, 0, nil, nil, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, errors.New("Out of range uint64"))
-		}
-		amount = tmpAmount.Uint64()
+	amount, err = CalculateAmountByDecimal(amount, vault.Decimal())
+	if err != nil {
+		return 0, 0, 0, nil, nil, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
 
 	actualAmount, err := vault.shield(amount)
@@ -360,4 +350,20 @@ func buildAcceptedShieldContents(
 	}
 	contents = append(contents, content)
 	return contents, nil
+}
+
+func CalculateAmountByDecimal(amount uint64, decimal uint) (uint64, error) {
+	tmpAmount := big.NewInt(0).SetUint64(amount)
+	tempDecimal := config.Param().BridgeAggParam.BaseLowerDecimal
+	if decimal >= config.Param().BridgeAggParam.BaseUpperDecimal {
+		tempDecimal = config.Param().BridgeAggParam.BaseUpperDecimal
+	}
+
+	tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tempDecimal)), nil))
+	tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
+	if !tmpAmount.IsUint64() {
+		return 0, errors.New("Out of range unit64")
+	}
+	amount = tmpAmount.Uint64()
+	return tmpAmount.Uint64(), nil
 }

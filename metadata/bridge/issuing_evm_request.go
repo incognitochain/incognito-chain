@@ -233,7 +233,7 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	// get hosts, minEVMConfirmationBlocks, networkPrefix depend iReq.Type
-	hosts, networkPrefix, minEVMConfirmationBlocks, checkEVMHardFork, err := GetEVMInfoByMetadataType(iReq.Type)
+	hosts, networkPrefix, minEVMConfirmationBlocks, checkEVMHardFork, err := GetEVMInfoByMetadataType(iReq.Type, iReq.NetworkID)
 	if err != nil {
 		metadataCommon.Logger.Log.Errorf("Can not get EVM info - Error: %+v", err)
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
