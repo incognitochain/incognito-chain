@@ -169,6 +169,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeAggStatusObjectWithValue(db, hash, value)
 	case BridgeAggVaultObjectType:
 		return newBridgeAggVaultObjectWithValue(db, hash, value)
+	case BridgeFTMTxObjectType:
+		return newBridgeFTMTxObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -318,6 +320,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeAggStatusObject(db, hash)
 	case BridgeAggVaultObjectType:
 		return newBridgeAggVaultObject(db, hash)
+	case BridgeFTMTxObjectType:
+		return newBridgeFTMTxObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

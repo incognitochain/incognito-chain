@@ -2486,7 +2486,7 @@ func (stateDB *StateDB) getBridgePRVEVMState(key common.Hash) (*BrigePRVEVMState
 	return NewBrigePRVEVMState(), false, nil
 }
 
-// ================================= BSC bridge OBJECT =======================================
+// ================================= PLG bridge OBJECT =======================================
 func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState, bool, error) {
 	plgTxState, err := stateDB.getStateObject(BridgePLGTxObjectType, key)
 	if err != nil {
@@ -2555,4 +2555,16 @@ func (stateDB *StateDB) getBridgeAggVault(key common.Hash) (*BridgeAggVaultState
 		return vaultObject.GetValue().(*BridgeAggVaultState), true, nil
 	}
 	return NewBridgeAggVaultState(), false, nil
+}
+
+// ================================= Fantom bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeFTMTxState(key common.Hash) (*BridgeFTMTxState, bool, error) {
+	ftmTxState, err := stateDB.getStateObject(BridgeFTMTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ftmTxState != nil {
+		return ftmTxState.GetValue().(*BridgeFTMTxState), true, nil
+	}
+	return NewBridgeFTMTxState(), false, nil
 }

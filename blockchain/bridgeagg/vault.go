@@ -126,16 +126,14 @@ func (v *Vault) increaseReserve(amount uint64) error {
 	return nil
 }
 
-func (v *Vault) convert(amount uint64, isPRV bool) error {
-	if !isPRV {
-		tmpAmount := big.NewInt(0).SetUint64(amount)
-		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
-		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(v.Decimal())), nil))
-		if !tmpAmount.IsUint64() {
-			return errors.New("Out of range uni64")
-		}
-		amount = tmpAmount.Uint64()
+func (v *Vault) convert(amount uint64) error {
+	tmpAmount := big.NewInt(0).SetUint64(amount)
+	tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+	tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(v.Decimal())), nil))
+	if !tmpAmount.IsUint64() {
+		return errors.New("Out of range uni64")
 	}
+	amount = tmpAmount.Uint64()
 	return v.increaseReserve(amount)
 }
 

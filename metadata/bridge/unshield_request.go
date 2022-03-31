@@ -79,7 +79,7 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 		if data.BurningAmount == 0 {
 			return false, false, fmt.Errorf("wrong request info's burned amount")
 		}
-		if data.NetworkID != common.BSCNetworkID && data.NetworkID != common.ETHNetworkID && data.NetworkID != common.PLGNetworkID {
+		if data.NetworkID != common.BSCNetworkID && data.NetworkID != common.ETHNetworkID && data.NetworkID != common.PLGNetworkID && data.NetworkID != common.FTMNetworkID {
 			return false, false, fmt.Errorf("Invalid networkID")
 		}
 		if data.BurningAmount < data.ExpectedAmount {

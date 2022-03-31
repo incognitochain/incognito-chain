@@ -134,7 +134,7 @@ func (sp *stateProducer) convert(
 			errorType = NotFoundTokenIDInNetworkError
 			return
 		}
-		err = vault.convert(md.Amount, md.UnifiedTokenID == common.PRVCoinID)
+		err = vault.convert(md.Amount)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			errorType = InvalidConvertAmountError
@@ -204,7 +204,7 @@ func (sp *stateProducer) shield(
 			break
 		}
 		switch data.NetworkID {
-		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID:
+		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID, common.FTMNetworkID:
 			blockHash := rCommon.Hash{}
 			e := blockHash.UnmarshalText([]byte(data.BlockHash))
 			if e != nil {

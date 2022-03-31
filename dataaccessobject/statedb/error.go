@@ -37,11 +37,12 @@ const (
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
-	//A
+	ErrInvalidBridgeFTMTxStateType            = "invalid bridge fantom tx state type"
+	// A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
 	ErrInvalidWaitingPortingRequestType    = "invalid waiting porting request type"
-	//B
+	// B
 	ErrInvalidPortalStatusStateType              = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType           = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType     = "invalid portal waiting redeem request type"
@@ -179,7 +180,7 @@ const (
 	StoreBurningConfirmError
 	GetBurningConfirmError
 
-	//portal
+	// portal
 	StoreCustodianStateError
 	StoreWaitingRedeemRequestError
 	StorePortalRewardError
@@ -294,6 +295,10 @@ const (
 	// Polygon bridge
 	BridgeInsertPLGTxHashIssuedError
 	IsPLGTxHashIssuedError
+
+	// Fantom bridge
+	BridgeInsertFTMTxHashIssuedError
+	IsFTMTxHashIssuedError
 
 	// Bridge Agg
 	GetBridgeAggStatusError
@@ -475,9 +480,13 @@ var ErrCodeMessage = map[int]struct {
 	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
 	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
 
+	// fantom bridge
+	BridgeInsertFTMTxHashIssuedError: {-15106, "Bridge Insert Fantom Tx Hash Issued Error"},
+	IsFTMTxHashIssuedError:           {-15107, "Is Fantom Tx Hash Issued Error"},
+
 	// bridge agg
-	GetBridgeAggStatusError:   {-15106, "Get bridge agg status error"},
-	StoreBridgeAggStatusError: {-15107, "Store bridge agg status Error"},
+	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},
+	StoreBridgeAggStatusError: {-15109, "Store bridge agg status Error"},
 }
 
 type StatedbError struct {

@@ -79,7 +79,7 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 	}
 	for _, data := range request.Data {
 		switch data.NetworkID {
-		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID:
+		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
 			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
 			if err != nil {
 				return false
@@ -104,7 +104,7 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 	extraData := [][]byte{}
 	for _, data := range request.Data {
 		switch data.NetworkID {
-		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID:
+		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
 			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
 			if err != nil {
 				return [][]string{}, err

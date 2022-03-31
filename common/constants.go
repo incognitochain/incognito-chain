@@ -121,6 +121,7 @@ const (
 	NativeToken               = "0x0000000000000000000000000000000000000000"
 	BSCPrefix                 = "BSC"
 	PLGPrefix                 = "PLG"
+	FTMPrefix                 = "FTM"
 	ExternalBridgeTokenLength = 20
 	UnifiedTokenPrefix        = "UT"
 )
@@ -243,4 +244,5 @@ const (
 	ETHNetworkID
 	BSCNetworkID
 	PLGNetworkID
+	FTMNetworkID
 )

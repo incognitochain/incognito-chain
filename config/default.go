@@ -80,8 +80,14 @@ var MainnetParam = &param{
 	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 10000000,
 	TxPoolVersion:              0,
+	GethParam: gethParam{
+		Host: []string{"https://eth-fullnode.incognito.org"},
+	},
 	BSCParam: bscParam{
-		Host: "https://bsc-dataseed.binance.org",
+		Host: []string{"https://bsc-dataseed.binance.org"},
+	},
+	PLGParam: plgParam{
+		Host: []string{"https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"},
 	},
 	IsBackup: false,
 }
@@ -162,7 +168,7 @@ var Testnet1Param = &param{
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -244,7 +250,7 @@ var Tesnet2Param = &param{
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -325,7 +331,7 @@ var LocalParam = &param{
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -406,7 +412,7 @@ var LocalDCSParam = &param{
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }

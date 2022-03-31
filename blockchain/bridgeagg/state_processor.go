@@ -90,22 +90,25 @@ func (sp *stateProcessor) convert(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		acceptedInst := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
-		err = json.Unmarshal(contentBytes, &acceptedInst)
+		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
+		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		if vaults, found := unifiedTokenInfos[acceptedInst.UnifiedTokenID]; found {
-			if vault, found := vaults[acceptedInst.NetworkID]; found {
-				vault.convert(acceptedInst.Amount, acceptedInst.UnifiedTokenID == common.PRVCoinID)
-				unifiedTokenInfos[acceptedInst.UnifiedTokenID][acceptedInst.NetworkID] = vault
+		if vaults, found := unifiedTokenInfos[acceptedContent.UnifiedTokenID]; found {
+			if vault, found := vaults[acceptedContent.NetworkID]; found {
+				err := vault.convert(acceptedContent.Amount)
+				if err != nil {
+					return unifiedTokenInfos, err
+				}
+				unifiedTokenInfos[acceptedContent.UnifiedTokenID][acceptedContent.NetworkID] = vault
 			} else {
 				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 			}
 		} else {
 			return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 		}
-		txReqID = acceptedInst.TxReqID
+		txReqID = acceptedContent.TxReqID
 		status = common.AcceptedStatusByte
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()

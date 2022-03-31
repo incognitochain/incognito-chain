@@ -51,6 +51,9 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 		case strconv.Itoa(metadataCommon.ShieldUnifiedTokenRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingUnifiedToken(curView, inst, updatingInfoByTokenID)
 
+		case strconv.Itoa(metadata.IssuingFantomRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertFTMTxHashIssued, false)
+
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
@@ -66,6 +69,8 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 		case strconv.Itoa(metadata.BurningPLGConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.PLGPrefix)
 
+		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix)
 		}
 		if err != nil {
 			return err
@@ -345,7 +350,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
-			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta {
+			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
+			metaType == metadata.IssuingFantomRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -354,7 +360,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
-			metaType == metadata.IssuingPLGResponseMeta {
+			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta {
 			meta := tx.GetMetadata().(*metadataBridge.IssuingEVMResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
