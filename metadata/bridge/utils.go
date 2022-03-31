@@ -320,6 +320,10 @@ func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, bool, er
 	var networkPrefix string
 	minConfirmationBlocks := metadataCommon.EVMConfirmationBlocks
 	checkEVMHardFork := false
+	/*isETHNetwork := false*/
+	/*isBSCNetwork := false*/
+	/*isPLGNetwork := false*/
+	/*isFTMNetwork := false*/
 
 	switch metadataType {
 	case metadataCommon.IssuingETHRequestMeta, metadataCommon.IssuingPRVERC20RequestMeta:
@@ -365,6 +369,26 @@ func GetEVMInfoByMetadataType(metadataType int) ([]string, string, int, bool, er
 			return nil, "", 0, false, fmt.Errorf("Invalid metadata type for EVM shielding request %v", metadataType)
 		}
 	}
+
+	/*if isBSCNetwork {*/
+	/*evmParam := config.Param().BSCParam*/
+	/*evmParam.GetFromEnv()*/
+	/*host = evmParam.Host*/
+	/*} else if isETHNetwork {*/
+	/*evmParam := config.Config().GethParam*/
+	/*evmParam.GetFromEnv()*/
+	/*protocol = evmParam.Protocol*/
+	/*host = evmParam.Host*/
+	/*port = evmParam.Port*/
+	/*} else if isPLGNetwork {*/
+	/*evmParam := config.Param().PLGParam*/
+	/*evmParam.GetFromEnv()*/
+	/*host = evmParam.Host*/
+	/*} else if isFTMNetwork {*/
+
+	/*} else {*/
+	/*return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: [verifyProofAndParseReceipt] invalid metatype with the hash: %s", iReq.BlockHash.String()))*/
+	/*}*/
 
 	return hosts, networkPrefix, minConfirmationBlocks, checkEVMHardFork, nil
 }
