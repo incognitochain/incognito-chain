@@ -79,9 +79,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BurningPLGForDepositToSCRequestMeta:
 		md = &metadataBridge.BurningRequest{}
 	case IssuingFantomRequestMeta:
-		md = &metadataBridge.BurningRequest{}
+		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingFantomResponseMeta:
-		md = &metadataBridge.BurningRequest{}
+		md = &metadataBridge.IssuingEVMResponse{}
 	case BurningFantomRequestMeta:
 		md = &metadataBridge.BurningRequest{}
 	case BurningFantomForDepositToSCRequestMeta:
