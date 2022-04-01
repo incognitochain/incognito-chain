@@ -492,7 +492,7 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListShieldStatusPrefix(),
+		statedb.BridgeAggShieldStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {
@@ -523,7 +523,7 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListUnshieldStatusPrefix(),
+		statedb.BridgeAggUnshieldStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {

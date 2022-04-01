@@ -858,11 +858,11 @@ func BridgeAggConvertStatusPrefix() []byte {
 	return bridgeAggConvertStatusPrefix
 }
 
-func BridgeAggListShieldStatusPrefix() []byte {
+func BridgeAggShieldStatusPrefix() []byte {
 	return bridgeAggShieldStatusPrefix
 }
 
-func BridgeAggListUnshieldStatusPrefix() []byte {
+func BridgeAggUnshieldStatusPrefix() []byte {
 	return bridgeAggUnshieldStatusPrefix
 }
 

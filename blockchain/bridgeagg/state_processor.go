@@ -188,7 +188,7 @@ func (sp *stateProcessor) shield(
 	contentBytes, _ := json.Marshal(shieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListShieldStatusPrefix(),
+		statedb.BridgeAggShieldStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)
@@ -246,7 +246,7 @@ func (sp *stateProcessor) unshield(
 	contentBytes, _ := json.Marshal(shieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListUnshieldStatusPrefix(),
+		statedb.BridgeAggUnshieldStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)
