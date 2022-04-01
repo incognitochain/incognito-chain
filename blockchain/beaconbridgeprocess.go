@@ -48,7 +48,7 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 
 		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
-		case strconv.Itoa(metadataCommon.ShieldUnifiedTokenRequestMeta):
+		case strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingUnifiedToken(curView, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.IssuingFantomRequestMeta):
@@ -351,7 +351,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
 			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
-			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.ShieldUnifiedTokenRequestMeta {
+			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.IssuingUnifiedTokenRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -361,9 +361,14 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
 			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta ||
-			metaType == metadataCommon.UnshieldUnifiedTokenResponseMeta {
-			meta := tx.GetMetadata().(*metadataBridge.IssuingEVMResponse)
-			reqTxID = meta.RequestedTxID
+			metaType == metadataCommon.IssuingUnifiedTokenResponeMeta {
+			if metaType == metadataCommon.IssuingUnifiedTokenResponeMeta {
+				meta := tx.GetMetadata().(*metadataBridge.ShieldResponse)
+				reqTxID = meta.RequestedTxID
+			} else {
+				meta := tx.GetMetadata().(*metadataBridge.IssuingEVMResponse)
+				reqTxID = meta.RequestedTxID
+			}
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {
 				return err

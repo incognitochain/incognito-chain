@@ -12,7 +12,6 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type TxBuilder struct {
@@ -33,12 +32,12 @@ func (txBuilder TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildBridgeAggConvertTokenUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
-	case metadataCommon.ShieldUnifiedTokenRequestMeta:
+	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildShieldUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
-	case metadataCommon.UnshieldUnifiedTokenRequestMeta:
+	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
@@ -160,33 +159,41 @@ func buildShieldUnifiedTokenResponse(
 	if inst.ShardID != shardID {
 		return nil, nil
 	}
+	var listShieldResponseData []metadataBridge.ShieldResponseData
+
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
 			return nil, err
 		}
-		acceptedInst := metadataBridge.AcceptedShieldRequest{}
-		err = json.Unmarshal(contentBytes, &acceptedInst)
+		acceptedContent := metadataBridge.AcceptedShieldRequest{}
+		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
 			return nil, err
 		}
-		key, err := wallet.Base58CheckDeserialize(acceptedInst.Receiver)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
-			return nil, err
-		}
-		address = key.KeySet.PaymentAddress
-		for _, data := range acceptedInst.Data {
+		address = acceptedContent.Receiver
+		for _, data := range acceptedContent.Data {
 			amount += data.IssuingAmount
+			shieldResponseData := metadataBridge.ShieldResponseData{
+				ExternalTokenID: data.ExternalTokenID,
+				UniqTx:          data.UniqTx,
+				NetworkID:       data.NetworkID,
+			}
+			listShieldResponseData = append(listShieldResponseData, shieldResponseData)
 		}
-		tokenID = acceptedInst.IncTokenID
-		txReqID = acceptedInst.TxReqID
+		tokenID = acceptedContent.IncTokenID
+		txReqID = acceptedContent.TxReqID
+
 	default:
 		return nil, nil
 	}
 
-	md := metadataBridge.NewUnshieldResponseWithValue(inst.Status, txReqID)
+	if amount == 0 {
+		return nil, nil
+	}
+
+	md := metadataBridge.NewShieldResponseWithValue(listShieldResponseData, txReqID, nil)
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &address, TokenID: &tokenID}
 	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {

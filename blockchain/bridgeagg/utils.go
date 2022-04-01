@@ -246,22 +246,11 @@ func shieldEVM(
 		contractAddress = config.Param().EthContractAddressStr
 		prefix = utils.EmptyString
 		isTxHashIssued = statedb.IsETHTxHashIssued
-		if incTokenID == common.PRVCoinID {
-			contractAddress = config.Param().PRVERC20ContractAddressStr
-			listTxUsed = ac.UniqPRVEVMTxsUsed
-			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
-		}
 	case common.BSCNetworkID:
 		listTxUsed = ac.UniqBSCTxsUsed
 		contractAddress = config.Param().BscContractAddressStr
 		prefix = common.BSCPrefix
 		isTxHashIssued = statedb.IsBSCTxHashIssued
-		if incTokenID == common.PRVCoinID {
-			contractAddress = config.Param().PRVBEP20ContractAddressStr
-			listTxUsed = ac.UniqPRVEVMTxsUsed
-			prefix = utils.EmptyString
-			isTxHashIssued = statedb.IsPRVEVMTxHashIssued
-		}
 	case common.PLGNetworkID:
 		listTxUsed = ac.UniqPLGTxsUsed
 		contractAddress = config.Param().PlgContractAddressStr
@@ -302,17 +291,9 @@ func shieldEVM(
 
 	switch networkID {
 	case common.ETHNetworkID:
-		if incTokenID == common.PRVCoinID {
-			ac.UniqPRVEVMTxsUsed = append(ac.UniqPRVEVMTxsUsed, uniqTx)
-		} else {
-			ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqTx)
-		}
+		ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqTx)
 	case common.BSCNetworkID:
-		if incTokenID == common.PRVCoinID {
-			ac.UniqPRVEVMTxsUsed = append(ac.UniqPRVEVMTxsUsed, uniqTx)
-		} else {
-			ac.UniqBSCTxsUsed = append(ac.UniqBSCTxsUsed, uniqTx)
-		}
+		ac.UniqBSCTxsUsed = append(ac.UniqBSCTxsUsed, uniqTx)
 	case common.PLGNetworkID:
 		ac.UniqPLGTxsUsed = append(ac.UniqPLGTxsUsed, uniqTx)
 	}
@@ -323,10 +304,11 @@ func shieldEVM(
 func buildAcceptedShieldContents(
 	shieldData, rewardData []metadataBridge.AcceptedShieldRequestData,
 	paymentAddress privacy.PaymentAddress, incTokenID, txReqID common.Hash, shardID byte,
+	shouldBuildRewardContent bool,
 ) ([][]byte, error) {
 	contents := [][]byte{}
 	acceptedContent := metadataBridge.AcceptedShieldRequest{
-		Receiver:   paymentAddress.String(),
+		Receiver:   paymentAddress,
 		IncTokenID: incTokenID,
 		TxReqID:    txReqID,
 		ShardID:    shardID,
@@ -337,19 +319,21 @@ func buildAcceptedShieldContents(
 		return contents, err
 	}
 	contents = append(contents, content)
-	acceptedRewardContent := metadataBridge.AcceptedShieldRequest{
-		Receiver:   paymentAddress.String(),
-		IncTokenID: incTokenID,
-		TxReqID:    txReqID,
-		ShardID:    shardID,
-		IsReward:   true,
-		Data:       rewardData,
+	if shouldBuildRewardContent {
+		acceptedRewardContent := metadataBridge.AcceptedShieldRequest{
+			Receiver:   paymentAddress,
+			IncTokenID: incTokenID,
+			TxReqID:    txReqID,
+			ShardID:    shardID,
+			IsReward:   true,
+			Data:       rewardData,
+		}
+		content, err = json.Marshal(acceptedRewardContent)
+		if err != nil {
+			return contents, err
+		}
+		contents = append(contents, content)
 	}
-	content, err = json.Marshal(acceptedRewardContent)
-	if err != nil {
-		return contents, err
-	}
-	contents = append(contents, content)
 	return contents, nil
 }
 

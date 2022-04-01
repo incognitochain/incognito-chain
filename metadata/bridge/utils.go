@@ -34,13 +34,13 @@ func IsBridgeAggMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:
 		return true
-	case metadataCommon.ShieldUnifiedTokenRequestMeta:
+	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		return true
-	case metadataCommon.ShieldUnifiedTokenResponseMeta:
+	case metadataCommon.IssuingUnifiedTokenResponeMeta:
 		return true
-	case metadataCommon.UnshieldUnifiedTokenRequestMeta:
+	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		return true
-	case metadataCommon.UnshieldUnifiedTokenResponseMeta:
+	case metadataCommon.BurningUnifiedTokenResonseMeta:
 		return true
 	default:
 		return false
@@ -325,16 +325,16 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	isPLGNetwork := false
 	isFTMNetwork := false
 
-	if metadataType == metadataCommon.IssuingETHRequestMeta || metadataType == metadataCommon.IssuingPRVERC20RequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.ETHNetworkID) {
+	if metadataType == metadataCommon.IssuingETHRequestMeta || metadataType == metadataCommon.IssuingPRVERC20RequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.ETHNetworkID) {
 		isETHNetwork = true
 	}
-	if metadataType == metadataCommon.IssuingBSCRequestMeta || metadataType == metadataCommon.IssuingPRVBEP20RequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.BSCNetworkID) {
+	if metadataType == metadataCommon.IssuingBSCRequestMeta || metadataType == metadataCommon.IssuingPRVBEP20RequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.BSCNetworkID) {
 		isBSCNetwork = true
 	}
-	if metadataType == metadataCommon.IssuingPLGRequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.PLGNetworkID) {
+	if metadataType == metadataCommon.IssuingPLGRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.PLGNetworkID) {
 		isPLGNetwork = true
 	}
-	if metadataType == metadataCommon.IssuingFantomRequestMeta || (metadataType == metadataCommon.ShieldUnifiedTokenRequestMeta && networkID == common.FTMNetworkID) {
+	if metadataType == metadataCommon.IssuingFantomRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.FTMNetworkID) {
 		isFTMNetwork = true
 	}
 

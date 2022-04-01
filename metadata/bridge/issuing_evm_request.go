@@ -148,7 +148,7 @@ func NewIssuingEVMRequestWithShieldRequest(data ShieldRequestData, incTokenID co
 
 	evmShieldRequest, _ := NewIssuingEVMRequest(
 		blockHash, data.TxIndex, data.Proof, incTokenID, data.NetworkID,
-		metadataCommon.ShieldUnifiedTokenRequestMeta,
+		metadataCommon.IssuingUnifiedTokenRequestMeta,
 	) // error always null
 	return evmShieldRequest, nil
 }
@@ -172,7 +172,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever metadataCommon.C
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != metadataCommon.IssuingETHRequestMeta && iReq.Type != metadataCommon.IssuingBSCRequestMeta &&
 		iReq.Type != metadataCommon.IssuingPRVERC20RequestMeta && iReq.Type != metadataCommon.IssuingPRVBEP20RequestMeta &&
-		iReq.Type != metadataCommon.IssuingPLGRequestMeta && !(iReq.Type == metadataCommon.ShieldUnifiedTokenRequestMeta && iReq.NetworkID != common.DefaultNetworkID) &&
+		iReq.Type != metadataCommon.IssuingPLGRequestMeta && !(iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta && iReq.NetworkID != common.DefaultNetworkID) &&
 		iReq.Type != metadataCommon.IssuingFantomRequestMeta {
 		return false
 	}

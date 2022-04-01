@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type ShieldResponseData struct {
@@ -23,29 +22,29 @@ type ShieldResponseData struct {
 
 type ShieldResponse struct {
 	metadataCommon.MetadataBase
-	TxReqID      common.Hash          `json:"TxReqID"`
-	Data         []ShieldResponseData `json:"Data"`
-	SharedRandom []byte               `json:"SharedRandom,omitempty"`
+	RequestedTxID common.Hash          `json:"RequestedTxID"`
+	Data          []ShieldResponseData `json:"Data"`
+	SharedRandom  []byte               `json:"SharedRandom,omitempty"`
 }
 
 func NewShieldResponse() *ShieldResponse {
 	return &ShieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.ShieldUnifiedTokenResponseMeta,
+			Type: metadataCommon.IssuingUnifiedTokenResponeMeta,
 		},
 	}
 }
 
 func NewShieldResponseWithValue(
-	data []ShieldResponseData, txReqID common.Hash, shardRandom []byte,
+	data []ShieldResponseData, requestedTxID common.Hash, shardRandom []byte,
 ) *ShieldResponse {
 	return &ShieldResponse{
 		Data: data,
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.ShieldUnifiedTokenResponseMeta,
+			Type: metadataCommon.IssuingUnifiedTokenResponeMeta,
 		},
-		SharedRandom: shardRandom,
-		TxReqID:      txReqID,
+		SharedRandom:  shardRandom,
+		RequestedTxID: requestedTxID,
 	}
 }
 
@@ -59,7 +58,7 @@ func (response *ShieldResponse) ValidateSanityData(chainRetriever metadataCommon
 }
 
 func (response *ShieldResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.ShieldUnifiedTokenResponseMeta
+	return response.Type == metadataCommon.IssuingUnifiedTokenResponeMeta
 }
 
 func (response *ShieldResponse) Hash() *common.Hash {
@@ -79,7 +78,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.ShieldUnifiedTokenRequestMeta) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta) {
 			continue
 		}
 
@@ -108,12 +107,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = acceptedContent.TxReqID
 			receivingTokenID = acceptedContent.IncTokenID
-			key, err := wallet.Base58CheckDeserialize(acceptedContent.Receiver)
-			if err != nil {
-				metadataCommon.Logger.Log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
-				continue
-			}
-			address = key.KeySet.PaymentAddress
+			address = acceptedContent.Receiver
 			for index, data := range acceptedContent.Data {
 				if !bytes.Equal(data.UniqTx, response.Data[index].UniqTx) {
 					continue
@@ -121,12 +115,15 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 				if !bytes.Equal(data.ExternalTokenID, response.Data[index].ExternalTokenID) {
 					continue
 				}
+				if data.NetworkID != response.Data[index].NetworkID {
+					continue
+				}
 				receivingAmtFromInst += data.IssuingAmount
 			}
 		} else {
 			continue
 		}
-		if !bytes.Equal(response.TxReqID[:], txReqIDFromInst[:]) || shardID != shardIDFromInst {
+		if !bytes.Equal(response.RequestedTxID[:], txReqIDFromInst[:]) || shardID != shardIDFromInst {
 			continue
 		}
 

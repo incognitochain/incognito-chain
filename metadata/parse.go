@@ -266,13 +266,13 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.ConvertTokenToUnifiedTokenResponse{}
 	case metadataCommon.BridgeAggModifyListTokenMeta:
 		md = &metadataBridge.ModifyListToken{}
-	case metadataCommon.ShieldUnifiedTokenRequestMeta:
+	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		md = &metadataBridge.ShieldRequest{}
-	case metadataCommon.ShieldUnifiedTokenResponseMeta:
+	case metadataCommon.IssuingUnifiedTokenResponeMeta:
 		md = &metadataBridge.ShieldResponse{}
-	case metadataCommon.UnshieldUnifiedTokenRequestMeta:
+	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		md = &metadataBridge.UnshieldRequest{}
-	case metadataCommon.UnshieldUnifiedTokenResponseMeta:
+	case metadataCommon.BurningUnifiedTokenResonseMeta:
 		md = &metadataBridge.UnshieldResponse{}
 	default:
 		Logger.log.Debug("parse meta err: %+v\n", meta)

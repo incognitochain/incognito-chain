@@ -88,8 +88,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
 			metadataCommon.BridgeAggModifyListTokenMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
-			metadataCommon.ShieldUnifiedTokenRequestMeta,
-			metadataCommon.UnshieldUnifiedTokenRequestMeta:
+			metadataCommon.IssuingUnifiedTokenRequestMeta,
+			metadataCommon.BurningUnifiedTokenRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -325,9 +325,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				modifyListTokensActions[shardID] = append(modifyListTokensActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
-			case metadataCommon.ShieldUnifiedTokenRequestMeta:
+			case metadataCommon.IssuingUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
-			case metadataCommon.UnshieldUnifiedTokenRequestMeta:
+			case metadataCommon.BurningUnifiedTokenRequestMeta:
 				unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
 			default:
 				continue

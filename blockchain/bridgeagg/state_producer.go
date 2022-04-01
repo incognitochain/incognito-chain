@@ -182,7 +182,7 @@ func (sp *stateProducer) shield(
 			contents = append(contents, action.TxReqID.Bytes())
 		}
 		resInst, err = buildInstruction(
-			metadataCommon.ShieldUnifiedTokenRequestMeta,
+			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			errorType, contents, action.TxReqID, shardID, err,
 		)
 		if err != nil {
@@ -201,6 +201,7 @@ func (sp *stateProducer) shield(
 	var receiveShardID byte
 	acceptedShieldRequestData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
 	acceptedShieldRequestRewardData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
+	var rewardAmount uint64
 
 	for index, data := range md.Data {
 		switch data.NetworkID {
@@ -228,6 +229,7 @@ func (sp *stateProducer) shield(
 			acceptedShieldRequestData[index].NetworkID = data.NetworkID
 			acceptedShieldRequestRewardData[index].NetworkID = data.NetworkID
 			receiveShardID = receivingShardID
+			rewardAmount += reward
 		case common.DefaultNetworkID:
 			errorType = OtherError
 			err = errors.New("Invalid networkID")
@@ -240,7 +242,7 @@ func (sp *stateProducer) shield(
 	}
 	contents, err = buildAcceptedShieldContents(
 		acceptedShieldRequestData, acceptedShieldRequestRewardData,
-		md.PaymentAddress, md.IncTokenID, action.TxReqID, receiveShardID,
+		md.PaymentAddress, md.IncTokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
 	)
 	if err != nil {
 		errorType = OtherError
@@ -285,7 +287,7 @@ func (sp *stateProducer) unshield(
 			contents = append(contents, content)
 		}
 		insts, err := buildInstruction(
-			metadataCommon.UnshieldUnifiedTokenRequestMeta,
+			metadataCommon.BurningUnifiedTokenRequestMeta,
 			errorType, contents, action.TxReqID, shardID, err,
 		)
 		if err != nil {

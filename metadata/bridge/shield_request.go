@@ -12,7 +12,7 @@ import (
 )
 
 type AcceptedShieldRequest struct {
-	Receiver   string                      `json:"Receiver"`
+	Receiver   privacy.PaymentAddress      `json:"Receiver"`
 	IncTokenID common.Hash                 `json:"IncTokenID"`
 	TxReqID    common.Hash                 `json:"TxReqID"`
 	IsReward   bool                        `json:"IsReward"`
@@ -44,7 +44,7 @@ type ShieldRequest struct {
 func NewShieldRequest() *ShieldRequest {
 	return &ShieldRequest{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.ShieldUnifiedTokenRequestMeta,
+			Type: metadataCommon.IssuingUnifiedTokenRequestMeta,
 		},
 	}
 }
@@ -57,7 +57,7 @@ func NewShieldRequestWithValue(
 		IncTokenID:     incTokenID,
 		PaymentAddress: paymentAddress,
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.ShieldUnifiedTokenRequestMeta,
+			Type: metadataCommon.IssuingUnifiedTokenRequestMeta,
 		},
 	}
 }
@@ -74,7 +74,7 @@ func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.C
 }
 
 func (request *ShieldRequest) ValidateMetadataByItself() bool {
-	if request.Type != metadataCommon.ShieldUnifiedTokenRequestMeta {
+	if request.Type != metadataCommon.IssuingUnifiedTokenRequestMeta {
 		return false
 	}
 	for _, data := range request.Data {
@@ -127,7 +127,7 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 			return [][]string{}, errors.New("Invalid networkID")
 		}
 	}
-	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), extraData).StringSlice(metadataCommon.ShieldUnifiedTokenRequestMeta)
+	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), extraData).StringSlice(metadataCommon.IssuingUnifiedTokenRequestMeta)
 	return [][]string{content}, err
 }
 

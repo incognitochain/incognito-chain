@@ -16,27 +16,27 @@ import (
 
 type UnshieldResponse struct {
 	metadataCommon.MetadataBase
-	Status  string      `json:"Status"`
-	TxReqID common.Hash `json:"TxReqID"`
+	Status        string      `json:"Status"`
+	RequestedTxID common.Hash `json:"RequestedTxID"`
 }
 
 func NewUnshieldResponse() *UnshieldResponse {
 	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
+			Type: metadataCommon.BurningUnifiedTokenResonseMeta,
 		},
 	}
 }
 
 func NewUnshieldResponseWithValue(
-	status string, txReqID common.Hash,
+	status string, requestedTxID common.Hash,
 ) *UnshieldResponse {
 	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
+			Type: metadataCommon.BurningUnifiedTokenResonseMeta,
 		},
-		Status:  status,
-		TxReqID: txReqID,
+		Status:        status,
+		RequestedTxID: requestedTxID,
 	}
 }
 
@@ -71,7 +71,7 @@ func (response *UnshieldResponse) ValidateSanityData(
 }
 
 func (response *UnshieldResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.UnshieldUnifiedTokenResponseMeta
+	return response.Type == metadataCommon.BurningUnifiedTokenResonseMeta
 }
 
 func (response *UnshieldResponse) Hash() *common.Hash {
@@ -102,7 +102,7 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 		metadataCommon.Logger.Log.Infof("BUGLOG currently processing inst: %v\n", inst)
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.UnshieldUnifiedTokenRequestMeta) {
+		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta) {
 			continue
 		}
 		tempInst := metadataCommon.NewInstruction()
@@ -135,8 +135,8 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 
-		if response.TxReqID.String() != txReqIDFromInst.String() {
-			metadataCommon.Logger.Log.Infof("BUGLOG txReqID: %v, %v\n", response.TxReqID.String(), txReqIDFromInst.String())
+		if response.RequestedTxID.String() != txReqIDFromInst.String() {
+			metadataCommon.Logger.Log.Infof("BUGLOG txReqID: %v, %v\n", response.RequestedTxID.String(), txReqIDFromInst.String())
 			continue
 		}
 

@@ -129,12 +129,12 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 			if err != nil {
 				return err
 			}
-		case metadataCommon.ShieldUnifiedTokenRequestMeta:
+		case metadataCommon.IssuingUnifiedTokenRequestMeta:
 			s.unifiedTokenInfos, err = s.processor.shield(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
 			}
-		case metadataCommon.UnshieldUnifiedTokenRequestMeta:
+		case metadataCommon.BurningUnifiedTokenRequestMeta:
 			s.unifiedTokenInfos, err = s.processor.unshield(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
