@@ -905,6 +905,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
+
+	// update bridge aggreator state
+	newBestState.bridgeAggState.ClearCache()
+	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	if err != nil {
+		return NewBlockChainError(ProcessBridgeInstructionError, err)
+	}
+
 	// execute, store
 	err = blockchain.processBridgeInstructions(newBestState, beaconBlock)
 	if err != nil {
@@ -960,13 +968,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if beaconBlock.Header.Height == config.Param().PDexParams.Pdexv3BreakPointHeight-1 {
 		newBestState.pdeStates[pdex.AmplifierVersion] = pdex.NewStatev2()
-	}
-
-	// update bridge aggreator state
-	newBestState.bridgeAggState.ClearCache()
-	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
-	if err != nil {
-		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 
 	// Save result of BurningConfirm instruction to get proof later
