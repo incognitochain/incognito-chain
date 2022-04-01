@@ -147,16 +147,16 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 			want:    750,
 			wantErr: false,
 		},
-		/*{*/
-		/*name: "y != 0, burntAmount > x - valid 2",*/
-		/*args: args{*/
-		/*x:           250,*/
-		/*y:           400,*/
-		/*burntAmount: 1050,*/
-		/*},*/
-		/*want:    750,*/
-		/*wantErr: false,*/
-		/*},*/
+		{
+			name: "unshield after shield",
+			args: args{
+				x:           1100,
+				y:           91,
+				burntAmount: 109,
+			},
+			want:    100,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
