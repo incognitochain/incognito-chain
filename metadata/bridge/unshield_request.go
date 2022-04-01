@@ -9,11 +9,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type RejectedUnshieldRequest struct {
-	TokenID       common.Hash `json:"TokenID"`
-	BurningAmount uint64      `json:"BurningAmount"`
+	TokenID  common.Hash         `json:"TokenID"`
+	Amount   uint64              `json:"Amount"`
+	Receiver privacy.OTAReceiver `json:"Receiver"`
 }
 
 type AcceptedUnshieldRequest struct {
@@ -38,8 +40,9 @@ type UnshieldRequestData struct {
 }
 
 type UnshieldRequest struct {
-	TokenID common.Hash           `json:"TokenID"`
-	Data    []UnshieldRequestData `json:"Data"`
+	TokenID  common.Hash           `json:"TokenID"`
+	Data     []UnshieldRequestData `json:"Data"`
+	Receiver privacy.OTAReceiver   `json:"Receiver"`
 	metadataCommon.MetadataBase
 }
 
@@ -52,11 +55,12 @@ func NewUnshieldRequest() *UnshieldRequest {
 }
 
 func NewUnshieldRequestWithValue(
-	tokenID common.Hash, data []UnshieldRequestData,
+	tokenID common.Hash, data []UnshieldRequestData, receiver privacy.OTAReceiver,
 ) *UnshieldRequest {
 	return &UnshieldRequest{
-		TokenID: tokenID,
-		Data:    data,
+		TokenID:  tokenID,
+		Data:     data,
+		Receiver: receiver,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
 		},
@@ -70,6 +74,12 @@ func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	if len(request.Data) == 0 {
 		return false, false, fmt.Errorf("list data cannot be null")
+	}
+	if !request.Receiver.IsValid() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("receiver is not valid"))
+	}
+	if request.Receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("otaReceiver shardID is different from txShardID"))
 	}
 	totalBurningAmount := uint64(0)
 	for _, data := range request.Data {
@@ -130,4 +140,12 @@ func (request *UnshieldRequest) BuildReqActions(tx metadataCommon.Transaction, c
 
 func (request *UnshieldRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
+}
+
+func (request *UnshieldRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: request.Receiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+	})
+	return result
 }

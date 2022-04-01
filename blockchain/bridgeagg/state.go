@@ -40,8 +40,8 @@ func (s *State) Clone() *State {
 	res.producer = stateProducer{}
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
 		res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
-		for tokenID, vault := range vaults {
-			res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault.Clone()
+		for networkID, vault := range vaults {
+			res.unifiedTokenInfos[unifiedTokenID][networkID] = vault.Clone()
 		}
 	}
 	return res

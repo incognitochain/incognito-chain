@@ -240,15 +240,14 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
-	tokenList := []common.Hash{mdReader.UnifiedTokenID, mdReader.TokenID}
-	recv, err := httpServer.pdexTxService.GenerateOTAReceivers(tokenList, keyWallet.KeySet.PaymentAddress)
+	recv := privacy.OTAReceiver{}
+	err = recv.FromAddress(keyWallet.KeySet.PaymentAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
-	mdReader.Receivers = recv
 
 	md := metadataBridge.NewConvertTokenToUnifiedTokenRequestWithValue(
-		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, mdReader.Receivers,
+		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, recv,
 	)
 	paramSelect.SetTokenID(mdReader.TokenID)
 	paramSelect.SetMetadata(md)
@@ -421,8 +420,13 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+	recv := privacy.OTAReceiver{}
+	err = recv.FromAddress(keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
 
-	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.TokenID, mdReader.Data)
+	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.TokenID, mdReader.Data, recv)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}

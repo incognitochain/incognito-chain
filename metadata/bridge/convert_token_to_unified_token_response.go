@@ -138,16 +138,16 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 			if err != nil {
 				return false, err
 			}
-			acceptedInst := AcceptedConvertTokenToUnifiedToken{}
-			err = json.Unmarshal(contentBytes, &acceptedInst)
+			acceptedContent := AcceptedConvertTokenToUnifiedToken{}
+			err = json.Unmarshal(contentBytes, &acceptedContent)
 			if err != nil {
 				return false, err
 			}
 			shardIDFromInst = tempInst.ShardID
-			txReqIDFromInst = acceptedInst.TxReqID
-			otaReceiver = acceptedInst.Receivers[acceptedInst.UnifiedTokenID]
-			receivingTokenID = acceptedInst.UnifiedTokenID
-			receivingAmtFromInst = acceptedInst.Amount
+			txReqIDFromInst = acceptedContent.TxReqID
+			otaReceiver = acceptedContent.Receiver
+			receivingTokenID = acceptedContent.UnifiedTokenID
+			receivingAmtFromInst = acceptedContent.Amount
 		default:
 			return false, errors.New("Not find status")
 		}

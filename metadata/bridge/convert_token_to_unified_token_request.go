@@ -13,11 +13,11 @@ import (
 )
 
 type ConvertTokenToUnifiedTokenRequest struct {
-	TokenID        common.Hash                         `json:"TokenID"`
-	UnifiedTokenID common.Hash                         `json:"UnifiedTokenID"`
-	NetworkID      uint                                `json:"NetworkID"`
-	Amount         uint64                              `json:"Amount"`
-	Receivers      map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
+	TokenID        common.Hash         `json:"TokenID"`
+	UnifiedTokenID common.Hash         `json:"UnifiedTokenID"`
+	NetworkID      uint                `json:"NetworkID"`
+	Amount         uint64              `json:"Amount"`
+	Receiver       privacy.OTAReceiver `json:"Receiver"`
 	metadataCommon.MetadataBase
 }
 
@@ -37,8 +37,7 @@ func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
 }
 
 func NewConvertTokenToUnifiedTokenRequestWithValue(
-	tokenID, unifiedTokenID common.Hash, networkID uint, amount uint64,
-	receivers map[common.Hash]privacy.OTAReceiver,
+	tokenID, unifiedTokenID common.Hash, networkID uint, amount uint64, receiver privacy.OTAReceiver,
 ) *ConvertTokenToUnifiedTokenRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
@@ -48,7 +47,7 @@ func NewConvertTokenToUnifiedTokenRequestWithValue(
 		TokenID:        tokenID,
 		NetworkID:      networkID,
 		Amount:         amount,
-		Receivers:      receivers,
+		Receiver:       receiver,
 		MetadataBase:   metadataBase,
 	}
 }
@@ -74,18 +73,11 @@ func (request *ConvertTokenToUnifiedTokenRequest) ValidateSanityData(
 	if request.TokenID.String() == request.UnifiedTokenID.String() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("TokenID and UnifiedTokenID cannot be the same"))
 	}
-	if len(request.Receivers) == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("Not enough receivers"))
+	if !request.Receiver.IsValid() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("receiver is not valid"))
 	}
-	tokenIDs := []common.Hash{request.UnifiedTokenID, request.TokenID}
-	for _, tokenID := range tokenIDs {
-		if receiver, found := request.Receivers[tokenID]; !found {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("Not enough receivers"))
-		} else {
-			if receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
-				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("otaReceiver shardID is different from txShardID"))
-			}
-		}
+	if request.Receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("otaReceiver shardID is different from txShardID"))
 	}
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
 	if err != nil || !isBurned {
@@ -127,11 +119,9 @@ func (request *ConvertTokenToUnifiedTokenRequest) CalculateSize() uint64 {
 
 func (request *ConvertTokenToUnifiedTokenRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
-	for _, val := range request.Receivers {
-		result = append(result, metadataCommon.OTADeclaration{
-			PublicKey: val.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
-		})
-	}
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: request.Receiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+	})
 	return result
 }
 

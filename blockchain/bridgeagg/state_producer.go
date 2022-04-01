@@ -3,9 +3,13 @@ package bridgeagg
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"math/big"
+	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
@@ -96,14 +100,14 @@ func (sp *stateProducer) convert(
 		err = NewBridgeAggErrorWithValue(OtherError, err)
 		return
 	}
-	rejectedConvertRequest := metadataBridge.RejectedConvertTokenToUnifiedToken{
-		TokenID:  md.TokenID,
-		Amount:   md.Amount,
-		Receiver: md.Receivers[md.TokenID],
-	}
 
 	defer func() {
 		if err != nil {
+			rejectedConvertRequest := metadataBridge.RejectedConvertTokenToUnifiedToken{
+				TokenID:  md.TokenID,
+				Amount:   md.Amount,
+				Receiver: md.Receiver,
+			}
 			Logger.log.Warnf("Convert token with tx %s err %v", action.TxReqID.String(), err)
 			content, err := json.Marshal(rejectedConvertRequest)
 			if err != nil {
@@ -198,20 +202,14 @@ func (sp *stateProducer) shield(
 	acceptedShieldRequestData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
 	acceptedShieldRequestRewardData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
 
-	shouldSkip := false
 	for index, data := range md.Data {
-		if shouldSkip {
-			break
-		}
 		switch data.NetworkID {
 		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID, common.FTMNetworkID:
 			blockHash := rCommon.Hash{}
-			e := blockHash.UnmarshalText([]byte(data.BlockHash))
-			if e != nil {
-				shouldSkip = true
+			err = blockHash.UnmarshalText([]byte(data.BlockHash))
+			if err != nil {
 				errorType = OtherError
-				err = e
-				continue
+				return
 			}
 			actualAmount, reward, receivingShardID, token, uniqTX, et, e := shieldEVM(
 				md.IncTokenID, data.NetworkID, tempAC, shardID,
@@ -219,10 +217,9 @@ func (sp *stateProducer) shield(
 				action.ExtraData[index], blockHash, data.TxIndex,
 			)
 			if e != nil {
-				shouldSkip = true
 				errorType = et
 				err = e
-				continue
+				return
 			}
 			acceptedShieldRequestData[index].IssuingAmount = actualAmount - reward
 			acceptedShieldRequestRewardData[index].IssuingAmount = reward
@@ -233,16 +230,13 @@ func (sp *stateProducer) shield(
 			receiveShardID = receivingShardID
 		case common.DefaultNetworkID:
 			errorType = OtherError
-			shouldSkip = true
+			err = errors.New("Invalid networkID")
 			return
 		default:
 			errorType = OtherError
-			shouldSkip = true
+			err = errors.New("Not found networkID")
 			return
 		}
-	}
-	if shouldSkip {
-		return
 	}
 	contents, err = buildAcceptedShieldContents(
 		acceptedShieldRequestData, acceptedShieldRequestRewardData,
@@ -258,153 +252,111 @@ func (sp *stateProducer) shield(
 }
 
 func (sp *stateProducer) unshield(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64, shardID byte,
+	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	beaconHeight uint64, shardID byte,
 	stateDB *statedb.StateDB,
 ) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
 	action := metadataCommon.NewAction()
-	md := &metadataBridge.BurningRequest{}
+	md := &metadataBridge.UnshieldRequest{}
 	action.Meta = md
 	err = action.FromString(contentStr)
 	if err != nil {
 		err = NewBridgeAggErrorWithValue(OtherError, err)
 		return
 	}
+	resUnifiedTokenInfos = unifiedTokenInfos
 	var errorType int
 	var contents [][]byte
-	var burningInst []string
-	shouldContinue := true
+	var burningInsts [][]string
+	var buringAmount uint64
 	defer func() {
-		if shouldContinue {
-			insts, err := buildInstruction(
-				metadataCommon.UnshieldUnifiedTokenRequestMeta,
-				errorType, contents, action.TxReqID, shardID, err,
-			)
+		if err != nil {
+			rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
+				TokenID:  md.TokenID,
+				Amount:   buringAmount,
+				Receiver: md.Receiver,
+			}
+			Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
+			content, err := json.Marshal(rejectedUnshieldRequest)
 			if err != nil {
+				errorType = OtherError
 				return
 			}
-			err = nil
-			resInsts = append(resInsts, insts...)
-			if len(burningInst) != 0 {
-				resInsts = append(resInsts, burningInst)
-			}
+			contents = append(contents, content)
+		}
+		insts, err := buildInstruction(
+			metadataCommon.UnshieldUnifiedTokenRequestMeta,
+			errorType, contents, action.TxReqID, shardID, err,
+		)
+		if err != nil {
+			Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), err)
+		}
+		err = nil
+		resInsts = append(resInsts, insts...)
+		if len(burningInsts) != 0 {
+			resInsts = append(resInsts, burningInsts...)
 		}
 	}()
 
-	//var prefix, contractAddress string
-	//var burningMetaType int
+	vaults, err := CloneVaults(resUnifiedTokenInfos, md.TokenID)
+	if err != nil {
+		errorType = NotFoundTokenIDInNetworkError
+		return
+	}
+	var listAcceptedUnshieldRequestData []metadataBridge.AcceptedUnshieldRequestData
 
-	/*switch md.NetworkID {*/
-	/*case common.ETHNetworkID:*/
-	/*prefix = utils.EmptyString*/
-	/*contractAddress = config.Param().PRVERC20ContractAddressStr*/
-	/*if *md.IsDepositToSC {*/
-	/*burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2*/
-	/*} else {*/
-	/*if md.TokenID == common.PRVCoinID {*/
-	/*burningMetaType = metadata.BurningPRVERC20ConfirmMeta*/
-	/*} else {*/
-	/*burningMetaType = metadata.BurningConfirmMetaV2*/
-	/*}*/
-	/*}*/
-	/*case common.BSCNetworkID:*/
-	/*prefix = common.BSCPrefix*/
-	/*contractAddress = config.Param().PRVBEP20ContractAddressStr*/
-	/*if *md.IsDepositToSC {*/
-	/*burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta*/
-	/*} else {*/
-	/*if md.TokenID == common.PRVCoinID {*/
-	/*burningMetaType = metadata.BurningPRVBEP20ConfirmMeta*/
-	/*} else {*/
-	/*burningMetaType = metadata.BurningBSCConfirmMeta*/
-	/*}*/
-	/*}*/
-	/*prefix = common.BSCPrefix*/
-	/*case common.PLGNetworkID:*/
-	/*prefix = common.PLGPrefix*/
-	/*if *md.IsDepositToSC {*/
-	/*burningMetaType = metadata.BurningPLGForDepositToSCRequestMeta*/
-	/*} else {*/
-	/*burningMetaType = metadata.BurningPLGConfirmMeta*/
-	/*}*/
-	/*prefix = common.PLGPrefix*/
-	/*case common.DefaultNetworkID:*/
-	/*err = errors.New("Cannot get info from default networkID")*/
-	/*return*/
-	/*default:*/
-	/*err = errors.New("Cannot detect networkID")*/
-	/*return*/
-	/*}*/
+	for _, data := range md.Data {
+		buringAmount += data.BurningAmount
+		switch data.NetworkID {
+		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+			externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
+			if e != nil {
+				errorType = et
+				err = e
+				burningInsts = [][]string{}
+				return
+			}
+			h := big.NewInt(0).SetUint64(beaconHeight)
+			burningInst := []string{
+				strconv.Itoa(burningMetaType),
+				strconv.Itoa(int(common.BridgeShardID)),
+				base58.Base58Check{}.Encode(externalTokenID, 0x00),
+				data.RemoteAddress,
+				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
+				action.TxReqID.String(),
+				base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
+				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
+			}
+			burningInsts = append(burningInsts, burningInst)
+			acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
+				Fee:           fee,
+				Amount:        amount,
+				NetworkID:     data.NetworkID,
+				IsDepositToSC: data.IsDepositToSC,
+			}
+			listAcceptedUnshieldRequestData = append(listAcceptedUnshieldRequestData, acceptedUnshieldRequestData)
+		case common.DefaultNetworkID:
+			errorType = OtherError
+			err = errors.New("Invalid networkID")
+			return
+		default:
+			errorType = OtherError
+			err = errors.New("Not found networkID")
+			return
+		}
+	}
 
-	/*var externalTokenID []byte*/
-	/*if md.TokenID.String() != common.PRVIDStr {*/
-	/*// Convert to external tokenID*/
-	/*externalTokenID, err = metadata.FindExternalTokenID(stateDB, md.TokenID, prefix, burningMetaType)*/
-	/*if err != nil {*/
-	/*errorType = NotFoundTokenIDInNetworkError*/
-	/*return*/
-	/*}*/
-	/*} else {*/
-	/*temp := rCommon.HexToAddress(contractAddress)*/
-	/*externalTokenID = temp[:]*/
-	/*}*/
+	acceptedContent := metadataBridge.AcceptedUnshieldRequest{
+		TokenID: md.TokenID,
+		TxReqID: action.TxReqID,
+		Data:    listAcceptedUnshieldRequestData,
+	}
+	content, err := json.Marshal(acceptedContent)
+	if err != nil {
+		errorType = OtherError
+		return
+	}
+	contents = append(contents, content)
 
-	/*resUnifiedTokenInfos = unifiedTokenInfos*/
-	/*vault, err := GetVault(resUnifiedTokenInfos, md.TokenID, md.NetworkID)*/
-	/*if err != nil {*/
-	/*errorType = NotFoundNetworkIDError*/
-	/*return*/
-	/*}*/
-
-	/*actualAmount, err := vault.unshield(md.BurningAmount, md.ExpectedAmount)*/
-	/*if err != nil {*/
-	/*Logger.log.Warnf("Calculate unshield amount error: %v tx %s", err, action.TxReqID.String())*/
-	/*errorType = CalculateUnshieldAmountError*/
-	/*return*/
-	/*}*/
-	/*amount := big.NewInt(0).SetUint64(actualAmount)*/
-	/*fee := md.BurningAmount - actualAmount*/
-	/*incTokenID := vault.tokenID*/
-	/*if md.TokenID == common.PRVCoinID {*/
-	/*incTokenID = common.PRVCoinID*/
-	/*}*/
-	/*if md.TokenID != common.PRVCoinID {*/
-	/*amount.Mul(amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))*/
-	/*amount.Div(amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))*/
-	/*if !amount.IsUint64() {*/
-	/*Logger.log.Warnf("Calculate actual unshield amount is out of range uint64")*/
-	/*errorType = OutOfRangeUni64Error*/
-	/*err = fmt.Errorf("Out of range uint64")*/
-	/*return*/
-	/*}*/
-
-	/*if bytes.Equal(externalTokenID, append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...)) {*/
-	/*amount = amount.Mul(amount, big.NewInt(1000000000))*/
-	/*}*/
-	/*}*/
-	/*acceptedContent := metadata.AcceptedUnshieldRequest{*/
-	/*TokenID:       md.TokenID,*/
-	/*Amount:        actualAmount,*/
-	/*Fee:           fee,*/
-	/*NetworkID:     md.NetworkID,*/
-	/*TxReqID:       action.TxReqID,*/
-	/*BurnerAddress: md.BurnerAddress,*/
-	/*}*/
-	/*content, err = json.Marshal(acceptedContent)*/
-	/*if err != nil {*/
-	/*shouldContinue = false*/
-	/*return*/
-	/*}*/
-
-	/*h := big.NewInt(0).SetUint64(beaconHeight)*/
-	/*burningInst = []string{*/
-	/*strconv.Itoa(burningMetaType),*/
-	/*strconv.Itoa(int(common.BridgeShardID)),*/
-	/*base58.Base58Check{}.Encode(externalTokenID, 0x00),*/
-	/*md.RemoteAddress,*/
-	/*base58.Base58Check{}.Encode(amount.Bytes(), 0x00),*/
-	/*action.TxReqID.String(),*/
-	/*base58.Base58Check{}.Encode(incTokenID[:], 0x00),*/
-	/*base58.Base58Check{}.Encode(h.Bytes(), 0x00),*/
-	/*}*/
 	return
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -286,12 +287,12 @@ func shieldEVM(
 	if err != nil {
 		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
-	amount, err = CalculateAmountByDecimal(amount, vault.Decimal())
+	tmpAmount, err := CalculateAmountByDecimal(amount, vault.Decimal(), AddOperator)
 	if err != nil {
 		return 0, 0, 0, nil, nil, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
 
-	actualAmount, err := vault.shield(amount)
+	actualAmount, err := vault.shield(tmpAmount.Uint64())
 	if err != nil {
 		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, txReqID)
 		return 0, 0, 0, nil, nil, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
@@ -352,18 +353,89 @@ func buildAcceptedShieldContents(
 	return contents, nil
 }
 
-func CalculateAmountByDecimal(amount uint64, decimal uint) (uint64, error) {
+func CalculateAmountByDecimal(amount uint64, decimal uint, operator byte) (*big.Int, error) {
 	tmpAmount := big.NewInt(0).SetUint64(amount)
 	tempDecimal := config.Param().BridgeAggParam.BaseLowerDecimal
 	if decimal >= config.Param().BridgeAggParam.BaseUpperDecimal {
 		tempDecimal = config.Param().BridgeAggParam.BaseUpperDecimal
 	}
 
-	tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tempDecimal)), nil))
-	tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
-	if !tmpAmount.IsUint64() {
-		return 0, errors.New("Out of range unit64")
+	switch operator {
+	case AddOperator:
+		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tempDecimal)), nil))
+		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
+		if !tmpAmount.IsUint64() {
+			return nil, errors.New("Out of range unit64")
+		}
+	case SubOperator:
+		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
+		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tempDecimal)), nil))
+	default:
+		return nil, errors.New("Cannot recognie operator")
 	}
-	amount = tmpAmount.Uint64()
-	return tmpAmount.Uint64(), nil
+
+	return tmpAmount, nil
+}
+
+func unshieldEVM(
+	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB,
+	vaults map[uint]*Vault,
+	incTokenID, txReqID common.Hash,
+) ([]byte, *big.Int, uint64, uint64, int, int, error) {
+	var prefix string
+	var burningMetaType int
+
+	switch data.NetworkID {
+	case common.ETHNetworkID:
+		prefix = utils.EmptyString
+		if data.IsDepositToSC {
+			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
+		} else {
+			burningMetaType = metadata.BurningConfirmMetaV2
+		}
+	case common.BSCNetworkID:
+		prefix = common.BSCPrefix
+		if data.IsDepositToSC {
+			burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta
+		} else {
+			burningMetaType = metadata.BurningBSCConfirmMeta
+		}
+		prefix = common.BSCPrefix
+	case common.PLGNetworkID:
+		prefix = common.PLGPrefix
+		if data.IsDepositToSC {
+			burningMetaType = metadata.BurningPLGForDepositToSCRequestMeta
+		} else {
+			burningMetaType = metadata.BurningPLGConfirmMeta
+		}
+		prefix = common.PLGPrefix
+	case common.DefaultNetworkID:
+		return nil, nil, 0, 0, burningMetaType, OtherError, errors.New("Cannot get info from default networkID")
+	default:
+		return nil, nil, 0, 0, burningMetaType, OtherError, errors.New("Cannot detect networkID")
+	}
+
+	vault, found := vaults[data.NetworkID]
+	if !found {
+		return nil, nil, 0, 0, burningMetaType, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
+	}
+
+	// Convert to external tokenID
+	externalTokenID, err := metadataBridge.FindExternalTokenID(stateDB, vault.tokenID, prefix, burningMetaType)
+	if err != nil {
+		return nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, err
+	}
+
+	actualAmount, err := vault.unshield(data.BurningAmount, data.ExpectedAmount)
+	if err != nil {
+		Logger.log.Warnf("Calculate unshield amount error: %v tx %s", err, txReqID.String())
+		return nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, err
+	}
+	fee := data.BurningAmount - actualAmount
+	unshieldAmount, err := CalculateAmountByDecimal(actualAmount, vault.Decimal(), SubOperator)
+	if err != nil {
+		return nil, nil, 0, 0, burningMetaType, OtherError, err
+	}
+
+	return externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }

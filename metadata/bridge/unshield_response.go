@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,13 +11,13 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 type UnshieldResponse struct {
 	metadataCommon.MetadataBase
-	Status       string      `json:"Status"`
-	TxReqID      common.Hash `json:"TxReqID"`
-	SharedRandom []byte      `json:"SharedRandom,omitempty"`
+	Status  string      `json:"Status"`
+	TxReqID common.Hash `json:"TxReqID"`
 }
 
 func NewUnshieldResponse() *UnshieldResponse {
@@ -28,15 +29,14 @@ func NewUnshieldResponse() *UnshieldResponse {
 }
 
 func NewUnshieldResponseWithValue(
-	status string, txReqID common.Hash, sharedRandom []byte,
+	status string, txReqID common.Hash,
 ) *UnshieldResponse {
 	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.UnshieldUnifiedTokenRequestMeta,
 		},
-		Status:       status,
-		TxReqID:      txReqID,
-		SharedRandom: sharedRandom,
+		Status:  status,
+		TxReqID: txReqID,
 	}
 }
 
@@ -112,7 +112,7 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
-		var address privacy.PaymentAddress
+		var otaReceiver privacy.OTAReceiver
 		var receivingAmtFromInst uint64
 		var receivingTokenID common.Hash
 
@@ -122,13 +122,17 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			if err := rejectContent.FromString(tempInst.Content); err != nil {
 				return false, err
 			}
+			var rejectedData RejectedUnshieldRequest
+			if err := json.Unmarshal(rejectContent.Data, &rejectedData); err != nil {
+				return false, err
+			}
 			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = rejectContent.TxReqID
-			/*receivingTokenID = mdData.TokenID*/
-			/*receivingAmtFromInst = mdData.BurningAmount*/
-			/*address = mdData.BurnerAddress*/
+			otaReceiver = rejectedData.Receiver
+			receivingTokenID = rejectedData.TokenID
+			receivingAmtFromInst = rejectedData.Amount
 		default:
-			return false, errors.New("Not find status")
+			continue
 		}
 
 		if response.TxReqID.String() != txReqIDFromInst.String() {
@@ -144,19 +148,30 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil {
 			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
-			continue
+			return false, err
 		}
 		if !isMinted {
-			metadataCommon.Logger.Log.Info("WARNING - VALIDATION: this is not Tx Mint")
-			continue
+			metadataCommon.Logger.Log.Info("WARNING - VALIDATION: this is not Tx Mint: ")
+			return false, errors.New("This is not tx mint")
 		}
-		if coinID.String() != receivingTokenID.String() {
-			metadataCommon.Logger.Log.Info("WARNING - VALIDATION: coinID is not similar to receivingTokenID")
-			continue
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
+		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+
+		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) {
+			return false, errors.New("OTAReceiver public key is invalid")
 		}
 
-		if ok := mintCoin.CheckCoinValid(address, response.SharedRandom, receivingAmtFromInst); !ok {
-			continue
+		if receivingAmtFromInst != paidAmount {
+			return false, fmt.Errorf("Amount is invalid receive %d paid %d", receivingAmtFromInst, paidAmount)
+		}
+
+		if !bytes.Equal(txR[:], otaReceiver.TxRandom[:]) {
+			return false, fmt.Errorf("otaReceiver tx random is invalid")
+		}
+
+		if receivingTokenID.String() != coinID.String() {
+			return false, fmt.Errorf("Coin is invalid receive %s expect %s", receivingTokenID.String(), coinID.String())
 		}
 		idx = i
 		break
@@ -167,8 +182,4 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	mintData.InstsUsed[idx] = 1
 	return true, nil
-}
-
-func (response *UnshieldResponse) SetSharedRandom(r []byte) {
-	response.SharedRandom = r
 }

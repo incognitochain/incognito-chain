@@ -125,11 +125,11 @@ func (v *Vault) increaseReserve(amount uint64) error {
 }
 
 func (v *Vault) convert(amount uint64) error {
-	amount, err := CalculateAmountByDecimal(amount, v.Decimal())
+	tmpAmount, err := CalculateAmountByDecimal(amount, v.Decimal(), AddOperator)
 	if err != nil {
 		return err
 	}
-	return v.increaseReserve(amount)
+	return v.increaseReserve(tmpAmount.Uint64())
 }
 
 func (v *Vault) shield(amount uint64) (uint64, error) {

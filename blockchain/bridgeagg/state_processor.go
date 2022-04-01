@@ -204,28 +204,30 @@ func (sp *stateProcessor) unshield(
 	var errorCode uint
 	switch inst.Status {
 	case common.AcceptedStatusStr:
-		/*contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)*/
-		/*if err != nil {*/
-		/*return unifiedTokenInfos, err*/
-		/*}*/
-		/*acceptedInst := metadataBridge.AcceptedUnshieldRequest{}*/
-		/*err = json.Unmarshal(contentBytes, &acceptedInst)*/
-		/*if err != nil {*/
-		/*return unifiedTokenInfos, err*/
-		/*}*/
-		/*vault := unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] // check available before*/
-		/*err = vault.increaseCurrentRewardReserve(acceptedInst.Fee)*/
-		/*if err != nil {*/
-		/*return unifiedTokenInfos, err*/
-		/*}*/
-		/*err = vault.decreaseReserve(acceptedInst.Amount)*/
-		/*if err != nil {*/
-		/*return unifiedTokenInfos, err*/
-		/*}*/
-		/*unifiedTokenInfos[acceptedInst.TokenID][acceptedInst.NetworkID] = vault*/
-		/*txReqID = acceptedInst.TxReqID*/
-		/*status = common.AcceptedStatusByte*/
-		/*sp.UnshieldTxsCache[txReqID] = acceptedInst.TokenID*/
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		acceptedContent := metadataBridge.AcceptedUnshieldRequest{}
+		err = json.Unmarshal(contentBytes, &acceptedContent)
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
+		for _, data := range acceptedContent.Data {
+			vault := unifiedTokenInfos[acceptedContent.TokenID][data.NetworkID] // check available before
+			err = vault.increaseCurrentRewardReserve(data.Fee)
+			if err != nil {
+				return unifiedTokenInfos, err
+			}
+			err = vault.decreaseReserve(data.Amount)
+			if err != nil {
+				return unifiedTokenInfos, err
+			}
+			unifiedTokenInfos[acceptedContent.TokenID][data.NetworkID] = vault
+			txReqID = acceptedContent.TxReqID
+			status = common.AcceptedStatusByte
+		}
+		sp.UnshieldTxsCache[txReqID] = acceptedContent.TxReqID
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
