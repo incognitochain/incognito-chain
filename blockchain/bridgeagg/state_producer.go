@@ -128,14 +128,17 @@ func (sp *stateProducer) convert(
 
 	if _, found := resUnifiedTokenInfos[md.UnifiedTokenID]; !found {
 		errorType = NotFoundTokenIDInNetworkError
+		err = errors.New("Cannot find unifiedTokenID")
 		return
 	}
 	if vault, found := resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID]; !found {
 		errorType = NotFoundNetworkIDError
+		err = errors.New("Cannot find networkID")
 		return
 	} else {
 		if vault.tokenID.String() != md.TokenID.String() {
 			errorType = NotFoundTokenIDInNetworkError
+			err = errors.New("TokenID is invalid")
 			return
 		}
 		err = vault.convert(md.Amount)
