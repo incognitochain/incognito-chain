@@ -256,6 +256,11 @@ func shieldEVM(
 		contractAddress = config.Param().PlgContractAddressStr
 		prefix = common.PLGPrefix
 		isTxHashIssued = statedb.IsPLGTxHashIssued
+	case common.FTMNetworkID:
+		listTxUsed = ac.UniqFTMTxsUsed
+		contractAddress = config.Param().FtmContractAddressStr
+		prefix = common.FTMPrefix
+		isTxHashIssued = statedb.IsFTMTxHashIssued
 	case common.DefaultNetworkID:
 		return 0, 0, 0, nil, nil, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
 	default:
