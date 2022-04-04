@@ -284,18 +284,17 @@ func (sp *stateProducer) unshield(
 			Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
 			content, err := json.Marshal(rejectedUnshieldRequest)
 			if err != nil {
-				Logger.log.Warnf("[bridgeagg] error %v", err)
 				errorType = OtherError
 				return
 			}
 			contents = append(contents, content)
 		}
-		insts, err := buildInstruction(
+		insts, e := buildInstruction(
 			metadataCommon.BurningUnifiedTokenRequestMeta,
 			errorType, contents, action.TxReqID, shardID, err,
 		)
-		if err != nil {
-			Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), err)
+		if e != nil {
+			Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), e)
 		}
 		err = nil
 		resInsts = append(resInsts, insts...)
