@@ -354,7 +354,6 @@ func (ftmParam *ftmParam) GetFromEnv() {
 }
 
 type bridgeAggParam struct {
-	AdminAddress     string `mapstructure:"admin_address"`
-	BaseUpperDecimal uint   `mapstructure:"base_upper_decimal"`
-	BaseLowerDecimal uint   `mapstructure:"base_lower_decimal"`
+	AdminAddress string `mapstructure:"admin_address"`
+	BaseDecimal  uint   `mapstructure:"base_decimal"`
 }

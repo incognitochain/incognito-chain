@@ -52,8 +52,7 @@ func getBridgeAggState(
 	res := &jsonresult.BridgeAggState{
 		BeaconTimeStamp:   beaconTimeStamp,
 		UnifiedTokenInfos: bridgeAggState.UnifiedTokenInfos(),
-		BaseUpperDecimal:  config.Param().BridgeAggParam.BaseUpperDecimal,
-		BaseLowerDecimal:  config.Param().BridgeAggParam.BaseLowerDecimal,
+		BaseDecimal:       config.Param().BridgeAggParam.BaseDecimal,
 	}
 	return res, nil
 }

@@ -344,21 +344,16 @@ func buildAcceptedShieldContents(
 
 func CalculateAmountByDecimal(amount uint64, decimal uint, operator byte) (*big.Int, error) {
 	tmpAmount := big.NewInt(0).SetUint64(amount)
-	tempDecimal := config.Param().BridgeAggParam.BaseLowerDecimal
-	if decimal >= config.Param().BridgeAggParam.BaseUpperDecimal {
-		tempDecimal = config.Param().BridgeAggParam.BaseUpperDecimal
-	}
-
 	switch operator {
 	case AddOperator:
-		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tempDecimal)), nil))
+		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
 		if !tmpAmount.IsUint64() {
 			return nil, errors.New("Out of range unit64")
 		}
 	case SubOperator:
 		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
-		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tempDecimal)), nil))
+		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 	default:
 		return nil, errors.New("Cannot recognie operator")
 	}
