@@ -1,22 +1,13 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"math/big"
 	"strconv"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
@@ -218,225 +209,12 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 }
 
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
-	var protocol, host, port string
-	if iReq.Type == IssuingBSCRequestMeta || iReq.Type == IssuingPRVBEP20RequestMeta {
-		evmParam := config.Param().BSCParam
-		evmParam.GetFromEnv()
-		host = evmParam.Host
-	} else if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta {
-		evmParam := config.Config().GethParam
-		evmParam.GetFromEnv()
-		protocol = evmParam.Protocol
-		host = evmParam.Host
-		port = evmParam.Port
-	} else if iReq.Type == IssuingPLGRequestMeta {
-		evmParam := config.Param().PLGParam
-		evmParam.GetFromEnv()
-		host = evmParam.Host
-	} else if iReq.Type == IssuingFantomRequestMeta {
-		evmParam := config.Param().FTMParam
-		evmParam.GetFromEnv()
-		host = evmParam.Host
-	} else {
-		return nil, errors.New("[verifyProofAndParseReceipt] invalid metatype")
-	}
-	evmHeader, err := GetEVMHeader(iReq.BlockHash, protocol, host, port)
+	// get hosts, minEVMConfirmationBlocks, networkPrefix depend iReq.Type
+	hosts, networkPrefix, minEVMConfirmationBlocks, checkEVMHardFork, err := GetEVMInfoByMetadataType(iReq.Type)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
-	}
-	if evmHeader == nil {
-		Logger.log.Warn("WARNING: Could not find out the EVM block header with the hash: ", iReq.BlockHash)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", iReq.BlockHash.String()))
-	}
-
-	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(protocol, host, port)
-	if err != nil {
-		Logger.log.Warn("WARNING: Could not find the most recent block height on Ethereum")
+		Logger.log.Errorf("Can not get EVM info - Error: %+v", err)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	minEVMConfirmationBlocks := EVMConfirmationBlocks
-	if iReq.Type == IssuingPLGRequestMeta {
-		minEVMConfirmationBlocks = PLGConfirmationBlocks
-	} else if iReq.Type == IssuingFantomRequestMeta {
-		minEVMConfirmationBlocks = FantomConfirmationBlocks
-	}
-	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(int64(minEVMConfirmationBlocks)))) == -1 {
-		errMsg := fmt.Sprintf("WARNING: It needs %v confirmation blocks for the process, "+
-			"the requested block (%s) but the latest block (%s)", minEVMConfirmationBlocks,
-			evmHeader.Number.String(), mostRecentBlkNum.String())
-		Logger.log.Warn(errMsg)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New(errMsg))
-	}
-
-	keybuf := new(bytes.Buffer)
-	keybuf.Reset()
-	rlp.Encode(keybuf, iReq.TxIndex)
-
-	nodeList := new(light.NodeList)
-	for _, proofStr := range iReq.ProofStrs {
-		proofBytes, err := base64.StdEncoding.DecodeString(proofStr)
-		if err != nil {
-			return nil, err
-		}
-		nodeList.Put([]byte{}, proofBytes)
-	}
-	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(evmHeader.ReceiptHash, keybuf.Bytes(), proof)
-	if err != nil {
-		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
-		Logger.log.Warn(errMsg)
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
-	}
-
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta ||
-		iReq.Type == IssuingPLGRequestMeta || iReq.Type == IssuingFantomRequestMeta {
-		if len(val) == 0 {
-			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
-		}
-
-		// hardfork london with new transaction type => 0x02 || RLP([...SenderPayload, ...SenderSignature, ...GasPayerPayload, ...GasPayerSignature])
-		if val[0] == AccessListTxType || val[0] == DynamicFeeTxType {
-			val = val[1:]
-		}
-	}
-
-	// Decode value from VerifyProof into Receipt
-	constructedReceipt := new(types.Receipt)
-	err = rlp.DecodeBytes(val, constructedReceipt)
-	if err != nil {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
-	}
-
-	if constructedReceipt.Status != types.ReceiptStatusSuccessful {
-		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("The constructedReceipt's status is not success"))
-	}
-
-	return constructedReceipt, nil
-}
-
-func ParseEVMLogData(data []byte) (map[string]interface{}, error) {
-	abiIns, err := abi.JSON(strings.NewReader(common.AbiJson))
-	if err != nil {
-		return nil, err
-	}
-	dataMap := map[string]interface{}{}
-	if err = abiIns.UnpackIntoMap(dataMap, "Deposit", data); err != nil {
-		return nil, NewMetadataTxError(UnexpectedError, err)
-	}
-	return dataMap, nil
-}
-
-func GetEVMHeader(
-	evmBlockHash rCommon.Hash,
-	protocol string,
-	host string,
-	port string,
-) (*types.Header, error) {
-	rpcClient := rpccaller.NewRPCClient()
-	getEVMHeaderByHashParams := []interface{}{evmBlockHash, false}
-	var getEVMHeaderByHashRes GetEVMHeaderByHashRes
-	err := rpcClient.RPCCall(
-		protocol,
-		host,
-		port,
-		"eth_getBlockByHash",
-		getEVMHeaderByHashParams,
-		&getEVMHeaderByHashRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getEVMHeaderByHashRes.RPCError != nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message)
-		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message))
-	}
-
-	if getEVMHeaderByHashRes.Result == nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
-		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: result is nil"))
-	}
-
-	evmHeaderByHash := getEVMHeaderByHashRes.Result
-	headerNum := evmHeaderByHash.Number
-
-	getEVMHeaderByNumberParams := []interface{}{fmt.Sprintf("0x%x", headerNum), false}
-	var getEVMHeaderByNumberRes GetEVMHeaderByNumberRes
-	err = rpcClient.RPCCall(
-		protocol,
-		host,
-		port,
-		"eth_getBlockByNumber",
-		getEVMHeaderByNumberParams,
-		&getEVMHeaderByNumberRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getEVMHeaderByNumberRes.RPCError != nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message)
-		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message))
-	}
-
-	if getEVMHeaderByNumberRes.Result == nil {
-		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
-		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: result is nil"))
-	}
-
-	evmHeaderByNum := getEVMHeaderByNumberRes.Result
-	if evmHeaderByNum.Hash().String() != evmHeaderByHash.Hash().String() {
-		return nil, errors.New(fmt.Sprintf("The requested eth BlockHash is being on fork branch, rejected!"))
-	}
-	return evmHeaderByHash, nil
-}
-
-// GetMostRecentEVMBlockHeight get most recent block height on Ethereum/BSC
-func GetMostRecentEVMBlockHeight(protocol string, host string, port string) (*big.Int, error) {
-	rpcClient := rpccaller.NewRPCClient()
-	params := []interface{}{}
-	var getEVMBlockNumRes GetEVMBlockNumRes
-	err := rpcClient.RPCCall(
-		protocol,
-		host,
-		port,
-		"eth_blockNumber",
-		params,
-		&getEVMBlockNumRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getEVMBlockNumRes.RPCError != nil {
-		return nil, errors.New(fmt.Sprintf("an error occured during calling eth_blockNumber: %s", getEVMBlockNumRes.RPCError.Message))
-	}
-
-	if len(getEVMBlockNumRes.Result) < 2 {
-		return nil, errors.New(fmt.Sprintf("invalid block height number eth_blockNumber: %s", getEVMBlockNumRes.Result))
-	}
-
-	blockNumber := new(big.Int)
-	_, ok := blockNumber.SetString(getEVMBlockNumRes.Result[2:], 16)
-	if !ok {
-		return nil, errors.New("Cannot convert blockNumber into integer")
-	}
-	return blockNumber, nil
-}
-
-func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, contractAddressStr string) (map[string]interface{}, error) {
-	logData := []byte{}
-	logLen := len(constructedReceipt.Logs)
-	if logLen == 0 {
-		Logger.log.Warn("WARNING: LOG data is invalid.")
-		return nil, nil
-	}
-	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(contractAddressStr).Bytes(), log.Address.Bytes()) {
-			logData = log.Data
-			break
-		}
-	}
-	if len(logData) == 0 {
-		return nil, nil
-	}
-	return ParseEVMLogData(logData)
+	return VerifyProofAndParseEVMReceipt(iReq.BlockHash, iReq.TxIndex, iReq.ProofStrs, hosts, minEVMConfirmationBlocks, networkPrefix, checkEVMHardFork)
 }

@@ -969,11 +969,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			} else {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-				if err == nil {
-					instructions = append(instructions, actionPairs...)
-				} else {
+				if err != nil {
 					Logger.log.Errorf("Build Request Action Error %+v", err)
+					return nil, nil, fmt.Errorf("Build Request Action Error %+v", err)
 				}
+				instructions = append(instructions, actionPairs...)
 			}
 		}
 		switch tx.GetMetadataType() {
