@@ -284,6 +284,7 @@ func (sp *stateProducer) unshield(
 			Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
 			content, err := json.Marshal(rejectedUnshieldRequest)
 			if err != nil {
+				Logger.log.Warnf("[bridgeagg] error %v", err)
 				errorType = OtherError
 				return
 			}
