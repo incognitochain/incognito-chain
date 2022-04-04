@@ -619,6 +619,15 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 				break
 			}
 		}
+		//if number of each shard committee update < 98%, not generate inst
+		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
+			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
+			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*98/100)) {
+				invalidCondition = true
+				break
+			}
+		}
+
 		if invalidCondition {
 			continue
 		}
