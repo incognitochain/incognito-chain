@@ -26,7 +26,6 @@ type FeatureStat struct {
 
 type FeatureReportInfo struct {
 	ValidatorStat map[string]map[int]uint64 // feature -> shardid -> stat
-	ProposeStat   map[string]map[int]uint64 // feature -> shardid -> stat
 	CommitteeStat map[string]map[int]uint64 // feature -> shardid -> stat
 	ValidatorSize map[int]int               // chainid -> all validator size
 }
@@ -176,7 +175,6 @@ func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk st
 
 func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	validatorStat := make(map[string]map[int]uint64)
-	proposeStat := make(map[string]map[int]uint64)
 	committeeStat := make(map[string]map[int]uint64)
 	validatorSize := make(map[int]int)
 
@@ -215,13 +213,10 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 			if validatorStat[feature] == nil {
 				validatorStat[feature] = make(map[int]uint64)
 			}
-			if proposeStat[feature] == nil {
-				proposeStat[feature] = make(map[int]uint64)
-			}
+
 			//check in beacon
 			if common.IndexOfStr(key, beaconCommittee) > -1 {
 				validatorStat[feature][-1]++
-				proposeStat[feature][-1]++
 				committeeStat[feature][-1]++
 			}
 
@@ -235,10 +230,6 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 				if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
 					validatorStat[feature][i]++
 					committeeStat[feature][i]++
-					//if in proposer, increase proposer
-					if common.IndexOfStr(key, shardCommmittee[i]) < beaconView.MinShardCommitteeSize {
-						proposeStat[feature][i]++
-					}
 				}
 			}
 		}
@@ -247,7 +238,6 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	//Logger.log.Infof("=========== \n%+v", validatorStat)
 	return FeatureReportInfo{
 		validatorStat,
-		proposeStat,
 		committeeStat,
 		validatorSize,
 	}
