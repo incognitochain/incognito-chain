@@ -141,7 +141,24 @@ func (sp *stateProducer) convert(
 			err = errors.New("TokenID is invalid")
 			return
 		}
-		err = vault.convert(md.Amount)
+		var prefix string
+		switch md.NetworkID {
+		case common.ETHNetworkID:
+			prefix = utils.EmptyString
+		case common.BSCNetworkID:
+			prefix = common.BSCPrefix
+		case common.PLGNetworkID:
+			prefix = common.PLGPrefix
+		case common.FTMNetworkID:
+			prefix = common.FTMPrefix
+		case common.DefaultNetworkID:
+			errorType = OtherError
+			err = NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
+		default:
+			errorType = NotFoundNetworkIDError
+			err = NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
+		}
+		err = vault.convert(md.Amount, prefix)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			errorType = InvalidConvertAmountError
@@ -207,8 +224,14 @@ func (sp *stateProducer) shield(
 	var rewardAmount uint64
 
 	for index, data := range md.Data {
-		switch data.NetworkID {
-		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
+		if e != nil {
+			err = e
+			errorType = OtherError
+			return
+		}
+		switch networkType {
+		case common.EVMNetworkType:
 			blockHash := rCommon.Hash{}
 			err = blockHash.UnmarshalText([]byte(data.BlockHash))
 			if err != nil {
@@ -233,13 +256,9 @@ func (sp *stateProducer) shield(
 			acceptedShieldRequestRewardData[index].NetworkID = data.NetworkID
 			receiveShardID = receivingShardID
 			rewardAmount += reward
-		case common.DefaultNetworkID:
-			errorType = OtherError
-			err = errors.New("Invalid networkID")
-			return
 		default:
 			errorType = OtherError
-			err = errors.New("Not found networkID")
+			err = errors.New("Not found networkType")
 			return
 		}
 	}

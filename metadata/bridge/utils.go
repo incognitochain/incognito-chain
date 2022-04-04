@@ -114,9 +114,9 @@ func ExtractIssueEVMData(
 	stateDB *statedb.StateDB, shardID byte, listTxUsed [][]byte, contractAddress string, prefix string,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
 	txReceipt *types.Receipt, blockHash rCommon.Hash, txIndex uint,
-) (uint64, byte, string, []byte, []byte, error) {
+) (*big.Int, byte, string, []byte, []byte, error) {
 	if txReceipt == nil {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: bridge tx receipt is null")
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: bridge tx receipt is null")
 	}
 
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -124,22 +124,22 @@ func ExtractIssueEVMData(
 	uniqTx := append(blockHash[:], []byte(strconv.Itoa(int(txIndex)))...)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in current block: ", uniqTx)
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in current block: ", uniqTx)
 	}
 	isIssued, err := isTxHashIssued(stateDB, uniqTx)
 	if err != nil {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
 	}
 	if isIssued {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in previous blocks: ", uniqTx)
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in previous blocks: ", uniqTx)
 	}
 
 	logMap, err := PickAndParseLogMapFromReceiptByContractAddr(txReceipt, contractAddress, "Deposit")
 	if err != nil {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an error occurred while parsing log map from receipt: ", err)
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an error occurred while parsing log map from receipt: ", err)
 	}
 	if logMap == nil {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not find log map out from receipt")
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not find log map out from receipt")
 	}
 
 	logMapBytes, _ := json.Marshal(logMap)
@@ -148,31 +148,23 @@ func ExtractIssueEVMData(
 	// the token might be ETH/ERC20 BNB/BEP20
 	tokenAddr, ok := logMap["token"].(rCommon.Address)
 	if !ok {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse evm token id from log map.")
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse evm token id from log map.")
 	}
 	token := append([]byte(prefix), tokenAddr.Bytes()...)
 
-	amount := uint64(0)
 	addressStr, ok := logMap["incognitoAddress"].(string)
 	if !ok {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse incognito address from bridge log map.")
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse incognito address from bridge log map.")
 	}
 	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse amount from bridge log map.")
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse amount from bridge log map.")
 	}
-	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
-		// convert amt from wei (10^18) to nano eth (10^9)
-		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-	} else { // ERC20 / BEP20
-		amount = amt.Uint64()
-	}
-
 	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
 	if err != nil {
-		return 0, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an error occurred while getting shard id from payment address: ", err)
+		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an error occurred while getting shard id from payment address: ", err)
 	}
-	return amount, receivingShardID, addressStr, token, uniqTx, nil
+	return amt, receivingShardID, addressStr, token, uniqTx, nil
 }
 
 func VerifyTokenPair(
@@ -180,6 +172,7 @@ func VerifyTokenPair(
 	ac *metadataCommon.AccumulatedValues,
 	incTokenID common.Hash,
 	token []byte,
+	availableToken []byte,
 ) error {
 	canProcess, err := ac.CanProcessTokenPair(token, incTokenID)
 	if err != nil {
@@ -192,12 +185,18 @@ func VerifyTokenPair(
 	if err != nil {
 		return fmt.Errorf("WARNING: Cannot find tokenID %s", incTokenID.String())
 	}
-	isValid, err := statedb.CanProcessTokenPair(stateDBs[common.BeaconChainID], token, incTokenID, privacyTokenExisted)
-	if err != nil {
-		return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
-	}
-	if !isValid {
-		return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
+	if len(availableToken) == 0 {
+		isValid, err := statedb.CanProcessTokenPair(stateDBs[common.BeaconChainID], token, incTokenID, privacyTokenExisted)
+		if err != nil {
+			return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
+		}
+		if !isValid {
+			return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
+		}
+	} else {
+		if !bytes.Equal(token, availableToken) && privacyTokenExisted {
+			return fmt.Errorf("WARNING: externalTokenID need to be the same with available externalTokenID")
+		}
 	}
 	return nil
 }
@@ -412,4 +411,13 @@ func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, err)
 	}
 	return dataMap, nil
+}
+
+func GetNetworkTypeByNetworkID(networkID uint) (uint, error) {
+	switch networkID {
+	case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+		return common.EVMNetworkType, nil
+	default:
+		return 0, errors.New("Not found networkID")
+	}
 }

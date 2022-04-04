@@ -246,3 +246,7 @@ const (
 	PLGNetworkID
 	FTMNetworkID
 )
+
+const (
+	EVMNetworkType = iota
+)

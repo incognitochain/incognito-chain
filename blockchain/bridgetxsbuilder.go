@@ -1,11 +1,14 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -149,7 +152,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	)
 	rejectedInst := inst.StringSlice()
 
-	amount, receivingShardID, addressStr, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
+	amt, receivingShardID, addressStr, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
 		stateDBs[common.BeaconChainID], shardID, listTxUsed,
 		contractAddress, prefix, isTxHashIssued,
 		issuingEVMBridgeReqAction.EVMReceipt,
@@ -160,8 +163,16 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		Logger.log.Warnf(err.Error())
 		return [][]string{rejectedInst}, nil, nil
 	}
+
+	amount := uint64(0)
+	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
+		// convert amt from wei (10^18) to nano eth (10^9)
+		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
+	} else { // ERC20 / BEP20
+		amount = amt.Uint64()
+	}
 	if !isPRV {
-		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
+		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token, nil)
 		if err != nil {
 			Logger.log.Warnf(err.Error())
 			return [][]string{rejectedInst}, nil, nil

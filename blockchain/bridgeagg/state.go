@@ -104,7 +104,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 	for _, content := range insts {
-		if len(insts) < 2 {
+		if len(content) != 4 {
 			continue // Not error, just not bridgeagg instructions
 		}
 		metaType, err := strconv.Atoi(content[0])
@@ -118,6 +118,7 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 		if err := inst.FromStringSlice(content); err != nil {
 			return err
 		}
+
 		switch inst.MetaType {
 		case metadataCommon.BridgeAggModifyListTokenMeta:
 			s.unifiedTokenInfos, err = s.processor.modifyListTokens(*inst, s.unifiedTokenInfos, sDB)
@@ -156,7 +157,14 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 					if err != nil {
 						return err
 					}
-					vault := NewVaultWithValue(*state, *tokenID)
+					info, has, err := statedb.GetBridgeTokenByType(sDB, *tokenID, false)
+					if err != nil {
+						return err
+					}
+					if !has {
+						return errors.New("Not found externalTokenID")
+					}
+					vault := NewVaultWithValue(*state, *tokenID, info.ExternalTokenID())
 					id, err := strconv.Atoi(networkID)
 					if err != nil {
 						return err

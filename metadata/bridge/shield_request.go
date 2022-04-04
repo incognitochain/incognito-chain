@@ -103,8 +103,12 @@ func (request *ShieldRequest) Hash() *common.Hash {
 func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	extraData := [][]byte{}
 	for _, data := range request.Data {
-		switch data.NetworkID {
-		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+		networkType, err := GetNetworkTypeByNetworkID(data.NetworkID)
+		if err != nil {
+			return nil, err
+		}
+		switch networkType {
+		case common.EVMNetworkType:
 			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
 			if err != nil {
 				return [][]string{}, err
@@ -121,8 +125,6 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
 			}
 			extraData = append(extraData, content)
-		case common.DefaultNetworkID:
-			return [][]string{}, errors.New("NetworkID cannot be default")
 		default:
 			return [][]string{}, errors.New("Invalid networkID")
 		}

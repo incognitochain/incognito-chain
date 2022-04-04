@@ -169,6 +169,10 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 	return has, nil
 }
 
+func GetBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
+	return getBridgeTokenByType(stateDB, incTokenID, isCentralized)
+}
+
 func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
 	key := GenerateBridgeTokenInfoObjectKey(isCentralized, incTokenID)
 	tokenInfoState, has, err := stateDB.getBridgeTokenInfoState(key)

@@ -44,7 +44,7 @@ func (blockService BlockService) GetBridgeAggState(
 func getBridgeAggState(
 	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB,
 ) (interface{}, error) {
-	bridgeAggState, err := bridgeagg.InitStateFromDB(stateDB)
+	bridgeAggState, err := bridgeagg.InitStateFromDB(stateDB, false)
 	if err != nil {
 		return nil, NewRPCError(GetBridgeAggStateError, err)
 	}

@@ -4,28 +4,36 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type Vault struct {
 	statedb.BridgeAggVaultState
-	tokenID common.Hash
+	tokenID         common.Hash
+	externalTokenID []byte
 }
 
 func (v *Vault) TokenID() common.Hash {
 	return v.tokenID
 }
 
+func (v *Vault) ExternalTokenID() []byte {
+	return v.externalTokenID
+}
+
 func NewVault() *Vault {
 	return &Vault{}
 }
 
-func NewVaultWithValue(state statedb.BridgeAggVaultState, tokenID common.Hash) *Vault {
+func NewVaultWithValue(state statedb.BridgeAggVaultState, tokenID common.Hash, externalTokenID []byte) *Vault {
 	return &Vault{
 		BridgeAggVaultState: state,
 		tokenID:             tokenID,
+		externalTokenID:     externalTokenID,
 	}
 }
 
@@ -34,6 +42,7 @@ func (v *Vault) Clone() *Vault {
 		BridgeAggVaultState: *v.BridgeAggVaultState.Clone(),
 	}
 	copy(res.tokenID[:], v.tokenID[:])
+	copy(res.externalTokenID[:], v.externalTokenID[:])
 	return res
 }
 
@@ -60,11 +69,13 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 
 func (v *Vault) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State   *statedb.BridgeAggVaultState `json:"State"`
-		TokenID common.Hash                  `json:"TokenID"`
+		State           *statedb.BridgeAggVaultState `json:"State"`
+		TokenID         common.Hash                  `json:"TokenID"`
+		ExternalTokenID []byte                       `json:"ExternalTokenID,omitempty"`
 	}{
-		State:   &v.BridgeAggVaultState,
-		TokenID: v.tokenID,
+		State:           &v.BridgeAggVaultState,
+		TokenID:         v.tokenID,
+		ExternalTokenID: v.externalTokenID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -74,8 +85,9 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 
 func (v *Vault) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State   *statedb.BridgeAggVaultState `json:"State"`
-		TokenID common.Hash                  `json:"TokenID"`
+		State           *statedb.BridgeAggVaultState `json:"State"`
+		TokenID         common.Hash                  `json:"TokenID"`
+		ExternalTokenID []byte                       `json:"ExternalTokenID,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -85,6 +97,7 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 		v.BridgeAggVaultState = *temp.State
 	}
 	v.tokenID = temp.TokenID
+	v.externalTokenID = temp.ExternalTokenID
 	return nil
 }
 
@@ -124,8 +137,10 @@ func (v *Vault) increaseReserve(amount uint64) error {
 	return nil
 }
 
-func (v *Vault) convert(amount uint64) error {
-	tmpAmount, err := CalculateAmountByDecimal(amount, v.Decimal(), AddOperator)
+func (v *Vault) convert(amount uint64, prefix string) error {
+	tmpAmount, err := CalculateAmountByDecimal(
+		*big.NewInt(0).SetUint64(amount), config.Param().BridgeAggParam.BaseDecimal, AddOperator, prefix, 0, v.externalTokenID,
+	)
 	if err != nil {
 		return err
 	}

@@ -2,11 +2,14 @@ package bridgeagg
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -214,4 +217,49 @@ func (logWriter) Write(p []byte) (n int, err error) {
 	os.Stdout.Write(p)
 	logRotator.Write(p)
 	return len(p), nil
+}
+
+func TestCalculateAmountByDecimal(t *testing.T) {
+	config.AbortParam()
+	config.Param().BridgeAggParam.BaseDecimal = 9
+	type args struct {
+		amount      big.Int
+		decimal     uint
+		operator    byte
+		prefix      string
+		networkType uint
+		token       []byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *big.Int
+		wantErr bool
+	}{
+		{
+			name: "Convert",
+			args: args{
+				amount:      *big.NewInt(100),
+				decimal:     config.Param().BridgeAggParam.BaseDecimal,
+				operator:    AddOperator,
+				prefix:      "",
+				networkType: 0,
+				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			},
+			want:    big.NewInt(100),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CalculateAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator, tt.args.prefix, tt.args.networkType, tt.args.token)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CalculateAmountByDecimal() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CalculateAmountByDecimal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

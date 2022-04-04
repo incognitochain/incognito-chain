@@ -1,6 +1,7 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -177,6 +178,8 @@ func InsertTxHashIssuedByNetworkID(networkID uint) func(*statedb.StateDB, []byte
 		return statedb.InsertBSCTxHashIssued
 	case common.ETHNetworkID:
 		return statedb.InsertETHTxHashIssued
+	case common.FTMNetworkID:
+		return statedb.InsertFTMTxHashIssued
 	}
 	return nil
 }
@@ -277,14 +280,15 @@ func shieldEVM(
 	if err != nil {
 		return 0, 0, 0, nil, nil, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
 	}
-	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token, vault.externalTokenID)
 	if err != nil {
 		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
-	tmpAmount, err := CalculateAmountByDecimal(amount, vault.Decimal(), AddOperator)
+	tmpAmount, err := CalculateAmountByDecimal(*amount, vault.Decimal(), AddOperator, prefix, 0, token)
 	if err != nil {
 		return 0, 0, 0, nil, nil, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
+	//tmpAmount is uint64 after this function
 
 	actualAmount, err := vault.shield(tmpAmount.Uint64())
 	if err != nil {
@@ -292,7 +296,7 @@ func shieldEVM(
 		return 0, 0, 0, nil, nil, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
 	}
 	vaults[networkID] = vault
-	reward := actualAmount - amount
+	reward := actualAmount - tmpAmount.Uint64()
 
 	switch networkID {
 	case common.ETHNetworkID:
@@ -342,23 +346,30 @@ func buildAcceptedShieldContents(
 	return contents, nil
 }
 
-func CalculateAmountByDecimal(amount uint64, decimal uint, operator byte) (*big.Int, error) {
-	tmpAmount := big.NewInt(0).SetUint64(amount)
+func CalculateAmountByDecimal(
+	amount big.Int, decimal uint, operator byte, prefix string, networkType uint, token []byte,
+) (*big.Int, error) {
+	res := big.NewInt(0).Set(&amount)
+	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
+		if decimal > config.Param().BridgeAggParam.BaseDecimal {
+			decimal = config.Param().BridgeAggParam.BaseDecimal
+		}
+	}
 	switch operator {
 	case AddOperator:
-		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
-		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
-		if !tmpAmount.IsUint64() {
+		res.Mul(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+		res.Div(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
+		if !res.IsUint64() {
 			return nil, errors.New("Out of range unit64")
 		}
 	case SubOperator:
-		tmpAmount.Mul(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
-		tmpAmount.Div(tmpAmount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+		res.Mul(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
+		res.Div(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 	default:
 		return nil, errors.New("Cannot recognie operator")
 	}
 
-	return tmpAmount, nil
+	return res, nil
 }
 
 func unshieldEVM(
@@ -416,7 +427,9 @@ func unshieldEVM(
 		return nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
 	}
 	fee := data.BurningAmount - actualAmount
-	unshieldAmount, err := CalculateAmountByDecimal(actualAmount, vault.Decimal(), SubOperator)
+	unshieldAmount, err := CalculateAmountByDecimal(
+		*big.NewInt(0).SetUint64(actualAmount), vault.Decimal(), SubOperator, prefix, 0, externalTokenID,
+	)
 	if err != nil {
 		return nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}

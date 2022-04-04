@@ -1,11 +1,13 @@
 package bridgeagg
 
 import (
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
-func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
+func InitStateFromDB(sDB *statedb.StateDB, includeExternalTokenID bool) (*State, error) {
 	unifiedTokenStates, err := statedb.GetBridgeAggUnifiedTokens(sDB)
 	if err != nil {
 		return nil, err
@@ -22,7 +24,18 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 			if err != nil {
 				state = statedb.NewBridgeAggVaultState()
 			}
-			vault := NewVaultWithValue(*state, convertToken.TokenID())
+			var externalTokenID []byte
+			if includeExternalTokenID {
+				info, has, err := statedb.GetBridgeTokenByType(sDB, convertToken.TokenID(), false)
+				if err != nil {
+					return nil, err
+				}
+				if !has {
+					return nil, errors.New("Not found externalTokenID")
+				}
+				externalTokenID = info.ExternalTokenID()
+			}
+			vault := NewVaultWithValue(*state, convertToken.TokenID(), externalTokenID)
 			unifiedTokenInfos[unifiedTokenState.TokenID()][convertToken.NetworkID()] = vault
 		}
 	}

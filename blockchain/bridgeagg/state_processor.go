@@ -100,7 +100,20 @@ func (sp *stateProcessor) convert(
 		}
 		if vaults, found := unifiedTokenInfos[acceptedContent.UnifiedTokenID]; found {
 			if vault, found := vaults[acceptedContent.NetworkID]; found {
-				err := vault.convert(acceptedContent.Amount)
+				var prefix string
+				switch acceptedContent.NetworkID {
+				case common.ETHNetworkID:
+					prefix = ""
+				case common.BSCNetworkID:
+					prefix = common.BSCPrefix
+				case common.PLGNetworkID:
+					prefix = common.PLGPrefix
+				case common.FTMNetworkID:
+					prefix = common.FTMPrefix
+				default:
+					return unifiedTokenInfos, errors.New("Not found networkID")
+				}
+				err := vault.convert(acceptedContent.Amount, prefix)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
