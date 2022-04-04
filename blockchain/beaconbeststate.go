@@ -592,6 +592,10 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	return slashingPenalty
 }
 
+func (beaconBestState *BeaconBestState) BridgeAggState() *bridgeagg.State {
+	return beaconBestState.bridgeAggState
+}
+
 func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
 	return beaconBestState.pdeStates[version]
 }

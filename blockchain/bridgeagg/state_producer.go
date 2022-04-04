@@ -69,8 +69,8 @@ func (sp *stateProducer) modifyListTokens(
 				}
 				return temp, unifiedTokenInfos, nil
 			}
-			v.SetLastUpdatedRewardReserve(vault.RewardReserve)
-			v.SetCurrentRewardReserve(vault.RewardReserve)
+			v.SetLastUpdatedRewardReserve(newRewardReserve)
+			v.SetCurrentRewardReserve(currentRewardReserve + newRewardReserve - lastUpdatedRewardReserve)
 			unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 		}
 	}

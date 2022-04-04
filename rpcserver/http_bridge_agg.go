@@ -536,3 +536,27 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 	}
 	return res, nil
 }
+
+func (httpServer *HttpServer) handleBridgeAggEstimateReceivedAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Incorrect parameter length"))
+	}
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
+		NetworkID      uint        `json:"NetworkID"`
+		Amount         uint64      `json:"Amount"`
+	}{}
+	rawMd, err := json.Marshal(arrayParams[0])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	err = json.Unmarshal(rawMd, &mdReader)
+	result, err := httpServer.blockService.EstimateReceivedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
+	}
+	return result, nil
+}

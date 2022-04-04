@@ -283,6 +283,7 @@ var HttpHandler = map[string]httpHandler{
 	bridgeaggStatusShield:           (*HttpServer).handleGetBridgeAggShieldStatus,
 	bridgeaggUnshield:               (*HttpServer).handleBridgeAggUnshield,
 	bridgeaggStatusUnshield:         (*HttpServer).handleGetBridgeAggUnshieldStatus,
+	bridgeaggEstimateReceivedAmount: (*HttpServer).handleBridgeAggEstimateReceivedAmount,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 

@@ -157,6 +157,7 @@ const (
 
 	// bridgeagg
 	GetBridgeAggStateError
+	BridgeAggEstimateReceivedAmountError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -303,7 +304,8 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
 	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
 	// bridgeagg
-	GetBridgeAggStateError: {-13000, "Get bridge agg state error"},
+	GetBridgeAggStateError:               {-13000, "Get bridge agg state error"},
+	BridgeAggEstimateReceivedAmountError: {-13001, "Bridge agg estimate receive amount error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

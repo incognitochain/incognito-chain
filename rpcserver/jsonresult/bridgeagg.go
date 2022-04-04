@@ -11,3 +11,8 @@ type BridgeAggState struct {
 	BaseUpperDecimal  uint                                      `json:"BaseUpperDecimal"`
 	BaseLowerDecimal  uint                                      `json:"BaseLowerDecimal"`
 }
+
+type BridgeAggEstimateReceivedAmount struct {
+	ReceivedAmount uint64 `json:"ReceivedAmount"`
+	Fee            uint64 `json:"Fee"`
+}

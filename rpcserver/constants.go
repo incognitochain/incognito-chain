@@ -311,6 +311,7 @@ const (
 	bridgeaggStatusShield           = "bridgeagg_getStatusShield"
 	bridgeaggUnshield               = "bridgeagg_unshield"
 	bridgeaggStatusUnshield         = "bridgeagg_getStatusUnshield"
+	bridgeaggEstimateReceivedAmount = "bridgeagg_estimateReceivedAmount"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

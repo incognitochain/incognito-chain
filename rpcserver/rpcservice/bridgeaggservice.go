@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -55,4 +56,21 @@ func getBridgeAggState(
 		BaseLowerDecimal:  config.Param().BridgeAggParam.BaseLowerDecimal,
 	}
 	return res, nil
+}
+
+func (blockService BlockService) EstimateReceivedAmount(unifiedTokenID common.Hash, networkID uint, burntAmount uint64) (interface{}, error) {
+	beaconBestView := blockService.BlockChain.GetBeaconBestState()
+	state := beaconBestView.BridgeAggState()
+	vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, networkID)
+	if err != nil {
+		return nil, NewRPCError(BridgeAggEstimateReceivedAmountError, err)
+	}
+
+	x := vault.Reserve()
+	y := vault.CurrentRewardReserve()
+	receivedAmount, err := bridgeagg.EstimateActualAmountByBurntAmount(x, y, burntAmount)
+	return &jsonresult.BridgeAggEstimateReceivedAmount{
+		ReceivedAmount: receivedAmount,
+		Fee:            burntAmount - receivedAmount,
+	}, err
 }
