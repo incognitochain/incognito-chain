@@ -1346,12 +1346,14 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if rootPoolPair.isEmpty() {
 			Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				res = append(res, mintAccessCoinInst)
 			}
 			res = append(res, rejectInsts...)
 			continue
 		}
 		if share.amount == 0 || metaData.ShareAmount() == 0 {
+			share.setAccessOTA(accessOTA)
 			Logger.log.Warnf("tx %v share amount is invalid", tx.Hash().String())
 			if shouldMintAccessCoin {
 				res = append(res, mintAccessCoinInst)
@@ -1803,6 +1805,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		if reward == nil || len(reward) == 0 {
 			Logger.log.Infof("No staking reward to withdraw")
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				instructions = append(instructions, mintAccessCoinInst)
 			}
 			instructions = append(instructions, rejectInst...)
