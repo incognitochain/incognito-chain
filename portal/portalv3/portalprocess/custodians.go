@@ -5,15 +5,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
-	"math/big"
-	"sort"
-	"strconv"
 )
 
 /* =======
@@ -551,7 +553,14 @@ func (p *PortalCustodianDepositProcessorV3) BuildNewInsts(
 	}
 
 	// verify proof and parse receipt
-	ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+	// Note: currently only support ETH
+	ethReceipt, err := metadata.VerifyProofAndParseEVMReceipt(
+		meta.BlockHash, meta.TxIndex, meta.ProofStrs,
+		config.Param().GethParam.Host,
+		metadata.EVMConfirmationBlocks,
+		"",
+		true,
+	)
 	if err != nil {
 		Logger.log.Errorf("Custodian deposit v3: Verify eth proof error: %+v", err)
 		return [][]string{rejectedInst}, nil

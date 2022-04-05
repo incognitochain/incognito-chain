@@ -2,11 +2,13 @@ package devframework
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
+	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
@@ -33,6 +35,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+
 	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -92,6 +95,7 @@ var (
 	pdexLogger             = backendLog.Logger("Pdex log ", false)
 	portalV4ProcessLogger  = backendLog.Logger("Portal v4 process log ", false)
 	portalV4TokenLogger    = backendLog.Logger("Portal v4 token log ", false)
+	evmCallerLogger        = backendLog.Logger("EVMCaller log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -148,6 +152,7 @@ func init() {
 	portaltokensv4.Logger.Init(portalV4TokenLogger)
 
 	txpool.Logger.Init(txPoolLogger)
+	evmcaller.Logger.Init(evmCallerLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -184,6 +189,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"PORTALV3COMMON":    portalV3CommonLogger,
 	"PORTALV3PROCESS":   portalV3ProcessLogger,
 	"PORTALV3TOKENS":    portalV3TokenLogger,
+	"EVMCALLER":         evmCallerLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

@@ -88,7 +88,7 @@ func NewBlockChain(isTest bool) *BlockChain {
 	bc := &BlockChain{}
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
-	bc.beaconViewCache, _ = lru.New(50)
+	bc.beaconViewCache, _ = lru.New(10)
 	bc.cQuitSync = make(chan struct{})
 	return bc
 }

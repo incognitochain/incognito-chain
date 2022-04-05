@@ -46,7 +46,7 @@ func CommitteeKeyListToString(keyList []CommitteePublicKey) ([]string, error) {
 	return result, nil
 }
 
-var keyStructCache, _ = lru.New(10000)
+var keyStructCache, _ = lru.New(3000)
 
 func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, error) {
 	if len(strKeyList) == 0 {
