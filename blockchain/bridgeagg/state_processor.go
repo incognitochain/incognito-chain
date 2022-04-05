@@ -113,7 +113,7 @@ func (sp *stateProcessor) convert(
 				default:
 					return unifiedTokenInfos, errors.New("Not found networkID")
 				}
-				err := vault.convert(acceptedContent.Amount, prefix)
+				err := vault.convert(acceptedContent.Amount, prefix, acceptedContent.ExternalTokenID)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}

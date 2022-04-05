@@ -158,7 +158,13 @@ func (sp *stateProducer) convert(
 			errorType = NotFoundNetworkIDError
 			err = NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
 		}
-		err = vault.convert(md.Amount, prefix)
+		externalTokenID, e := GetExternalTokenIDByIncTokenID(md.TokenID, sDBs[common.BeaconChainID])
+		if e != nil {
+			errorType = NotFoundTokenIDInNetworkError
+			err = e
+			return
+		}
+		err = vault.convert(md.Amount, prefix, externalTokenID)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			errorType = InvalidConvertAmountError

@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
-func InitStateFromDB(sDB *statedb.StateDB, includeExternalTokenID bool) (*State, error) {
+func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 	unifiedTokenStates, err := statedb.GetBridgeAggUnifiedTokens(sDB)
 	if err != nil {
 		return nil, err
@@ -24,20 +24,20 @@ func InitStateFromDB(sDB *statedb.StateDB, includeExternalTokenID bool) (*State,
 			if err != nil {
 				state = statedb.NewBridgeAggVaultState()
 			}
-			var externalTokenID []byte
-			if includeExternalTokenID {
-				info, has, err := statedb.GetBridgeTokenByType(sDB, convertToken.TokenID(), false)
-				if err != nil {
-					return nil, err
-				}
-				if !has {
-					return nil, errors.New("Not found externalTokenID")
-				}
-				externalTokenID = info.ExternalTokenID()
-			}
-			vault := NewVaultWithValue(*state, convertToken.TokenID(), externalTokenID)
+			vault := NewVaultWithValue(*state, convertToken.TokenID())
 			unifiedTokenInfos[unifiedTokenState.TokenID()][convertToken.NetworkID()] = vault
 		}
 	}
 	return NewStateWithValue(unifiedTokenInfos), nil
+}
+
+func GetExternalTokenIDByIncTokenID(incTokenID common.Hash, sDB *statedb.StateDB) ([]byte, error) {
+	info, has, err := statedb.GetBridgeTokenByType(sDB, incTokenID, false)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, errors.New("Not found externalTokenID")
+	}
+	return info.ExternalTokenID(), nil
 }

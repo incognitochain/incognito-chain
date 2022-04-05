@@ -280,7 +280,7 @@ func shieldEVM(
 	if err != nil {
 		return 0, 0, 0, nil, nil, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
 	}
-	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token, vault.externalTokenID)
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
 	if err != nil {
 		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}

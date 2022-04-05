@@ -157,14 +157,7 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 					if err != nil {
 						return err
 					}
-					info, has, err := statedb.GetBridgeTokenByType(sDB, *tokenID, false)
-					if err != nil {
-						return err
-					}
-					if !has {
-						return errors.New("Not found externalTokenID")
-					}
-					vault := NewVaultWithValue(*state, *tokenID, info.ExternalTokenID())
+					vault := NewVaultWithValue(*state, *tokenID)
 					id, err := strconv.Atoi(networkID)
 					if err != nil {
 						return err

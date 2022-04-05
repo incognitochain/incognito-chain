@@ -172,7 +172,6 @@ func VerifyTokenPair(
 	ac *metadataCommon.AccumulatedValues,
 	incTokenID common.Hash,
 	token []byte,
-	availableToken []byte,
 ) error {
 	canProcess, err := ac.CanProcessTokenPair(token, incTokenID)
 	if err != nil {
@@ -185,18 +184,12 @@ func VerifyTokenPair(
 	if err != nil {
 		return fmt.Errorf("WARNING: Cannot find tokenID %s", incTokenID.String())
 	}
-	if len(availableToken) == 0 {
-		isValid, err := statedb.CanProcessTokenPair(stateDBs[common.BeaconChainID], token, incTokenID, privacyTokenExisted)
-		if err != nil {
-			return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
-		}
-		if !isValid {
-			return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
-		}
-	} else {
-		if !bytes.Equal(token, availableToken) && privacyTokenExisted {
-			return fmt.Errorf("WARNING: externalTokenID need to be the same with available externalTokenID")
-		}
+	isValid, err := statedb.CanProcessTokenPair(stateDBs[common.BeaconChainID], token, incTokenID, privacyTokenExisted)
+	if err != nil {
+		return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
+	}
+	if !isValid {
+		return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
 	}
 	return nil
 }

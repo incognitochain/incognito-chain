@@ -29,7 +29,8 @@ type RejectedConvertTokenToUnifiedToken struct {
 
 type AcceptedConvertTokenToUnifiedToken struct {
 	ConvertTokenToUnifiedTokenRequest
-	TxReqID common.Hash `json:"TxReqID"`
+	TxReqID         common.Hash `json:"TxReqID"`
+	ExternalTokenID []byte      `json:"ExternalTokenID"`
 }
 
 func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
