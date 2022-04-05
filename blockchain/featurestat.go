@@ -257,7 +257,6 @@ func (featureStat *FeatureStat) addNode(timestamp int, key string, features []st
 
 	//not update from old message
 	if _, ok := featureStat.nodes[key]; ok && featureStat.nodes[key].Timestamp > timestamp {
-		panic(1)
 		return
 	}
 
