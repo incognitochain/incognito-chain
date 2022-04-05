@@ -95,49 +95,53 @@ func (bc *BlockChain) InitFeatureStat() {
 	go func() {
 		for {
 			time.Sleep(5 * time.Minute)
-			//get untrigger feature
-			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
 
-			//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint
-			unTriggerFeatures := beaconView.getUntriggerFeature(false)
-			updatedFeature := unTriggerFeatures
-			for feature, _ := range beaconView.TriggeredFeature {
-				updatedFeature = append(updatedFeature, feature)
-			}
-			msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if msg != nil {
-				if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
-					Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
-				}
-			}
-
-			//only after checkpoint, send feature state for  validator not in sync pool
-			unTriggerFeatures = beaconView.getUntriggerFeature(true)
-			msg, err = CreateNewFeatureStatMessage(beaconView, false, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if msg != nil {
-				if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
-					Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
-				}
-			}
-
-			//DefaultFeatureStat.Report()
-			DefaultFeatureStat.lock.Lock()
-			for id, node := range DefaultFeatureStat.nodes {
-				if time.Now().Unix()-int64(node.Timestamp) > 30*60 {
-					delete(DefaultFeatureStat.nodes, id)
-				}
-			}
-			DefaultFeatureStat.lock.Unlock()
+			bc.SendFeatureStat()
 		}
 	}()
+}
+
+func (bc *BlockChain) SendFeatureStat() {
+	beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
+
+	//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint
+	unTriggerFeatures := beaconView.getUntriggerFeature(false)
+	updatedFeature := unTriggerFeatures
+	for feature, _ := range beaconView.TriggeredFeature {
+		updatedFeature = append(updatedFeature, feature)
+	}
+	msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	if msg != nil {
+		if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
+			Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+		}
+	}
+
+	//only after checkpoint, send feature state for  validator not in sync pool
+	unTriggerFeatures = beaconView.getUntriggerFeature(true)
+	msg, err = CreateNewFeatureStatMessage(beaconView, false, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	if msg != nil {
+		if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
+			Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+		}
+	}
+
+	//DefaultFeatureStat.Report()
+	DefaultFeatureStat.lock.Lock()
+	for id, node := range DefaultFeatureStat.nodes {
+		if time.Now().Unix()-int64(node.Timestamp) > 30*60 {
+			delete(DefaultFeatureStat.nodes, id)
+		}
+	}
+	DefaultFeatureStat.lock.Unlock()
 }
 
 func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
