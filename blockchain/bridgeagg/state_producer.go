@@ -15,6 +15,7 @@ import (
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type stateProducer struct {
@@ -229,6 +230,7 @@ func (sp *stateProducer) shield(
 	acceptedShieldRequestRewardData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
 	var rewardAmount uint64
 
+	paymentAddress := ""
 	for index, data := range md.Data {
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
 		if e != nil {
@@ -244,16 +246,17 @@ func (sp *stateProducer) shield(
 				errorType = OtherError
 				return
 			}
-			actualAmount, reward, receivingShardID, token, uniqTX, et, e := shieldEVM(
+			actualAmount, reward, receivingShardID, token, uniqTX, addressStr, et, e := shieldEVM(
 				md.IncTokenID, data.NetworkID, tempAC, shardID,
 				action.TxReqID, vaults, stateDBs,
-				action.ExtraData[index], blockHash, data.TxIndex,
+				action.ExtraData[index], blockHash, data.TxIndex, paymentAddress,
 			)
 			if e != nil {
 				errorType = et
 				err = e
 				return
 			}
+			paymentAddress = addressStr
 			acceptedShieldRequestData[index].IssuingAmount = actualAmount - reward
 			acceptedShieldRequestRewardData[index].IssuingAmount = reward
 			acceptedShieldRequestData[index].ExternalTokenID = token
@@ -268,9 +271,14 @@ func (sp *stateProducer) shield(
 			return
 		}
 	}
+	key, err := wallet.Base58CheckDeserialize(paymentAddress)
+	if err != nil {
+		errorType = OtherError
+		return
+	}
 	contents, err = buildAcceptedShieldContents(
 		acceptedShieldRequestData, acceptedShieldRequestRewardData,
-		md.PaymentAddress, md.IncTokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
+		key.KeySet.PaymentAddress, md.IncTokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
 	)
 	if err != nil {
 		errorType = OtherError

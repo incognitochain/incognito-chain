@@ -232,12 +232,12 @@ func shieldEVM(
 	incTokenID common.Hash, networkID uint, ac *metadataCommon.AccumulatedValues,
 	shardID byte, txReqID common.Hash,
 	vaults map[uint]*Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
-	blockHash rCommon.Hash, txIndex uint,
-) (uint64, uint64, byte, []byte, []byte, int, error) {
+	blockHash rCommon.Hash, txIndex uint, currentPaymentAddress string,
+) (uint64, uint64, byte, []byte, []byte, string, int, error) {
 	var txReceipt *types.Receipt
 	err := json.Unmarshal(extraData, &txReceipt)
 	if err != nil {
-		return 0, 0, 0, nil, nil, OtherError, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestUnmarshalJsonError, err)
+		return 0, 0, 0, nil, nil, "", OtherError, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestUnmarshalJsonError, err)
 	}
 	var listTxUsed [][]byte
 	var contractAddress, prefix string
@@ -265,35 +265,38 @@ func shieldEVM(
 		prefix = common.FTMPrefix
 		isTxHashIssued = statedb.IsFTMTxHashIssued
 	case common.DefaultNetworkID:
-		return 0, 0, 0, nil, nil, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
+		return 0, 0, 0, nil, nil, "", OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
 	default:
-		return 0, 0, 0, nil, nil, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
+		return 0, 0, 0, nil, nil, "", NotFoundNetworkIDError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
 	}
 	vault, found := vaults[networkID]
 	if !found {
-		return 0, 0, 0, nil, nil, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
+		return 0, 0, 0, nil, nil, "", NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
 	}
-	amount, receivingShardID, _, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
+	amount, receivingShardID, paymentAddress, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
 		stateDBs[common.BeaconChainID], shardID, listTxUsed,
 		contractAddress, prefix, isTxHashIssued, txReceipt, blockHash, txIndex,
 	)
 	if err != nil {
-		return 0, 0, 0, nil, nil, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
+		return 0, 0, 0, nil, nil, "", FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
+	}
+	if currentPaymentAddress != "" && currentPaymentAddress != paymentAddress {
+		return 0, 0, 0, nil, nil, "", FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, errors.New("PaymentAddress from proofs need to be similar"))
 	}
 	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
 	if err != nil {
-		return 0, 0, 0, nil, nil, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
+		return 0, 0, 0, nil, nil, "", FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
 	tmpAmount, err := CalculateAmountByDecimal(*amount, vault.Decimal(), AddOperator, prefix, 0, token)
 	if err != nil {
-		return 0, 0, 0, nil, nil, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
+		return 0, 0, 0, nil, nil, "", OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
 	//tmpAmount is uint64 after this function
 
 	actualAmount, err := vault.shield(tmpAmount.Uint64())
 	if err != nil {
 		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, txReqID)
-		return 0, 0, 0, nil, nil, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
+		return 0, 0, 0, nil, nil, "", CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
 	}
 	vaults[networkID] = vault
 	reward := actualAmount - tmpAmount.Uint64()
@@ -307,7 +310,7 @@ func shieldEVM(
 		ac.UniqPLGTxsUsed = append(ac.UniqPLGTxsUsed, uniqTx)
 	}
 	ac.DBridgeTokenPair[vault.tokenID.String()] = token
-	return actualAmount, reward, receivingShardID, token, uniqTx, 0, nil
+	return actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, 0, nil
 }
 
 func buildAcceptedShieldContents(
@@ -370,6 +373,30 @@ func CalculateAmountByDecimal(
 	}
 
 	return res, nil
+}
+
+func CalculateAmountUnshield(
+	amount big.Int, unifiedTokenID, tokenID common.Hash,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	prefix string, networkType uint, token []byte,
+) (uint64, error) {
+	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
+		for _, vault := range vaults {
+			if vault.tokenID == tokenID {
+				amt, err := CalculateAmountByDecimal(amount, vault.Decimal(), AddOperator, prefix, networkType, token)
+				if err != nil {
+					return 0, err
+				}
+				if !amt.IsUint64() {
+					return 0, errors.New("Out of range uint64")
+				}
+				return amt.Uint64(), nil
+			}
+		}
+	} else {
+		return 0, errors.New("Not found unifiedTokenID")
+	}
+	return 0, errors.New("Not found tokenID")
 }
 
 func unshieldEVM(

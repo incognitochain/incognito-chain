@@ -327,6 +327,11 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		metadataBridge.ShieldRequest
+	}{}
+
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
@@ -335,10 +340,6 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
 	}
 
-	// metadata object format to read from RPC parameters
-	mdReader := &struct {
-		metadataBridge.ShieldRequest
-	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
@@ -346,7 +347,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	}
 
 	md := metadataBridge.NewShieldRequestWithValue(
-		mdReader.Data, mdReader.IncTokenID, keyWallet.KeySet.PaymentAddress,
+		mdReader.Data, mdReader.IncTokenID,
 	)
 
 	// create new param to build raw tx from param interface

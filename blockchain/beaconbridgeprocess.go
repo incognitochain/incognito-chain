@@ -270,23 +270,29 @@ func (blockchain *BlockChain) processBurningReq(
 	}
 	amt := big.NewInt(0).SetBytes(amountBytes)
 	amount := uint64(0)
-	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
-		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-	} else {
-		amount = amt.Uint64()
-	}
 
 	incTokenID := &common.Hash{}
 	txReqID, err := common.Hash{}.NewHashFromStr(instruction[5])
 	if err != nil {
 		return updatingInfoByTokenID, err
 	}
+	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
 	unifiedTokenID, err := curView.bridgeAggState.UnifiedTokenIDCached(*txReqID)
 	if err != nil {
-		incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
+		if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
+			amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
+		} else {
+			amount = amt.Uint64()
+		}
 	} else {
+		tempIncTokenID := &common.Hash{}
+		*tempIncTokenID = *incTokenID
 		incTokenID = &unifiedTokenID
-		externalTokenID = nil
+		externalTokenID = []byte(common.UnifiedTokenPrefix)
+		amount, err = bridgeagg.CalculateAmountUnshield(*amt, *incTokenID, *tempIncTokenID, curView.bridgeAggState.UnifiedTokenInfos(), prefix, 0, externalTokenID)
+		if err != nil {
+			return updatingInfoByTokenID, err
+		}
 	}
 
 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, *incTokenID, false)
@@ -434,7 +440,7 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 					CountUpAmt:      data.IssuingAmount,
 					DeductAmt:       0,
 					TokenID:         acceptedShieldRequest.IncTokenID,
-					ExternalTokenID: data.ExternalTokenID,
+					ExternalTokenID: []byte(common.UnifiedTokenPrefix),
 					IsCentralized:   false,
 				}
 			}

@@ -35,9 +35,8 @@ type ShieldRequestData struct {
 }
 
 type ShieldRequest struct {
-	Data           []ShieldRequestData    `json:"Data"`
-	IncTokenID     common.Hash            `json:"IncTokenID"`
-	PaymentAddress privacy.PaymentAddress `json:"PaymentAddress,omitempty"`
+	Data       []ShieldRequestData `json:"Data"`
+	IncTokenID common.Hash         `json:"IncTokenID"`
 	metadataCommon.MetadataBase
 }
 
@@ -50,12 +49,11 @@ func NewShieldRequest() *ShieldRequest {
 }
 
 func NewShieldRequestWithValue(
-	data []ShieldRequestData, incTokenID common.Hash, paymentAddress privacy.PaymentAddress,
+	data []ShieldRequestData, incTokenID common.Hash,
 ) *ShieldRequest {
 	return &ShieldRequest{
-		Data:           data,
-		IncTokenID:     incTokenID,
-		PaymentAddress: paymentAddress,
+		Data:       data,
+		IncTokenID: incTokenID,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.IssuingUnifiedTokenRequestMeta,
 		},
@@ -122,7 +120,7 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 			}
 			content, err := json.Marshal(evmReceipt)
 			if err != nil {
-				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
+				return [][]string{}, err
 			}
 			extraData = append(extraData, content)
 		default:
