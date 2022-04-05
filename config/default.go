@@ -85,6 +85,7 @@ var MainnetParam = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	MemoryCacheMaxSize:       536870912, // 500Mb
 }
 
 var Testnet1Param = &param{
@@ -167,6 +168,7 @@ var Testnet1Param = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	MemoryCacheMaxSize:       536870912, // 500Mb
 }
 
 var Tesnet2Param = &param{
@@ -250,6 +252,7 @@ var Tesnet2Param = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	MemoryCacheMaxSize:       536870912, // 500Mb
 }
 
 var LocalParam = &param{
@@ -332,6 +335,7 @@ var LocalParam = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	MemoryCacheMaxSize:       536870912, // 500Mb
 }
 
 var LocalDCSParam = &param{
@@ -414,6 +418,7 @@ var LocalDCSParam = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	MemoryCacheMaxSize:       536870912, // 500Mb
 }
 
 func (p *param) LoadKeyByNetwork(network string) {

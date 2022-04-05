@@ -114,11 +114,21 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	beaconBlock := types.NewBeaconBlock()
 	if config.Config().EnableFFStorage {
 		err = beaconBlock.FromBytes(beaconBlockBytes)
+		if err != nil {
+			return nil, 0, err
+		}
+		if beaconBlock.GetHeight() > 1 {
+			valData, err := blockchain.BeaconChain.blkManager.GetBlockValidation(beaconBlockHash)
+			if err != nil {
+				return nil, 0, err
+			}
+			beaconBlock.AddValidationField(valData)
+		}
 	} else {
 		err = json.Unmarshal(beaconBlockBytes, beaconBlock)
-	}
-	if err != nil {
-		return nil, 0, err
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
@@ -203,11 +213,21 @@ func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, s
 	shardBlock := types.NewShardBlock()
 	if config.Config().EnableFFStorage {
 		err = shardBlock.FromBytes(shardBlockBytes)
+		if err != nil {
+			return nil, 0, err
+		}
+		if shardBlock.GetHeight() > 1 {
+			valData, err := blockchain.ShardChain[shardID].blkManager.GetBlockValidation(hash)
+			if err != nil {
+				return nil, 0, err
+			}
+			shardBlock.AddValidationField(valData)
+		}
 	} else {
 		err = json.Unmarshal(shardBlockBytes, shardBlock)
-	}
-	if err != nil {
-		return nil, 0, err
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 	return shardBlock, shardBlock.Header.Height, nil
 }

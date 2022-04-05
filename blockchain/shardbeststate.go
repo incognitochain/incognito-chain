@@ -774,7 +774,10 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 		if err != nil {
 			return err
 		}
-		json.Unmarshal(sRHBytes, finalViewRH)
+		err = json.Unmarshal(sRHBytes, finalViewRH)
+		if err != nil {
+			return err
+		}
 	}
 
 	consensusRootHash, consensusRebuildRoot, err := commitToDisk(shardBestState.consensusStateDB, finalViewRH.ConsensusStateDBRootHash)

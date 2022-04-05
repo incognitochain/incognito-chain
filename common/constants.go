@@ -224,7 +224,6 @@ const (
 
 const (
 	CacheNumCounters = int64(100000)
-	CacheMaxCost     = int64(2 * 1 << 30) // 2 GiB
 	CacheBufferItems = int64(64)
 )
 

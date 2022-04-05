@@ -2,6 +2,7 @@ package incdb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/pkg/errors"
@@ -50,4 +51,16 @@ func OpenMultipleDB(typ string) (map[int]Database, error) {
 		m[i] = db
 	}
 	return m, nil
+}
+
+func OpenDBWithPath(typ string, path string) (Database, error) {
+	d, exists := drivers[typ]
+	if !exists {
+		return nil, errors.Wrapf(errors.New("Driver is not registered"), typ)
+	}
+	db, err := d.Open(path)
+	if err != nil {
+		return nil, errors.WithStack(fmt.Errorf("Open database error %+v", err))
+	}
+	return db, nil
 }

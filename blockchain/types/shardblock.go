@@ -7,7 +7,6 @@ import (
 
 	ggproto "github.com/golang/protobuf/proto"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -455,16 +454,6 @@ func (sBody *ShardBody) FromProtoShardBody(protoData *proto.ShardBodyBytes) erro
 func (sBlock ShardBlock) ToProtoShardBlock() (*proto.ShardBlockBytes, error) {
 	res := &proto.ShardBlockBytes{}
 	var err error
-	if sBlock.GetHeight() > 1 {
-		v, err := consensustypes.DecodeValidationData(sBlock.GetValidationField())
-		if err != nil {
-			return nil, err
-		}
-		res.ValidationData, err = v.ToBytes()
-		if err != nil {
-			return nil, err
-		}
-	}
 	res.Body = sBlock.Body.ToProtoShardBody()
 	res.Header, err = sBlock.Header.ToProtoShardHeader()
 	if err != nil {
@@ -475,16 +464,7 @@ func (sBlock ShardBlock) ToProtoShardBlock() (*proto.ShardBlockBytes, error) {
 
 func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) error {
 	if protoData.Header.Height > 1 {
-		valData := consensustypes.ValidationData{}
-		err := valData.FromBytes(protoData.ValidationData)
-		if err != nil {
-			return err
-		}
-		vStr, err := consensustypes.EncodeValidationData(valData)
-		if err != nil {
-			return err
-		}
-		sBlock.AddValidationField(vStr)
+		sBlock.AddValidationField("")
 	}
 	err := sBlock.Body.FromProtoShardBody(protoData.Body)
 	if err != nil {

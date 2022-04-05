@@ -374,10 +374,12 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 		// This block is not inserted yet, no need to replace
 		return nil
 	}
-	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
+	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, chain.shardID, newValidationData); err != nil {
 		Logger.log.Error(err)
 		return err
 	}
+	Logger.log.Infof("SHARD %+v | Shard Hash %+v, Replace Previous ValidationData with newValidationData %+v",
+		chain.shardID, previousBlockHash.String(), newValidationData)
 
 	return nil
 }

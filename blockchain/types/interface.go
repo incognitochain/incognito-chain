@@ -20,6 +20,7 @@ type BlockInterface interface {
 	GetProposeTime() int64
 	GetProposer() string
 	GetValidationField() string
+	AddValidationField(validationData string)
 	GetRound() int
 	GetRoundKey() string
 	GetInstructions() [][]string
