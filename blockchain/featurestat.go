@@ -217,6 +217,9 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 			if validatorStat[feature] == nil {
 				validatorStat[feature] = make(map[int]uint64)
 			}
+			if committeeStat[feature] == nil {
+				committeeStat[feature] = make(map[int]uint64)
+			}
 
 			//check in beacon
 			if common.IndexOfStr(key, beaconCommittee) > -1 {
