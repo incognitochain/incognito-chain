@@ -475,6 +475,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPLGResponseMeta, false)
 				}
+			case metadata.IssuingFantomRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
+				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
 				if len(inst) >= 4 && inst[2] == portalcommonv3.PortalRequestRejectedChainStatus {
@@ -959,11 +963,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			} else {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-				if err == nil {
-					instructions = append(instructions, actionPairs...)
-				} else {
+				if err != nil {
 					Logger.log.Errorf("Build Request Action Error %+v", err)
+					return nil, nil, fmt.Errorf("Build Request Action Error %+v", err)
 				}
+				instructions = append(instructions, actionPairs...)
 			}
 		}
 		switch tx.GetMetadataType() {

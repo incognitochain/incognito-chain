@@ -232,7 +232,7 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 				if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
 					validatorStat[feature][i]++
 					//if in proposer, increase proposer
-					if common.IndexOfStr(key, shardCommmittee[i]) < config.Param().CommitteeSize.NumberOfFixedShardBlockValidator {
+					if common.IndexOfStr(key, shardCommmittee[i]) < beaconView.MinShardCommitteeSize {
 						proposeStat[feature][i]++
 					}
 				}
