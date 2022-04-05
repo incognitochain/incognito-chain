@@ -262,6 +262,19 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 			want:    big.NewInt(1234567),
 			wantErr: false,
 		},
+		{
+			name: "Shield - 2",
+			args: args{
+				amount:      *big.NewInt(50000000000000000),
+				decimal:     18,
+				operator:    AddOperator,
+				prefix:      "",
+				networkType: 0,
+				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			},
+			want:    big.NewInt(50000000),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
