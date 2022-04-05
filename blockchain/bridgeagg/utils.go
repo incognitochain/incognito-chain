@@ -382,14 +382,13 @@ func unshieldEVM(
 
 	switch data.NetworkID {
 	case common.ETHNetworkID:
-		prefix = utils.EmptyString
 		if data.IsDepositToSC {
 			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
 		} else {
 			burningMetaType = metadata.BurningConfirmMetaV2
 		}
+		prefix = utils.EmptyString
 	case common.BSCNetworkID:
-		prefix = common.BSCPrefix
 		if data.IsDepositToSC {
 			burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta
 		} else {
@@ -397,13 +396,19 @@ func unshieldEVM(
 		}
 		prefix = common.BSCPrefix
 	case common.PLGNetworkID:
-		prefix = common.PLGPrefix
 		if data.IsDepositToSC {
 			burningMetaType = metadata.BurningPLGForDepositToSCRequestMeta
 		} else {
 			burningMetaType = metadata.BurningPLGConfirmMeta
 		}
 		prefix = common.PLGPrefix
+	case common.FTMNetworkID:
+		if data.IsDepositToSC {
+			burningMetaType = metadata.BurningFantomConfirmForDepositToSCMeta
+		} else {
+			burningMetaType = metadata.BurningFantomConfirmMeta
+		}
+		prefix = common.FTMPrefix
 	case common.DefaultNetworkID:
 		return nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
 	default:

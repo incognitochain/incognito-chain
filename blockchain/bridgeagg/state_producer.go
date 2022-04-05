@@ -337,8 +337,14 @@ func (sp *stateProducer) unshield(
 
 	for _, data := range md.Data {
 		buringAmount += data.BurningAmount
-		switch data.NetworkID {
-		case common.BSCNetworkID, common.ETHNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
+		if e != nil {
+			errorType = NotFoundNetworkIDError
+			err = errors.New("Not found networkID")
+			return
+		}
+		switch networkType {
+		case common.EVMNetworkType:
 			externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
 			if e != nil {
 				errorType = et
@@ -365,12 +371,8 @@ func (sp *stateProducer) unshield(
 				IsDepositToSC: data.IsDepositToSC,
 			}
 			listAcceptedUnshieldRequestData = append(listAcceptedUnshieldRequestData, acceptedUnshieldRequestData)
-		case common.DefaultNetworkID:
-			errorType = OtherError
-			err = errors.New("Invalid networkID")
-			return
 		default:
-			errorType = OtherError
+			errorType = NotFoundNetworkIDError
 			err = errors.New("Not found networkID")
 			return
 		}

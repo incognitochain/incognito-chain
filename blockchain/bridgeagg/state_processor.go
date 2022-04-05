@@ -29,6 +29,7 @@ func (sp *stateProcessor) modifyListTokens(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
+		Logger.log.Info("Processing inst content:", string(contentBytes))
 		acceptedInst := metadataBridge.AcceptedModifyListToken{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
@@ -93,6 +94,7 @@ func (sp *stateProcessor) convert(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
+		Logger.log.Info("Processing inst content:", string(contentBytes))
 		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
 		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
@@ -164,6 +166,7 @@ func (sp *stateProcessor) shield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
+		Logger.log.Info("Processing inst content:", string(contentBytes))
 		acceptedInst := metadataBridge.AcceptedShieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
@@ -224,6 +227,7 @@ func (sp *stateProcessor) unshield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
+		Logger.log.Info("Processing inst content:", string(contentBytes))
 		acceptedContent := metadataBridge.AcceptedUnshieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
