@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -27,6 +28,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -211,15 +213,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	startTimeVerifyPreProcessingBeaconBlock := time.Now()
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
-	parentBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), previousBlockHash)
+	previousBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
-	}
-
-	previousBeaconBlock := types.NewBeaconBlock()
-	err = json.Unmarshal(parentBlockBytes, previousBeaconBlock)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed to unmarshall parent block of block height %+v", beaconBlock.Header.Height))
 	}
 	// Verify block height with parent block
 	if previousBeaconBlock.Header.Height+1 != beaconBlock.Header.Height {
@@ -1018,68 +1014,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 	}
 
-	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
-	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
-	//	return err
-	//}
-
-	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-	if err != nil {
-		return err
-	}
-
-	newBestState.ConsensusStateDBRootHash = consensusRootHash
-	featureRootHash, err := newBestState.featureStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
-	if err != nil {
-		return err
-	}
-	newBestState.FeatureStateDBRootHash = featureRootHash
-	rewardRootHash, err := newBestState.rewardStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
-	if err != nil {
-		return err
-	}
-	newBestState.RewardStateDBRootHash = rewardRootHash
-	slashRootHash, err := newBestState.slashStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
-	if err != nil {
-		return err
-	}
-	newBestState.SlashStateDBRootHash = slashRootHash
-	newBestState.consensusStateDB.ClearObjects()
-	newBestState.rewardStateDB.ClearObjects()
-	newBestState.featureStateDB.ClearObjects()
-	newBestState.slashStateDB.ClearObjects()
-	//statedb===========================END
-
 	batch := blockchain.GetBeaconChainDatabase().NewBatch()
-	//State Root Hash
-	bRH := BeaconRootHash{
-		ConsensusStateDBRootHash: consensusRootHash,
-		FeatureStateDBRootHash:   featureRootHash,
-		RewardStateDBRootHash:    rewardRootHash,
-		SlashStateDBRootHash:     slashRootHash,
+
+	if err := newBestState.CommitTrieToDisk(batch); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if err := rawdbv2.StoreBeaconRootsHash(batch, blockHash, bRH); err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-
-	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
+	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
@@ -1106,15 +1047,15 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
+		prevView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if prevView == nil {
+			//multiview is disconnected to the last final view, we must retrieve block instead
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
-				// panic("Database is corrupt")
 				return err
 			}
 		} else {
-			storeBlock = newFinalView.GetBlock()
+			storeBlock = prevView.GetBlock()
 		}
 	}
 

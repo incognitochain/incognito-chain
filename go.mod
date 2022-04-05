@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.38.0
 	github.com/0xBahamoot/go-bigcompressor v1.0.5
 	github.com/0xsirrush/color v1.7.0
+	github.com/VictoriaMetrics/fastcache v1.8.0
 	github.com/allegro/bigcache v1.2.1
 	github.com/aristanetworks/goarista v0.0.0-20190704150520-f44d68189fd7 // indirect
 	github.com/binance-chain/go-sdk v1.1.3
@@ -17,6 +18,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dchest/siphash v1.2.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
+	github.com/dgraph-io/ristretto v0.0.2
 	github.com/dgryski/go-identicon v0.0.0-20140725220403-371855927d74
 	github.com/ebfe/keccak v0.0.0-20150115210727-5cc570678d1b
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
@@ -25,7 +27,7 @@ require (
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0
+	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
@@ -60,15 +62,16 @@ require (
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.6.1
-	github.com/syndtr/goleveldb v1.0.0
+	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.27.1
+	google.golang.org/protobuf v1.23.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.3.0
 	stathat.com/c/consistent v1.0.0
 )
 

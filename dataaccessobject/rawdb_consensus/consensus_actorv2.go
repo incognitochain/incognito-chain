@@ -12,6 +12,7 @@ func GetAllProposeHistory(db incdb.Database, chainID int) (map[int64]struct{}, e
 
 	prefix := GetProposeHistoryPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -22,18 +23,6 @@ func GetAllProposeHistory(db incdb.Database, chainID int) (map[int64]struct{}, e
 			return nil, err
 		}
 		res[int64(timeSlot)] = struct{}{}
-	}
-
-	return res, nil
-}
-
-func GetProposeHistoryByKey(db incdb.Database, chainID int, currentTimeSlot int64) (interface{}, error) {
-
-	key := GetProposeHistoryKey(chainID, uint64(currentTimeSlot))
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
 	}
 
 	return res, nil
@@ -69,6 +58,7 @@ func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]by
 
 	prefix := GetReceiveBlockByHeightPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -86,18 +76,6 @@ func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]by
 	}
 
 	return res, res2, nil
-}
-
-func GetReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) ([]byte, error) {
-
-	key := GetReceiveBlockByHeightKey(chainID, height)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
 }
 
 func StoreReceiveBlockByHeight(db incdb.Database, chainID int, height uint64, numberOfBlock int, value []byte) error {
@@ -136,6 +114,7 @@ func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte
 
 	prefix := GetReceiveBlockByHashPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -147,19 +126,6 @@ func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte
 	}
 
 	return res, nil
-}
-
-func GetReceiveBlockByHash(db incdb.Database, chainID int, blockHash string) ([]byte, error) {
-
-	key := GetReceiveBlockByHashKey(chainID, blockHash)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
-
 }
 
 func StoreReceiveBlockByHash(db incdb.Database, chainID int, blockHash string, value []byte) error {
@@ -190,6 +156,7 @@ func GetAllVoteHistory(db incdb.Database, chainID int) (map[uint64][]byte, error
 
 	prefix := GetVoteHistoryPrefix(chainID)
 	it := db.NewIteratorWithPrefix(prefix)
+	defer it.Release()
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
@@ -202,18 +169,6 @@ func GetAllVoteHistory(db incdb.Database, chainID int) (map[uint64][]byte, error
 		value := make([]byte, len(it.Value()))
 		copy(value, it.Value())
 		res[height] = value
-	}
-
-	return res, nil
-}
-
-func GetVoteHistory(db incdb.Database, chainID int, height uint64) (interface{}, error) {
-
-	key := GetVoteHistoryKey(chainID, height)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
 	}
 
 	return res, nil

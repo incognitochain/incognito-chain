@@ -261,7 +261,7 @@ func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash,
+	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash.GetRootHash(),
 		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -496,6 +496,86 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 		"Proposer":      committee,
 		"ProposerIndex": committeIndex,
 	}, nil
+}
+
+func (httpServer *HttpServer) handleEnableFastSyncMode(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	shardSyncMode, ok := arrayParams[0].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	if shardSyncMode {
+		config.Config().SyncMode = common.STATEDB_BATCH_COMMIT_MODE
+	} else {
+		config.Config().SyncMode = common.STATEDB_ARCHIVE_MODE
+	}
+
+	return map[string]interface{}{
+		"Shard": config.Config().SyncMode,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleSetFullValidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+	fullValidation, ok := arrayParams[0].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+
+	config.Config().IsFullValidation = fullValidation
+	return map[string]interface{}{
+		"IsFullValidation": config.Config().IsFullValidation,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetRootHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("want length %+v but got %+v", 2, len(arrayParams)))
+	}
+
+	tempChainID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
+	}
+	chainID := int(tempChainID)
+
+	tempBlockHash, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Hash Value"))
+	}
+	blockHash := common.Hash{}.NewHashFromStr2(tempBlockHash)
+
+	if chainID == -1 {
+		res, err := blockchain.GetBeaconRootsHashByBlockHash(
+			httpServer.config.BlockChain.BeaconChain.GetChainDatabase(),
+			blockHash,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		return res, nil
+	} else {
+		res, err := blockchain.GetShardRootsHashByBlockHash(
+			httpServer.config.BlockChain.ShardChain[chainID].GetChainDatabase(),
+			byte(chainID),
+			blockHash,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		return res, nil
+	}
 }
 
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

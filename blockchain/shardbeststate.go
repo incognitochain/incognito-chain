@@ -8,11 +8,12 @@ import (
 	"sort"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -28,12 +29,22 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-type ShardRootHash struct {
-	ConsensusStateDBRootHash   common.Hash
-	TransactionStateDBRootHash common.Hash
-	FeatureStateDBRootHash     common.Hash
-	RewardStateDBRootHash      common.Hash
-	SlashStateDBRootHash       common.Hash
+//type ShardRootHash struct {
+//	ConsensusStateDBRootHash   common.Hash
+//	TransactionStateDBRootHash common.Hash
+//	FeatureStateDBRootHash     common.Hash
+//	RewardStateDBRootHash      common.Hash
+//	SlashStateDBRootHash       common.Hash
+//}
+
+//[]byte = string help rebuild from multiple mode
+// it must compatible with old code
+type ShardRootHashv2 struct {
+	ConsensusStateDBRootHash   statedb.RebuildInfo
+	TransactionStateDBRootHash statedb.RebuildInfo
+	FeatureStateDBRootHash     statedb.RebuildInfo
+	RewardStateDBRootHash      statedb.RebuildInfo
+	SlashStateDBRootHash       statedb.RebuildInfo
 }
 
 type ShardBestState struct {
@@ -158,26 +169,49 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+const (
+	SHARDDB_CONSENSUS = "CONSENSUSDB"
+	SHARDDB_TX        = "TXDB"
+	SHARDDB_FEATURE   = "FEATUREDB"
+	SHARDDB_REWARD    = "REWARDDB"
+	SHARDDB_SLASH     = "SLASHDB"
+)
+
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, pivotState *ShardBestState) error {
 	var err error
-	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	//TODO: get shard root hash from db
+	sRHBytes, err := rawdbv2.GetShardRootsHash(db, shardBestState.ShardID, shardBestState.BestBlockHash)
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
+
+	rebuildSRH := &ShardRootHashv2{
+		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(""),
+		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(""),
+		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(""),
+		RewardStateDBRootHash:      *statedb.NewEmptyRebuildInfo(""),
+		SlashStateDBRootHash:       *statedb.NewEmptyRebuildInfo(""),
+	}
+	json.Unmarshal(sRHBytes, &rebuildSRH)
+	mode := config.Config().SyncMode
+
+	shardBestState.consensusStateDB, err = statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, rebuildSRH.ConsensusStateDBRootHash, pivotState.consensusStateDB)
 	if err != nil {
 		return err
 	}
-	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
+	shardBestState.transactionStateDB, err = statedb.NewWithMode(SHARDDB_TX, mode, db, rebuildSRH.TransactionStateDBRootHash, pivotState.transactionStateDB)
 	if err != nil {
 		return err
 	}
-	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(shardBestState.RewardStateDBRootHash, dbAccessWarper)
+	shardBestState.featureStateDB, err = statedb.NewWithMode(SHARDDB_FEATURE, mode, db, rebuildSRH.FeatureStateDBRootHash, pivotState.featureStateDB)
 	if err != nil {
 		return err
 	}
-	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
+	shardBestState.rewardStateDB, err = statedb.NewWithMode(SHARDDB_REWARD, mode, db, rebuildSRH.RewardStateDBRootHash, pivotState.rewardStateDB)
+	if err != nil {
+		return err
+	}
+	shardBestState.slashStateDB, err = statedb.NewWithMode(SHARDDB_SLASH, mode, db, rebuildSRH.SlashStateDBRootHash, pivotState.slashStateDB)
 	if err != nil {
 		return err
 	}
@@ -369,20 +403,6 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 		tokenIDs = append(tokenIDs, k)
 	}
 	return tokenIDs
-}
-
-func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
-	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
-	if err != nil {
-		return nil, err
-	}
-	data, err := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, *h)
-	if err != nil {
-		return nil, err
-	}
-	sRH := &ShardRootHash{}
-	err = json.Unmarshal(data, sRH)
-	return sRH, err
 }
 
 func InitShardCommitteeState(
@@ -718,6 +738,93 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 	}
 
 	return beaconHeight, nil
+}
+
+func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceWrite bool, newFinalView *ShardBestState) (err error) {
+	if shardBestState.ShardHeight == 1 {
+		forceWrite = true
+	}
+
+	commitToDisk := func(stateDB *statedb.StateDB, finalViewRebuildInfo statedb.RebuildInfo) (common.Hash, statedb.RebuildInfo, error) {
+		rootHash, _, err := stateDB.Commit(true)
+		if err != nil {
+			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
+		}
+		//log.Println("=========> ", forceWrite, shardBestState.ShardID)
+		if err := stateDB.Finalized(forceWrite, finalViewRebuildInfo); err != nil {
+			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
+		}
+		//return latest rebuild root (after finalized)
+		return rootHash, stateDB.GetRebuildRoot(), err
+	}
+
+	//get final sHRv2 (detail rebuild info: commit hash , ffindex)
+	mode := config.Config().SyncMode
+	finalViewRH := &ShardRootHashv2{
+		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(common.STATEDB_ARCHIVE_MODE),
+		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(mode),
+		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(mode),
+		RewardStateDBRootHash:      *statedb.NewEmptyRebuildInfo(mode),
+		SlashStateDBRootHash:       *statedb.NewEmptyRebuildInfo(mode),
+	}
+
+	//get finalview shard root hash (bypass first block)
+	if shardBestState.ShardHeight > 1 { //from beginning, when no final view
+		sRHBytes, err := rawdbv2.GetShardRootsHash(db, shardBestState.ShardID, newFinalView.BestBlockHash)
+		if err != nil {
+			return err
+		}
+		json.Unmarshal(sRHBytes, finalViewRH)
+	}
+
+	consensusRootHash, consensusRebuildRoot, err := commitToDisk(shardBestState.consensusStateDB, finalViewRH.ConsensusStateDBRootHash)
+	if err != nil {
+		return err
+	}
+
+	transactionStateDBRootHash, txRebuildRoot, err := commitToDisk(shardBestState.transactionStateDB, finalViewRH.TransactionStateDBRootHash)
+	if err != nil {
+		return err
+	}
+
+	featureStateDBRootHash, featureRebuildRoot, err := commitToDisk(shardBestState.featureStateDB, finalViewRH.FeatureStateDBRootHash)
+	if err != nil {
+		return err
+	}
+
+	rewardStateDBRootHash, rewardRebuildRoot, err := commitToDisk(shardBestState.rewardStateDB, finalViewRH.RewardStateDBRootHash)
+	if err != nil {
+		return err
+	}
+
+	slashStateDBRootHash, slashRebuildRoot, err := commitToDisk(shardBestState.slashStateDB, finalViewRH.SlashStateDBRootHash)
+	if err != nil {
+		return err
+	}
+
+	shardBestState.ConsensusStateDBRootHash = consensusRootHash
+	shardBestState.TransactionStateDBRootHash = transactionStateDBRootHash
+	shardBestState.FeatureStateDBRootHash = featureStateDBRootHash
+	shardBestState.RewardStateDBRootHash = rewardStateDBRootHash
+	shardBestState.SlashStateDBRootHash = slashStateDBRootHash
+
+	newSRH := &ShardRootHashv2{
+		ConsensusStateDBRootHash:   consensusRebuildRoot,
+		TransactionStateDBRootHash: txRebuildRoot,
+		FeatureStateDBRootHash:     featureRebuildRoot,
+		RewardStateDBRootHash:      rewardRebuildRoot,
+		SlashStateDBRootHash:       slashRebuildRoot,
+	}
+
+	//Logger.log.Infof("Store ShardRootHashV2, ShardID %+v, BlockHash %+v, RebuildInfo %+v"+
+	//	"", shardBestState.ShardID, shardBestState.BestBlockHash, s)
+
+	if err := rawdbv2.StoreShardRootsHash(db, shardBestState.ShardID, shardBestState.BestBlockHash, newSRH); err != nil {
+		panic(err)
+		return NewBlockChainError(CommitTrieToDiskError, err)
+	}
+
+	return nil
 }
 
 func (curView *ShardBestState) GetProposerLength() int {

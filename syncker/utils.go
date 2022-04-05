@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 	"time"
 
@@ -16,9 +17,22 @@ const STOP_SYNC = "stop_sync"
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
-func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
-	sameCommitteeBlock := blocks
+func InsertBatchBlock(chain Chain, blocks []types.BlockInterface, cQuit chan struct{}) (int, error) {
+	//if full validation, we dont need batch block
+	if config.Config().IsFullValidation {
+		for i, v := range blocks {
+			if !chain.CheckExistedBlk(v) {
+				err := chain.InsertBlock(v, true)
+				if err != nil {
+					return i, err
+				}
+			}
+		}
+		return len(blocks), nil
+	}
 
+	//not fullvalidation, we batch block which having same committee
+	sameCommitteeBlock := blocks
 	validatorRootHashChange := func(blk interface{}) bool {
 		switch blk.(type) {
 		case *types.BeaconBlock:

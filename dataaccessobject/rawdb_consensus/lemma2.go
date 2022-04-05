@@ -61,34 +61,3 @@ func GetShardFinalityProof(db incdb.KeyValueReader, shardID byte, hash common.Ha
 
 	return m, nil
 }
-
-func DeleteShardFinalityProof(db incdb.Database, shardID byte, hash common.Hash) error {
-
-	key := GetShardFinalityProofKey(shardID, hash)
-
-	err := db.Delete(key)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DeleteAllShardFinalityProof(db incdb.Database, shardID byte) error {
-
-	prefix := GetShardFinalityProofPrefix(shardID)
-
-	it := db.NewIteratorWithPrefix(prefix)
-	defer it.Release()
-
-	for it.Next() {
-		key := make([]byte, len(it.Key()))
-		copy(key, it.Key())
-		err := db.Delete(key)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}

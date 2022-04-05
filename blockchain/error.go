@@ -88,6 +88,7 @@ const (
 	ShardCandidateRootError
 	BeaconCandidateRootError
 	StoreShardBlockError
+	CommitTrieToDiskError
 	StoreBestStateError
 	FetchAndStoreTransactionError
 	FetchAndStoreCrossTransactionError
@@ -370,6 +371,7 @@ var ErrCodeMessage = map[int]struct {
 	ReplacePreviousValidationDataError:                {-1162, "Replace Previous Validation Data Error"},
 	CommitteeFromBlockNotFoundError:                   {-1163, "Committee From Beacon Block Not Found Error"},
 	ShardSyncValidatorHashError:                       {-1164, "Shard Sync Validator Hash Error"},
+	CommitTrieToDiskError:                             {-1165, "Commit Trie to disk Error"},
 	FinishSyncInstructionError:                        {-1165, "Checking finish sync instruction error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},

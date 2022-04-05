@@ -1,5 +1,7 @@
 package config
 
+import "github.com/incognitochain/incognito-chain/common"
+
 //Env variables key
 const (
 	NetworkKey        = "INCOGNITO_NETWORK_KEY"
@@ -86,4 +88,31 @@ var (
 	defaultRPCKeyFile  = "rpc.key"
 	defaultRPCCertFile = "rpc.cert"
 	defaultLogDir      = DefaultLogDirname
+)
+
+var (
+	configCache4GB = batchCommitSyncModeParam{
+		TrieJournalCacheSize: 32,
+		BlockTrieInMemory:    uint64(500),
+		TrieNodeLimit:        common.StorageSize(128 * 1024 * 1024),
+		TrieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
+	configCache8GB = batchCommitSyncModeParam{
+		TrieJournalCacheSize: 32,
+		BlockTrieInMemory:    uint64(2000),
+		TrieNodeLimit:        common.StorageSize(512 * 1024 * 1024),
+		TrieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
+	configCache16GB = batchCommitSyncModeParam{
+		TrieJournalCacheSize: 32,
+		BlockTrieInMemory:    uint64(10000),
+		TrieNodeLimit:        common.StorageSize(2 * 1024 * 1024 * 1024),
+		TrieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
+	configCache32GB = batchCommitSyncModeParam{
+		TrieJournalCacheSize: 32,
+		BlockTrieInMemory:    uint64(20000),
+		TrieNodeLimit:        common.StorageSize(4 * 1024 * 1024 * 1024),
+		TrieImgsLimit:        common.StorageSize(4 * 1024 * 1024),
+	}
 )

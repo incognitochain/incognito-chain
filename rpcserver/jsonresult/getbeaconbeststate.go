@@ -1,6 +1,8 @@
 package jsonresult
 
 import (
+	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
@@ -192,15 +194,19 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 
 	result.FinishSyncManager = finishsync.DefaultFinishSyncMsgPool.GetFinishedSyncValidators()
 	result.Config = make(map[string]interface{})
-	result.Config["EnableSlashingHeightV1"] = config.Param().ConsensusParam.EnableSlashingHeight
-	result.Config["InitShardCommitteeSize"] = config.Param().CommitteeSize.InitShardCommitteeSize
-	result.Config["NumberOfBlockInEpoch"] = config.Param().EpochParam.NumberOfBlockInEpoch
-	result.Config["RandomTime"] = config.Param().EpochParam.RandomTime
-	result.Config["EnableSlashingHeightV2"] = config.Param().ConsensusParam.EnableSlashingHeightV2
-	result.Config["StakingFlowV3"] = config.Param().ConsensusParam.StakingFlowV3Height
-	result.Config["StakingFlowV2"] = config.Param().ConsensusParam.StakingFlowV2Height
-	result.Config["BlockProducingV3"] = config.Param().ConsensusParam.BlockProducingV3Height
-	result.Config["BlockProducingV3Height"] = config.Param().ConsensusParam.BlockProducingV3Height
+	cfg := config.Config()
+	cfgBytes, _ := json.Marshal(cfg)
+	json.Unmarshal(cfgBytes, &result.Config)
+
+	// result.Config["EnableSlashingHeightV1"] = config.Param().ConsensusParam.EnableSlashingHeight
+	// result.Config["InitShardCommitteeSize"] = config.Param().CommitteeSize.InitShardCommitteeSize
+	// result.Config["NumberOfBlockInEpoch"] = config.Param().EpochParam.NumberOfBlockInEpoch
+	// result.Config["RandomTime"] = config.Param().EpochParam.RandomTime
+	// result.Config["EnableSlashingHeightV2"] = config.Param().ConsensusParam.EnableSlashingHeightV2
+	// result.Config["StakingFlowV3"] = config.Param().ConsensusParam.StakingFlowV3Height
+	// result.Config["StakingFlowV2"] = config.Param().ConsensusParam.StakingFlowV2Height
+	// result.Config["BlockProducingV3"] = config.Param().ConsensusParam.BlockProducingV3Height
+	// result.Config["BlockProducingV3Height"] = config.Param().ConsensusParam.BlockProducingV3Height
 	return result
 }
 

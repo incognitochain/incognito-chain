@@ -1,12 +1,20 @@
 package statedb
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"path"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common/prque"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
@@ -17,14 +25,40 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BatchCommitConfig struct {
+	triegc            *prque.Prque // Priority queue mapping block numbers to tries to gc
+	blockTrieInMemory uint64
+	trieNodeLimit     common.StorageSize
+	trieImgsLimit     common.StorageSize
+	flatFile          FlatFile
+}
+
+func NewBatchCommitConfig(flatFile FlatFile) *BatchCommitConfig {
+	return &BatchCommitConfig{
+		triegc:            prque.New(nil),
+		flatFile:          flatFile,
+		blockTrieInMemory: config.Param().BatchCommitSyncModeParam.BlockTrieInMemory,
+		trieNodeLimit:     config.Param().BatchCommitSyncModeParam.TrieNodeLimit,
+		trieImgsLimit:     config.Param().BatchCommitSyncModeParam.TrieImgsLimit,
+	}
+}
+
 // StateDBs within the incognito protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
 // * State Object
 type StateDB struct {
-	db   DatabaseAccessWarper
-	trie Trie
-	//rawdb incdb.Database
+	liteStateDB *LiteStateDB
+
+	db                DatabaseAccessWarper
+	trie              Trie
+	dbName            string
+	mode              string
+	batchCommitConfig *BatchCommitConfig
+
+	//rebuild string of current stateDB
+	curRebuildInfo *RebuildInfo
+
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
@@ -35,13 +69,170 @@ type StateDB struct {
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
-	dbErr error
+	dbErr  error
+	logger dataaccessobject.STATEDBLogger
 
 	// Measurements gathered during execution for debugging purposes
 	StateObjectReads   time.Duration
 	StateObjectHashes  time.Duration
 	StateObjectUpdates time.Duration
 	StateObjectCommits time.Duration
+}
+
+func NewBatchCommitStateDB(rootDir string, dbName string, db incdb.Database, rootHash common.Hash) (*StateDB, error) {
+	//create ff manager
+	ffDir := path.Join(rootDir, fmt.Sprintf("state_%v", dbName))
+	ff, err := flatfile.NewFlatFile(ffDir, 5000)
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot create flatfile")
+	}
+
+	//create stateDB batch commit mode
+	trieDBWrapper := NewDatabaseAccessWarper(db)
+	stateDB, err := NewWithPrefixTrie(rootHash, trieDBWrapper)
+	if err != nil {
+		return nil, err
+	}
+	stateDB.mode = common.STATEDB_BATCH_COMMIT_MODE
+	stateDB.dbName = dbName
+	stateDB.batchCommitConfig = NewBatchCommitConfig(ff)
+
+	return stateDB, nil
+}
+
+// New return a new statedb attach with a state root
+// input the rebuildRootData (commit hash, ffindex)
+func NewWithMode(dbName string, mode string, db incdb.Database, rebuildRootData RebuildInfo, pivotState *StateDB) (*StateDB, error) {
+	dataaccessobject.Logger.Log.Info("Init database", dbName, rebuildRootData)
+	rootDir := db.GetPath()
+	trieDBWrapper := NewDatabaseAccessWarper(db)
+	metrics.EnabledExpensive = true
+	rebuildMode := rebuildRootData.mode
+	rebuildRootHash := rebuildRootData.rebuildRootHash
+	rebuildFFIndex := rebuildRootData.rebuildFFIndex
+	switch mode {
+	case common.STATEDB_ARCHIVE_MODE:
+		//what if rebuildMode is batch, lite
+		if rebuildMode == common.STATEDB_LITE_MODE {
+			return nil, errors.New("Data is not compatible! Litemode is used")
+		}
+		if rebuildMode == common.STATEDB_BATCH_COMMIT_MODE {
+			stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildRootData, pivotState)
+			if stateDB != nil {
+				stateDB.mode = common.STATEDB_ARCHIVE_MODE
+				stateDB.curRebuildInfo = rebuildRootData.Copy()
+			}
+			return stateDB, err
+		} else {
+			stateDB, err := NewWithPrefixTrie(rebuildRootHash, trieDBWrapper)
+			if stateDB != nil {
+				stateDB.curRebuildInfo = rebuildRootData.Copy()
+			}
+			return stateDB, err
+		}
+
+	case common.STATEDB_BATCH_COMMIT_MODE:
+		//reject if it started with Lite mode
+		if rebuildMode == common.STATEDB_LITE_MODE {
+			return nil, errors.New("Data is not compatible! Litemode is used")
+		}
+
+		//if rebuild Root is archive, then we directly build from that rebuildRoot
+		if rebuildMode == common.STATEDB_ARCHIVE_MODE {
+			returnStateDB, err := NewBatchCommitStateDB(rootDir, dbName, db, rebuildRootHash)
+			if returnStateDB != nil {
+				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
+				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+			}
+			return returnStateDB, err
+		}
+
+		//create new stateDB from beginning
+		if rebuildRootData.IsEmpty() {
+			returnStateDB, err := NewBatchCommitStateDB(rootDir, dbName, db, common.EmptyRoot)
+			if returnStateDB != nil {
+				returnStateDB.curRebuildInfo = rebuildRootData.Copy()
+				returnStateDB.curRebuildInfo.mode = common.STATEDB_BATCH_COMMIT_MODE
+				returnStateDB.curRebuildInfo.rebuildFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+				returnStateDB.curRebuildInfo.pivotFFIndex = int64(returnStateDB.batchCommitConfig.flatFile.Size()) - 1
+			}
+			return returnStateDB, err
+		}
+
+		//else rebuild from state
+		//if pivotState nil, rebuild it
+		var pivotIndex = rebuildRootData.pivotFFIndex
+		var err error
+		if pivotState == nil {
+			//rebuild pivotState
+			pivotState, err = NewBatchCommitStateDB(rootDir, dbName, db, rebuildRootData.pivotRootHash)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			pivotIndex = pivotState.curRebuildInfo.rebuildFFIndex //need to rebuild from this pivot rebuild ff index
+		}
+
+		//replay state object to rebuild to expected state
+		buildTime := time.Now()
+		stateSeries, err := pivotState.GetStateObjectFromBranch(uint64(rebuildFFIndex), int(pivotIndex))
+		if err != nil {
+			return nil, err
+		}
+		newState := pivotState.Copy()
+		for i, stateObjects := range stateSeries {
+			if i > 0 && i%1000 == 0 {
+				dataaccessobject.Logger.Log.Infof("DB %v Building root: %v / %v commits", dbName, i, len(stateSeries))
+			}
+			//TODO: count size of object, it size > threshold then we call commit (cap node/image)
+			for objKey, obj := range stateObjects {
+				if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
+					return nil, err
+				}
+				if obj.IsDeleted() {
+					newState.MarkDeleteStateObject(obj.GetType(), objKey)
+				}
+			}
+		}
+		newStateRoot, _ := newState.IntermediateRoot(true)
+		newState.db.TrieDB().Reference(newStateRoot, common.Hash{})
+		newState.batchCommitConfig.triegc.Push(newStateRoot, -rebuildFFIndex)
+
+		if err != nil {
+			return nil, err
+		}
+
+		//check if we have expect rebuild root
+		dataaccessobject.Logger.Log.Infof("DB %v Build root: %v (%v commits in %v) .Expected root %v", dbName, newStateRoot, len(stateSeries),
+			time.Since(buildTime).Seconds(), rebuildRootHash)
+		if newStateRoot.String() != rebuildRootHash.String() {
+			return nil, errors.New("Cannot rebuild correct root")
+		}
+
+		newState.curRebuildInfo = rebuildRootData.Copy()
+		return newState, nil
+
+	case common.STATEDB_LITE_MODE:
+		if rebuildMode != common.STATEDB_LITE_MODE {
+			return nil, errors.New("Must run with lite mode")
+		}
+
+		stateDB, err := NewLiteStateDB(rootDir, dbName, rebuildRootData, db)
+		if err != nil {
+			return nil, err
+		}
+		stateDB.curRebuildInfo = rebuildRootData.Copy()
+
+		if stateDB.liteStateDB.headStateNode == nil {
+			return nil, errors.New("Cannot rebuild root, head root not found")
+		}
+
+		return stateDB, nil
+	default:
+		return nil, errors.New("Cannot recognize statedb mode")
+	}
 }
 
 // New return a new statedb attach with a state root
@@ -51,13 +242,21 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 		return nil, err
 	}
 	metrics.EnabledExpensive = true
+
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
+		mode:                common.STATEDB_ARCHIVE_MODE,
+		batchCommitConfig:   nil,
+		logger:              dataaccessobject.Logger,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}, nil
+}
+
+func (stateDB *StateDB) GetMode() string {
+	return stateDB.mode
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -92,71 +291,14 @@ func (stateDB *StateDB) ClearObjects() {
 	stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
 }
 
-// IntermediateRoot computes the current root hash of the state trie.
-// It is called in between transactions to get the root hash that
-// goes into transaction receipts.
-func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
-	for addr := range stateDB.stateObjectsPending {
-		obj := stateDB.stateObjects[addr]
-		if obj.IsDeleted() {
-			stateDB.deleteStateObject(obj)
-		} else {
-			stateDB.updateStateObject(obj)
-		}
-	}
-	if len(stateDB.stateObjectsPending) > 0 {
-		stateDB.stateObjectsPending = make(map[common.Hash]struct{})
-	}
-	// Track the amount of time wasted on hashing the account trie
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
-	}
-	return stateDB.trie.Hash()
-}
-func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
-	for _, object := range stateDB.stateObjects {
-		if object.IsEmpty() {
-			object.MarkDelete()
-		}
-	}
-}
-
-// Commit writes the state to the underlying in-memory trie database.
-func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
-	// Finalize any pending changes and merge everything into the tries
-	//if metrics.EnabledExpensive {
-	//	defer func(start time.Time) {
-	//		elapsed := time.Since(start)
-	//		stateDB.StateObjectCommits += elapsed
-	//		dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
-	//	}(time.Now())
-	//}
-	stateDB.IntermediateRoot(deleteEmptyObjects)
-
-	if len(stateDB.stateObjectsDirty) > 0 {
-		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
-	}
-	// Write the account trie changes, measuing the amount of wasted time
-	return stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
-		return nil
-	})
-}
-
 // Database return current database access warper
 func (stateDB *StateDB) Database() DatabaseAccessWarper {
 	return stateDB.db
 }
 
-// Copy duplicate statedb and return new statedb instance
-func (stateDB *StateDB) Copy() *StateDB {
-	return &StateDB{
-		db:                  stateDB.db,
-		trie:                stateDB.db.CopyTrie(stateDB.trie),
-		stateObjects:        make(map[common.Hash]StateObject),
-		stateObjectsPending: make(map[common.Hash]struct{}),
-		stateObjectsDirty:   make(map[common.Hash]struct{}),
-	}
+// Database return current database access warper
+func (stateDB *StateDB) Trie() Trie {
+	return stateDB.trie
 }
 
 // Exist check existence of a state object in statedb
@@ -174,12 +316,242 @@ func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool 
 	return stateObject == nil || stateObject.IsEmpty() || err != nil
 }
 
+// IntermediateRoot computes the current root hash of the state trie.
+// It is called in between transactions to get the root hash that
+// goes into transaction receipts.
+func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) (common.Hash, map[common.Hash]StateObject) {
+	changeObj := make(map[common.Hash]StateObject)
+	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
+	for addr := range stateDB.stateObjectsPending {
+		obj := stateDB.stateObjects[addr]
+		changeObj[addr] = obj
+		if obj.IsDeleted() {
+			stateDB.deleteStateObject(obj)
+		} else {
+			stateDB.updateStateObject(obj)
+		}
+	}
+	if len(stateDB.stateObjectsPending) > 0 {
+		stateDB.stateObjectsPending = make(map[common.Hash]struct{})
+	}
+	// Track the amount of time wasted on hashing the account trie
+	if metrics.EnabledExpensive {
+		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
+	}
+	return stateDB.trie.Hash(), changeObj
+}
+
+func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
+	for _, object := range stateDB.stateObjects {
+		if object.IsEmpty() {
+			object.MarkDelete()
+		}
+	}
+}
+
+//readDB raw db
+//writeDB support batch
+//finalViewRebuildInfo is root that we expect not rebuild before that point
+func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildInfo) error {
+	switch stateDB.mode {
+	case common.STATEDB_ARCHIVE_MODE:
+		rootHash, _ := stateDB.IntermediateRoot(true)
+		if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
+			return err
+		}
+		return nil
+	case common.STATEDB_BATCH_COMMIT_MODE:
+		trieDB := stateDB.db.TrieDB()
+		batchCommitConfig := stateDB.batchCommitConfig
+
+		//if force write (stop node) or reach #commit threshold => write to disk
+		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
+		//pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
+		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
+			//write the current roothash commit nodes to disk
+			rootHash := stateDB.curRebuildInfo.rebuildRootHash
+			rootIndex := stateDB.curRebuildInfo.rebuildFFIndex
+			if err := stateDB.db.TrieDB().Commit(rootHash, false, nil); err != nil {
+				return err
+			}
+			if stateDB.curRebuildInfo.pivotFFIndex > 0 {
+				batchCommitConfig.flatFile.Truncate(uint64(stateDB.curRebuildInfo.pivotFFIndex))
+			}
+			stateDB.curRebuildInfo.pivotRootHash = rootHash
+			stateDB.curRebuildInfo.pivotFFIndex = rootIndex
+		}
+		//dereference roothash of finalized commit, for GC reduce memory
+		for !batchCommitConfig.triegc.Empty() {
+			oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
+			if -number >= finalViewIndex {
+				batchCommitConfig.triegc.Push(oldRootHash, number)
+				break
+			}
+			trieDB.Dereference(oldRootHash.(common.Hash))
+		}
+		return nil
+	case common.STATEDB_LITE_MODE:
+		//finalstate is not defined (=> when init state)
+		if finalViewRebuildInfo.rebuildRootHash.IsEqual(&common.EmptyRoot) {
+			return nil
+		}
+
+		//finalized and update rebuild info
+		err := stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
+		if err != nil {
+			return err
+		}
+		stateDB.curRebuildInfo.pivotRootHash = finalViewRebuildInfo.rebuildRootHash
+		stateDB.curRebuildInfo.pivotFFIndex = finalViewRebuildInfo.rebuildFFIndex
+
+		//truncate already finalized index
+		err = stateDB.liteStateDB.flatfile.Truncate(uint64(finalViewRebuildInfo.rebuildFFIndex))
+		if err != nil {
+			stateDB.logger.Log.Error("Truncate error")
+		}
+		return nil
+
+	default:
+		return errors.New("Cannot recognized mode")
+	}
+
+}
+
+func (stateDB *StateDB) GetRebuildRoot() RebuildInfo {
+	return *stateDB.curRebuildInfo
+}
+
+// Commit writes the state to the underlying in-memory trie database.
+// commit hash, string for rebuild state, error
+func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, *RebuildInfo, error) {
+	switch stateDB.mode {
+	case common.STATEDB_ARCHIVE_MODE, common.STATEDB_BATCH_COMMIT_MODE:
+		// Finalize any pending changes and merge everything into the tries
+		_, changeObj := stateDB.IntermediateRoot(deleteEmptyObjects)
+
+		if len(stateDB.stateObjectsDirty) > 0 {
+			stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
+		}
+		// Write the account trie changes, measuing the amount of wasted time
+		root, _, err := stateDB.trie.Commit(func(paths [][]byte, hexpath []byte, leaf []byte, parent common.Hash) error {
+			return nil
+		})
+		if err != nil {
+			return root, nil, err
+		}
+
+		//If statedb is batch commit mode, write changeObj to tmp file (flat file)
+		if stateDB.mode == common.STATEDB_BATCH_COMMIT_MODE {
+			if len(changeObj) == 0 {
+				rebuildInfo := stateDB.curRebuildInfo.Copy()
+				return root, rebuildInfo, nil
+			}
+
+			//cap max memory in stateDB
+			//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
+			nodes, imgs := stateDB.db.TrieDB().Size()
+			batchCommitConfig := stateDB.batchCommitConfig
+			if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
+				stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
+			}
+
+			bytesSerialize := MapByteSerialize(changeObj)
+			//append changeObj with previous ff index, to help retrieve stateObject of a branch
+
+			preRebuildIndex := stateDB.curRebuildInfo.rebuildFFIndex
+			var preRebuildIndexInt = make([]byte, 8)
+			binary.LittleEndian.PutUint64(preRebuildIndexInt, uint64(preRebuildIndex))
+			stateObjectsIndex, err := stateDB.batchCommitConfig.flatFile.Append(append(preRebuildIndexInt, bytesSerialize...))
+			if err != nil {
+				return common.Hash{}, nil, err
+			}
+			//log.Println("write index", stateObjectsIndex, preRebuildIndex, len(changeObj))
+			//update current rebuild string
+			stateDB.curRebuildInfo = NewRebuildInfo(common.STATEDB_BATCH_COMMIT_MODE, root, stateDB.curRebuildInfo.pivotRootHash, int64(stateObjectsIndex), stateDB.curRebuildInfo.pivotFFIndex)
+
+			// NOTE: reference current root hash, we will deference it  when we finalized pivot, so that GC will remove memory
+			// push it into queue with index priority (we want to get smallest index first, so put negative to give small number have high priority)
+			stateDB.db.TrieDB().Reference(root, common.Hash{})
+			stateDB.batchCommitConfig.triegc.Push(root, -int64(stateObjectsIndex))
+			stateDB.ClearObjects()
+			curRebuild := stateDB.curRebuildInfo.Copy()
+			return root, curRebuild, nil
+
+		} else {
+			curRebuildInfo := NewRebuildInfo(common.STATEDB_ARCHIVE_MODE, root, root, 0, 0)
+			stateDB.curRebuildInfo = curRebuildInfo
+			return root, curRebuildInfo, nil
+		}
+
+	case common.STATEDB_LITE_MODE:
+		if len(stateDB.liteStateDB.headStateNode.stateObjects) == 0 {
+			if stateDB.liteStateDB.headStateNode.previousLink == nil {
+				return stateDB.curRebuildInfo.rebuildRootHash, NewRebuildInfo(common.STATEDB_LITE_MODE, stateDB.curRebuildInfo.rebuildRootHash,
+					stateDB.curRebuildInfo.pivotRootHash, stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex), nil
+			}
+			root := *stateDB.liteStateDB.headStateNode.previousLink.aggregateHash
+			curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, root, stateDB.curRebuildInfo.pivotRootHash,
+				stateDB.curRebuildInfo.rebuildFFIndex, stateDB.curRebuildInfo.pivotFFIndex)
+			stateDB.curRebuildInfo = curRebuildInfo.Copy()
+			return root, curRebuildInfo, nil
+		}
+
+		h, newRebuildIndex, err := stateDB.liteStateDB.Commit()
+		if err != nil {
+			return common.Hash{}, nil, err
+		}
+		stateDB.liteStateDB.NewStateNode()
+		curRebuildInfo := NewRebuildInfo(common.STATEDB_LITE_MODE, h, stateDB.curRebuildInfo.pivotRootHash, int64(newRebuildIndex), stateDB.curRebuildInfo.pivotFFIndex)
+		stateDB.curRebuildInfo = curRebuildInfo.Copy()
+		return h, curRebuildInfo, nil
+	default:
+		return common.Hash{}, nil, errors.New("Cannot recognized mode")
+	}
+
+}
+
+// Copy duplicate statedb and return new statedb instance
+func (stateDB *StateDB) Copy() *StateDB {
+	curRebuildInfo := stateDB.curRebuildInfo
+	if stateDB.curRebuildInfo == nil {
+		curRebuildInfo = nil
+	}
+
+	if stateDB.liteStateDB != nil {
+		return &StateDB{
+			mode:                stateDB.mode,
+			dbName:              stateDB.dbName,
+			liteStateDB:         stateDB.liteStateDB.Copy(),
+			curRebuildInfo:      curRebuildInfo,
+			stateObjects:        make(map[common.Hash]StateObject),
+			stateObjectsPending: make(map[common.Hash]struct{}),
+			stateObjectsDirty:   make(map[common.Hash]struct{}),
+		}
+	}
+
+	return &StateDB{
+		db:                  stateDB.db,
+		dbName:              stateDB.dbName,
+		trie:                stateDB.db.CopyTrie(stateDB.trie),
+		curRebuildInfo:      curRebuildInfo,
+		mode:                stateDB.mode,
+		batchCommitConfig:   stateDB.batchCommitConfig,
+		logger:              dataaccessobject.Logger,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}
+}
+
 // ================================= STATE OBJECT =======================================
 // getDeletedStateObject is similar to getStateObject, but instead of returning
 // nil for a deleted state object, it returns the actual object with the deleted
 // flag set. This is needed by the state journal to revert to the correct self-
 // destructed object instead of wiping all knowledge about the state object.
 func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) (StateObject, error) {
+	if stateDB.liteStateDB != nil {
+		return stateDB.liteStateDB.GetStateObject(objectType, hash)
+	}
 	// Prefer live objects if any is available
 	if obj := stateDB.stateObjects[hash]; obj != nil {
 		return obj, nil
@@ -253,20 +625,23 @@ func (stateDB *StateDB) createStateObjectWithValue(objectType int, hash common.H
 
 // SetStateObject add new stateobject into statedb
 func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) error {
-	obj, err := stateDB.getOrNewStateObjectWithValue(objectType, key, value)
+	obj, _, err := stateDB.createStateObjectWithValue(objectType, key, value)
 	if err != nil {
 		return err
 	}
-	err = obj.SetValue(value)
-	if err != nil {
-		return err
+	if stateDB.liteStateDB != nil {
+		stateDB.liteStateDB.SetStateObject(obj)
+	} else {
+		stateDB.stateObjectsPending[key] = struct{}{}
 	}
-	stateDB.stateObjectsPending[key] = struct{}{}
 	return nil
 }
 
 // MarkDeleteStateObject add new stateobject into statedb
 func (stateDB *StateDB) MarkDeleteStateObject(objectType int, key common.Hash) bool {
+	if stateDB.liteStateDB != nil {
+		return stateDB.liteStateDB.MarkDeleteStateObject(objectType, key)
+	}
 	stateObject, err := stateDB.getStateObject(objectType, key)
 	if err == nil && stateObject != nil {
 		stateObject.MarkDelete()
@@ -307,14 +682,26 @@ func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common
 
 // add state object into statedb struct
 func (stateDB *StateDB) setStateObject(object StateObject) {
-	key := object.GetHash()
-	stateDB.stateObjects[key] = object
+	if stateDB.liteStateDB != nil {
+		stateDB.liteStateDB.SetStateObject(object)
+		return
+	}
+	stateDB.stateObjects[object.GetHash()] = object
 }
 
 // getStateObject retrieves a state object given by the address, returning nil if
 // the object is not found or was deleted in this execution context. If you need
 // to differentiate between non-existent/just-deleted, use getDeletedStateObject.
 func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) (StateObject, error) {
+	if stateDB.liteStateDB != nil {
+		if obj, err := stateDB.liteStateDB.GetStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
+			return obj, nil
+		} else if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
 	if obj, err := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
 		return obj, nil
 	} else if err != nil {
@@ -1202,10 +1589,7 @@ func (stateDB *StateDB) getSerialNumberState(key common.Hash) (*SerialNumberStat
 func (stateDB *StateDB) getAllSerialNumberByPrefix(tokenID common.Hash, shardID byte) [][]byte {
 	serialNumberList := [][]byte{}
 	prefix := GetSerialNumberPrefix(tokenID, shardID)
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		serialNumberState := NewSerialNumberState()
@@ -1215,6 +1599,20 @@ func (stateDB *StateDB) getAllSerialNumberByPrefix(tokenID common.Hash, shardID 
 		}
 		serialNumberList = append(serialNumberList, serialNumberState.SerialNumber())
 	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(prefix)
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(prefix)
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
+	}
+
 	return serialNumberList
 }
 
@@ -1261,11 +1659,9 @@ func (stateDB *StateDB) getCommitmentLengthState(key common.Hash) (*big.Int, boo
 }
 
 func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shardID byte) map[string]uint64 {
-	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
-	it := trie.NewIterator(temp)
 	m := make(map[string]uint64)
-	for it.Next() {
-		value := it.Value
+
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newCommitmentState := NewCommitmentState()
@@ -1275,6 +1671,18 @@ func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shard
 		}
 		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.Commitment(), common.Base58Version)
 		m[commitmentString] = newCommitmentState.Index().Uint64()
+	}
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetCommitmentPrefix(tokenID, shardID))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return m
 }
@@ -1292,11 +1700,8 @@ func (stateDB *StateDB) getOutputCoinState(key common.Hash) (*OutputCoinState, b
 }
 
 func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte, publicKey []byte) []*OutputCoinState {
-	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
-	it := trie.NewIterator(temp)
 	outputCoins := []*OutputCoinState{}
-	for it.Next() {
-		value := it.Value
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newOutputCoin := NewOutputCoinState()
@@ -1305,6 +1710,19 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 			panic("wrong expect type")
 		}
 		outputCoins = append(outputCoins, newOutputCoin)
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetOutputCoinPrefix(tokenID, shardID, publicKey))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return outputCoins
 }
@@ -1353,12 +1771,9 @@ func (stateDB *StateDB) getOTACoinLengthState(key common.Hash) (*big.Int, bool, 
 }
 
 func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OTACoinState {
-	temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
-	it := trie.NewIterator(temp)
-	onetimeAddresses := make([]*OTACoinState, 0)
 
-	for it.Next() {
-		value := it.Value
+	onetimeAddresses := make([]*OTACoinState, 0)
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newOnetimeAddress := NewOTACoinState()
@@ -1367,6 +1782,20 @@ func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte
 			panic("wrong expect type")
 		}
 		onetimeAddresses = append(onetimeAddresses, newOnetimeAddress)
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetOTACoinPrefix(tokenID, shardID, height))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
+		it := trie.NewIterator(temp)
+
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return onetimeAddresses
 }
@@ -1384,11 +1813,9 @@ func (stateDB *StateDB) getSNDerivatorState(key common.Hash) (*SNDerivatorState,
 }
 
 func (stateDB *StateDB) getAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]byte {
-	temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
-	it := trie.NewIterator(temp)
 	list := [][]byte{}
-	for it.Next() {
-		value := it.Value
+
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		newSNDerivatorState := NewSNDerivatorState()
@@ -1397,6 +1824,19 @@ func (stateDB *StateDB) getAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]
 			panic("wrong expect type")
 		}
 		list = append(list, newSNDerivatorState.Snd())
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetSNDerivatorPrefix(tokenID))
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return list
 }
@@ -1432,11 +1872,8 @@ func (stateDB *StateDB) getTokenTxs(tokenID common.Hash) []common.Hash {
 }
 
 func (stateDB *StateDB) getAllTokenWithTxs() map[common.Hash]*TokenState {
-	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
-	it := trie.NewIterator(temp)
 	tokenIDs := make(map[common.Hash]*TokenState)
-	for it.Next() {
-		value := it.Value
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		tokenState := NewTokenState()
@@ -1449,15 +1886,26 @@ func (stateDB *StateDB) getAllTokenWithTxs() map[common.Hash]*TokenState {
 		tokenState.AddTxs(txs)
 		tokenIDs[tokenID] = tokenState
 	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetTokenPrefix())
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetTokenPrefix())
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			processKey(it.Value)
+		}
+	}
 	return tokenIDs
 }
 
 func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
-	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
-	it := trie.NewIterator(temp)
 	tokenIDs := make(map[common.Hash]*TokenState)
-	for it.Next() {
-		value := it.Value
+
+	var processKey = func(value []byte) {
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
 		tokenState := NewTokenState()
@@ -1467,6 +1915,20 @@ func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
 		}
 		tokenID := tokenState.TokenID()
 		tokenIDs[tokenID] = tokenState
+	}
+
+	if stateDB.liteStateDB != nil {
+		it := stateDB.liteStateDB.NewIteratorwithPrefix(GetTokenPrefix())
+		for it.Next() {
+			processKey(it.Value())
+		}
+	} else {
+		temp := stateDB.trie.NodeIterator(GetTokenPrefix())
+		it := trie.NewIterator(temp)
+
+		for it.Next() {
+			processKey(it.Value)
+		}
 	}
 	return tokenIDs
 }

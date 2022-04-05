@@ -81,7 +81,7 @@ func (r *FakeReader) Read(p []byte) (n int, err error) {
 
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
-	bc = blockchain.NewBlockChain(&blockchain.Config{}, true)
+	bc = blockchain.NewBlockChain(true)
 	bc.IsTest = true
 	netAddrs, _ = common.ParseListeners(rpcListener, "tcp")
 	listeners := make([]net.Listener, 0, len(netAddrs))

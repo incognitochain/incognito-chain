@@ -223,9 +223,21 @@ const (
 	PortalVersion4 = 4
 )
 
+const (
+	CacheNumCounters = int64(100000)
+	CacheMaxCost     = int64(2 * 1 << 30) // 2 GiB
+	CacheBufferItems = int64(64)
+)
+
 var TIMESLOT = uint64(0) //need to be set when init chain
 
 var (
 	BurningAddressByte  []byte
 	BurningAddressByte2 []byte
+)
+
+const (
+	STATEDB_BATCH_COMMIT_MODE = "batchcommit"
+	STATEDB_ARCHIVE_MODE      = "archive"
+	STATEDB_LITE_MODE         = "lite"
 )

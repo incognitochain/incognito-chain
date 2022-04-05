@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -117,6 +118,8 @@ type config struct {
 	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
 	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
 	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
+	SyncMode            string    `mapstructure:"sync_mode" long:"syncmode" description:"smart contract of prv bep20"`
+	EnableFFStorage     bool      `mapstructure:"enable_ffstorage" long:"ffstorage" description:"enable_ffstorage"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -419,4 +422,18 @@ func (gethPram *gethParam) GetFromEnv() {
 	if host != utils.EmptyString || protocol != utils.EmptyString || port != utils.EmptyString {
 		gethPram.Host = []string{rpccaller.BuildRPCServerAddress(protocol, host, port)}
 	}
+}
+
+func (c *config) GetShardDataDir(shardID int) string {
+
+	newPath := ""
+
+	prefix := filepath.Join(c.DataDir, c.DatabaseDir)
+	if shardID == common.BeaconChainID {
+		newPath = path.Join(prefix, common.BeaconChainDatabaseDirectory)
+	} else {
+		newPath = path.Join(prefix, common.ShardChainDatabaseDirectory+strconv.Itoa(shardID))
+	}
+
+	return newPath
 }

@@ -11,6 +11,7 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
+	"github.com/incognitochain/incognito-chain/proto"
 )
 
 // PortalSig defines sigs of one beacon validator on unshield external tx
@@ -18,6 +19,25 @@ type PortalSig struct {
 	TokenID   string
 	RawTxHash string
 	Sigs      [][]byte // array of sigs for all TxIn
+}
+
+func (pSig PortalSig) ToPortalSigBytes() *proto.PortalSigBytes {
+	return &proto.PortalSigBytes{
+		TokenID: pSig.TokenID,
+		TxHash:  pSig.RawTxHash,
+		Sigs:    pSig.Sigs,
+	}
+}
+
+func (pSig *PortalSig) FromPortalSigBytes(data *proto.PortalSigBytes) error {
+	pSig.TokenID = data.TokenID
+	pSig.RawTxHash = data.TxHash
+	for _, sig := range data.Sigs {
+		copySig := make([]byte, len(sig))
+		copy(copySig, sig)
+		pSig.Sigs = append(pSig.Sigs, copySig)
+	}
+	return nil
 }
 
 // CheckAndSignPortalUnshieldExternalTx checks portal instructions need beacons sign on

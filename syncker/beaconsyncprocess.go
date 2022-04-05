@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -36,9 +37,11 @@ type BeaconSyncProcess struct {
 	actionCh            chan func()
 	lastCrossShardState map[byte]map[byte]uint64
 	lastInsert          string
+	cQuit               chan struct{}
+	wg                  *sync.WaitGroup
 }
 
-func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface) *BeaconSyncProcess {
+func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface, cQuit chan struct{}) *BeaconSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -57,6 +60,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 		beaconPeerStateCh:   make(chan *wire.MessagePeerState, 100),
 		actionCh:            make(chan func()),
 		lastCrossShardState: make(map[byte]map[byte]uint64),
+		cQuit:               cQuit,
 	}
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
@@ -263,6 +267,13 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 //sync beacon
 func (s *BeaconSyncProcess) syncBeacon() {
 	for {
+		select {
+		case <-s.cQuit:
+			Logger.Logger.Info(">>>>>>>>>>>>>>>> beacon")
+			s.wg.Done()
+			return
+		default:
+		}
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
 			s.isCatchUp = false
@@ -291,7 +302,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	blockBuffer := []types.BlockInterface{}
 	defer func() {
 		if requestCnt == 0 {
@@ -348,6 +359,8 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	insertTime := time.Now()
 	for {
 		select {
+		case <-s.cQuit:
+			return
 		case blk := <-ch:
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
@@ -362,7 +375,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 					//Logger.Infof("[config] v height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
 					/*}*/
 
-					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
+					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer, s.cQuit); err != nil {
 						if successBlk == 0 {
 							fmt.Println(err)
 						}

@@ -528,6 +528,7 @@ func (a *actorV2) Start() error {
 
 func (a *actorV2) run() error {
 	go func() {
+		time.Sleep(time.Duration(common.TIMESLOT) * time.Second)
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)

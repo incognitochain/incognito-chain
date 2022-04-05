@@ -35,11 +35,11 @@ func storeOutputCoin(initRoot common.Hash, db DatabaseAccessWarper, limit int, s
 		}
 	}
 
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -65,11 +65,11 @@ func TestStateDB_StoreAndGetOutputCoinState(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

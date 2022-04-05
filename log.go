@@ -64,7 +64,7 @@ var (
 	rpcServiceBridgeLogger = backendLog.Logger("RPC service DeBridge log", false)
 	netsyncLogger          = backendLog.Logger("Netsync log", false)
 	peerLogger             = backendLog.Logger("Peer log", true)
-	dbLogger               = backendLog.Logger("Database log", false)
+	dbLogger               = backendLog.Logger("IntermediateWriter log", false)
 	dbmpLogger             = backendLog.Logger("Mempool Persistence DB log", false)
 	walletLogger           = backendLog.Logger("Wallet log", false)
 	blockchainLogger       = backendLog.Logger("BlockChain log", false)
@@ -79,7 +79,7 @@ var (
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
 	relayingLogger         = backendLog.Logger("Relaying log", false)
 	wrapperLogger          = backendLog.Logger("Wrapper log", false)
-	daov2Logger            = backendLog.Logger("DAO log", false)
+	statedb2Logger         = backendLog.Logger("StateDB log", false)
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
 	privacyV1Logger        = backendLog.Logger("Privacy V1 log ", false)
@@ -139,7 +139,7 @@ func init() {
 	peerv2.Logger.Init(peerv2Logger)
 	relaying.Logger.Init(relayingLogger)
 	wrapper.Logger.Init(wrapperLogger)
-	dataaccessobject.Logger.Init(daov2Logger)
+	dataaccessobject.Logger.Init(statedb2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
 	finishsync.Logger.Init(finishSyncLogger)
@@ -186,7 +186,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"META":              metadataLogger,
 	"TRIE":              trieLogger,
 	"PEERV2":            peerv2Logger,
-	"DAO":               daov2Logger,
+	"STATEDB":           statedb2Logger,
 	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
 	"INST":              instructionLogger,

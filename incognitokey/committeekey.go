@@ -116,7 +116,7 @@ func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error
 }
 
 var GetMiningKeyBase58Cache, _ = lru.New(2000)
-var ToBase58Cache, _ = lru.New(2000)
+var ToBase58Cache, _ = lru.New(5000)
 
 func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
 	b, _ := pubKey.RawBytes()
