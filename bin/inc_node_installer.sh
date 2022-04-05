@@ -143,7 +143,7 @@ systemctl start docker.service
 echo "Finished. Launching setup script..."
 sleep 3
 clear
-cat << 'EOF' 
+cat << 'EOF'
       ██╗███╗░░██╗░█████╗░░█████╗░░██████╗░███╗░░██╗██╗████████╗░█████╗░░░░░█████╗░██████╗░░██████╗░
       ██║████╗░██║██╔══██╗██╔══██╗██╔════╝░████╗░██║██║╚══██╔══╝██╔══██╗░░░██╔══██╗██╔══██╗██╔════╝░
       ██║██╔██╗██║██║░░╚═╝██║░░██║██║░░██╗░██╔██╗██║██║░░░██║░░░██║░░██║░░░██║░░██║██████╔╝██║░░██╗░
@@ -157,11 +157,11 @@ cat << 'EOF'
 $$  \ /$$/ $$$$  $$ |/$$$$$$  |/$$$$$$$ |/$$$$$$  |      $$      \ /$$$$$$$/ /$$$$$$  |$$ |/$$$$$$  |$$$$$$/
  $$  /$$/  $$ $$ $$ |$$ |  $$ |$$ |  $$ |$$    $$ |       $$$$$$  |$$ |      $$ |  $$/ $$ |$$ |  $$ |  $$ | __
   $$ $$/   $$ |$$$$ |$$ \__$$ |$$ \__$$ |$$$$$$$$/       /  \__$$ |$$ \_____ $$ |      $$ |$$ |__$$ |  $$ |/  |
-   $$$/    $$ | $$$ |$$    $$/ $$    $$ |$$       |      $$    $$/ $$       |$$ |      $$ |$$    $$/   $$  $$/ 
-    $/     $$/   $$/  $$$$$$/   $$$$$$$/  $$$$$$$/        $$$$$$/   $$$$$$$/ $$/       $$/ $$$$$$$/     $$$$/  
-                                                                                           $$ |                
-                                                                                           $$ |                
-                                                                                           $$/                 
+   $$$/    $$ | $$$ |$$    $$/ $$    $$ |$$       |      $$    $$/ $$       |$$ |      $$ |$$    $$/   $$  $$/
+    $/     $$/   $$/  $$$$$$/   $$$$$$$/  $$$$$$$/        $$$$$$/   $$$$$$$/ $$/       $$/ $$$$$$$/     $$$$/
+                                                                                           $$ |
+                                                                                           $$ |
+                                                                                           $$/
 EOF
 if [[ $interactive_mode ]]; then # interactive mode, taking user input
 cat << EOF
@@ -174,7 +174,7 @@ cat << EOF
 EOF
   printf "${VALIDATOR_K[1]}"
   read VALIDATOR_K[0]
-  
+
   printf "${GETH_NAME[1]}"
   read GETH_NAME[0]
 
@@ -322,7 +322,7 @@ cat << 'EOF' >> $SCRIPT
 
 current_latest_tag=$(cat $TMP)
 echo "Getting Incognito docker tags"
-tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags | jq ".[].name" | grep "\"00")
+tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags | jq ".[].name")
 tags=${tags//\"/}
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
 latest_tag=${sorted_tags[0]}
