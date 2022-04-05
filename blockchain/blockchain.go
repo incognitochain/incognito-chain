@@ -1217,6 +1217,28 @@ func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [
 	return validFinishedSyncValidators
 }
 
+func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*statedb.StakerInfo, error) {
+	height := bc.GetLastBeaconHeightInEpoch(epoch)
+	// var beaconConsensusRootHash common.Hash
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	committeeKeys, err := bc.getValidatorsFromCacheByEpoch(epoch, sID)
+	if err != nil {
+		Logger.log.Error(err)
+		committeeKeys = statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+		key := getCommitteeCacheKeyByEpoch(epoch, sID)
+		bc.committeeByEpochCache.Add(key, committeeKeys)
+	}
+	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, committeeKeys)
+	return committeeState, nil
+}
+
 func (bc *BlockChain) GetAllCommitteeStakeInfo(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
@@ -1311,12 +1333,12 @@ func (blockchain *BlockChain) getBeaconValidators(
 	err error,
 ) {
 	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, common.BeaconChainSyncID)
-	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
 		return res, err
 	}
+	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
 	if v := blockchain.BeaconChain.GetViewByHash(prevHash); v != nil {
 		res = v.GetCommittee()
 

@@ -1,9 +1,10 @@
 package statedb
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -491,6 +492,10 @@ func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*Committee
 
 func GetAllCommitteeStakeInfo(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfo {
 	return stateDB.getShardsCommitteeInfo(allShardCommittee)
+}
+
+func GetOneCommitteeStakeInfo(stateDB *StateDB, committee []incognitokey.CommitteePublicKey) []*StakerInfo {
+	return stateDB.getOneShardCommitteeInfo(committee)
 }
 
 func GetAllCommitteeStakeInfoSlashingVersion(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfoSlashingVersion {

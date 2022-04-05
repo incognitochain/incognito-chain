@@ -62,7 +62,7 @@ func NewBlockService(
 	BlockService,
 	error,
 ) {
-	mCache, err := common.NewRistrettoMemCache(config.Param().MemoryCacheMaxSize)
+	mCache, err := common.NewRistrettoMemCache(config.Param().MemoryCacheMaxSize / (int64(config.Param().ActiveShards) + 1))
 	if err != nil {
 		return nil, err
 	}
