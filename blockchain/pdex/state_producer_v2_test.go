@@ -963,7 +963,11 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 	//
 
 	//reject instruction
-	rejectWithdrawLiquidityInst, err := instruction.NewRejectWithdrawLiquidityWithValue(*txHash, 1).StringSlice()
+	tempRejectWithdrawLiquidityInst, err := instruction.NewRejectWithdrawLiquidityWithValue(*txHash, 1, "123", nil, nil).StringSlice()
+	assert.Nil(t, err)
+
+	//reject instruction
+	rejectWithdrawLiquidityInst, err := instruction.NewRejectWithdrawLiquidityWithValue(*txHash, 1, poolPairID, nil, nil).StringSlice()
 	assert.Nil(t, err)
 	//
 
@@ -1135,7 +1139,7 @@ func Test_stateProducerV2_withdrawLiquidity(t *testing.T) {
 				},
 				beaconHeight: 20,
 			},
-			want: [][]string{rejectWithdrawLiquidityInst, mintNftInst},
+			want: [][]string{tempRejectWithdrawLiquidityInst, mintNftInst},
 			want1: map[string]*PoolPairState{
 				poolPairID: &PoolPairState{
 					state: *rawdbv2.NewPdexv3PoolPairWithValue(
@@ -2631,7 +2635,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 	valEnv0 = tx_generic.WithShardID(valEnv0, 1)
 	invalidStakingPoolIDTx.On("GetValidationEnv").Return(valEnv0)
 	invalidStakingPoolIDTx.On("Hash").Return(txReqID)
-	invalidStakingPoolIDRejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	invalidStakingPoolIDRejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1, "abcd", nil, nil).StringSlice()
 	assert.Nil(t, err)
 	//
 
@@ -2645,7 +2649,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 	valEnv1 = tx_generic.WithShardID(valEnv1, 1)
 	invalidNftIDTx.On("GetValidationEnv").Return(valEnv1)
 	invalidNftIDTx.On("Hash").Return(txReqID)
-	invalidNftIDRejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	invalidNftIDRejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1, common.PRVIDStr, nil, nil).StringSlice()
 	//
 
 	//invalidAmount
@@ -2658,7 +2662,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 	valEnv3 = tx_generic.WithShardID(valEnv3, 1)
 	invalidAmountTx.On("GetValidationEnv").Return(valEnv3)
 	invalidAmountTx.On("Hash").Return(txReqID)
-	invalidAmountInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	invalidAmountInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1, common.PRVIDStr, nil, nil).StringSlice()
 	//
 
 	//validTx
@@ -2806,7 +2810,7 @@ func Test_stateProducerV2_unstaking(t *testing.T) {
 				stateProducerBase: stateProducerBase{},
 			},
 			args: args{
-				txs: []metadata.Transaction{invalidStakingPoolIDTx},
+				txs: []metadata.Transaction{invalidAmountTx},
 				nftIDs: map[string]uint64{
 					nftID1: 100,
 				},

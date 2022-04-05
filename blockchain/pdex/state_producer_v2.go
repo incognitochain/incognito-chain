@@ -1004,13 +1004,11 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 				var shardID byte
 				for k, v := range orderReward.uncollectedRewards {
-					if v.amount != 0 {
-						receiversInfo[k] = metadataPdexv3.ReceiverInfo{
-							Address: v.receiver,
-							Amount:  v.amount,
-						}
-						shardID = v.receiver.GetShardID()
+					receiversInfo[k] = metadataPdexv3.ReceiverInfo{
+						Address: v.receiver,
+						Amount:  v.amount,
 					}
+					shardID = v.receiver.GetShardID()
 				}
 				accessHash, err := common.Hash{}.NewHashFromStr(accessID)
 				if err != nil {
@@ -1145,6 +1143,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if reward == nil || len(reward) == 0 {
 			Logger.log.Infof("No reward to withdraw")
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				instructions = append(instructions, mintAccessCoinInst)
 			}
 			instructions = append(instructions, rejectInst...)
@@ -1166,6 +1165,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if notEnoughOTA {
 			Logger.log.Warnf("Not enough OTA in withdraw LP fee request")
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				instructions = append(instructions, mintAccessCoinInst)
 			}
 			instructions = append(instructions, rejectInst...)
@@ -1199,6 +1199,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 
 		if shouldMintAccessCoin {
+			share.setAccessOTA(accessOTA)
 			instructions = append(instructions, mintAccessCoinInst)
 		}
 		instructions = append(instructions, acceptedInst...)
@@ -1286,7 +1287,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
 
-		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
+		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, nil)
 		if err != nil {
 			return res, poolPairs, err
 		}
@@ -1342,6 +1343,10 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			if err != nil {
 				return res, poolPairs, err
 			}
+			rejectInsts, err = v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessOTA)
+			if err != nil {
+				return res, poolPairs, err
+			}
 		}
 		if rootPoolPair.isEmpty() {
 			Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
@@ -1356,6 +1361,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			share.setAccessOTA(accessOTA)
 			Logger.log.Warnf("tx %v share amount is invalid", tx.Hash().String())
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				res = append(res, mintAccessCoinInst)
 			}
 			res = append(res, rejectInsts...)
@@ -1369,6 +1375,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				res = append(res, mintAccessCoinInst)
 			}
 			res = append(res, rejectInsts...)
@@ -1380,6 +1387,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			shouldMintAccessCoin = false
 		}
 		if shouldMintAccessCoin {
+			newShare.accessOTA = accessOTA
 			res = append(res, mintAccessCoinInst)
 		}
 
@@ -1542,7 +1550,7 @@ func (sp *stateProducerV2) unstaking(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UnstakingRequest)
 		txReqID := *tx.Hash()
 		stakingPoolID, _ := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
-		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
+		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID, nil)
 		if err != nil {
 			return res, stakingPoolStates, err
 		}
@@ -1591,11 +1599,16 @@ func (sp *stateProducerV2) unstaking(
 				return res, stakingPoolStates, err
 			}
 			shouldMintAccessCoin = true
+			rejectInsts, err = v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID, accessOTA)
+			if err != nil {
+				return res, stakingPoolStates, err
+			}
 		}
 
 		if staker.liquidity == 0 || metaData.UnstakingAmount() == 0 || rootStakingPoolState.liquidity == 0 {
 			Logger.log.Warnf("tx %v unstaking amount is 0", tx.Hash().String())
 			if shouldMintAccessCoin {
+				staker.setAccessOTA(accessOTA)
 				res = append(res, mintAccessCoinInst)
 			}
 			res = append(res, rejectInsts...)
@@ -1606,6 +1619,7 @@ func (sp *stateProducerV2) unstaking(
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
 			if shouldMintAccessCoin {
+				staker.setAccessOTA(accessOTA)
 				res = append(res, mintAccessCoinInst)
 			}
 			res = append(res, rejectInsts...)
@@ -1614,6 +1628,7 @@ func (sp *stateProducerV2) unstaking(
 		if metaData.OtaReceivers()[metaData.StakingPoolID()] == utils.EmptyString {
 			Logger.log.Warnf("tx %v ota receiver is invalid", tx.Hash().String())
 			if shouldMintAccessCoin {
+				staker.setAccessOTA(accessOTA)
 				res = append(res, mintAccessCoinInst)
 			}
 			res = append(res, rejectInsts...)
@@ -1625,6 +1640,7 @@ func (sp *stateProducerV2) unstaking(
 			shouldMintAccessCoin = false
 		}
 		if shouldMintAccessCoin {
+			newStaker.setAccessOTA(accessOTA)
 			res = append(res, mintAccessCoinInst)
 		}
 		insts, err := v2.BuildAcceptUnstakingInstructions(
@@ -1827,6 +1843,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		if notEnoughOTA {
 			Logger.log.Warnf("Not enough OTA in withdrawal staking reward request")
 			if shouldMintAccessCoin {
+				share.setAccessOTA(accessOTA)
 				instructions = append(instructions, mintAccessCoinInst)
 			}
 			instructions = append(instructions, rejectInst...)
@@ -1852,6 +1869,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			shouldMintAccessCoin = false
 		}
 		if shouldMintAccessCoin {
+			share.setAccessOTA(accessOTA)
 			instructions = append(instructions, mintAccessCoinInst)
 		}
 

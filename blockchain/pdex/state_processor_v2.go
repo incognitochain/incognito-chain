@@ -564,7 +564,7 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 	var err error
 	switch inst[1] {
 	case common.PDEWithdrawalRejectedChainStatus:
-		_, err = sp.rejectWithdrawLiquidity(stateDB, inst)
+		_, err = sp.rejectWithdrawLiquidity(stateDB, inst, poolPairs)
 	case common.PDEWithdrawalAcceptedChainStatus:
 		poolPairs, _, err = sp.acceptWithdrawLiquidity(stateDB, inst, poolPairs, beaconHeight, lmLockedBlocks)
 	}
@@ -575,13 +575,23 @@ func (sp *stateProcessorV2) withdrawLiquidity(
 }
 
 func (sp *stateProcessorV2) rejectWithdrawLiquidity(
-	stateDB *statedb.StateDB, inst []string,
+	stateDB *statedb.StateDB, inst []string, poolPairs map[string]*PoolPairState,
 ) (*v2.WithdrawStatus, error) {
 	rejectWithdrawLiquidity := instruction.NewRejectWithdrawLiquidity()
 	err := rejectWithdrawLiquidity.FromStringSlice(inst)
 	if err != nil {
 		return nil, err
 	}
+	if rejectWithdrawLiquidity.AccessOTA() != nil {
+		if poolPair, found := poolPairs[rejectWithdrawLiquidity.PoolPairID()]; found {
+			if rejectWithdrawLiquidity.AccessID() != nil {
+				if share, found := poolPair.shares[rejectWithdrawLiquidity.AccessID().String()]; found {
+					share.setAccessOTA(rejectWithdrawLiquidity.AccessOTA()) // accessOTA is valid from producer step
+				}
+			}
+		}
+	}
+
 	withdrawStatus := v2.WithdrawStatus{
 		Status: common.Pdexv3RejectStatus,
 	}
@@ -940,6 +950,16 @@ func (sp *stateProcessorV2) withdrawLPFee(
 		}
 		sp.receiverCache[actionData.TxReqID.String()][actionData.TokenID] = actionData.Receiver
 	} else {
+		if actionData.AccessOTA != nil {
+			if poolPair, found := pairs[actionData.PoolPairID]; found {
+				if actionData.AccessID != nil {
+					if share, found := poolPair.shares[actionData.AccessID.String()]; found {
+						share.setAccessOTA(actionData.AccessOTA) // accessOTA is valid from producer step
+					}
+				}
+			}
+		}
+
 		reqTrackStatus = metadataPdexv3.WithdrawLPFeeFailedStatus
 	}
 
@@ -1242,6 +1262,16 @@ func (sp *stateProcessorV2) unstaking(
 		if err != nil {
 			return stakingPoolStates, nil, err
 		}
+		if rejectInst.AccessOTA() != nil {
+			if stakingPool, found := stakingPoolStates[rejectInst.StakingPoolID()]; found {
+				if rejectInst.AccessID() != nil {
+					if staker, found := stakingPool.stakers[rejectInst.AccessID().String()]; found {
+						staker.setAccessOTA(rejectInst.AccessOTA()) // accessOTA is valid from producer step
+					}
+				}
+			}
+		}
+
 		txReqID = rejectInst.TxReqID()
 		status = common.Pdexv3RejectStatus
 	}
@@ -1359,6 +1389,16 @@ func (sp *stateProcessorV2) withdrawStakingReward(
 		}
 		sp.receiverCache[actionData.TxReqID.String()][actionData.TokenID] = actionData.Receiver
 	} else {
+		if actionData.AccessOTA != nil {
+			if stakingPool, found := pools[actionData.StakingPoolID]; found {
+				if actionData.AccessID != nil {
+					if staker, found := stakingPool.stakers[actionData.AccessID.String()]; found {
+						staker.setAccessOTA(actionData.AccessOTA) // accessOTA is valid from producer step
+					}
+				}
+			}
+		}
+
 		reqTrackStatus = metadataPdexv3.WithdrawStakingRewardFailedStatus
 	}
 

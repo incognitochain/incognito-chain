@@ -701,7 +701,7 @@ func Test_stateProcessorV2_acceptWithdrawLiquidity(t *testing.T) {
 
 	// invalid insturction
 	invalidInst, err := instruction.NewRejectWithdrawLiquidityWithValue(
-		*txHash, 1,
+		*txHash, 1, "", nil, nil,
 	).StringSlice()
 	assert.Nil(t, err)
 	//
@@ -1027,7 +1027,7 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 	assert.Nil(t, err)
 
 	// valid insturction
-	inst, err := instruction.NewRejectWithdrawLiquidityWithValue(*nftHash, 1).StringSlice()
+	inst, err := instruction.NewRejectWithdrawLiquidityWithValue(*nftHash, 1, "", nil, nil).StringSlice()
 	assert.Nil(t, err)
 
 	type fields struct {
@@ -1036,8 +1036,9 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 		stateProcessorBase stateProcessorBase
 	}
 	type args struct {
-		stateDB *statedb.StateDB
-		inst    []string
+		stateDB   *statedb.StateDB
+		inst      []string
+		poolPairs map[string]*PoolPairState
 	}
 	tests := []struct {
 		name    string
@@ -1050,8 +1051,9 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 			name:   "Valid input",
 			fields: fields{},
 			args: args{
-				stateDB: sDB,
-				inst:    inst,
+				stateDB:   sDB,
+				inst:      inst,
+				poolPairs: map[string]*PoolPairState{},
 			},
 			want: &v2utils.WithdrawStatus{
 				Status: common.Pdexv3RejectStatus,
@@ -1066,7 +1068,7 @@ func Test_stateProcessorV2_rejectWithdrawLiquidity(t *testing.T) {
 				withdrawTxCache:    tt.fields.withdrawTxCache,
 				stateProcessorBase: tt.fields.stateProcessorBase,
 			}
-			got, err := sp.rejectWithdrawLiquidity(tt.args.stateDB, tt.args.inst)
+			got, err := sp.rejectWithdrawLiquidity(tt.args.stateDB, tt.args.inst, tt.args.poolPairs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("stateProcessorV2.rejectWithdrawLiquidity() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1940,7 +1942,7 @@ func Test_stateProcessorV2_unstaking(t *testing.T) {
 	nftHash1, err := common.Hash{}.NewHashFromStr(nftID1)
 	assert.Nil(t, err)
 
-	rejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1).StringSlice()
+	rejectInst, err := instruction.NewRejectUnstakingWithValue(*txReqID, 1, "", nil, nil).StringSlice()
 	assert.Nil(t, err)
 	acceptInst, err := instruction.NewAcceptUnstakingWithValue(
 		common.PRVCoinID, 50, utils.EmptyString, *txReqID, 1, metadataPdexv3.AccessOption{

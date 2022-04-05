@@ -13,10 +13,12 @@ import (
 
 func BuildRejectWithdrawLiquidityInstructions(
 	metaData metadataPdexv3.WithdrawLiquidityRequest,
-	txReqID common.Hash, shardID byte,
+	txReqID common.Hash, shardID byte, accessOTA []byte,
 ) ([][]string, error) {
 	res := [][]string{}
-	inst, err := instruction.NewRejectWithdrawLiquidityWithValue(txReqID, shardID).StringSlice()
+	inst, err := instruction.NewRejectWithdrawLiquidityWithValue(
+		txReqID, shardID, metaData.PoolPairID(), metaData.AccessID, accessOTA,
+	).StringSlice()
 	if err != nil {
 		return res, err
 	}

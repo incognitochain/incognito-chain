@@ -11,10 +11,12 @@ import (
 
 func BuildRejectUnstakingInstructions(
 	metaData metadataPdexv3.UnstakingRequest,
-	txReqID common.Hash, shardID byte,
+	txReqID common.Hash, shardID byte, accessOTA []byte,
 ) ([][]string, error) {
 	res := [][]string{}
-	rejectInst, err := instruction.NewRejectUnstakingWithValue(txReqID, shardID).StringSlice()
+	rejectInst, err := instruction.NewRejectUnstakingWithValue(
+		txReqID, shardID, metaData.StakingPoolID(), metaData.AccessID, accessOTA,
+	).StringSlice()
 	if err != nil {
 		return res, err
 	}

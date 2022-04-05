@@ -12,7 +12,7 @@ import (
 )
 
 func TestRejectUnstaking_FromStringSlice(t *testing.T) {
-	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1)
+	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1, "", nil, nil)
 	data, err := json.Marshal(&rejectUnstaking)
 	assert.Nil(t, err)
 
@@ -91,7 +91,7 @@ func TestRejectUnstaking_FromStringSlice(t *testing.T) {
 }
 
 func TestRejectUnstaking_StringSlice(t *testing.T) {
-	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1)
+	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1, "", nil, nil)
 	data, err := json.Marshal(&rejectUnstaking)
 	assert.Nil(t, err)
 
