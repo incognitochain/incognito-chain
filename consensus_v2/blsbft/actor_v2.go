@@ -1222,9 +1222,9 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	block := blockInfo.(types.BlockInterface)
 
 	blockHash := block.Hash().String()
-	producerCommitteePublicKey := incognitokey.CommitteePublicKey{}
-	producerCommitteePublicKey.FromBase58(block.GetProducer())
-	producerMiningKeyBase58 := producerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
+	proposerCommitteePublicKey := incognitokey.CommitteePublicKey{}
+	proposerCommitteePublicKey.FromBase58(block.GetProposer())
+	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
 	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
 	if err != nil {
 		a.logger.Error(err)
@@ -1264,7 +1264,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 			committees,
 			signingCommittees,
 			userKeySet,
-			producerMiningKeyBase58,
+			proposerMiningKeyBase58,
 		)
 		if err != nil {
 			a.logger.Error(err)
@@ -1299,7 +1299,7 @@ func (a *actorV2) handleNewProposeMsg(
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittees []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
-	producerPublicBLSMiningKey string,
+	proposerPublicBLSMiningKey string,
 ) error {
 
 	blockHash := block.Hash().String()
@@ -1310,7 +1310,7 @@ func (a *actorV2) handleNewProposeMsg(
 		signingCommittees,
 		userKeySet,
 		a.chain.GetBestView().GetProposerLength(),
-		producerPublicBLSMiningKey,
+		proposerPublicBLSMiningKey,
 	)
 
 	newProposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
@@ -1440,8 +1440,7 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	for h, proposeBlk := range a.receiveBlockByHash {
-		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute {
-			//delete(a.votedTimeslot, proposeBlk.block.GetProposeTime())
+		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && (proposeBlk.block == nil || proposeBlk.block.GetHeight() <= a.chain.GetFinalView().GetHeight()) {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}

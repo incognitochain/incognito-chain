@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -97,7 +98,8 @@ var (
 	portalV4ProcessLogger = backendLog.Logger("Portal v4 process log ", false)
 	portalV4TokenLogger   = backendLog.Logger("Portal v4 token log ", false)
 
-	txPoolLogger = backendLog.Logger("Txpool log ", false)
+	txPoolLogger    = backendLog.Logger("Txpool log ", false)
+	evmCallerLogger = backendLog.Logger("EVMCaller log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -157,6 +159,7 @@ func init() {
 	portaltokensv4.Logger.Init(portalV4TokenLogger)
 
 	txpool.Logger.Init(txPoolLogger)
+	evmcaller.Logger.Init(evmCallerLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -196,6 +199,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"PORTALV3TOKENS":    portalV3TokenLogger,
 	"PORTALV4PROCESS":   portalV4ProcessLogger,
 	"PORTALV4TOKENS":    portalV4TokenLogger,
+	"EVMCALLER":         evmCallerLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

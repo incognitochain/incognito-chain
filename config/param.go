@@ -47,6 +47,7 @@ type param struct {
 	EthContractAddressStr            string                       `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
 	PlgContractAddressStr            string                       `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
+	FtmContractAddressStr            string                       `mapstructure:"ftm_contract_address" description:"smart contract of FTM for bridge"`
 	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`
@@ -60,8 +61,10 @@ type param struct {
 	EnableFeatureFlags               map[string]uint64            `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64                       `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                          `mapstructure:"tx_pool_version"`
+	GethParam                        gethParam                    `mapstructure:"geth_param"`
 	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
 	PLGParam                         plgParam                     `mapstructure:"plg_param"`
+	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
@@ -310,7 +313,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 }
 
 type bscParam struct {
-	Host string `mapstructure:"host"`
+	Host []string `mapstructure:"host"`
 }
 
 type pdexParam struct {
@@ -332,16 +335,26 @@ type pdexParam struct {
 
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
-		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
+		bschParam.Host = []string{utils.GetEnv(BSCHostKey, utils.EmptyString)}
 	}
 }
 
 type plgParam struct {
-	Host string `mapstructure:"host"`
+	Host []string `mapstructure:"host"`
 }
 
 func (plgParam *plgParam) GetFromEnv() {
 	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
-		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
+		plgParam.Host = []string{utils.GetEnv(PLGHostKey, utils.EmptyString)}
+	}
+}
+
+type ftmParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (ftmParam *ftmParam) GetFromEnv() {
+	if utils.GetEnv(FTMHostKey, utils.EmptyString) != utils.EmptyString {
+		ftmParam.Host = []string{utils.GetEnv(FTMHostKey, utils.EmptyString)}
 	}
 }

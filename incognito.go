@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -196,6 +197,10 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		return err
 	}
+
+	// Init EVM caller cacher
+	evmcaller.InitCacher()
+
 	defer func() {
 		Logger.log.Warn("Gracefully shutting down the server...")
 		server.Stop()
