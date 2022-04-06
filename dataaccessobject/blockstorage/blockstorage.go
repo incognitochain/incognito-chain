@@ -62,12 +62,19 @@ func NewBlockService(
 	BlockService,
 	error,
 ) {
-	mCache, err := common.NewRistrettoMemCache(int64(config.Param().FlatFileParam.MaxCacheSize / uint64(config.Param().ActiveShards+1)))
-	if err != nil {
-		return nil, err
+	var (
+		mCache common.Cacher
+		err    error
+		subDB  incdb.Database
+	)
+	if config.Config().EnableFFStorage {
+		mCache, err = common.NewRistrettoMemCache(int64(config.Param().FlatFileParam.MaxCacheSize / uint64(config.Param().ActiveShards+1)))
+		if err != nil {
+			return nil, err
+		}
+		dbPath := path.Join(rawDB.GetPath(), "ffdata")
+		subDB, err = incdb.OpenDBWithPath("leveldb", dbPath)
 	}
-	dbPath := path.Join(rawDB.GetPath(), "ffdata")
-	subDB, err := incdb.OpenDBWithPath("leveldb", dbPath)
 	if err != nil {
 		return nil, err
 	}
