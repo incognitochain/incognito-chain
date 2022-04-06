@@ -414,6 +414,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		metadataBridge.UnshieldRequest
+		Receivers map[string]uint64
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)

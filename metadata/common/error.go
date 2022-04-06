@@ -106,6 +106,7 @@ const (
 	BridgeAggModifyListTokenValidateSanityDataError
 	BridgeAggConvertRequestValidateSanityDataError
 	BridgeAggShieldValidateSanityDataError
+	BridgeAggUnshieldValidateSanityDataError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -205,6 +206,7 @@ var ErrCodeMessage = map[int]struct {
 	BridgeAggModifyListTokenValidateSanityDataError: {-12000, "Modify list token validate sanity error"},
 	BridgeAggConvertRequestValidateSanityDataError:  {-12001, "Convert request sanity error"},
 	BridgeAggShieldValidateSanityDataError:          {-12002, "Shield request sanity error"},
+	BridgeAggUnshieldValidateSanityDataError:        {-12003, "Unshield request sanity error"},
 }
 
 type MetadataTxError struct {

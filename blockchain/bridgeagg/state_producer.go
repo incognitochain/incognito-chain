@@ -10,6 +10,7 @@ import (
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
@@ -142,39 +143,28 @@ func (sp *stateProducer) convert(
 			err = errors.New("TokenID is invalid")
 			return
 		}
-		var prefix string
-		switch md.NetworkID {
-		case common.ETHNetworkID:
-			prefix = utils.EmptyString
-		case common.BSCNetworkID:
-			prefix = common.BSCPrefix
-		case common.PLGNetworkID:
-			prefix = common.PLGPrefix
-		case common.FTMNetworkID:
-			prefix = common.FTMPrefix
-		case common.DefaultNetworkID:
-			errorType = OtherError
-			err = NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
-		default:
-			errorType = NotFoundNetworkIDError
-			err = NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
-		}
-		externalTokenID, e := GetExternalTokenIDByIncTokenID(md.TokenID, sDBs[common.BeaconChainID])
-		if e != nil {
-			errorType = NotFoundTokenIDInNetworkError
-			err = e
-			return
-		}
-		err = vault.convert(md.Amount, prefix, externalTokenID)
+		err = vault.convert(md.Amount)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			errorType = InvalidConvertAmountError
 			return
 		}
 		resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID] = vault
+		decimal := vault.Decimal()
+		if decimal > config.Param().BridgeAggParam.BaseDecimal {
+			decimal = config.Param().BridgeAggParam.BaseDecimal
+		}
+		var externalTokenID []byte
+		externalTokenID, err = GetExternalTokenIDByIncTokenID(md.TokenID, sDBs[common.BeaconChainID])
+		if err != nil {
+			errorType = NotFoundTokenIDInNetworkError
+			return
+		}
 		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{
 			ConvertTokenToUnifiedTokenRequest: *md,
 			TxReqID:                           action.TxReqID,
+			IncDecimal:                        decimal,
+			ExternalTokenID:                   externalTokenID,
 		}
 		var content []byte
 		content, err = json.Marshal(acceptedContent)

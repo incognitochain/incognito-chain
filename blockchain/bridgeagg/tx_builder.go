@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -74,7 +75,13 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		if err != nil {
 			return nil, err
 		}
-		amount = acceptedContent.Amount
+		amt, err := CalculateAmountByDecimal(
+			*big.NewInt(0).SetUint64(acceptedContent.Amount), acceptedContent.IncDecimal, AddOperator,
+		)
+		if err != nil {
+			return nil, err
+		}
+		amount = amt.Uint64()
 		tokenID = acceptedContent.UnifiedTokenID
 		otaReceiver = acceptedContent.Receiver
 		txReqID = acceptedContent.TxReqID

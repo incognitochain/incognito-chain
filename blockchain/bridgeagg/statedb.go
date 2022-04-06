@@ -41,3 +41,22 @@ func GetExternalTokenIDByIncTokenID(incTokenID common.Hash, sDB *statedb.StateDB
 	}
 	return info.ExternalTokenID(), nil
 }
+
+func GetVaultByUnifiedTokenIDAndNetworkID(unifiedTokenID common.Hash, networkID uint, sDB *statedb.StateDB) (*Vault, error) {
+	convertTokens, err := statedb.GetBridgeAggConvertedTokens(sDB, unifiedTokenID)
+	if err != nil {
+		return nil, err
+	}
+	for _, convertToken := range convertTokens {
+		if convertToken.NetworkID() != networkID {
+			continue
+		}
+		state, err := statedb.GetBridgeAggVault(sDB, unifiedTokenID, convertToken.TokenID())
+		if err != nil {
+			return nil, err
+		}
+		state = statedb.NewBridgeAggVaultState()
+		return NewVaultWithValue(*state, convertToken.TokenID()), nil
+	}
+	return nil, errors.New("Not found vault")
+}

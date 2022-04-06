@@ -479,19 +479,18 @@ func (blockchain *BlockChain) processConvertReq(
 	if err != nil {
 		return nil, err
 	}
-	Logger.log.Info("Processing inst content:", string(contentBytes))
 	acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
 	err = json.Unmarshal(contentBytes, &acceptedContent)
 	if err != nil {
 		return nil, err
 	}
-	convertedAmount, err := bridgeagg.CalculateConvertAmount(
-		*big.NewInt(0).SetUint64(acceptedContent.Amount), acceptedContent.UnifiedTokenID,
-		acceptedContent.NetworkID, curView.bridgeAggState.UnifiedTokenInfos(), acceptedContent.ExternalTokenID,
+	amount, err := bridgeagg.CalculateAmountByDecimal(
+		*big.NewInt(0).SetUint64(acceptedContent.Amount), acceptedContent.IncDecimal, bridgeagg.AddOperator,
 	)
 	if err != nil {
 		return nil, err
 	}
+	convertedAmount := amount.Uint64()
 	updatingInfo, found := updatingInfoByTokenID[acceptedContent.TokenID]
 	if found {
 		updatingInfo.DeductAmt += acceptedContent.Amount

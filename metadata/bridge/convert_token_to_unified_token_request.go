@@ -31,6 +31,7 @@ type AcceptedConvertTokenToUnifiedToken struct {
 	ConvertTokenToUnifiedTokenRequest
 	TxReqID         common.Hash `json:"TxReqID"`
 	ExternalTokenID []byte      `json:"ExternalTokenID"`
+	IncDecimal      uint        `json:"IncDecimal"`
 }
 
 func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
@@ -61,7 +62,7 @@ func (request *ConvertTokenToUnifiedTokenRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	return true, nil
+	return beaconViewRetriever.BridgeAggIsValidBurntAmount(request.Amount, request.UnifiedTokenID, request.NetworkID)
 }
 
 func (request *ConvertTokenToUnifiedTokenRequest) ValidateSanityData(

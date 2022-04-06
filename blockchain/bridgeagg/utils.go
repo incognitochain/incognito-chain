@@ -1,7 +1,6 @@
 package bridgeagg
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -287,7 +286,7 @@ func shieldEVM(
 	if err != nil {
 		return 0, 0, 0, nil, nil, "", FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
-	tmpAmount, err := CalculateAmountByDecimal(*amount, vault.Decimal(), AddOperator, prefix, 0, token)
+	tmpAmount, err := CalculateAmountByDecimal(*amount, vault.Decimal(), AddOperator)
 	if err != nil {
 		return 0, 0, 0, nil, nil, "", OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
@@ -349,15 +348,8 @@ func buildAcceptedShieldContents(
 	return contents, nil
 }
 
-func CalculateAmountByDecimal(
-	amount big.Int, decimal uint, operator byte, prefix string, networkType uint, token []byte,
-) (*big.Int, error) {
+func CalculateAmountByDecimal(amount big.Int, decimal uint, operator byte) (*big.Int, error) {
 	res := big.NewInt(0).Set(&amount)
-	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
-		if decimal > config.Param().BridgeAggParam.BaseDecimal {
-			decimal = config.Param().BridgeAggParam.BaseDecimal
-		}
-	}
 	switch operator {
 	case AddOperator:
 		res.Mul(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
@@ -369,7 +361,7 @@ func CalculateAmountByDecimal(
 		res.Mul(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(decimal)), nil))
 		res.Div(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 	default:
-		return nil, errors.New("Cannot recognie operator")
+		return nil, errors.New("Cannot recognize operator")
 	}
 
 	return res, nil
@@ -395,39 +387,6 @@ func CalculateUnshieldAmount(
 		return 0, errors.New("Not found unifiedTokenID")
 	}
 	return 0, errors.New("Not found tokenID")
-}
-
-func CalculateConvertAmount(
-	amount big.Int, unifiedTokenID common.Hash, networkID uint,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
-	token []byte,
-) (uint64, error) {
-	vault, err := GetVault(unifiedTokenInfos, unifiedTokenID, networkID)
-	if err != nil {
-		return 0, err
-	}
-	var prefix string
-	switch networkID {
-	case common.ETHNetworkID:
-		prefix = ""
-	case common.BSCNetworkID:
-		prefix = common.BSCPrefix
-	case common.PLGNetworkID:
-		prefix = common.PLGPrefix
-	case common.FTMNetworkID:
-		prefix = common.FTMPrefix
-	default:
-		return 0, errors.New("Not found networkID")
-	}
-	decimal := config.Param().BridgeAggParam.BaseDecimal
-	if decimal > vault.Decimal() {
-		decimal = vault.Decimal()
-	}
-	convertedAmount, err := CalculateAmountByDecimal(
-		amount, decimal,
-		AddOperator, prefix, 0, token,
-	)
-	return convertedAmount.Uint64(), err
 }
 
 func unshieldEVM(
@@ -492,7 +451,7 @@ func unshieldEVM(
 	}
 	fee := data.BurningAmount - actualAmount
 	unshieldAmount, err := CalculateAmountByDecimal(
-		*big.NewInt(0).SetUint64(actualAmount), vault.Decimal(), SubOperator, prefix, 0, externalTokenID,
+		*big.NewInt(0).SetUint64(actualAmount), vault.Decimal(), SubOperator,
 	)
 	if err != nil {
 		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)

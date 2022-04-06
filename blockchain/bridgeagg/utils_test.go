@@ -239,12 +239,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Add",
 			args: args{
-				amount:      *big.NewInt(100000),
-				decimal:     6,
-				operator:    AddOperator,
-				prefix:      "",
-				networkType: 0,
-				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				amount:   *big.NewInt(100000),
+				decimal:  6,
+				operator: AddOperator,
 			},
 			want:    big.NewInt(100000000),
 			wantErr: false,
@@ -252,12 +249,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Sub",
 			args: args{
-				amount:      *big.NewInt(100000000),
-				decimal:     6,
-				operator:    SubOperator,
-				prefix:      "",
-				networkType: 0,
-				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				amount:   *big.NewInt(100000000),
+				decimal:  6,
+				operator: SubOperator,
 			},
 			want:    big.NewInt(100000),
 			wantErr: false,
@@ -265,12 +259,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Convert",
 			args: args{
-				amount:      *big.NewInt(100),
-				decimal:     config.Param().BridgeAggParam.BaseDecimal,
-				operator:    AddOperator,
-				prefix:      "",
-				networkType: 0,
-				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				amount:   *big.NewInt(100),
+				decimal:  config.Param().BridgeAggParam.BaseDecimal,
+				operator: AddOperator,
 			},
 			want:    big.NewInt(100),
 			wantErr: false,
@@ -278,12 +269,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield",
 			args: args{
-				amount:      *big.NewInt(1234567890000000),
-				decimal:     18,
-				operator:    AddOperator,
-				prefix:      "",
-				networkType: 0,
-				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				amount:   *big.NewInt(1234567890000000),
+				decimal:  18,
+				operator: AddOperator,
 			},
 			want:    big.NewInt(1234567),
 			wantErr: false,
@@ -291,12 +279,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield - 2",
 			args: args{
-				amount:      *big.NewInt(50000000000000000),
-				decimal:     18,
-				operator:    AddOperator,
-				prefix:      "",
-				networkType: 0,
-				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				amount:   *big.NewInt(50000000000000000),
+				decimal:  18,
+				operator: AddOperator,
 			},
 			want:    big.NewInt(50000000),
 			wantErr: false,
@@ -304,7 +289,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator, tt.args.prefix, tt.args.networkType, tt.args.token)
+			got, err := CalculateAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateAmountByDecimal() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -147,7 +149,14 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 			txReqIDFromInst = acceptedContent.TxReqID
 			otaReceiver = acceptedContent.Receiver
 			receivingTokenID = acceptedContent.UnifiedTokenID
-			receivingAmtFromInst = acceptedContent.Amount
+			// Calculate amount by decimal
+			tmpAmt := big.NewInt(0).SetUint64(acceptedContent.Amount)
+			tmpAmt.Mul(tmpAmt, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+			tmpAmt.Div(tmpAmt, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(acceptedContent.IncDecimal)), nil))
+			if !tmpAmt.IsUint64() {
+				return false, errors.New("Out of range unit64")
+			}
+			receivingAmtFromInst = tmpAmt.Uint64()
 		default:
 			return false, errors.New("Not find status")
 		}
