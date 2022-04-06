@@ -247,7 +247,7 @@ func (sp *stateProcessor) unshield(
 			txReqID = acceptedContent.TxReqID
 			status = common.AcceptedStatusByte
 		}
-		sp.UnshieldTxsCache[txReqID] = acceptedContent.TxReqID
+		sp.UnshieldTxsCache[txReqID] = acceptedContent.TokenID
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {

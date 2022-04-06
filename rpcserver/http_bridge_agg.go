@@ -399,7 +399,6 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
 	}
-
 	if len(arrayParams) != 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
@@ -464,7 +463,6 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
-
 	marshaledTx, err := json.Marshal(tx)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)

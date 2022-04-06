@@ -383,10 +383,8 @@ func CalculateAmountUnshield(
 	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
 		for _, vault := range vaults {
 			if vault.tokenID == tokenID {
-				amt, err := CalculateAmountByDecimal(amount, vault.Decimal(), AddOperator, prefix, networkType, token)
-				if err != nil {
-					return 0, err
-				}
+				amt := amount.Mul(&amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
+				amt.Div(amt, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
 				if !amt.IsUint64() {
 					return 0, errors.New("Out of range uint64")
 				}
@@ -403,7 +401,7 @@ func unshieldEVM(
 	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB,
 	vaults map[uint]*Vault,
 	incTokenID, txReqID common.Hash,
-) ([]byte, *big.Int, uint64, uint64, int, int, error) {
+) (common.Hash, []byte, *big.Int, uint64, uint64, int, int, error) {
 	var prefix string
 	var burningMetaType int
 
@@ -437,34 +435,35 @@ func unshieldEVM(
 		}
 		prefix = common.FTMPrefix
 	case common.DefaultNetworkID:
-		return nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
 	default:
-		return nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
 	}
 
 	vault, found := vaults[data.NetworkID]
 	if !found {
-		return nil, nil, 0, 0, burningMetaType, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
 	}
 
 	// Convert to external tokenID
+
 	externalTokenID, err := metadataBridge.FindExternalTokenID(stateDB, vault.tokenID, prefix, burningMetaType)
 	if err != nil {
-		return nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 	}
 
 	actualAmount, err := vault.unshield(data.BurningAmount, data.ExpectedAmount)
 	if err != nil {
 		Logger.log.Warnf("Calculate unshield amount error: %v tx %s", err, txReqID.String())
-		return nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
 	}
 	fee := data.BurningAmount - actualAmount
 	unshieldAmount, err := CalculateAmountByDecimal(
 		*big.NewInt(0).SetUint64(actualAmount), vault.Decimal(), SubOperator, prefix, 0, externalTokenID,
 	)
 	if err != nil {
-		return nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 
-	return externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
+	return vault.tokenID, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }

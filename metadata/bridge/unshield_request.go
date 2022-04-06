@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -72,7 +73,7 @@ func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 }
 
 func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	if len(request.Data) == 0 {
+	if len(request.Data) <= 0 || len(request.Data) >= config.Param().BridgeAggParam.MaxLenOfPath {
 		return false, false, fmt.Errorf("list data cannot be null")
 	}
 	if !request.Receiver.IsValid() {

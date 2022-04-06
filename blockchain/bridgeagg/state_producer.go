@@ -353,7 +353,7 @@ func (sp *stateProducer) unshield(
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
+			incTokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
 			if e != nil {
 				errorType = et
 				err = e
@@ -368,7 +368,7 @@ func (sp *stateProducer) unshield(
 				data.RemoteAddress,
 				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
 				action.TxReqID.String(),
-				base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
+				base58.Base58Check{}.Encode(incTokenID[:], 0x00),
 				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 			}
 			burningInsts = append(burningInsts, burningInst)
