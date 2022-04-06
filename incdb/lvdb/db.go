@@ -211,6 +211,10 @@ func (b *batch) ValueSize() int {
 
 // Write flushes any accumulated data to disk.
 func (b *batch) Write() error {
+	data := b.b.Dump()
+	if len(data) > 100000 {
+		incdb.Logger.Log.Infof("[debugsize] sizebatch %v", len(data))
+	}
 	return b.db.Write(b.b, nil)
 }
 
