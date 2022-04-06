@@ -119,7 +119,7 @@ type config struct {
 	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
 	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
 	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
-	SyncMode            string `mapstructure:"sync_mode" long:"syncmode" description:"smart contract of prv bep20"`
+	SyncMode            string `mapstructure:"sync_mode" long:"syncmode" description:"archive,batchcommit,lite"`
 	EnableFFStorage     bool   `mapstructure:"enable_ffstorage" long:"ffstorage" description:"enable_ffstorage"`
 }
 

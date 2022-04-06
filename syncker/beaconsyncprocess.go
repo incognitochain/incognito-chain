@@ -270,7 +270,6 @@ func (s *BeaconSyncProcess) syncBeacon() {
 		select {
 		case <-s.cQuit:
 			Logger.Logger.Info(">>>>>>>>>>>>>>>> beacon")
-			s.wg.Done()
 			return
 		default:
 		}
