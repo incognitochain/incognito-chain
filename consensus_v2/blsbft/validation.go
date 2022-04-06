@@ -20,7 +20,6 @@ type vote struct {
 
 type BlockValidation interface {
 	types.BlockInterface
-	AddValidationField(validationData string)
 }
 
 func ValidateProducerSigV1(block types.BlockInterface) error {

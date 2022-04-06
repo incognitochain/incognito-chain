@@ -1,11 +1,19 @@
 package common
 
 import (
+	"sync/atomic"
+
 	"github.com/dgraph-io/ristretto"
 )
 
 type MemCache struct {
 	cacher Cacher
+}
+
+var totalCacheSize int64 = 0
+
+func GetRequestedCacheSize() int64 {
+	return totalCacheSize
 }
 
 type Cacher interface {
@@ -18,6 +26,7 @@ func NewMemCache(cacher Cacher) *MemCache {
 }
 
 func NewRistrettoMemCache(maxSize int64) (Cacher, error) {
+	atomic.AddInt64(&totalCacheSize, maxSize)
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: CacheNumCounters,
 		MaxCost:     maxSize,

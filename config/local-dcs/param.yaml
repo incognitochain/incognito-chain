@@ -93,3 +93,4 @@ batch_commit_sync_mode_param:
   block_trie_in_memory: 20000
   trie_node_limit: 1e9
   trie_img_limit: 4e6
+cachesize: 536870912 #500Mb

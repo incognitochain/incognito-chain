@@ -188,16 +188,6 @@ func NewBeaconBlock() *BeaconBlock {
 func (beaconBlock BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, error) {
 	res := &proto.BeaconBlockBytes{}
 	var err error
-	if beaconBlock.GetHeight() > 1 {
-		v, err := consensustypes.DecodeValidationData(beaconBlock.GetValidationField())
-		if err != nil {
-			panic(err)
-		}
-		res.ValidationData, err = v.ToBytes()
-		if err != nil {
-			return nil, err
-		}
-	}
 	res.Body, err = beaconBlock.Body.ToProtoBeaconBody()
 	if err != nil {
 		return nil, err
@@ -212,16 +202,7 @@ func (beaconBlock BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, er
 func (beaconBlock *BeaconBlock) FromProtoBeaconBlock(protoData *proto.BeaconBlockBytes) error {
 
 	if protoData.Header.Height > 1 {
-		valData := consensustypes.ValidationData{}
-		err := valData.FromBytes(protoData.ValidationData)
-		if err != nil {
-			return err
-		}
-		vStr, err := consensustypes.EncodeValidationData(valData)
-		if err != nil {
-			return err
-		}
-		beaconBlock.AddValidationField(vStr)
+		beaconBlock.AddValidationField("")
 	}
 	err := beaconBlock.Body.FromProtoBeaconBody(protoData.Body)
 	if err != nil {

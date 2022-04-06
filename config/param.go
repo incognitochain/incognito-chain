@@ -72,6 +72,7 @@ type param struct {
 	PRVERC20ContractAddressStr       string                   `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string                   `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
 	BatchCommitSyncModeParam         batchCommitSyncModeParam `mapstructure:"batch_commit_sync_mode_param"`
+	MemoryCacheMaxSize               int64                    `mapstructure:"cachesize"`
 }
 
 type genesisParam struct {

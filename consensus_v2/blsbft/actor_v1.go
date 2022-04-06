@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -376,7 +377,7 @@ func (actorV1 *actorV1) run() error {
 						actorV1.roundData.blockValidateData.ValidatiorsIdx = validatorIdx
 
 						validationDataString, _ := consensustypes.EncodeValidationData(actorV1.roundData.blockValidateData)
-						actorV1.roundData.block.(BlockValidation).AddValidationField(validationDataString)
+						actorV1.roundData.block.AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
@@ -436,7 +437,7 @@ func (actorV1 *actorV1) enterProposePhase(keyset *signatureschemes2.MiningKey) {
 	if err != nil {
 		actorV1.logger.Errorf("Encode validation data failed %+v", err)
 	}
-	block.(BlockValidation).AddValidationField(validationDataString)
+	block.AddValidationField(validationDataString)
 
 	actorV1.roundData.block = block
 	actorV1.roundData.blockHash = *block.Hash()

@@ -45,6 +45,12 @@ func GetHashToBlockIndexKey(hash common.Hash) []byte {
 	return append(temp, hash[:]...)
 }
 
+func GetHashToBlockValidationKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len("blkval"))
+	temp = append(temp, "blkval"...)
+	return append(temp, hash[:]...)
+}
+
 func GetShardIndexToBlockHashPrefix(shardID byte, index uint64) []byte {
 	buf := common.Uint64ToBytes(index)
 	temp := make([]byte, 0, len(shardIndexToBlockHashPrefix))

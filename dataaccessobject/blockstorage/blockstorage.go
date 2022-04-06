@@ -1,9 +1,12 @@
 package blockstorage
 
 import (
+	"path"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -18,6 +21,13 @@ type BlockService interface {
 		[]byte,
 		error,
 	)
+	GetBlockValidation(
+		blkHash common.Hash,
+	) (string, error)
+	StoreBlockValidation(
+		blkHash common.Hash,
+		valData string,
+	) error
 	CheckBlockByHash(
 		hash *common.Hash,
 	) (
@@ -39,6 +49,7 @@ type BlockInfor struct {
 type BlockManager struct {
 	chainID int
 	rDB     incdb.Database
+	sRDB    incdb.Database //mini raw db
 	fDB     flatfile.FlatFile
 	cacher  common.Cacher
 }
@@ -51,13 +62,19 @@ func NewBlockService(
 	BlockService,
 	error,
 ) {
-	mCache, err := common.NewRistrettoMemCache(common.CacheMaxCost)
+	mCache, err := common.NewRistrettoMemCache(config.Param().MemoryCacheMaxSize)
+	if err != nil {
+		return nil, err
+	}
+	dbPath := path.Join(rawDB.GetPath(), "ffdata")
+	subDB, err := incdb.OpenDBWithPath("leveldb", dbPath)
 	if err != nil {
 		return nil, err
 	}
 	res := &BlockManager{
 		chainID: chainID,
 		rDB:     rawDB,
+		sRDB:    subDB,
 		fDB:     flatfileManager,
 		cacher:  mCache,
 	}
@@ -72,7 +89,7 @@ func (blkM *BlockManager) CheckBlockByHash(
 ) {
 	if config.Config().EnableFFStorage {
 		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
-		_, err := blkM.rDB.Get(keyIdx)
+		_, err := blkM.sRDB.Get(keyIdx)
 		if err != nil {
 			return false, err
 		}
@@ -100,7 +117,7 @@ func (blkM *BlockManager) GetBlockByHash(
 				return res, nil
 			}
 		}
-		blkIdBytes, err := blkM.rDB.Get(keyIdx)
+		blkIdBytes, err := blkM.sRDB.Get(keyIdx)
 		if (err != nil) || (len(blkIdBytes) == 0) {
 			return nil, errors.Errorf("Can not get index for block hash %v, got %v, error %v", hash.String(), blkIdBytes, err)
 		}
@@ -123,6 +140,13 @@ func (blkM *BlockManager) StoreBlock(
 	var err error
 	blkHash := blkData.Hash()
 	if config.Config().EnableFFStorage {
+		if blkData.GetHeight() > 1 {
+			vData := blkData.GetValidationField()
+			err = blkM.StoreBlockValidation(*blkHash, vData)
+			if err != nil {
+				return err
+			}
+		}
 		blkBytes, err := blkData.ToBytes()
 		if err != nil {
 			return err
@@ -132,7 +156,7 @@ func (blkM *BlockManager) StoreBlock(
 			return err
 		}
 		key := rawdbv2.GetHashToBlockIndexKey(*blkHash)
-		err = blkM.rDB.Put(key, common.Uint64ToBytes(blkIndex))
+		err = blkM.sRDB.Put(key, common.Uint64ToBytes(blkIndex))
 		if err != nil {
 			return err
 		}
@@ -149,4 +173,53 @@ func (blkM *BlockManager) StoreBlock(
 	}
 
 	return nil
+}
+
+func (blkM *BlockManager) StoreBlockValidation(
+	blkHash common.Hash,
+	valData string,
+) error {
+	vData, err := consensustypes.DecodeValidationData(valData)
+	if err != nil {
+		return err
+	}
+	vDataBytes, err := vData.ToBytes()
+	if err != nil {
+		return err
+	}
+	key := rawdbv2.GetHashToBlockValidationKey(blkHash)
+	err = blkM.sRDB.Put(key, vDataBytes)
+	if err != nil {
+		return err
+	}
+	blkM.cacher.Set(key, valData, int64(len([]byte(valData))))
+	return nil
+}
+
+func (blkM *BlockManager) GetBlockValidation(
+	blkHash common.Hash,
+) (string, error) {
+	key := rawdbv2.GetHashToBlockValidationKey(blkHash)
+	rawValData, existed := blkM.cacher.Get(key)
+	if existed {
+		if valData, ok := rawValData.(string); ok {
+			return valData, nil
+		}
+	}
+	valDataBytes, err := blkM.sRDB.Get(key)
+	if err != nil {
+		return "", err
+	}
+	valData := consensustypes.ValidationData{}
+	err = valData.FromBytes(valDataBytes)
+	if err != nil {
+		return "", err
+	}
+
+	valDataStr, err := consensustypes.EncodeValidationData(valData)
+	if err != nil {
+		return "", err
+	}
+	blkM.cacher.Set(key, valDataStr, int64(len([]byte(valDataStr))))
+	return valDataStr, nil
 }
