@@ -72,7 +72,7 @@ type param struct {
 	PRVERC20ContractAddressStr       string                   `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string                   `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
 	BatchCommitSyncModeParam         batchCommitSyncModeParam `mapstructure:"batch_commit_sync_mode_param"`
-	MemoryCacheMaxSize               int64                    `mapstructure:"cachesize"`
+	FlatFileParam                    flatfileParam            `mapstructure:"flatfileparam"`
 }
 
 type genesisParam struct {
@@ -145,6 +145,11 @@ type batchCommitSyncModeParam struct {
 	BlockTrieInMemory    uint64             `mapstructure:"block_trie_in_memory"`
 	TrieNodeLimit        common.StorageSize `mapstructure:"trie_node_limit"`
 	TrieImgsLimit        common.StorageSize `mapstructure:"trie_img_limit"`
+}
+
+type flatfileParam struct {
+	MaxCacheSize uint64 `mapstructure:"maxcachesize"`
+	CompLevel    int    `mapstructure:"compresslevel"`
 }
 
 func LoadParam() *param {

@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -1371,4 +1372,115 @@ func TestMultipleBatchCommitFinalizeSwitchToArchive(t *testing.T) {
 		}
 	}
 
+}
+
+func TestBatchCommitIterator(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+
+	wantKeys := [][]byte{}
+	temp := common.HashH([]byte("test-prefix"))
+	prefix := temp[:12]
+	for i := 0; i < 5; i++ {
+		randKey[i] = common.BytesToHash(append(prefix, randKey[i][12:]...))
+		wantKeys = append(wantKeys, randKey[i][:])
+	}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testObjects := make([]StateObject, 7)
+	testObjects[0], _ = newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	testObjects[1], _ = newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	testObjects[2], _ = newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects[3], _ = newTestObjectWithValue(stateDB, randKey[3], randValue[3])
+	testObjects[4], _ = newTestObjectWithValue(stateDB, randKey[4], randValue[4])
+	testObjects[5], _ = newTestObjectWithValue(stateDB, randKey[5], randValue[5])
+	testObjects[6], _ = newTestObjectWithValue(stateDB, randKey[6], randValue[6])
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[2].GetHash(), testObjects[2].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[3].GetHash(), testObjects[3].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[4].GetHash(), testObjects[4].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[5].GetHash(), testObjects[5].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := stateDB.Finalized(true, *NewEmptyRebuildInfo("")); err != nil {
+		t.Fatal(err)
+	}
+
+	stateDB2 := stateDB.Copy()
+
+	nodeIter := stateDB2.trie.NodeIterator(prefix)
+	iter := trie.NewIterator(nodeIter)
+	gotKeys := [][]byte{}
+	for iter.Next() {
+		gotKey := make([]byte, len(iter.Key))
+		copy(gotKey, iter.Key)
+		gotKeys = append(gotKeys, gotKey)
+	}
+
+	sort.Slice(wantKeys, func(i, j int) bool {
+		return string(wantKeys[i]) < string(wantKeys[j])
+	})
+
+	sort.Slice(gotKeys, func(i, j int) bool {
+		return string(gotKeys[i]) < string(gotKeys[j])
+	})
+
+	if !reflect.DeepEqual(wantKeys, gotKeys) {
+		t.Fatal("iterator test fail")
+	}
 }

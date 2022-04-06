@@ -45,3 +45,26 @@ func GZipToBytes(src []byte) ([]byte, error) {
 	}
 	return resultBytes, nil
 }
+
+// GZipFromBytes receives bytes array
+// and compresses that bytes array using gzip
+func GZipFromBytesWithLvl(src []byte, lvl int) ([]byte, error) {
+	if len(src) == 0 {
+		return []byte{}, errors.New("input to gzip compress is empty")
+	}
+	var b bytes.Buffer
+	gz, err := gzip.NewWriterLevel(&b, lvl)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := gz.Write(src); err != nil {
+		return nil, err
+	}
+	if err := gz.Flush(); err != nil {
+		return nil, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
