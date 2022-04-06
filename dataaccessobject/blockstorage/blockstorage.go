@@ -62,7 +62,7 @@ func NewBlockService(
 	BlockService,
 	error,
 ) {
-	mCache, err := common.NewRistrettoMemCache(config.Param().MemoryCacheMaxSize)
+	mCache, err := common.NewRistrettoMemCache(int64(config.Param().FlatFileParam.MaxCacheSize / uint64(config.Param().ActiveShards+1)))
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,11 @@ func (blkM *BlockManager) GetBlockByHash(
 		if err != nil {
 			return nil, err
 		}
-		return blkM.fDB.Read(blkID)
+		compBytes, err := blkM.fDB.Read(blkID)
+		if err != nil {
+			return nil, err
+		}
+		return common.GZipToBytes(compBytes)
 	}
 	if blkM.chainID == common.BeaconChainID {
 		return rawdbv2.GetBeaconBlockByHash(blkM.rDB, *hash)
@@ -151,7 +155,11 @@ func (blkM *BlockManager) StoreBlock(
 		if err != nil {
 			return err
 		}
-		blkIndex, err := blkM.fDB.Append(blkBytes)
+		compBytes, err := common.GZipFromBytesWithLvl(blkBytes, config.Param().FlatFileParam.CompLevel)
+		if err != nil {
+			return err
+		}
+		blkIndex, err := blkM.fDB.Append(compBytes)
 		if err != nil {
 			return err
 		}
