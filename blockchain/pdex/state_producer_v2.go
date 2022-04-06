@@ -1584,7 +1584,6 @@ func (sp *stateProducerV2) unstaking(
 
 		if !metaData.AccessOption.UseNft() {
 			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); !ok || err != nil {
-
 				res = append(res, rejectInsts...)
 				continue
 			}

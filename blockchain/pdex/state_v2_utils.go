@@ -608,10 +608,8 @@ func (orderReward *OrderReward) isEmpty() bool {
 	if orderReward.withdrawnStatus == WaitToWithdrawOrderReward {
 		return false
 	}
-	for _, reward := range orderReward.uncollectedRewards {
-		if reward.amount != 0 {
-			return false
-		}
+	if len(orderReward.uncollectedRewards) != 0 {
+		return false
 	}
 	return true
 }
