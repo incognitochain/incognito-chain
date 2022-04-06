@@ -237,6 +237,32 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "Decimal < base decimal - Add",
+			args: args{
+				amount:      *big.NewInt(100000),
+				decimal:     6,
+				operator:    AddOperator,
+				prefix:      "",
+				networkType: 0,
+				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			},
+			want:    big.NewInt(100000000),
+			wantErr: false,
+		},
+		{
+			name: "Decimal < base decimal - Sub",
+			args: args{
+				amount:      *big.NewInt(100000000),
+				decimal:     6,
+				operator:    SubOperator,
+				prefix:      "",
+				networkType: 0,
+				token:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			},
+			want:    big.NewInt(100000),
+			wantErr: false,
+		},
+		{
 			name: "Convert",
 			args: args{
 				amount:      *big.NewInt(100),

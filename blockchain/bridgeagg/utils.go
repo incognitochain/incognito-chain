@@ -375,7 +375,7 @@ func CalculateAmountByDecimal(
 	return res, nil
 }
 
-func CalculateAmountUnshield(
+func CalculateUnshieldAmount(
 	amount big.Int, unifiedTokenID, tokenID common.Hash,
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	prefix string, networkType uint, token []byte,
@@ -395,6 +395,39 @@ func CalculateAmountUnshield(
 		return 0, errors.New("Not found unifiedTokenID")
 	}
 	return 0, errors.New("Not found tokenID")
+}
+
+func CalculateConvertAmount(
+	amount big.Int, unifiedTokenID common.Hash, networkID uint,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	token []byte,
+) (uint64, error) {
+	vault, err := GetVault(unifiedTokenInfos, unifiedTokenID, networkID)
+	if err != nil {
+		return 0, err
+	}
+	var prefix string
+	switch networkID {
+	case common.ETHNetworkID:
+		prefix = ""
+	case common.BSCNetworkID:
+		prefix = common.BSCPrefix
+	case common.PLGNetworkID:
+		prefix = common.PLGPrefix
+	case common.FTMNetworkID:
+		prefix = common.FTMPrefix
+	default:
+		return 0, errors.New("Not found networkID")
+	}
+	decimal := config.Param().BridgeAggParam.BaseDecimal
+	if decimal > vault.Decimal() {
+		decimal = vault.Decimal()
+	}
+	convertedAmount, err := CalculateAmountByDecimal(
+		amount, decimal,
+		AddOperator, prefix, 0, token,
+	)
+	return convertedAmount.Uint64(), err
 }
 
 func unshieldEVM(

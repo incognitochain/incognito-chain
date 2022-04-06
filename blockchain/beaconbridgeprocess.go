@@ -71,6 +71,8 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 
 		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix)
+		case strconv.Itoa(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processConvertReq(curView, inst, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return err
@@ -289,7 +291,7 @@ func (blockchain *BlockChain) processBurningReq(
 		*tempIncTokenID = *incTokenID
 		incTokenID = &unifiedTokenID
 		externalTokenID = []byte(common.UnifiedTokenPrefix)
-		amount, err = bridgeagg.CalculateAmountUnshield(*amt, *incTokenID, *tempIncTokenID, curView.bridgeAggState.UnifiedTokenInfos(), prefix, 0, externalTokenID)
+		amount, err = bridgeagg.CalculateUnshieldAmount(*amt, *incTokenID, *tempIncTokenID, curView.bridgeAggState.UnifiedTokenInfos(), prefix, 0, externalTokenID)
 		if err != nil {
 			return updatingInfoByTokenID, err
 		}
@@ -457,5 +459,65 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 		}
 	}
 
+	return updatingInfoByTokenID, nil
+}
+
+func (blockchain *BlockChain) processConvertReq(
+	curView *BeaconBestState,
+	instruction []string,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (map[common.Hash]metadata.UpdatingInfo, error) {
+	inst := metadataCommon.NewInstruction()
+	err := inst.FromStringSlice(instruction)
+	if err != nil {
+		return nil, err
+	}
+	if inst.Status != common.AcceptedStatusStr {
+		return updatingInfoByTokenID, nil
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	if err != nil {
+		return nil, err
+	}
+	Logger.log.Info("Processing inst content:", string(contentBytes))
+	acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
+	err = json.Unmarshal(contentBytes, &acceptedContent)
+	if err != nil {
+		return nil, err
+	}
+	convertedAmount, err := bridgeagg.CalculateConvertAmount(
+		*big.NewInt(0).SetUint64(acceptedContent.Amount), acceptedContent.UnifiedTokenID,
+		acceptedContent.NetworkID, curView.bridgeAggState.UnifiedTokenInfos(), acceptedContent.ExternalTokenID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	updatingInfo, found := updatingInfoByTokenID[acceptedContent.TokenID]
+	if found {
+		updatingInfo.DeductAmt += acceptedContent.Amount
+	} else {
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:      0,
+			DeductAmt:       acceptedContent.Amount,
+			TokenID:         acceptedContent.TokenID,
+			ExternalTokenID: acceptedContent.ExternalTokenID,
+			IsCentralized:   false,
+		}
+	}
+	updatingInfoByTokenID[acceptedContent.TokenID] = updatingInfo
+
+	updatingInfo, found = updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
+	if found {
+		updatingInfo.CountUpAmt += convertedAmount
+	} else {
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:      convertedAmount,
+			DeductAmt:       0,
+			TokenID:         acceptedContent.UnifiedTokenID,
+			ExternalTokenID: []byte(common.UnifiedTokenPrefix),
+			IsCentralized:   false,
+		}
+	}
+	updatingInfoByTokenID[acceptedContent.UnifiedTokenID] = updatingInfo
 	return updatingInfoByTokenID, nil
 }

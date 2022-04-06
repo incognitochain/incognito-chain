@@ -127,8 +127,12 @@ func (v *Vault) increaseReserve(amount uint64) error {
 }
 
 func (v *Vault) convert(amount uint64, prefix string, externalTokenID []byte) error {
+	decimal := config.Param().BridgeAggParam.BaseDecimal
+	if decimal > v.Decimal() {
+		decimal = v.Decimal()
+	}
 	tmpAmount, err := CalculateAmountByDecimal(
-		*big.NewInt(0).SetUint64(amount), config.Param().BridgeAggParam.BaseDecimal, AddOperator, prefix, 0, externalTokenID,
+		*big.NewInt(0).SetUint64(amount), decimal, AddOperator, prefix, 0, externalTokenID,
 	)
 	if err != nil {
 		return err
