@@ -302,16 +302,16 @@ const (
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
 	// bridgeagg method
-	bridgeaggModifyListTokens       = "bridgeagg_modifyListTokens"
-	bridgeaggState                  = "bridgeagg_getState"
-	bridgeaggStatusModifyListTokens = "bridgeagg_getStatusModifyListTokens"
-	bridgeaggConvert                = "bridgeagg_convert"
-	bridgeaggStatusConvert          = "bridgeagg_getStatusConvert"
-	bridgeaggShield                 = "bridgeagg_shield"
-	bridgeaggStatusShield           = "bridgeagg_getStatusShield"
-	bridgeaggUnshield               = "bridgeagg_unshield"
-	bridgeaggStatusUnshield         = "bridgeagg_getStatusUnshield"
-	bridgeaggEstimateReceivedAmount = "bridgeagg_estimateReceivedAmount"
+	bridgeaggModifyListTokens       = "bridgeaggModifyListTokens"
+	bridgeaggState                  = "bridgeaggGetState"
+	bridgeaggStatusModifyListTokens = "bridgeaggGetStatusModifyListTokens"
+	bridgeaggConvert                = "bridgeaggConvert"
+	bridgeaggStatusConvert          = "bridgeaggGetStatusConvert"
+	bridgeaggShield                 = "bridgeaggShield"
+	bridgeaggStatusShield           = "bridgeaggGetStatusShield"
+	bridgeaggUnshield               = "bridgeaggUnshield"
+	bridgeaggStatusUnshield         = "bridgeaggGetStatusUnshield"
+	bridgeaggEstimateReceivedAmount = "bridgeaggEstimateReceivedAmount"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
