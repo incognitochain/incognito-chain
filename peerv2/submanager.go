@@ -329,6 +329,9 @@ func (sub *SubManager) processSubscriptionMessage(msgName string, inbox chan *pu
 			Logger.Warn(err)
 			return
 		}
+		if msgName != wire.CmdBFT {
+			Logger.Infof("Received msg %v, data hash %v", msgName, common.HashH(msg.Data).String())
+		}
 		//Logger.Info("[dcs] sub.Topic():", sub.Topic())
 		inbox <- msg
 	}
