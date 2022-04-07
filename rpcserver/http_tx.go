@@ -72,21 +72,21 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
-
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58 check data is invalid"))
 	}
-
 	txMsg, txHash, LastBytePubKeySender, err := httpServer.txService.SendRawTransaction(base58CheckData)
 	if err != nil {
-		return nil, err
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	messageHex, err1 := encodeMessage(txMsg)
 	if err1 != nil {
-		Logger.log.Error(err)
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err1)
 	}
-	httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
+	//httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
 	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
 		Logger.log.Infof("handleSendRawTransaction broadcast tx %v to shard %v successfully, msgHash %v", txHash.String(), common.GetShardIDFromLastByte(LastBytePubKeySender), common.HashH([]byte(messageHex)).String())
@@ -95,8 +95,8 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		}
 	} else {
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err2)
 	}
-
 	result := jsonresult.NewCreateTransactionResult(
 		txHash,
 		utils.EmptyString,

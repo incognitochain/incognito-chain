@@ -35,12 +35,12 @@ const (
 
 	// DefaultEstimateFeeMaxRollback is the default number of rollbacks
 	// allowed by the fee estimator for orphaned blocks.
-	DefaultEstimateFeeMaxRollback = 2
+	DefaultEstimateFeeMaxRollback = 0
 
 	// DefaultEstimateFeeMinRegisteredBlocks is the default minimum
 	// number of blocks which must be observed by the fee estimator before
 	// it will provide fee estimations.
-	DefaultEstimateFeeMinRegisteredBlocks = 3
+	DefaultEstimateFeeMinRegisteredBlocks = 0
 )
 
 var (
@@ -796,7 +796,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 // returns the limit fee of tokenID
 // if there is no exchange rate between native token and privacy token, return limit fee of native token
 func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
-	limitFee := ef.limitFee
+	//limitFee := ef.limitFee
 	//isFeePToken := false
 
 	//if tokenID != nil {
@@ -807,5 +807,5 @@ func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
 	//	}
 	//}
 
-	return limitFee
+	return 0
 }

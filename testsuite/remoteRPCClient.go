@@ -3,6 +3,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -238,7 +239,8 @@ func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	}
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
-		return res, errors.New(rpcERR.Error())
+		fmt.Println("submit key error", err)
+		return res, errors.New(err.Error())
 	}
 	resp := struct {
 		Result bool
@@ -298,7 +300,7 @@ func (r *RemoteRPCClient) GetBalanceByPrivateKey(privateKey string) (res uint64,
 	}
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
-		return res, errors.New(rpcERR.Error())
+		return res, errors.New(err.Error())
 	}
 	resp := struct {
 		Result uint64
@@ -463,6 +465,67 @@ func (r *RemoteRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey str
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) SendRawTransaction(data string) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "sendtransaction",
+		"params":  []interface{}{data},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) CreateRawTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createtransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
 	return resp.Result, err
 }
 
@@ -875,14 +938,15 @@ func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *jso
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		fmt.Println(string(body))
+		return res, errors.New(err.Error())
+	}
 
 	if resp.Error != nil && resp.Error.StackTrace != "" {
 		return res, errors.New(resp.Error.StackTrace)
 	}
 
-	if err != nil {
-		return res, errors.New(rpcERR.Error())
-	}
 	return resp.Result, err
 }
 

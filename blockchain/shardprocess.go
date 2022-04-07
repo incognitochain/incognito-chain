@@ -1213,9 +1213,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
-	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
-
-	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	storeBlock := newFinalView.GetBlock()
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
@@ -1266,6 +1263,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err := batchData.Write(); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
+	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
 	if !config.Config().ForceBackup {
 		return nil
