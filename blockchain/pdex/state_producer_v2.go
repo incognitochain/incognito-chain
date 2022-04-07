@@ -1079,7 +1079,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
-			accessOTA,
+			nil,
 		)
 
 		// check conditions
@@ -1121,6 +1121,15 @@ func (sp *stateProducerV2) withdrawLPFee(
 				if err != nil {
 					return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
 				}
+				rejectInst = v2utils.BuildWithdrawLPFeeInsts(
+					metaData.PoolPairID,
+					metaData.AccessOption,
+					map[common.Hash]metadataPdexv3.ReceiverInfo{},
+					shardID,
+					txReqID,
+					metadataPdexv3.RequestRejectedChainStatus,
+					accessOTA,
+				)
 			}
 		}
 
@@ -1770,7 +1779,7 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
-			accessOTA,
+			nil,
 		)
 
 		// check conditions
@@ -1809,6 +1818,15 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			if err != nil {
 				return instructions, pools, fmt.Errorf("Can not generate mint access instruction")
 			}
+			rejectInst = v2utils.BuildWithdrawStakingRewardInsts(
+				metaData.StakingPoolID,
+				metaData.AccessOption,
+				map[common.Hash]metadataPdexv3.ReceiverInfo{},
+				shardID,
+				txReqID,
+				metadataPdexv3.RequestRejectedChainStatus,
+				accessOTA,
+			)
 		}
 
 		// compute amount of received staking reward
