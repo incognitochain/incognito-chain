@@ -77,6 +77,9 @@ const (
 	// Polygon bridge
 	BridgePLGTxObjectType = 66
 
+	// Fantom bridge
+	BridgeFTMTxObjectType = 70
+
 	// pDex v3
 	Pdexv3StatusObjectType                    = 48
 	Pdexv3ParamsObjectType                    = 49
@@ -100,7 +103,7 @@ const (
 	Pdexv3PoolPairLmRewardPerShareObjectType  = 68
 	Pdexv3PoolPairLmLockedShareObjectType     = 69
 
-	PortalV4ShieldInfoObjectType = 70
+	PortalV4ShieldInfoObjectType = 71
 )
 
 // Prefix length

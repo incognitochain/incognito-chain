@@ -40,7 +40,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		committees:                       shard0Committee,
 		signingCommittees:                shard0Committee,
 		userKeySet:                       []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey:       "",
+		proposerPublicBLSMiningKey:       "",
 		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc1ProposeMsg := &BFTPropose{
@@ -55,7 +55,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		tc1Env.committees,
 		tc1Env.signingCommittees,
 		tc1Env.userKeySet,
-		tc1Env.producerPublicBLSMiningKey,
+		tc1Env.proposerPublicBLSMiningKey,
 		true,
 	)
 
@@ -82,7 +82,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		committees:                       shard0Committee,
 		signingCommittees:                shard0Committee,
 		userKeySet:                       []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey:       "",
+		proposerPublicBLSMiningKey:       "",
 		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc2ProposeMsg := &BFTPropose{
@@ -115,7 +115,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		committees:                       shard0Committee,
 		signingCommittees:                shard0Committee,
 		userKeySet:                       []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey:       "",
+		proposerPublicBLSMiningKey:       "",
 		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc3ProposeMsg := &BFTPropose{
@@ -193,7 +193,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		tc3Env.committees,
 		tc3Env.signingCommittees,
 		tc3Env.userKeySet,
-		tc3Env.producerPublicBLSMiningKey,
+		tc3Env.proposerPublicBLSMiningKey,
 		true,
 	)
 
@@ -220,7 +220,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 		committees:                       shard0Committee,
 		signingCommittees:                shard0Committee,
 		userKeySet:                       []signatureschemes2.MiningKey{},
-		producerPublicBLSMiningKey:       "",
+		proposerPublicBLSMiningKey:       "",
 		NumberOfFixedShardBlockValidator: 8,
 	}
 	tc4ProposeMsg := &BFTPropose{

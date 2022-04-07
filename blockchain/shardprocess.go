@@ -163,7 +163,11 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		blockchain.config.Syncker.SyncMissingShardBlock(ctx, "", shardID, preHash)
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
-	curView := preView.(*ShardBestState)
+	curView := NewShardBestState()
+	err := curView.cloneShardBestStateFrom(preView.(*ShardBestState))
+	if err != nil {
+		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Cannot clone shard view"))
+	}
 
 	if blockHeight != curView.ShardHeight+1 {
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomminÏg block height %+v", curView.ShardHeight, blockHeight))
@@ -614,7 +618,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 			crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHeight)
 		}
 	}
-	crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
+	crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(curView, crossShardRequired)
 	if err != nil {
 		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Unable to get required crossShard blocks from pool in time"))
 	}
@@ -772,6 +776,32 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
+
+	//update trigger feature
+	for _, beaconBlock := range beaconBlocks {
+		for _, inst := range beaconBlock.Body.Instructions {
+			if inst[0] == instruction.ENABLE_FEATURE {
+				enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				if shardBestState.TriggeredFeature == nil {
+					shardBestState.TriggeredFeature = make(map[string]uint64)
+				}
+				for _, feature := range enableFeatures.Features {
+					if common.IndexOfStr(feature, shardBestState.getUntriggerFeature()) != -1 {
+						shardBestState.TriggeredFeature[feature] = shardBlock.GetHeight()
+					} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
+						Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
+						return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
+					}
+
+				}
+			}
+		}
+	}
+
+	//update committee
 	beaconInstructions, _, err := blockchain.
 		extractInstructionsFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
@@ -798,7 +828,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 
 	newMaxCommitteeSize := GetMaxCommitteeSize(shardBestState.MaxShardCommitteeSize,
-		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, confirmedBeaconHeightCommittee)
+		shardBestState.TriggeredFeature, shardBlock.GetHeight())
 	if newMaxCommitteeSize != shardBestState.MaxShardCommitteeSize {
 		Logger.log.Infof("SHARD %+v | Shard Height %+v, hash %+v, Confirmed Beacon Height %+v, found new max committee size %+v",
 			shardBlock.Header.ShardID, shardBlock.Header.Height, *shardBlock.Hash(), confirmedBeaconHeightCommittee, newMaxCommitteeSize)
@@ -1458,7 +1488,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
 				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
-				metadata.IssuingPLGRequestMeta:
+				metadata.IssuingPLGRequestMeta, metadata.IssuingFantomRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

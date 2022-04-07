@@ -189,7 +189,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconProcessHeight)
+	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardBestState, beaconProcessHeight)
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
@@ -481,6 +481,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPLGResponseMeta, false)
 				}
+			case metadata.IssuingFantomRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
+				}
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
 				if len(inst) >= 4 && inst[2] == portalcommonv3.PortalRequestRejectedChainStatus {
@@ -716,11 +720,12 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 //	  - Process valid block to extract:
 //	   + Cross output coin
 //	   + Cross Normal Token
-func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
+func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
+	toShard := curView.ShardID
 	var allCrossShardBlock = make([][]*types.CrossShardBlock, config.Param().ActiveShards)
-	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard, nil) {
+	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(curView, nil) {
 		heightList := make([]uint64, len(v))
 		for i, b := range v {
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*types.CrossShardBlock))
@@ -964,11 +969,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			} else {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-				if err == nil {
-					instructions = append(instructions, actionPairs...)
-				} else {
+				if err != nil {
 					Logger.log.Errorf("Build Request Action Error %+v", err)
+					return nil, nil, fmt.Errorf("Build Request Action Error %+v", err)
 				}
+				instructions = append(instructions, actionPairs...)
 			}
 		}
 		switch tx.GetMetadataType() {

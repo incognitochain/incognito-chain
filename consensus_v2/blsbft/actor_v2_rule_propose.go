@@ -17,11 +17,11 @@ type ProposeMessageEnvironment struct {
 	signingCommittees                []incognitokey.CommitteePublicKey
 	userKeySet                       []signatureschemes2.MiningKey
 	NumberOfFixedShardBlockValidator int
-	producerPublicBLSMiningKey       string
+	proposerPublicBLSMiningKey       string
 }
 
-func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock types.BlockInterface, committees []incognitokey.CommitteePublicKey, signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey, numberOfFixedShardBlockValidator int, producerPublicBLSMiningKey string) *ProposeMessageEnvironment {
-	return &ProposeMessageEnvironment{block: block, previousBlock: previousBlock, committees: committees, signingCommittees: signingCommittees, userKeySet: userKeySet, NumberOfFixedShardBlockValidator: numberOfFixedShardBlockValidator, producerPublicBLSMiningKey: producerPublicBLSMiningKey}
+func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock types.BlockInterface, committees []incognitokey.CommitteePublicKey, signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey, numberOfFixedShardBlockValidator int, proposerPublicBLSMiningKey string) *ProposeMessageEnvironment {
+	return &ProposeMessageEnvironment{block: block, previousBlock: previousBlock, committees: committees, signingCommittees: signingCommittees, userKeySet: userKeySet, NumberOfFixedShardBlockValidator: numberOfFixedShardBlockValidator, proposerPublicBLSMiningKey: proposerPublicBLSMiningKey}
 }
 
 type SendProposeBlockEnvironment struct {
@@ -66,7 +66,7 @@ func (p ProposeRuleLemma1) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		Committees:              incognitokey.DeepCopy(env.committees),
 		SigningCommittees:       incognitokey.DeepCopy(env.signingCommittees),
 		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(env.userKeySet),
-		ProposerMiningKeyBase58: env.producerPublicBLSMiningKey,
+		ProposerMiningKeyBase58: env.proposerPublicBLSMiningKey,
 	}, nil
 }
 
@@ -141,7 +141,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		env.committees,
 		env.signingCommittees,
 		env.userKeySet,
-		env.producerPublicBLSMiningKey,
+		env.proposerPublicBLSMiningKey,
 		isValidLemma2,
 	)
 

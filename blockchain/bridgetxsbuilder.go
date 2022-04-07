@@ -174,7 +174,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return append(instructions, rejectedInst), nil, nil
 	}
 
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(txReceipt, contractAddress)
+	logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(txReceipt, contractAddress, "Deposit")
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil, nil

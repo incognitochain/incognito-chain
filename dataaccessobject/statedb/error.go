@@ -37,11 +37,12 @@ const (
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
-	//A
+	ErrInvalidBridgeFTMTxStateType            = "invalid bridge fantom tx state type"
+	// A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
 	ErrInvalidWaitingPortingRequestType    = "invalid waiting porting request type"
-	//B
+	// B
 	ErrInvalidPortalStatusStateType              = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType           = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType     = "invalid portal waiting redeem request type"
@@ -143,6 +144,7 @@ const (
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
 	StoreSyncingValidatorsError
+	SaveStopAutoStakerInfoError
 
 	DeleteBeaconCommitteeError
 	DeleteOneShardCommitteeError
@@ -174,7 +176,7 @@ const (
 	StoreBurningConfirmError
 	GetBurningConfirmError
 
-	//portal
+	// portal
 	StoreCustodianStateError
 	StoreWaitingRedeemRequestError
 	StorePortalRewardError
@@ -290,6 +292,10 @@ const (
 	BridgeInsertPLGTxHashIssuedError
 	IsPLGTxHashIssuedError
 
+	// Fantom bridge
+	BridgeInsertFTMTxHashIssuedError
+	IsFTMTxHashIssuedError
+
 	// More PortalV4 Errors
 	StorePortalV4ShieldInfoError
 	GetPortalV4ShieldInfoError
@@ -350,6 +356,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
 	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
+	SaveStopAutoStakerInfoError:            {-3016, "Store Stop Autostake Info Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},
@@ -468,6 +475,10 @@ var ErrCodeMessage = map[int]struct {
 	// polygon bridge
 	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
 	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
+
+	// fantom bridge
+	BridgeInsertFTMTxHashIssuedError: {-15106, "Bridge Insert Fantom Tx Hash Issued Error"},
+	IsFTMTxHashIssuedError:           {-15107, "Is Fantom Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
