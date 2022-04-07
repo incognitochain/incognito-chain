@@ -1,6 +1,7 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -286,7 +287,13 @@ func shieldEVM(
 	if err != nil {
 		return 0, 0, 0, nil, nil, "", FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
-	tmpAmount, err := CalculateAmountByDecimal(*amount, vault.Decimal(), AddOperator)
+	decimal := vault.Decimal()
+	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
+		if decimal > config.Param().BridgeAggParam.BaseDecimal {
+			decimal = config.Param().BridgeAggParam.BaseDecimal
+		}
+	}
+	tmpAmount, err := CalculateAmountByDecimal(*amount, decimal, AddOperator)
 	if err != nil {
 		return 0, 0, 0, nil, nil, "", OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
@@ -450,12 +457,33 @@ func unshieldEVM(
 		return common.Hash{}, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
 	}
 	fee := data.BurningAmount - actualAmount
-	unshieldAmount, err := CalculateAmountByDecimal(
-		*big.NewInt(0).SetUint64(actualAmount), vault.Decimal(), SubOperator,
-	)
+	decimal := vault.Decimal()
+	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
+		if decimal > config.Param().BridgeAggParam.BaseDecimal {
+			decimal = config.Param().BridgeAggParam.BaseDecimal
+		}
+	}
+	unshieldAmount, err := CalculateAmountByDecimal(*big.NewInt(0).SetUint64(actualAmount), decimal, SubOperator)
 	if err != nil {
 		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 
 	return vault.tokenID, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
+}
+
+func UpdateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
+	var resLastUpdatedRewardReserve, resRewardReserve uint64
+	if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
+		return 0, 0, errors.New("deltaY is < newRewardReserve")
+	}
+	resLastUpdatedRewardReserve = newRewardReserve
+	resRewardReserve = currentRewardReserve + newRewardReserve - lastUpdatedRewardReserve
+	return resLastUpdatedRewardReserve, resRewardReserve, nil
+}
+
+func CalculateIncDecimal(decimal, baseDecimal uint) uint {
+	if decimal > baseDecimal {
+		return baseDecimal
+	}
+	return decimal
 }

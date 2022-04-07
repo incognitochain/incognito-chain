@@ -60,9 +60,8 @@ func (sp *stateProducer) modifyListTokens(
 			}
 			newRewardReserve := vault.RewardReserve
 			v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
-			lastUpdatedRewardReserve := v.LastUpdatedRewardReserve()
-			currentRewardReserve := v.CurrentRewardReserve()
-			if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
+			newLastUpdatedRewardReserve, newCurrentRewardReserve, err := UpdateRewardReserve(v.LastUpdatedRewardReserve(), v.CurrentRewardReserve(), newRewardReserve)
+			if err != nil {
 				Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid", action.TxReqID.String())
 				rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
 				temp, err := inst.StringSliceWithRejectContent(rejectContent)
@@ -71,8 +70,8 @@ func (sp *stateProducer) modifyListTokens(
 				}
 				return temp, unifiedTokenInfos, nil
 			}
-			v.SetLastUpdatedRewardReserve(newRewardReserve)
-			v.SetCurrentRewardReserve(currentRewardReserve + newRewardReserve - lastUpdatedRewardReserve)
+			v.SetLastUpdatedRewardReserve(newLastUpdatedRewardReserve)
+			v.SetCurrentRewardReserve(newCurrentRewardReserve)
 			unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 		}
 	}

@@ -635,7 +635,8 @@ func (beaconBestState *BeaconBestState) BridgeAggIsValidBurntAmount(burntAmount 
 	if err != nil {
 		return false, err
 	}
-	amt, err := bridgeagg.CalculateAmountByDecimal(*big.NewInt(0).SetUint64(burntAmount), vault.Decimal(), bridgeagg.AddOperator)
+	decimal := bridgeagg.CalculateIncDecimal(vault.Decimal(), config.Param().BridgeAggParam.BaseDecimal)
+	amt, err := bridgeagg.CalculateAmountByDecimal(*big.NewInt(0).SetUint64(burntAmount), decimal, bridgeagg.AddOperator)
 	if err != nil {
 		return false, err
 	}

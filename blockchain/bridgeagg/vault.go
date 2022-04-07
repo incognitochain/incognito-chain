@@ -127,9 +127,8 @@ func (v *Vault) increaseReserve(amount uint64) error {
 }
 
 func (v *Vault) convert(amount uint64) error {
-	tmpAmount, err := CalculateAmountByDecimal(
-		*big.NewInt(0).SetUint64(amount), config.Param().BridgeAggParam.BaseDecimal, AddOperator,
-	)
+	decimal := CalculateIncDecimal(v.Decimal(), config.Param().BridgeAggParam.BaseDecimal)
+	tmpAmount, err := CalculateAmountByDecimal(*big.NewInt(0).SetUint64(amount), decimal, AddOperator)
 	if err != nil {
 		return err
 	}
