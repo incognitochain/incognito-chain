@@ -326,7 +326,7 @@ func (sub *SubManager) processSubscriptionMessage(msgName string, inbox chan *pu
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := subs.Next(ctx)
 		if err != nil { // Subscription might have been cancelled
-			Logger.Warn(err)
+			Logger.Errorf("[debugsubs] Can not read message from topic %v, err %v", msgName, err)
 			return
 		}
 		if msgName != wire.CmdBFT {
