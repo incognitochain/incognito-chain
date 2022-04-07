@@ -774,9 +774,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
 	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
-
 	if !proposeBlockInfo.IsCommitted {
-		a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
 		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
 			a.logger.Infof("Commit block %v , height: %v", blockHash, proposeBlockInfo.block.GetHeight())
 			var err error
@@ -790,6 +788,8 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 				return
 			}
 			proposeBlockInfo.IsCommitted = true
+		} else {
+			a.logger.Infof("Not commit block %v , need: %v, only have: %v", blockHash, 2*len(proposeBlockInfo.SigningCommittees)/3, proposeBlockInfo.ValidVotes)
 		}
 	}
 }
