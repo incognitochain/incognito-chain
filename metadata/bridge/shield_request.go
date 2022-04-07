@@ -67,7 +67,7 @@ func (request *ShieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Transac
 
 func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	if len(request.Data) <= 0 || len(request.Data) >= config.Param().BridgeAggParam.MaxLenOfPath {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [0..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
 	return true, true, nil
 }

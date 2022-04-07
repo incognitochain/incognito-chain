@@ -38,6 +38,9 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 	params interface{},
 ) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
+	}
 	privateKey, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
@@ -48,9 +51,6 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
@@ -207,6 +207,9 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 	*jsonresult.CreateTransactionResult, *rpcservice.RPCError,
 ) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
+	}
 	privateKey, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
@@ -311,6 +314,9 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	*jsonresult.CreateTransactionResult, *rpcservice.RPCError,
 ) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
+	}
 	privateKey, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
@@ -388,6 +394,9 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	*jsonresult.CreateTransactionResult, *rpcservice.RPCError,
 ) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
+	}
 	privateKey, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
@@ -414,7 +423,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		metadataBridge.UnshieldRequest
-		Receivers map[string]uint64
+		Receivers map[string]uint64 `json:"Receivers,omitempty"`
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -454,6 +463,19 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 			PaymentAddress: burnAddr,
 			Amount:         burningAmount,
 		},
+	}
+	if len(mdReader.Receivers) != 0 {
+		for k, v := range mdReader.Receivers {
+			key, err := wallet.Base58CheckDeserialize(k)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+			}
+			temp := &privacy.PaymentInfo{
+				PaymentAddress: key.KeySet.PaymentAddress,
+				Amount:         v,
+			}
+			burnPayments = append(burnPayments, temp)
+		}
 	}
 	paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
 	paramSelect.SetTokenReceivers(burnPayments)

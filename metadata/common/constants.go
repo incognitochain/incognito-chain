@@ -209,9 +209,10 @@ const (
 	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
 	IssuingUnifiedTokenRequestMeta                  = 343
-	IssuingUnifiedTokenResponeMeta                  = 344
-	BurningUnifiedTokenRequestMeta                  = 345
-	BurningUnifiedTokenResonseMeta                  = 346
+	IssuingUnifiedTokenResponseMeta                 = 344
+	IssuingUnifiedRewardResponseMeta                = 346
+	BurningUnifiedTokenRequestMeta                  = 347
+	BurningUnifiedTokenResonseMeta                  = 348
 )
 
 var minerCreatedMetaTypes = []int{
@@ -260,7 +261,8 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3UnstakingResponseMeta,
 	Pdexv3WithdrawStakingRewardResponseMeta,
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
-	IssuingUnifiedTokenResponeMeta,
+	IssuingUnifiedTokenResponseMeta,
+	IssuingUnifiedRewardResponseMeta,
 	BurningUnifiedTokenResonseMeta,
 }
 

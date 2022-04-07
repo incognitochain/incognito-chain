@@ -53,6 +53,7 @@ func getBridgeAggState(
 		BeaconTimeStamp:   beaconTimeStamp,
 		UnifiedTokenInfos: bridgeAggState.UnifiedTokenInfos(),
 		BaseDecimal:       config.Param().BridgeAggParam.BaseDecimal,
+		MaxLenOfPath:      config.Param().BridgeAggParam.MaxLenOfPath,
 	}
 	return res, nil
 }

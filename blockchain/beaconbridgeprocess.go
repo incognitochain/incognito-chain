@@ -369,8 +369,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
 			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta ||
-			metaType == metadataCommon.IssuingUnifiedTokenResponeMeta {
-			if metaType == metadataCommon.IssuingUnifiedTokenResponeMeta {
+			metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadataCommon.IssuingUnifiedRewardResponseMeta {
+			if metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadataCommon.IssuingUnifiedRewardResponseMeta {
 				meta := tx.GetMetadata().(*metadataBridge.ShieldResponse)
 				reqTxID = meta.RequestedTxID
 			} else {

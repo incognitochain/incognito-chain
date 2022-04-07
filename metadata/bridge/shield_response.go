@@ -27,21 +27,21 @@ type ShieldResponse struct {
 	SharedRandom  []byte               `json:"SharedRandom,omitempty"`
 }
 
-func NewShieldResponse() *ShieldResponse {
+func NewShieldResponse(metaType int) *ShieldResponse {
 	return &ShieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.IssuingUnifiedTokenResponeMeta,
+			Type: metaType,
 		},
 	}
 }
 
 func NewShieldResponseWithValue(
-	data []ShieldResponseData, requestedTxID common.Hash, shardRandom []byte,
+	metaType int, data []ShieldResponseData, requestedTxID common.Hash, shardRandom []byte,
 ) *ShieldResponse {
 	return &ShieldResponse{
 		Data: data,
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.IssuingUnifiedTokenResponeMeta,
+			Type: metaType,
 		},
 		SharedRandom:  shardRandom,
 		RequestedTxID: requestedTxID,
@@ -58,7 +58,7 @@ func (response *ShieldResponse) ValidateSanityData(chainRetriever metadataCommon
 }
 
 func (response *ShieldResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.IssuingUnifiedTokenResponeMeta
+	return response.Type == metadataCommon.IssuingUnifiedTokenResponseMeta || response.Type == metadataCommon.IssuingUnifiedRewardResponseMeta
 }
 
 func (response *ShieldResponse) Hash() *common.Hash {
@@ -78,7 +78,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedRewardResponseMeta)) {
 			continue
 		}
 

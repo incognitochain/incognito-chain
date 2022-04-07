@@ -167,6 +167,7 @@ func buildShieldUnifiedTokenResponse(
 		return nil, nil
 	}
 	var listShieldResponseData []metadataBridge.ShieldResponseData
+	var isReward bool
 
 	switch inst.Status {
 	case common.AcceptedStatusStr:
@@ -191,7 +192,7 @@ func buildShieldUnifiedTokenResponse(
 		}
 		tokenID = acceptedContent.IncTokenID
 		txReqID = acceptedContent.TxReqID
-
+		isReward = acceptedContent.IsReward
 	default:
 		return nil, nil
 	}
@@ -200,7 +201,12 @@ func buildShieldUnifiedTokenResponse(
 		return nil, nil
 	}
 
-	md := metadataBridge.NewShieldResponseWithValue(listShieldResponseData, txReqID, nil)
+	var md *metadataBridge.ShieldResponse
+	if isReward {
+		md = metadataBridge.NewShieldResponseWithValue(metadataCommon.IssuingUnifiedRewardResponseMeta, listShieldResponseData, txReqID, nil)
+	} else {
+		md = metadataBridge.NewShieldResponseWithValue(metadataCommon.IssuingUnifiedTokenResponseMeta, listShieldResponseData, txReqID, nil)
+	}
 	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &address, TokenID: &tokenID}
 	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {

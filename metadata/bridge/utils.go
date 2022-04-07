@@ -36,7 +36,9 @@ func IsBridgeAggMetaType(metaType int) bool {
 		return true
 	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		return true
-	case metadataCommon.IssuingUnifiedTokenResponeMeta:
+	case metadataCommon.IssuingUnifiedTokenResponseMeta:
+		return true
+	case metadataCommon.IssuingUnifiedRewardResponseMeta:
 		return true
 	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		return true
