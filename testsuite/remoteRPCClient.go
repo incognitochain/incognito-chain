@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
 	"io/ioutil"
@@ -25,10 +26,6 @@ func (r *RemoteRPCClient) CreateAndSendTxWithPortalV4UnshieldRequest(privatekey 
 }
 
 func (r *RemoteRPCClient) GetPortalUnshieldRequestStatus(tx string) (res *metadata.PortalUnshieldRequestStatus, err error) {
-	panic("implement me")
-}
-
-func (r *RemoteRPCClient) CreateAndSendTokenInitTransaction(param rpcclient.PdexV3InitTokenParam) (jsonresult.CreateTransactionTokenResult, error) {
 	panic("implement me")
 }
 
@@ -62,6 +59,37 @@ func (r *RemoteRPCClient) Pdexv3_TxAddTrade(privatekey string, param rpcclient.P
 
 func (r *RemoteRPCClient) Pdexv3_TxAddOrder(privatekey string, params rpcclient.PdexV3AddOrderParam) error {
 	panic("implement me")
+}
+
+func (r *RemoteRPCClient) CreateAndSendTokenInitTransaction(param rpcserver.TokenInitParam) (*jsonresult.CreateTransactionTokenResult, error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendtokeninittransaction",
+		"params":  []interface{}{param},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result *jsonresult.CreateTransactionTokenResult
+		Error  *ErrMsg
+	}{}
+	//fmt.Println(string(body))
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	return resp.Result, nil
 }
 
 func (r *RemoteRPCClient) SendFinishSync(mining, cpk string, sid float64) error {
@@ -110,7 +138,7 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 		return errors.New(rpcERR.Error())
 	}
 	resp := struct {
-		Result bool
+		Result interface{}
 		Error  *ErrMsg
 	}{}
 	//fmt.Println(string(body))
@@ -450,7 +478,7 @@ func (r *RemoteRPCClient) CreateAndSendTransaction(privateKey string, receivers 
 	}
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
-		return res, errors.New(rpcERR.Error())
+		return res, errors.New(err.Error())
 	}
 	resp := struct {
 		Result jsonresult.CreateTransactionResult

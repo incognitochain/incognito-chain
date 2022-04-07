@@ -170,21 +170,22 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			if block == nil {
 				continue
 			}
+			fmt.Println("Shard", s.shardID, "try to insert", block.Hash().String())
 			//if already insert and error, last time insert is < 10s then we skip
-			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
+			insertTime, ok := insertShardTimeCache.Get(block.Hash().String())
 			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
 				continue
 			}
 
 			//fullnode delay 1 block (make sure insert final block)
-			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
-				if len(preBlk) == 0 {
-					continue
-				}
-			}
+			//if os.Getenv("FULLNODE") != "" {
+			//	preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
+			//	if len(preBlk) == 0 {
+			//		continue
+			//	}
+			//}
 
-			insertShardTimeCache.Add(viewHash.String(), time.Now())
+			insertShardTimeCache.Add(block.Hash().String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
 			if err := s.Chain.InsertBlock(block.(types.BlockInterface), true); err != nil {

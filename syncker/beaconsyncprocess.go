@@ -243,12 +243,12 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			}
 
 			//fullnode delay 1 block (make sure insert final block)
-			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.beaconPool.GetBlockByPrevHash(*blk.Hash())
-				if len(preBlk) == 0 {
-					continue
-				}
-			}
+			//if os.Getenv("FULLNODE") != "" {
+			//	preBlk := s.beaconPool.GetBlockByPrevHash(*blk.Hash())
+			//	if len(preBlk) == 0 {
+			//		continue
+			//	}
+			//}
 
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++

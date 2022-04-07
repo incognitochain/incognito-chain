@@ -217,7 +217,7 @@ func (sim *NodeEngine) Init() {
 		panic(err)
 	}
 	dbpath := filepath.Join(sim.config.DataDir)
-	db, err := incdb.OpenMultipleDB("leveldb", dbpath)
+	db, err := incdb.OpenMultipleDB("leveldb")
 	// Create db and use it.
 	if err != nil {
 		panic(err)
