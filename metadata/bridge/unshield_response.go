@@ -23,7 +23,7 @@ type UnshieldResponse struct {
 func NewUnshieldResponse() *UnshieldResponse {
 	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.BurningUnifiedTokenResonseMeta,
+			Type: metadataCommon.BurningUnifiedTokenResponseMeta,
 		},
 	}
 }
@@ -33,7 +33,7 @@ func NewUnshieldResponseWithValue(
 ) *UnshieldResponse {
 	return &UnshieldResponse{
 		MetadataBase: metadataCommon.MetadataBase{
-			Type: metadataCommon.BurningUnifiedTokenResonseMeta,
+			Type: metadataCommon.BurningUnifiedTokenResponseMeta,
 		},
 		Status:        status,
 		RequestedTxID: requestedTxID,
@@ -71,7 +71,7 @@ func (response *UnshieldResponse) ValidateSanityData(
 }
 
 func (response *UnshieldResponse) ValidateMetadataByItself() bool {
-	return response.Type == metadataCommon.BurningUnifiedTokenResonseMeta
+	return response.Type == metadataCommon.BurningUnifiedTokenResponseMeta
 }
 
 func (response *UnshieldResponse) Hash() *common.Hash {

@@ -210,9 +210,9 @@ const (
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
 	IssuingUnifiedTokenRequestMeta                  = 343
 	IssuingUnifiedTokenResponseMeta                 = 344
-	IssuingUnifiedRewardResponseMeta                = 346
-	BurningUnifiedTokenRequestMeta                  = 347
-	BurningUnifiedTokenResonseMeta                  = 348
+	IssuingUnifiedRewardResponseMeta                = 345
+	BurningUnifiedTokenRequestMeta                  = 346
+	BurningUnifiedTokenResponseMeta                 = 347
 )
 
 var minerCreatedMetaTypes = []int{
@@ -263,7 +263,7 @@ var minerCreatedMetaTypes = []int{
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 	IssuingUnifiedTokenResponseMeta,
 	IssuingUnifiedRewardResponseMeta,
-	BurningUnifiedTokenResonseMeta,
+	BurningUnifiedTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

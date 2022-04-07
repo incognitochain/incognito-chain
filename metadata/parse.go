@@ -274,7 +274,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.ShieldResponse{}
 	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		md = &metadataBridge.UnshieldRequest{}
-	case metadataCommon.BurningUnifiedTokenResonseMeta:
+	case metadataCommon.BurningUnifiedTokenResponseMeta:
 		md = &metadataBridge.UnshieldResponse{}
 	default:
 		Logger.log.Debug("parse meta err: %+v\n", meta)
