@@ -283,7 +283,7 @@ func shieldEVM(
 	if currentPaymentAddress != "" && currentPaymentAddress != paymentAddress {
 		return 0, 0, 0, nil, nil, "", FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, errors.New("PaymentAddress from proofs need to be similar"))
 	}
-	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token, true)
 	if err != nil {
 		return 0, 0, 0, nil, nil, "", FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
@@ -321,16 +321,16 @@ func shieldEVM(
 
 func buildAcceptedShieldContents(
 	shieldData, rewardData []metadataBridge.AcceptedShieldRequestData,
-	paymentAddress privacy.PaymentAddress, incTokenID, txReqID common.Hash, shardID byte,
+	paymentAddress privacy.PaymentAddress, tokenID, txReqID common.Hash, shardID byte,
 	shouldBuildRewardContent bool,
 ) ([][]byte, error) {
 	contents := [][]byte{}
 	acceptedContent := metadataBridge.AcceptedShieldRequest{
-		Receiver:   paymentAddress,
-		IncTokenID: incTokenID,
-		TxReqID:    txReqID,
-		ShardID:    shardID,
-		Data:       shieldData,
+		Receiver: paymentAddress,
+		TokenID:  tokenID,
+		TxReqID:  txReqID,
+		ShardID:  shardID,
+		Data:     shieldData,
 	}
 	content, err := json.Marshal(acceptedContent)
 	if err != nil {
@@ -339,12 +339,12 @@ func buildAcceptedShieldContents(
 	contents = append(contents, content)
 	if shouldBuildRewardContent {
 		acceptedRewardContent := metadataBridge.AcceptedShieldRequest{
-			Receiver:   paymentAddress,
-			IncTokenID: incTokenID,
-			TxReqID:    txReqID,
-			ShardID:    shardID,
-			IsReward:   true,
-			Data:       rewardData,
+			Receiver: paymentAddress,
+			TokenID:  tokenID,
+			TxReqID:  txReqID,
+			ShardID:  shardID,
+			IsReward: true,
+			Data:     rewardData,
 		}
 		content, err = json.Marshal(acceptedRewardContent)
 		if err != nil {

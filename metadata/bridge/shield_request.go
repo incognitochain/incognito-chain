@@ -13,12 +13,12 @@ import (
 )
 
 type AcceptedShieldRequest struct {
-	Receiver   privacy.PaymentAddress      `json:"Receiver"`
-	IncTokenID common.Hash                 `json:"IncTokenID"`
-	TxReqID    common.Hash                 `json:"TxReqID"`
-	IsReward   bool                        `json:"IsReward"`
-	ShardID    byte                        `json:"ShardID"`
-	Data       []AcceptedShieldRequestData `json:"Data"`
+	Receiver privacy.PaymentAddress      `json:"Receiver"`
+	TokenID  common.Hash                 `json:"TokenID"`
+	TxReqID  common.Hash                 `json:"TxReqID"`
+	IsReward bool                        `json:"IsReward"`
+	ShardID  byte                        `json:"ShardID"`
+	Data     []AcceptedShieldRequestData `json:"Data"`
 }
 
 type AcceptedShieldRequestData struct {
@@ -36,8 +36,8 @@ type ShieldRequestData struct {
 }
 
 type ShieldRequest struct {
-	Data       []ShieldRequestData `json:"Data"`
-	IncTokenID common.Hash         `json:"IncTokenID"`
+	Data    []ShieldRequestData `json:"Data"`
+	TokenID common.Hash         `json:"TokenID"`
 	metadataCommon.MetadataBase
 }
 
@@ -50,11 +50,11 @@ func NewShieldRequest() *ShieldRequest {
 }
 
 func NewShieldRequestWithValue(
-	data []ShieldRequestData, incTokenID common.Hash,
+	data []ShieldRequestData, tokenID common.Hash,
 ) *ShieldRequest {
 	return &ShieldRequest{
-		Data:       data,
-		IncTokenID: incTokenID,
+		Data:    data,
+		TokenID: tokenID,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.IssuingUnifiedTokenRequestMeta,
 		},
@@ -79,7 +79,7 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 	for _, data := range request.Data {
 		switch data.NetworkID {
 		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
-			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
+			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.TokenID)
 			if err != nil {
 				return false
 			}
@@ -108,7 +108,7 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.IncTokenID)
+			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.TokenID)
 			if err != nil {
 				return [][]string{}, err
 			}

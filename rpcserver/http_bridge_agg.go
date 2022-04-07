@@ -353,7 +353,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	}
 
 	md := metadataBridge.NewShieldRequestWithValue(
-		mdReader.Data, mdReader.IncTokenID,
+		mdReader.Data, mdReader.TokenID,
 	)
 
 	// create new param to build raw tx from param interface

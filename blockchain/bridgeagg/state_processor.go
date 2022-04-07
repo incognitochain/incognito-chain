@@ -160,7 +160,7 @@ func (sp *stateProcessor) shield(
 			return unifiedTokenInfos, err
 		}
 		for _, data := range acceptedInst.Data {
-			vault := unifiedTokenInfos[acceptedInst.IncTokenID][data.NetworkID] // check available before
+			vault := unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] // check available before
 			if acceptedInst.IsReward {
 				err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
 				if err != nil {
@@ -172,7 +172,7 @@ func (sp *stateProcessor) shield(
 					return unifiedTokenInfos, err
 				}
 			}
-			unifiedTokenInfos[acceptedInst.IncTokenID][data.NetworkID] = vault
+			unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte

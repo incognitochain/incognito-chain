@@ -172,7 +172,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		amount = amt.Uint64()
 	}
 	if !isPRV {
-		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
+		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token, false)
 		if err != nil {
 			Logger.log.Warnf(err.Error())
 			return [][]string{rejectedInst}, nil, nil

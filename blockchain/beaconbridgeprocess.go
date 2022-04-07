@@ -434,19 +434,19 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 				return updatingInfoByTokenID, err
 			}
 
-			updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.IncTokenID]
+			updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.TokenID]
 			if found {
 				updatingInfo.CountUpAmt += data.IssuingAmount
 			} else {
 				updatingInfo = metadata.UpdatingInfo{
 					CountUpAmt:      data.IssuingAmount,
 					DeductAmt:       0,
-					TokenID:         acceptedShieldRequest.IncTokenID,
+					TokenID:         acceptedShieldRequest.TokenID,
 					ExternalTokenID: []byte(common.UnifiedTokenPrefix),
 					IsCentralized:   false,
 				}
 			}
-			updatingInfoByTokenID[acceptedShieldRequest.IncTokenID] = updatingInfo
+			updatingInfoByTokenID[acceptedShieldRequest.TokenID] = updatingInfo
 		}
 	} else if inst.Status == common.RejectedStatusStr {
 		rejectContent := metadataCommon.NewRejectContent()

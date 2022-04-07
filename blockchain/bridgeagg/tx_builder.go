@@ -190,7 +190,7 @@ func buildShieldUnifiedTokenResponse(
 			}
 			listShieldResponseData = append(listShieldResponseData, shieldResponseData)
 		}
-		tokenID = acceptedContent.IncTokenID
+		tokenID = acceptedContent.TokenID
 		txReqID = acceptedContent.TxReqID
 		isReward = acceptedContent.IsReward
 	default:

@@ -207,7 +207,7 @@ func (sp *stateProducer) shield(
 		err = nil
 	}()
 
-	vaults, err := CloneVaults(resUnifiedTokenInfos, md.IncTokenID)
+	vaults, err := CloneVaults(resUnifiedTokenInfos, md.TokenID)
 	if err != nil {
 		errorType = NotFoundTokenIDInNetworkError
 		return
@@ -236,7 +236,7 @@ func (sp *stateProducer) shield(
 				return
 			}
 			actualAmount, reward, receivingShardID, token, uniqTX, addressStr, et, e := shieldEVM(
-				md.IncTokenID, data.NetworkID, tempAC, shardID,
+				md.TokenID, data.NetworkID, tempAC, shardID,
 				action.TxReqID, vaults, stateDBs,
 				action.ExtraData[index], blockHash, data.TxIndex, paymentAddress,
 			)
@@ -267,13 +267,13 @@ func (sp *stateProducer) shield(
 	}
 	contents, err = buildAcceptedShieldContents(
 		acceptedShieldRequestData, acceptedShieldRequestRewardData,
-		key.KeySet.PaymentAddress, md.IncTokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
+		key.KeySet.PaymentAddress, md.TokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
 	)
 	if err != nil {
 		errorType = OtherError
 		return
 	}
-	resUnifiedTokenInfos[md.IncTokenID] = vaults
+	resUnifiedTokenInfos[md.TokenID] = vaults
 	ac = tempAC
 	return
 }
@@ -342,7 +342,7 @@ func (sp *stateProducer) unshield(
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			incTokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
+			TokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
 			if e != nil {
 				errorType = et
 				err = e
@@ -357,7 +357,7 @@ func (sp *stateProducer) unshield(
 				data.RemoteAddress,
 				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
 				action.TxReqID.String(),
-				base58.Base58Check{}.Encode(incTokenID[:], 0x00),
+				base58.Base58Check{}.Encode(TokenID[:], 0x00),
 				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 			}
 			burningInsts = append(burningInsts, burningInst)

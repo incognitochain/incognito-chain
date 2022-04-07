@@ -106,7 +106,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			}
 			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = acceptedContent.TxReqID
-			receivingTokenID = acceptedContent.IncTokenID
+			receivingTokenID = acceptedContent.TokenID
 			address = acceptedContent.Receiver
 			for index, data := range acceptedContent.Data {
 				if !bytes.Equal(data.UniqTx, response.Data[index].UniqTx) {
