@@ -120,4 +120,4 @@ auto_enable_feature:
       require_percentage: 100
 flatfileparam:
   maxcachesize: 536870912 #500Mb
-  compresslevel: 0
+  compresslevel: -1
