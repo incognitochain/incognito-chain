@@ -1212,6 +1212,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
+	//old finalView is used to as checkPointView (not latest final view)
+	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, finalView.(*ShardBestState)); err != nil {
+		return NewBlockChainError(CommitTrieToDiskError, err)
+	}
+
 	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	storeBlock := newFinalView.GetBlock()
@@ -1249,10 +1254,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
 			}
 		}
-	}
-
-	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, newFinalView.(*ShardBestState)); err != nil {
-		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)

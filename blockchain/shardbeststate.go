@@ -740,18 +740,19 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 	return beaconHeight, nil
 }
 
-func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceWrite bool, newFinalView *ShardBestState) (err error) {
+//checkPointView is used to finalized batchcommit or finalized statenode in lite mode
+func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceWrite bool, checkPointView *ShardBestState) (err error) {
 	if shardBestState.ShardHeight == 1 {
 		forceWrite = true
 	}
 
-	commitToDisk := func(stateDB *statedb.StateDB, finalViewRebuildInfo statedb.RebuildInfo) (common.Hash, statedb.RebuildInfo, error) {
+	commitToDisk := func(stateDB *statedb.StateDB, checkPointViewRebuildInfo statedb.RebuildInfo) (common.Hash, statedb.RebuildInfo, error) {
 		rootHash, _, err := stateDB.Commit(true)
 		if err != nil {
 			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
 		}
 		//log.Println("=========> ", forceWrite, shardBestState.ShardID)
-		if err := stateDB.Finalized(forceWrite, finalViewRebuildInfo); err != nil {
+		if err := stateDB.Finalized(forceWrite, checkPointViewRebuildInfo); err != nil {
 			return common.Hash{}, *statedb.NewEmptyRebuildInfo(""), err
 		}
 		//return latest rebuild root (after finalized)
@@ -760,7 +761,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 
 	//get final sHRv2 (detail rebuild info: commit hash , ffindex)
 	mode := config.Config().SyncMode
-	finalViewRH := &ShardRootHashv2{
+	checkPointViewRH := &ShardRootHashv2{
 		ConsensusStateDBRootHash:   *statedb.NewEmptyRebuildInfo(common.STATEDB_ARCHIVE_MODE),
 		TransactionStateDBRootHash: *statedb.NewEmptyRebuildInfo(mode),
 		FeatureStateDBRootHash:     *statedb.NewEmptyRebuildInfo(mode),
@@ -770,37 +771,37 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 
 	//get finalview shard root hash (bypass first block)
 	if shardBestState.ShardHeight > 1 { //from beginning, when no final view
-		sRHBytes, err := rawdbv2.GetShardRootsHash(db, shardBestState.ShardID, newFinalView.BestBlockHash)
+		sRHBytes, err := rawdbv2.GetShardRootsHash(db, shardBestState.ShardID, checkPointView.BestBlockHash)
 		if err != nil {
 			return err
 		}
-		err = json.Unmarshal(sRHBytes, finalViewRH)
+		err = json.Unmarshal(sRHBytes, checkPointViewRH)
 		if err != nil {
 			return err
 		}
 	}
 
-	consensusRootHash, consensusRebuildRoot, err := commitToDisk(shardBestState.consensusStateDB, finalViewRH.ConsensusStateDBRootHash)
+	consensusRootHash, consensusRebuildRoot, err := commitToDisk(shardBestState.consensusStateDB, checkPointViewRH.ConsensusStateDBRootHash)
 	if err != nil {
 		return err
 	}
 
-	transactionStateDBRootHash, txRebuildRoot, err := commitToDisk(shardBestState.transactionStateDB, finalViewRH.TransactionStateDBRootHash)
+	transactionStateDBRootHash, txRebuildRoot, err := commitToDisk(shardBestState.transactionStateDB, checkPointViewRH.TransactionStateDBRootHash)
 	if err != nil {
 		return err
 	}
 
-	featureStateDBRootHash, featureRebuildRoot, err := commitToDisk(shardBestState.featureStateDB, finalViewRH.FeatureStateDBRootHash)
+	featureStateDBRootHash, featureRebuildRoot, err := commitToDisk(shardBestState.featureStateDB, checkPointViewRH.FeatureStateDBRootHash)
 	if err != nil {
 		return err
 	}
 
-	rewardStateDBRootHash, rewardRebuildRoot, err := commitToDisk(shardBestState.rewardStateDB, finalViewRH.RewardStateDBRootHash)
+	rewardStateDBRootHash, rewardRebuildRoot, err := commitToDisk(shardBestState.rewardStateDB, checkPointViewRH.RewardStateDBRootHash)
 	if err != nil {
 		return err
 	}
 
-	slashStateDBRootHash, slashRebuildRoot, err := commitToDisk(shardBestState.slashStateDB, finalViewRH.SlashStateDBRootHash)
+	slashStateDBRootHash, slashRebuildRoot, err := commitToDisk(shardBestState.slashStateDB, checkPointViewRH.SlashStateDBRootHash)
 	if err != nil {
 		return err
 	}

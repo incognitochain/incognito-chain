@@ -352,7 +352,7 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 //readDB raw db
 //writeDB support batch
 //finalViewRebuildInfo is root that we expect not rebuild before that point
-func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildInfo) error {
+func (stateDB *StateDB) Finalized(forceWrite bool, checkPointView RebuildInfo) error {
 	switch stateDB.mode {
 	case common.STATEDB_ARCHIVE_MODE:
 		rootHash, _ := stateDB.IntermediateRoot(true)
@@ -365,9 +365,9 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 		batchCommitConfig := stateDB.batchCommitConfig
 
 		//if force write (stop node) or reach #commit threshold => write to disk
-		finalViewIndex := finalViewRebuildInfo.rebuildFFIndex
+		checkPointIndex := checkPointView.rebuildFFIndex
 		//pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
-		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
+		if forceWrite || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < checkPointIndex {
 			//write the current roothash commit nodes to disk
 			rootHash := stateDB.curRebuildInfo.rebuildRootHash
 			rootIndex := stateDB.curRebuildInfo.rebuildFFIndex
@@ -383,7 +383,7 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 		//dereference roothash of finalized commit, for GC reduce memory
 		for !batchCommitConfig.triegc.Empty() {
 			oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-			if -number >= finalViewIndex {
+			if -number >= checkPointIndex {
 				batchCommitConfig.triegc.Push(oldRootHash, number)
 				break
 			}
@@ -392,20 +392,20 @@ func (stateDB *StateDB) Finalized(forceWrite bool, finalViewRebuildInfo RebuildI
 		return nil
 	case common.STATEDB_LITE_MODE:
 		//finalstate is not defined (=> when init state)
-		if finalViewRebuildInfo.rebuildRootHash.IsEqual(&common.EmptyRoot) {
+		if checkPointView.rebuildRootHash.IsEqual(&common.EmptyRoot) {
 			return nil
 		}
 
 		//finalized and update rebuild info
-		err := stateDB.liteStateDB.Finalized(finalViewRebuildInfo.rebuildRootHash)
+		err := stateDB.liteStateDB.Finalized(checkPointView.rebuildRootHash)
 		if err != nil {
 			return err
 		}
-		stateDB.curRebuildInfo.pivotRootHash = finalViewRebuildInfo.rebuildRootHash
-		stateDB.curRebuildInfo.pivotFFIndex = finalViewRebuildInfo.rebuildFFIndex
+		stateDB.curRebuildInfo.pivotRootHash = checkPointView.rebuildRootHash
+		stateDB.curRebuildInfo.pivotFFIndex = checkPointView.rebuildFFIndex
 
 		//truncate already finalized index
-		err = stateDB.liteStateDB.flatfile.Truncate(uint64(finalViewRebuildInfo.rebuildFFIndex))
+		err = stateDB.liteStateDB.flatfile.Truncate(uint64(checkPointView.rebuildFFIndex))
 		if err != nil {
 			stateDB.logger.Log.Error("Truncate error")
 		}
