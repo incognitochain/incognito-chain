@@ -28,7 +28,7 @@ import (
 
 func IsBridgeAggMetaType(metaType int) bool {
 	switch metaType {
-	case metadataCommon.BridgeAggModifyListTokenMeta:
+	case metadataCommon.BridgeAggModifyRewardReserveMeta:
 		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 		return true
@@ -43,6 +43,8 @@ func IsBridgeAggMetaType(metaType int) bool {
 	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		return true
 	case metadataCommon.BurningUnifiedTokenResponseMeta:
+		return true
+	case metadataCommon.BridgeAggAddTokenMeta:
 		return true
 	default:
 		return false

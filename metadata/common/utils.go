@@ -699,18 +699,6 @@ func IsPdexv3Type(metadataType int) bool {
 	}
 }
 
-func IsBridgeAggType(metadataType int) bool {
-	switch metadataType {
-	case BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-		return true
-	case BridgeAggConvertTokenToUnifiedTokenResponseMeta:
-		return true
-	case BridgeAggModifyListTokenMeta:
-		return true
-	}
-	return false
-}
-
 func IsPDETx(metadata Metadata) bool {
 	if metadata != nil {
 		return IsPDEType(metadata.GetType())

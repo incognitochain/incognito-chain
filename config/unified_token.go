@@ -4,23 +4,34 @@ import (
 	"encoding/json"
 	"log"
 	"path/filepath"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/spf13/viper"
 )
 
-var ReadUnifiedToken bool
+var unifiedToken map[uint64]map[common.Hash]map[uint]Vault
 
-type Vault struct {
-	State struct {
-		Decimal uint `mapstructure:"Decimal"`
-	} `mapstructure:"State"`
-	TokenID string `mapstructure:"TokenID"`
+func UnifiedToken() map[uint64]map[common.Hash]map[uint]Vault {
+	return unifiedToken
 }
 
-func LoadUnifiedToken(data []byte) map[string]map[string]Vault {
-	res := make(map[string]map[string]Vault)
+//AbortUnifiedToken use for unit test only
+// DO NOT use this function for development process
+func AbortUnifiedToken() {
+	p = &param{}
+}
+
+type Vault struct {
+	ExternalDecimal uint   `mapstructure:"external_decimal"`
+	ExternalTokenID []byte `mapstructure:"external_token_id"`
+	IncTokenID      string `mapstructure:"inc_token_id"`
+}
+
+func LoadUnifiedToken(data []byte) {
+	unifiedToken = make(map[uint64]map[common.Hash]map[uint]Vault)
+	temp := make(map[string]map[string]map[string]Vault)
 	network := c.Network()
 	//read config from file
 	viper.SetConfigName(utils.GetEnv(UnifiedTokenFileKey, DefaultUnifiedTokenFile))           // name of config file (without extension)
@@ -34,18 +45,39 @@ func LoadUnifiedToken(data []byte) map[string]map[string]Vault {
 			}
 		} else { //if file not found
 			log.Println("Using default unified token for " + network)
-			json.Unmarshal(data, &res)
+			json.Unmarshal(data, &temp)
 		}
 	} else {
-		err = viper.Unmarshal(&res)
+		err = viper.Unmarshal(&temp)
 		if err != nil {
 			panic(err)
 		}
 	}
-	if _, found := res[common.PRVIDStr]; found {
+	if _, found := temp[common.PRVIDStr]; found {
 		panic("Found PRV in list unified token config")
 	}
-	return res
+	for beaconHeightStr, unifiedTokens := range temp {
+		beaconHeight, err := strconv.ParseUint(beaconHeightStr, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		unifiedToken[beaconHeight] = make(map[common.Hash]map[uint]Vault)
+		for unifiedTokenID, vaults := range unifiedTokens {
+			unifiedTokenHash, err := common.Hash{}.NewHashFromStr(unifiedTokenID)
+			if err != nil {
+				panic(err)
+			}
+			unifiedToken[beaconHeight][*unifiedTokenHash] = make(map[uint]Vault)
+			for networkIDStr, vault := range vaults {
+				networkID, err := strconv.Atoi(networkIDStr)
+				if err != nil {
+					panic(err)
+				}
+				unifiedToken[beaconHeight][*unifiedTokenHash][uint(networkID)] = vault
+			}
+		}
+
+	}
 }
 
 var mainnetUnifiedToken = []byte{}

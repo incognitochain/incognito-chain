@@ -22,21 +22,21 @@ import (
 type stateProducer struct {
 }
 
-func (sp *stateProducer) modifyListTokens(
+func (sp *stateProducer) modifyRewardReserve(
 	contentStr string,
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	sDBs map[int]*statedb.StateDB,
 	shardID byte,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	action := metadataCommon.NewAction()
-	md := &metadataBridge.ModifyListToken{}
+	md := &metadataBridge.ModifyRewardReserve{}
 	action.Meta = md
 	err := action.FromString(contentStr)
 	if err != nil {
 		return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 	inst := metadataCommon.NewInstructionWithValue(
-		metadataCommon.BridgeAggModifyListTokenMeta,
+		metadataCommon.BridgeAggModifyRewardReserveMeta,
 		common.AcceptedStatusStr,
 		shardID,
 		utils.EmptyString,
@@ -75,9 +75,9 @@ func (sp *stateProducer) modifyListTokens(
 			unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 		}
 	}
-	acceptedContent := metadataBridge.AcceptedModifyListToken{
-		ModifyListToken: *md,
-		TxReqID:         action.TxReqID,
+	acceptedContent := metadataBridge.AcceptedModifyRewardReserve{
+		ModifyRewardReserve: *md,
+		TxReqID:             action.TxReqID,
 	}
 	contentBytes, err := json.Marshal(acceptedContent)
 	if err != nil {
@@ -388,4 +388,44 @@ func (sp *stateProducer) unshield(
 	contents = append(contents, content)
 
 	return
+}
+
+func (sp *stateProducer) addToken(
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64, sDB *statedb.StateDB,
+) ([]string, map[common.Hash]map[uint]*Vault, error) {
+	res := []string{}
+	addToken := metadataBridge.AddToken{}
+	configUnifiedTokens := config.UnifiedToken()
+	if unifiedTokens, found := configUnifiedTokens[beaconHeight]; found {
+		for unifiedTokenID, vaults := range unifiedTokens {
+			if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
+				for networkID, vault := range vaults {
+					err := validateConfigVault(sDB, networkID, vault)
+					if err != nil {
+						return res, unifiedTokenInfos, err
+					}
+					tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
+					if err != nil {
+						return res, unifiedTokenInfos, err
+					}
+					//TODO: @tin store to
+					err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, vault.ExternalTokenID, false, 0, "+")
+					if err != nil {
+						return res, unifiedTokenInfos, err
+					}
+					state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
+					v := NewVaultWithValue(*state, *tokenID)
+					unifiedTokenInfos[unifiedTokenID][networkID] = v
+				}
+			}
+		}
+	}
+	if len(addToken.NewListTokens) != 0 {
+		var err error
+		res, err = addToken.StringSlice()
+		if err != nil {
+			return res, unifiedTokenInfos, err
+		}
+	}
+	return res, unifiedTokenInfos, nil
 }

@@ -12,31 +12,31 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type ModifyListToken struct {
+type ModifyRewardReserve struct {
 	metadataCommon.MetadataBaseWithSignature
 	NewListTokens map[common.Hash][]Vault `json:"NewListTokens"` // unifiedTokenID -> list tokenID
 }
 
-type AcceptedModifyListToken struct {
-	ModifyListToken
+type AcceptedModifyRewardReserve struct {
+	ModifyRewardReserve
 	TxReqID common.Hash `json:"TxReqID"`
 }
 
-func NewModifyListToken() *ModifyListToken {
-	return &ModifyListToken{}
+func NewModifyRewardReserve() *ModifyRewardReserve {
+	return &ModifyRewardReserve{}
 }
 
-func NewModifyListTokenWithValue(
+func NewModifyRewardReserveWithValue(
 	newListTokens map[common.Hash][]Vault,
-) *ModifyListToken {
-	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metadataCommon.BridgeAggModifyListTokenMeta)
-	request := &ModifyListToken{}
+) *ModifyRewardReserve {
+	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metadataCommon.BridgeAggModifyRewardReserveMeta)
+	request := &ModifyRewardReserve{}
 	request.MetadataBaseWithSignature = *metadataBase
 	request.NewListTokens = newListTokens
 	return request
 }
 
-func (request *ModifyListToken) ValidateTxWithBlockChain(
+func (request *ModifyRewardReserve) ValidateTxWithBlockChain(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
@@ -47,7 +47,7 @@ func (request *ModifyListToken) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (request *ModifyListToken) ValidateSanityData(
+func (request *ModifyRewardReserve) ValidateSanityData(
 	chainRetriever metadataCommon.ChainRetriever,
 	shardViewRetriever metadataCommon.ShardViewRetriever,
 	beaconViewRetriever metadataCommon.BeaconViewRetriever,
@@ -57,35 +57,35 @@ func (request *ModifyListToken) ValidateSanityData(
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().BridgeAggParam.AdminAddress)
 	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	if ok, err := request.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Sender is unauthorized"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Sender is unauthorized"))
 	}
 
 	// check tx type and version
 	if tx.GetType() != common.TxNormalType {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Tx bridge agg modify list tokens must be TxNormalType"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Tx bridge agg modify list tokens must be TxNormalType"))
 	}
 
 	if tx.GetVersion() != 2 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, errors.New("Tx bridge agg modify list tokens must be version 2"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Tx bridge agg modify list tokens must be version 2"))
 	}
 
 	usedTokenIDs := make(map[common.Hash]bool)
 	for unifiedTokenID, vaults := range request.NewListTokens {
 		if usedTokenIDs[unifiedTokenID] {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", unifiedTokenID.String()))
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", unifiedTokenID.String()))
 		}
 		usedTokenIDs[unifiedTokenID] = true
 		for _, vault := range vaults {
 			if usedTokenIDs[vault.TokenID()] {
-				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyListTokenValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", vault.TokenID().String()))
+				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", vault.TokenID().String()))
 			}
 			usedTokenIDs[vault.TokenID()] = true
 		}
@@ -94,11 +94,11 @@ func (request *ModifyListToken) ValidateSanityData(
 	return true, true, nil
 }
 
-func (request *ModifyListToken) ValidateMetadataByItself() bool {
-	return request.Type == metadataCommon.BridgeAggModifyListTokenMeta
+func (request *ModifyRewardReserve) ValidateMetadataByItself() bool {
+	return request.Type == metadataCommon.BridgeAggModifyRewardReserveMeta
 }
 
-func (request *ModifyListToken) Hash() *common.Hash {
+func (request *ModifyRewardReserve) Hash() *common.Hash {
 	record := request.MetadataBaseWithSignature.Hash().String()
 	if request.Sig != nil && len(request.Sig) != 0 {
 		record += string(request.Sig)
@@ -112,7 +112,7 @@ func (request *ModifyListToken) Hash() *common.Hash {
 	return &hash
 }
 
-func (request *ModifyListToken) HashWithoutSig() *common.Hash {
+func (request *ModifyRewardReserve) HashWithoutSig() *common.Hash {
 	record := request.MetadataBaseWithSignature.Hash().String()
 	contentBytes, _ := json.Marshal(request.NewListTokens)
 	hashParams := common.HashH(contentBytes)
@@ -123,11 +123,11 @@ func (request *ModifyListToken) HashWithoutSig() *common.Hash {
 	return &hash
 }
 
-func (request *ModifyListToken) CalculateSize() uint64 {
+func (request *ModifyRewardReserve) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
-func (request *ModifyListToken) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), nil).StringSlice(metadataCommon.BridgeAggModifyListTokenMeta)
+func (request *ModifyRewardReserve) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+	content, err := metadataCommon.NewActionWithValue(request, *tx.Hash(), nil).StringSlice(metadataCommon.BridgeAggModifyRewardReserveMeta)
 	return [][]string{content}, err
 }

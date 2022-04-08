@@ -86,7 +86,7 @@ func collectStatefulActions(
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
-			metadataCommon.BridgeAggModifyListTokenMeta,
+			metadataCommon.BridgeAggModifyRewardReserveMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta:
@@ -168,11 +168,19 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	unshieldActions := make([][]string, beaconBestState.ActiveShards)
 	shieldActions := make([][]string, beaconBestState.ActiveShards)
 	convertActions := make([][]string, beaconBestState.ActiveShards)
-	modifyListTokensActions := make([][]string, beaconBestState.ActiveShards)
+	modifyRewardReserveActions := make([][]string, beaconBestState.ActiveShards)
 	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 	if err != nil {
 		Logger.log.Error(err)
 		return utils.EmptyStringMatrix, err
+	}
+
+	newInst, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight)
+	if err != nil {
+		return [][]string{}, err
+	}
+	if len(newInst) > 0 {
+		instructions = append(instructions, newInst)
 	}
 
 	for _, value := range keys {
@@ -321,8 +329,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
-			case metadataCommon.BridgeAggModifyListTokenMeta:
-				modifyListTokensActions[shardID] = append(modifyListTokensActions[shardID], contentStr)
+			case metadataCommon.BridgeAggModifyRewardReserveMeta:
+				modifyRewardReserveActions[shardID] = append(modifyRewardReserveActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
@@ -384,7 +392,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	bridgeAggEnv := bridgeagg.
 		NewStateEnvBuilder().
 		BuildConvertActions(convertActions).
-		BuildModifyListTokenActions(modifyListTokensActions).
+		BuildModifyRewardReserveActions(modifyRewardReserveActions).
 		BuildShieldActions(shieldActions).
 		BuildUnshieldActions(unshieldActions).
 		BuildAccumulatedValues(accumulatedValues).

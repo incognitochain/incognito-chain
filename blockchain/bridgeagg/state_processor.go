@@ -15,7 +15,7 @@ type stateProcessor struct {
 	UnshieldTxsCache map[common.Hash]common.Hash
 }
 
-func (sp *stateProcessor) modifyListTokens(
+func (sp *stateProcessor) modifyRewardReserve(
 	inst metadataCommon.Instruction,
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
 	sDB *statedb.StateDB,
@@ -30,7 +30,7 @@ func (sp *stateProcessor) modifyListTokens(
 			return unifiedTokenInfos, err
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
-		acceptedInst := metadataBridge.AcceptedModifyListToken{}
+		acceptedInst := metadataBridge.AcceptedModifyRewardReserve{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return unifiedTokenInfos, err
@@ -67,14 +67,14 @@ func (sp *stateProcessor) modifyListTokens(
 	default:
 		return unifiedTokenInfos, errors.New("Can not recognize status")
 	}
-	modifyListTokenStatus := ModifyListTokenStatus{
+	modifyRewardReserveStatus := ModifyRewardReserveStatus{
 		Status:    status,
 		ErrorCode: errorCode,
 	}
-	contentBytes, _ := json.Marshal(modifyListTokenStatus)
+	contentBytes, _ := json.Marshal(modifyRewardReserveStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListTokenModifyingStatusPrefix(),
+		statedb.BridgeAggRewardReserveModifyingStatusPrefix(),
 		txReqID.Bytes(),
 		contentBytes,
 	)
@@ -261,4 +261,18 @@ func (sp *stateProcessor) unshield(
 
 func (sp *stateProcessor) clearCache() {
 	sp.UnshieldTxsCache = make(map[common.Hash]common.Hash)
+}
+
+func (sp *stateProcessor) addToken(
+	inst []string,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	sDB *statedb.StateDB,
+) (map[common.Hash]map[uint]*Vault, error) {
+	content := metadataBridge.AddToken{}
+	err := content.FromStringSlice(inst)
+	if err != nil {
+		return unifiedTokenInfos, err
+	}
+	//TODO: @tin add to db new token
+	return unifiedTokenInfos, nil
 }

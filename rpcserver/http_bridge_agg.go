@@ -16,9 +16,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyListTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyRewardReserve(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var res interface{}
-	data, err := httpServer.createBridgeAggModifyListTokensTransaction(params)
+	data, err := httpServer.createBridgeAggModifyRewardReserveTransaction(params)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyListTokens(par
 	return res, nil
 }
 
-func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
+func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 	params interface{},
 ) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -85,7 +85,7 @@ func (httpServer *HttpServer) createBridgeAggModifyListTokensTransaction(
 		}
 	}
 
-	md := metadataBridge.NewModifyListTokenWithValue(newList)
+	md := metadataBridge.NewModifyRewardReserveWithValue(newList)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -131,7 +131,7 @@ func (httpServer *HttpServer) handleGetBridgeAggState(params interface{}, closeC
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetBridgeAggModifyListTokenStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetBridgeAggModifyRewardReserveStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -148,7 +148,7 @@ func (httpServer *HttpServer) handleGetBridgeAggModifyListTokenStatus(params int
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggListTokenModifyingStatusPrefix(),
+		statedb.BridgeAggRewardReserveModifyingStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {

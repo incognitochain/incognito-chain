@@ -25,7 +25,7 @@ type ShieldStatus struct {
 	ErrorCode uint `json:"ErrorCode,omitempty"`
 }
 
-type ModifyListTokenStatus struct {
+type ModifyRewardReserveStatus struct {
 	Status    byte `json:"Status"`
 	ErrorCode uint `json:"ErrorCode,omitempty"`
 }
@@ -486,4 +486,9 @@ func CalculateIncDecimal(decimal, baseDecimal uint) uint {
 		return baseDecimal
 	}
 	return decimal
+}
+
+func validateConfigVault(sDB *statedb.StateDB, networkID uint, vault config.Vault) error {
+	//TODO: @tin fill contetnt for this function
+	return nil
 }

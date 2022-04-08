@@ -10,7 +10,7 @@ type StateEnvBuilder interface {
 	BuildUnshieldActions([][]string) StateEnvBuilder
 	BuildShieldActions([][]string) StateEnvBuilder
 	BuildConvertActions([][]string) StateEnvBuilder
-	BuildModifyListTokenActions([][]string) StateEnvBuilder
+	BuildModifyRewardReserveActions([][]string) StateEnvBuilder
 	BuildStateDBs(map[int]*statedb.StateDB) StateEnvBuilder
 	BuildBeaconHeight(uint64) StateEnvBuilder
 	Build() StateEnvironment
@@ -21,13 +21,13 @@ func NewStateEnvBuilder() StateEnvBuilder {
 }
 
 type stateEnvironment struct {
-	accumulatedValues       *metadata.AccumulatedValues
-	unshieldActions         [][]string
-	shieldActions           [][]string
-	convertActions          [][]string
-	modifyListTokensActions [][]string
-	beaconHeight            uint64
-	stateDBs                map[int]*statedb.StateDB
+	accumulatedValues          *metadata.AccumulatedValues
+	unshieldActions            [][]string
+	shieldActions              [][]string
+	convertActions             [][]string
+	modifyRewardReserveActions [][]string
+	beaconHeight               uint64
+	stateDBs                   map[int]*statedb.StateDB
 }
 
 func (env *stateEnvironment) BuildBeaconHeight(beaconHeight uint64) StateEnvBuilder {
@@ -55,8 +55,8 @@ func (env *stateEnvironment) BuildConvertActions(actions [][]string) StateEnvBui
 	return env
 }
 
-func (env *stateEnvironment) BuildModifyListTokenActions(actions [][]string) StateEnvBuilder {
-	env.modifyListTokensActions = actions
+func (env *stateEnvironment) BuildModifyRewardReserveActions(actions [][]string) StateEnvBuilder {
+	env.modifyRewardReserveActions = actions
 	return env
 }
 
@@ -75,7 +75,7 @@ type StateEnvironment interface {
 	UnshieldActions() [][]string
 	ShieldActions() [][]string
 	ConvertActions() [][]string
-	ModifyListTokensActions() [][]string
+	ModifyRewardReserveActions() [][]string
 	StateDBs() map[int]*statedb.StateDB
 }
 
@@ -99,8 +99,8 @@ func (env *stateEnvironment) ConvertActions() [][]string {
 	return env.convertActions
 }
 
-func (env *stateEnvironment) ModifyListTokensActions() [][]string {
-	return env.modifyListTokensActions
+func (env *stateEnvironment) ModifyRewardReserveActions() [][]string {
+	return env.modifyRewardReserveActions
 }
 
 func (env *stateEnvironment) StateDBs() map[int]*statedb.StateDB {

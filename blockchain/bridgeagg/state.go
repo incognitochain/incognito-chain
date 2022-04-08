@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -86,12 +85,12 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		}
 	}
 
-	for shardID, actions := range env.ModifyListTokensActions() {
+	for shardID, actions := range env.ModifyRewardReserveActions() {
 		for _, action := range actions {
 			inst := []string{}
-			inst, s.unifiedTokenInfos, err = s.producer.modifyListTokens(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
+			inst, s.unifiedTokenInfos, err = s.producer.modifyRewardReserve(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyListTokenError, err)
+				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyRewardReserveError, err)
 			}
 			res = append(res, inst)
 		}
@@ -104,8 +103,8 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 	for _, content := range insts {
-		if len(content) != 4 {
-			continue // Not error, just not bridgeagg instructions
+		if len(content) == 0 {
+			continue // Empty instruction
 		}
 		metaType, err := strconv.Atoi(content[0])
 		if err != nil {
@@ -114,14 +113,25 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 		if !metadataBridge.IsBridgeAggMetaType(metaType) {
 			continue // Not error, just not bridgeagg instructions
 		}
+		if metaType == metadataCommon.BridgeAggAddTokenMeta {
+			s.unifiedTokenInfos, err = s.processor.addToken(content, s.unifiedTokenInfos, sDB)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		if len(content) != 4 {
+			continue // Not error, just not bridgeagg instructions
+		}
+
 		inst := metadataCommon.NewInstruction()
 		if err := inst.FromStringSlice(content); err != nil {
 			return err
 		}
 
 		switch inst.MetaType {
-		case metadataCommon.BridgeAggModifyListTokenMeta:
-			s.unifiedTokenInfos, err = s.processor.modifyListTokens(*inst, s.unifiedTokenInfos, sDB)
+		case metadataCommon.BridgeAggModifyRewardReserveMeta:
+			s.unifiedTokenInfos, err = s.processor.modifyRewardReserve(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
 			}
@@ -141,32 +151,6 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 				return err
 			}
 		}
-	}
-	if !config.ReadUnifiedToken {
-		configedUnifiedToken := config.Param().UnifiedToken
-		for unifiedTokenIDStr, unifiedToken := range configedUnifiedToken {
-			unifiedTokenID, err := common.Hash{}.NewHashFromStr(unifiedTokenIDStr)
-			if err != nil {
-				return err
-			}
-			if _, found := s.unifiedTokenInfos[*unifiedTokenID]; !found {
-				s.unifiedTokenInfos[*unifiedTokenID] = make(map[uint]*Vault)
-				for networkID, vault := range unifiedToken {
-					state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.State.Decimal)
-					tokenID, err := common.Hash{}.NewHashFromStr(vault.TokenID)
-					if err != nil {
-						return err
-					}
-					vault := NewVaultWithValue(*state, *tokenID)
-					id, err := strconv.Atoi(networkID)
-					if err != nil {
-						return err
-					}
-					s.unifiedTokenInfos[*unifiedTokenID][uint(id)] = vault
-				}
-			}
-		}
-		config.ReadUnifiedToken = true
 	}
 	return nil
 }
@@ -263,4 +247,11 @@ func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
 	} else {
 		return common.Hash{}, fmt.Errorf("txID %s not found in cache", txReqID.String())
 	}
+}
+
+func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDB *statedb.StateDB) ([]string, error) {
+	res := []string{}
+	var err error
+	res, s.unifiedTokenInfos, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDB)
+	return res, err
 }
