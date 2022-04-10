@@ -27,7 +27,7 @@ func (a *AddToken) StringSlice() ([]string, error) {
 }
 
 func (a *AddToken) FromStringSlice(source []string) error {
-	if len(source) == 2 {
+	if len(source) != 2 {
 		return fmt.Errorf("len of instruction need to be 2 but get %d", len(source))
 	}
 	if strconv.Itoa(metadataCommon.BridgeAggAddTokenMeta) != source[0] {

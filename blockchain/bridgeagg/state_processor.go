@@ -275,6 +275,7 @@ func (sp *stateProcessor) addToken(
 	}
 	for unifiedTokenID, vaults := range content.NewListTokens {
 		if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
+			unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 			for networkID, vault := range vaults {
 				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 				if err != nil {

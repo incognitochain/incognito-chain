@@ -399,6 +399,7 @@ func (sp *stateProducer) addToken(
 	if unifiedTokens, found := configUnifiedTokens[beaconHeight]; found {
 		for unifiedTokenID, vaults := range unifiedTokens {
 			if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
+				unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 				for networkID, vault := range vaults {
 					err := validateConfigVault(sDBs, networkID, vault)
 					if err != nil {
@@ -418,6 +419,7 @@ func (sp *stateProducer) addToken(
 				}
 			}
 		}
+		addToken.NewListTokens = unifiedTokens
 	}
 	if len(addToken.NewListTokens) != 0 {
 		var err error
