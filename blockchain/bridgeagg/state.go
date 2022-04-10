@@ -249,9 +249,9 @@ func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
 	}
 }
 
-func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDB *statedb.StateDB) ([]string, error) {
+func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB) ([]string, error) {
 	res := []string{}
 	var err error
-	res, s.unifiedTokenInfos, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDB)
+	res, s.unifiedTokenInfos, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs)
 	return res, err
 }

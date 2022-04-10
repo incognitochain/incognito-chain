@@ -391,7 +391,7 @@ func (sp *stateProducer) unshield(
 }
 
 func (sp *stateProducer) addToken(
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64, sDB *statedb.StateDB,
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64, sDBs map[int]*statedb.StateDB,
 ) ([]string, map[common.Hash]map[uint]*Vault, error) {
 	res := []string{}
 	addToken := metadataBridge.AddToken{}
@@ -400,7 +400,7 @@ func (sp *stateProducer) addToken(
 		for unifiedTokenID, vaults := range unifiedTokens {
 			if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
 				for networkID, vault := range vaults {
-					err := validateConfigVault(sDB, networkID, vault)
+					err := validateConfigVault(sDBs, networkID, vault)
 					if err != nil {
 						return res, unifiedTokenInfos, err
 					}
@@ -408,8 +408,7 @@ func (sp *stateProducer) addToken(
 					if err != nil {
 						return res, unifiedTokenInfos, err
 					}
-					//TODO: @tin store to
-					err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, vault.ExternalTokenID, false, 0, "+")
+					err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, vault.ExternalTokenID, false, 0, "+")
 					if err != nil {
 						return res, unifiedTokenInfos, err
 					}

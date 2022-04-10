@@ -1,9 +1,11 @@
 package bridgeagg
 
 import (
+	"encoding/base64"
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -59,4 +61,20 @@ func GetVaultByUnifiedTokenIDAndNetworkID(unifiedTokenID common.Hash, networkID 
 		return NewVaultWithValue(*state, convertToken.TokenID()), nil
 	}
 	return nil, errors.New("Not found vault")
+}
+
+func GetBridgeTokenIndex(sDB *statedb.StateDB) (map[common.Hash]*rawdbv2.BridgeTokenInfo, map[string]bool, error) {
+	bridgeTokenInfoIndex := make(map[common.Hash]*rawdbv2.BridgeTokenInfo)
+	externalTokenIDIndex := make(map[string]bool)
+	bridgeTokenInfoStates, err := statedb.GetBridgeTokens(sDB)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
+		bridgeTokenInfoIndex[*bridgeTokenInfoState.TokenID] = bridgeTokenInfoState
+		encodedExternalTokenID := base64.StdEncoding.EncodeToString(bridgeTokenInfoState.ExternalTokenID)
+		externalTokenIDIndex[encodedExternalTokenID] = true
+
+	}
+	return bridgeTokenInfoIndex, externalTokenIDIndex, nil
 }

@@ -488,7 +488,38 @@ func CalculateIncDecimal(decimal, baseDecimal uint) uint {
 	return decimal
 }
 
-func validateConfigVault(sDB *statedb.StateDB, networkID uint, vault config.Vault) error {
-	//TODO: @tin fill contetnt for this function
+func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault config.Vault) error {
+	if vault.ExternalDecimal == 0 {
+		return fmt.Errorf("ExternalTokenID cannot be 0")
+	}
+	if vault.IncTokenID == utils.EmptyString {
+		return fmt.Errorf("IncTokenID cannot empty")
+	}
+	incTokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
+	if err != nil {
+		return err
+	}
+	bridgeTokenInfoIndex, externalTokenIDIndex, err := GetBridgeTokenIndex(sDBs[common.BeaconChainID])
+	if err != nil {
+		return err
+	}
+	externalTokenID := vault.ExternalTokenID
+	encodedExternalTokenID := base64.StdEncoding.EncodeToString(externalTokenID)
+	if externalTokenIDIndex[encodedExternalTokenID] {
+		return errors.New("ExternalTokenID has existed")
+	}
+	if bridgeTokenInfoState, found := bridgeTokenInfoIndex[*incTokenID]; found {
+		if !bytes.Equal(bridgeTokenInfoState.ExternalTokenID, externalTokenID) {
+			return errors.New("ExternalTokenID is not valid with data from db")
+		}
+	} else {
+		isExisted, err := statedb.CheckTokenIDExisted(sDBs, *incTokenID)
+		if err != nil {
+			return fmt.Errorf("WARNING: Error in finding tokenID %s", incTokenID.String())
+		}
+		if isExisted {
+			return fmt.Errorf("WARNING: tokenID %s has existed", incTokenID.String())
+		}
+	}
 	return nil
 }

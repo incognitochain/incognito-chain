@@ -323,3 +323,16 @@ func IsBridgeToken(stateDB *StateDB, tokenID common.Hash) (
 	}
 	return isBridgeTokens, err
 }
+
+func GetBridgeTokens(stateDB *StateDB) ([]*rawdbv2.BridgeTokenInfo, error) {
+	cBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(true)
+	dBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
+	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
+	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
+	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
+		tokenID := bridgeTokenInfoState.IncTokenID()
+		tempBridgeTokenInfo := rawdbv2.NewBridgeTokenInfo(&tokenID, bridgeTokenInfoState.Amount(), bridgeTokenInfoState.ExternalTokenID(), bridgeTokenInfoState.Network(), bridgeTokenInfoState.IsCentralized())
+		bridgeTokenInfos = append(bridgeTokenInfos, tempBridgeTokenInfo)
+	}
+	return bridgeTokenInfos, nil
+}

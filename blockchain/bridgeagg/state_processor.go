@@ -273,6 +273,22 @@ func (sp *stateProcessor) addToken(
 	if err != nil {
 		return unifiedTokenInfos, err
 	}
-	//TODO: @tin add to db new token
+	for unifiedTokenID, vaults := range content.NewListTokens {
+		if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
+			for networkID, vault := range vaults {
+				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
+				if err != nil {
+					return unifiedTokenInfos, err
+				}
+				err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, vault.ExternalTokenID, false, 0, "+")
+				if err != nil {
+					return unifiedTokenInfos, err
+				}
+				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
+				v := NewVaultWithValue(*state, *tokenID)
+				unifiedTokenInfos[unifiedTokenID][networkID] = v
+			}
+		}
+	}
 	return unifiedTokenInfos, nil
 }
