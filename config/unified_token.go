@@ -25,7 +25,7 @@ func AbortUnifiedToken() {
 
 type Vault struct {
 	ExternalDecimal uint   `mapstructure:"external_decimal"`
-	ExternalTokenID []byte `mapstructure:"external_token_id"`
+	ExternalTokenID string `mapstructure:"external_token_id"`
 	IncTokenID      string `mapstructure:"inc_token_id"`
 }
 

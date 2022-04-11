@@ -283,7 +283,7 @@ func shieldEVM(
 	if currentPaymentAddress != "" && currentPaymentAddress != paymentAddress {
 		return 0, 0, 0, nil, nil, "", FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, errors.New("PaymentAddress from proofs need to be similar"))
 	}
-	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token, true)
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
 	if err != nil {
 		return 0, 0, 0, nil, nil, "", FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
@@ -503,7 +503,10 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault co
 	if err != nil {
 		return err
 	}
-	externalTokenID := vault.ExternalTokenID
+	externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+	if err != nil {
+		return err
+	}
 	encodedExternalTokenID := base64.StdEncoding.EncodeToString(externalTokenID)
 	if externalTokenIDIndex[encodedExternalTokenID] {
 		return errors.New("ExternalTokenID has existed")
@@ -522,4 +525,29 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault co
 		}
 	}
 	return nil
+}
+
+func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]byte, error) {
+	var res []byte
+	var prefix string
+	switch networkID {
+	case common.ETHNetworkID:
+		prefix = utils.EmptyString
+	case common.BSCNetworkID:
+		prefix = common.BSCPrefix
+	case common.PLGNetworkID:
+		prefix = common.PLGPrefix
+	case common.FTMNetworkID:
+		prefix = common.FTMPrefix
+	}
+	networkType, err := metadataBridge.GetNetworkTypeByNetworkID(networkID)
+	if err != nil {
+		return nil, err
+	}
+	switch networkType {
+	case common.EVMNetworkType:
+		tokenAddr := rCommon.HexToAddress(externalTokenID)
+		res = append([]byte(prefix), tokenAddr.Bytes()...)
+	}
+	return res, nil
 }

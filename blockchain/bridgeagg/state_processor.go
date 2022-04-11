@@ -281,7 +281,8 @@ func (sp *stateProcessor) addToken(
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
-				err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, vault.ExternalTokenID, false, 0, "+")
+				externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+				err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, externalTokenID, false, 0, "+")
 				if err != nil {
 					return unifiedTokenInfos, err
 				}

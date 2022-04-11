@@ -176,7 +176,6 @@ func VerifyTokenPair(
 	ac *metadataCommon.AccumulatedValues,
 	incTokenID common.Hash,
 	token []byte,
-	shouldReturnIfNotFoundToken bool,
 ) error {
 	canProcess, err := ac.CanProcessTokenPair(token, incTokenID)
 	if err != nil {
@@ -187,9 +186,6 @@ func VerifyTokenPair(
 	}
 	privacyTokenExisted, err := statedb.CheckTokenIDExisted(stateDBs, incTokenID)
 	if err != nil {
-		return fmt.Errorf("WARNING: Cannot find tokenID %s", incTokenID.String())
-	}
-	if shouldReturnIfNotFoundToken && !privacyTokenExisted {
 		return fmt.Errorf("WARNING: Cannot find tokenID %s", incTokenID.String())
 	}
 	isValid, err := statedb.CanProcessTokenPair(stateDBs[common.BeaconChainID], token, incTokenID, privacyTokenExisted)

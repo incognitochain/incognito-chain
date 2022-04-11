@@ -409,7 +409,8 @@ func (sp *stateProducer) addToken(
 					if err != nil {
 						return res, unifiedTokenInfos, err
 					}
-					err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, vault.ExternalTokenID, false, 0, "+")
+					externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+					err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, externalTokenID, false, 0, "+")
 					if err != nil {
 						return res, unifiedTokenInfos, err
 					}
