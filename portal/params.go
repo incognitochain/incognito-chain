@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"encoding/json"
 	"sort"
 	"time"
 
@@ -77,6 +78,8 @@ func (p PortalParams) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalPara
 var p *PortalParams
 
 func GetPortalParams() *PortalParams {
+	jsb, _ := json.Marshal(p)
+	Logger.log.Infof("PortalParams: %v\n", string(jsb))
 	return p
 }
 
