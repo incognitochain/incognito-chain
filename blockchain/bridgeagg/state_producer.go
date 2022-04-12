@@ -332,7 +332,7 @@ func (sp *stateProducer) unshield(
 	}
 	var listAcceptedUnshieldRequestData []metadataBridge.AcceptedUnshieldRequestData
 
-	for _, data := range md.Data {
+	for index, data := range md.Data {
 		buringAmount += data.BurningAmount
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
 		if e != nil {
@@ -350,13 +350,14 @@ func (sp *stateProducer) unshield(
 				return
 			}
 			h := big.NewInt(0).SetUint64(beaconHeight)
+			newTxReqID := common.HashH(append(action.TxReqID.Bytes(), common.IntToBytes(index)...))
 			burningInst := []string{
 				strconv.Itoa(burningMetaType),
 				strconv.Itoa(int(common.BridgeShardID)),
 				base58.Base58Check{}.Encode(externalTokenID, 0x00),
 				data.RemoteAddress,
 				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
-				action.TxReqID.String(),
+				newTxReqID.String(),
 				base58.Base58Check{}.Encode(TokenID[:], 0x00),
 				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 			}
