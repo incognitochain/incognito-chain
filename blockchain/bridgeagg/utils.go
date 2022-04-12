@@ -507,15 +507,15 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault co
 	if err != nil {
 		return err
 	}
-	encodedExternalTokenID := base64.StdEncoding.EncodeToString(externalTokenID)
-	if externalTokenIDIndex[encodedExternalTokenID] {
-		return errors.New("ExternalTokenID has existed")
-	}
 	if bridgeTokenInfoState, found := bridgeTokenInfoIndex[*incTokenID]; found {
 		if !bytes.Equal(bridgeTokenInfoState.ExternalTokenID, externalTokenID) {
 			return errors.New("ExternalTokenID is not valid with data from db")
 		}
 	} else {
+		encodedExternalTokenID := base64.StdEncoding.EncodeToString(externalTokenID)
+		if externalTokenIDIndex[encodedExternalTokenID] {
+			return errors.New("ExternalTokenID has existed")
+		}
 		isExisted, err := statedb.CheckTokenIDExisted(sDBs, *incTokenID)
 		if err != nil {
 			return fmt.Errorf("WARNING: Error in finding tokenID %s", incTokenID.String())

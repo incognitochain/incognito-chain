@@ -300,3 +300,33 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateRewardReserve(t *testing.T) {
+	type args struct {
+		lastUpdatedRewardReserve uint64
+		currentRewardReserve     uint64
+		newRewardReserve         uint64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint64
+		want1   uint64
+		wantErr bool
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := UpdateRewardReserve(tt.args.lastUpdatedRewardReserve, tt.args.currentRewardReserve, tt.args.newRewardReserve)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UpdateRewardReserve() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("UpdateRewardReserve() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("UpdateRewardReserve() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
