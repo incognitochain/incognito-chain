@@ -3,6 +3,7 @@ package btcrelaying
 import (
 	"compress/bzip2"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -189,6 +190,8 @@ func GetChainV2(dbPath string, params *chaincfg.Params, genesisBlkHeight int32) 
 	if !isSupportedDbType(testDbType) {
 		return nil, fmt.Errorf("unsupported db type %v", testDbType)
 	}
+	jsb, _ := json.Marshal(params)
+	Logger.log.Infof("GetChainV2: %v - %v\n", genesisBlkHeight, string(jsb))
 
 	var db database.DB
 	// dbPath := filepath.Join(testDbRoot, dbName)
