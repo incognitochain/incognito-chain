@@ -28,6 +28,7 @@ func getHardcodedMainNetGenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
 }
 
 func getHardcodedTestNet3GenesisBlock() (*wire.MsgBlock, *chainhash.Hash) {
+	Logger.log.Infof("getHardcodedTestNet3GenesisBlock ENTERED\n")
 	// Block 2063133 from bitcoin testnet3
 	genesisHash, _ := chainhash.NewHashFromStr("000000000000001e1cdb07e6597a84f7cd01d524c5a1235428a6cb312e02d2b6")
 	prevBlkHash, _ := chainhash.NewHashFromStr("000000000000008d4cd340c1a4e28f584128331bcb5162df0438676319b0f71f")
