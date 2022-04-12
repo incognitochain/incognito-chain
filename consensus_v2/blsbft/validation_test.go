@@ -71,7 +71,7 @@ func TestDecodeAndValidateSig(t *testing.T) {
 		t.Fatal(err)
 	}
 	hash, _ := common.Hash{}.NewHashFromStr("030bcfa39a9da5dc525c2424c44bf7a58480c5bb9e82f50c81a0f9a5093fc69c")
-	if err := validateSingleBriSig(hash, valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(hash, valData.ProposerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -1088,39 +1088,43 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err2)
 	}
 
-	finalView := blockchain.BeaconChain.multiView.GetFinalView()
-	blockchain.BeaconChain.multiView.AddView(newBestState)
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
-	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
-	storeBlock := newFinalView.GetBlock()
-	finalizedBlocks := []*types.BeaconBlock{}
+	curFinalView := blockchain.BeaconChain.multiView.GetFinalView()
+	blockchain.BeaconChain.multiView.AddView(newBestState)
+	newFinalView := blockchain.BeaconChain.multiView.TryFinalizeView(newBestState)
 
-	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
-		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
-		}
-		if storeBlock.GetHeight() == 1 {
-			break
-		}
-		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
-		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
-			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
+	if newFinalView != nil {
+		
+		storeBlock := newFinalView.GetBlock()
+		finalizedBlocks := []*types.BeaconBlock{}
+
+		for curFinalView == nil || storeBlock.GetHeight() > curFinalView.GetHeight() {
+			err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 			if err != nil {
-				// panic("Database is corrupt")
-				return err
+				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
-		} else {
-			storeBlock = newFinalView.GetBlock()
+			if storeBlock.GetHeight() == 1 {
+				break
+			}
+			finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
+			prevHash := storeBlock.GetPrevHash()
+			newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+			if newFinalView == nil {
+				storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
+				if err != nil {
+					// panic("Database is corrupt")
+					return err
+				}
+			} else {
+				storeBlock = newFinalView.GetBlock()
+			}
 		}
-	}
 
-	for i := len(finalizedBlocks) - 1; i >= 0; i-- {
-		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
-		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
+		for i := len(finalizedBlocks) - 1; i >= 0; i-- {
+			Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
+			processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
+		}
 	}
 
 	err = blockchain.BackupBeaconViews(batch)

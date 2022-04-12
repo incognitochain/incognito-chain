@@ -243,7 +243,7 @@ func (engine *Engine) loadKeysFromPrivateKey() {
 		panic(err)
 	}
 	engine.validators = []*consensus.Validator{
-		&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
+		{PrivateSeed: privateSeed, MiningKey: *miningKey},
 	}
 }
 
@@ -311,6 +311,10 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
+	}
+
+	if chainHeight >= config.Param().ConsensusParam.InstantFinalityHeight {
+		return types.INSTANT_FINALITY_VERSION
 	}
 
 	if chainHeight >= config.Param().ConsensusParam.BlockProducingV3Height {

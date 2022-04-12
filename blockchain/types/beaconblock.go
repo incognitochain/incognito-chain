@@ -145,6 +145,17 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (beaconBlock BeaconBlock) GetProposedBlockHash() *common.Hash {
+
+	headerHash := beaconBlock.Header.Hash()
+	t := headerHash.String() + beaconBlock.Header.Proposer
+	t += fmt.Sprintf("%d", beaconBlock.Header.ProposeTime)
+
+	hash := common.HashH([]byte(t))
+
+	return &hash
+}
+
 func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 	return beaconBlock.Header.Epoch
 }
@@ -199,8 +210,8 @@ func (beaconBlock *BeaconBlock) GetAggregateRootHash() common.Hash {
 
 func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
 	beaconBlock.ValidationData = validationData
-	return
 }
+
 func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData
 }
@@ -277,12 +288,12 @@ func (header *BeaconHeader) toString() string {
 	res += header.InstructionHash.String()
 
 	//to compatible with mainnet database, version 3 dont have proposer info
-	if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
+	if header.Version == MULTI_VIEW_VERSION || (header.Version >= 4 && header.Version <= BLOCK_PRODUCINGV3_VERSION) {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
 
-	if header.Version >= LEMMA2_VERSION {
+	if header.Version >= LEMMA2_VERSION && header.Version <= BLOCK_PRODUCINGV3_VERSION {
 		res += fmt.Sprintf("%v", header.FinalityHeight)
 	}
 

@@ -1062,7 +1062,8 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 		return block, NewConsensusError(UnExpectedError, err)
 	}
 	validationData.PortalSig = portalSigs
-	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProposerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProposedBlockBLSSig, _ = userMiningKey.BriSignData(block.GetProposedBlockHash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(BlockValidation).AddValidationField(validationDataString)
 

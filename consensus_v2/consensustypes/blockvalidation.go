@@ -7,12 +7,12 @@ import (
 )
 
 type ValidationData struct {
-	ProducerBLSSig []byte
-	ProducerBriSig []byte
-	ValidatiorsIdx []int
-	AggSig         []byte
-	BridgeSig      [][]byte
-	PortalSig      []*portalprocessv4.PortalSig
+	ProposerBLSSig      []byte `json:"ProducerBLSSig"` // @NOTICE: add json tag for backward compatible
+	ProposedBlockBLSSig []byte
+	ValidatiorsIdx      []int
+	AggSig              []byte
+	BridgeSig           [][]byte
+	PortalSig           []*portalprocessv4.PortalSig
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {

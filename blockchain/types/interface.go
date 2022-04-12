@@ -14,6 +14,7 @@ type BlockInterface interface {
 	GetVersion() int
 	GetHeight() uint64
 	Hash() *common.Hash
+	GetProposedBlockHash() *common.Hash
 	//AddValidationField(validateData string) error
 	GetProducer() string
 	GetProduceTime() int64

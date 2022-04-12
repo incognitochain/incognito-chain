@@ -82,7 +82,7 @@ func (s *Engine) GetNodeMiningPublicKeys() (userPks []*incognitokey.CommitteePub
 //legacy code -> get all key type  of 1 mining key
 func (engine *Engine) GetAllMiningPublicKeys() []string {
 	var keys []string
-	for keyType, _ := range engine.userMiningPublicKeys.MiningPubKey {
+	for keyType := range engine.userMiningPublicKeys.MiningPubKey {
 		keys = append(keys, fmt.Sprintf("%v:%v", keyType, engine.userMiningPublicKeys.GetMiningKeyBase58(keyType)))
 	}
 	return keys
@@ -162,9 +162,9 @@ func (engine *Engine) ValidateProducerPosition(
 
 func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
 	if block.GetVersion() == types.BFT_VERSION {
-		return blsbft.ValidateProducerSigV1(block)
+		return blsbft.ValidateProducerSig(block)
 	} else {
-		return blsbft.ValidateProducerSigV2(block)
+		return blsbft.ValidateProposerSig(block)
 	}
 }
 

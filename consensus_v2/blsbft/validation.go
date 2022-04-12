@@ -23,7 +23,7 @@ type BlockValidation interface {
 	AddValidationField(validationData string)
 }
 
-func ValidateProducerSigV1(block types.BlockInterface) error {
+func ValidateProducerSig(block types.BlockInterface) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -38,7 +38,7 @@ func ValidateProducerSigV1(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(block.Hash(), valData.ProposerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -46,7 +46,7 @@ func ValidateProducerSigV1(block types.BlockInterface) error {
 	return nil
 }
 
-func ValidateProducerSigV2(block types.BlockInterface) error {
+func ValidateProposerSig(block types.BlockInterface) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -58,8 +58,13 @@ func ValidateProducerSigV2(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(block.Hash(), valData.ProposerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
+	}
+	if block.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if err := validateSingleBriSig(block.GetProposedBlockHash(), valData.ProposedBlockBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+			return NewConsensusError(UnExpectedError, err)
+		}
 	}
 	//end := time.Now().Sub(start)
 	//fmt.Printf("ConsLog just verify %v\n", end.Seconds())

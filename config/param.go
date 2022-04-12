@@ -134,6 +134,7 @@ type consensusParam struct {
 	Lemma2Height              uint64   `mapstructure:"lemma2_height"`
 	ByzantineDetectorHeight   uint64   `mapstructure:"byzantine_detector_height"`
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
+	InstantFinalityHeight     uint64   `mapstructure:"instant_finality_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }

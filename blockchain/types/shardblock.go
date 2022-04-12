@@ -42,13 +42,12 @@ type ShardHeader struct {
 	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
+	//for version >= 3
+	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
 
 	//for version >= 2
 	Proposer    string
 	ProposeTime int64
-
-	//for version >= 3
-	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
 
 	//for version 6
 	FinalityHeight uint64 `json:"FinalityHeight"`
@@ -129,6 +128,17 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 
 func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
+	return &hash
+}
+
+func (shardBlock ShardBlock) GetProposedBlockHash() *common.Hash {
+
+	headerHash := shardBlock.Header.Hash()
+	t := headerHash.String() + shardBlock.Header.Proposer
+	t += fmt.Sprintf("%d", shardBlock.Header.ProposeTime)
+
+	hash := common.HashH([]byte(t))
+
 	return &hash
 }
 
@@ -334,7 +344,7 @@ func (shardHeader *ShardHeader) String() string {
 	res += shardHeader.StakingTxRoot.String()
 	res += fmt.Sprintf("%v", shardHeader.BeaconHeight)
 	tokenIDs := make([]common.Hash, 0)
-	for tokenID, _ := range shardHeader.TotalTxsFee {
+	for tokenID := range shardHeader.TotalTxsFee {
 		tokenIDs = append(tokenIDs, tokenID)
 	}
 	sort.Slice(tokenIDs, func(i int, j int) bool {
@@ -349,7 +359,7 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version >= MULTI_VIEW_VERSION {
+	if shardHeader.Version >= MULTI_VIEW_VERSION && shardHeader.Version <= BLOCK_PRODUCINGV3_VERSION {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
@@ -358,7 +368,7 @@ func (shardHeader *ShardHeader) String() string {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
 
-	if shardHeader.Version >= LEMMA2_VERSION {
+	if shardHeader.Version >= LEMMA2_VERSION && shardHeader.Version <= BLOCK_PRODUCINGV3_VERSION {
 		res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
 	}
 

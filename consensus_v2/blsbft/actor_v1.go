@@ -172,7 +172,7 @@ func (actorV1 *actorV1) ValidateData(data []byte, sig string, publicKey string) 
 
 func (actorV1 *actorV1) combineVotes(votes map[string]vote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
 	var blsSigList [][]byte
-	for validator, _ := range votes {
+	for validator := range votes {
 		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
 	}
 	sort.Ints(validatorIdx)
@@ -431,7 +431,7 @@ func (actorV1 *actorV1) enterProposePhase(keyset *signatureschemes2.MiningKey) {
 		return
 	}
 	var validationData consensustypes.ValidationData
-	validationData.ProducerBLSSig, _ = keyset.BriSignData(block.Hash().GetBytes())
+	validationData.ProposerBLSSig, _ = keyset.BriSignData(block.Hash().GetBytes())
 	validationDataString, err := consensustypes.EncodeValidationData(validationData)
 	if err != nil {
 		actorV1.logger.Errorf("Encode validation data failed %+v", err)

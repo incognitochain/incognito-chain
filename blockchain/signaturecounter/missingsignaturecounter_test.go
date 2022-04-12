@@ -146,19 +146,19 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
@@ -177,19 +177,19 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
@@ -208,19 +208,19 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -239,19 +239,19 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -270,19 +270,19 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -301,19 +301,19 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -340,7 +340,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 					aggregatedMissingSignatureFull[k] += 1
 				}
 			}
-			for k, _ := range missingSignatureFull {
+			for k := range missingSignatureFull {
 				missingSignatureFull[k] = NewMissingSignature()
 			}
 		})
@@ -398,11 +398,11 @@ func TestSignatureCounter_AddMissingSignature2(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -421,15 +421,15 @@ func TestSignatureCounter_AddMissingSignature2(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -487,27 +487,27 @@ func TestSignatureCounter_AddMissingSignature3(t *testing.T) {
 			},
 			wantFields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys2[0]: MissingSignature{
+					committeePublicKeys2[0]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys2[1]: MissingSignature{
+					committeePublicKeys2[1]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys2[2]: MissingSignature{
+					committeePublicKeys2[2]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys2[3]: MissingSignature{
+					committeePublicKeys2[3]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
-					committeePublicKeys2[4]: MissingSignature{
+					committeePublicKeys2[4]: {
 						Missing:     1,
 						ActualTotal: 1,
 					},
-					committeePublicKeys2[5]: MissingSignature{
+					committeePublicKeys2[5]: {
 						Missing:     0,
 						ActualTotal: 1,
 					},
@@ -547,19 +547,19 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 			name: "no penalty",
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     49,
 						ActualTotal: 100,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     149,
 						ActualTotal: 300,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     239,
 						ActualTotal: 480,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     249,
 						ActualTotal: 500,
 					},
@@ -572,19 +572,19 @@ func TestSignatureCounter_GetAllSlashingPenalty(t *testing.T) {
 			name: "penalty range >= 50",
 			fields: fields{
 				missingSignature: map[string]MissingSignature{
-					committeePublicKeys[0]: MissingSignature{
+					committeePublicKeys[0]: {
 						Missing:     51,
 						ActualTotal: 100,
 					},
-					committeePublicKeys[1]: MissingSignature{
+					committeePublicKeys[1]: {
 						Missing:     149,
 						ActualTotal: 300,
 					},
-					committeePublicKeys[2]: MissingSignature{
+					committeePublicKeys[2]: {
 						Missing:     239,
 						ActualTotal: 480,
 					},
-					committeePublicKeys[3]: MissingSignature{
+					committeePublicKeys[3]: {
 						Missing:     250,
 						ActualTotal: 500,
 					},

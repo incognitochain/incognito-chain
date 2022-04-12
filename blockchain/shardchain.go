@@ -92,6 +92,9 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 func (chain *ShardChain) AddView(view multiview.View) bool {
 	curBestView := chain.multiView.GetBestView()
 	added := chain.multiView.AddView(view)
+	if added {
+		chain.multiView.TryFinalizeView(view)
+	}
 	if (curBestView != nil) && (added) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()
@@ -244,7 +247,7 @@ func (chain *ShardChain) CreateNewBlock(
 		newBlock.Header.ProposeTime = startTime
 	}
 
-	if version >= types.LEMMA2_VERSION {
+	if version >= types.LEMMA2_VERSION && version <= types.BLOCK_PRODUCINGV3_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err

@@ -24,14 +24,39 @@ type View interface {
 	GetProposerLength() int
 }
 
+// beacon BS and shard BS not share all the function
+// maintain all old functions, only add new function, do not change interface because it impact many other package
+// BBS: add view, finalize block = old finality rule, finalize block = new rule, get best confirmable chains, get confirmable chain
+// SBS: add view, finalize block = old finality rule, finalize block = new rule
+//
+
 type MultiView struct {
-	viewByHash     map[common.Hash]View //viewByPrevHash map[common.Hash][]View
+	viewByHash     map[common.Hash]View
 	viewByPrevHash map[common.Hash][]View
 	actionCh       chan func()
 
 	//state
 	finalView View
 	bestView  View
+}
+
+type Context struct {
+}
+
+type IMultiView interface {
+	// add a new view to a tree
+	AddView(View) // same with all
+	// get best view => Rule
+	// 1. View with max depth
+	// 2. View with equal depth but smallest block producing time
+	// 3. View with equal depth but newer committee
+	GetBestView() // same with all
+	// Capture Final View
+	GetFinalView() // same with all
+	// Finalize view based on version and shard or beacon
+	TryFinalizeView(View) View // 3 version now based on shard or beacon
+	// Use breadth first search rule
+	GetAllViewsWithBFS() // same with all
 }
 
 func NewMultiView() *MultiView {
@@ -108,14 +133,12 @@ func (multiView *MultiView) AddView(view View) bool {
 	multiView.actionCh <- func() {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
 			multiView.viewByHash[*view.GetHash()] = view
-			multiView.updateViewState(view)
 			res <- true
 			return
 		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
 			if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
 				multiView.viewByHash[*view.GetHash()] = view
 				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
-				multiView.updateViewState(view)
 				res <- true
 				return
 			}
@@ -133,8 +156,10 @@ func (multiView *MultiView) GetFinalView() View {
 	return multiView.finalView
 }
 
-//update view whenever there is new view insert into system
-func (multiView *MultiView) updateViewState(newView View) {
+// TryFinalizeView try to finalize a view, return new finalize view
+// this view must be added to multiview before
+func (multiView *MultiView) TryFinalizeView(newView View) View {
+
 	defer func() {
 		if multiView.viewByHash[*multiView.finalView.GetPreviousHash()] != nil {
 			delete(multiView.viewByHash, *multiView.finalView.GetPreviousHash())
@@ -145,7 +170,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 	if multiView.finalView == nil {
 		multiView.bestView = newView
 		multiView.finalView = newView
-		return
+		return multiView.finalView
 	}
 
 	//update bestView
@@ -162,37 +187,45 @@ func (multiView *MultiView) updateViewState(newView View) {
 		//update finalView: consensus 1
 		prev1Hash := multiView.bestView.GetPreviousHash()
 		if prev1Hash == nil {
-			return
+			return nil
 		}
 		prev1View := multiView.viewByHash[*prev1Hash]
 		if prev1View == nil {
-			return
+			return nil
 		}
+
 		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
-		////update finalView: consensus 2
-		prev1Hash := multiView.bestView.GetPreviousHash()
-		prev1View := multiView.viewByHash[*prev1Hash]
-		if prev1View == nil || multiView.finalView.GetHeight() == prev1View.GetHeight() {
-			return
+		return multiView.finalView
+
+	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION && newView.GetBlock().GetVersion() <= types.BLOCK_PRODUCINGV3_VERSION {
+		// update finalView: consensus 2
+		preHash := multiView.bestView.GetPreviousHash()
+		preView := multiView.viewByHash[*preHash]
+		if preView == nil || multiView.finalView.GetHeight() == preView.GetHeight() {
+			return nil
 		}
 		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(preView.GetBlock().GetProposeTime())
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
-			multiView.finalView = prev1View
+			multiView.finalView = preView
+			return multiView.finalView
 		}
 		if newView.GetBlock().GetVersion() >= types.LEMMA2_VERSION {
 			// update final view lemma 2
 			if newView.GetBlock().GetHeight()-1 == newView.GetBlock().GetFinalityHeight() {
-				multiView.finalView = prev1View
+				multiView.finalView = preView
+				return multiView.finalView
 			}
 		}
 	} else {
 		fmt.Println("Block version is not correct")
 	}
 
-	//fmt.Println("Debug bestview", multiView.bestView.GetHeight())
-	return
+	return nil
+}
+
+func (multiView *MultiView) BeaconInstantFinalize(view View, reProposeHash []string, committees []incognitokey.CommitteePublicKey) {
+
 }
 
 func (multiView *MultiView) GetAllViewsWithBFS() []View {

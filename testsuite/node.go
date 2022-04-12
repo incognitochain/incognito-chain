@@ -456,10 +456,10 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		}
 		switch version {
 		case 2:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			proposerPK, _ = curView.GetProposerByTimeSlot(int64(uint64(sim.timer.Now())/common.TIMESLOT), 2)
 			//fmt.Println("version 2")
 		case 3:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			proposerPK, _ = curView.GetProposerByTimeSlot(int64(uint64(sim.timer.Now())/common.TIMESLOT), 2)
 			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
 			if chainID > -1 {
 				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
@@ -628,7 +628,7 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 
 func (s *NodeEngine) SignBlock(userMiningKey *signatureschemes.MiningKey, block types.BlockInterface) {
 	var validationData consensustypes.ValidationData
-	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProposerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(blsbft.BlockValidation).AddValidationField(validationDataString)
 }
