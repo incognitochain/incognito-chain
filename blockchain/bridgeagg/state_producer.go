@@ -401,24 +401,24 @@ func (sp *stateProducer) addToken(
 		for unifiedTokenID, vaults := range unifiedTokens {
 			if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
 				unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
-				for networkID, vault := range vaults {
-					err := validateConfigVault(sDBs, networkID, vault)
-					if err != nil {
-						return res, unifiedTokenInfos, err
-					}
-					tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
-					if err != nil {
-						return res, unifiedTokenInfos, err
-					}
-					externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
-					err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, externalTokenID, false, 0, "+")
-					if err != nil {
-						return res, unifiedTokenInfos, err
-					}
-					state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
-					v := NewVaultWithValue(*state, *tokenID)
-					unifiedTokenInfos[unifiedTokenID][networkID] = v
+			}
+			for networkID, vault := range vaults {
+				err := validateConfigVault(sDBs, networkID, vault)
+				if err != nil {
+					return res, unifiedTokenInfos, err
 				}
+				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
+				if err != nil {
+					return res, unifiedTokenInfos, err
+				}
+				externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+				err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, externalTokenID, false, 0, "+")
+				if err != nil {
+					return res, unifiedTokenInfos, err
+				}
+				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
+				v := NewVaultWithValue(*state, *tokenID)
+				unifiedTokenInfos[unifiedTokenID][networkID] = v
 			}
 		}
 		addToken.NewListTokens = unifiedTokens

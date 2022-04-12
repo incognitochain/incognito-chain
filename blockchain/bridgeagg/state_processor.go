@@ -276,20 +276,20 @@ func (sp *stateProcessor) addToken(
 	for unifiedTokenID, vaults := range content.NewListTokens {
 		if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
 			unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
-			for networkID, vault := range vaults {
-				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
-				if err != nil {
-					return unifiedTokenInfos, err
-				}
-				externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
-				err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, externalTokenID, false, 0, "+")
-				if err != nil {
-					return unifiedTokenInfos, err
-				}
-				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
-				v := NewVaultWithValue(*state, *tokenID)
-				unifiedTokenInfos[unifiedTokenID][networkID] = v
+		}
+		for networkID, vault := range vaults {
+			tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
+			if err != nil {
+				return unifiedTokenInfos, err
 			}
+			externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+			err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, externalTokenID, false, 0, "+")
+			if err != nil {
+				return unifiedTokenInfos, err
+			}
+			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
+			v := NewVaultWithValue(*state, *tokenID)
+			unifiedTokenInfos[unifiedTokenID][networkID] = v
 		}
 	}
 	return unifiedTokenInfos, nil
