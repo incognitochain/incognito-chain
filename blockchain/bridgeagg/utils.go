@@ -471,16 +471,6 @@ func unshieldEVM(
 	return vault.tokenID, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }
 
-func UpdateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
-	var resLastUpdatedRewardReserve, resRewardReserve uint64
-	if newRewardReserve < lastUpdatedRewardReserve-currentRewardReserve {
-		return 0, 0, errors.New("deltaY is < newRewardReserve")
-	}
-	resLastUpdatedRewardReserve = newRewardReserve
-	resRewardReserve = currentRewardReserve + newRewardReserve - lastUpdatedRewardReserve
-	return resLastUpdatedRewardReserve, resRewardReserve, nil
-}
-
 func CalculateIncDecimal(decimal, baseDecimal uint) uint {
 	if decimal > baseDecimal {
 		return baseDecimal
@@ -550,4 +540,42 @@ func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]by
 		res = append([]byte(prefix), tokenAddr.Bytes()...)
 	}
 	return res, nil
+}
+
+func CloneUnifiedTokenInfos(unifiedTokenInfos map[common.Hash]map[uint]*Vault) map[common.Hash]map[uint]*Vault {
+	res := make(map[common.Hash]map[uint]*Vault)
+	for unifiedTokenID, vaults := range unifiedTokenInfos {
+		res[unifiedTokenID] = make(map[uint]*Vault)
+		for networkID, vault := range vaults {
+			res[unifiedTokenID][networkID] = vault.Clone()
+		}
+	}
+	return res
+}
+
+func UpdateRewardReserve(
+	unifiedTokenInfos map[common.Hash]map[uint]*Vault, newRewardReserve uint64,
+	unifiedTokenID common.Hash, networkID uint, off bool,
+) error {
+	v := unifiedTokenInfos[unifiedTokenID][networkID]
+	newLastUpdatedRewardReserve, newCurrentRewardReserve, err := updateRewardReserve(v.LastUpdatedRewardReserve(), v.CurrentRewardReserve(), newRewardReserve)
+	if err != nil {
+		return err
+	}
+	v.SetLastUpdatedRewardReserve(newLastUpdatedRewardReserve)
+	v.SetCurrentRewardReserve(newCurrentRewardReserve)
+	unifiedTokenInfos[unifiedTokenID][networkID] = v
+	return nil
+}
+
+func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
+	var resLastUpdatedRewardReserve, resRewardReserve uint64
+	tmp := big.NewInt(0).Sub(big.NewInt(0).SetUint64(lastUpdatedRewardReserve), big.NewInt(0).SetUint64(currentRewardReserve))
+	if tmp.Cmp(big.NewInt(0).SetUint64(newRewardReserve)) > 0 {
+		return 0, 0, errors.New("deltaY is > newRewardReserve")
+	}
+
+	resLastUpdatedRewardReserve = newRewardReserve
+	resRewardReserve = currentRewardReserve + newRewardReserve - lastUpdatedRewardReserve // always >= 0 by above condition
+	return resLastUpdatedRewardReserve, resRewardReserve, nil
 }

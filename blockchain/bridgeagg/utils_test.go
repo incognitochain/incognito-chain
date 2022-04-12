@@ -301,7 +301,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	}
 }
 
-func TestUpdateRewardReserve(t *testing.T) {
+func Test_updateRewardReserve(t *testing.T) {
 	type args struct {
 		lastUpdatedRewardReserve uint64
 		currentRewardReserve     uint64
@@ -344,7 +344,7 @@ func TestUpdateRewardReserve(t *testing.T) {
 				newRewardReserve:         200,
 			},
 			want:    200,
-			want1:   200,
+			want1:   190,
 			wantErr: false,
 		},
 		{
@@ -355,22 +355,44 @@ func TestUpdateRewardReserve(t *testing.T) {
 				newRewardReserve:         200,
 			},
 			want:    200,
-			want1:   200,
+			want1:   210,
+			wantErr: false,
+		},
+		{
+			name: "newY < deltaY",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     10,
+				newRewardReserve:         50,
+			},
+			want:    0,
+			want1:   0,
+			wantErr: true,
+		},
+		{
+			name: "deltaY < 0",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     200,
+				newRewardReserve:         50,
+			},
+			want:    50,
+			want1:   150,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := UpdateRewardReserve(tt.args.lastUpdatedRewardReserve, tt.args.currentRewardReserve, tt.args.newRewardReserve)
+			got, got1, err := updateRewardReserve(tt.args.lastUpdatedRewardReserve, tt.args.currentRewardReserve, tt.args.newRewardReserve)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("UpdateRewardReserve() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("updateRewardReserve() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("UpdateRewardReserve() got = %v, want %v", got, tt.want)
+				t.Errorf("updateRewardReserve() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("UpdateRewardReserve() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("updateRewardReserve() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
