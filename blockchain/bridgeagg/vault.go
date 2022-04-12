@@ -132,6 +132,9 @@ func (v *Vault) convert(amount uint64) error {
 	if err != nil {
 		return err
 	}
+	if tmpAmount.Cmp(big.NewInt(0)) == 0 {
+		return fmt.Errorf("amount %d is not enough for converting", amount)
+	}
 	return v.increaseReserve(tmpAmount.Uint64())
 }
 

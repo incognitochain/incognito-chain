@@ -313,7 +313,52 @@ func TestUpdateRewardReserve(t *testing.T) {
 		want    uint64
 		want1   uint64
 		wantErr bool
-	}{}
+	}{
+		{
+			name: "First time modify",
+			args: args{
+				lastUpdatedRewardReserve: 0,
+				currentRewardReserve:     0,
+				newRewardReserve:         100,
+			},
+			want:    100,
+			want1:   100,
+			wantErr: false,
+		},
+		{
+			name: "Second time modify - not yet update reward",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     100,
+				newRewardReserve:         200,
+			},
+			want:    200,
+			want1:   200,
+			wantErr: false,
+		},
+		{
+			name: "Second time modify - has updated reward - deltaY > 0",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     90,
+				newRewardReserve:         200,
+			},
+			want:    200,
+			want1:   200,
+			wantErr: false,
+		},
+		{
+			name: "Second time modify - has updated reward - deltaY < 0",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     110,
+				newRewardReserve:         200,
+			},
+			want:    200,
+			want1:   200,
+			wantErr: false,
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1, err := UpdateRewardReserve(tt.args.lastUpdatedRewardReserve, tt.args.currentRewardReserve, tt.args.newRewardReserve)

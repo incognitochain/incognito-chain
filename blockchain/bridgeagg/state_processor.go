@@ -220,7 +220,8 @@ func (sp *stateProcessor) unshield(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		for _, data := range acceptedContent.Data {
+		txReqID = acceptedContent.TxReqID
+		for index, data := range acceptedContent.Data {
 			vault := unifiedTokenInfos[acceptedContent.TokenID][data.NetworkID] // check available before
 			err = vault.increaseCurrentRewardReserve(data.Fee)
 			if err != nil {
@@ -231,10 +232,10 @@ func (sp *stateProcessor) unshield(
 				return unifiedTokenInfos, err
 			}
 			unifiedTokenInfos[acceptedContent.TokenID][data.NetworkID] = vault
-			txReqID = acceptedContent.TxReqID
 			status = common.AcceptedStatusByte
+			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
+			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.TokenID
 		}
-		sp.UnshieldTxsCache[txReqID] = acceptedContent.TokenID
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {

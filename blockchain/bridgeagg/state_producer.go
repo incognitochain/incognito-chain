@@ -245,6 +245,11 @@ func (sp *stateProducer) shield(
 				err = e
 				return
 			}
+			if actualAmount == 0 {
+				errorType = CalculateShieldAmountError
+				err = errors.New("Actual receive amount from shield cannot be 0")
+				return
+			}
 			paymentAddress = addressStr
 			acceptedShieldRequestData[index].IssuingAmount = actualAmount - reward
 			acceptedShieldRequestRewardData[index].IssuingAmount = reward
@@ -346,6 +351,12 @@ func (sp *stateProducer) unshield(
 			if e != nil {
 				errorType = et
 				err = e
+				burningInsts = [][]string{}
+				return
+			}
+			if amount == 0 {
+				errorType = CalculateUnshieldAmountError
+				err = errors.New("Actual receive amount is 0 with unshielding request")
 				burningInsts = [][]string{}
 				return
 			}
