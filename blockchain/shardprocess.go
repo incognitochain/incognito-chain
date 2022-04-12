@@ -1212,8 +1212,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-	//old finalView is used to as checkPointView (not latest final view)
-	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, finalView.(*ShardBestState)); err != nil {
+	//old finalView is used as checkPointView (not latest final view)
+	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, finalView); err != nil {
 		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
 

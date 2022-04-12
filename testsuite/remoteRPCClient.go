@@ -156,7 +156,34 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 }
 
 func (r *RemoteRPCClient) GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error) {
-	panic("implement me")
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"params":  []interface{}{},
+		"method":  "getmempoolinfo",
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result *jsonresult.GetMempoolInfo
+		Error  *ErrMsg
+	}{}
+	//fmt.Println(string(body))
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	return resp.Result, nil
 }
 
 func (r *RemoteRPCClient) CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error) {

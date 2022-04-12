@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"log"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -358,6 +359,7 @@ func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error) {
 // ValidateSanity performs sanity check for this proof.
 // The input parameter is ingored.
 func (proof PaymentProofV2) ValidateSanity(vEnv env.ValidationEnviroment) (bool, error) {
+	log.Println("coin", len(proof.GetInputCoins()), len(proof.GetOutputCoins()))
 	if len(proof.GetInputCoins()) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
 	}

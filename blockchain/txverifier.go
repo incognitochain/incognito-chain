@@ -99,7 +99,7 @@ func (v *TxsVerifier) checkFees(
 	beaconStateDB *statedb.StateDB,
 	shardID byte,
 ) bool {
-	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
+	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String(), tx.GetTxActualSize())
 	txType := tx.GetType()
 	if txType == common.TxCustomTokenPrivacyType {
 		limitFee := v.feeEstimator.GetLimitFeeForNativeToken()

@@ -324,6 +324,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	defer t.Stop()
 	errChan := make(chan validateResult)
 	go func() {
+		t1 := time.Now()
 		if ok := isTxForUser(tx); !ok {
 			Logger.Debugf("This transaction %v can not be sent by user", tx.Hash().String())
 			errChan <- validateResult{
@@ -346,6 +347,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			tp.Cacher.Add(tx.Hash().String(), nil, tp.ttl)
 		}
 		start = time.Now()
+		fmt.Println(tx.Hash().String(), "1", time.Since(t1).Seconds())
 		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
 			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
 			errChan <- validateResult{
@@ -355,13 +357,16 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			}
 			return
 		}
+		fmt.Println(tx.Hash().String(), "2", time.Since(t1).Seconds())
 		ok, err := tp.Verifier.ValidateWithoutChainstate(tx)
+		fmt.Println(tx.Hash().String(), "3", time.Since(t1).Seconds())
 		errChan <- validateResult{
 			err:    err,
 			result: ok,
 			cost:   time.Since(start),
 		}
 	}()
+
 	select {
 	case <-t.C:
 		return false, errors.Errorf("[stream] Trying send to client but timeout"), 0
@@ -513,6 +518,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			}
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
+			Logger.Info("Update curTime", curTime.Seconds(), txDetails.VTime.Seconds())
 			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
 			for k := range removeIdx {
 				res[k] = nil
@@ -752,6 +758,9 @@ func (tp *TxsPool) CheckValidatedTxs(
 
 func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 	MAX := runtime.NumCPU() - 1
+	if MAX > 8 {
+		MAX = 8
+	}
 	nWorkers := make(chan int, MAX)
 	for {
 		select {

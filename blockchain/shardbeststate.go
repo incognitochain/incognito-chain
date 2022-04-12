@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"sort"
 	"time"
@@ -741,7 +742,7 @@ func getConfirmedCommitteeHeightFromBeacon(bc *BlockChain, shardBlock *types.Sha
 }
 
 //checkPointView is used to finalized batchcommit or finalized statenode in lite mode
-func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceWrite bool, checkPointView *ShardBestState) (err error) {
+func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceWrite bool, checkPointView multiview.View) (err error) {
 	if shardBestState.ShardHeight == 1 {
 		forceWrite = true
 	}
@@ -771,7 +772,7 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 
 	//get finalview shard root hash (bypass first block)
 	if shardBestState.ShardHeight > 1 { //from beginning, when no final view
-		sRHBytes, err := rawdbv2.GetShardRootsHash(db, shardBestState.ShardID, checkPointView.BestBlockHash)
+		sRHBytes, err := rawdbv2.GetShardRootsHash(db, shardBestState.ShardID, checkPointView.(*ShardBestState).BestBlockHash)
 		if err != nil {
 			return err
 		}

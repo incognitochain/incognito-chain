@@ -871,27 +871,29 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				}
 				if EnableIndexingCoinByOTAKey {
 					handler := func(k, v interface{}) bool {
-						vkArr, ok := k.([64]byte)
-						if !ok {
-							return false
-						}
-						processing, ok := v.(int)
-						if !ok {
-							return false
-						}
-						if processing == 0 {
-							return false
-						}
-						otaKey := coinIndexer.OTAKeyFromRaw(vkArr)
-						ks := &incognitokey.KeySet{}
-						ks.OTAKey = otaKey
-						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
-						if belongs {
-							err = outcoinIndexer.StoreIndexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
-							if err != nil {
-								Logger.log.Errorf("StoreIndexedOutputCoins in viewpoint for OTAKey %x error: %v\n", vkArr, err)
+						go func() {
+							vkArr, ok := k.([64]byte)
+							if !ok {
+								return
 							}
-						}
+							processing, ok := v.(int)
+							if !ok {
+								return
+							}
+							if processing == 0 {
+								return
+							}
+							otaKey := coinIndexer.OTAKeyFromRaw(vkArr)
+							ks := &incognitokey.KeySet{}
+							ks.OTAKey = otaKey
+							belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
+							if belongs {
+								err = outcoinIndexer.StoreIndexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
+								if err != nil {
+									Logger.log.Errorf("StoreIndexedOutputCoins in viewpoint for OTAKey %x error: %v\n", vkArr, err)
+								}
+							}
+						}()
 						return true
 					}
 					outcoinIndexer.GetManagedOTAKeys().Range(handler)

@@ -100,6 +100,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 		return height
 	}
+	time.Sleep(time.Second * 5)
 	beaconProcessHeight = getBeaconFinalHeightForProcess()
 
 	if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
