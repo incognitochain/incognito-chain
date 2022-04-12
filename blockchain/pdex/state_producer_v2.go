@@ -273,7 +273,6 @@ func (sp *stateProducerV2) modifyParams(
 		// check conditions
 		metadataParams := metaData.Pdexv3Params
 		newParams := Params(metadataParams)
-		Logger.log.Info("[pdex] newParams.AutoWithdrawOrderRewardLimitAmount:", newParams.AutoWithdrawOrderRewardLimitAmount)
 		isValidParams, errorMsg := isValidPdexv3Params(&newParams, pairs)
 
 		status := ""
