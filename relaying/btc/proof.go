@@ -13,7 +13,7 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
-const BTCBlockConfirmations = 6
+const BTCBlockConfirmations = 1
 
 type MerkleProof struct {
 	ProofHash *chainhash.Hash
