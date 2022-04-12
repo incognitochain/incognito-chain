@@ -11,6 +11,7 @@ func (b *BlockChain) maybeAcceptBlockV2(block *btcutil.Block, flags BehaviorFlag
 	// The height of this block is one more than the referenced previous
 	// block.
 	prevHash := &block.MsgBlock().Header.PrevBlock
+	Logger.log.Infof("hash: %v, prevHash: %v\n", block.MsgBlock().Header.BlockHash().String(), prevHash.String())
 	prevNode := b.index.LookupNode(prevHash)
 	if prevNode == nil {
 		str := fmt.Sprintf("previous block %s is unknown", prevHash)
