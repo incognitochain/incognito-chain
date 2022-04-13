@@ -220,8 +220,8 @@ WAITFORBEACON:
 	}
 
 	if shouldValidate {
-		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
+			committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 			Logger.log.Errorf("Validate block %v shard %v, hash %+v, validationData %+v, with committee %v return error %v", shardBlock.GetHeight(), *shardBlock.Hash(), shardBlock.GetValidationField(), shardBlock.GetShardID(), committeesStr, err)
 			return err
 		}
@@ -279,6 +279,14 @@ WAITFORBEACON:
 
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	err = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
+	if err != nil {
+		return err
+	}
+	blk, _, err := blockchain.GetShardBlockByHashWithShardID(*shardBlock.Hash(), shardID)
+	if err != nil {
+		return err
+	}
+	err = blockchain.ShardChain[shardID].ValidateBlockSignatures(blk, signingCommittees)
 	if err != nil {
 		return err
 	}

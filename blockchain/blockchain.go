@@ -1228,35 +1228,35 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 	if err != nil {
 		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
-	committeeKeys, err := bc.getValidatorsFromCacheByEpoch(epoch, sID)
-	if err != nil {
-		Logger.log.Error(err)
-		committeeKeys = statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-		key := getCommitteeCacheKeyByEpoch(epoch, sID)
-		bc.committeeByEpochCache.Add(key, committeeKeys)
-	} else {
-		tmp := map[string]struct{}{}
-		for _, k := range committeeKeys {
-			str, err := k.ToBase58()
-			if err != nil {
-				panic(err)
-			}
-			tmp[str] = struct{}{}
-		}
-		committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-		if len(committeeKeys2) != len(committeeKeys) {
-			panic("aaaaaaaaaa")
-		}
-		for _, k := range committeeKeys2 {
-			str, err := k.ToBase58()
-			if err != nil {
-				panic(err)
-			}
-			if _, ok := tmp[str]; !ok {
-				panic("bbbbbbbbbbbb")
-			}
-		}
-	}
+	// committeeKeys, err := bc.getValidatorsFromCacheByEpoch(epoch, sID)
+	committeeKeys := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	key := getCommitteeCacheKeyByEpoch(epoch, sID)
+	// 	bc.committeeByEpochCache.Add(key, committeeKeys)
+	// } else {
+	// 	tmp := map[string]struct{}{}
+	// 	for _, k := range committeeKeys {
+	// 		str, err := k.ToBase58()
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		tmp[str] = struct{}{}
+	// 	}
+	// 	committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+	// 	if len(committeeKeys2) != len(committeeKeys) {
+	// 		panic("aaaaaaaaaa")
+	// 	}
+	// 	for _, k := range committeeKeys2 {
+	// 		str, err := k.ToBase58()
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		if _, ok := tmp[str]; !ok {
+	// 			panic("bbbbbbbbbbbb")
+	// 		}
+	// 	}
+	// }
 	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, committeeKeys)
 	return committeeState, nil
 }
