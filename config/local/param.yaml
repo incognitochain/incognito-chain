@@ -116,11 +116,13 @@ is_enable_bpv3_stats: false
 batch_commit_sync_mode_param:
   trie_journal_cache_size: 32
   block_trie_in_memory: 2000
-  trie_node_limit: 512 * 1024 * 1024
-  trie_img_limit: 4 * 1024 * 1024
+  trie_node_limit: 536870912
+  trie_img_limit: 5242880
 auto_enable_feature:
   - maxcommitteesize48:
       min_trigger: 1e9
       force_trigger: 1e9
       require_percentage: 100
-cachesize: 536870912 #500Mb
+flatfileparam:
+  maxcachesize: 536870912 #500Mb
+  compresslevel: 0

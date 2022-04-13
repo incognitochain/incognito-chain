@@ -88,6 +88,19 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	rolehash := ""
 	relayShardIDs := sub.relayShard
 	var newTopics = make(msgToTopics)
+	receivedTopics := map[string]interface{}{}
+	filterNewTopics := func(newTopics []Topic, received map[string]interface{}) []Topic {
+		res := []Topic{}
+		for _, t := range newTopics {
+			key := fmt.Sprintf("%v-%v", t.Name, t.Act)
+			if _, ok := received[key]; ok {
+				continue
+			}
+			res = append(res, t)
+			received[key] = struct{}{}
+		}
+		return res
+	}
 	var err error
 	shardIDs := []int{}
 	nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
@@ -145,6 +158,9 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		if err != nil {
 			return err
 		}
+		for m, topics := range newTopics {
+			newTopics[m] = filterNewTopics(topics, receivedTopics)
+		}
 
 		// Registering mining
 		for chainID, validator := range newRole {
@@ -159,6 +175,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 					return err // Don't save new role and topics since we need to retry later
 				}
 				for msg, topic := range topics {
+					topic = filterNewTopics(topic, receivedTopics)
 					newTopics[msg] = append(newTopics[msg], topic...)
 				}
 			}
@@ -181,6 +198,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 			return err // Don't save new role and topics since we need to retry later
 		}
 		for msg, topic := range topics {
+			topic = filterNewTopics(topic, receivedTopics)
 			newTopics[msg] = append(newTopics[msg], topic...)
 		}
 
@@ -279,7 +297,9 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics, for
 
 			s, err := sub.subscriber.Subscribe(t.Name)
 			if err != nil {
-				return errors.WithStack(err)
+				errN := errors.WithStack(err)
+				Logger.Errorf("Can not subscribe topic %v, err %v", t.Name, errN)
+				return errN
 			}
 			sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
 			go sub.processSubscriptionMessage(m, sub.messages, s)
@@ -321,12 +341,13 @@ func (sub *SubManager) processSubscriptionMessage(msgName string, inbox chan *pu
 		sub.processIncomingTxs(subs)
 		return
 	}
+	Logger.Debugf("Start process subscription msg from msgType %v", msgName)
 	ctx := context.Background()
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := subs.Next(ctx)
 		if err != nil { // Subscription might have been cancelled
-			Logger.Warn(err)
+			Logger.Errorf("Can not get data from msgType %v, err %v", msgName, err)
 			return
 		}
 		//Logger.Info("[dcs] sub.Topic():", sub.Topic())

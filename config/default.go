@@ -1,6 +1,7 @@
 package config
 
 import (
+	"compress/gzip"
 	"time"
 )
 
@@ -91,7 +92,10 @@ var MainnetParam = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
-	MemoryCacheMaxSize:       536870912, // 500Mb
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var Testnet1Param = &param{
@@ -174,7 +178,10 @@ var Testnet1Param = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
-	MemoryCacheMaxSize:       536870912, // 500Mb
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var Tesnet2Param = &param{
@@ -258,7 +265,10 @@ var Tesnet2Param = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
-	MemoryCacheMaxSize:       536870912, // 500Mb
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var LocalParam = &param{
@@ -341,7 +351,10 @@ var LocalParam = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
-	MemoryCacheMaxSize:       536870912, // 500Mb
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var LocalDCSParam = &param{
@@ -424,7 +437,10 @@ var LocalDCSParam = &param{
 	},
 	IsBackup:                 false,
 	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
-	MemoryCacheMaxSize:       536870912, // 500Mb
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 func (p *param) LoadKeyByNetwork(network string) {

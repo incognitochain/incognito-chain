@@ -1293,12 +1293,26 @@ func (blockchain *BlockChain) processStoreShardBlock(
 // ReplacePreviousValidationData replace newValidationData to previous if
 // new aggregated signatures is combined from a larger subset of committees
 func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Hash, sID int, newValidationData string) error {
-	sChain := blockchain.ShardChain[byte(sID)]
-	valData, err := sChain.blkManager.GetBlockValidation(blockHash)
-	if err != nil {
-		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	sChain := blockchain.ShardChain[sID]
+	var (
+		oldValidationData string
+		err               error
+		shardBlock        *types.ShardBlock
+	)
+	if !config.Config().EnableFFStorage {
+		shardBlock, _, err = blockchain.GetShardBlockByHashWithShardID(blockHash, byte(sID))
+		if (err != nil) || (shardBlock == nil) {
+			return NewBlockChainError(ReplacePreviousValidationDataError, err)
+		}
+		oldValidationData = shardBlock.ValidationData
+	} else {
+		oldValidationData, err = sChain.blkManager.GetBlockValidation(blockHash)
+		if err != nil {
+			return NewBlockChainError(ReplacePreviousValidationDataError, err)
+		}
 	}
-	decodedOldValidationData, err := consensustypes.DecodeValidationData(valData)
+
+	decodedOldValidationData, err := consensustypes.DecodeValidationData(oldValidationData)
 	if err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	}
@@ -1309,8 +1323,17 @@ func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Has
 	}
 
 	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
-		if err := sChain.blkManager.StoreBlockValidation(blockHash, newValidationData); err != nil {
-			return NewBlockChainError(ReplacePreviousValidationDataError, err)
+		if !config.Config().EnableFFStorage {
+			shardBlock.ValidationData = newValidationData
+			if err := sChain.blkManager.StoreBlock(proto.BlkType_BlkShard, shardBlock); err != nil {
+				return NewBlockChainError(ReplacePreviousValidationDataError, err)
+			}
+			Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
+				shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
+		} else {
+			if err := sChain.blkManager.StoreBlockValidation(blockHash, newValidationData); err != nil {
+				return NewBlockChainError(ReplacePreviousValidationDataError, err)
+			}
 		}
 	}
 
