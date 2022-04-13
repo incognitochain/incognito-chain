@@ -291,7 +291,7 @@ func (sp *stateProcessor) addToken(
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal)
+			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
 			v := NewVaultWithValue(*state, *tokenID)
 			unifiedTokenInfos[unifiedTokenID][networkID] = v
 		}

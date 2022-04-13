@@ -66,6 +66,7 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 			TokenID       common.Hash `json:"TokenID"`
 			NetworkID     uint        `json:"NetworkID"`
 			RewardReserve uint64      `json:"RewardReserve"`
+			IsPaused      bool        `json:"IsPaused"`
 		} `json:"NewList"`
 	}{}
 	// parse params & metadata
@@ -81,6 +82,7 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
 					value.TokenID, value.NetworkID,
 				),
+				IsPaused: value.IsPaused,
 			})
 		}
 	}

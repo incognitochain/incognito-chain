@@ -14,6 +14,7 @@ type BridgeAggVaultState struct {
 	lastUpdatedRewardReserve uint64
 	currentRewardReserve     uint64
 	decimal                  uint
+	isPaused                 bool
 }
 
 func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
@@ -22,11 +23,13 @@ func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
 		CurrentRewardReserve     uint64 `json:"CurrentRewardReserve"`
 		Decimal                  uint   `json:"Decimal"`
+		IsPaused                 bool   `json:"IsPaused"`
 	}{
 		Reserve:                  state.reserve,
 		LastUpdatedRewardReserve: state.lastUpdatedRewardReserve,
 		CurrentRewardReserve:     state.currentRewardReserve,
 		Decimal:                  state.decimal,
+		IsPaused:                 state.isPaused,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -40,6 +43,7 @@ func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
 		CurrentRewardReserve     uint64 `json:"CurrentRewardReserve"`
 		Decimal                  uint   `json:"Decimal"`
+		IsPaused                 bool   `json:"IsPaused"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -49,6 +53,7 @@ func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 	state.lastUpdatedRewardReserve = temp.LastUpdatedRewardReserve
 	state.currentRewardReserve = temp.CurrentRewardReserve
 	state.decimal = temp.Decimal
+	state.isPaused = temp.IsPaused
 	return nil
 }
 
@@ -57,13 +62,14 @@ func NewBridgeAggVaultState() *BridgeAggVaultState {
 }
 
 func NewBridgeAggVaultStateWithValue(
-	reserve, lastUpdatedRewardReserve, currentRewardReserve uint64, decimal uint,
+	reserve, lastUpdatedRewardReserve, currentRewardReserve uint64, decimal uint, isPaused bool,
 ) *BridgeAggVaultState {
 	return &BridgeAggVaultState{
 		reserve:                  reserve,
 		lastUpdatedRewardReserve: lastUpdatedRewardReserve,
 		currentRewardReserve:     currentRewardReserve,
 		decimal:                  decimal,
+		isPaused:                 isPaused,
 	}
 }
 
@@ -83,6 +89,10 @@ func (b *BridgeAggVaultState) CurrentRewardReserve() uint64 {
 	return b.currentRewardReserve
 }
 
+func (b *BridgeAggVaultState) IsPaused() bool {
+	return b.isPaused
+}
+
 func (b *BridgeAggVaultState) SetReserve(reserve uint64) {
 	b.reserve = reserve
 }
@@ -99,12 +109,17 @@ func (b *BridgeAggVaultState) SetDecimal(decimal uint) {
 	b.decimal = decimal
 }
 
+func (b *BridgeAggVaultState) SetIsPaused(isPaused bool) {
+	b.isPaused = isPaused
+}
+
 func (b *BridgeAggVaultState) Clone() *BridgeAggVaultState {
 	return &BridgeAggVaultState{
 		reserve:                  b.reserve,
 		lastUpdatedRewardReserve: b.lastUpdatedRewardReserve,
 		currentRewardReserve:     b.currentRewardReserve,
 		decimal:                  b.decimal,
+		isPaused:                 b.isPaused,
 	}
 }
 
@@ -115,7 +130,7 @@ func (b *BridgeAggVaultState) GetDiff(compareState *BridgeAggVaultState) (*Bridg
 	if b.reserve != compareState.reserve ||
 		b.currentRewardReserve != compareState.currentRewardReserve ||
 		b.lastUpdatedRewardReserve != compareState.lastUpdatedRewardReserve ||
-		b.decimal != compareState.decimal {
+		b.decimal != compareState.decimal || b.isPaused != compareState.isPaused {
 		return b.Clone(), nil
 	}
 	return nil, nil

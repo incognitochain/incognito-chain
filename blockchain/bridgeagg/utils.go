@@ -564,6 +564,7 @@ func UpdateRewardReserve(
 	}
 	v.SetLastUpdatedRewardReserve(newLastUpdatedRewardReserve)
 	v.SetCurrentRewardReserve(newCurrentRewardReserve)
+	v.SetIsPaused(isPaused)
 	unifiedTokenInfos[unifiedTokenID][networkID] = v
 	return nil
 }

@@ -402,6 +402,17 @@ func Test_updateRewardReserve(t *testing.T) {
 			want1:   0,
 			wantErr: false,
 		},
+		{
+			name: "Not change value",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     10,
+				newRewardReserve:         100,
+			},
+			want:    100,
+			want1:   10,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

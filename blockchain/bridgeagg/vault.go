@@ -139,9 +139,15 @@ func (v *Vault) convert(amount uint64) error {
 }
 
 func (v *Vault) shield(amount uint64) (uint64, error) {
-	actualAmount, err := CalculateActualAmount(v.Reserve(), v.CurrentRewardReserve(), amount, AddOperator)
-	if err != nil {
-		return 0, err
+	var actualAmount uint64
+	var err error
+	if v.IsPaused() {
+		actualAmount = amount
+	} else {
+		actualAmount, err = CalculateActualAmount(v.Reserve(), v.CurrentRewardReserve(), amount, AddOperator)
+		if err != nil {
+			return 0, err
+		}
 	}
 	err = v.decreaseCurrentRewardReserve(actualAmount - amount)
 	if err != nil {
@@ -155,12 +161,18 @@ func (v *Vault) shield(amount uint64) (uint64, error) {
 }
 
 func (v *Vault) unshield(amount, expectedAmount uint64) (uint64, error) {
-	actualAmount, err := EstimateActualAmountByBurntAmount(v.Reserve(), v.CurrentRewardReserve(), amount)
-	if err != nil {
-		return 0, err
-	}
-	if actualAmount < expectedAmount {
-		return 0, fmt.Errorf("actual amount %v < expected amount %v", actualAmount, expectedAmount)
+	var actualAmount uint64
+	var err error
+	if v.IsPaused() {
+		actualAmount = amount
+	} else {
+		actualAmount, err = EstimateActualAmountByBurntAmount(v.Reserve(), v.CurrentRewardReserve(), amount)
+		if err != nil {
+			return 0, err
+		}
+		if actualAmount < expectedAmount {
+			return 0, fmt.Errorf("actual amount %v < expected amount %v", actualAmount, expectedAmount)
+		}
 	}
 	err = v.increaseCurrentRewardReserve(amount - actualAmount)
 	if err != nil {
