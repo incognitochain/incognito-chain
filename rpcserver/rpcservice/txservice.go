@@ -714,6 +714,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 					sView,
 					bcView,
 					[]metadata.Transaction{tx},
+					false,
 				)
 				if (!ok) || (e != nil) {
 					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
@@ -2042,6 +2043,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 					sView,
 					bcView,
 					[]metadata.Transaction{tx},
+					false,
 				)
 				if (!ok) || (e != nil) {
 					return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
