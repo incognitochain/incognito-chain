@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -578,9 +579,57 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReceivedAmount(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	err = json.Unmarshal(rawMd, &mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
+	}
 	result, err := httpServer.blockService.EstimateReceivedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
 	}
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Incorrect parameter length"))
+	}
+	// metadata object format to read from RPC parameters
+	Reader := &struct {
+		TxReqID   common.Hash `json:"TxReqID"`
+		DataIndex *int        `json:"DataIndex"`
+		NetworkID uint        `json:"NetworkID"`
+	}{}
+	rawData, err := json.Marshal(arrayParams[0])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	err = json.Unmarshal(rawData, &Reader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	var burningConfirmMeta int
+	txReqID := Reader.TxReqID
+	if Reader.DataIndex != nil {
+		txReqID = common.HashH(append(txReqID.Bytes(), common.IntToBytes(*Reader.DataIndex)...))
+	}
+	height, onBeacon, err := httpServer.blockService.GetBurningConfirm(txReqID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	switch Reader.NetworkID {
+	case common.ETHNetworkID:
+		burningConfirmMeta = metadata.BurningConfirmMeta
+		if onBeacon {
+			burningConfirmMeta = metadata.BurningConfirmMetaV2
+		}
+	case common.BSCNetworkID:
+		burningConfirmMeta = metadata.BurningBSCConfirmMeta
+	case common.PLGNetworkID:
+		burningConfirmMeta = metadata.BurningPLGConfirmMeta
+	case common.FTMNetworkID:
+		burningConfirmMeta = metadata.BurningFantomConfirmMeta
+	}
+	return retrieveBurnProof(burningConfirmMeta, onBeacon, height, &txReqID, httpServer)
 }
