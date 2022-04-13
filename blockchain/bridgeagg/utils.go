@@ -555,7 +555,7 @@ func CloneUnifiedTokenInfos(unifiedTokenInfos map[common.Hash]map[uint]*Vault) m
 
 func UpdateRewardReserve(
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault, newRewardReserve uint64,
-	unifiedTokenID common.Hash, networkID uint, off bool,
+	unifiedTokenID common.Hash, networkID uint, isPaused bool,
 ) error {
 	v := unifiedTokenInfos[unifiedTokenID][networkID]
 	newLastUpdatedRewardReserve, newCurrentRewardReserve, err := updateRewardReserve(v.LastUpdatedRewardReserve(), v.CurrentRewardReserve(), newRewardReserve)
@@ -569,13 +569,16 @@ func UpdateRewardReserve(
 }
 
 func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
-	var resLastUpdatedRewardReserve, resRewardReserve uint64
+	var resLastUpdatedRewardReserve uint64
 	tmp := big.NewInt(0).Sub(big.NewInt(0).SetUint64(lastUpdatedRewardReserve), big.NewInt(0).SetUint64(currentRewardReserve))
 	if tmp.Cmp(big.NewInt(0).SetUint64(newRewardReserve)) > 0 {
 		return 0, 0, errors.New("deltaY is > newRewardReserve")
 	}
 
 	resLastUpdatedRewardReserve = newRewardReserve
-	resRewardReserve = currentRewardReserve + newRewardReserve - lastUpdatedRewardReserve // always >= 0 by above condition
-	return resLastUpdatedRewardReserve, resRewardReserve, nil
+	tmpRewardReserve := big.NewInt(0).Sub(big.NewInt(0).SetUint64(newRewardReserve), tmp)
+	if !tmpRewardReserve.IsUint64() {
+		return 0, 0, errors.New("Out of range uint64")
+	}
+	return resLastUpdatedRewardReserve, tmpRewardReserve.Uint64(), nil
 }

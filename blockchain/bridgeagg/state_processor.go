@@ -44,7 +44,7 @@ func (sp *stateProcessor) modifyRewardReserve(
 				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
 					return unifiedTokenInfos, errors.New("Cannot find vault")
 				} else {
-					err := UpdateRewardReserve(unifiedTokenInfos, vault.RewardReserve, unifiedTokenID, vault.NetworkID(), vault.Off)
+					err := UpdateRewardReserve(unifiedTokenInfos, vault.RewardReserve, unifiedTokenID, vault.NetworkID(), vault.IsPaused)
 					if err != nil {
 						return unifiedTokenInfos, err
 					}
@@ -276,11 +276,17 @@ func (sp *stateProcessor) addToken(
 			unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 		}
 		for networkID, vault := range vaults {
+			if _, found := unifiedTokenInfos[unifiedTokenID][networkID]; found {
+				continue
+			}
 			tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+			externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+			if err != nil {
+				return unifiedTokenInfos, err
+			}
 			err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, externalTokenID, false, 0, "+")
 			if err != nil {
 				return unifiedTokenInfos, err

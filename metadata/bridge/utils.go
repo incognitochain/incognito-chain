@@ -55,7 +55,7 @@ type Vault struct {
 	statedb.BridgeAggConvertedTokenState
 	RewardReserve uint64 `json:"RewardReserve"`
 	Decimal       uint   `json:"Decimal"`
-	Off           bool   `json:"Off"`
+	IsPaused      bool   `json:"IsPaused"`
 }
 
 func (v *Vault) MarshalJSON() ([]byte, error) {
@@ -63,12 +63,12 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 		State         *statedb.BridgeAggConvertedTokenState `json:"State"`
 		RewardReserve uint64                                `json:"RewardReserve"`
 		Decimal       uint                                  `json:"Decimal"`
-		Off           bool                                  `json:"Off"`
+		IsPaused      bool                                  `json:"IsPaused"`
 	}{
 		State:         &v.BridgeAggConvertedTokenState,
 		RewardReserve: v.RewardReserve,
 		Decimal:       v.Decimal,
-		Off:           v.Off,
+		IsPaused:      v.IsPaused,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -81,7 +81,7 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 		State         *statedb.BridgeAggConvertedTokenState `json:"State"`
 		RewardReserve uint64                                `json:"RewardReserve"`
 		Decimal       uint                                  `json:"Decimal"`
-		Off           bool                                  `json:"Off"`
+		IsPaused      bool                                  `json:"IsPaused"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -92,7 +92,7 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 		v.BridgeAggConvertedTokenState = *temp.State
 	}
 	v.Decimal = temp.Decimal
-	v.Off = temp.Off
+	v.IsPaused = temp.IsPaused
 	return nil
 }
 

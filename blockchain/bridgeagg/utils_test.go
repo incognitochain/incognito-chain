@@ -380,6 +380,28 @@ func Test_updateRewardReserve(t *testing.T) {
 			want1:   150,
 			wantErr: false,
 		},
+		{
+			name: "deltaY < 0",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     200,
+				newRewardReserve:         50,
+			},
+			want:    50,
+			want1:   150,
+			wantErr: false,
+		},
+		{
+			name: "Set reward to 0",
+			args: args{
+				lastUpdatedRewardReserve: 100,
+				currentRewardReserve:     10,
+				newRewardReserve:         90,
+			},
+			want:    90,
+			want1:   0,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

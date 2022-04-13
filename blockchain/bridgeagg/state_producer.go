@@ -60,7 +60,7 @@ func (sp *stateProducer) modifyRewardReserve(
 				return temp, unifiedTokenInfos, nil
 
 			}
-			err := UpdateRewardReserve(unifiedTokenInfos, vault.RewardReserve, unifiedTokenID, vault.NetworkID(), vault.Off)
+			err := UpdateRewardReserve(unifiedTokenInfos, vault.RewardReserve, unifiedTokenID, vault.NetworkID(), vault.IsPaused)
 			if err != nil {
 				Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid err %v", action.TxReqID.String(), err)
 				rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
@@ -416,11 +416,17 @@ func (sp *stateProducer) addToken(
 				if err != nil {
 					return res, unifiedTokenInfos, err
 				}
+				if _, found := unifiedTokenInfos[unifiedTokenID][networkID]; found {
+					continue
+				}
 				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 				if err != nil {
 					return res, unifiedTokenInfos, err
 				}
-				externalTokenID, _ := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+				externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+				if err != nil {
+					return res, unifiedTokenInfos, err
+				}
 				err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, externalTokenID, false, 0, "+")
 				if err != nil {
 					return res, unifiedTokenInfos, err
