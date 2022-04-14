@@ -76,6 +76,28 @@ func TestCalculateActualAmount(t *testing.T) {
 			want:    109,
 			wantErr: false,
 		},
+		{
+			name: "unshield y != 0",
+			args: args{
+				y:        100,
+				deltaX:   100,
+				x:        1000,
+				operator: SubOperator,
+			},
+			want:    89,
+			wantErr: false,
+		},
+		{
+			name: "unshield y == 0",
+			args: args{
+				y:        0,
+				deltaX:   100,
+				x:        1000,
+				operator: SubOperator,
+			},
+			want:    100,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

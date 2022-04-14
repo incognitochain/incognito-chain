@@ -284,6 +284,8 @@ var HttpHandler = map[string]httpHandler{
 	bridgeaggUnshield:                    (*HttpServer).handleBridgeAggUnshield,
 	bridgeaggStatusUnshield:              (*HttpServer).handleGetBridgeAggUnshieldStatus,
 	bridgeaggEstimateReceivedAmount:      (*HttpServer).handleBridgeAggEstimateReceivedAmount,
+	bridgeaggEstimateFee:                 (*HttpServer).handleBridgeAggEstimateFee,
+	bridgeaggEstimateReward:              (*HttpServer).handleBridgeAggEstimateReward,
 	bridgeaggGetBurntProof:               (*HttpServer).handleBridgeAggGetBurntProof,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,

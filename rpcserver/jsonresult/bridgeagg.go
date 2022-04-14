@@ -16,3 +16,9 @@ type BridgeAggEstimateReceivedAmount struct {
 	ReceivedAmount uint64 `json:"ReceivedAmount"`
 	Fee            uint64 `json:"Fee"`
 }
+
+type BridgeAggCalculateActualAmount struct {
+	Amount uint64  `json:"Amount"`
+	Reward *uint64 `json:"Reward,omitempty"`
+	Fee    *uint64 `json:"Fee,omitempty"`
+}

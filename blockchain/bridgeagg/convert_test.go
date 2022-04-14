@@ -23,17 +23,18 @@ var _ = func() (_ struct{}) {
 }()
 
 type ConvertTestCase struct {
-	Name                 string                                           `json:"name"`
-	Metadata             metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadata"`
-	ExpectedInstructions [][]string                                       `json:"expected_instructions"`
-	State                *State                                           `json:"state"`
-	ExpectedState        *State                                           `json:"expected_state"`
-	TxID                 common.Hash                                      `json:"tx_id"`
+	Name                  string                                              `json:"name"`
+	Metadatas             []*metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadatas"`
+	ExpectedInstructions  [][]string                                          `json:"expected_instructions"`
+	UnifiedTokens         map[common.Hash]map[uint]*Vault                     `json:"unified_tokens"`
+	ExpectedUnifiedTokens map[common.Hash]map[uint]*Vault                     `json:"expected_unified_tokens"`
+	TxID                  common.Hash                                         `json:"tx_id"`
 }
 
 type ActualResult struct {
-	Instructions [][]string
-	State        *State
+	Instructions   [][]string
+	ProducerState  *State
+	ProcessorState *State
 }
 
 type ConvertTestSuite struct {
@@ -46,6 +47,18 @@ type ConvertTestSuite struct {
 }
 
 func (c *ConvertTestSuite) SetupSuite() {
+	config.AbortParam()
+	config.Param().BridgeAggParam.BaseDecimal = 9
+
+	rawTestCases, _ := readTestCases("convert.json")
+	err := json.Unmarshal(rawTestCases, &c.testCases)
+	if err != nil {
+		panic(err)
+	}
+	c.currentTestCaseIndex = -1
+}
+
+func (c *ConvertTestSuite) SetupTest() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
 	if err != nil {
 		panic(err)
@@ -56,38 +69,41 @@ func (c *ConvertTestSuite) SetupSuite() {
 	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	c.sdb = sDB
 
-	config.AbortParam()
-	config.Param().BridgeAggParam.BaseDecimal = 9
-
-	rawTestCases, _ := readTestCases("convert.json")
-	err = json.Unmarshal(rawTestCases, &c.testCases)
-	if err != nil {
-		panic(err)
-	}
-	c.currentTestCaseIndex = -1
-}
-
-func (c *ConvertTestSuite) SetupTest() {
 	c.currentTestCaseIndex++
 	testCase := c.testCases[c.currentTestCaseIndex]
-	action, err := metadataCommon.NewActionWithValue(&testCase.Metadata, testCase.TxID, nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
-	assert := c.Assert()
-	assert.Nil(err, fmt.Sprintf("Error in build action %v", err))
-	fmt.Println("action:", action)
+	actions := []string{}
+	for _, v := range testCase.Metadatas {
+		content, err := metadataCommon.NewActionWithValue(v, testCase.TxID, nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
+		if err != nil {
+			panic(err)
+		}
+		err = statedb.UpdateBridgeTokenInfo(sDB, v.TokenID, []byte("123"), false, v.Amount+100, "+")
+		if err != nil {
+			panic(err)
+		}
+		actions = append(actions, content[1])
+	}
 
+	assert := c.Assert()
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
 			common.BeaconChainID: c.sdb,
 		},
-		convertActions: [][]string{action},
+		convertActions: [][]string{actions},
 	}
-	state := testCase.State.Clone()
-	actualInstructions, err := state.BuildInstructions(env)
-	assert.Nil(err, err.Error())
+	state := NewState()
+	state.unifiedTokenInfos = testCase.UnifiedTokens
+	producerState := state.Clone()
+	processorState := state.Clone()
+	actualInstructions, err := producerState.BuildInstructions(env)
+	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
+	err = processorState.Process(actualInstructions, c.sdb)
+	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
 	c.actualResults = append(c.actualResults, ActualResult{
-		Instructions: actualInstructions,
-		State:        state,
+		Instructions:   actualInstructions,
+		ProducerState:  producerState,
+		ProcessorState: processorState,
 	})
 }
 
@@ -95,18 +111,34 @@ func (c *ConvertTestSuite) TestAcceptedConvert() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseIndex]
 	actualResult := c.actualResults[c.currentTestCaseIndex]
-	assert.NotEqual(actualResult.Instructions, testCase.ExpectedInstructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
 }
 
-/*func (c *ConvertTestSuite) TestRejectedConvert() {*/
-/*testCase := c.testCases[c.currentTestCaseIndex]*/
-/*fmt.Println(testCase)*/
-/*}*/
+func (c *ConvertTestSuite) TestRejectedConvert() {
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseIndex]
+	actualResult := c.actualResults[c.currentTestCaseIndex]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+}
 
-/*func (c *ConvertTestSuite) TestRejectedThenAcceptedConvert() {*/
-/*testCase := c.testCases[c.currentTestCaseIndex]*/
-/*fmt.Println(testCase)*/
-/*}*/
+func (c *ConvertTestSuite) TestRejectedThenAcceptedConvert() {
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseIndex]
+	actualResult := c.actualResults[c.currentTestCaseIndex]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+}
 
 func TestConvertTestSuite(t *testing.T) {
 	suite.Run(t, new(ConvertTestSuite))

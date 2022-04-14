@@ -58,7 +58,7 @@ func getBridgeAggState(
 	return res, nil
 }
 
-func (blockService BlockService) EstimateReceivedAmount(unifiedTokenID common.Hash, networkID uint, burntAmount uint64) (interface{}, error) {
+func (blockService BlockService) BridgeAggEstimateReceivedAmount(unifiedTokenID common.Hash, networkID uint, burntAmount uint64) (interface{}, error) {
 	beaconBestView := blockService.BlockChain.GetBeaconBestState()
 	state := beaconBestView.BridgeAggState()
 	vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, networkID)
@@ -72,5 +72,40 @@ func (blockService BlockService) EstimateReceivedAmount(unifiedTokenID common.Ha
 	return &jsonresult.BridgeAggEstimateReceivedAmount{
 		ReceivedAmount: receivedAmount,
 		Fee:            burntAmount - receivedAmount,
+	}, err
+}
+
+func (blockService BlockService) BridgeAggCalculateActualAmount(unifiedTokenID common.Hash, networkID uint, amount uint64, operator byte) (interface{}, error) {
+	var errorType int
+	if operator == bridgeagg.AddOperator {
+		errorType = BridgeAggEstimateRewardError
+	} else if operator == bridgeagg.SubOperator {
+		errorType = BridgeAggEstimateFeeError
+	}
+	beaconBestView := blockService.BlockChain.GetBeaconBestState()
+	state := beaconBestView.BridgeAggState()
+	vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, networkID)
+	if err != nil {
+		return nil, NewRPCError(errorType, err)
+	}
+
+	x := vault.Reserve()
+	y := vault.CurrentRewardReserve()
+	var fee, reward *uint64
+	amt, err := bridgeagg.CalculateActualAmount(x, y, amount, operator)
+	if operator == bridgeagg.AddOperator {
+		reward = new(uint64)
+		*reward = amt - amount
+	} else if operator == bridgeagg.SubOperator {
+		if amount > x {
+			return nil, NewRPCError(errorType, fmt.Errorf("Unshield amount %v > vault amount %v", amount, x))
+		}
+		fee = new(uint64)
+		*fee = amount - amt
+	}
+	return &jsonresult.BridgeAggCalculateActualAmount{
+		Amount: amount,
+		Fee:    fee,
+		Reward: reward,
 	}, err
 }

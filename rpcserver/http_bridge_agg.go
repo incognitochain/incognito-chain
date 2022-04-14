@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -582,9 +583,63 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReceivedAmount(params inter
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
 	}
-	result, err := httpServer.blockService.EstimateReceivedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
+	result, err := httpServer.blockService.BridgeAggEstimateReceivedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleBridgeAggEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Incorrect parameter length"))
+	}
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
+		NetworkID      uint        `json:"NetworkID"`
+		Amount         uint64      `json:"Amount"`
+	}{}
+	rawMd, err := json.Marshal(arrayParams[0])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	err = json.Unmarshal(rawMd, &mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeError, err)
+	}
+	result, err := httpServer.blockService.BridgeAggCalculateActualAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, bridgeagg.SubOperator)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeError, err)
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Incorrect parameter length"))
+	}
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
+		NetworkID      uint        `json:"NetworkID"`
+		Amount         uint64      `json:"Amount"`
+	}{}
+	rawMd, err := json.Marshal(arrayParams[0])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	err = json.Unmarshal(rawMd, &mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
+	}
+	result, err := httpServer.blockService.BridgeAggCalculateActualAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, bridgeagg.AddOperator)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}
 	return result, nil
 }

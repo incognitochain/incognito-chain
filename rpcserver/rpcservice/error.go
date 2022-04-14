@@ -158,6 +158,8 @@ const (
 	// bridgeagg
 	GetBridgeAggStateError
 	BridgeAggEstimateReceivedAmountError
+	BridgeAggEstimateFeeError
+	BridgeAggEstimateRewardError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -306,6 +308,8 @@ var ErrCodeMessage = map[int]struct {
 	// bridgeagg
 	GetBridgeAggStateError:               {-13000, "Get bridge agg state error"},
 	BridgeAggEstimateReceivedAmountError: {-13001, "Bridge agg estimate receive amount error"},
+	BridgeAggEstimateFeeError:            {-13001, "Bridge agg estimate fee error"},
+	BridgeAggEstimateRewardError:         {-13001, "Bridge agg estimate reward error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
