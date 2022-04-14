@@ -72,6 +72,12 @@ func (request *ConvertTokenToUnifiedTokenRequest) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
+	if request.TokenID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("TokenID can not be empty"))
+	}
+	if request.UnifiedTokenID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("UnifiedTokenID can not be empty"))
+	}
 	if request.TokenID.String() == request.UnifiedTokenID.String() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, errors.New("TokenID and UnifiedTokenID cannot be the same"))
 	}

@@ -107,6 +107,9 @@ func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 }
 
 func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
+	if request.TokenID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("TokenID can not be empty"))
+	}
 	if len(request.Data) <= 0 || len(request.Data) >= config.Param().BridgeAggParam.MaxLenOfPath {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}

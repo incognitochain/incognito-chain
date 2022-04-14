@@ -414,22 +414,16 @@ func (sp *stateProducer) addToken(
 			for networkID, vault := range vaults {
 				err := validateConfigVault(sDBs, networkID, vault)
 				if err != nil {
-					return res, unifiedTokenInfos, err
+					Logger.log.Warnf("Validate config vault fail by error %v", err)
+					return res, unifiedTokenInfos, nil
 				}
 				if _, found := unifiedTokenInfos[unifiedTokenID][networkID]; found {
 					continue
 				}
 				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 				if err != nil {
-					return res, unifiedTokenInfos, err
-				}
-				externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
-				if err != nil {
-					return res, unifiedTokenInfos, err
-				}
-				err = statedb.UpdateBridgeTokenInfo(sDBs[common.BeaconChainID], *tokenID, externalTokenID, false, 0, "+")
-				if err != nil {
-					return res, unifiedTokenInfos, err
+					Logger.log.Warnf("tokenID %s is not a valid hash %v", vault.IncTokenID, err)
+					return res, unifiedTokenInfos, nil
 				}
 				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
 				v := NewVaultWithValue(*state, *tokenID)
@@ -442,7 +436,8 @@ func (sp *stateProducer) addToken(
 		var err error
 		res, err = addToken.StringSlice()
 		if err != nil {
-			return res, unifiedTokenInfos, err
+			Logger.log.Warnf("Error in building instruction %v", err)
+			return []string{}, unifiedTokenInfos, nil
 		}
 	}
 	return res, unifiedTokenInfos, nil

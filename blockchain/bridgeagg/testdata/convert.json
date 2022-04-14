@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Accepted",
+        "metadata": {},
+        "instructions": [],
+        "state": {}
+    },
+    {
+        "name": "Rejected",
+        "metadata": {},
+        "instructions": [],
+        "state": {}
+    },
+    {
+        "name": "Rejected then accepted",
+        "metadata": {},
+        "instructions": [],
+        "state": {}
+    }
+]

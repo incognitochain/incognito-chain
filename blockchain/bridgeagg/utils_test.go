@@ -2,6 +2,7 @@ package bridgeagg
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -429,4 +430,12 @@ func Test_updateRewardReserve(t *testing.T) {
 			}
 		})
 	}
+}
+
+func readTestCases(fileName string) ([]byte, error) {
+	raw, err := ioutil.ReadFile("testdata/" + fileName)
+	if err != nil {
+		panic(err)
+	}
+	return raw, nil
 }
