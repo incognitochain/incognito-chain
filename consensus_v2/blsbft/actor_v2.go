@@ -198,16 +198,6 @@ func (a *actorV2) SortReceiveBlockByHeight(blockHeight uint64) {
 }
 
 func (a *actorV2) CleanReceiveBlockByHeight(blockHeight uint64) error {
-	a.logger.Infof("[debugmemory]=============================================================")
-	for k, v := range a.receiveBlockByHeight {
-		blkSize := 0
-		for _, blk := range v {
-			bs, _ := json.Marshal(blk)
-			blkSize += len(bs)
-		}
-		a.logger.Infof("[debugmemory] cKey %v ID %v Height %v, total size %v, len %v, final height %v", a.chainKey, a.chainID, k, blkSize, len(v), a.chain.GetFinalViewHeight())
-	}
-	a.logger.Infof("[debugmemory]=============================================================")
 
 	if err := rawdb_consensus.DeleteReceiveBlockByHeight(
 		rawdb_consensus.GetConsensusDatabase(),
@@ -1430,6 +1420,17 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 }
 
 func (a *actorV2) handleCleanMem() {
+
+	a.logger.Infof("[debugmemory]=============================================================")
+	for k, v := range a.receiveBlockByHeight {
+		blkSize := 0
+		for _, blk := range v {
+			bs, _ := json.Marshal(blk)
+			blkSize += len(bs)
+		}
+		a.logger.Infof("[debugmemory] cKey %v ID %v Height %v, total size %v, len %v, final height %v", a.chainKey, a.chainID, k, blkSize, len(v), a.chain.GetFinalViewHeight())
+	}
+	a.logger.Infof("[debugmemory]=============================================================")
 
 	for h := range a.receiveBlockByHeight {
 		if h <= a.chain.GetFinalView().GetHeight() {
