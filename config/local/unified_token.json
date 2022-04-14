@@ -16,14 +16,5 @@
                 "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
             }
         }
-    },
-    "40": {
-        "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-            "3": {
-                "external_decimal": 18,
-                "external_token_id": "0x0000000000000000000000000000000000000000",
-                "inc_token_id": "4661bf371a8ac4f8eaf42db07c292be721e49742c5830a1db1f4a70a1b2b85e4"
-            }
-        }
     }
 }
