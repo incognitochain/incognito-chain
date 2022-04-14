@@ -1091,11 +1091,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
 	curFinalView := blockchain.BeaconChain.multiView.GetFinalView()
-	blockchain.BeaconChain.multiView.AddView(newBestState)
-	newFinalView := blockchain.BeaconChain.multiView.TryFinalizeView(newBestState)
+	newFinalView, _ := blockchain.BeaconChain.multiView.AddViewAndFinalizeV1(newBestState)
 
 	if newFinalView != nil {
-		
+
 		storeBlock := newFinalView.GetBlock()
 		finalizedBlocks := []*types.BeaconBlock{}
 

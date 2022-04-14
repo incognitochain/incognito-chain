@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 )
 
 type ProposeMessageEnvironment struct {
@@ -25,20 +26,20 @@ func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock type
 }
 
 type SendProposeBlockEnvironment struct {
-	finalityProof    *FinalityProof
+	finalityProof    *multiview.FinalityProof
 	isValidRePropose bool
 	userProposeKey   signatureschemes2.MiningKey
 	peerID           string
 }
 
-func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string) *SendProposeBlockEnvironment {
+func NewSendProposeBlockEnvironment(finalityProof *multiview.FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string) *SendProposeBlockEnvironment {
 	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID}
 }
 
 type IProposeMessageRule interface {
 	HandleBFTProposeMessage(env *ProposeMessageEnvironment, propose *BFTPropose) (*ProposeBlockInfo, error)
 	CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error)
-	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string)
+	GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*multiview.FinalityProof, bool, string)
 	HandleCleanMem(finalView uint64)
 	FinalityProof() map[string]map[int64]string
 }
@@ -75,7 +76,7 @@ func (p ProposeRuleLemma1) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 	var bftPropose = new(BFTPropose)
 	blockData, _ := json.Marshal(block)
 
-	bftPropose.FinalityProof = *NewFinalityProof()
+	bftPropose.FinalityProof = *multiview.NewFinalityProof()
 	bftPropose.ReProposeHashSignature = ""
 	bftPropose.Block = blockData
 	bftPropose.PeerID = env.peerID
@@ -83,8 +84,8 @@ func (p ProposeRuleLemma1) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 	return bftPropose, nil
 }
 
-func (p ProposeRuleLemma1) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string) {
-	return NewFinalityProof(), false, ""
+func (p ProposeRuleLemma1) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*multiview.FinalityProof, bool, string) {
+	return multiview.NewFinalityProof(), false, ""
 }
 
 type ProposeRuleLemma2 struct {
@@ -221,7 +222,7 @@ func (p *ProposeRuleLemma2) verifyLemma2FirstBlockNextHeight(
 	block types.BlockInterface,
 ) error {
 
-	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
+	isValid, err := multiview.VerifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
 	if err != nil {
 		return err
 	}
@@ -247,7 +248,7 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 	numberOfFixedShardBlockVaildator int,
 ) (bool, error) {
 
-	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
+	isValid, err := multiview.VerifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
 	if err != nil {
 		return false, err
 	}
@@ -323,7 +324,7 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 func (p *ProposeRuleLemma2) addFinalityProof(
 	block types.BlockInterface,
 	reProposeHashSignature string,
-	proof FinalityProof,
+	proof multiview.FinalityProof,
 ) error {
 	previousHash := block.GetPrevHash()
 	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
@@ -386,7 +387,7 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 
 func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
 
-	reProposeHashSignature, err := createReProposeHashSignature(
+	reProposeHashSignature, err := multiview.CreateReProposeHashSignature(
 		env.userProposeKey.PriKey[common.BridgeConsensus], block)
 
 	if err != nil {
@@ -399,7 +400,7 @@ func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 	if env.isValidRePropose {
 		bftPropose.FinalityProof = *env.finalityProof
 	} else {
-		bftPropose.FinalityProof = *NewFinalityProof()
+		bftPropose.FinalityProof = *multiview.NewFinalityProof()
 	}
 	bftPropose.ReProposeHashSignature = reProposeHashSignature
 
@@ -409,17 +410,17 @@ func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 	return bftPropose, nil
 }
 
-func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string) {
+func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*multiview.FinalityProof, bool, string) {
 	if block == nil {
-		return NewFinalityProof(), false, "block is nil"
+		return multiview.NewFinalityProof(), false, "block is nil"
 	}
 
 	finalityData, ok := p.nextBlockFinalityProof[block.GetPrevHash().String()]
 	if !ok {
-		return NewFinalityProof(), false, "finality proof not found"
+		return multiview.NewFinalityProof(), false, "finality proof not found"
 	}
 
-	finalityProof := NewFinalityProof()
+	finalityProof := multiview.NewFinalityProof()
 
 	producerTime := block.GetProduceTime()
 	producerTimeTimeSlot := common.CalculateTimeSlot(producerTime)
@@ -431,7 +432,7 @@ func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, cur
 	for i := producerTimeTimeSlot; i < currentTimeSlot; i++ {
 		reProposeHashSignature, ok := finalityData[i]
 		if !ok {
-			return NewFinalityProof(), false, "invalid re-propose hash signature"
+			return multiview.NewFinalityProof(), false, "invalid re-propose hash signature"
 		}
 		finalityProof.AddProof(reProposeHashSignature)
 	}
@@ -457,8 +458,8 @@ func (n NoHandleProposeMessageRule) CreateProposeBFTMessage(env *SendProposeBloc
 	return new(BFTPropose), errors.New("using no handle propose message rule")
 }
 
-func (n NoHandleProposeMessageRule) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*FinalityProof, bool, string) {
-	return NewFinalityProof(), false, ""
+func (n NoHandleProposeMessageRule) GetValidFinalityProof(block types.BlockInterface, currentTimeSlot int64) (*multiview.FinalityProof, bool, string) {
+	return multiview.NewFinalityProof(), false, ""
 }
 
 func (n NoHandleProposeMessageRule) HandleCleanMem(finalView uint64) {

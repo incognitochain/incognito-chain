@@ -148,6 +148,10 @@ func (beaconBestState *BeaconBestState) GetBeaconHeight() uint64 {
 	return beaconBestState.BeaconHeight
 }
 
+func (beaconBestState *BeaconBestState) CommitteeFromBlock() common.Hash {
+	return beaconBestState.BestBlockHash
+}
+
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
 	db := bc.GetBeaconChainDatabase()
 	var err error
@@ -1215,7 +1219,7 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 
 func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []string {
 	unTriggerFeatures := []string{}
-	for f, _ := range config.Param().AutoEnableFeature {
+	for f := range config.Param().AutoEnableFeature {
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
 			if afterCheckPoint {
 				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {

@@ -154,9 +154,7 @@ func (s *Node) RequestMissingViewViaStream(peerID string, hashes [][]byte, fromC
 			for _, h := range hashes {
 				pH, _ := common.Hash{}.NewHash(h)
 				v := c.chain.multiview.GetViewByHash(*pH)
-				if added := s.chain.multiview.AddView(v); added {
-					s.chain.multiview.TryFinalizeView(v)
-				}
+				s.chain.multiview.AddViewAndFinalizeV1(v)
 			}
 		}
 	}

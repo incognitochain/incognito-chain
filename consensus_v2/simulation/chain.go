@@ -25,7 +25,7 @@ func NewChain(chainID int, chainName string, committee []incognitokey.CommitteeP
 		NewBlock(1, 1, "Genesis", common.Hash{}),
 		committee,
 	}
-	c.multiview.AddView(state)
+	c.multiview.addView(state)
 	return c
 }
 
@@ -69,7 +69,7 @@ func (s *Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 		block,
 		s.multiview.GetBestView().GetCommittee(),
 	}
-	s.multiview.AddView(state)
+	s.multiview.addView(state)
 	return nil
 }
 

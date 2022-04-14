@@ -38,7 +38,7 @@ package multiview
 //	return s.node[h]
 //}
 //
-//func (s *ViewGraph) AddView(b View) {
+//func (s *ViewGraph) addView(b View) {
 //	newBlockHash := *b.GetViewHash()
 //	s.lock.Lock()
 //	defer s.lock.Unlock()

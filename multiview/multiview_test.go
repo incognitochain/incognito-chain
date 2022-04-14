@@ -3,6 +3,7 @@ package multiview
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/multiview/mocks"
 	"testing"
 )
 
@@ -34,63 +35,53 @@ func (s *FakeView) GetBlockTime() int64 {
 	return s.time
 }
 
-func TestNewMultiView(t *testing.T) {
+// TODO: @hung build unit-test
+func Test_getAllChains(t *testing.T) {
 
-	multiView := NewMultiView()
-	multiView.AddView(&FakeView{
-		&common.Hash{1},
-		&common.Hash{0},
-		1,
-		1,
-		1,
-	})
-
-	var print = func() {
-		fmt.Println("best", multiView.bestView.GetHash().String())
-		fmt.Println("final", multiView.finalView.GetHash().String())
-		fmt.Println(" ")
+	views := []*mocks.View{}
+	hashs := []common.Hash{}
+	viewsByPreHash := make(map[common.Hash][]View)
+	for i := 0; i < 10; i++ {
+		t := common.Hash{byte(i)}
+		hashs = append(hashs, t)
+		view := &mocks.View{}
+		view.On("GetHash").Return(&t).Times(10)
+		views = append(views, view)
 	}
+	views[0].On("GetHeight").Return(uint64(1)).Times(10)
+	views[1].On("GetHeight").Return(uint64(2)).Times(10)
+	views[2].On("GetHeight").Return(uint64(2)).Times(10)
+	views[3].On("GetHeight").Return(uint64(2)).Times(10)
+	views[4].On("GetHeight").Return(uint64(3)).Times(10)
+	views[5].On("GetHeight").Return(uint64(3)).Times(10)
+	views[6].On("GetHeight").Return(uint64(3)).Times(10)
+	views[7].On("GetHeight").Return(uint64(3)).Times(10)
+	views[8].On("GetHeight").Return(uint64(4)).Times(10)
+	views[9].On("GetHeight").Return(uint64(4)).Times(10)
+	/**
+	0 -> 1 -> 4
+	  -> 2 -> 5
+		   -> 6 -> 8
+		   -> 7 -> 9
+	  -> 3
+	*/
+	viewsByPreHash[hashs[0]] = []View{views[1], views[2], views[3]}
+	viewsByPreHash[hashs[1]] = []View{views[4]}
+	viewsByPreHash[hashs[2]] = []View{views[5], views[6], views[7]}
+	viewsByPreHash[hashs[6]] = []View{views[8]}
+	viewsByPreHash[hashs[7]] = []View{views[9]}
 
-	multiView.AddView(&FakeView{
-		&common.Hash{2},
-		&common.Hash{1},
-		2,
-		2,
-		2,
-	})
-
-	multiView.AddView(&FakeView{
-		&common.Hash{3},
-		&common.Hash{2},
-		3,
-		3,
-		3,
-	})
-
-	multiView.AddView(&FakeView{
-		&common.Hash{4},
-		&common.Hash{3},
-		4,
-		4,
-		4,
-	})
-
-	multiView.AddView(&FakeView{
-		&common.Hash{5},
-		&common.Hash{3},
-		4,
-		5,
-		5,
-	})
-
-	print()
-
-	for _, v := range multiView.GetAllViewsWithBFS() {
-		fmt.Println("node", v.GetHash().String())
-		fmt.Println("->")
-	}
-
-	if multiView.bestView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000004" || multiView.finalView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000003" {
-		panic("Wrong")
+	res := [][]View{}
+	getAllChains(hashs[0], viewsByPreHash, &res, []View{views[0]})
+	for i, v := range res {
+		t.Log(i)
+		s1 := ""
+		s2 := ""
+		for _, v1 := range v {
+			s1 += fmt.Sprintf("%d ", v1.GetHeight())
+			s2 += fmt.Sprintf("%s ", v1.GetHash().String())
+		}
+		t.Log(s1)
+		t.Log(s2)
 	}
 }

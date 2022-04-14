@@ -353,8 +353,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// Insert new block into beacon chain
-	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
-	blockchain.BeaconChain.multiView.TryFinalizeView(initBeaconBestState)
+	blockchain.BeaconChain.multiView.AddViewAndFinalizeV1(initBeaconBestState)
 	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase()); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.GetBeaconBestState().BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
@@ -667,10 +666,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 
 		// finish reproduce
-		if !blockchain.BeaconChain.multiView.AddView(v) {
+		if _, added := blockchain.BeaconChain.multiView.AddViewAndFinalizeV1(v); !added {
 			panic("Restart beacon views fail")
-		} else {
-			blockchain.BeaconChain.multiView.TryFinalizeView(v)
 		}
 	}
 	for _, beaconState := range allViews {
@@ -747,10 +744,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if v.NumberOfFixedShardBlockValidator == 0 {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
-		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
+		if _, added := blockchain.ShardChain[shardID].multiView.AddViewAndFinalizeV1(v); !added {
 			panic("Restart shard views fail")
-		} else {
-			blockchain.ShardChain[shardID].multiView.TryFinalizeView(v)
 		}
 	}
 	return nil

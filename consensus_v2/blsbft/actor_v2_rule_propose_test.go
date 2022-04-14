@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"testing"
 )
@@ -87,7 +88,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	}
 	tc2ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -225,7 +226,7 @@ func TestProposeRuleLemma2_HandleBFTProposeMessage(t *testing.T) {
 	}
 	tc4ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -903,7 +904,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 
 	tc1ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -921,7 +922,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 
 	tc2ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"12YUeCqoWMgMhMewWRFLwExzCANqcJLkHA6yV3rLC3NoN3RqbcfMX9Mu69Qh6zHQtFWTGNdQrxmQt7BMfZXbapKwVQfyr15Q",
@@ -967,7 +968,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 
 	tc3ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "1sfuYPVAjFPuG7uHReskCSqN8eBvN33usJ1RZCMfbLGD6rYh4WnfsdULBMP4Wp2kw3Hw5nFSEYBY8cQjoA2vJxX5PJjWbuF",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1rtHzbBpvTpeEWcGAqz5pTxh3x3tH1RsBPVbFXxWHXabeApbno2We1VwEHZoLJPoYuS5HQboTfQQoRY76VyttqosGRGAheL",
 				"12YUeCqoWMgMhMewWRFLwExzCANqcJLkHA6yV3rLC3NoN3RqbcfMX9Mu69Qh6zHQtFWTGNdQrxmQt7BMfZXbapKwVQfyr15Q",
@@ -1101,7 +1102,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 
 	tc1ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -1120,7 +1121,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 
 	tc2ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1202,7 +1203,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 
 	tc3ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{},
 		},
 	}
@@ -1223,7 +1224,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 
 	tc4ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1307,7 +1308,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 
 	tc5ProposeMsg := &BFTPropose{
 		ReProposeHashSignature: "12Xzv92cdgguVCNzAFS7LANpXyXXdWAYDXFJssQgGK5236q8HPzW8RQKPmrEhVeP6A9fCvswfKihKWwKBURrzSaPZ7H5pnLm",
-		FinalityProof: FinalityProof{
+		FinalityProof: multiview.FinalityProof{
 			ReProposeHashSignature: []string{
 				"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 				"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1509,7 +1510,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	tc1FinalityProof := make(map[string]map[int64]string)
 	tc1Chain := &mocks.Chain{}
 	tc1Block := &mocksTypes.BlockInterface{}
-	tc1InputProof := FinalityProof{
+	tc1InputProof := multiview.FinalityProof{
 		ReProposeHashSignature: []string{},
 	}
 	tc1ReProposeHashSignature := ""
@@ -1525,7 +1526,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	tc2FinalityProof := make(map[string]map[int64]string)
 	tc2Chain := &mocks.Chain{}
 	tc2Block := &mocksTypes.BlockInterface{}
-	tc2InputProof := FinalityProof{
+	tc2InputProof := multiview.FinalityProof{
 		ReProposeHashSignature: []string{"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 			"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
 			"1E2x3nf8K3YLdoPDQeWh8mtiS5zhErfTYvBiniidDZXYBVfET8zWkswMepQ4hd39Q7zTLZ4UTbmx9oP4QsfBdDTLVKcgQrt",
@@ -1604,7 +1605,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	tc3FinalityProof := make(map[string]map[int64]string)
 	tc3Chain := &mocks.Chain{}
 	tc3Block := &mocksTypes.BlockInterface{}
-	tc3InputProof := FinalityProof{
+	tc3InputProof := multiview.FinalityProof{
 		ReProposeHashSignature: []string{
 			"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 			"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",
@@ -1691,7 +1692,7 @@ func TestProposeRuleLemma2_addFinalityProof(t *testing.T) {
 	type args struct {
 		block                  types.BlockInterface
 		reProposeHashSignature string
-		proof                  FinalityProof
+		proof                  multiview.FinalityProof
 	}
 	tests := []struct {
 		name                       string
@@ -2088,7 +2089,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   *FinalityProof
+		want   *multiview.FinalityProof
 		want1  bool
 	}{
 		{
@@ -2102,7 +2103,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           nil,
 				currentTimeSlot: 163275391,
 			},
-			want:  NewFinalityProof(),
+			want:  multiview.NewFinalityProof(),
 			want1: false,
 		},
 		{
@@ -2116,7 +2117,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           tc2Block,
 				currentTimeSlot: 163275391,
 			},
-			want:  NewFinalityProof(),
+			want:  multiview.NewFinalityProof(),
 			want1: false,
 		},
 		{
@@ -2130,7 +2131,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           tc3Block,
 				currentTimeSlot: 163275388,
 			},
-			want:  NewFinalityProof(),
+			want:  multiview.NewFinalityProof(),
 			want1: false,
 		},
 		{
@@ -2144,7 +2145,7 @@ func TestProposeRuleLemma2_GetValidFinalityProof(t *testing.T) {
 				block:           tc4Block,
 				currentTimeSlot: 163275388,
 			},
-			want: &FinalityProof{
+			want: &multiview.FinalityProof{
 				ReProposeHashSignature: []string{
 					"1ec352qhKtECAtECXP5pmdAtJyfCPSjjVCnL4TXZ3DQuTkSuvmT2yNBFtc4m9phexFXZqHzaoesmmC6SHYwEVDFeysuXfRH",
 					"1htdgUEgxdxTYSXNUP5pPEipknKwhiD8wwngDGXZE7qRWy43VhjvXzDRHNuyn1L4SMvxwpBMvqu1UfCkQkWV3ZpdUQAQYoX",

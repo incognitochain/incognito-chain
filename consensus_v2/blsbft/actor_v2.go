@@ -635,7 +635,7 @@ func (a *actorV2) run() error {
 						}
 					}
 
-					var finalityProof = NewFinalityProof()
+					var finalityProof = multiview.NewFinalityProof()
 					var isEnoughLemma2Proof = false
 					var failReason = ""
 					if proposeBlockInfo.block != nil {

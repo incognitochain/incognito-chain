@@ -3,6 +3,7 @@ package blsbft
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/multiview"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,7 +20,7 @@ type BFTPropose struct {
 	PeerID                 string
 	Block                  json.RawMessage
 	ReProposeHashSignature string
-	FinalityProof          FinalityProof
+	FinalityProof          multiview.FinalityProof
 }
 
 type BFTVote struct {

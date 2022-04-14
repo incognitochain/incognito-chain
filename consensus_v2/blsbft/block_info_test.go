@@ -3,6 +3,7 @@ package blsbft
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"testing"
 )
 
@@ -145,7 +146,7 @@ func TestReProposeBlockInfo_VerifySignature(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := ReProposeBlockInfo{
+			r := multiview.ReProposeBlockInfo{
 				PreviousBlockHash: tt.fields.PreviousBlockHash,
 				Producer:          tt.fields.Producer,
 				ProducerTimeSlot:  tt.fields.ProducerTimeSlot,
@@ -227,7 +228,7 @@ func TestReProposeBlockInfo_Sign(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := ReProposeBlockInfo{
+			r := multiview.ReProposeBlockInfo{
 				PreviousBlockHash: tt.fields.PreviousBlockHash,
 				Producer:          tt.fields.Producer,
 				ProducerTimeSlot:  tt.fields.ProducerTimeSlot,
@@ -467,7 +468,7 @@ func TestFinalityProof_Verify(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &FinalityProof{
+			f := &multiview.FinalityProof{
 				ReProposeHashSignature: tt.fields.ReProposeHashSignature,
 			}
 			if err := f.Verify(tt.args.previousBlockHash, tt.args.producer, tt.args.beginTimeSlot, tt.args.proposers, tt.args.rootHash); (err != nil) != tt.wantErr {
