@@ -407,11 +407,28 @@ func (sp *stateProducer) addToken(
 	addToken := metadataBridge.AddToken{}
 	configUnifiedTokens := config.UnifiedToken()
 	if unifiedTokens, found := configUnifiedTokens[beaconHeight]; found {
+		unifiedTokenIDs := make(map[string]bool)
+		externalTokenIDs := make(map[string]common.Hash)
+		incTokenIDs := make(map[string]bool)
 		for unifiedTokenID, vaults := range unifiedTokens {
+			if unifiedTokenIDs[unifiedTokenID.String()] {
+				Logger.log.Warnf("Duplicate unifiedTokenID %s", unifiedTokenID.String())
+				return res, unifiedTokenInfos, nil
+			}
 			if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
 				unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 			}
 			for networkID, vault := range vaults {
+				if hash, found := externalTokenIDs[vault.ExternalTokenID]; found {
+					if hash.String() != unifiedTokenID.String() {
+						Logger.log.Warnf("Duplicate externalTokenID %s", vault.ExternalTokenID)
+						return res, unifiedTokenInfos, nil
+					}
+				}
+				if incTokenIDs[vault.IncTokenID] {
+					Logger.log.Warnf("Duplicate incTokenID %s", vault.IncTokenID)
+					return res, unifiedTokenInfos, nil
+				}
 				err := validateConfigVault(sDBs, networkID, vault)
 				if err != nil {
 					Logger.log.Warnf("Validate config vault fail by error %v", err)
@@ -428,7 +445,10 @@ func (sp *stateProducer) addToken(
 				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
 				v := NewVaultWithValue(*state, *tokenID)
 				unifiedTokenInfos[unifiedTokenID][networkID] = v
+				externalTokenIDs[vault.ExternalTokenID] = unifiedTokenID
+				incTokenIDs[vault.IncTokenID] = true
 			}
+			unifiedTokenIDs[unifiedTokenID.String()] = true
 		}
 		addToken.NewListTokens = unifiedTokens
 	}

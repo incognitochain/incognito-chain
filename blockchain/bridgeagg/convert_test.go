@@ -31,8 +31,6 @@ type ConvertTestCase struct {
 
 type ConvertTestSuite struct {
 	suite.Suite
-	producerState        []*State
-	processorState       []*State
 	testCases            []ConvertTestCase
 	currentTestCaseIndex int
 
@@ -76,6 +74,7 @@ func (c *ConvertTestSuite) SetupTest() {
 func (c *ConvertTestSuite) TestAcceptedConvert() {
 	testCase := c.testCases[c.currentTestCaseIndex]
 	fmt.Println(testCase)
+
 }
 
 func (c *ConvertTestSuite) TestRejectedConvert() {
