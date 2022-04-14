@@ -74,13 +74,13 @@ func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
 func CheckTokenIDExisted(sDBs map[int]*StateDB, tokenID common.Hash) (bool, error) {
 	for chainID, sDB := range sDBs {
 		if chainID == common.BeaconChainID {
-			if existed := PrivacyTokenIDExisted(sDBs[common.BeaconChainID], tokenID); existed {
-				return false, nil
+			if isExisted := PrivacyTokenIDExisted(sDBs[common.BeaconChainID], tokenID); isExisted {
+				return true, nil
 			}
 			continue
 		}
-		isExist := PrivacyTokenIDExisted(sDB, tokenID)
-		if isExist {
+		isExisted := PrivacyTokenIDExisted(sDB, tokenID)
+		if isExisted {
 			return true, nil
 		}
 	}

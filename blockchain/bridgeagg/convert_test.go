@@ -22,17 +22,19 @@ var _ = func() (_ struct{}) {
 }()
 
 type ConvertTestCase struct {
-	Name         string                                           `json:"name"`
-	Metadata     metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadata"`
-	Instructions [][]string                                       `json:"instructions"`
-	State        *State                                           `json:"state"`
+	Name           string                                           `json:"name"`
+	Metadata       metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadata"`
+	Instructions   [][]string                                       `json:"instructions"`
+	ProducerState  *State                                           `json:"producer_state"`
+	ProcessorState *State                                           `json:"processor_state"`
 }
 
 type ConvertTestSuite struct {
 	suite.Suite
-	producerState  *State
-	processorState *State
-	testCases      []ConvertTestCase
+	producerState        []*State
+	processorState       []*State
+	testCases            []ConvertTestCase
+	currentTestCaseIndex int
 
 	sdb *statedb.StateDB
 	env *stateEnvironment
@@ -48,8 +50,6 @@ func (c *ConvertTestSuite) SetupSuite() {
 	emptyRoot := common.HexToHash(common.HexEmptyRoot)
 	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	c.sdb = sDB
-	c.processorState = NewState()
-	c.producerState = NewState()
 
 	config.AbortParam()
 	config.Param().BridgeAggParam.BaseDecimal = 9
@@ -66,19 +66,26 @@ func (c *ConvertTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(0)
-	Logger.log.Info(c.testCases)
+	c.currentTestCaseIndex = -1
+}
+
+func (c *ConvertTestSuite) SetupTest() {
+	c.currentTestCaseIndex++
 }
 
 func (c *ConvertTestSuite) TestAcceptedConvert() {
+	testCase := c.testCases[c.currentTestCaseIndex]
+	fmt.Println(testCase)
 }
 
 func (c *ConvertTestSuite) TestRejectedConvert() {
-
+	testCase := c.testCases[c.currentTestCaseIndex]
+	fmt.Println(testCase)
 }
 
 func (c *ConvertTestSuite) TestRejectedThenAcceptedConvert() {
-
+	testCase := c.testCases[c.currentTestCaseIndex]
+	fmt.Println(testCase)
 }
 
 func TestConvertTestSuite(t *testing.T) {

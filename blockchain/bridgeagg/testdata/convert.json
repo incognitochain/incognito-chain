@@ -3,18 +3,21 @@
         "name": "Accepted",
         "metadata": {},
         "instructions": [],
-        "state": {}
+        "producer_state": {},
+        "processor_state": {}
     },
     {
         "name": "Rejected",
         "metadata": {},
         "instructions": [],
-        "state": {}
+        "producer_state": {},
+        "processor_state": {}
     },
     {
         "name": "Rejected then accepted",
         "metadata": {},
         "instructions": [],
-        "state": {}
+        "producer_state": {},
+        "processor_state": {}
     }
 ]
