@@ -1,23 +1,105 @@
 [
     {
         "name": "Accepted",
-        "metadata": {},
-        "instructions": [],
-        "producer_state": {},
-        "processor_state": {}
+        "metadata": {
+            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+            "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+            "NetworkID": 1,
+            "Amount": 100,
+            "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+            "Type": 341
+        },
+        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "expected_instructions": [
+            [
+                
+            ]
+        ],
+        "state": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_state": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 100,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        }
     },
     {
         "name": "Rejected",
-        "metadata": {},
-        "instructions": [],
-        "producer_state": {},
-        "processor_state": {}
+        "metadata": {
+            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+            "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+            "NetworkID": 1,
+            "Amount": 100,
+            "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+            "Type": 341
+        },
+        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "expected_instructions": [
+            [
+
+            ]
+        ],
+        "state": {},
+        "expected_state": {}
     },
     {
         "name": "Rejected then accepted",
-        "metadata": {},
-        "instructions": [],
-        "producer_state": {},
-        "processor_state": {}
+        "metadata": {
+            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+            "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+            "NetworkID": 1,
+            "Amount": 100,
+            "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+            "Type": 341
+        },
+        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "expected_instructions": [
+            [
+
+            ]
+        ],
+        "state": {},
+        "expected_state": {}
     }
 ]
