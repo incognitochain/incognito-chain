@@ -929,17 +929,15 @@ func (a *actorV2) voteValidBlock(
 			if err != nil {
 				a.logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
-			} else {
-				proposeBlockInfo.IsVoted = true
-				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
-					return err
-				}
-				if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
-					return err
-				}
 			}
 		}
-
+	}
+	proposeBlockInfo.IsVoted = true
+	if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+		return err
+	}
+	if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
+		return err
 	}
 
 	return nil
