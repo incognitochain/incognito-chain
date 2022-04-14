@@ -932,12 +932,14 @@ func (a *actorV2) voteValidBlock(
 			}
 		}
 	}
-	proposeBlockInfo.IsVoted = true
-	if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
-		return err
-	}
-	if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
-		return err
+	if len(proposeBlockInfo.UserKeySet) > 0 {
+		proposeBlockInfo.IsVoted = true
+		if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+			return err
+		}
+		if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
+			return err
+		}
 	}
 
 	return nil
