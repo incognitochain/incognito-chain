@@ -1385,24 +1385,47 @@ func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
 	err error,
 ) {
 	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, cID)
+	res2 := []incognitokey.CommitteePublicKey{}
+	res3 := []incognitokey.CommitteePublicKey{}
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
-		return res, err
+		// return res, err
 	}
 	key := getCommitteeCacheKeyByEpoch(epoch, cID)
 	if v := blockchain.ShardChain[cID].GetViewByHash(prevHash); v != nil {
-		res = v.GetCommittee()
-		blockchain.committeeByEpochCache.Add(key, res)
-		return res, nil
+		// res = v.GetCommittee()
+		res2 = v.GetCommittee()
+		blockchain.committeeByEpochCache.Add(key, res2)
+		// return res2, nil
 	}
 	consensusDB, err := getShardConsensusStateDB(blockchain.GetShardChainDatabase(cID), cID, prevHash)
 	if err != nil {
 		return nil, err
 	}
-	res = statedb.GetOneShardCommittee(consensusDB, cID)
-	blockchain.committeeByEpochCache.Add(key, res)
-	return res, nil
+	res3 = statedb.GetOneShardCommittee(consensusDB, cID)
+	a1 := len(res)
+	a2 := len(res2)
+	a3 := len(res3)
+
+	if a3*a2 != 0 {
+		if !equal2list(res3, res2) {
+			return nil, errors.Errorf("Something wrong with view")
+		}
+	}
+
+	if a1*a2 != 0 {
+		if !equal2list(res, res2) {
+			return nil, errors.Errorf("Something wrong with cache 1")
+		}
+	}
+	if a1*a3 != 0 {
+		if !equal2list(res, res3) {
+			return nil, errors.Errorf("Something wrong with cache 2")
+		}
+	}
+	blockchain.committeeByEpochCache.Add(key, res3)
+	return res3, nil
 }
 
 func (blockchain *BlockChain) getShardValidators(
@@ -1482,4 +1505,33 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
+}
+
+func equal2list(listA, listB []incognitokey.CommitteePublicKey) bool {
+	tmp := map[string]struct{}{}
+	for _, k := range listA {
+		str, err := k.ToBase58()
+		if err != nil {
+			// panic(err)
+			return false
+		}
+		tmp[str] = struct{}{}
+	}
+	// committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+	if len(listA) != len(listB) {
+		return false
+		// panic("aaaaaaaaaa")
+	}
+	for _, k := range listB {
+		str, err := k.ToBase58()
+		if err != nil {
+			// panic(err)
+			return false
+		}
+		if _, ok := tmp[str]; !ok {
+			// panic("bbbbbbbbbbbb")
+			return false
+		}
+	}
+	return true
 }
