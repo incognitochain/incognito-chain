@@ -305,7 +305,7 @@ func (f *FlatFileManager) Append(data []byte) (uint64, error) {
 }
 
 func NewFlatFile(dir string, fileBound uint64) (*FlatFileManager, error) {
-	cache, _ := lru.New(50)
+	cache, _ := lru.New(4)
 	itemCache, _ := lru.New(50)
 	ff := &FlatFileManager{
 		dataDir:       dir,
