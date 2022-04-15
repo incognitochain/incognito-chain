@@ -203,40 +203,6 @@ func newProposeBlockForProposeMsgLemma2(
 	}
 }
 
-func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
-	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey,
-	signingCommittes []incognitokey.CommitteePublicKey,
-	userKeySet []signatureschemes2.MiningKey,
-	validVotes, errVotes int,
-) {
-	proposeBlockInfo.block = block
-	proposeBlockInfo.ReceiveTime = time.Now()
-	proposeBlockInfo.Committees = incognitokey.DeepCopy(committees)
-	proposeBlockInfo.SigningCommittees = incognitokey.DeepCopy(signingCommittes)
-	proposeBlockInfo.UserKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
-	proposeBlockInfo.ValidVotes = validVotes
-	proposeBlockInfo.ErrVotes = errVotes
-}
-
-func newBlockInfoForVoteMsg(chainID int) *ProposeBlockInfo {
-	proposeBlockInfo := &ProposeBlockInfo{
-		Votes:      make(map[string]*BFTVote),
-		HasNewVote: true,
-	}
-	if chainID == common.BeaconChainID {
-		if proposeBlockInfo.block == nil {
-			proposeBlockInfo.block = types.NewBeaconBlock()
-		}
-	} else {
-		if proposeBlockInfo.block == nil {
-			proposeBlockInfo.block = types.NewShardBlock()
-		}
-	}
-
-	return proposeBlockInfo
-}
-
 type FinalityProof struct {
 	ReProposeHashSignature []string
 }

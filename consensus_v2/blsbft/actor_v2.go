@@ -766,10 +766,9 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	}
 
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
-	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
 
 	if !proposeBlockInfo.IsCommitted {
-		a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
+		a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3)
 		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
 			a.logger.Infof("Commit block %v , height: %v", blockHash, proposeBlockInfo.block.GetHeight())
 			var err error
@@ -1215,7 +1214,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	blockHash := block.Hash().String()
 
-	proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash)
+	_, ok := a.GetReceiveBlockByHash(blockHash)
 	if ok {
 		return errors.New("Already receive block")
 	}
@@ -1251,7 +1250,6 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 
 	err = a.handleNewProposeMsg(
-		proposeBlockInfo,
 		proposeMsg,
 		block,
 		previousBlock,
@@ -1277,7 +1275,6 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 }
 
 func (a *actorV2) handleNewProposeMsg(
-	oldProposeBlockInfo *ProposeBlockInfo,
 	proposeMsg BFTPropose,
 	block types.BlockInterface,
 	previousBlock types.BlockInterface,
@@ -1303,16 +1300,6 @@ func (a *actorV2) handleNewProposeMsg(
 		a.logger.Errorf("Fail to HandleBFTProposeMessage, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
 		return err
-	}
-
-	if oldProposeBlockInfo != nil {
-		if len(oldProposeBlockInfo.Votes) != 0 {
-			for k, v := range oldProposeBlockInfo.Votes {
-				newProposeBlockInfo.Votes[k] = v
-			}
-		}
-		newProposeBlockInfo.ErrVotes = oldProposeBlockInfo.ErrVotes
-		newProposeBlockInfo.ValidVotes = oldProposeBlockInfo.ValidVotes
 	}
 
 	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {

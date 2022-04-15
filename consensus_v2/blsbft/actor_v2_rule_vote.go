@@ -77,6 +77,9 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 
 	v.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	proposeBlockInfo.HasNewVote = false
+	proposeBlockInfo.ValidVotes = validVote
+	proposeBlockInfo.ErrVotes = errVote
+
 	for key, value := range proposeBlockInfo.Votes {
 		if value.IsValid == -1 {
 			delete(proposeBlockInfo.Votes, key)
