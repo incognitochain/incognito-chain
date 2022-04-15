@@ -104,7 +104,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
-	blockchain.beaconViewCache, _ = lru.New(50)
+	blockchain.beaconViewCache, _ = lru.New(10)
 	blockchain.committeeByEpochCache, _ = lru.New(50)
 	err := wallet.InitPublicKeyBurningAddressByte()
 	if err != nil {

@@ -1031,6 +1031,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 	blockchain.BeaconChain.multiView.AddView(newBestState)
+	bbsBytes, _ := json.Marshal(newBestState)
+	committeeStateBytes, _ := json.Marshal(newBestState.beaconCommitteeState)
+	pdeStatesBytes, _ := json.Marshal(newBestState.pdeStates)
+	portalStateV3Bytes, _ := json.Marshal(newBestState.portalStateV3)
+	portalStateV4Bytes, _ := json.Marshal(newBestState.portalStateV4)
+	Logger.log.Infof("[debugmemory] Size newBestState %v", len(bbsBytes))
+	Logger.log.Infof("[debugmemory] Size beaconCommitteeState %v", len(committeeStateBytes))
+	Logger.log.Infof("[debugmemory] Size pdeStates %v", len(pdeStatesBytes))
+	Logger.log.Infof("[debugmemory] Size portalStateV3 %v", len(portalStateV3Bytes))
+	Logger.log.Infof("[debugmemory] Size portalStateV4 %v", len(portalStateV4Bytes))
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
