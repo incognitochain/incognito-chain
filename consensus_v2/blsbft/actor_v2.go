@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"time"
@@ -822,12 +821,12 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+
 		"Committee %+v", a.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
 
-	// @NOTICE: debug mode only, this data should only be used for debugging
-	if v.block.GetVersion() >= types.LEMMA2_VERSION {
-		if err := a.chain.StoreFinalityProof(v.block, v.FinalityProof, v.ReProposeHashSignature); err != nil {
-			a.logger.Errorf("Store Finality Proof error %+v", err)
-		}
-	}
+	//// @NOTICE: debug mode only, this data should only be used for debugging
+	//if v.block.GetVersion() >= types.LEMMA2_VERSION {
+	//	if err := a.chain.StoreFinalityProof(v.block, v.FinalityProof, v.ReProposeHashSignature); err != nil {
+	//		a.logger.Errorf("Store Finality Proof error %+v", err)
+	//	}
+	//}
 	return nil
 }
 
