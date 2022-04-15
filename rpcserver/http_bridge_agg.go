@@ -68,7 +68,7 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 			NetworkID     uint        `json:"NetworkID"`
 			RewardReserve uint64      `json:"RewardReserve"`
 			IsPaused      bool        `json:"IsPaused"`
-		} `json:"NewList"`
+		} `json:"Vaults"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)

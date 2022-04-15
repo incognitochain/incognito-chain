@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
@@ -249,9 +250,14 @@ func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
 	}
 }
 
-func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB) ([]string, error) {
+func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues) ([]string, error) {
 	res := []string{}
 	var err error
-	res, s.unifiedTokenInfos, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs)
+	tempAC := new(metadata.AccumulatedValues)
+	*tempAC = *ac
+	res, s.unifiedTokenInfos, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, tempAC)
+	if len(res) != 0 {
+		ac = tempAC
+	}
 	return res, err
 }

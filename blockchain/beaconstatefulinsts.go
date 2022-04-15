@@ -175,7 +175,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		return utils.EmptyStringMatrix, err
 	}
 
-	newInst, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs)
+	newInst, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues)
 	if err != nil {
 		return [][]string{}, err
 	}

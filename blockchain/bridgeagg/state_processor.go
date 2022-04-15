@@ -35,7 +35,7 @@ func (sp *stateProcessor) modifyRewardReserve(
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		for unifiedTokenID, vaults := range acceptedInst.NewListTokens {
+		for unifiedTokenID, vaults := range acceptedInst.Vaults {
 			_, found := unifiedTokenInfos[unifiedTokenID]
 			if !found {
 				unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
@@ -205,6 +205,7 @@ func (sp *stateProcessor) unshield(
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
+	var fee, amount uint64
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
@@ -232,6 +233,8 @@ func (sp *stateProcessor) unshield(
 			status = common.AcceptedStatusByte
 			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
 			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.TokenID
+			amount += data.Amount
+			fee += data.Fee
 		}
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
@@ -244,11 +247,13 @@ func (sp *stateProcessor) unshield(
 	default:
 		return unifiedTokenInfos, errors.New("Can not recognize status")
 	}
-	shieldStatus := ShieldStatus{
-		Status:    status,
-		ErrorCode: errorCode,
+	unshieldStatus := UnshieldStatus{
+		Status:                 status,
+		Fee:                    fee,
+		InternalUnshieldAmount: amount,
+		ErrorCode:              errorCode,
 	}
-	contentBytes, _ := json.Marshal(shieldStatus)
+	contentBytes, _ := json.Marshal(unshieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggUnshieldStatusPrefix(),

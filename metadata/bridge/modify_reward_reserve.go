@@ -14,7 +14,7 @@ import (
 
 type ModifyRewardReserve struct {
 	metadataCommon.MetadataBaseWithSignature
-	NewListTokens map[common.Hash][]Vault `json:"NewListTokens"` // unifiedTokenID -> list tokenID
+	Vaults map[common.Hash][]Vault `json:"Vaults"` // unifiedTokenID -> list tokenID
 }
 
 type AcceptedModifyRewardReserve struct {
@@ -26,13 +26,11 @@ func NewModifyRewardReserve() *ModifyRewardReserve {
 	return &ModifyRewardReserve{}
 }
 
-func NewModifyRewardReserveWithValue(
-	newListTokens map[common.Hash][]Vault,
-) *ModifyRewardReserve {
+func NewModifyRewardReserveWithValue(vaults map[common.Hash][]Vault) *ModifyRewardReserve {
 	metadataBase := metadataCommon.NewMetadataBaseWithSignature(metadataCommon.BridgeAggModifyRewardReserveMeta)
 	request := &ModifyRewardReserve{}
 	request.MetadataBaseWithSignature = *metadataBase
-	request.NewListTokens = newListTokens
+	request.Vaults = vaults
 	return request
 }
 
@@ -78,7 +76,7 @@ func (request *ModifyRewardReserve) ValidateSanityData(
 	}
 
 	usedTokenIDs := make(map[common.Hash]bool)
-	for unifiedTokenID, vaults := range request.NewListTokens {
+	for unifiedTokenID, vaults := range request.Vaults {
 		if usedTokenIDs[unifiedTokenID] {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", unifiedTokenID.String()))
 		}
@@ -114,7 +112,7 @@ func (request *ModifyRewardReserve) Hash() *common.Hash {
 
 func (request *ModifyRewardReserve) HashWithoutSig() *common.Hash {
 	record := request.MetadataBaseWithSignature.Hash().String()
-	contentBytes, _ := json.Marshal(request.NewListTokens)
+	contentBytes, _ := json.Marshal(request.Vaults)
 	hashParams := common.HashH(contentBytes)
 	record += hashParams.String()
 

@@ -21,8 +21,17 @@ import (
 )
 
 type ShieldStatus struct {
-	Status    byte `json:"Status"`
-	ErrorCode uint `json:"ErrorCode,omitempty"`
+	Status    byte   `json:"Status"`
+	Amount    uint64 `json:"Amount"`
+	Reward    uint64 `json:"Reward"`
+	ErrorCode uint   `json:"ErrorCode,omitempty"`
+}
+
+type UnshieldStatus struct {
+	Status                 byte   `json:"Status"`
+	InternalUnshieldAmount uint64 `json:"InternalUnshieldAmount"`
+	Fee                    uint64 `json:"Fee"`
+	ErrorCode              uint   `json:"ErrorCode,omitempty"`
 }
 
 type ModifyRewardReserveStatus struct {

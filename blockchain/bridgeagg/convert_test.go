@@ -22,6 +22,7 @@ type ConvertTestCase struct {
 	UnifiedTokens         map[common.Hash]map[uint]*Vault                     `json:"unified_tokens"`
 	ExpectedUnifiedTokens map[common.Hash]map[uint]*Vault                     `json:"expected_unified_tokens"`
 	TxID                  common.Hash                                         `json:"tx_id"`
+	BridgeTokensInfo      map[common.Hash]*statedb.BridgeTokenInfoState       `json:"bridge_tokens_info"`
 }
 
 type ConvertTestSuite struct {
@@ -64,11 +65,13 @@ func (c *ConvertTestSuite) SetupTest() {
 		if err != nil {
 			panic(err)
 		}
-		err = statedb.UpdateBridgeTokenInfo(sDB, v.TokenID, []byte("123"), false, v.Amount+100, "+")
+		actions = append(actions, content[1])
+	}
+	for tokenID, v := range testCase.BridgeTokensInfo {
+		err := statedb.UpdateBridgeTokenInfo(sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
 		}
-		actions = append(actions, content[1])
 	}
 
 	assert := c.Assert()
@@ -94,7 +97,7 @@ func (c *ConvertTestSuite) SetupTest() {
 	})
 }
 
-func (c *ConvertTestSuite) TestAcceptedConvert() {
+func (c *ConvertTestSuite) TestAccepted() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseIndex]
 	actualResult := c.actualResults[c.currentTestCaseIndex]
@@ -105,7 +108,7 @@ func (c *ConvertTestSuite) TestAcceptedConvert() {
 	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
 }
 
-func (c *ConvertTestSuite) TestRejectedConvert() {
+func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseIndex]
 	actualResult := c.actualResults[c.currentTestCaseIndex]
@@ -116,7 +119,29 @@ func (c *ConvertTestSuite) TestRejectedConvert() {
 	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
 }
 
-func (c *ConvertTestSuite) TestRejectedThenAcceptedConvert() {
+func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseIndex]
+	actualResult := c.actualResults[c.currentTestCaseIndex]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+}
+
+func (c *ConvertTestSuite) TestRejectedByInvalidNetworkID() {
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseIndex]
+	actualResult := c.actualResults[c.currentTestCaseIndex]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+}
+
+func (c *ConvertTestSuite) TestRejectedThenAccepted() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseIndex]
 	actualResult := c.actualResults[c.currentTestCaseIndex]
