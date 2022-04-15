@@ -157,8 +157,8 @@ const (
 
 	// bridgeagg
 	GetBridgeAggStateError
-	BridgeAggEstimateReceivedAmountError
-	BridgeAggEstimateFeeError
+	BridgeAggEstimateFeeByBurntAmountError
+	BridgeAggEstimateFeeByExpectedAmountError
 	BridgeAggEstimateRewardError
 )
 
@@ -306,10 +306,10 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
 	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
 	// bridgeagg
-	GetBridgeAggStateError:               {-13000, "Get bridge agg state error"},
-	BridgeAggEstimateReceivedAmountError: {-13001, "Bridge agg estimate receive amount error"},
-	BridgeAggEstimateFeeError:            {-13001, "Bridge agg estimate fee error"},
-	BridgeAggEstimateRewardError:         {-13001, "Bridge agg estimate reward error"},
+	GetBridgeAggStateError:                    {-13000, "Get bridge agg state error"},
+	BridgeAggEstimateFeeByBurntAmountError:    {-13001, "Bridge agg estimate fee by burnt amount error"},
+	BridgeAggEstimateFeeByExpectedAmountError: {-13001, "Bridge agg estimate fee by expected amount error"},
+	BridgeAggEstimateRewardError:              {-13001, "Bridge agg estimate reward error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

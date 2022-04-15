@@ -311,8 +311,8 @@ const (
 	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
 	bridgeaggUnshield                    = "bridgeaggUnshield"
 	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
-	bridgeaggEstimateReceivedAmount      = "bridgeaggEstimateReceivedAmount"
-	bridgeaggEstimateFee                 = "bridgeaggEstimateFee"
+	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
+	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
 	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
 	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
 

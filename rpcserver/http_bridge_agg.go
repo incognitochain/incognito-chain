@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -563,7 +562,7 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 	return res, nil
 }
 
-func (httpServer *HttpServer) handleBridgeAggEstimateReceivedAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleEstimateFeeByBurntAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -573,7 +572,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReceivedAmount(params inter
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
 		NetworkID      uint        `json:"NetworkID"`
-		Amount         uint64      `json:"Amount"`
+		BurntAmount    uint64      `json:"BurntAmount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
 	if err != nil {
@@ -581,16 +580,16 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReceivedAmount(params inter
 	}
 	err = json.Unmarshal(rawMd, &mdReader)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByBurntAmountError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateReceivedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
+	result, err := httpServer.blockService.BridgeAggEstimateFeeByBurntAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.BurntAmount)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateReceivedAmountError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByBurntAmountError, err)
 	}
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleBridgeAggEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleEstimateFeeByExpectedAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -600,7 +599,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateFee(params interface{}, clo
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
 		NetworkID      uint        `json:"NetworkID"`
-		Amount         uint64      `json:"Amount"`
+		ExpectedAmount uint64      `json:"ExpectedAmount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
 	if err != nil {
@@ -608,11 +607,11 @@ func (httpServer *HttpServer) handleBridgeAggEstimateFee(params interface{}, clo
 	}
 	err = json.Unmarshal(rawMd, &mdReader)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByExpectedAmountError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggCalculateActualAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, bridgeagg.SubOperator)
+	result, err := httpServer.blockService.BridgeAggEstimateFeeByExpectedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.ExpectedAmount)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByExpectedAmountError, err)
 	}
 	return result, nil
 }
@@ -637,7 +636,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggCalculateActualAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, bridgeagg.AddOperator)
+	result, err := httpServer.blockService.BridgeAggEstimateReward(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}

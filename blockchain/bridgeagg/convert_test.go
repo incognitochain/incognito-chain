@@ -16,25 +16,12 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var _ = func() (_ struct{}) {
-	Logger.Init(common.NewBackend(nil).Logger("test", true))
-	Logger.log.Info("Init logger")
-	return
-}()
-
 type ConvertTestCase struct {
-	Name                  string                                              `json:"name"`
 	Metadatas             []*metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadatas"`
 	ExpectedInstructions  [][]string                                          `json:"expected_instructions"`
 	UnifiedTokens         map[common.Hash]map[uint]*Vault                     `json:"unified_tokens"`
 	ExpectedUnifiedTokens map[common.Hash]map[uint]*Vault                     `json:"expected_unified_tokens"`
 	TxID                  common.Hash                                         `json:"tx_id"`
-}
-
-type ActualResult struct {
-	Instructions   [][]string
-	ProducerState  *State
-	ProcessorState *State
 }
 
 type ConvertTestSuite struct {

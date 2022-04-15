@@ -15,6 +15,18 @@ import (
 	"github.com/jrick/logrotate/rotator"
 )
 
+type ActualResult struct {
+	Instructions   [][]string
+	ProducerState  *State
+	ProcessorState *State
+}
+
+var _ = func() (_ struct{}) {
+	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	Logger.log.Info("Init logger")
+	return
+}()
+
 func TestCalculateActualAmount(t *testing.T) {
 	type args struct {
 		x        uint64
