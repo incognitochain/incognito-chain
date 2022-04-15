@@ -1,7 +1,9 @@
 package rawdb_consensus
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"strings"
 )
@@ -24,6 +26,35 @@ func GetAllProposeHistory(db incdb.Database, chainID int) (map[int64]struct{}, e
 		res[int64(timeSlot)] = struct{}{}
 	}
 
+	return res, nil
+}
+
+func StoreVoteByBlockHash(db incdb.Database, hash string, validator string, vote []byte) error {
+	key := GetVoteByBlockHashPrefixKey(hash)
+	key = append(key, []byte(validator)...)
+	if err := db.Put(key, vote); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetVotesByBlockHash(db incdb.Database, hash string) (map[string]*blsbft.BFTVote, error) {
+	res := make(map[string]*blsbft.BFTVote)
+	prefix := GetVoteByBlockHashPrefixKey(hash)
+	it := db.NewIteratorWithPrefix(prefix)
+	for it.Next() {
+		key := make([]byte, len(it.Key()))
+		copy(key, it.Key())
+		keys := strings.Split(string(key), string(splitter))
+		validator := string(keys[2])
+		v := &blsbft.BFTVote{}
+		err := json.Unmarshal(it.Value(), v)
+		if err != nil {
+			return nil, err
+		}
+		res[validator] = v
+	}
 	return res, nil
 }
 
@@ -86,48 +117,6 @@ func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]by
 	}
 
 	return res, res2, nil
-}
-
-func GetReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) ([]byte, error) {
-
-	key := GetReceiveBlockByHeightKey(chainID, height)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
-}
-
-func StoreReceiveBlockByHeight(db incdb.Database, chainID int, height uint64, numberOfBlock int, value []byte) error {
-
-	key := GetReceiveBlockByHeightKey(chainID, height)
-	value = getReceiveBlockByHeightValue(numberOfBlock, value)
-
-	if err := db.Put(key, value); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getReceiveBlockByHeightValue(numberOfBlock int, value []byte) []byte {
-	res := common.IntToBytes(numberOfBlock)
-	res = append(res, splitter...)
-	res = append(res, value...)
-	return res
-}
-
-func DeleteReceiveBlockByHeight(db incdb.Database, chainID int, height uint64) error {
-
-	key := GetReceiveBlockByHeightKey(chainID, height)
-
-	if err := db.Delete(key); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte, error) {

@@ -18,6 +18,7 @@ func GetConsensusDatabase() incdb.Database {
 var splitter = []byte("-[-]-")
 var shardFinalityProofPrefix = []byte("s-fp" + string(splitter))
 var blacklistPrefix = []byte("bd-bl" + string(splitter))
+var voteByHashPrefix = []byte("v-h" + string(splitter))
 var proposeHistoryPrefix = []byte("p-h" + string(splitter))
 var receiveBlockByHeightPrefix = []byte("rb-height" + string(splitter))
 var receiveBlockByHashPrefix = []byte("rb-hash" + string(splitter))
@@ -48,6 +49,14 @@ func GetByzantineBlackListKey(validator string) []byte {
 	prefix := GetByzantineBlackListPrefix()
 	key := append(prefix, []byte(validator)...)
 
+	return key
+}
+
+func GetVoteByBlockHashPrefixKey(hash string) []byte {
+	temp := make([]byte, len(voteByHashPrefix))
+	copy(temp, voteByHashPrefix)
+	key := append(temp, []byte(hash)...)
+	key = append(key, splitter...)
 	return key
 }
 

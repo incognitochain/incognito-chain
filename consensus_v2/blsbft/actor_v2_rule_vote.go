@@ -83,15 +83,6 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 		}
 	}
 
-	proposeBlockInfo.addBlockInfo(
-		proposeBlockInfo.block,
-		proposeBlockInfo.Committees,
-		proposeBlockInfo.SigningCommittees,
-		proposeBlockInfo.UserKeySet,
-		validVote,
-		errVote,
-	)
-
 	return proposeBlockInfo
 }
 
@@ -214,15 +205,6 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 			delete(proposeBlockInfo.Votes, key)
 		}
 	}
-
-	proposeBlockInfo.addBlockInfo(
-		proposeBlockInfo.block,
-		proposeBlockInfo.Committees,
-		proposeBlockInfo.SigningCommittees,
-		proposeBlockInfo.UserKeySet,
-		validVote,
-		errVote,
-	)
 
 	return proposeBlockInfo
 }

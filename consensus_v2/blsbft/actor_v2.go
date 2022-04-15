@@ -47,13 +47,9 @@ type actorV2 struct {
 	currentTime     int64
 	currentTimeSlot int64
 
-	proposeHistory       map[int64]struct{}
-	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //recentVotedBlockHeight -> blockInfo
-	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
-	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
-	// previous block hash -> a map of next block block time slot -> corresponding re-propose hash signature
-
-	nextBlockFinalityProof map[string]map[int64]string
+	proposeHistory     map[int64]struct{}
+	receiveBlockByHash map[string]*ProposeBlockInfo    //blockHash -> blockInfo
+	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
 	ruleDirector *ActorV2RuleDirector
 	blockVersion int
@@ -108,15 +104,10 @@ func newActorV2WithValue(
 	if err != nil {
 		panic(err) //must not error
 	}
-	a.receiveBlockByHeight, err = InitReceiveBlockByHeight(chainID)
-	if err != nil {
-		panic(err) //must not error
-	}
 	a.voteHistory, err = InitVoteHistory(chainID)
 	if err != nil {
 		panic(err) //must not error
 	}
-	a.nextBlockFinalityProof = make(map[string]map[int64]string)
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
@@ -164,51 +155,17 @@ func InitReceiveBlockByHeight(chainID int) (map[uint64][]*ProposeBlockInfo, erro
 	return res, nil
 }
 
-func (a *actorV2) AddReceiveBlockByHeight(blockHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
-
-	a.receiveBlockByHeight[blockHeight] = append(a.receiveBlockByHeight[blockHeight], proposeBlockInfo)
-
-	data, err := json.Marshal(a.receiveBlockByHeight[blockHeight])
-	if err != nil {
-		return err
-	}
-
-	if err := rawdb_consensus.StoreReceiveBlockByHeight(
-		rawdb_consensus.GetConsensusDatabase(),
-		a.chainID,
-		blockHeight,
-		len(a.receiveBlockByHeight[blockHeight]),
-		data,
-	); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (a *actorV2) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBlockInfo {
-	a.SortReceiveBlockByHeight(blockHeight)
-	return a.receiveBlockByHeight[blockHeight]
-}
-
-func (a *actorV2) SortReceiveBlockByHeight(blockHeight uint64) {
-	sort.Slice(a.receiveBlockByHeight[blockHeight], func(i, j int) bool {
-		return a.receiveBlockByHeight[blockHeight][i].block.GetProduceTime() < a.receiveBlockByHeight[blockHeight][j].block.GetProduceTime()
-	})
-}
-
-func (a *actorV2) CleanReceiveBlockByHeight(blockHeight uint64) error {
-
-	if err := rawdb_consensus.DeleteReceiveBlockByHeight(
-		rawdb_consensus.GetConsensusDatabase(),
-		a.chainID,
-		blockHeight,
-	); err != nil {
-		return err
+	tmp := []*ProposeBlockInfo{}
+	for _, proposeInfo := range a.receiveBlockByHash {
+		if proposeInfo.block.GetHeight() == blockHeight {
+			tmp = append(tmp, proposeInfo)
+		}
 	}
-	delete(a.receiveBlockByHeight, blockHeight)
-
-	return nil
+	sort.Slice(tmp, func(i, j int) bool {
+		return tmp[i].block.GetProduceTime() < tmp[j].block.GetProduceTime()
+	})
+	return tmp
 }
 
 func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
@@ -237,10 +194,30 @@ func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		//restore votes by block hash
+		votes, err := rawdb_consensus.GetVotesByBlockHash(rawdb_consensus.GetConsensusDatabase(), proposeBlockInfo.block.Hash().String())
+		if err != nil {
+			return nil, err
+		}
+		proposeBlockInfo.Votes = votes
 		res[k] = proposeBlockInfo
 	}
 
 	return res, nil
+}
+
+func (a *actorV2) AddVoteByBlockHash(blockHash string, bftVote BFTVote) error {
+	data, err := json.Marshal(bftVote)
+	if err != nil {
+		return err
+	}
+
+	if err = rawdb_consensus.StoreVoteByBlockHash(rawdb_consensus.GetConsensusDatabase(), blockHash, bftVote.Validator, data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *ProposeBlockInfo) error {
@@ -561,7 +538,7 @@ func (a *actorV2) run() error {
 			case proposeMsg := <-a.proposeMessageCh:
 				err := a.handleProposeMsg(proposeMsg)
 				if err != nil {
-					a.logger.Debug(err)
+					a.logger.Error(err)
 					continue
 				}
 
@@ -626,7 +603,6 @@ func (a *actorV2) run() error {
 					}
 					// Proposer Rule: check propose block connected to bestview (longest chain rule 1)
 					// and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
-
 					var proposeBlockInfo = NewProposeBlockInfo()
 					for _, v := range a.GetSortedReceiveBlockByHeight(bestView.GetHeight() + 1) {
 						if v.IsValid {
@@ -923,9 +899,6 @@ func (a *actorV2) voteValidBlock(
 				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
 					return err
 				}
-				if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
-					return err
-				}
 			}
 		}
 
@@ -1214,25 +1187,28 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
 	if err != nil || blockInfo == nil {
-		a.logger.Debug(err)
 		return err
 	}
 
 	block := blockInfo.(types.BlockInterface)
 
 	blockHash := block.Hash().String()
+
+	proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash)
+	if ok {
+		return errors.New("Already receive block")
+	}
+
 	proposerCommitteePublicKey := incognitokey.CommitteePublicKey{}
 	proposerCommitteePublicKey.FromBase58(block.GetProposer())
 	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
 	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
 	if err != nil {
-		a.logger.Error(err)
 		return err
 	}
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
 	if err != nil {
-		a.logger.Error(err)
 		return err
 	}
 	if len(userKeySet) == 0 {
@@ -1253,32 +1229,21 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		}
 	}
 
-	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash); !ok ||
-		!reflect.DeepEqual(proposeBlockInfo.block, block) {
-		err := a.handleNewProposeMsg(
-			proposeBlockInfo,
-			proposeMsg,
-			block,
-			previousBlock,
-			committees,
-			signingCommittees,
-			userKeySet,
-			proposerMiningKeyBase58,
-		)
-		if err != nil {
-			a.logger.Error(err)
-			return err
-		}
-	} else {
-		proposeBlockInfo.addBlockInfo(
-			block, committees, signingCommittees, userKeySet, proposeBlockInfo.ValidVotes, proposeBlockInfo.ErrVotes)
-		if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
-			a.logger.Errorf("add receive block by hash error %+v", err)
-		}
+	err = a.handleNewProposeMsg(
+		proposeBlockInfo,
+		proposeMsg,
+		block,
+		previousBlock,
+		committees,
+		signingCommittees,
+		userKeySet,
+		proposerMiningKeyBase58,
+	)
+	if err != nil {
+		return err
 	}
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {
-		a.logger.Debug("Receive block create from old view. Rejected!")
 		return errors.New("Receive block create from old view. Rejected!")
 	}
 
@@ -1332,10 +1297,6 @@ func (a *actorV2) handleNewProposeMsg(
 	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	if err := a.AddReceiveBlockByHeight(block.GetHeight(), newProposeBlockInfo); err != nil {
-		a.logger.Errorf("add receive block by height error %+v", err)
-	}
-
 	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
@@ -1392,9 +1353,6 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 								if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
 									return err
 								}
-								if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
-									return err
-								}
 							}
 						}
 					} else {
@@ -1403,32 +1361,17 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 				}
 			}
 		}
-		// record new votes
-		if err := a.AddReceiveBlockByHash(voteMsg.BlockHash, proposeBlockInfo); err != nil {
-			a.logger.Errorf("add receive block by hash error %+v", err)
-		}
-	} else {
-		proposeBlockInfo := newBlockInfoForVoteMsg(a.chainID)
-		proposeBlockInfo.Votes[voteMsg.Validator] = &voteMsg
-		if err := a.AddReceiveBlockByHash(voteMsg.BlockHash, proposeBlockInfo); err != nil {
-			a.logger.Errorf("add receive block by hash error %+v", err)
-		}
-		a.logger.Infof("Chain %v, Receive vote (%d) for block %v from validator %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].Votes), voteMsg.BlockHash, voteMsg.Validator)
+
+	}
+
+	// record new votes for restore
+	if err := a.AddVoteByBlockHash(voteMsg.BlockHash, voteMsg); err != nil {
+		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
 	return nil
 }
 
 func (a *actorV2) handleCleanMem() {
-
-	for h := range a.receiveBlockByHeight {
-		if h <= a.chain.GetFinalView().GetHeight() {
-			err := a.CleanReceiveBlockByHeight(h)
-			if err != nil {
-				a.logger.Errorf("clean receive block by height error %+v", err)
-			}
-			//delete(a.bodyHashes, h)
-		}
-	}
 
 	for h := range a.voteHistory {
 		if h <= a.chain.GetFinalView().GetHeight() {

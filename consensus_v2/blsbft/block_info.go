@@ -54,7 +54,6 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.Committees = tempBeaconBlock.Alias.Committees
 		p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
 		p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
-		p.Votes = tempBeaconBlock.Alias.Votes
 		p.IsValid = tempBeaconBlock.Alias.IsValid
 		p.HasNewVote = tempBeaconBlock.Alias.HasNewVote
 		p.IsVoted = tempBeaconBlock.Alias.IsVoted
@@ -83,7 +82,6 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.Committees = tempShardBlock.Alias.Committees
 		p.SigningCommittees = tempShardBlock.Alias.SigningCommittees
 		p.UserKeySet = tempShardBlock.Alias.UserKeySet
-		p.Votes = tempShardBlock.Alias.Votes
 		p.IsValid = tempShardBlock.Alias.IsValid
 		p.HasNewVote = tempShardBlock.Alias.HasNewVote
 		p.IsVoted = tempShardBlock.Alias.IsVoted
@@ -114,7 +112,6 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				Committees:              p.Committees,
 				SigningCommittees:       p.SigningCommittees,
 				UserKeySet:              p.UserKeySet,
-				Votes:                   p.Votes,
 				IsValid:                 p.IsValid,
 				HasNewVote:              p.HasNewVote,
 				IsVoted:                 p.IsVoted,
@@ -144,7 +141,6 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				Committees:              p.Committees,
 				SigningCommittees:       p.SigningCommittees,
 				UserKeySet:              p.UserKeySet,
-				Votes:                   p.Votes,
 				IsValid:                 p.IsValid,
 				HasNewVote:              p.HasNewVote,
 				IsVoted:                 p.IsVoted,
