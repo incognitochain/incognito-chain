@@ -895,10 +895,13 @@ func (a *actorV2) voteValidBlock(
 				a.logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
 			} else {
-				proposeBlockInfo.IsVoted = true
-				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
-					return err
+				if !proposeBlockInfo.IsVoted { //not update database if field is already set
+					proposeBlockInfo.IsVoted = true
+					if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+						return err
+					}
 				}
+
 			}
 		}
 

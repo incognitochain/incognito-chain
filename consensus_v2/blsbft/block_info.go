@@ -55,7 +55,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
 		p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
 		p.IsValid = tempBeaconBlock.Alias.IsValid
-		p.HasNewVote = tempBeaconBlock.Alias.HasNewVote
+		p.HasNewVote = true //force check 2/3+1 after init
 		p.IsVoted = tempBeaconBlock.Alias.IsVoted
 		p.IsCommitted = tempBeaconBlock.Alias.IsCommitted
 		p.ValidVotes = tempBeaconBlock.Alias.ValidVotes
@@ -83,7 +83,6 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.SigningCommittees = tempShardBlock.Alias.SigningCommittees
 		p.UserKeySet = tempShardBlock.Alias.UserKeySet
 		p.IsValid = tempShardBlock.Alias.IsValid
-		p.HasNewVote = tempShardBlock.Alias.HasNewVote
 		p.IsVoted = tempShardBlock.Alias.IsVoted
 		p.IsCommitted = tempShardBlock.Alias.IsCommitted
 		p.ValidVotes = tempShardBlock.Alias.ValidVotes
