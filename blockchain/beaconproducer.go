@@ -604,22 +604,24 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		// check proposer threshold
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report(curView)
-		if featureStatReport.ProposeStat[feature] == nil {
+		if featureStatReport.CommitteeStat[feature] == nil {
 			continue
 		}
 		beaconProposerSize := len(curView.GetCommittee())
-		//if number of beacon proposer update < 90%, not generate inst
-		if featureStatReport.ProposeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*90/100)) {
+		//if number of beacon proposer update < 95%, not generate inst
+		if featureStatReport.CommitteeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*95/100)) {
 			continue
 		}
-		//if number of each shard proposer update < 90%, not generate inst
+
+		//if number of each shard committee update < 95%, not generate inst
 		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
-			shardProposerSize := curView.MinShardCommitteeSize //assume Min Size = proposer size (bpv3 change this)
-			if featureStatReport.ProposeStat[feature][chainID] < uint64(math.Ceil(float64(shardProposerSize)*90/100)) {
+			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
+			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*95/100)) {
 				invalidCondition = true
 				break
 			}
 		}
+
 		if invalidCondition {
 			continue
 		}

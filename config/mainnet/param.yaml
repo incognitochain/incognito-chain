@@ -71,22 +71,22 @@ enable_feature_flags:
 portal_v3_height: 10000000
 tx_pool_version: 0
 geth_param:
-  host: 
+  host:
     - "https://eth-fullnode.incognito.org"
 bsc_param:
-  host: 
+  host:
     - "https://bsc-dataseed.binance.org"
     - "https://bsc-dataseed1.defibit.io"
     - "https://bsc-dataseed1.ninicoin.io"
     - "https://bsc-dataseed2.defibit.io"
 plg_param:
-  host: 
+  host:
     - "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
     - "https://polygon-rpc.com"
     - "https://rpc-mainnet.maticvigil.com"
     - "https://rpc-mainnet.matic.quiknode.pro"
 ftm_param:
-  host: 
+  host:
     - "https://rpcapi.fantom.network"
     - "https://rpc.ftm.tools"
 pdex_param:
@@ -108,4 +108,4 @@ auto_enable_feature:
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
-      require_percentage: 98
+      require_percentage: 85
