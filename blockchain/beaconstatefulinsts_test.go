@@ -42,12 +42,20 @@ func TestBlockChain_buildStatefulInstructions(t *testing.T) {
 	config.Param().EthContractAddressStr = "0x7bebc8445c6223b41b7bb4b0ae9742e2fd2f47f3"
 	config.AbortUnifiedToken()
 	common.MaxShardNumber = 8
+	view := multiview.NewMultiView()
+	view.AddView(&BeaconBestState{
+		BestBlock: types.BeaconBlock{
+			Header: types.BeaconHeader{
+				Height: 10,
+			},
+		},
+	})
 	temp := map[uint64]map[common.Hash]map[uint]config.Vault{
 		10: {
 			common.PRVCoinID: map[uint]config.Vault{
 				1: {
 					ExternalDecimal: 9,
-					ExternalTokenID: "0x0000000000000000000000000000000000000000",
+					ExternalTokenID: "0x0000000000000000000000000000000000000001",
 					IncTokenID:      "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
 				},
 			},
@@ -86,16 +94,30 @@ func TestBlockChain_buildStatefulInstructions(t *testing.T) {
 			name: "addToken + shield pToken",
 			fields: fields{
 				ShardChain: []*ShardChain{
-					&ShardChain{
-						multiView: &multiview.MultiView{},
+					{
+						multiView: view,
 					},
-					&ShardChain{},
-					&ShardChain{},
-					&ShardChain{},
-					&ShardChain{},
-					&ShardChain{},
-					&ShardChain{},
-					&ShardChain{},
+					{
+						multiView: view,
+					},
+					{
+						multiView: view,
+					},
+					{
+						multiView: view,
+					},
+					{
+						multiView: view,
+					},
+					{
+						multiView: view,
+					},
+					{
+						multiView: view,
+					},
+					{
+						multiView: view,
+					},
 				},
 			},
 			args: args{
@@ -126,7 +148,7 @@ func TestBlockChain_buildStatefulInstructions(t *testing.T) {
 			want: [][]string{
 				{
 					"348",
-					"eyJOZXdMaXN0VG9rZW5zIjp7IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDQiOnsiMSI6eyJFeHRlcm5hbERlY2ltYWwiOjksIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In19fX0=",
+					"eyJOZXdMaXN0VG9rZW5zIjp7IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDQiOnsiMSI6eyJFeHRlcm5hbERlY2ltYWwiOjksIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMSIsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In19fX0=",
 				},
 				{
 					"80", "0", "rejected", "13e56a4572aa7eeb5e7f658a8af036ed3ff8a1285452f30c741f4733bc8c7f9c",

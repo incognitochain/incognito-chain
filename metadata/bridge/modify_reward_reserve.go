@@ -76,7 +76,13 @@ func (request *ModifyRewardReserve) ValidateSanityData(
 	}
 
 	usedTokenIDs := make(map[common.Hash]bool)
+	if len(request.Vaults) == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Length of unifiedTokens cannot be 0"))
+	}
 	for unifiedTokenID, vaults := range request.Vaults {
+		if len(vaults) == 0 {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Length of vaults cannot be 0"))
+		}
 		if unifiedTokenID.IsZeroValue() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("unifiedTokenID can not be empty"))
 		}
