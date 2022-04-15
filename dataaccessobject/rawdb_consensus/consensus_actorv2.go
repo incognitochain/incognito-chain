@@ -51,6 +51,19 @@ func GetVotesByBlockHash(db incdb.Database, hash string) (map[string][]byte, err
 	return res, nil
 }
 
+func DeleteVotesByHash(db incdb.Database, hash string) error {
+	prefix := GetVoteByBlockHashPrefixKey(hash)
+	it := db.NewIteratorWithPrefix(prefix)
+	for it.Next() {
+		key := make([]byte, len(it.Key()))
+		err := db.Delete(key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func GetProposeHistoryByKey(db incdb.Database, chainID int, currentTimeSlot int64) (interface{}, error) {
 
 	key := GetProposeHistoryKey(chainID, uint64(currentTimeSlot))
