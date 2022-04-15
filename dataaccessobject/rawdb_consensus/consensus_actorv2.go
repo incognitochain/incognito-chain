@@ -55,8 +55,7 @@ func DeleteVotesByHash(db incdb.Database, hash string) error {
 	prefix := GetVoteByBlockHashPrefixKey(hash)
 	it := db.NewIteratorWithPrefix(prefix)
 	for it.Next() {
-		key := make([]byte, len(it.Key()))
-		err := db.Delete(key)
+		err := db.Delete(it.Key())
 		if err != nil {
 			return err
 		}
@@ -99,32 +98,6 @@ func DeleteProposeHistory(db incdb.Database, chainID int, currentTimeSlot int64)
 	return nil
 }
 
-func GetAllReceiveBlockByHeight(db incdb.Database, chainID int) (map[uint64][]byte, map[uint64]int, error) {
-
-	res := make(map[uint64][]byte)
-	res2 := make(map[uint64]int)
-
-	prefix := GetReceiveBlockByHeightPrefix(chainID)
-	it := db.NewIteratorWithPrefix(prefix)
-	for it.Next() {
-		key := make([]byte, len(it.Key()))
-		copy(key, it.Key())
-		keys := strings.Split(string(key), string(splitter))
-		tempHeight := keys[2]
-		height, err := common.BytesToUint64([]byte(tempHeight))
-		if err != nil {
-			return nil, nil, err
-		}
-		value := make([]byte, len(it.Value()))
-		copy(value, it.Value())
-		values := strings.Split(string(value), string(splitter))
-		res[height] = []byte(values[1])
-		res2[height] = common.BytesToInt([]byte(values[0]))
-	}
-
-	return res, res2, nil
-}
-
 func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte, error) {
 
 	res := make(map[string][]byte)
@@ -142,19 +115,6 @@ func GetAllReceiveBlockByHash(db incdb.Database, chainID int) (map[string][]byte
 	}
 
 	return res, nil
-}
-
-func GetReceiveBlockByHash(db incdb.Database, chainID int, blockHash string) ([]byte, error) {
-
-	key := GetReceiveBlockByHashKey(chainID, blockHash)
-
-	res, err := db.Get(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return res, nil
-
 }
 
 func StoreReceiveBlockByHash(db incdb.Database, chainID int, blockHash string, value []byte) error {

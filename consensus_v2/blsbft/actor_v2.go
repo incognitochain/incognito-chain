@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"time"
@@ -119,42 +120,6 @@ func newActorV2WithValue(
 	return a
 }
 
-func InitReceiveBlockByHeight(chainID int) (map[uint64][]*ProposeBlockInfo, error) {
-
-	data, numberOfBlocks, err := rawdb_consensus.GetAllReceiveBlockByHeight(
-		rawdb_consensus.GetConsensusDatabase(),
-		chainID,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make(map[uint64][]*ProposeBlockInfo)
-
-	for k, v := range data {
-		numberOfBlock := numberOfBlocks[k]
-		proposeBlockInfos := []*ProposeBlockInfo{}
-		for i := 0; i < numberOfBlock; i++ {
-			if chainID == common.BeaconChainID {
-				proposeBlockInfos = append(proposeBlockInfos, &ProposeBlockInfo{
-					block: types.NewBeaconBlock(),
-				})
-			} else {
-				proposeBlockInfos = append(proposeBlockInfos, &ProposeBlockInfo{
-					block: types.NewShardBlock(),
-				})
-			}
-		}
-		err := json.Unmarshal(v, &proposeBlockInfos)
-		if err != nil {
-			return nil, err
-		}
-		res[k] = proposeBlockInfos
-	}
-
-	return res, nil
-}
-
 func (a *actorV2) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBlockInfo {
 	tmp := []*ProposeBlockInfo{}
 	for _, proposeInfo := range a.receiveBlockByHash {
@@ -238,7 +203,6 @@ func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *Prop
 	); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -273,6 +237,7 @@ func (a *actorV2) CleanReceiveBlockByHash(blockHash string) error {
 	); err != nil {
 		return err
 	}
+
 	delete(a.receiveBlockByHash, blockHash)
 
 	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), blockHash); err != nil {
@@ -846,6 +811,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			}
 		}
 	}
+
 	if !isInsertWithPreviousData {
 		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 			return err

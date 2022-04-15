@@ -161,25 +161,6 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 	}
 }
 
-//NewProposeBlockInfoValue : new propose block info
-func newProposeBlockForProposeMsg(
-	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey,
-	signingCommittes []incognitokey.CommitteePublicKey,
-	userKeySet []signatureschemes2.MiningKey,
-	proposerMiningKeyBase58 string,
-) *ProposeBlockInfo {
-	return &ProposeBlockInfo{
-		block:                   block,
-		ReceiveTime:             time.Now(),
-		Votes:                   make(map[string]*BFTVote),
-		Committees:              incognitokey.DeepCopy(committees),
-		SigningCommittees:       incognitokey.DeepCopy(signingCommittes),
-		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
-		ProposerMiningKeyBase58: proposerMiningKeyBase58,
-	}
-}
-
 func newProposeBlockForProposeMsgLemma2(
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
