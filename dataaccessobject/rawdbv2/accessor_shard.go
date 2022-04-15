@@ -31,6 +31,11 @@ func StoreFinalizedShardBlockHashByIndex(db incdb.KeyValueWriter, sid byte, inde
 	return nil
 }
 
+func HasFinalizedShardBlockHashByIndex(db incdb.KeyValueReader, sid byte, index uint64) (bool, error) {
+	keyHash := GetShardIndexToBlockHashPrefix(sid, index)
+	return db.Has(keyHash)
+}
+
 func GetFinalizedShardBlockHashByIndex(db incdb.KeyValueReader, sid byte, index uint64) (*common.Hash, error) {
 	keyHash := GetShardIndexToBlockHashPrefix(sid, index)
 	val, err := db.Get(keyHash)

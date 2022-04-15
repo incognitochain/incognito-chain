@@ -72,7 +72,7 @@ func Test_getAllChains(t *testing.T) {
 	viewsByPreHash[hashs[7]] = []View{views[9]}
 
 	res := [][]View{}
-	getAllChains(hashs[0], viewsByPreHash, &res, []View{views[0]})
+	getAllBranches(hashs[0], viewsByPreHash, &res, []View{views[0]})
 	for i, v := range res {
 		t.Log(i)
 		s1 := ""

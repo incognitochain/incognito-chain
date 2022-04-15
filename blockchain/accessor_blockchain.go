@@ -330,6 +330,85 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 	return allShardBlocks
 }
 
+func (blockchain *BlockChain) GetInstantFinalityShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
+	allShardBlocks := make(map[byte][]*types.ShardBlock)
+	for shardID, bestShardHeight := range bestShardHeights {
+		bestBranch, err := blockchain.ShardChain[shardID].multiView.GetBestConfirmableShardBranch()
+		if err != nil {
+			Logger.log.Errorf("GetBestConfirmableShardBranch shard %+v, error  %+v", shardID, err)
+			continue
+		}
+		shardBlocks, err := blockchain.VerifyInstantFinalityShardBlockForBeaconProducer(shardID, bestShardHeight, bestBranch)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		allShardBlocks[shardID] = shardBlocks
+	}
+	return allShardBlocks
+}
+
+func (blockchain *BlockChain) VerifyInstantFinalityShardBlockForBeaconProducer(
+	shardID byte, bestShardHeight uint64, bestBranch []types.BlockInterface) ([]*types.ShardBlock, error) {
+
+	shardBlocks := []*types.ShardBlock{}
+
+	// @NOTICE: this case only happen when bug in code
+	if bestBranch[0].GetHeight() > bestShardHeight {
+		return shardBlocks, fmt.Errorf("shard %+v, bestShardHeight is %+v but smallest block in branch is %+v",
+			shardID, bestShardHeight, bestBranch[0])
+	}
+
+	index := 0
+	for ; index < len(bestBranch); index++ {
+		if bestBranch[index].GetHeight() == bestShardHeight+1 {
+			break
+		}
+	}
+	bestBranch = bestBranch[index:]
+
+	maxShardBlock := int(bestBranch[len(bestBranch)-1].GetHeight() - bestShardHeight)
+	// limit maximum number of shard blocks for beacon producer
+	if maxShardBlock > MAX_S2B_BLOCK {
+		maxShardBlock = MAX_S2B_BLOCK
+	}
+
+	epoch := bestBranch[0].GetCurrentEpoch()
+	// limit number of req-res transaction type
+	limitTxs := map[int]int{}
+	for i := 0; i < maxShardBlock; i++ {
+		shardBlock, ok := bestBranch[i].(*types.ShardBlock)
+		if !ok {
+			Logger.log.Errorf("GetShardBlockForBeaconProducerInstantFinality shard %+v, "+
+				"fail to convert %+v, types %p to *types.ShardBlock", shardID, bestBranch[i], bestBranch[i])
+		}
+		if shardBlock.GetCurrentEpoch() > epoch {
+			break
+		}
+
+		if ok := checkLimitTxAction(true, limitTxs, shardBlock); !ok {
+			Logger.log.Infof("Maximum tx action, return %v/%v block for shard %v", len(shardBlocks), shardBlock.GetHeight()-bestShardHeight, shardID)
+			break
+		}
+
+		shardBlocks = append(shardBlocks, shardBlock)
+
+		containSwap := func(inst [][]string) bool {
+			for _, inst := range inst {
+				if inst[0] == instruction.SWAP_ACTION {
+					return true
+				}
+			}
+			return false
+		}
+		if containSwap(shardBlock.Body.Instructions) {
+			break
+		}
+	}
+
+	return shardBlocks, nil
+}
+
 func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*types.ShardBlock, error) {
 	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
@@ -368,6 +447,69 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 			}
 
 		}
+		allRequireShardBlocks[shardID] = shardBlocks
+	}
+	return allRequireShardBlocks, nil
+}
+
+func (blockchain *BlockChain) GetInstantFinalityShardBlocksForBeaconValidator(
+	allRequiredShardState map[byte][]types.ShardState) (map[byte][]*types.ShardBlock, error) {
+	// connect to latest final view
+	// must be confirmable chain
+	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
+	for shardID, requiredShardState := range allRequiredShardState {
+		limitTxs := map[int]int{}
+		shardBlocks := []*types.ShardBlock{}
+		lastEpoch := uint64(0)
+		for _, shardState := range requiredShardState {
+			shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(shardState.Hash, shardID)
+			if err != nil {
+				return nil, err
+			}
+			if ok := checkLimitTxAction(true, limitTxs, shardBlock); !ok {
+				return nil, errors.Errorf("Total txs of range ShardBlocks [%v..%v] is lager than limit", requiredShardState[0], requiredShardState[len(requiredShardState)-1])
+			}
+			//only get shard block within epoch
+			if lastEpoch == 0 {
+				lastEpoch = shardBlock.GetCurrentEpoch() //update epoch of first block
+			} else {
+				if lastEpoch != shardBlock.GetCurrentEpoch() { //if next block have different epoch than break
+					return nil, fmt.Errorf("Contain block in different epoch")
+				}
+			}
+
+			shardBlocks = append(shardBlocks, shardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == instruction.SWAP_ACTION {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(shardBlock.Body.Instructions) {
+				break
+			}
+		}
+
+		if len(shardBlocks) != len(requiredShardState) {
+			return nil, fmt.Errorf("shard %+v, beacon producer confirm %+v shard block, validator only found %+v shard blocks",
+				shardID, len(requiredShardState), len(shardBlocks))
+		}
+
+		// verify if shardblocks whether is confirmable chain or not
+		tempShardBlocks := []types.BlockInterface{}
+		for _, v := range shardBlocks {
+			temp := types.BlockInterface(v)
+			tempShardBlocks = append(tempShardBlocks, temp)
+		}
+
+		isOk, err := blockchain.BeaconChain.multiView.IsBelongToConfirmableChain(tempShardBlocks)
+		if !isOk {
+			return nil, err
+		}
+
 		allRequireShardBlocks[shardID] = shardBlocks
 	}
 	return allRequireShardBlocks, nil

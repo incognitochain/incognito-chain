@@ -80,7 +80,12 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	portalParams := portal.GetPortalParams()
-	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
+	allShardBlocks := make(map[byte][]*types.ShardBlock)
+	if version < types.INSTANT_FINALITY_VERSION {
+		allShardBlocks = blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
+	} else {
+		allShardBlocks = blockchain.GetInstantFinalityShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
+	}
 
 	//dequeueInst := copiedCurView.generateOutdatedDequeueInstruction()
 

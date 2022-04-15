@@ -168,29 +168,25 @@ func (multiView *MultiView) SimulateAddViewV1(view View) (*MultiView, bool) {
 
 //Only add view if view is validated (at least enough signature)
 func (multiView *MultiView) addView(view View, proof *ReProposeProof) bool {
-	res := make(chan bool)
-	multiView.actionCh <- func() {
-		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
+
+	if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
+		multiView.viewByHash[*view.GetHash()] = view
+		if view.GetBlock().GetVersion() == types.INSTANT_FINALITY_VERSION && proof != nil {
+			multiView.finalityProof[*view.GetHash()] = proof
+		}
+		return true
+	} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
+		if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
 			multiView.viewByHash[*view.GetHash()] = view
+			multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 			if view.GetBlock().GetVersion() == types.INSTANT_FINALITY_VERSION && proof != nil {
 				multiView.finalityProof[*view.GetHash()] = proof
 			}
-			res <- true
-			return
-		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
-			if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
-				multiView.viewByHash[*view.GetHash()] = view
-				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
-				if view.GetBlock().GetVersion() == types.INSTANT_FINALITY_VERSION && proof != nil {
-					multiView.finalityProof[*view.GetHash()] = proof
-				}
-				res <- true
-				return
-			}
+			return true
 		}
-		res <- false
 	}
-	return <-res
+
+	return false
 }
 
 func (multiView *MultiView) GetBestView() View {
@@ -271,25 +267,45 @@ func (multiView *MultiView) finalizeViewV1(newView View) View {
 
 func (multiView *MultiView) BeaconSimulateAddViewV2(view View, proof *ReProposeProof) (*MultiView, error) {
 
-	cloneView := multiView.Clone()
-
-	cloneView.addView(view, proof)
-
-	_, err := cloneView.tryInstantFinalizeBeacon(view)
-	if err != nil {
-		return nil, err
-	} else {
-		return cloneView, nil
+	type result struct {
+		m   *MultiView
+		err error
 	}
+
+	ch := make(chan result)
+
+	multiView.actionCh <- func() {
+		cloneView := multiView.Clone()
+
+		isAdded := cloneView.addView(view, proof)
+		if !isAdded {
+			ch <- result{m: nil, err: fmt.Errorf("add view hash %+v, height %+v failed", view.GetHash().String(), view.GetHeight())}
+			return
+		}
+		_, err := cloneView.tryInstantFinalizeBeacon(view)
+		if err != nil {
+			ch <- result{m: nil, err: err}
+			return
+		} else {
+			ch <- result{m: cloneView, err: nil}
+			return
+		}
+	}
+
+	res := <-ch
+
+	return res.m, res.err
 }
 
 func (multiView *MultiView) BeaconAddViewAndFinalizeV2(view View, proof *ReProposeProof) {
-	if view.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
-		fmt.Println(errors.New("Instant finality do not support this block version"))
-		return
+	multiView.actionCh <- func() {
+		if view.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
+			fmt.Println(errors.New("Instant finality do not support this block version"))
+			return
+		}
+		multiView.addView(view, proof)
+		multiView.tryInstantFinalizeBeacon(view)
 	}
-	multiView.addView(view, proof)
-	multiView.tryInstantFinalizeBeacon(view)
 }
 
 func (multiView *MultiView) tryInstantFinalizeBeacon(newView View) (View, error) {
@@ -342,28 +358,47 @@ func (multiView *MultiView) tryInstantFinalizeBeacon(newView View) (View, error)
 	return nil, nil
 }
 
-func (multiView *MultiView) ShardSimulateAddViewV2(view View, proof *ReProposeProof, finalizedIndex map[uint64]common.Hash) (View, error) {
-
-	cloneView := multiView.Clone()
-
-	cloneView.addView(view, proof)
-
-	err := cloneView.tryInstantFinalizeShard(finalizedIndex)
-	if err != nil {
-		return nil, err
-	} else {
-		return cloneView.finalView, nil
+func (multiView *MultiView) ShardSimulateAddViewV2(view View, proof *ReProposeProof, finalizedIndex map[uint64]common.Hash) (*MultiView, error) {
+	type result struct {
+		m   *MultiView
+		err error
 	}
+
+	ch := make(chan result)
+
+	multiView.actionCh <- func() {
+		cloneView := multiView.Clone()
+
+		isAdded := cloneView.addView(view, proof)
+		if !isAdded {
+			ch <- result{m: nil, err: fmt.Errorf("add view hash %+v, height %+v failed", view.GetHash().String(), view.GetHeight())}
+			return
+		}
+		err := cloneView.tryInstantFinalizeShard(finalizedIndex)
+		if err != nil {
+			ch <- result{m: nil, err: err}
+			return
+		} else {
+			ch <- result{m: cloneView, err: nil}
+			return
+		}
+	}
+
+	res := <-ch
+
+	return res.m, res.err
 }
 
-//TODO: @hung finalize when block is first insert
 func (multiView *MultiView) ShardAddViewAndFinalizeV2(view View, proof *ReProposeProof, finalizedIndex map[uint64]common.Hash) {
-	if multiView.bestView.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
-		fmt.Println(errors.New("Instant finality do not support this view version"))
-		return
+	multiView.actionCh <- func() {
+		if multiView.bestView.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
+			fmt.Println(errors.New("Instant finality do not support this view version"))
+			return
+		}
+
+		multiView.addView(view, proof)
+		_ = multiView.tryInstantFinalizeShard(finalizedIndex)
 	}
-	multiView.addView(view, proof)
-	_ = multiView.tryInstantFinalizeShard(finalizedIndex)
 }
 
 func (multiView *MultiView) tryInstantFinalizeShard(finalizedIndex map[uint64]common.Hash) error {
@@ -404,7 +439,7 @@ func (multiView *MultiView) calculateShardBestView() (View, error) {
 
 	// get all chains from final view including the final view
 	chains := [][]View{}
-	getAllChains(*multiView.finalView.GetHash(), multiView.viewByPrevHash, &chains, []View{multiView.finalView})
+	getAllBranches(*multiView.finalView.GetHash(), multiView.viewByPrevHash, &chains, []View{multiView.finalView})
 
 	confirmableChains := [][]View{}
 	for _, v := range chains {
@@ -422,30 +457,46 @@ func (multiView *MultiView) calculateShardBestView() (View, error) {
 	return bestChain[len(bestChain)-1], nil
 }
 
-func (multiView *MultiView) GetBestConfirmableShardBlock() ([]types.BlockInterface, error) {
-	// get all chains from final view including the final view
-	chains := [][]View{}
-	getAllChains(*multiView.finalView.GetHash(), multiView.viewByPrevHash, &chains, []View{multiView.finalView})
+func (multiView *MultiView) GetBestConfirmableShardBranch() ([]types.BlockInterface, error) {
 
-	confirmableChains := [][]View{}
-	for _, v := range chains {
-		finalizedIndex, isConfirmable := isConfirmableChain(v, multiView.finalityProof)
-		if isConfirmable {
-			confirmableChains = append(confirmableChains, v[:finalizedIndex+1])
+	type result struct {
+		blocks []types.BlockInterface
+		err    error
+	}
+
+	ch := make(chan result)
+
+	multiView.actionCh <- func() {
+		// get all branches from final view including the final view
+		branches := [][]View{}
+		getAllBranches(*multiView.finalView.GetHash(), multiView.viewByPrevHash, &branches, []View{multiView.finalView})
+
+		confirmableChains := [][]View{}
+		for _, v := range branches {
+			finalizedIndex, isConfirmable := isConfirmableChain(v, multiView.finalityProof)
+			if isConfirmable {
+				confirmableChains = append(confirmableChains, v[:finalizedIndex+1])
+			}
 		}
+
+		bestBranch, err := multiView.shardForkChoiceRule(branches)
+		if err != nil {
+			ch <- result{blocks: nil, err: err}
+			return
+		}
+
+		res := []types.BlockInterface{}
+		for _, v := range bestBranch {
+			res = append(res, v.GetBlock())
+		}
+
+		ch <- result{blocks: res, err: nil}
+		return
 	}
 
-	bestChain, err := multiView.shardForkChoiceRule(chains)
-	if err != nil {
-		return nil, err
-	}
+	res := <-ch
 
-	res := []types.BlockInterface{}
-	for _, v := range bestChain {
-		res = append(res, v.GetBlock())
-	}
-
-	return res, nil
+	return res.blocks, res.err
 }
 
 // shardForkChoiceRule output the best chain from multiple confirmable chain
@@ -454,43 +505,43 @@ func (multiView *MultiView) GetBestConfirmableShardBlock() ([]types.BlockInterfa
 // 	choose chains with the newer committee
 // 	if chains share the same committee
 //		choose chains that have smaller producer time
-func (multiView *MultiView) shardForkChoiceRule(confirmableChains [][]View) ([]View, error) {
+func (multiView *MultiView) shardForkChoiceRule(confirmableBranches [][]View) ([]View, error) {
 
-	if len(confirmableChains) == 0 {
+	if len(confirmableBranches) == 0 {
 		return []View{}, errors.New("find no confirmable chain")
 	}
 
-	if len(confirmableChains) == 1 {
-		return confirmableChains[0], nil
+	if len(confirmableBranches) == 1 {
+		return confirmableBranches[0], nil
 	}
 
-	sameHeightChain := [][]View{}
+	sameHeightBranches := [][]View{}
 	maxHeight := uint64(0)
 
-	for _, chain := range confirmableChains {
+	for _, chain := range confirmableBranches {
 		height := chain[len(chain)-1].GetHeight()
 		if height > maxHeight {
 			maxHeight = height
 		}
 	}
 
-	for _, chain := range confirmableChains {
+	for _, chain := range confirmableBranches {
 		height := chain[len(chain)-1].GetHeight()
 		if height == maxHeight {
-			sameHeightChain = append(sameHeightChain, chain)
+			sameHeightBranches = append(sameHeightBranches, chain)
 		}
 	}
 
-	if len(sameHeightChain) == 1 {
-		return sameHeightChain[0], nil
+	if len(sameHeightBranches) == 1 {
+		return sameHeightBranches[0], nil
 	}
 
-	sameCommitteeChain := [][]View{}
+	sameCommitteeBranches := [][]View{}
 	bestCommitteeHash := common.Hash{}
 	bestBeaconHeight := uint64(0)
 
-	for i := 0; i < len(sameHeightChain); i++ {
-		committeeHash := sameHeightChain[i][len(sameHeightChain)-1].CommitteeFromBlock()
+	for i := 0; i < len(sameHeightBranches); i++ {
+		committeeHash := sameHeightBranches[i][len(sameHeightBranches)-1].CommitteeFromBlock()
 		_, blockHeight, err := multiView.bc.GetBeaconBlockByHash(committeeHash)
 		if err != nil {
 			return []View{}, err
@@ -501,26 +552,92 @@ func (multiView *MultiView) shardForkChoiceRule(confirmableChains [][]View) ([]V
 		}
 	}
 
-	for i := 0; i < len(sameHeightChain); i++ {
-		committeeHash := sameHeightChain[i][len(sameHeightChain)-1].CommitteeFromBlock()
+	for i := 0; i < len(sameHeightBranches); i++ {
+		committeeHash := sameHeightBranches[i][len(sameHeightBranches)-1].CommitteeFromBlock()
 		if bestCommitteeHash == committeeHash {
-			sameCommitteeChain = append(sameCommitteeChain, sameHeightChain[i])
+			sameCommitteeBranches = append(sameCommitteeBranches, sameHeightBranches[i])
 		}
 	}
 
-	if len(sameCommitteeChain) == 1 {
-		return sameCommitteeChain[0], nil
+	if len(sameCommitteeBranches) == 1 {
+		return sameCommitteeBranches[0], nil
 	}
 
-	smallerProduceTimeChain := 0
+	smallerProduceTimeBranches := 0
 	minProduceTime := int64(math.MaxInt64)
-	for i, v := range sameCommitteeChain {
+	for i, v := range sameCommitteeBranches {
 		if minProduceTime < v[len(v)-1].GetBlock().GetProduceTime() {
-			smallerProduceTimeChain = i
+			smallerProduceTimeBranches = i
 		}
 	}
 
-	return sameCommitteeChain[smallerProduceTimeChain], nil
+	return sameCommitteeBranches[smallerProduceTimeBranches], nil
+}
+
+func (multiView *MultiView) IsBelongToConfirmableChain(branch []types.BlockInterface) (bool, error) {
+
+	if len(branch) == 0 {
+		return false, errors.New("empty branch")
+	}
+
+	type result struct {
+		confirmable bool
+		reason      error
+	}
+
+	ch := make(chan result)
+
+	multiView.actionCh <- func() {
+		firstBlock := branch[0]
+		if firstBlock.GetPrevHash() != *multiView.finalView.GetHash() {
+			ch <- result{confirmable: false, reason: fmt.Errorf("first block %+v %+v, previous %+v, do not connect to final view %+v %+v",
+				*firstBlock.Hash(), firstBlock.GetHeight(), firstBlock.GetPrevHash(), *multiView.finalView.GetHash(), multiView.finalView.GetHeight())}
+			return
+		}
+
+		childBlock := branch[len(branch)-1]
+		var parentBlock types.BlockInterface
+		if len(branch) == 1 {
+			parentBlock = multiView.finalView.GetBlock()
+		} else {
+			parentBlock = branch[len(branch)-2]
+			for i := len(branch) - 1; i >= 1; i-- {
+				if branch[i].GetPrevHash() != *branch[i-1].Hash() {
+					ch <- result{confirmable: false, reason: fmt.Errorf("block %+v %+v, previous %+v, do not connect to block %+v %+v",
+						*branch[i].Hash(), branch[i].GetHeight(), branch[i].GetPrevHash(), *branch[i-1].Hash(), branch[i-1].GetHeight())}
+				}
+			}
+		}
+
+		proof, ok := multiView.finalityProof[*childBlock.Hash()]
+		if !ok {
+			proof = nil
+		}
+
+		isValid := isFirstProposeNextHeight(childBlock, parentBlock) || isValidReProposeBlock(childBlock, parentBlock, proof)
+		if isValid {
+			ch <- result{confirmable: true, reason: nil}
+			return
+		}
+
+		// this branch must belong to a finalized branch
+		v := multiView.viewByHash[*childBlock.Hash()]
+		branches := [][]View{}
+		getAllBranches(*childBlock.Hash(), multiView.viewByPrevHash, &branches, []View{v})
+		for _, branch := range branches {
+			_, confirm := isConfirmableChain(branch, multiView.finalityProof)
+			if confirm {
+				ch <- result{confirmable: true, reason: nil}
+				return
+			}
+		}
+
+		ch <- result{confirmable: false, reason: errors.New("branch do not belong to any confirmable chain")}
+		return
+	}
+
+	res := <-ch
+	return res.confirmable, res.reason
 }
 
 // isConfirmableChain iterator from the last element of the list to find to confirmable view
@@ -606,8 +723,8 @@ func isValidReProposeBlock(childBlock, parentBlock types.BlockInterface, rePropo
 	return err == nil
 }
 
-// getAllChains by using depth first search to find all path from final view, consider views are directed acyclic graph
-func getAllChains(curView common.Hash, views map[common.Hash][]View, chains *[][]View, curChain []View) {
+// getAllBranches by using depth first search to find all path from final view, consider views are directed acyclic graph
+func getAllBranches(curView common.Hash, views map[common.Hash][]View, chains *[][]View, curChain []View) {
 
 	childViews, exist := views[curView]
 	// end of the tree
@@ -620,7 +737,7 @@ func getAllChains(curView common.Hash, views map[common.Hash][]View, chains *[][
 	// continue to traverse
 	for _, childView := range childViews {
 		curChain = append(curChain, childView)
-		getAllChains(*childView.GetHash(), views, chains, curChain)
+		getAllBranches(*childView.GetHash(), views, chains, curChain)
 		curChain = curChain[:len(curChain)-1]
 	}
 
