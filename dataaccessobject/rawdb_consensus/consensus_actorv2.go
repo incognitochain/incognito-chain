@@ -1,9 +1,7 @@
 package rawdb_consensus
 
 import (
-	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"strings"
 )
@@ -39,21 +37,16 @@ func StoreVoteByBlockHash(db incdb.Database, hash string, validator string, vote
 	return nil
 }
 
-func GetVotesByBlockHash(db incdb.Database, hash string) (map[string]*blsbft.BFTVote, error) {
-	res := make(map[string]*blsbft.BFTVote)
+func GetVotesByBlockHash(db incdb.Database, hash string) (map[string][]byte, error) {
+	res := make(map[string][]byte)
 	prefix := GetVoteByBlockHashPrefixKey(hash)
 	it := db.NewIteratorWithPrefix(prefix)
 	for it.Next() {
 		key := make([]byte, len(it.Key()))
 		copy(key, it.Key())
 		keys := strings.Split(string(key), string(splitter))
-		validator := string(keys[2])
-		v := &blsbft.BFTVote{}
-		err := json.Unmarshal(it.Value(), v)
-		if err != nil {
-			return nil, err
-		}
-		res[validator] = v
+		validator := keys[2]
+		res[validator] = it.Value()
 	}
 	return res, nil
 }

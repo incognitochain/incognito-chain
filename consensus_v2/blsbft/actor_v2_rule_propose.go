@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -148,7 +147,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		isValidLemma2,
 	)
 	//get vote for this propose block (case receive vote faster)
-	votes, err := rawdb_consensus.GetVotesByBlockHash(rawdb_consensus.GetConsensusDatabase(), env.block.Hash().String())
+	votes, err := GetVotesByBlockHashFromDB(env.block.Hash().String())
 	if err != nil {
 		p.logger.Error("Cannot get vote by block hash for rebuild", err)
 		return nil, err
