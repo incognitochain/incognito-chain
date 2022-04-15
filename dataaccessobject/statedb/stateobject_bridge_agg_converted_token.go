@@ -24,7 +24,7 @@ func (state *BridgeAggConvertedTokenState) TokenID() common.Hash {
 func (state *BridgeAggConvertedTokenState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		TokenID   common.Hash `json:"TokenID"`
-		NetworkID uint        `json:"NetworkID"`
+		NetworkID uint        `json:"NetworkID,omitempty"`
 	}{
 		TokenID:   state.tokenID,
 		NetworkID: state.networkID,

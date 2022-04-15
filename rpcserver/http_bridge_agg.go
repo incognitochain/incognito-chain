@@ -65,7 +65,6 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 	mdReader := &struct {
 		NewList map[common.Hash][]struct {
 			TokenID       common.Hash `json:"TokenID"`
-			NetworkID     uint        `json:"NetworkID"`
 			RewardReserve uint64      `json:"RewardReserve"`
 			IsPaused      bool        `json:"IsPaused"`
 		} `json:"Vaults"`
@@ -79,11 +78,9 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 	for k, v := range mdReader.NewList {
 		for _, value := range v {
 			newList[k] = append(newList[k], metadataBridge.Vault{
-				RewardReserve: value.RewardReserve,
-				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
-					value.TokenID, value.NetworkID,
-				),
-				IsPaused: value.IsPaused,
+				RewardReserve:                value.RewardReserve,
+				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(value.TokenID, 0),
+				IsPaused:                     value.IsPaused,
 			})
 		}
 	}

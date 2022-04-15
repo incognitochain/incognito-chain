@@ -68,7 +68,7 @@ func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenI
 
 	x := vault.Reserve()
 	y := vault.CurrentRewardReserve()
-	expectedAmount, err := bridgeagg.EstimateActualAmountByBurntAmount(x, y, burntAmount)
+	expectedAmount, err := bridgeagg.EstimateActualAmountByBurntAmount(x, y, burntAmount, vault.IsPaused())
 	return &jsonresult.BridgeAggEstimateFee{
 		ExpectedAmount: expectedAmount,
 		Fee:            burntAmount - expectedAmount,
@@ -86,7 +86,7 @@ func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTok
 
 	x := vault.Reserve()
 	y := vault.CurrentRewardReserve()
-	receivedAmount, err := bridgeagg.CalculateActualAmount(x, y, amount, bridgeagg.SubOperator)
+	receivedAmount, err := bridgeagg.CalculateActualAmount(x, y, amount, bridgeagg.SubOperator, vault.IsPaused())
 	if amount > x {
 		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Unshield amount %v > vault amount %v", amount, x))
 	}
@@ -107,7 +107,7 @@ func (blockService BlockService) BridgeAggEstimateReward(unifiedTokenID common.H
 
 	x := vault.Reserve()
 	y := vault.CurrentRewardReserve()
-	amt, err := bridgeagg.CalculateActualAmount(x, y, amount, bridgeagg.AddOperator)
+	amt, err := bridgeagg.CalculateActualAmount(x, y, amount, bridgeagg.AddOperator, vault.IsPaused())
 	return &jsonresult.BridgeAggEstimateReward{
 		ReceivedAmount: amt,
 		Reward:         amt - amount,

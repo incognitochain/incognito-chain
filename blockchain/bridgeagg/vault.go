@@ -140,10 +140,7 @@ func (v *Vault) convert(amount uint64) error {
 
 func (v *Vault) shield(amount uint64) (uint64, error) {
 	var currentRewardReserve uint64
-	if !v.IsPaused() {
-		currentRewardReserve = v.CurrentRewardReserve()
-	}
-	actualAmount, err := CalculateActualAmount(v.Reserve(), currentRewardReserve, amount, AddOperator)
+	actualAmount, err := CalculateActualAmount(v.Reserve(), currentRewardReserve, amount, AddOperator, v.IsPaused())
 	if err != nil {
 		return 0, err
 	}
@@ -160,10 +157,7 @@ func (v *Vault) shield(amount uint64) (uint64, error) {
 
 func (v *Vault) unshield(amount, expectedAmount uint64) (uint64, error) {
 	var currentRewardReserve uint64
-	if !v.IsPaused() {
-		currentRewardReserve = v.CurrentRewardReserve()
-	}
-	actualAmount, err := EstimateActualAmountByBurntAmount(v.Reserve(), currentRewardReserve, amount)
+	actualAmount, err := EstimateActualAmountByBurntAmount(v.Reserve(), currentRewardReserve, amount, v.IsPaused())
 	if err != nil {
 		return 0, err
 	}

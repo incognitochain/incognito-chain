@@ -33,6 +33,7 @@ func TestCalculateActualAmount(t *testing.T) {
 		y        uint64
 		deltaX   uint64
 		operator byte
+		isPaused bool
 	}
 	tests := []struct {
 		name    string
@@ -110,10 +111,34 @@ func TestCalculateActualAmount(t *testing.T) {
 			want:    100,
 			wantErr: false,
 		},
+		{
+			name: "isPaused shield",
+			args: args{
+				y:        10,
+				deltaX:   100,
+				x:        1000,
+				operator: AddOperator,
+				isPaused: true,
+			},
+			want:    100,
+			wantErr: false,
+		},
+		{
+			name: "isPaused shield",
+			args: args{
+				y:        10,
+				deltaX:   100,
+				x:        1000,
+				operator: SubOperator,
+				isPaused: true,
+			},
+			want:    100,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateActualAmount(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.operator)
+			got, err := CalculateActualAmount(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.operator, tt.args.isPaused)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateActualAmount() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -130,6 +155,7 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 		x           uint64
 		y           uint64
 		burntAmount uint64
+		isPaused    bool
 	}
 	tests := []struct {
 		name    string
@@ -202,10 +228,21 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 			want:    100,
 			wantErr: false,
 		},
+		{
+			name: "isPaused",
+			args: args{
+				x:           1000,
+				y:           10,
+				burntAmount: 100,
+				isPaused:    true,
+			},
+			want:    100,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := EstimateActualAmountByBurntAmount(tt.args.x, tt.args.y, tt.args.burntAmount)
+			got, err := EstimateActualAmountByBurntAmount(tt.args.x, tt.args.y, tt.args.burntAmount, tt.args.isPaused)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("EstimateActualAmountByBurntAmount() error = %v, wantErr %v", err, tt.wantErr)
 				return

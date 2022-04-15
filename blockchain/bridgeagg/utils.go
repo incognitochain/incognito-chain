@@ -65,14 +65,14 @@ func NewStateChange() *StateChange {
 	}
 }
 
-func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
+func CalculateActualAmount(x, y, deltaX uint64, operator byte, isPaused bool) (uint64, error) {
 	if operator != SubOperator && operator != AddOperator {
 		return 0, errors.New("Cannot recognize operator")
 	}
 	if deltaX == 0 {
 		return 0, errors.New("Cannot process with deltaX = 0")
 	}
-	if y == 0 {
+	if y == 0 || isPaused {
 		return deltaX, nil
 	}
 	if x == 0 {
@@ -110,11 +110,11 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte) (uint64, error) {
 	return actualAmount.Uint64(), nil
 }
 
-func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64) (uint64, error) {
+func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) (uint64, error) {
 	if burntAmount == 0 {
 		return 0, errors.New("Cannot process with burntAmount = 0")
 	}
-	if y == 0 {
+	if y == 0 || isPaused {
 		if burntAmount > x {
 			return 0, fmt.Errorf("BurntAmount %d is > x %d", burntAmount, x)
 		}
