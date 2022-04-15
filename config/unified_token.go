@@ -20,7 +20,12 @@ func UnifiedToken() map[uint64]map[common.Hash]map[uint]Vault {
 //AbortUnifiedToken use for unit test only
 // DO NOT use this function for development process
 func AbortUnifiedToken() {
-	p = &param{}
+	unifiedToken = make(map[uint64]map[common.Hash]map[uint]Vault)
+}
+
+// DO NOT use this function for development process
+func SetUnifiedToken(UnifiedToken map[uint64]map[common.Hash]map[uint]Vault) {
+	unifiedToken = UnifiedToken
 }
 
 type Vault struct {
