@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -161,7 +160,6 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		issuingEVMBridgeReqAction.Meta.TxIndex,
 	)
 	if err != nil {
-		fmt.Println("err 0:", err)
 		Logger.log.Warnf(err.Error())
 		return [][]string{rejectedInst}, nil, nil
 	}
@@ -176,7 +174,6 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	if !isPRV {
 		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
 		if err != nil {
-			fmt.Println("err 1:", err)
 			Logger.log.Warnf(err.Error())
 			return [][]string{rejectedInst}, nil, nil
 		}
