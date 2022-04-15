@@ -505,7 +505,7 @@ func (blockchain *BlockChain) GetInstantFinalityShardBlocksForBeaconValidator(
 			tempShardBlocks = append(tempShardBlocks, temp)
 		}
 
-		isOk, err := blockchain.BeaconChain.multiView.IsBelongToConfirmableChain(tempShardBlocks)
+		isOk, err := blockchain.ShardChain[shardID].multiView.IsBelongToConfirmableChain(tempShardBlocks)
 		if !isOk {
 			return nil, err
 		}
