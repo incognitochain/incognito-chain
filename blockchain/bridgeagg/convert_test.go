@@ -17,21 +17,15 @@ import (
 )
 
 type ConvertTestCase struct {
-	Metadatas             []*metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadatas"`
-	ExpectedInstructions  [][]string                                          `json:"expected_instructions"`
-	UnifiedTokens         map[common.Hash]map[uint]*Vault                     `json:"unified_tokens"`
-	ExpectedUnifiedTokens map[common.Hash]map[uint]*Vault                     `json:"expected_unified_tokens"`
-	TxID                  common.Hash                                         `json:"tx_id"`
-	BridgeTokensInfo      map[common.Hash]*statedb.BridgeTokenInfoState       `json:"bridge_tokens_info"`
+	Metadatas        []*metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadatas"`
+	ExpectedStatuses []ConvertStatus                                     `json:"expected_statuses"`
+	ActualStatues    []ConvertStatus
+	TestCase
 }
 
 type ConvertTestSuite struct {
-	suite.Suite
-	testCases            []ConvertTestCase
-	currentTestCaseIndex int
-	actualResults        []ActualResult
-
-	sdb *statedb.StateDB
+	testCases []ConvertTestCase
+	TestSuite
 }
 
 func (c *ConvertTestSuite) SetupSuite() {
@@ -55,13 +49,12 @@ func (c *ConvertTestSuite) SetupTest() {
 	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
 	emptyRoot := common.HexToHash(common.HexEmptyRoot)
 	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	c.sdb = sDB
 
 	c.currentTestCaseIndex++
 	testCase := c.testCases[c.currentTestCaseIndex]
 	actions := []string{}
-	for _, v := range testCase.Metadatas {
-		content, err := metadataCommon.NewActionWithValue(v, testCase.TxID, nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
+	for i, v := range testCase.Metadatas {
+		content, err := metadataCommon.NewActionWithValue(v, testCase.TxIDs[i], nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
 		if err != nil {
 			panic(err)
 		}
@@ -78,7 +71,7 @@ func (c *ConvertTestSuite) SetupTest() {
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
-			common.BeaconChainID: c.sdb,
+			common.BeaconChainID: sDB,
 		},
 		convertActions: [][]string{actions},
 	}
@@ -86,15 +79,28 @@ func (c *ConvertTestSuite) SetupTest() {
 	state.unifiedTokenInfos = testCase.UnifiedTokens
 	producerState := state.Clone()
 	processorState := state.Clone()
-	actualInstructions, err := producerState.BuildInstructions(env)
+	actualInstructions, _, err := producerState.BuildInstructions(env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, c.sdb)
+	err = processorState.Process(actualInstructions, sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
+
 	c.actualResults = append(c.actualResults, ActualResult{
 		Instructions:   actualInstructions,
 		ProducerState:  producerState,
 		ProcessorState: processorState,
 	})
+	for _, txID := range testCase.TxIDs {
+		data, err := statedb.GetBridgeAggStatus(
+			sDB,
+			statedb.BridgeAggConvertStatusPrefix(),
+			txID.Bytes(),
+		)
+		assert.Nil(err, fmt.Sprintf("get bridge agg status %v", err))
+		var status ConvertStatus
+		err = json.Unmarshal(data, &status)
+		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
+		c.testCases[c.currentTestCaseIndex].ActualStatues = append(c.testCases[c.currentTestCaseIndex].ActualStatues, status)
+	}
 }
 
 func (c *ConvertTestSuite) TestAccepted() {
@@ -103,9 +109,12 @@ func (c *ConvertTestSuite) TestAccepted() {
 	actualResult := c.actualResults[c.currentTestCaseIndex]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
 func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
@@ -114,9 +123,12 @@ func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
 	actualResult := c.actualResults[c.currentTestCaseIndex]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
 func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
@@ -125,20 +137,26 @@ func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
 	actualResult := c.actualResults[c.currentTestCaseIndex]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
-func (c *ConvertTestSuite) TestRejectedByInvalidNetworkID() {
+func (c *ConvertTestSuite) TestRejectedInvalidNetworkID() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseIndex]
 	actualResult := c.actualResults[c.currentTestCaseIndex]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
 func (c *ConvertTestSuite) TestRejectedThenAccepted() {
@@ -147,9 +165,12 @@ func (c *ConvertTestSuite) TestRejectedThenAccepted() {
 	actualResult := c.actualResults[c.currentTestCaseIndex]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", actualResult.ProducerState, expectedState).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected processor state %v but get %v", actualResult.ProcessorState, expectedState).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
 func TestConvertTestSuite(t *testing.T) {

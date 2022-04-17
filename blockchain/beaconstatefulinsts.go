@@ -175,12 +175,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		return utils.EmptyStringMatrix, err
 	}
 
-	newInst, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues)
+	newInst, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues)
 	if err != nil {
 		return [][]string{}, err
 	}
 	if len(newInst) > 0 {
 		instructions = append(instructions, newInst)
+		accumulatedValues = newAccumulatedValues
 	}
 
 	for _, value := range keys {
@@ -399,13 +400,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildBeaconHeight(beaconHeight).
 		BuildStateDBs(sDBs).
 		Build()
-	bridgeAggInsts, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)
+	bridgeAggInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)
 	if err != nil {
 		return instructions, err
 	}
 	if len(bridgeAggInsts) > 0 {
 		instructions = append(instructions, bridgeAggInsts...)
 	}
+	accumulatedValues = newAccumulatedValues
 
 	return instructions, nil
 }

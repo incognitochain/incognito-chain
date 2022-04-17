@@ -11,9 +11,27 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
+	"github.com/stretchr/testify/suite"
 )
+
+type TestSuite struct {
+	suite.Suite
+	currentTestCaseIndex int
+	actualResults        []ActualResult
+}
+
+type TestCase struct {
+	ExpectedInstructions  [][]string                                    `json:"expected_instructions"`
+	UnifiedTokens         map[common.Hash]map[uint]*Vault               `json:"unified_tokens"`
+	ExpectedUnifiedTokens map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
+	TxIDs                 []common.Hash                                 `json:"tx_ids"`
+	BridgeTokensInfo      map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+}
 
 type ActualResult struct {
 	Instructions   [][]string
@@ -23,6 +41,8 @@ type ActualResult struct {
 
 var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	evmcaller.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	metadataCommon.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	Logger.log.Info("Init logger")
 	return
 }()

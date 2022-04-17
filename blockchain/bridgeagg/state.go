@@ -47,16 +47,17 @@ func (s *State) Clone() *State {
 	return res
 }
 
-func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
+func (s *State) BuildInstructions(env StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
 	res := [][]string{}
 	var err error
+	ac := env.AccumulatedValues()
 
 	for shardID, actions := range env.UnshieldActions() {
 		for _, action := range actions {
 			inst := [][]string{}
 			inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
 			}
 			res = append(res, inst...)
 		}
@@ -65,12 +66,13 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	for shardID, actions := range env.ShieldActions() {
 		for _, action := range actions {
 			insts := [][]string{}
-			insts, s.unifiedTokenInfos, err = s.producer.shield(
-				action, s.unifiedTokenInfos, env.AccumulatedValues(), byte(shardID), env.StateDBs(),
+			insts, s.unifiedTokenInfos, ac, err = s.producer.shield(
+				action, s.unifiedTokenInfos, ac, byte(shardID), env.StateDBs(),
 			)
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToShieldError, err)
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToShieldError, err)
 			}
+
 			res = append(res, insts...)
 		}
 	}
@@ -80,7 +82,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			insts := [][]string{}
 			insts, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
 			}
 			res = append(res, insts...)
 		}
@@ -91,7 +93,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			inst := []string{}
 			inst, s.unifiedTokenInfos, err = s.producer.modifyRewardReserve(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, NewBridgeAggErrorWithValue(FailToBuildModifyRewardReserveError, err)
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToBuildModifyRewardReserveError, err)
 			}
 			res = append(res, inst)
 		}
@@ -99,7 +101,7 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	Logger.log.Info("bridgeagg instructions:", res)
 
-	return res, nil
+	return res, ac, nil
 }
 
 func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
@@ -250,14 +252,9 @@ func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
 	}
 }
 
-func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues) ([]string, error) {
+func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues) ([]string, *metadata.AccumulatedValues, error) {
 	res := []string{}
 	var err error
-	tempAC := new(metadata.AccumulatedValues)
-	*tempAC = *ac
-	res, s.unifiedTokenInfos, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, tempAC)
-	if len(res) != 0 {
-		ac = tempAC
-	}
-	return res, err
+	res, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac)
+	return res, ac, err
 }

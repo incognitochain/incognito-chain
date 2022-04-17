@@ -78,7 +78,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedRewardResponseMeta)) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(metadataCommon.IssuingUnifiedTokenRequestMeta)) {
 			continue
 		}
 

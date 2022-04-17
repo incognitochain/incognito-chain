@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -512,18 +513,28 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 	}
 	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	data, err := statedb.GetBridgeAggStatus(
-		sDB,
-		statedb.BridgeAggShieldStatusPrefix(),
-		txID.Bytes(),
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	res := []bridgeagg.ShieldStatus{}
+	prefixValues := [][]byte{
+		{},
+		{common.BoolToByte(false)},
+		{common.BoolToByte(true)},
 	}
-	var res json.RawMessage
-	err = json.Unmarshal(data, &res)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	for _, prefixValue := range prefixValues {
+		suffix := append(txID.Bytes(), prefixValue...)
+		data, err := statedb.GetBridgeAggStatus(
+			sDB,
+			statedb.BridgeAggShieldStatusPrefix(),
+			suffix,
+		)
+		if err != nil {
+			continue
+		}
+		status := bridgeagg.ShieldStatus{}
+		err = json.Unmarshal(data, &status)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		res = append(res, status)
 	}
 	return res, nil
 }

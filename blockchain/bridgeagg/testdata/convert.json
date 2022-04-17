@@ -19,7 +19,10 @@
                 "Type": 341
             }
         ],
-        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f1"
+        ],
         "expected_instructions": [
             [
                 "341", "0", "accepted", 
@@ -27,7 +30,7 @@
             ],
             [
                 "341", "0", "accepted", 
-                "eyJUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhMTExMSIsIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIk5ldHdvcmtJRCI6MiwiQW1vdW50IjoxMDAsIlJlY2VpdmVyIjoiMTVzWG95bzhrQ1pDSGp1ck5DNjliOFdWMmpNQ3ZmNXRWcmNRNW1UMWVIOU5tMzUxWFJqRTFCSDRXSEhMR1lQWnk5ZHhUU0xpS1FkNktkZm9HcTR5YjRnUDFBVTJvYUpUZW9HeW1zRXpvbnlpMVhTVzJKMlU3TGVBVmpTMVMyZ2piTkRrMXQzZjlRVWcyZ2s0IiwiVHlwZSI6MzQxLCJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkV4dGVybmFsVG9rZW5JRCI6IkFRSUQiLCJJbmNEZWNpbWFsIjo2fQ=="
+                "eyJUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhMTExMSIsIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIk5ldHdvcmtJRCI6MiwiQW1vdW50IjoxMDAsIlJlY2VpdmVyIjoiMTVzWG95bzhrQ1pDSGp1ck5DNjliOFdWMmpNQ3ZmNXRWcmNRNW1UMWVIOU5tMzUxWFJqRTFCSDRXSEhMR1lQWnk5ZHhUU0xpS1FkNktkZm9HcTR5YjRnUDFBVTJvYUpUZW9HeW1zRXpvbnlpMVhTVzJKMlU3TGVBVmpTMVMyZ2piTkRrMXQzZjlRVWcyZ2s0IiwiVHlwZSI6MzQxLCJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkV4dGVybmFsVG9rZW5JRCI6IkFRSUQiLCJJbmNEZWNpbWFsIjo2fQ=="
             ]
         ],
         "unified_tokens": {
@@ -89,7 +92,17 @@
                 "ExternalTokenID": [1, 2, 3, 4],
                 "Amount": 200
             }
-        }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "ErrorCode": 0
+            },
+            {
+                "Status": 1,
+                "ErrorCode": 0
+            }
+        ]
     },
     {
         "name": "Rejected - invalid networkID",
@@ -103,7 +116,9 @@
                 "Type": 341
             }
         ],
-        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
         "expected_instructions": [
             [
                 "341", "0", "rejected", 
@@ -169,7 +184,13 @@
                 "ExternalTokenID": [1, 2, 3, 4],
                 "Amount": 200
             }
-        }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1001
+            }
+        ]
     },
     {
         "name": "Rejected - invalid token id",
@@ -183,7 +204,9 @@
                 "Type": 341
             }
         ],
-        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
         "expected_instructions": [
             [
                 "341", "0", "rejected", 
@@ -249,7 +272,13 @@
                 "ExternalTokenID": [1, 2, 3, 4],
                 "Amount": 200
             }
-        }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1000
+            }
+        ]
     },
     {
         "name": "Rejected - invalid unified token id",
@@ -263,7 +292,9 @@
                 "Type": 341
             }
         ],
-        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
         "expected_instructions": [
             [
                 "341", "0", "rejected", 
@@ -329,7 +360,13 @@
                 "ExternalTokenID": [1, 2, 3, 4],
                 "Amount": 200
             }
-        }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1000
+            }
+        ]
     },
     {
         "name": "Rejected then accepted",
@@ -351,7 +388,10 @@
                 "Type": 341
             }
         ],
-        "tx_id": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f1"
+        ],
         "expected_instructions": [
             [
                 "341", "0", "rejected", 
@@ -359,7 +399,7 @@
             ],
             [
                 "341", "0", "accepted", 
-                "eyJUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSIsIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIk5ldHdvcmtJRCI6MSwiQW1vdW50IjoxMDAsIlJlY2VpdmVyIjoiMTVzWG95bzhrQ1pDSGp1ck5DNjliOFdWMmpNQ3ZmNXRWcmNRNW1UMWVIOU5tMzUxWFJqRTFCSDRXSEhMR1lQWnk5ZHhUU0xpS1FkNktkZm9HcTR5YjRnUDFBVTJvYUpUZW9HeW1zRXpvbnlpMVhTVzJKMlU3TGVBVmpTMVMyZ2piTkRrMXQzZjlRVWcyZ2s0IiwiVHlwZSI6MzQxLCJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkV4dGVybmFsVG9rZW5JRCI6IkFRSURCQT09IiwiSW5jRGVjaW1hbCI6OX0="
+                "eyJUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSIsIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIk5ldHdvcmtJRCI6MSwiQW1vdW50IjoxMDAsIlJlY2VpdmVyIjoiMTVzWG95bzhrQ1pDSGp1ck5DNjliOFdWMmpNQ3ZmNXRWcmNRNW1UMWVIOU5tMzUxWFJqRTFCSDRXSEhMR1lQWnk5ZHhUU0xpS1FkNktkZm9HcTR5YjRnUDFBVTJvYUpUZW9HeW1zRXpvbnlpMVhTVzJKMlU3TGVBVmpTMVMyZ2piTkRrMXQzZjlRVWcyZ2s0IiwiVHlwZSI6MzQxLCJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkV4dGVybmFsVG9rZW5JRCI6IkFRSURCQT09IiwiSW5jRGVjaW1hbCI6OX0="
             ]
         ],
         "unified_tokens": {
@@ -421,6 +461,15 @@
                 "ExternalTokenID": [1, 2, 3, 4],
                 "Amount": 200
             }
-        }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1000
+            },
+            {
+                "Status": 1
+            }
+        ]
     }
 ]

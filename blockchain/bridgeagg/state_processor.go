@@ -144,6 +144,8 @@ func (sp *stateProcessor) shield(
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
+	var suffix []byte
+	var amount, reward uint64
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
@@ -163,16 +165,19 @@ func (sp *stateProcessor) shield(
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
+				reward += data.IssuingAmount
 			} else {
 				err = vault.increaseReserve(data.IssuingAmount)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
+				amount += data.IssuingAmount
 			}
 			unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
+		suffix = append(txReqID.Bytes(), common.BoolToByte(acceptedInst.IsReward))
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
@@ -181,18 +186,21 @@ func (sp *stateProcessor) shield(
 		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
+		suffix = txReqID.Bytes()
 	default:
 		return unifiedTokenInfos, errors.New("Can not recognize status")
 	}
 	shieldStatus := ShieldStatus{
 		Status:    status,
 		ErrorCode: errorCode,
+		Amount:    amount,
+		Reward:    reward,
 	}
 	contentBytes, _ := json.Marshal(shieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggShieldStatusPrefix(),
-		txReqID.Bytes(),
+		suffix,
 		contentBytes,
 	)
 }
@@ -248,10 +256,10 @@ func (sp *stateProcessor) unshield(
 		return unifiedTokenInfos, errors.New("Can not recognize status")
 	}
 	unshieldStatus := UnshieldStatus{
-		Status:                 status,
-		Fee:                    fee,
-		InternalUnshieldAmount: amount,
-		ErrorCode:              errorCode,
+		Status:         status,
+		Fee:            fee,
+		ReceivedAmount: amount,
+		ErrorCode:      errorCode,
 	}
 	contentBytes, _ := json.Marshal(unshieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
