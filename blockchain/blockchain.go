@@ -1430,8 +1430,10 @@ func (blockchain *BlockChain) getShardValidators(
 		if err != nil {
 			return nil, err
 		} else {
-			if !equal2list(res, c) {
-				return nil, errors.Errorf("Something wrong with cache 1")
+			if len(res) > 0 {
+				if !equal2list(res, c) {
+					return nil, errors.Errorf("Something wrong with cache, cache %+v, db %+v", res, c)
+				}
 			}
 		}
 	}
