@@ -97,11 +97,11 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	}
 
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
-		fmt.Println("GetValidationField", block.GetValidationField())
+		log.Println("GetValidationField", block.Hash().String(), block.GetValidationField())
 		return NewConsensusError(UnExpectedError, err)
 	}
 	if _, ok := ErrorHash[block.Hash().String()]; ok {
-		log.Println("GetValidationField", block.GetValidationField())
+		log.Println("GetValidationField", block.Hash().String(), block.GetValidationField())
 	}
 	return nil
 }
