@@ -50,7 +50,8 @@ DATA_DIR="$INC_HOME/node_data"
 TMP="$INC_HOME/inc_node_latest_tag"
 KEY_FILE="$INC_HOME/validator_keys"
 SCRIPT="$INC_HOME/run_node.sh"
-
+DBMODE="archive"
+FFSTORAGE="false"
 
 # check super user
 if [ $(whoami) != root ]; then
@@ -263,6 +264,8 @@ key_file=$KEY_FILE
 run()
 {
   bootnode=$BOOTNODE
+  dbmode=$DBMODE
+  ffstorage=$FFSTORAGE
   data_dir=$DATA_DIR
   rpc_port=${PORT_RPC[0]}
   node_port=${PORT_NODE[0]}
@@ -308,6 +311,7 @@ cat << 'EOF' >> $SCRIPT
     set -x
     docker run --restart=always --net inc_net \
       -p $node_port:$node_port -p $rpc_port:$rpc_port \
+      -e DBMODE=$dbmode -e FFStorage=$ffstorage \
       -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode \
       -e GETH_NAME=$geth_name -e GETH_PROTOCOL=$geth_proto -e GETH_PORT=$geth_port \
       -e FULLNODE=$fullnode -e MININGKEY=${key} -e TESTNET=false -e LIMIT_FEE=1 \
