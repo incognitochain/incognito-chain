@@ -315,8 +315,8 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	return nil
 }
 
-func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
+func (chain *ShardChain) InsertBlock(block types.BlockInterface, proof *multiview.ReProposeProof, shouldValidate bool) error {
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), proof, shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -325,11 +325,11 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate 
 	return nil
 }
 
-func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
+func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface, proof *multiview.ReProposeProof) error {
 
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
 
-	if err := chain.InsertBlock(block, false); err != nil {
+	if err := chain.InsertBlock(block, nil, false); err != nil {
 		return err
 	}
 
@@ -338,7 +338,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 
 func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
 
-	if err := chain.InsertBlock(block, false); err != nil {
+	if err := chain.InsertBlock(block, nil, false); err != nil {
 		return err
 	}
 
@@ -510,4 +510,54 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 	}
 
 	return shardBlock.(*types.ShardBlock), m, nil
+}
+
+func (blockchain *BlockChain) FinalizeView(shardBestState *ShardBestState, proof *multiview.ReProposeProof) (multiview.View, error) {
+
+	shardID := shardBestState.ShardID
+	chain := blockchain.ShardChain[shardID]
+	version := shardBestState.GetBlock().GetVersion()
+	var newFinalView multiview.View = nil
+
+	if version <= types.BLOCK_PRODUCINGV3_VERSION {
+		newFinalView, _ = chain.multiView.AddViewAndFinalizeV1(shardBestState)
+	} else if version >= types.INSTANT_FINALITY_VERSION {
+		finalizedIndex, err := blockchain.GetShardFinalizedIndexFromBeacon(shardID, chain.GetFinalViewHeight()+1, chain.GetBestViewHeight())
+		if err != nil {
+			return nil, err
+		}
+		newFinalView, err = chain.multiView.ShardAddViewAndFinalizeV2(shardBestState, proof, finalizedIndex)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("Finalize Block but got unknown block version %+v", version)
+	}
+
+	return newFinalView, nil
+}
+
+func (blockchain *BlockChain) SimulateView(shardBestState *ShardBestState, proof *multiview.ReProposeProof) error {
+
+	shardID := shardBestState.ShardID
+	chain := blockchain.ShardChain[shardID]
+	version := shardBestState.GetBlock().GetVersion()
+
+	if version <= types.BLOCK_PRODUCINGV3_VERSION {
+		if _, added := chain.multiView.SimulateAddViewV1(shardBestState); !added {
+			err := fmt.Errorf("BEACON | failed to add view height %+v, hash %+v to multiveiw", shardBestState.BeaconHeight, shardBestState.BestBlockHash)
+			return err
+		}
+	} else if version >= types.INSTANT_FINALITY_VERSION {
+		finalizedIndex, err := blockchain.GetShardFinalizedIndexFromBeacon(shardID, chain.GetFinalViewHeight()+1, chain.GetBestViewHeight())
+		if err != nil {
+			return err
+		}
+		_, err = chain.multiView.ShardSimulateAddViewV2(shardBestState, proof, finalizedIndex)
+		return err
+	} else {
+		return fmt.Errorf("Finalize Block but got unknown block version %+v", version)
+	}
+
+	return nil
 }

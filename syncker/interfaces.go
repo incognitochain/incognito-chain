@@ -50,7 +50,7 @@ type Chain interface {
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
-	InsertBlock(block types.BlockInterface, shouldValidate bool) error
+	InsertBlock(block types.BlockInterface, proof *multiview.ReProposeProof, shouldValidate bool) error
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)

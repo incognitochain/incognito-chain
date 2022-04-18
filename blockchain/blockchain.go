@@ -296,7 +296,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	committeeChange := committeestate.NewCommitteeChange()
 	committeeChange.ShardCommitteeAdded[shardID] = initShardState.GetShardCommittee()
 
-	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, []*types.BeaconBlock{genesisBeaconBlock})
+	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange, []*types.BeaconBlock{genesisBeaconBlock}, nil)
 	if err != nil {
 		return err
 	}
@@ -666,8 +666,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 
 		// finish reproduce
-		if _, added := blockchain.BeaconChain.multiView.AddViewAndFinalizeV1(v); !added {
-			panic("Restart beacon views fail")
+		if _, err := blockchain.BeaconChain.FinalizeBlock(v, nil); err != nil {
+			panic("Restart beacon views fail: " + err.Error())
 		}
 	}
 	for _, beaconState := range allViews {
@@ -744,8 +744,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if v.NumberOfFixedShardBlockValidator == 0 {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
-		if _, added := blockchain.ShardChain[shardID].multiView.AddViewAndFinalizeV1(v); !added {
-			panic("Restart shard views fail")
+		if err := blockchain.ShardChain[shardID].multiView.ShardRestoreViewV2(v); err != nil {
+			panic("Restart shard views fail: " + err.Error())
 		}
 	}
 	return nil

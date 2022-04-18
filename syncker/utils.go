@@ -101,10 +101,10 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			var err error
 			if firstInsert { //always validate the first block even in batch mode
 				//Logger.Infof("[config] block height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
-				err = chain.InsertBlock(v, true)
+				err = chain.InsertBlock(v, nil, true)
 				firstInsert = false
 			} else {
-				err = chain.InsertBlock(v, batchingValidate == false)
+				err = chain.InsertBlock(v, nil, batchingValidate == false)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)

@@ -452,6 +452,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 	rewardForPdex := uint64(0)
 
+	// TODO: @hung if blockProducingV3 work with Instant Finality set blockVersion >= types.BLOCK_PRODUCINGV3_VERSION
 	if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
 		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,

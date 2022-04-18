@@ -332,11 +332,11 @@ func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (multiview.
 	view4 := multiView0.GetBestView()
 
 	if chainID == -1 {
-		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view1.GetBlock(), true)
-		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view2.GetBlock(), true)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view1.GetBlock(), nil, true)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view2.GetBlock(), nil, true)
 	} else {
-		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view1.GetBlock(), true)
-		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view2.GetBlock(), true)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view1.GetBlock(), nil, true)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view2.GetBlock(), nil, true)
 	}
 	return view2, view4
 }

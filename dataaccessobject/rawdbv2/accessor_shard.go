@@ -49,6 +49,32 @@ func GetFinalizedShardBlockHashByIndex(db incdb.KeyValueReader, sid byte, index 
 	return h, nil
 }
 
+func StoreBeaconConfirmInstantFinalityShardBlock(db incdb.KeyValueWriter, sid byte, index uint64, hash common.Hash) error {
+	keyHash := GetBeaconConfirmShardBlockPrefix(sid, index)
+	if err := db.Put(keyHash, hash.Bytes()); err != nil {
+		return NewRawdbError(StoreShardBlockIndexError, err)
+	}
+	return nil
+}
+
+func HasBeaconConfirmInstantFinalityShardBlock(db incdb.KeyValueReader, sid byte, index uint64) (bool, error) {
+	keyHash := GetBeaconConfirmShardBlockPrefix(sid, index)
+	return db.Has(keyHash)
+}
+
+func GetBeaconConfirmInstantFinalityShardBlock(db incdb.KeyValueReader, sid byte, index uint64) (*common.Hash, error) {
+	keyHash := GetBeaconConfirmShardBlockPrefix(sid, index)
+	val, err := db.Get(keyHash)
+	if err != nil {
+		return nil, NewRawdbError(GetShardBlockByIndexError, err)
+	}
+	h, err := common.Hash{}.NewHash(val)
+	if err != nil {
+		return nil, NewRawdbError(GetShardBlockByIndexError, err)
+	}
+	return h, nil
+}
+
 func HasShardBlock(db incdb.KeyValueReader, hash common.Hash) (bool, error) {
 	keyHash := GetShardHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {

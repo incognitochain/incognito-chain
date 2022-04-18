@@ -242,9 +242,8 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 	return newBlock, nil
 }
 
-// TODO: change name
-func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
+func (chain *BeaconChain) InsertBlock(block types.BlockInterface, proof *multiview.ReProposeProof, shouldValidate bool) error {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), proof, shouldValidate); err != nil {
 		Logger.log.Error(err)
 		return err
 	}
@@ -257,9 +256,9 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	return err == nil
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
+func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface, proof *multiview.ReProposeProof) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), proof, true); err != nil {
 		Logger.log.Error(err)
 		return err
 	}
@@ -465,3 +464,39 @@ func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
 	return nil
 }
+
+func (chain *BeaconChain) FinalizeBlock(beaconBestState *BeaconBestState, proof *multiview.ReProposeProof) (multiview.View, error) {
+
+	var version = beaconBestState.GetBlock().GetVersion()
+	var newFinalView multiview.View
+
+	if version <= types.BLOCK_PRODUCINGV3_VERSION {
+		newFinalView, _ = chain.multiView.AddViewAndFinalizeV1(beaconBestState)
+	} else if version >= types.INSTANT_FINALITY_VERSION {
+		newFinalView, _ = chain.multiView.BeaconAddViewAndFinalizeV2(beaconBestState, proof)
+	} else {
+		return nil, fmt.Errorf("Finalize Block but got unknown block version %+v", version)
+	}
+
+	return newFinalView, nil
+}
+
+func (chain *BeaconChain) SimulateView(beaconBestState *BeaconBestState, proof *multiview.ReProposeProof) error {
+
+	version := beaconBestState.GetBlock().GetVersion()
+
+	if version <= types.BLOCK_PRODUCINGV3_VERSION {
+		if _, added := chain.multiView.SimulateAddViewV1(beaconBestState); !added {
+			err := fmt.Errorf("BEACON | failed to add view height %+v, hash %+v to multiveiw", beaconBestState.BeaconHeight, beaconBestState.BestBlockHash)
+			return err
+		}
+	} else if version >= types.INSTANT_FINALITY_VERSION {
+		_, err := chain.multiView.BeaconSimulateAddViewV2(beaconBestState, proof)
+		return err
+	} else {
+		return fmt.Errorf("Finalize Block but got unknown block version %+v", version)
+	}
+
+	return nil
+}
+

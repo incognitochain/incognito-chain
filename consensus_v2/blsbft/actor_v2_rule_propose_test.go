@@ -1083,7 +1083,7 @@ func TestProposeRuleLemma2_verifyFinalityProof(t *testing.T) {
 				nextBlockFinalityProof: tt.fields.nextBlockFinalityProof,
 				chain:                  tt.fields.chain,
 			}
-			got, err := p.verifyFinalityProof(tt.args.proposeMsg, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
+			_, got, err := p.verifyFinalityProof(tt.args.proposeMsg, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("verifyFinalityProof() error = %v, wantErr %v", err, tt.wantErr)
 				return

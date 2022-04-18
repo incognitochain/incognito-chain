@@ -250,7 +250,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			insertCnt++
 			//must validate this block when insert
 
-			if err := s.chain.InsertBlock(blk.(types.BlockInterface), true); err != nil {
+			if err := s.chain.InsertBlock(blk.(types.BlockInterface), nil, true); err != nil {
 				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
 			}

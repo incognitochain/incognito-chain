@@ -48,27 +48,6 @@ type MultiView struct {
 	bestView  View
 }
 
-type Context struct {
-}
-
-type IMultiView interface {
-	// add a new view to a tree
-	AddView(View) // same with all
-	// get best view => Rule
-	// 1. View with max depth
-	// 2. View with equal depth but smallest block producing time
-	// 3. View with equal depth but newer committee
-	GetBestView() // same with all
-	// Capture Final View
-	GetFinalView() // same with all
-	// Finalize view based on version and shard or beacon
-	TryFinalizeView(View) View // 3 version now based on shard or beacon
-	// Use breadth first search rule
-	GetAllViewsWithBFS() // same with all
-	// simulate add view and return new final view
-	SimulateNewFinalView(View)
-}
-
 func NewMultiView() *MultiView {
 	s := &MultiView{
 		viewByHash:     make(map[common.Hash]View),
@@ -144,26 +123,54 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 
 func (multiView *MultiView) AddViewAndFinalizeV1(view View) (View, bool) {
 
-	added := multiView.addView(view, nil)
-	if !added {
-		return nil, false
+	type result struct {
+		v     View
+		added bool
 	}
 
-	return multiView.finalizeViewV1(view), true
+	ch := make(chan result)
+
+	multiView.actionCh <- func() {
+
+		added := multiView.addView(view, nil)
+		if !added {
+			ch <- result{v: nil, added: false}
+			return
+		}
+		ch <- result{v: multiView.finalizeViewV1(view), added: true}
+	}
+
+	res := <-ch
+	return res.v, res.added
 }
 
 func (multiView *MultiView) SimulateAddViewV1(view View) (*MultiView, bool) {
 
-	clonedView := multiView.Clone()
-
-	added := clonedView.addView(view, nil)
-	if !added {
-		return nil, false
+	type result struct {
+		v     *MultiView
+		added bool
 	}
 
-	clonedView.finalizeViewV1(view)
+	ch := make(chan result)
 
-	return clonedView, true
+	multiView.actionCh <- func() {
+
+		clonedView := multiView.Clone()
+
+		added := clonedView.addView(view, nil)
+		if !added {
+			ch <- result{v: nil, added: false}
+			return
+		}
+
+		clonedView.finalizeViewV1(view)
+
+		ch <- result{v: clonedView, added: true}
+		return
+	}
+
+	res := <-ch
+	return res.v, res.added
 }
 
 //Only add view if view is validated (at least enough signature)
@@ -211,7 +218,6 @@ func (multiView *MultiView) finalizeViewV1(newView View) View {
 	if multiView.finalView == nil {
 		multiView.bestView = newView
 		multiView.finalView = newView
-		return multiView.finalView
 	}
 
 	//update bestView
@@ -236,7 +242,6 @@ func (multiView *MultiView) finalizeViewV1(newView View) View {
 		}
 
 		multiView.finalView = prev1View
-		return multiView.finalView
 
 	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION && newView.GetBlock().GetVersion() <= types.BLOCK_PRODUCINGV3_VERSION {
 		// update finalView: consensus 2
@@ -249,20 +254,18 @@ func (multiView *MultiView) finalizeViewV1(newView View) View {
 		prev1TimeSlot := common.CalculateTimeSlot(preView.GetBlock().GetProposeTime())
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			multiView.finalView = preView
-			return multiView.finalView
 		}
 		if newView.GetBlock().GetVersion() >= types.LEMMA2_VERSION {
 			// update final view lemma 2
 			if newView.GetBlock().GetHeight()-1 == newView.GetBlock().GetFinalityHeight() {
 				multiView.finalView = preView
-				return multiView.finalView
 			}
 		}
 	} else {
 		fmt.Println("Block version is not correct")
 	}
 
-	return nil
+	return multiView.finalView
 }
 
 func (multiView *MultiView) BeaconSimulateAddViewV2(view View, proof *ReProposeProof) (*MultiView, error) {
@@ -297,15 +300,29 @@ func (multiView *MultiView) BeaconSimulateAddViewV2(view View, proof *ReProposeP
 	return res.m, res.err
 }
 
-func (multiView *MultiView) BeaconAddViewAndFinalizeV2(view View, proof *ReProposeProof) {
+// TODO: @hung review handle add view when init view or restore view
+func (multiView *MultiView) BeaconAddViewAndFinalizeV2(view View, proof *ReProposeProof) (View, error) {
+	type result struct {
+		v   View
+		err error
+	}
+
+	ch := make(chan result)
+
 	multiView.actionCh <- func() {
 		if view.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
-			fmt.Println(errors.New("Instant finality do not support this block version"))
+			err := fmt.Errorf("Instant finality do not support this block version %+v", view.GetBlock().GetVersion())
+			ch <- result{v: nil, err: err}
 			return
 		}
 		multiView.addView(view, proof)
-		multiView.tryInstantFinalizeBeacon(view)
+		v, err := multiView.tryInstantFinalizeBeacon(view)
+		ch <- result{v: v, err: err}
+		return
 	}
+
+	res := <-ch
+	return res.v, res.err
 }
 
 func (multiView *MultiView) tryInstantFinalizeBeacon(newView View) (View, error) {
@@ -388,17 +405,52 @@ func (multiView *MultiView) ShardSimulateAddViewV2(view View, proof *ReProposePr
 
 	return res.m, res.err
 }
+func (multiView *MultiView) ShardRestoreViewV2(view View) error {
 
-func (multiView *MultiView) ShardAddViewAndFinalizeV2(view View, proof *ReProposeProof, finalizedIndex map[uint64]common.Hash) {
+	ch := make(chan error)
+	multiView.actionCh <- func() {
+		var err error
+		added := multiView.addView(view, nil)
+		if !added {
+			ch <- fmt.Errorf("failed to add view %+v, %+v to multiview", view.GetHeight(), *view.GetHash())
+			return
+		}
+		if multiView.finalView == nil {
+			multiView.finalView = view
+			multiView.bestView = view
+		} else {
+			multiView.bestView, err = multiView.calculateShardBestView()
+		}
+		ch <- err
+	}
+
+	return <-ch
+}
+
+// TODO: @hung review handle add view when init view or restore view
+func (multiView *MultiView) ShardAddViewAndFinalizeV2(view View, proof *ReProposeProof, finalizedIndex map[uint64]common.Hash) (View, error) {
+
+	type result struct {
+		v   View
+		err error
+	}
+
+	ch := make(chan result)
+
 	multiView.actionCh <- func() {
 		if multiView.bestView.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
-			fmt.Println(errors.New("Instant finality do not support this view version"))
+			err := errors.New("Instant finality do not support this view version")
+			ch <- result{v: nil, err: err}
 			return
 		}
 
 		multiView.addView(view, proof)
-		_ = multiView.tryInstantFinalizeShard(finalizedIndex)
+		err := multiView.tryInstantFinalizeShard(finalizedIndex)
+		ch <- result{v: multiView.finalView, err: err}
 	}
+
+	res := <-ch
+	return res.v, res.err
 }
 
 func (multiView *MultiView) tryInstantFinalizeShard(finalizedIndex map[uint64]common.Hash) error {

@@ -86,13 +86,14 @@ func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(
 }
 
 type ShardState struct {
-	ValidationData     string
-	CommitteeFromBlock common.Hash
-	Height             uint64
-	Hash               common.Hash
-	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
-	ProposerTime       int64
-	Version            int
+	ValidationData         string
+	PreviousValidationData string
+	CommitteeFromBlock     common.Hash
+	Height                 uint64
+	Hash                   common.Hash
+	CrossShard             []byte //In this state, shard i send cross shard tx to which shard
+	ProposerTime           int64
+	Version                int
 }
 
 func NewShardState(validationData string,

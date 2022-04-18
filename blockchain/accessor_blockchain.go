@@ -689,7 +689,25 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 	return bRH, err
 }
 
-//GetStakerInfo : Return staker info from statedb
-func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
-	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+func (blockchain *BlockChain) GetShardFinalizedIndexFromBeacon(shardID byte, from, to uint64) (map[uint64]common.Hash, error) {
+
+	db := blockchain.GetBeaconChainDatabase()
+	m := make(map[uint64]common.Hash)
+
+	for h := from; h <= to; h++ {
+		has, err := rawdbv2.HasBeaconConfirmInstantFinalityShardBlock(db, shardID, h)
+		if err != nil {
+			return m, err
+		}
+		if !has {
+			return m, nil
+		}
+		hash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(db, shardID, h)
+		if err != nil {
+			return m, err
+		}
+		m[h] = *hash
+	}
+
+	return m, nil
 }

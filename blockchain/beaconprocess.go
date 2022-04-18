@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"sort"
 	"strconv"
@@ -105,7 +106,7 @@ CONTINUE_VERIFY:
 // var bcTmp time.Duration
 // var bcStart time.Time
 // var bcAllTime time.Duration
-func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
+func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, reProposeProof *multiview.ReProposeProof, shouldValidate bool) error {
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -172,8 +173,12 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
+	if err := blockchain.BeaconChain.SimulateView(newBestState, reProposeProof); err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock, committeeChange); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock, committeeChange, reProposeProof); err2 != nil {
 		return err2
 	}
 
@@ -728,9 +733,16 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 					return err
 				}
 			} else {
-				err := curView.countMissingSignatureV2(cache, bc, shardID, shardState)
-				if err != nil {
-					return err
+				if shardState.Version <= types.BLOCK_PRODUCINGV3_VERSION {
+					err := curView.countMissingSignatureV2(cache, bc, shardID, shardState)
+					if err != nil {
+						return err
+					}
+				} else if shardState.Version == types.INSTANT_FINALITY_VERSION {
+					err := curView.countMissingSignatureV3(bc, shardID, shardState)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -777,6 +789,41 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	return curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 }
 
+func (curView *BeaconBestState) countMissingSignatureV3(
+	bc *BlockChain,
+	shardID byte,
+	shardState types.ShardState,
+) error {
+
+	if shardState.Height == 1 {
+		return nil
+	}
+
+	previousBlock, err := bc.GetShardBlockByHeightV1(shardState.Height-1, shardID)
+	if err != nil {
+		return err
+	}
+
+	committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(previousBlock.CommitteeFromBlock(), shardID)
+	if err != nil {
+		return err
+	}
+
+	// TODO: @hung uncomment this to apply block producing v3 with instant finality
+	//	timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
+	//	_, proposerIndex := GetProposer(
+	//		timeSlot,
+	//		committees,
+	//		curView.GetShardProposerLength(),
+	//	)
+	//	committees = FilterSigningCommitteeV3(
+	//		committees,
+	//		proposerIndex,
+	//	)
+
+	return curView.missingSignatureCounter.AddMissingSignature(shardState.PreviousValidationData, committees)
+}
+
 func (curView *BeaconBestState) countMissingSignatureV1(
 	bc *BlockChain,
 	shardID byte,
@@ -811,6 +858,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
+	reProposeProof *multiview.ReProposeProof,
 ) error {
 	startTimeProcessStoreBeaconBlock := time.Now()
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
@@ -1101,8 +1149,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
+	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		for shardID, shardStates := range beaconBlock.Body.ShardState {
+			for _, shardState := range shardStates {
+				err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+				if err != nil {
+					return NewBlockChainError(StoreBeaconBlockError, err)
+				}
+			}
+		}
+	}
+
 	curFinalView := blockchain.BeaconChain.multiView.GetFinalView()
-	newFinalView, _ := blockchain.BeaconChain.multiView.AddViewAndFinalizeV1(newBestState)
+	newFinalView, _ := blockchain.BeaconChain.FinalizeBlock(newBestState, reProposeProof)
 
 	if newFinalView != nil {
 
@@ -1144,17 +1203,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		for shardID, shardStates := range beaconBlock.Body.ShardState {
-			for _, shardState := range shardStates {
-				err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batch, shardID, shardState.Height, shardState.Hash)
-				if err != nil {
-					return NewBlockChainError(StoreBeaconBlockError, err)
-				}
-			}
-		}
 	}
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)

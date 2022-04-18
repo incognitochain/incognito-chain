@@ -30,6 +30,7 @@ type ProposeBlockInfo struct {
 	ReProposeHashSignature  string
 	IsValidLemma2Proof      bool
 	FinalityProof           multiview.FinalityProof
+	ReProposeProof          *multiview.ReProposeProof
 }
 
 func NewProposeBlockInfo() *ProposeBlockInfo {
@@ -191,6 +192,7 @@ func newProposeBlockForProposeMsgLemma2(
 	userKeySet []signatureschemes2.MiningKey,
 	proposerMiningKeyBase58 string,
 	isValidLemma2 bool,
+	proof *multiview.ReProposeProof,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
 		block:                   block,
@@ -203,6 +205,7 @@ func newProposeBlockForProposeMsgLemma2(
 		IsValidLemma2Proof:      isValidLemma2,
 		ReProposeHashSignature:  proposeMsg.ReProposeHashSignature,
 		FinalityProof:           proposeMsg.FinalityProof,
+		ReProposeProof:          proof,
 	}
 }
 

@@ -601,7 +601,7 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 
 func (curView *ShardBestState) getUntriggerFeature() []string {
 	unTriggerFeatures := []string{}
-	for f, _ := range config.Param().AutoEnableFeature {
+	for f := range config.Param().AutoEnableFeature {
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
 			unTriggerFeatures = append(unTriggerFeatures, f)
 		}
@@ -622,7 +622,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	switch shardBlock.Header.Version {
 	case types.BFT_VERSION:
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
-	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION:
+	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION, types.INSTANT_FINALITY_VERSION:
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
@@ -630,6 +630,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		signingCommittees := incognitokey.DeepCopy(committees)
 		return committees, signingCommittees, nil
 	case types.BLOCK_PRODUCINGV3_VERSION:
+		// TODO: @hung if blockProducingV3 work with Instant Finality move types.INSTANT_FINALITY_VERSION here
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err

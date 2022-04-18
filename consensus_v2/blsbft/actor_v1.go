@@ -391,7 +391,7 @@ func (actorV1 *actorV1) run() error {
 							continue
 						}
 
-						if err := actorV1.chain.InsertAndBroadcastBlock(actorV1.roundData.block); err != nil {
+						if err := actorV1.chain.InsertAndBroadcastBlock(actorV1.roundData.block, nil); err != nil {
 							actorV1.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {

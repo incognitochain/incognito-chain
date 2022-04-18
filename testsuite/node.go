@@ -533,13 +533,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Insert
 		if chainID == -1 {
-			err = chain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), true)
+			err = chain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), nil, true)
 			if err != nil {
 				panic(err)
 			}
 			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
-			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
+			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), nil, true)
 			if err != nil {
 				panic(err)
 			} else {

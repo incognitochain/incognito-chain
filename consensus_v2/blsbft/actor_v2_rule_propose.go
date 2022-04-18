@@ -119,6 +119,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	var err error
 	var isReProposeFirstBlockNextHeight = false
 	var isFirstBlockNextHeight = false
+	var reProposeProof *multiview.ReProposeProof = nil
 	isFirstBlockNextHeight = p.isFirstBlockNextHeight(env.previousBlock, env.block)
 	if isFirstBlockNextHeight {
 		err := p.verifyLemma2FirstBlockNextHeight(proposeMsg, env.block)
@@ -129,7 +130,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	} else {
 		isReProposeFirstBlockNextHeight = p.isReProposeFromFirstBlockNextHeight(env.previousBlock, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 		if isReProposeFirstBlockNextHeight {
-			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
+			reProposeProof, isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 			if err != nil {
 				return nil, err
 			}
@@ -144,6 +145,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		env.userKeySet,
 		env.proposerPublicBLSMiningKey,
 		isValidLemma2,
+		reProposeProof,
 	)
 
 	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, finality height %+v, isValidLemma2 %+v",
@@ -246,37 +248,37 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
 	numberOfFixedShardBlockVaildator int,
-) (bool, error) {
+) (*multiview.ReProposeProof, bool, error) {
 
 	isValid, err := multiview.VerifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 	if !isValid {
-		return false, fmt.Errorf("Invalid ReProposeBlockNextHeight ReproposeHashSignature %+v, proposer %+v",
+		return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight ReproposeHashSignature %+v, proposer %+v",
 			proposeMsg.ReProposeHashSignature, block.GetProposer())
 	}
 
-	isValidProof, err := p.verifyFinalityProof(proposeMsg, block, committees, numberOfFixedShardBlockVaildator)
+	reProposeProof, isValidProof, err := p.verifyFinalityProof(proposeMsg, block, committees, numberOfFixedShardBlockVaildator)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 
 	finalityHeight := block.GetFinalityHeight()
 	if isValidProof {
 		previousBlockHeight := block.GetHeight() - 1
 		if finalityHeight != previousBlockHeight {
-			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+			return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
 				previousBlockHeight, finalityHeight)
 		}
 	} else {
 		if finalityHeight != 0 {
-			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+			return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
 				0, finalityHeight)
 		}
 	}
 
-	return isValidProof, nil
+	return reProposeProof, isValidProof, nil
 }
 
 func (p *ProposeRuleLemma2) verifyFinalityProof(
@@ -284,7 +286,7 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
 	numberOfFixedShardBlockValidator int,
-) (bool, error) {
+) (*multiview.ReProposeProof, bool, error) {
 
 	finalityProof := proposeMsg.FinalityProof
 
@@ -297,7 +299,7 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 	if int(currentTimeSlot-beginTimeSlot) != len(finalityProof.ReProposeHashSignature) {
 		p.logger.Infof("Failed to verify finality proof, expect number of proof %+v, but got %+v",
 			int(currentTimeSlot-beginTimeSlot), len(finalityProof.ReProposeHashSignature))
-		return false, nil
+		return nil, false, nil
 	}
 
 	proposerBase58List := []string{}
@@ -315,10 +317,12 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 		rootHash,
 	)
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 
-	return true, nil
+	reProposeProof := multiview.NewReProposeProof(&finalityProof, proposerBase58List)
+
+	return reProposeProof, true, nil
 }
 
 func (p *ProposeRuleLemma2) addFinalityProof(

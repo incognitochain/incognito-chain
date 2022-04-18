@@ -1180,7 +1180,8 @@ func (b *BeaconBestState) CalculateExpectedTotalBlock(blockVersion int) map[byte
 	subsetNumberOfShardBlock := make(map[byte]uint)
 
 	for shardID, numberOfBlock := range b.NumberOfShardBlock {
-		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+		// TODO: @hung if blockProducingV3 work with Instant Finality set blockVersion >= types.BLOCK_PRODUCINGV3_VERSION
+		if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock / 2
 		} else {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock
@@ -1266,4 +1267,9 @@ func (curView *BeaconBestState) GetProposerLength() int {
 
 func (curView *BeaconBestState) GetShardProposerLength() int {
 	return curView.NumberOfFixedShardBlockValidator
+}
+
+//GetStakerInfo : Return staker info from statedb
+func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
+	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }

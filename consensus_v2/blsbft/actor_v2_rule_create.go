@@ -121,7 +121,7 @@ func (n OnlyCreateBlockRule) CreateBlock(
 }
 
 type IInsertBlockRule interface {
-	InsertBlock(block types.BlockInterface) error
+	InsertBlock(proposeBlockInfo *ProposeBlockInfo) error
 	InsertWithPrevValidationData(types.BlockInterface, string) error
 }
 
@@ -138,8 +138,8 @@ func NewInsertOnlyRule(chain Chain, logger common.Logger) *InsertOnlyRule {
 	return &InsertOnlyRule{chain: chain, logger: logger}
 }
 
-func (i InsertOnlyRule) InsertBlock(block types.BlockInterface) error {
-	return i.chain.InsertBlock(block, false)
+func (i InsertOnlyRule) InsertBlock(proposeBlockInfo *ProposeBlockInfo) error {
+	return i.chain.InsertBlock(proposeBlockInfo.block, nil, false)
 }
 
 type InsertAndBroadcastRule struct {
@@ -155,6 +155,6 @@ func NewInsertAndBroadcastRule(chain Chain, logger common.Logger) *InsertAndBroa
 	return &InsertAndBroadcastRule{chain: chain, logger: logger}
 }
 
-func (i InsertAndBroadcastRule) InsertBlock(block types.BlockInterface) error {
-	return i.chain.InsertAndBroadcastBlock(block)
+func (i InsertAndBroadcastRule) InsertBlock(proposeBlockInfo *ProposeBlockInfo) error {
+	return i.chain.InsertAndBroadcastBlock(proposeBlockInfo.block, nil)
 }

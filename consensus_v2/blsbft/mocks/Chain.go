@@ -510,13 +510,13 @@ func (_m *Chain) GetViewByHash(hash common.Hash) multiview.View {
 	return r0
 }
 
-// InsertAndBroadcastBlock provides a mock function with given fields: block
-func (_m *Chain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-	ret := _m.Called(block)
+// InsertAndBroadcastBlock provides a mock function with given fields: block, proof
+func (_m *Chain) InsertAndBroadcastBlock(block types.BlockInterface, proof *multiview.ReProposeProof) error {
+	ret := _m.Called(block, proof)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(types.BlockInterface) error); ok {
-		r0 = rf(block)
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, *multiview.ReProposeProof) error); ok {
+		r0 = rf(block, proof)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -538,13 +538,13 @@ func (_m *Chain) InsertAndBroadcastBlockWithPrevValidationData(_a0 types.BlockIn
 	return r0
 }
 
-// InsertBlock provides a mock function with given fields: block, shouldValidate
-func (_m *Chain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-	ret := _m.Called(block, shouldValidate)
+// InsertBlock provides a mock function with given fields: block, proof, shouldValidate
+func (_m *Chain) InsertBlock(block types.BlockInterface, proof *multiview.ReProposeProof, shouldValidate bool) error {
+	ret := _m.Called(block, proof, shouldValidate)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(types.BlockInterface, bool) error); ok {
-		r0 = rf(block, shouldValidate)
+	if rf, ok := ret.Get(0).(func(types.BlockInterface, *multiview.ReProposeProof, bool) error); ok {
+		r0 = rf(block, proof, shouldValidate)
 	} else {
 		r0 = ret.Error(0)
 	}

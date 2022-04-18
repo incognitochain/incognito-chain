@@ -803,7 +803,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 	}
 	v.block.(BlockValidation).AddValidationField(validationData)
 
-	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
+	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v); err != nil {
 		return err
 	}
 
@@ -851,7 +851,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		}
 	}
 	if !isInsertWithPreviousData {
-		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
+		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v); err != nil {
 			return err
 		}
 	}
