@@ -1436,6 +1436,7 @@ func (blockchain *BlockChain) getShardValidators(
 				}
 			}
 		}
+		return c, nil
 	}
 	return blockchain.GetShardCommitteeFromBeaconHash(beaconHash, cID)
 }
