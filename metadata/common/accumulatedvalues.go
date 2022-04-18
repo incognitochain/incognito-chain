@@ -99,11 +99,13 @@ func (ac *AccumulatedValues) Clone() *AccumulatedValues {
 		res.UniqFTMTxsUsed[i] = make([]byte, len(v))
 		copy(res.UniqFTMTxsUsed[i], v)
 	}
+	res.CBridgeTokens = make([]*common.Hash, len(ac.CBridgeTokens))
 	for _, v := range ac.CBridgeTokens {
 		tokenID := &common.Hash{}
 		copy(tokenID[:], v[:])
 		res.CBridgeTokens = append(res.CBridgeTokens, tokenID)
 	}
+	res.InitTokens = make([]*common.Hash, len(ac.InitTokens))
 	for _, v := range ac.InitTokens {
 		tokenID := &common.Hash{}
 		copy(tokenID[:], v[:])

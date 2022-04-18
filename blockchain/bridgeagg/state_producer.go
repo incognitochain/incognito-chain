@@ -379,7 +379,7 @@ func (sp *stateProducer) unshield(
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			TokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, md.TokenID, action.TxReqID)
+			TokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, action.TxReqID)
 			if e != nil {
 				errorType = et
 				err = e

@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
@@ -86,14 +87,18 @@ func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTok
 
 	x := vault.Reserve()
 	y := vault.CurrentRewardReserve()
-	receivedAmount, err := bridgeagg.CalculateActualAmount(x, y, amount, bridgeagg.SubOperator, vault.IsPaused())
+	fee, err := bridgeagg.CalculateDeltaY(x, y, amount, bridgeagg.SubOperator, vault.IsPaused())
 	if amount > x {
 		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Unshield amount %v > vault amount %v", amount, x))
 	}
+	burntAmount := big.NewInt(0).Add(big.NewInt(0).SetUint64(fee), big.NewInt(0).SetUint64(amount))
+	if !burntAmount.IsUint64() {
+		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Value is not unit64"))
+	}
 	return &jsonresult.BridgeAggEstimateFee{
 		ExpectedAmount: amount,
-		Fee:            amount - receivedAmount,
-		BurntAmount:    amount + amount - receivedAmount,
+		Fee:            fee,
+		BurntAmount:    burntAmount.Uint64(),
 	}, err
 }
 
@@ -107,7 +112,7 @@ func (blockService BlockService) BridgeAggEstimateReward(unifiedTokenID common.H
 
 	x := vault.Reserve()
 	y := vault.CurrentRewardReserve()
-	amt, err := bridgeagg.CalculateActualAmount(x, y, amount, bridgeagg.AddOperator, vault.IsPaused())
+	amt, err := bridgeagg.CalculateShieldActualAmount(x, y, amount, vault.IsPaused())
 	return &jsonresult.BridgeAggEstimateReward{
 		ReceivedAmount: amt,
 		Reward:         amt - amount,

@@ -47,7 +47,7 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func TestCalculateActualAmount(t *testing.T) {
+func TestCalculateShieldActualAmount(t *testing.T) {
 	type args struct {
 		x        uint64
 		y        uint64
@@ -110,28 +110,6 @@ func TestCalculateActualAmount(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "unshield y != 0",
-			args: args{
-				y:        100,
-				deltaX:   100,
-				x:        1000,
-				operator: SubOperator,
-			},
-			want:    89,
-			wantErr: false,
-		},
-		{
-			name: "unshield y == 0",
-			args: args{
-				y:        0,
-				deltaX:   100,
-				x:        1000,
-				operator: SubOperator,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
 			name: "isPaused shield",
 			args: args{
 				y:        10,
@@ -144,21 +122,33 @@ func TestCalculateActualAmount(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "isPaused shield",
+			name: "shield with large amount",
 			args: args{
-				y:        10,
-				deltaX:   100,
-				x:        1000,
-				operator: SubOperator,
-				isPaused: true,
+				y:        1e10,
+				deltaX:   1234567,
+				x:        1234567,
+				operator: AddOperator,
+				isPaused: false,
 			},
-			want:    100,
+			want:    5001234567,
+			wantErr: false,
+		},
+		{
+			name: "shield with large amount - 2",
+			args: args{
+				y:        5e9,
+				deltaX:   609,
+				x:        2469134,
+				operator: SubOperator,
+				isPaused: false,
+			},
+			want:    1233530,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateActualAmount(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.operator, tt.args.isPaused)
+			got, err := CalculateShieldActualAmount(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.isPaused)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateActualAmount() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -257,6 +247,16 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				isPaused:    true,
 			},
 			want:    100,
+			wantErr: false,
+		},
+		{
+			name: "unshield with large amount",
+			args: args{
+				x:           2469134,
+				y:           5e9,
+				burntAmount: 1234567,
+			},
+			want:    609,
 			wantErr: false,
 		},
 	}
@@ -529,4 +529,67 @@ func readTestCases(fileName string) ([]byte, error) {
 		panic(err)
 	}
 	return raw, nil
+}
+
+func TestCalculateDeltaY(t *testing.T) {
+	type args struct {
+		x        uint64
+		y        uint64
+		deltaX   uint64
+		operator byte
+		isPaused bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+		{
+			name: "unshield y != 0",
+			args: args{
+				y:        100,
+				deltaX:   100,
+				x:        1000,
+				operator: SubOperator,
+			},
+			want:    11,
+			wantErr: false,
+		},
+		{
+			name: "unshield y != 0, isPaused",
+			args: args{
+				y:        100,
+				deltaX:   100,
+				x:        1000,
+				operator: SubOperator,
+				isPaused: true,
+			},
+			want:    0,
+			wantErr: false,
+		},
+		{
+			name: "unshield y == 0",
+			args: args{
+				y:        0,
+				deltaX:   100,
+				x:        1000,
+				operator: SubOperator,
+			},
+			want:    0,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CalculateDeltaY(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.operator, tt.args.isPaused)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CalculateDeltaY() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("CalculateDeltaY() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

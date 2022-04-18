@@ -65,7 +65,7 @@ func NewStateChange() *StateChange {
 	}
 }
 
-func CalculateActualAmount(x, y, deltaX uint64, operator byte, isPaused bool) (uint64, error) {
+func CalculateDeltaY(x, y, deltaX uint64, operator byte, isPaused bool) (uint64, error) {
 	if operator != SubOperator && operator != AddOperator {
 		return 0, errors.New("Cannot recognize operator")
 	}
@@ -73,36 +73,36 @@ func CalculateActualAmount(x, y, deltaX uint64, operator byte, isPaused bool) (u
 		return 0, errors.New("Cannot process with deltaX = 0")
 	}
 	if y == 0 || isPaused {
-		return deltaX, nil
+		return 0, nil
 	}
 	if x == 0 {
-		temp := deltaX + y - 1
-		if temp < deltaX {
-			return 0, errors.New("Out of range uint64")
-		}
-		return temp, nil
+		return y - 1, nil
 	}
 	newX := big.NewInt(0) // x'
-	actualAmount := big.NewInt(0)
 	switch operator {
 	case AddOperator:
 		newX.Add(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(deltaX))
-		temp := big.NewInt(0).Mul(big.NewInt(0).SetUint64(y), big.NewInt(0).SetUint64(deltaX))
-		reward := temp.Div(temp, newX)
-		actualAmount = big.NewInt(0).Add(big.NewInt(0).SetUint64(deltaX), reward)
-		if actualAmount.Cmp(big.NewInt(0).SetUint64(deltaX)) < 0 {
-			return 0, errors.New("actualAmount < deltaX")
-		}
 	case SubOperator:
 		newX.Sub(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(deltaX))
-		temp := big.NewInt(0).Mul(big.NewInt(0).SetUint64(y), big.NewInt(0).SetUint64(deltaX))
-		fee := temp.Div(temp, newX)
-		actualAmount = big.NewInt(0).Sub(big.NewInt(0).SetUint64(deltaX), fee)
-		if actualAmount.Cmp(big.NewInt(0).SetUint64(deltaX)) > 0 {
-			return 0, errors.New("actualAmount > deltaX")
-		}
 	default:
 		return 0, errors.New("Cannot recognize operator")
+	}
+	temp := big.NewInt(0).Mul(big.NewInt(0).SetUint64(y), big.NewInt(0).SetUint64(deltaX))
+	deltaY := temp.Div(temp, newX)
+	if !deltaY.IsUint64() {
+		return 0, errors.New("Actual amount is not uint64")
+	}
+	return deltaY.Uint64(), nil
+}
+
+func CalculateShieldActualAmount(x, y, deltaX uint64, isPaused bool) (uint64, error) {
+	deltaY, err := CalculateDeltaY(x, y, deltaX, AddOperator, isPaused)
+	if err != nil {
+		return 0, err
+	}
+	actualAmount := big.NewInt(0).Add(big.NewInt(0).SetUint64(deltaX), big.NewInt(0).SetUint64(deltaY))
+	if actualAmount.Cmp(big.NewInt(0).SetUint64(deltaX)) < 0 {
+		return 0, errors.New("actualAmount < deltaX")
 	}
 	if !actualAmount.IsUint64() {
 		return 0, errors.New("Actual amount is not uint64")
@@ -326,7 +326,7 @@ func shieldEVM(
 	case common.FTMNetworkID:
 		ac.UniqFTMTxsUsed = append(ac.UniqFTMTxsUsed, uniqTx)
 	}
-	ac.DBridgeTokenPair[vault.tokenID.String()] = token
+	ac.DBridgeTokenPair[incTokenID.String()] = []byte(common.UnifiedTokenPrefix)
 	return actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
 }
 
@@ -410,7 +410,7 @@ func CalculateUnshieldAmount(
 func unshieldEVM(
 	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB,
 	vaults map[uint]*Vault,
-	incTokenID, txReqID common.Hash,
+	txReqID common.Hash,
 ) (common.Hash, []byte, *big.Int, uint64, uint64, int, int, error) {
 	var prefix string
 	var burningMetaType int

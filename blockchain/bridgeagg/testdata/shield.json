@@ -91,13 +91,17 @@
         ],
         "expected_accumulated_values": {
             "UniqETHTxsUsed": [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
             ],
             "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
             "DBridgeTokenPair": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
             },
-            "CBridgeTokens": []
+            "CBridgeTokens": [],
+            "InitTokens": []
         }
     },
     {
@@ -200,13 +204,17 @@
         ],
         "expected_accumulated_values": {
             "UniqETHTxsUsed": [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
             ],
             "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
             "DBridgeTokenPair": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
             },
-            "CBridgeTokens": []
+            "CBridgeTokens": [],
+            "InitTokens": []
         }
     },
     {
@@ -301,13 +309,15 @@
         ],
         "expected_accumulated_values": {
             "UniqETHTxsUsed": [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             ],
             "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
             "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
             },
-            "CBridgeTokens": []
+            "CBridgeTokens": [],
+            "InitTokens": []
         }
     },
     {
@@ -402,13 +412,15 @@
         ],
         "expected_accumulated_values": {
             "UniqETHTxsUsed": [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             ],
             "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
             "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
             },
-            "CBridgeTokens": []
+            "CBridgeTokens": [],
+            "InitTokens": []
         }
     },
     {
@@ -528,13 +540,17 @@
         ],
         "expected_accumulated_values": {
             "UniqETHTxsUsed": [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
             ],
             "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
             "DBridgeTokenPair": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
             },
-            "CBridgeTokens": []
+            "CBridgeTokens": [],
+            "InitTokens": []
         }
     },
     {
@@ -639,13 +655,17 @@
         ],
         "expected_accumulated_values": {
             "UniqETHTxsUsed": [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
             ],
             "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
             "DBridgeTokenPair": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
             },
-            "CBridgeTokens": []
+            "CBridgeTokens": [],
+            "InitTokens": []
         }
     }
 ]

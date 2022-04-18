@@ -139,7 +139,7 @@ func (v *Vault) convert(amount uint64) error {
 }
 
 func (v *Vault) shield(amount uint64) (uint64, error) {
-	actualAmount, err := CalculateActualAmount(v.Reserve(), v.CurrentRewardReserve(), amount, AddOperator, v.IsPaused())
+	actualAmount, err := CalculateShieldActualAmount(v.Reserve(), v.CurrentRewardReserve(), amount, v.IsPaused())
 	if err != nil {
 		return 0, err
 	}
