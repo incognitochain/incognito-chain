@@ -21,8 +21,8 @@ import (
 type ShieldTestCase struct {
 	TestCase
 	Metadatas                 []*metadataBridge.ShieldRequest `json:"metadatas"`
-	ExpectedStatuses          []ShieldStatus                  `json:"expected_statuses"`
-	ActualStatues             []ShieldStatus
+	ExpectedStatuses          []TestShieldStatus              `json:"expected_statuses"`
+	ActualStatues             []TestShieldStatus
 	ExpectedAccumulatedValues *metadata.AccumulatedValues `json:"expected_accumulated_values"`
 	ActualAccumulatedValues   *metadata.AccumulatedValues
 }
@@ -30,6 +30,17 @@ type ShieldTestCase struct {
 type ShieldTestSuite struct {
 	testCases []ShieldTestCase
 	TestSuite
+}
+
+type TestShieldStatusData struct {
+	Amount uint64 `json:"Amount,omitempty"`
+	Reward uint64 `json:"Reward,omitempty"`
+}
+
+type TestShieldStatus struct {
+	Status    byte                   `json:"Status"`
+	Data      []TestShieldStatusData `json:"Data,omitempty"`
+	ErrorCode uint                   `json:"ErrorCode,omitempty"`
 }
 
 func (s *ShieldTestSuite) SetupSuite() {
@@ -113,7 +124,6 @@ func (s *ShieldTestSuite) SetupTest() {
 	processorState := state.Clone()
 	actualInstructions, ac, err := producerState.BuildInstructions(env)
 	s.testCases[s.currentTestCaseIndex].ActualAccumulatedValues = ac
-	fmt.Println("actualAccumulatedValues:", testCase.ActualAccumulatedValues)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorState.Process(actualInstructions, sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
@@ -123,6 +133,7 @@ func (s *ShieldTestSuite) SetupTest() {
 		ProcessorState: processorState,
 	})
 	for _, txID := range testCase.TxIDs {
+		shieldStatus := TestShieldStatus{}
 		prefixValues := [][]byte{
 			{},
 			{common.BoolToByte(false)},
@@ -141,8 +152,18 @@ func (s *ShieldTestSuite) SetupTest() {
 			status := ShieldStatus{}
 			err = json.Unmarshal(data, &status)
 			assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-			s.testCases[s.currentTestCaseIndex].ActualStatues = append(s.testCases[s.currentTestCaseIndex].ActualStatues, status)
+			shieldStatus.Status = status.Status
+			if status.Status == common.RejectedStatusByte {
+				shieldStatus.Data = nil
+				shieldStatus.ErrorCode = status.ErrorCode
+			} else {
+				shieldStatus.Data = append(shieldStatus.Data, TestShieldStatusData{
+					Amount: status.Amount,
+					Reward: status.Reward,
+				})
+			}
 		}
+		s.testCases[s.currentTestCaseIndex].ActualStatues = append(s.testCases[s.currentTestCaseIndex].ActualStatues, shieldStatus)
 	}
 }
 

@@ -86,7 +86,11 @@
         "expected_statuses": [
             {
                 "Status": 1,
-                "Amount": 50000000
+                "Data": [
+                    {
+                        "Amount": 50000000
+                    }
+                ]
             }
         ],
         "expected_accumulated_values": {
@@ -195,11 +199,14 @@
         "expected_statuses": [
             {
                 "Status": 1,
-                "Amount": 50000000
-            },
-            {
-                "Status": 1,
-                "Reward": 99
+                "Data": [
+                    {
+                        "Amount": 50000000
+                    },
+                    {
+                        "Reward": 99
+                    }
+                ]
             }
         ],
         "expected_accumulated_values": {
@@ -531,7 +538,11 @@
         "expected_statuses": [
             {
                 "Status": 1,
-                "Amount": 50000000
+                "Data": [
+                    {
+                        "Amount": 50000000
+                    }
+                ]
             },
             {
                 "Status": 0,

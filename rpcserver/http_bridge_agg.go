@@ -513,7 +513,18 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 	}
 	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	res := []bridgeagg.ShieldStatus{}
+	type ShieldStatusData struct {
+		Amount uint64 `json:"Amount,omitempty"`
+		Reward uint64 `json:"Reward,omitempty"`
+	}
+
+	type ShieldStatus struct {
+		Status    byte               `json:"Status"`
+		Data      []ShieldStatusData `json:"Data,omitempty"`
+		ErrorCode uint               `json:"ErrorCode,omitempty"`
+	}
+
+	res := ShieldStatus{}
 	prefixValues := [][]byte{
 		{},
 		{common.BoolToByte(false)},
@@ -534,7 +545,16 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 		}
-		res = append(res, status)
+		res.Status = status.Status
+		if status.Status == common.RejectedStatusByte {
+			res.Data = nil
+			res.ErrorCode = status.ErrorCode
+		} else {
+			res.Data = append(res.Data, ShieldStatusData{
+				Amount: status.Amount,
+				Reward: status.Reward,
+			})
+		}
 	}
 	return res, nil
 }

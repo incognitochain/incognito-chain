@@ -205,7 +205,7 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				y:           100,
 				burntAmount: 111,
 			},
-			want:    100,
+			want:    99,
 			wantErr: false,
 		},
 		{
@@ -235,7 +235,7 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				y:           91,
 				burntAmount: 109,
 			},
-			want:    100,
+			want:    99,
 			wantErr: false,
 		},
 		{
