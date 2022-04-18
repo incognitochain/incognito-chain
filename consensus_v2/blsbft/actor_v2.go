@@ -237,7 +237,6 @@ func (a *actorV2) CleanReceiveBlockByHash(blockHash string) error {
 	); err != nil {
 		return err
 	}
-	log.Println("remove receive propose", blockHash)
 	delete(a.receiveBlockByHash, blockHash)
 
 	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), blockHash); err != nil {
