@@ -44,6 +44,7 @@ type CommitteeProvide interface {
 		cID byte,
 		beaconHash common.Hash,
 		prevHash common.Hash,
+		height uint64,
 		epoch uint64,
 	) (string, error)
 	GetValidatorIndex(
@@ -51,6 +52,7 @@ type CommitteeProvide interface {
 		cID byte,
 		beaconHash common.Hash,
 		prevHash common.Hash,
+		height uint64,
 		epoch uint64,
 	) (int, error)
 }

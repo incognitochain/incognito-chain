@@ -47,6 +47,11 @@ type ShardRootHashv2 struct {
 	SlashStateDBRootHash       statedb.RebuildInfo
 }
 
+type CommitteeCheckPoint struct {
+	Height   uint64      `json:"h"`
+	RootHash common.Hash `json:"rh"`
+}
+
 type ShardBestState struct {
 	BestBlockHash                    common.Hash       `json:"BestBlockHash"` // hash of block.
 	BestBlock                        *types.ShardBlock `json:"BestBlock"`     // block data
@@ -72,6 +77,8 @@ type ShardBestState struct {
 	BlockInterval          time.Duration
 	BlockMaxCreateTime     time.Duration
 	MetricBlockHeight      uint64
+
+	CommitteeChangeCheckpoint map[uint64]CommitteeCheckPoint `json:"CmtChkP"`
 
 	//================================ StateDB Method
 	// block height => root hash
@@ -832,4 +839,16 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 
 func (curView *ShardBestState) GetProposerLength() int {
 	return curView.NumberOfFixedShardBlockValidator
+}
+
+func (shardBestState *ShardBestState) updateCommitteeChangeCheckpoint(epoch, height uint64, rootHash common.Hash) {
+	newMap := map[uint64]CommitteeCheckPoint{}
+	for k, v := range shardBestState.CommitteeChangeCheckpoint {
+		newMap[k] = v
+	}
+	newMap[epoch] = CommitteeCheckPoint{
+		Height:   height,
+		RootHash: rootHash,
+	}
+	shardBestState.CommitteeChangeCheckpoint = newMap
 }

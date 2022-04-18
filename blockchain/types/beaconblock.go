@@ -477,6 +477,7 @@ func (header BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, erro
 			common.BeaconChainSyncID,
 			common.Hash{},
 			header.PreviousBlockHash,
+			header.Height,
 			header.Epoch,
 		)
 		if err != nil {
@@ -490,6 +491,7 @@ func (header BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, erro
 				common.BeaconChainSyncID,
 				common.Hash{},
 				header.PreviousBlockHash,
+				header.Height,
 				header.Epoch,
 			)
 			if err != nil {
@@ -531,6 +533,7 @@ func (header *BeaconHeader) FromProtoBeaconHeader(protoData *proto.BeaconHeaderB
 			common.BeaconChainSyncID,
 			common.Hash{},
 			header.PreviousBlockHash,
+			protoData.Height,
 			protoData.Epoch,
 		)
 		if err != nil {
@@ -543,6 +546,7 @@ func (header *BeaconHeader) FromProtoBeaconHeader(protoData *proto.BeaconHeaderB
 				common.BeaconChainSyncID,
 				common.Hash{},
 				header.PreviousBlockHash,
+				protoData.Height,
 				protoData.Epoch,
 			)
 			if err != nil {

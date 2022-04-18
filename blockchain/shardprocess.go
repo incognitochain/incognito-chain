@@ -1095,6 +1095,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
 	batchData := blockchain.GetShardChainDatabase(shardID).NewBatch()
+	curConsensusRootHash := newShardState.ConsensusStateDBRootHash
 
 	err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
 	if err != nil {
@@ -1261,6 +1262,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, newFinalView.(*ShardBestState)); err != nil {
 		return NewBlockChainError(CommitTrieToDiskError, err)
+	}
+	if !bytes.Equal(curConsensusRootHash[:], newShardState.ConsensusStateDBRootHash[:]) {
+		newShardState.updateCommitteeChangeCheckpoint(newShardState.Epoch, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
+		key := getCommitteeCacheKeyByEpoch(newShardState.Epoch, shardID)
+		blockchain.committeeByEpochCache.Add(key, newShardState.GetCommittee())
 	}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)

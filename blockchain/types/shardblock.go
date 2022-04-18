@@ -269,6 +269,7 @@ func (sHeader ShardHeader) ToProtoShardHeader() (*proto.ShardHeaderBytes, error)
 			sHeader.ShardID,
 			sHeader.CommitteeFromBlock,
 			sHeader.PreviousBlockHash,
+			sHeader.Height,
 			sHeader.Epoch,
 		)
 		if err != nil {
@@ -281,6 +282,7 @@ func (sHeader ShardHeader) ToProtoShardHeader() (*proto.ShardHeaderBytes, error)
 				sHeader.ShardID,
 				sHeader.CommitteeFromBlock,
 				sHeader.PreviousBlockHash,
+				sHeader.Height,
 				sHeader.Epoch,
 			)
 			if err != nil {
@@ -332,6 +334,7 @@ func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderByt
 			byte(protoData.ShardID),
 			sHeader.CommitteeFromBlock,
 			sHeader.PreviousBlockHash,
+			protoData.Height,
 			protoData.Epoch,
 		)
 		if err != nil {
@@ -344,6 +347,7 @@ func (sHeader *ShardHeader) FromProtoShardHeader(protoData *proto.ShardHeaderByt
 				byte(protoData.ShardID),
 				sHeader.CommitteeFromBlock,
 				sHeader.PreviousBlockHash,
+				protoData.Height,
 				protoData.Epoch,
 			)
 			if err != nil {
