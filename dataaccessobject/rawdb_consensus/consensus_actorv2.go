@@ -48,7 +48,10 @@ func GetVotesByBlockHash(db incdb.Database, hash string) (map[string][]byte, err
 		copy(key, it.Key())
 		keys := strings.Split(string(key), string(splitter))
 		validator := keys[2]
-		res[validator] = it.Value()
+		value := it.Value()
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		res[validator] = newValue
 	}
 	return res, nil
 }
