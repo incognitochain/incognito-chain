@@ -3,6 +3,7 @@ package blsmultisig
 import (
 	"bytes"
 	"errors"
+	"log"
 	"math/big"
 	"sync"
 
@@ -48,10 +49,12 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 
 	for _, idx := range signersIdx {
 		if (idx < 0) || (idx >= len(committee)) {
+			log.Println("xxxxxxxxx 1")
 			return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
 		}
 	}
 	if len(signersIdx) > len(committee) || (len(committee) < 1) {
+		log.Println("xxxxxxxxx 2")
 		return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
 	}
 	wg := sync.WaitGroup{}
@@ -89,10 +92,12 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 	// case <-done:
 	// case err := <-errChan:
 	if err != nil {
+		log.Println("xxxxxxxxx 3")
 		return false, NewBLSSignatureError(DecompressFromByteErr, err)
 	}
 	// }
 	if !bytes.Equal(lPair.Marshal(), rPair.Marshal()) {
+		log.Println("xxxxxxxxx 4")
 		return false, nil
 	}
 	// fmt.Printf("ConsLog %v %v %v %v %v %v %v\n", e1.Seconds(), e2.Seconds(), e3.Seconds(), e4.Seconds(), e5.Seconds(), e6.Seconds(), e7.Seconds())

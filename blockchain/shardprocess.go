@@ -222,7 +222,8 @@ WAITFORBEACON:
 	if shouldValidate {
 		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-			Logger.log.Errorf("Validate block %v shard %v, hash %+v, validationData %+v, with committee %v return error %v", shardBlock.GetHeight(), *shardBlock.Hash(), shardBlock.GetValidationField(), shardBlock.GetShardID(), committeesStr, err)
+			Logger.log.Errorf("Validate block %v shard %v, hash %+v, validationData %+v, with committee %v return error %v",
+				shardBlock.GetHeight(), shardBlock.GetShardID(), *shardBlock.Hash(), shardBlock.GetValidationField(), committeesStr, err)
 			return err
 		}
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)

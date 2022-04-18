@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"time"
@@ -236,7 +237,7 @@ func (a *actorV2) CleanReceiveBlockByHash(blockHash string) error {
 	); err != nil {
 		return err
 	}
-
+	log.Println("remove receive propose", blockHash)
 	delete(a.receiveBlockByHash, blockHash)
 
 	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), blockHash); err != nil {
@@ -799,12 +800,13 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		} else {
 			previousProposeBlockInfo.block.AddValidationField(rawPreviousValidationData)
 			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
+				log.Println(validationData)
 				return err
 			}
 			isInsertWithPreviousData = true
 			previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
-			a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
-				v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
+			a.logger.Infof("Block %+v broadcast with previous block %+v chain %v , previous block number of signatures %+v",
+				v.block.GetHeight(), v.block.(*types.ShardBlock).GetShardID(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
 
 			if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)

@@ -3,6 +3,7 @@ package blsbft
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -96,7 +97,11 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	}
 
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		fmt.Println("GetValidationField", block.GetValidationField())
 		return NewConsensusError(UnExpectedError, err)
+	}
+	if _, ok := ErrorHash[block.Hash().String()]; ok {
+		log.Println("GetValidationField", block.GetValidationField())
 	}
 	return nil
 }
@@ -135,6 +140,8 @@ func validateSingleBriSig(
 	return nil
 }
 
+var ErrorHash = make(map[string]int)
+
 func validateBLSSig(
 	dataHash *common.Hash,
 	aggSig []byte,
@@ -146,7 +153,12 @@ func validateBLSSig(
 		return NewConsensusError(UnExpectedError, err)
 	}
 	if !result {
+		log.Println("fail", dataHash.String(), aggSig, validatorIdx, committee)
+		ErrorHash[dataHash.String()] = 1
 		return NewConsensusError(UnExpectedError, errors.New("Invalid Signature!"))
+	}
+	if _, ok := ErrorHash[dataHash.String()]; ok {
+		log.Println("sucesss", dataHash.String(), aggSig, validatorIdx, committee)
 	}
 	return nil
 }
