@@ -595,27 +595,49 @@ func (httpServer *HttpServer) handleGetOTACoinsByIndices(params interface{}, clo
 
 	fmt.Printf("shardID: %v\n", shardID)
 
-	tmpIdxList, ok := paramList["Indices"]
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `Indices` not found"))
-	}
-
-	jsb, err := json.Marshal(tmpIdxList)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot marshal list indices"))
-	}
-	var idxList []float64
-
-	err = json.Unmarshal(jsb, &idxList)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse index list as []float64"))
-	}
-
-	fmt.Printf("idxList: %v\n", idxList)
-
 	uIdxList := make([]uint64, 0)
-	for _, idx := range idxList {
-		uIdxList = append(uIdxList, uint64(idx))
+	fromParam, ok := paramList["FromIndex"]
+	if !ok {
+		tmpIdxList, ok := paramList["Indices"]
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("either `Indices` or (`FromIndex`, `ToIndex`) must be supplied"))
+		}
+
+		jsb, err := json.Marshal(tmpIdxList)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot marshal list indices"))
+		}
+		var idxList []float64
+
+		err = json.Unmarshal(jsb, &idxList)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse index list as []float64"))
+		}
+
+		for _, idx := range idxList {
+			uIdxList = append(uIdxList, uint64(idx))
+		}
+	} else {
+		fromIndex, ok := fromParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `FromIndex` is not valid"))
+		}
+
+		toParam, ok := paramList["ToIndex"]
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `ToIndex` is required"))
+		}
+		toIndex, ok := toParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `ToIndex` is not valid"))
+		}
+		if uint64(toIndex) < uint64(fromIndex) {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("`ToIndex` (%v) must be greater than or equal to `FromIndex` (%v)",
+				uint64(toIndex), uint64(fromIndex)))
+		}
+		for i := uint64(fromIndex); i <= uint64(toIndex); i++ {
+			uIdxList = append(uIdxList, i)
+		}
 	}
 
 	return httpServer.outputCoinService.GetOutputCoinByIndex(*tokenID, uIdxList, byte(shardID))
