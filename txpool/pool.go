@@ -376,14 +376,6 @@ func (tp *TxsPool) FilterWithNewView(
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
 ) {
-	mapForChkDbSpend := map[[privacy.Ed25519KeySize]byte]struct {
-		Index  uint
-		Detail TxInfoDetail
-	}{}
-	mapForChkDbStake := map[string]interface{}{}
-	if !tp.IsRunning() {
-		return
-	}
 	sDB := sView.GetCopiedTransactionStateDB()
 	txsData := tp.snapshotPool()
 	txsToRemove := []string{}
@@ -392,10 +384,6 @@ func (tp *TxsPool) FilterWithNewView(
 		Logger.Infof("SHARD %v | Filter mempool with bview %v, sview %v; del %v txs, remaining %v \n", sView.GetShardID(), bcView.GetHeight(), sView.GetHeight(), len(txsToRemove), len(txsValid))
 	}()
 	for txHash, tx := range txsData.TxByHash {
-		if tp.isDoubleStake(mapForChkDbStake, tx) {
-			Logger.Errorf("[txTracing] Tx %v is stake/unstake/stop auto stake twice with sView %v\n", txHash, sView.GetHeight())
-			continue
-		}
 		if err := tx.CheckData(sDB); err != nil {
 			Logger.Errorf("[txTracing] Validate tx %v return error %v with sView %v\n", txHash, err, sView.GetHeight())
 			txsToRemove = append(txsToRemove, txHash)
@@ -412,30 +400,6 @@ func (tp *TxsPool) FilterWithNewView(
 			Logger.Errorf("[txTracing] Validate tx %v return error %v with sView %v\n", txHash, err, sView.GetHeight())
 			txsToRemove = append(txsToRemove, txHash)
 			continue
-		}
-		isDoubleSpend, needToReplace, _, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, tx, &txsValid)
-		if isDoubleSpend && !needToReplace {
-			txsToRemove = append(txsToRemove, txHash)
-			continue
-		}
-		for k := range removeIdx {
-			txsToRemove = append(txsToRemove, txsValid[k].Hash().String())
-			txsValid[k] = nil
-		}
-		if info, ok := tp.Data.TxInfos[txHash]; ok {
-			txsValid = insertTxIntoList(
-				mapForChkDbSpend,
-				TxInfoDetail{
-					Fee:   info.Fee,
-					Size:  info.Size,
-					Hash:  txHash,
-					VTime: 0,
-					Tx:    tx,
-				},
-				txsValid,
-			)
-		} else {
-			txsToRemove = append(txsToRemove, txHash)
 		}
 	}
 	if tp.IsRunning() {

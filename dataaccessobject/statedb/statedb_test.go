@@ -2,15 +2,17 @@ package statedb
 
 import (
 	"bytes"
+	"github.com/incognitochain/incognito-chain/config"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
-	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
@@ -77,14 +79,103 @@ func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, []
 	return keys, values
 }
 
+func TestFlatFileSerialize(t *testing.T) {
+
+	stateDB := &StateDB{}
+
+	objTestCase1, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2.deleted = true
+
+	type args struct {
+		sob StateObject
+	}
+	tests := []struct {
+		name string
+		args args
+		want []byte
+	}{
+		{
+			name: "test_state_object_delete_false",
+			args: args{
+				sob: objTestCase1,
+			},
+			want: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+		},
+		{
+			name: "test_state_object_delete_true",
+			args: args{
+				sob: objTestCase2,
+			},
+			want: []byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ByteSerialize(tt.args.sob); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ByteSerialize() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFlatFileDeSerialize(t *testing.T) {
+
+	stateDB := &StateDB{}
+
+	objTestCase1, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2, _ := newTestObjectWithValue(stateDB, common.HashH([]byte{0}), []byte{0, 1, 2, 3})
+	objTestCase2.deleted = true
+
+	type args struct {
+		stateDB *StateDB
+		sobByte []byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    StateObject
+		wantErr bool
+	}{
+		{
+			name: "test_state_object_delete_false",
+			args: args{
+				stateDB,
+				[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+			},
+			want: objTestCase1,
+		},
+		{
+			name: "test_state_object_delete_true",
+			args: args{
+				stateDB,
+				[]byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 93, 83, 70, 159, 32, 254, 244, 248, 234, 181, 43, 136, 4, 78, 222, 105, 199, 122, 106, 104, 166, 7, 40, 96, 159, 196, 166, 95, 245, 49, 231, 208, 0, 1, 2, 3},
+			},
+			want: objTestCase2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ByteDeSerialize(tt.args.stateDB, tt.args.sobByte)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ByteDeSerialize() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ByteDeSerialize() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	keys, values := generateKeyValuePairWithPrefix(5, []byte("abc"))
 	stateDB, _ := NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	stateDB.SetStateObject(TestObjectType, keys[0], values[0])
 	stateDB.SetStateObject(TestObjectType, keys[1], values[1])
 	stateDB.SetStateObject(TestObjectType, keys[2], values[2])
-	rootHash, _ := stateDB.Commit(true)
-	stateDB.Database().TrieDB().Commit(rootHash, false)
+	rootHash, _, _ := stateDB.Commit(true)
+	stateDB.Database().TrieDB().Commit(rootHash, false, nil)
 
 	v0, err := stateDB.getTestObject(keys[0])
 	if err != nil {
@@ -130,8 +221,8 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	stateDB.MarkDeleteStateObject(TestObjectType, keys[3])
 	stateDB.MarkDeleteStateObject(TestObjectType, keys[4])
 
-	rootHash2, _ := stateDB.Commit(true)
-	stateDB.Database().TrieDB().Commit(rootHash2, false)
+	rootHash2, _, _ := stateDB.Commit(true)
+	stateDB.Database().TrieDB().Commit(rootHash2, false, nil)
 
 	v0, err = stateDB.getTestObject(keys[0])
 	v1, err = stateDB.getTestObject(keys[1])
@@ -256,7 +347,7 @@ func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
 func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
 	var sampleKey common.Hash
 	rootHash, m := createAndStoreDataForTesting(limit100000)
-	for key, _ := range m[0].wantKey {
+	for key := range m[0].wantKey {
 		sampleKey = key
 		break
 	}
@@ -271,7 +362,7 @@ func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
 func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
 	var sampleKey common.Hash
 	rootHash, m := createAndStoreDataForTesting(limit10000)
-	for key, _ := range m[0].wantKey {
+	for key := range m[0].wantKey {
 		sampleKey = key
 		break
 	}
@@ -286,7 +377,7 @@ func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
 func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
 	var sampleKey common.Hash
 	rootHash, m := createAndStoreDataForTesting(limit1000)
-	for key, _ := range m[0].wantKey {
+	for key := range m[0].wantKey {
 		sampleKey = key
 		break
 	}
@@ -465,14 +556,14 @@ func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
 			}
 		}
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}
 	if bytes.Compare(rootHash.Bytes(), emptyRoot.Bytes()) == 0 {
 		panic("root hash is empty")
 	}
-	err = warperDBStatedbTest.TrieDB().Commit(rootHash, false)
+	err = warperDBStatedbTest.TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -527,4 +618,869 @@ func prefixLen(a, b []byte) int {
 // hasTerm returns whether a hex key has the terminator flag.
 func hasTerm(s []byte) bool {
 	return len(s) > 0 && s[len(s)-1] == 16
+}
+
+//
+//func Test_BatchStateDB(t *testing.T) {
+//	config.LoadConfig()
+//	config.LoadParam()
+//
+//	//init DB and txDB
+//	os.RemoveAll("./tmp")
+//	db, err := incdb.Open("leveldb", "./tmp")
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	//generate data
+//	var randKey []common.Hash
+//	var randValue [][]byte
+//	rand.Seed(1)
+//	for i := 0; i < 100; i++ {
+//		k, v := genRandomKV()
+//		randKey = append(randKey, k)
+//		randValue = append(randValue, v)
+//	}
+//	dbName := "test"
+//	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	// check set & get object
+//	stateDB.getOrNewStateObjectWithValue(TestObjectType, randKey[0], randValue[0])
+//	getData, _ := stateDB.getTestObject(randKey[0])
+//	if !bytes.Equal(getData, randValue[0]) { // must return equal
+//		t.Fatal(errors.New("Cannot store live object to newTxDB"))
+//	}
+//	stateDB.getOrNewStateObjectWithValue(TestObjectType, randKey[1], randValue[1])
+//	getData, _ = stateDB.getTestObject(randKey[1])
+//	if !bytes.Equal(getData, randValue[1]) { // must return equal
+//		t.Fatal(errors.New("Cannot store live object to newTxDB"))
+//	}
+//
+//	//clone new txDB: must remove old live state
+//	newTxDB := stateDB.Copy()
+//	getData, _ = newTxDB.getTestObject(randKey[0])
+//	if len(getData) != 0 { // must return empty
+//		t.Fatal(errors.New("Copy stateDB but data of other live state still exist"))
+//	}
+//
+//	newTxDB.getOrNewStateObjectWithValue(TestObjectType, randKey[1], randValue[1])
+//	getData, _ = newTxDB.getTestObject(randKey[1])
+//	if !bytes.Equal(getData, randValue[1]) { // must return equal
+//		t.Fatal(errors.New("Cannot store live object to newTxDB"))
+//	}
+//
+//	for i := 0; i < 10; i++ {
+//		newTxDB.getOrNewStateObjectWithValue(TestObjectType, randKey[i+1], randValue[i+1])
+//		agg, rebuildRoot, err := newTxDB.Commit(true)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//		fmt.Println(agg, rebuildRoot)
+//	}
+//	//double commit
+//	newAgg, newAggRoot, _ := newTxDB.Commit(true)
+//	fmt.Println("double commit", newAgg, newAggRoot)
+//
+//	newTxDB.getOrNewStateObjectWithValue(TestObjectType, randKey[12], randValue[12])
+//	_, rebuildRoot, err := newTxDB.Commit(true)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	newTxDB.Finalized(true, *newAggRoot)
+//	pivotCommit, _ := GetLatestPivotCommit(db, dbName)
+//	if strings.Index(pivotCommit, newAgg.String()) != 0 {
+//		fmt.Println(pivotCommit, newAgg.String())
+//		t.Fatal(errors.New("Store wrong pivot point"))
+//	}
+//
+//	fmt.Println(rebuildRoot)
+//	newStateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *rebuildRoot, nil)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	getData, _ = newStateDB.getTestObject(randKey[12])
+//	if !bytes.Equal(getData, randValue[12]) { // must return equal
+//		t.Fatal(errors.New("Cannot store live object to newStateDB"))
+//	}
+//}
+
+func TestBatchCommitFinalizeNoFFRebuild(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	testObjects := []StateObject{}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sObj1, _ := newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	sObj2, _ := newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	sObj3, _ := newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects = append(testObjects, sObj1)
+	testObjects = append(testObjects, sObj2)
+	testObjects = append(testObjects, sObj3)
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash, rebuildInfo1, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := stateDB.Finalized(true, *rebuildInfo1); err != nil {
+		t.Fatal(err)
+	}
+
+	rebuildInfo2 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash,
+		pivotRootHash:   rootHash,
+		rebuildFFIndex:  rebuildInfo1.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo1.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildInfo2, nil)
+	if v0, err := stateDB2.getStateObject(TestObjectType, testObjects[0].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v0.GetValueBytes(), testObjects[0].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[0].GetValueBytes(), v0.GetValueBytes())
+		}
+	}
+
+	if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[1].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v1.GetValueBytes(), testObjects[1].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[1].GetValueBytes(), v1.GetValueBytes())
+		}
+	}
+
+	if v2, err := stateDB2.getStateObject(TestObjectType, testObjects[2].GetHash()); err != nil {
+		t.Fatal("expect err but got ", err)
+	} else if v2 != nil {
+		t.Fatal("expect nil but got ", v2)
+	}
+
+}
+
+func TestBatchCommitNoFinalizeFFRebuild(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	testObjects := []StateObject{}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sObj1, _ := newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	sObj2, _ := newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	sObj3, _ := newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects = append(testObjects, sObj1)
+	testObjects = append(testObjects, sObj2)
+	testObjects = append(testObjects, sObj3)
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash, rebuildInfo1, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//if err := stateDB.Finalized(true, *rebuildInfo1); err != nil {
+	//	t.Fatal(err)
+	//}
+
+	rebuildInfo2 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash,
+		pivotRootHash:   emptyRoot,
+		rebuildFFIndex:  rebuildInfo1.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo1.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildInfo2, nil)
+	if v0, err := stateDB2.getStateObject(TestObjectType, testObjects[0].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v0.GetValueBytes(), testObjects[0].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[0].GetValueBytes(), v0.GetValueBytes())
+		}
+	}
+
+	if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[1].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v1.GetValueBytes(), testObjects[1].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[1].GetValueBytes(), v1.GetValueBytes())
+		}
+	}
+
+	if v2, err := stateDB2.getStateObject(TestObjectType, testObjects[2].GetHash()); err != nil {
+		t.Fatal("expect err but got ", err)
+	} else if v2 != nil {
+		t.Fatal("expect nil but got ", v2)
+	}
+
+	rootHash2, _, err := stateDB2.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(rootHash, rootHash2) {
+		t.Fatalf("expect two root hash equal but 1 = %+v, 2 = %+v", rootHash, rootHash2)
+	}
+}
+
+func TestBatchCommitFinalizeSwitchToArchive(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	testObjects := []StateObject{}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sObj1, _ := newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	sObj2, _ := newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	sObj3, _ := newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects = append(testObjects, sObj1)
+	testObjects = append(testObjects, sObj2)
+	testObjects = append(testObjects, sObj3)
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash, rebuildInfo1, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := stateDB.Finalized(true, *rebuildInfo1); err != nil {
+		t.Fatal(err)
+	}
+
+	rebuildInfo2 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash,
+		pivotRootHash:   rootHash,
+		rebuildFFIndex:  rebuildInfo1.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo1.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_ARCHIVE_MODE, db, rebuildInfo2, nil)
+	if v0, err := stateDB2.getStateObject(TestObjectType, testObjects[0].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v0.GetValueBytes(), testObjects[0].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[0].GetValueBytes(), v0.GetValueBytes())
+		}
+	}
+
+	if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[1].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v1.GetValueBytes(), testObjects[1].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[1].GetValueBytes(), v1.GetValueBytes())
+		}
+	}
+
+	if v2, err := stateDB2.getStateObject(TestObjectType, testObjects[2].GetHash()); err != nil {
+		t.Fatal("expect err but got ", err)
+	} else if v2 != nil {
+		t.Fatal("expect nil but got ", v2)
+	}
+
+}
+
+func TestBatchCommitNoFinalizeSwitchToArchive(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	testObjects := []StateObject{}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sObj1, _ := newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	sObj2, _ := newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	sObj3, _ := newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects = append(testObjects, sObj1)
+	testObjects = append(testObjects, sObj2)
+	testObjects = append(testObjects, sObj3)
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash, rebuildInfo1, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//if err := stateDB.Finalized(true, *rebuildInfo1); err != nil {
+	//	t.Fatal(err)
+	//}
+
+	rebuildInfo2 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash,
+		pivotRootHash:   rootHash,
+		rebuildFFIndex:  rebuildInfo1.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo1.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_ARCHIVE_MODE, db, rebuildInfo2, nil)
+	if v0, err := stateDB2.getStateObject(TestObjectType, testObjects[0].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v0.GetValueBytes(), testObjects[0].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[0].GetValueBytes(), v0.GetValueBytes())
+		}
+	}
+
+	if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[1].GetHash()); err != nil {
+		t.Fatal(err)
+	} else {
+		if !bytes.Equal(v1.GetValueBytes(), testObjects[1].GetValueBytes()) {
+			t.Fatalf("expect %+v, got %+v", testObjects[1].GetValueBytes(), v1.GetValueBytes())
+		}
+	}
+
+	if v2, err := stateDB2.getStateObject(TestObjectType, testObjects[2].GetHash()); err != nil {
+		t.Fatal("expect err but got ", err)
+	} else if v2 != nil {
+		t.Fatal("expect nil but got ", v2)
+	}
+
+}
+
+func TestMultipleBatchCommitNoFinalize(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testObjects := make([]StateObject, 7)
+	testObjects[0], _ = newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	testObjects[1], _ = newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	testObjects[2], _ = newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects[3], _ = newTestObjectWithValue(stateDB, randKey[3], randValue[3])
+	testObjects[4], _ = newTestObjectWithValue(stateDB, randKey[4], randValue[4])
+	testObjects[5], _ = newTestObjectWithValue(stateDB, randKey[5], randValue[5])
+	testObjects[6], _ = newTestObjectWithValue(stateDB, randKey[6], randValue[6])
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[2].GetHash(), testObjects[2].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[3].GetHash(), testObjects[3].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[4].GetHash(), testObjects[4].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[5].GetHash(), testObjects[5].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash3, rebuildInfo3, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rebuildInfo4 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash3,
+		pivotRootHash:   emptyRoot,
+		rebuildFFIndex:  rebuildInfo3.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo3.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildInfo4, nil)
+	for i := 0; i <= 5; i++ {
+		if v, err := stateDB2.getStateObject(TestObjectType, testObjects[i].GetHash()); err != nil {
+			t.Fatal(err)
+		} else {
+			if !bytes.Equal(v.GetValueBytes(), testObjects[i].GetValueBytes()) {
+				t.Fatalf("expect %+v, got %+v", testObjects[i].GetValueBytes(), v.GetValueBytes())
+			}
+		}
+	}
+
+	for i := 6; i < len(testObjects); i++ {
+		if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[i].GetHash()); err != nil {
+			t.Fatal(err)
+		} else if v1 != nil {
+			t.Fatalf("expect nil, but got %+v", v1)
+		}
+	}
+
+}
+
+func TestMultipleBatchCommitFinalize(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testObjects := make([]StateObject, 7)
+	testObjects[0], _ = newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	testObjects[1], _ = newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	testObjects[2], _ = newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects[3], _ = newTestObjectWithValue(stateDB, randKey[3], randValue[3])
+	testObjects[4], _ = newTestObjectWithValue(stateDB, randKey[4], randValue[4])
+	testObjects[5], _ = newTestObjectWithValue(stateDB, randKey[5], randValue[5])
+	testObjects[6], _ = newTestObjectWithValue(stateDB, randKey[6], randValue[6])
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[2].GetHash(), testObjects[2].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[3].GetHash(), testObjects[3].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[4].GetHash(), testObjects[4].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[5].GetHash(), testObjects[5].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash3, rebuildInfo3, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := stateDB.Finalized(true, *NewEmptyRebuildInfo("")); err != nil {
+		t.Fatal(err)
+	}
+
+	rebuildInfo4 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash3,
+		pivotRootHash:   rebuildInfo3.pivotRootHash,
+		rebuildFFIndex:  rebuildInfo3.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo3.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, rebuildInfo4, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i <= 5; i++ {
+		if v, err := stateDB2.getStateObject(TestObjectType, testObjects[i].GetHash()); err != nil {
+			t.Fatal(err)
+		} else {
+			if !bytes.Equal(v.GetValueBytes(), testObjects[i].GetValueBytes()) {
+				t.Fatalf("expect %+v, got %+v", testObjects[i].GetValueBytes(), v.GetValueBytes())
+			}
+		}
+	}
+
+	for i := 6; i < len(testObjects); i++ {
+		if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[i].GetHash()); err != nil {
+			t.Fatal(err)
+		} else if v1 != nil {
+			t.Fatalf("expect nil, but got %+v", v1)
+		}
+	}
+
+}
+
+func TestMultipleBatchCommitFinalizeSwitchToArchive(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testObjects := make([]StateObject, 7)
+	testObjects[0], _ = newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	testObjects[1], _ = newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	testObjects[2], _ = newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects[3], _ = newTestObjectWithValue(stateDB, randKey[3], randValue[3])
+	testObjects[4], _ = newTestObjectWithValue(stateDB, randKey[4], randValue[4])
+	testObjects[5], _ = newTestObjectWithValue(stateDB, randKey[5], randValue[5])
+	testObjects[6], _ = newTestObjectWithValue(stateDB, randKey[6], randValue[6])
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[2].GetHash(), testObjects[2].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[3].GetHash(), testObjects[3].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[4].GetHash(), testObjects[4].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[5].GetHash(), testObjects[5].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	rootHash3, rebuildInfo3, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := stateDB.Finalized(true, *NewEmptyRebuildInfo("")); err != nil {
+		t.Fatal(err)
+	}
+
+	rebuildInfo4 := RebuildInfo{
+		mode:            common.STATEDB_BATCH_COMMIT_MODE,
+		rebuildRootHash: rootHash3,
+		pivotRootHash:   rebuildInfo3.pivotRootHash,
+		rebuildFFIndex:  rebuildInfo3.rebuildFFIndex,
+		pivotFFIndex:    rebuildInfo3.pivotFFIndex,
+	}
+	stateDB2, err := NewWithMode(dbName, common.STATEDB_ARCHIVE_MODE, db, rebuildInfo4, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i <= 5; i++ {
+		if v, err := stateDB2.getStateObject(TestObjectType, testObjects[i].GetHash()); err != nil {
+			t.Fatal(err)
+		} else {
+			if !bytes.Equal(v.GetValueBytes(), testObjects[i].GetValueBytes()) {
+				t.Fatalf("expect %+v, got %+v", testObjects[i].GetValueBytes(), v.GetValueBytes())
+			}
+		}
+	}
+
+	for i := 6; i < len(testObjects); i++ {
+		if v1, err := stateDB2.getStateObject(TestObjectType, testObjects[i].GetHash()); err != nil {
+			t.Fatal(err)
+		} else if v1 != nil {
+			t.Fatalf("expect nil, but got %+v", v1)
+		}
+	}
+
+}
+
+func TestBatchCommitIterator(t *testing.T) {
+
+	config.LoadConfig()
+	config.LoadParam()
+
+	//generate data
+	var randKey []common.Hash
+	var randValue [][]byte
+	rand.Seed(1)
+	for i := 0; i < 100; i++ {
+		k, v := genRandomKV()
+		randKey = append(randKey, k)
+		randValue = append(randValue, v)
+	}
+
+	wantKeys := [][]byte{}
+	temp := common.HashH([]byte("test-prefix"))
+	prefix := temp[:12]
+	for i := 0; i < 5; i++ {
+		randKey[i] = common.BytesToHash(append(prefix, randKey[i][12:]...))
+		wantKeys = append(wantKeys, randKey[i][:])
+	}
+	//init DB and txDB
+	os.RemoveAll("./tmp")
+	db, err := incdb.Open("leveldb", "./tmp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dbName := "test"
+
+	stateDB, err := NewWithMode(dbName, common.STATEDB_BATCH_COMMIT_MODE, db, *NewEmptyRebuildInfo(""), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testObjects := make([]StateObject, 7)
+	testObjects[0], _ = newTestObjectWithValue(stateDB, randKey[0], randValue[0])
+	testObjects[1], _ = newTestObjectWithValue(stateDB, randKey[1], randValue[1])
+	testObjects[2], _ = newTestObjectWithValue(stateDB, randKey[2], randValue[2])
+	testObjects[3], _ = newTestObjectWithValue(stateDB, randKey[3], randValue[3])
+	testObjects[4], _ = newTestObjectWithValue(stateDB, randKey[4], randValue[4])
+	testObjects[5], _ = newTestObjectWithValue(stateDB, randKey[5], randValue[5])
+	testObjects[6], _ = newTestObjectWithValue(stateDB, randKey[6], randValue[6])
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[0].GetHash(), testObjects[0].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[1].GetHash(), testObjects[1].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[2].GetHash(), testObjects[2].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[3].GetHash(), testObjects[3].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check set & get object
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[4].GetHash(), testObjects[4].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+	if err := stateDB.SetStateObject(TestObjectType, testObjects[5].GetHash(), testObjects[5].GetValue()); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := stateDB.Finalized(true, *NewEmptyRebuildInfo("")); err != nil {
+		t.Fatal(err)
+	}
+
+	stateDB2 := stateDB.Copy()
+
+	nodeIter := stateDB2.trie.NodeIterator(prefix)
+	iter := trie.NewIterator(nodeIter)
+	gotKeys := [][]byte{}
+	for iter.Next() {
+		gotKey := make([]byte, len(iter.Key))
+		copy(gotKey, iter.Key)
+		gotKeys = append(gotKeys, gotKey)
+	}
+
+	sort.Slice(wantKeys, func(i, j int) bool {
+		return string(wantKeys[i]) < string(wantKeys[j])
+	})
+
+	sort.Slice(gotKeys, func(i, j int) bool {
+		return string(gotKeys[i]) < string(gotKeys[j])
+	})
+
+	if !reflect.DeepEqual(wantKeys, gotKeys) {
+		t.Fatal("iterator test fail")
+	}
 }

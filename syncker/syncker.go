@@ -2,7 +2,6 @@ package syncker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -15,8 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -32,6 +29,7 @@ type SynckerManagerConfig struct {
 	Blockchain *blockchain.BlockChain
 	Consensus  peerv2.ConsensusData
 	MiningKey  string
+	CQuit      chan struct{}
 }
 
 type SynckerManager struct {
@@ -71,7 +69,12 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	}
 
 	//init beacon sync process
-	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain)
+	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(
+		synckerManager.config.Network,
+		synckerManager.config.Blockchain,
+		synckerManager.config.Blockchain.BeaconChain,
+		config.CQuit,
+	)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
 
 	//init shard sync process
@@ -81,7 +84,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 			sid, synckerManager.config.Network,
 			synckerManager.config.Blockchain,
 			synckerManager.config.Blockchain.BeaconChain,
-			chain, synckerManager.config.Consensus,
+			chain, synckerManager.config.Consensus, config.CQuit,
 		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
@@ -124,7 +127,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
 
 	if beaconChain, ok := chainValidator[-1]; ok {
-		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
+		synckerManager.BeaconSyncProcess.isCommittee = beaconChain.State.Role == common.CommitteeRole
 	}
 
 	preloadAddr := configpkg.Config().PreloadAddress
@@ -140,7 +143,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 
 	wg := sync.WaitGroup{}
 	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
-	for chainID, _ := range chainValidator {
+	for chainID := range chainValidator {
 		wantedShard[byte(chainID)] = struct{}{}
 	}
 	for sid, syncProc := range synckerManager.ShardSyncProcess {
@@ -245,7 +248,7 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- peerState
 	}
 	//shard
-	for sid, _ := range peerState.Shards {
+	for sid := range peerState.Shards {
 		if synckerManager.ShardSyncProcess[int(sid)] != nil {
 			// b, _ := json.Marshal(peerState)
 			// fmt.Println("[debugshard]: receive peer state", string(b))
@@ -266,7 +269,6 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 	}
 
 	bc := synckerManager.config.Blockchain
-	beaconDB := bc.GetBeaconChainDatabase()
 	for i := 0; i < synckerManager.config.Blockchain.GetActiveShardNumber(); i++ {
 		for {
 			if i == int(toShard) {
@@ -290,17 +292,10 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 			Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
-			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
+			beaconBlock, _, err := synckerManager.Blockchain.GetBeaconBlockByHash(*beaconHash)
 			if err != nil {
 				Logger.Errorf("Get beacon block by hash %v failed\n", beaconHash.String())
 				break
-			}
-
-			beaconBlock := new(types.BeaconBlock)
-			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
-			if err != nil {
-				Logger.Errorf("Cannot unmarshal beaconBlock %v at syncker\n", beaconBlock.GetHeight()-1)
-				return nil
 			}
 
 			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)

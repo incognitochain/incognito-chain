@@ -528,6 +528,7 @@ func (a *actorV2) Start() error {
 
 func (a *actorV2) run() error {
 	go func() {
+		time.Sleep(time.Duration(common.TIMESLOT) * time.Second)
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
@@ -801,7 +802,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(BlockValidation).AddValidationField(validationData)
+	v.block.AddValidationField(validationData)
 
 	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
@@ -822,7 +823,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		return err
 	}
 	isInsertWithPreviousData := false
-	v.block.(BlockValidation).AddValidationField(validationData)
+	v.block.AddValidationField(validationData)
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -836,7 +837,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		if err != nil {
 			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
 		} else {
-			previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
+			previousProposeBlockInfo.block.AddValidationField(rawPreviousValidationData)
 			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
 				return err
 			}
@@ -1064,7 +1065,7 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 	validationData.PortalSig = portalSigs
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
-	block.(BlockValidation).AddValidationField(validationDataString)
+	block.AddValidationField(validationDataString)
 
 	return block, nil
 }

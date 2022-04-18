@@ -1,7 +1,9 @@
 package rawdbv2_test
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -35,8 +37,10 @@ var _ = func() (_ struct{}) {
 		shardBlock.Header.ShardID = 0
 		shardBlock.Header.Round = 1
 		shardBlock.Header.Version = 1
-		if i != 0 {
+		if i != 0 && i != 1 {
 			shardBlock.Header.PreviousBlockHash = shardBlocks[i-1].Header.Hash()
+		} else {
+			shardBlock.Header.PreviousBlockHash = common.Hash{}
 		}
 		shardBlocks = append(shardBlocks, shardBlock)
 	}
@@ -69,32 +73,24 @@ func resetDatabaseShard() {
 func storeShardBlock() error {
 	resetDatabaseShard()
 	for i := 0; i < maxS; i++ {
-		err := rawdbv2.StoreShardBlock(dbS, byte(0), uint64(i), shardBlocks[i].Header.Hash(), shardBlocks[i])
+		err := rawdbv2.StoreShardBlock(dbS, shardBlocks[i].Header.Hash(), shardBlocks[i])
 		if err != nil {
 			return err
 		}
 	}
-	err := rawdbv2.StoreShardBlock(dbS, byte(0), forkedShardBlock1.Header.Height, forkedShardBlock1.Header.Hash(), forkedShardBlock1)
+	err := rawdbv2.StoreShardBlock(dbS, forkedShardBlock1.Header.Hash(), forkedShardBlock1)
 	if err != nil {
 		return err
 	}
-	err1 := rawdbv2.StoreShardBlock(dbS, byte(0), forkedShardBlock2.Header.Height, forkedShardBlock2.Header.Hash(), forkedShardBlock2)
+	err1 := rawdbv2.StoreShardBlock(dbS, forkedShardBlock2.Header.Hash(), forkedShardBlock2)
 	if err1 != nil {
 		return err1
 	}
 	for i := 0; i < maxS; i++ {
-		err := rawdbv2.StoreShardBlockIndex(dbS, byte(0), uint64(i), shardBlocks[i].Header.Hash())
+		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(dbS, byte(0), uint64(i), shardBlocks[i].Header.Hash())
 		if err != nil {
 			return err
 		}
-	}
-	err2 := rawdbv2.StoreShardBlockIndex(dbS, byte(0), forkedShardBlock1.Header.Height, forkedShardBlock1.Header.Hash())
-	if err2 != nil {
-		return err2
-	}
-	err3 := rawdbv2.StoreShardBlockIndex(dbS, byte(0), forkedShardBlock2.Header.Height, forkedShardBlock2.Header.Hash())
-	if err3 != nil {
-		return err3
 	}
 	return nil
 }
@@ -102,34 +98,34 @@ func storeShardBlock() error {
 func TestStoreShardBlock(t *testing.T) {
 	resetDatabaseShard()
 	for i := 0; i < maxS; i++ {
-		err := rawdbv2.StoreShardBlock(dbS, byte(0), uint64(i), shardBlocks[i].Header.Hash(), shardBlocks[i])
+		err := rawdbv2.StoreShardBlock(dbS, shardBlocks[i].Header.Hash(), shardBlocks[i])
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err := rawdbv2.StoreShardBlock(dbS, byte(0), forkedShardBlock1.Header.Height, forkedShardBlock1.Header.Hash(), forkedShardBlock1)
+	err := rawdbv2.StoreShardBlock(dbS, forkedShardBlock1.Header.Hash(), forkedShardBlock1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err1 := rawdbv2.StoreShardBlock(dbS, byte(0), forkedShardBlock2.Header.Height, forkedShardBlock2.Header.Hash(), forkedShardBlock2)
+	err1 := rawdbv2.StoreShardBlock(dbS, forkedShardBlock2.Header.Hash(), forkedShardBlock2)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
 }
 
-func TestStoreShardBlockIndex(t *testing.T) {
+func TestStoreFinalizedShardBlockHashByIndex(t *testing.T) {
 	resetDatabaseShard()
 	for i := 0; i < maxS; i++ {
-		err := rawdbv2.StoreShardBlockIndex(dbS, byte(0), uint64(i), shardBlocks[i].Header.Hash())
+		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(dbS, byte(0), uint64(i), shardBlocks[i].Header.Hash())
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err := rawdbv2.StoreShardBlockIndex(dbS, byte(0), forkedShardBlock1.Header.Height, forkedShardBlock1.Header.Hash())
+	err := rawdbv2.StoreFinalizedShardBlockHashByIndex(dbS, byte(0), forkedShardBlock1.Header.Height, forkedShardBlock1.Header.Hash())
 	if err != nil {
 		t.Fatal(err)
 	}
-	err1 := rawdbv2.StoreShardBlockIndex(dbS, byte(0), forkedShardBlock2.Header.Height, forkedShardBlock2.Header.Hash())
+	err1 := rawdbv2.StoreFinalizedShardBlockHashByIndex(dbS, byte(0), forkedShardBlock2.Header.Height, forkedShardBlock2.Header.Hash())
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -222,33 +218,23 @@ func TestGetShardBlockByIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempShardBlockHeight1, err := rawdbv2.GetShardBlockByIndex(dbS, 0, 1)
+	hash, err := rawdbv2.GetFinalizedShardBlockHashByIndex(dbS, 0, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tempShardBlockHeight1) != 2 {
-		t.Fatalf("want %+v but got %+v block", 2, len(tempShardBlockHeight1))
-	}
-
-	tempShardBlockHeight2, err := rawdbv2.GetShardBlockByIndex(dbS, 0, 2)
+	data, err := rawdbv2.GetShardBlockByHash(dbS, *hash)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tempShardBlockHeight2) != 2 {
-		t.Fatalf("want %+v but got %+v block", 2, len(tempShardBlockHeight2))
+	shardBlock := types.NewShardBlock()
+	err = json.Unmarshal(data, shardBlock)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	for i := 3; i < maxS; i++ {
-		tempShardBlockHeight, err := rawdbv2.GetShardBlockByIndex(dbS, 0, uint64(i))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(tempShardBlockHeight) != 1 {
-			t.Fatalf("want %+v but got %+v block", 1, len(tempShardBlockHeight))
-		}
+	if shardBlock.Header.Height != uint64(1) {
+		t.Fatalf("want height %+v but got %+v", 1, shardBlock.Header.Height)
 	}
-}
-
-func TestGetIndexOfShardBlock(t *testing.T) {
-
+	if shardBlock.Header.Hash().String() != hash.String() {
+		t.Fatalf("want hash %+v but got %+v", shardBlock.Header.Hash(), *hash)
+	}
 }

@@ -65,28 +65,3 @@ func DeleteBlackListValidator(db incdb.KeyValueWriter, validator string) error {
 	key := GetByzantineBlackListKey(validator)
 	return db.Delete(key)
 }
-
-func GetBlackListValidator(db incdb.KeyValueReader, validator string) (bool, *BlackListValidator, error) {
-
-	key := GetByzantineBlackListKey(validator)
-	has, err := db.Has(key)
-	if err != nil {
-		return false, nil, err
-	}
-
-	if !has {
-		return false, nil, nil
-	}
-
-	data, err := db.Get(key)
-	if err != nil {
-		return false, nil, err
-	}
-	blackListValidator := NewBlackListValidator()
-
-	if err := json.Unmarshal(data, blackListValidator); err != nil {
-		return false, nil, err
-	}
-
-	return true, blackListValidator, nil
-}

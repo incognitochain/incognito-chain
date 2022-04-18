@@ -318,9 +318,11 @@ func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bo
 }
 
 func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash, version int) bool {
+	Logger.log.Debugf("verifyHashFromShardState, allShardState %+v, hash %+v, version %+v", allShardState, hash, version)
 	res, err := generateHashFromShardState(allShardState, version)
 	if err != nil {
 		return false
 	}
+	Logger.log.Debugf("verifyHashFromShardState, byteResult=%+v", res)
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }

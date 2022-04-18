@@ -3,9 +3,11 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/pkg/errors"
 )
 
 func (blockchain *BlockChain) ListAllPrivacyCustomTokenAndPRV() (map[common.Hash]*statedb.TokenState, error) {
@@ -162,18 +164,16 @@ func (blockchain *BlockChain) PrivacyTokenIDExistedInNetwork(curView *BeaconBest
 		return false, nil
 	}
 
-	for shardID, shardHash := range curView.BestShardHash {
-		db := blockchain.GetShardChainDatabase(shardID)
-		shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, shardHash)
-		if err != nil {
-			return false, err
+	for shardID, shardChain := range blockchain.ShardChain {
+		if shardChain == nil {
+			return false, errors.Errorf("Can not get data from shard %v", shardID)
 		}
-		stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash,
-			statedb.NewDatabaseAccessWarper(db))
-		if err != nil {
-			return false, err
+		bestState := shardChain.GetBestState()
+		if bestState == nil {
+			return false, errors.Errorf("Can not get data from shard %v", shardID)
 		}
-		isExist := statedb.PrivacyTokenIDExisted(stateDB, tokenID)
+		txStateDB := bestState.transactionStateDB.Copy()
+		isExist := statedb.PrivacyTokenIDExisted(txStateDB, tokenID)
 		if isExist {
 			return true, nil
 		}

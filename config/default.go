@@ -1,6 +1,7 @@
 package config
 
 import (
+	"compress/gzip"
 	"time"
 )
 
@@ -89,7 +90,12 @@ var MainnetParam = &param{
 	PLGParam: plgParam{
 		Host: []string{"https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"},
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var Testnet1Param = &param{
@@ -170,7 +176,12 @@ var Testnet1Param = &param{
 	BSCParam: bscParam{
 		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var Tesnet2Param = &param{
@@ -252,7 +263,12 @@ var Tesnet2Param = &param{
 	BSCParam: bscParam{
 		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var LocalParam = &param{
@@ -333,7 +349,12 @@ var LocalParam = &param{
 	BSCParam: bscParam{
 		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 var LocalDCSParam = &param{
@@ -414,7 +435,12 @@ var LocalDCSParam = &param{
 	BSCParam: bscParam{
 		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
-	IsBackup: false,
+	IsBackup:                 false,
+	BatchCommitSyncModeParam: batchCommitSyncModeParam{},
+	FlatFileParam: flatfileParam{
+		MaxCacheSize: 536870912, // 500Mb
+		CompLevel:    gzip.NoCompression,
+	},
 }
 
 func (p *param) LoadKeyByNetwork(network string) {

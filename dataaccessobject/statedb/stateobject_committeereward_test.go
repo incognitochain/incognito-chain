@@ -24,11 +24,11 @@ func storeCommitteeReward(initRoot common.Hash, warperDB DatabaseAccessWarper) (
 	for key, value := range mState {
 		sDB.SetStateObject(CommitteeRewardObjectType, key, value)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -84,11 +84,11 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	if _, ok := stateObjects[key2]; ok {
 		t.Fatalf("want nothing but got %+v", key2)
 	}
-	rootHash, err := sDB.Commit(true)
+	rootHash, _, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,11 +148,11 @@ func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 			}
 			tempM[value] = reward
 		}
-		rootHash, err := sDB.Commit(true)
+		rootHash, _, err := sDB.Commit(true)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		err = sDB.Database().TrieDB().Commit(rootHash, false, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

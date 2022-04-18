@@ -61,4 +61,5 @@ type Database interface {
 	PreloadBackup(backupFile string) error
 	ReOpen() error
 	Clear() error
+	GetPath() string
 }

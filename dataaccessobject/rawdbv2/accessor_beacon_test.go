@@ -62,32 +62,24 @@ func resetDatabase() {
 func storeBeaconBlock() error {
 	resetDatabase()
 	for i := 0; i < max; i++ {
-		err := rawdbv2.StoreBeaconBlockByHash(db, uint64(i), beaconBlocks[i].Header.Hash(), beaconBlocks[i])
+		err := rawdbv2.StoreBeaconBlockByHash(db, beaconBlocks[i].Header.Hash(), beaconBlocks[i])
 		if err != nil {
 			return err
 		}
 	}
-	err := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock1.Header.Height, forkedBeaconBlock1.Header.Hash(), forkedBeaconBlock1)
+	err := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock1.Header.Hash(), forkedBeaconBlock1)
 	if err != nil {
 		return err
 	}
-	err1 := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock2.Header.Height, forkedBeaconBlock2.Header.Hash(), forkedBeaconBlock2)
+	err1 := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock2.Header.Hash(), forkedBeaconBlock2)
 	if err1 != nil {
 		return err1
 	}
 	for i := 0; i < max; i++ {
-		err := rawdbv2.StoreBeaconBlockIndex(db, uint64(i), beaconBlocks[i].Header.Hash())
+		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(db, uint64(i), beaconBlocks[i].Header.Hash())
 		if err != nil {
 			return err
 		}
-	}
-	err2 := rawdbv2.StoreBeaconBlockIndex(db, forkedBeaconBlock1.Header.Height, forkedBeaconBlock1.Header.Hash())
-	if err2 != nil {
-		return err2
-	}
-	err3 := rawdbv2.StoreBeaconBlockIndex(db, forkedBeaconBlock2.Header.Height, forkedBeaconBlock2.Header.Hash())
-	if err3 != nil {
-		return err3
 	}
 	return nil
 }
@@ -95,34 +87,34 @@ func storeBeaconBlock() error {
 func TestStoreBeaconBlock(t *testing.T) {
 	resetDatabase()
 	for i := 0; i < max; i++ {
-		err := rawdbv2.StoreBeaconBlockByHash(db, uint64(i), beaconBlocks[i].Header.Hash(), beaconBlocks[i])
+		err := rawdbv2.StoreBeaconBlockByHash(db, beaconBlocks[i].Header.Hash(), beaconBlocks[i])
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock1.Header.Height, forkedBeaconBlock1.Header.Hash(), forkedBeaconBlock1)
+	err := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock1.Header.Hash(), forkedBeaconBlock1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err1 := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock2.Header.Height, forkedBeaconBlock2.Header.Hash(), forkedBeaconBlock2)
+	err1 := rawdbv2.StoreBeaconBlockByHash(db, forkedBeaconBlock2.Header.Hash(), forkedBeaconBlock2)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
 }
 
-func TestStoreBeaconBlockIndex(t *testing.T) {
+func TestStoreFinalizedBeaconBlockHashByIndex(t *testing.T) {
 	resetDatabase()
 	for i := 0; i < max; i++ {
-		err := rawdbv2.StoreBeaconBlockIndex(db, uint64(i), beaconBlocks[i].Header.Hash())
+		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(db, uint64(i), beaconBlocks[i].Header.Hash())
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err := rawdbv2.StoreBeaconBlockIndex(db, forkedBeaconBlock1.Header.Height, forkedBeaconBlock1.Header.Hash())
+	err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(db, forkedBeaconBlock1.Header.Height, forkedBeaconBlock1.Header.Hash())
 	if err != nil {
 		t.Fatal(err)
 	}
-	err1 := rawdbv2.StoreBeaconBlockIndex(db, forkedBeaconBlock2.Header.Height, forkedBeaconBlock2.Header.Hash())
+	err1 := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(db, forkedBeaconBlock2.Header.Height, forkedBeaconBlock2.Header.Hash())
 	if err1 != nil {
 		t.Fatal(err1)
 	}
@@ -238,69 +230,23 @@ func TestGetBeaconBlockByIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempBeaconBlockHeight1, err := rawdbv2.GetBeaconBlockByIndex(db, 1)
-	count1 := 0
-	for h, data := range tempBeaconBlockHeight1 {
-		beaconBlock := types.NewBeaconBlock()
-		err = json.Unmarshal(data, beaconBlock)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if beaconBlock.Header.Height != uint64(1) {
-			t.Fatalf("want height %+v but got %+v", 1, beaconBlock.Header.Height)
-		}
-		if beaconBlock.Header.Hash().String() != h.String() {
-			t.Fatalf("want hash %+v but got %+v", beaconBlock.Header.Hash(), h)
-		}
-		count1++
+	hash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(db, beaconBlocks[1].GetHeight())
+	if err != nil {
+		t.Fatal(err)
 	}
-	if count1 != 2 {
-		t.Fatalf("want %+v but got %+v block", 2, count1)
+	data, err := rawdbv2.GetBeaconBlockByHash(db, *hash)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	tempBeaconBlockHeight2, err := rawdbv2.GetBeaconBlockByIndex(db, 2)
-	count2 := 0
-	for h, data := range tempBeaconBlockHeight2 {
-		beaconBlock := types.NewBeaconBlock()
-		err = json.Unmarshal(data, beaconBlock)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if beaconBlock.Header.Height != uint64(2) {
-			t.Fatalf("want height %+v but got %+v", 2, beaconBlock.Header.Height)
-		}
-		if beaconBlock.Header.Hash().String() != h.String() {
-			t.Fatalf("want hash %+v but got %+v", beaconBlock.Header.Hash(), h)
-		}
-		count2++
+	beaconBlock := types.NewBeaconBlock()
+	err = json.Unmarshal(data, beaconBlock)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if count2 != 2 {
-		t.Fatalf("want %+v but got %+v block", 2, count2)
+	if beaconBlock.Header.Height != uint64(1) {
+		t.Fatalf("want height %+v but got %+v", 1, beaconBlock.Header.Height)
 	}
-
-	for i := 3; i < max; i++ {
-		tempBeaconBlockHeight, err := rawdbv2.GetBeaconBlockByIndex(db, uint64(i))
-		count := 0
-		for h, data := range tempBeaconBlockHeight {
-			beaconBlock := types.NewBeaconBlock()
-			err = json.Unmarshal(data, beaconBlock)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if beaconBlock.Header.Height != uint64(i) {
-				t.Fatalf("want height %+v but got %+v", i, beaconBlock.Header.Height)
-			}
-			if beaconBlock.Header.Hash().String() != h.String() {
-				t.Fatalf("want hash %+v but got %+v", beaconBlock.Header.Hash(), h)
-			}
-			count++
-		}
-		if count != 1 {
-			t.Fatalf("want %+v but got %+v block", 1, count2)
-		}
+	if beaconBlock.Header.Hash().String() != hash.String() {
+		t.Fatalf("want hash %+v but got %+v", beaconBlock.Header.Hash(), *hash)
 	}
-}
-
-func TestGetIndexOfBeaconBlock(t *testing.T) {
-
 }

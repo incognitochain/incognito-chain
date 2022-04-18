@@ -74,7 +74,8 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
-			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash})
+			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+		0)
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]string
@@ -103,7 +104,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -111,17 +112,17 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -164,7 +165,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key26, key27, key28, key29,
@@ -173,18 +174,18 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key50, key51, key52, key54, key56, key58, key59,
 								key60, key61, key62, key63,
 								key70, key71, key72, key73, key74, key75, key76,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								key21, key24, key25,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -268,7 +269,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -276,17 +277,17 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -329,7 +330,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key25, key26, key27, key28, key29,
@@ -338,17 +339,17 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key50, key51, key52, key53, key58, key59,
 								key60, key61, key62, key63,
 								key70, key71, key72, key73, key74, key75, key76,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -435,7 +436,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -443,17 +444,17 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -496,7 +497,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key29,
@@ -505,18 +506,18 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
 								key70, key71, key72, key73, key74, key75, key76, key77,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								key21, key24, key25, key26, key27, key28,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -600,7 +601,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -608,17 +609,17 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -661,7 +662,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -670,17 +671,17 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
 								key70, key71, key72, key73, key74, key75, key76,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key77, key78, key79,
 								key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
-							},
-							1: []string{
+														},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -760,7 +761,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -768,14 +769,14 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{
+							0: {},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -830,7 +831,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20,
@@ -838,14 +839,14 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{
+							0: {},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -928,7 +929,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -936,14 +937,14 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{
+							0: {},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -986,7 +987,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -994,14 +995,14 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
 								key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 								key60, key61, key62, key63,
-							},
-							1: []string{
+														},
+							1: {
 								key4, key5, key6, key7,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{
+							0: {},
+							1: {
 								key12, key13, key14, key15,
 							},
 						},
@@ -1119,18 +1120,18 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
@@ -1147,18 +1148,18 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
@@ -1169,10 +1170,10 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 					numberOfAssignedCandidates: 0,
 				},
 				syncPool: map[byte][]string{
-					0: []string{
+					0: {
 						key,
 					},
-					1: []string{
+					1: {
 						key0,
 					},
 				},
@@ -1190,8 +1191,8 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 					*incKey0, *incKey,
 				},
 				SyncingPoolAdded: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{*incKey},
-					1: []incognitokey.CommitteePublicKey{*incKey0},
+					0: {*incKey},
+					1: {*incKey0},
 				},
 			},
 		},
@@ -1243,8 +1244,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{key},
+							0: {},
+							1: {key},
 						},
 					},
 				},
@@ -1255,8 +1256,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key2},
-							1: []string{key},
+							0: {key2},
+							1: {key},
 						},
 					},
 				},
@@ -1278,8 +1279,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key3},
-							1: []string{key},
+							0: {key0, key3},
+							1: {key},
 						},
 					},
 				},
@@ -1290,8 +1291,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key2, key3},
-							1: []string{key},
+							0: {key0, key2, key3},
+							1: {key},
 						},
 					},
 				},
@@ -1313,8 +1314,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{key},
+							0: {},
+							1: {key},
 						},
 					},
 				},
@@ -1325,8 +1326,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key4, key2},
-							1: []string{key},
+							0: {key6, key4, key2},
+							1: {key},
 						},
 					},
 				},
@@ -1347,8 +1348,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key5},
-							1: []string{key},
+							0: {key5},
+							1: {key},
 						},
 					},
 				},
@@ -1359,8 +1360,8 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key2, key6, key4, key5},
-							1: []string{key},
+							0: {key2, key6, key4, key5},
+							1: {key},
 						},
 					},
 				},
@@ -1419,10 +1420,10 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 				},
 				syncPool: map[byte][]string{
-					0: []string{
+					0: {
 						key0, key, key2, key3,
 					},
-					1: []string{
+					1: {
 						key4, key5, key6, key7,
 					},
 				},
@@ -1432,10 +1433,10 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 				},
 				syncPool: map[byte][]string{
-					0: []string{
+					0: {
 						key0, key, key2, key3,
 					},
-					1: []string{
+					1: {
 						key4, key5, key6, key7, key8, key9, key10,
 					},
 				},
@@ -1445,14 +1446,14 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 				candidates: []string{key8, key9, key10},
 				committeeChange: &CommitteeChange{
 					SyncingPoolAdded: map[byte][]incognitokey.CommitteePublicKey{
-						1: []incognitokey.CommitteePublicKey{},
+						1: {},
 					},
 				},
 				beaconHeight: 1000,
 			},
 			want: &CommitteeChange{
 				SyncingPoolAdded: map[byte][]incognitokey.CommitteePublicKey{
-					1: []incognitokey.CommitteePublicKey{
+					1: {
 						*incKey8, *incKey9, *incKey10,
 					},
 				},
@@ -1502,18 +1503,18 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 							key0, key, key2, key3,
 						},
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
@@ -1545,18 +1546,18 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 					swapRule:                   NewSwapRuleV3(),
 				},
 				syncPool: map[byte][]string{
-					0: []string{
+					0: {
 						key, key0, key2, key3,
 					},
-					1: []string{
+					1: {
 						key, key0, key2, key3,
 					},
 				},
 				finishedSyncValidators: map[byte][]string{
-					0: []string{
+					0: {
 						key, key0, key2, key3,
 					},
-					1: []string{
+					1: {
 						key, key0, key2, key3,
 					},
 				},
@@ -1569,18 +1570,18 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 							key0, key, key2, key3,
 						},
 						shardCommittee: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{
+							0: {
 								key0, key, key2, key3,
 							},
-							1: []string{
+							1: {
 								key0, key, key2, key3,
 							},
 						},
@@ -1612,10 +1613,10 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 					swapRule:                   NewSwapRuleV3(),
 				},
 				syncPool: map[byte][]string{
-					0: []string{
+					0: {
 						key, key0, key2, key3,
 					},
-					1: []string{
+					1: {
 						key, key0, key2, key3,
 					},
 				},
@@ -1679,6 +1680,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		0,
 	)
 
 	type fields struct {
@@ -1710,12 +1712,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key3},
-							1: []string{key4, key5},
+							0: {key3},
+							1: {key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key7},
-							1: []string{key8, key9},
+							0: {key6, key7},
+							1: {key8, key9},
 						},
 						autoStake: map[string]bool{
 							key:   true,
@@ -1751,8 +1753,8 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					numberOfAssignedCandidates: 1,
 				},
 				syncPool: map[byte][]string{
-					0: []string{key10, key11},
-					1: []string{key12, key13},
+					0: {key10, key11},
+					1: {key12, key13},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -1762,12 +1764,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key3},
-							1: []string{key4, key5},
+							0: {key3},
+							1: {key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key7},
-							1: []string{key8, key9},
+							0: {key6, key7},
+							1: {key8, key9},
 						},
 						autoStake: map[string]bool{
 							key2:  false,
@@ -1797,8 +1799,8 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					numberOfAssignedCandidates: 1,
 				},
 				syncPool: map[byte][]string{
-					0: []string{key10, key11},
-					1: []string{key12, key13},
+					0: {key10, key11},
+					1: {key12, key13},
 				},
 			},
 			args: args{
@@ -1827,12 +1829,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key3},
-							1: []string{key4, key5},
+							0: {key3},
+							1: {key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key7},
-							1: []string{key8, key9},
+							0: {key6, key7},
+							1: {key8, key9},
 						},
 						autoStake: map[string]bool{
 							key:   true,
@@ -1868,8 +1870,8 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					numberOfAssignedCandidates: 0,
 				},
 				syncPool: map[byte][]string{
-					0: []string{key10, key11},
-					1: []string{key12, key13},
+					0: {key10, key11},
+					1: {key12, key13},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -1879,12 +1881,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key3},
-							1: []string{key4, key5},
+							0: {key3},
+							1: {key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key7},
-							1: []string{key8, key9},
+							0: {key6, key7},
+							1: {key8, key9},
 						},
 						autoStake: map[string]bool{
 							key:   true,
@@ -1920,8 +1922,8 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					numberOfAssignedCandidates: 0,
 				},
 				syncPool: map[byte][]string{
-					0: []string{key10, key11},
-					1: []string{key12, key13},
+					0: {key10, key11},
+					1: {key12, key13},
 				},
 			},
 			args: args{
@@ -1945,12 +1947,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key3},
-							1: []string{key4, key5},
+							0: {key3},
+							1: {key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key7},
-							1: []string{key8, key9},
+							0: {key6, key7},
+							1: {key8, key9},
 						},
 						autoStake: map[string]bool{
 							key:   true,
@@ -1986,8 +1988,8 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					numberOfAssignedCandidates: 0,
 				},
 				syncPool: map[byte][]string{
-					0: []string{key10, key11},
-					1: []string{key12, key13},
+					0: {key10, key11},
+					1: {key12, key13},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -1997,12 +1999,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key3},
-							1: []string{key4, key5},
+							0: {key3},
+							1: {key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
-							0: []string{key6, key7},
-							1: []string{key8, key9},
+							0: {key6, key7},
+							1: {key8, key9},
 						},
 						autoStake: map[string]bool{
 							key:   true,
@@ -2032,8 +2034,8 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					numberOfAssignedCandidates: 0,
 				},
 				syncPool: map[byte][]string{
-					0: []string{key10, key11},
-					1: []string{key12, key13},
+					0: {key10, key11},
+					1: {key12, key13},
 				},
 			},
 			args: args{
@@ -2147,7 +2149,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
-			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash})
+			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+		0)
 
 	randomInstructionCommitteeChange := NewCommitteeChange()
 	randomInstructionCommitteeChange.NextEpochShardCandidateRemoved =
@@ -2175,12 +2178,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu:              finalMutex,
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake:      map[string]bool{},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
@@ -2192,8 +2195,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 2,
 					},
 					syncPool: map[byte][]string{
-						0: []string{},
-						1: []string{},
+						0: {},
+						1: {},
 					},
 				},
 			},
@@ -2205,12 +2208,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu:              finalMutex,
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake:      map[string]bool{},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
@@ -2222,8 +2225,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key},
-						1: []string{key0},
+						0: {key},
+						1: {key0},
 					},
 				},
 			},
@@ -2231,13 +2234,13 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 				env: &BeaconCommitteeStateEnvironment{
 					ActiveShards: 2,
 					BeaconInstructions: [][]string{
-						[]string{
+						{
 							instruction.RANDOM_ACTION,
 							"800000",
 							"120000",
 							"350000",
 							"190000",
-						},
+												},
 					},
 				},
 			},
@@ -2295,10 +2298,10 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 					ActiveShards:     2,
 					ConsensusStateDB: sDB,
 					BeaconInstructions: [][]string{
-						[]string{
+						{
 							instruction.UNSTAKE_ACTION,
 							strings.Join([]string{key, key10}, instruction.SPLITTER),
-						},
+												},
 					},
 					newUnassignedCommonPool: []string{
 						key0, key, key2, key3, key4, key5, key6, key7, key8,
@@ -2324,12 +2327,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu:              finalMutex,
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake: map[string]bool{
 								key:  true,
@@ -2344,8 +2347,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2357,12 +2360,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu:              finalMutex,
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key15, key10, key11},
+								0: {key8, key9},
+								1: {key15, key10, key11},
 							},
 							autoStake: map[string]bool{
 								key:  true,
@@ -2377,8 +2380,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14},
+						0: {key12, key13},
+						1: {key14},
 					},
 				},
 			},
@@ -2407,12 +2410,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu:              finalMutex,
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake: map[string]bool{
 								key:  true,
@@ -2427,8 +2430,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2440,12 +2443,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu:              finalMutex,
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake: map[string]bool{
 								key:  true,
@@ -2460,8 +2463,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2487,12 +2490,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake: map[string]bool{
 								key:  true,
@@ -2507,8 +2510,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2519,12 +2522,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{key4, key5},
-								1: []string{key6, key7},
+								0: {key4, key5},
+								1: {key6, key7},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key8, key9},
-								1: []string{key10, key11},
+								0: {key8, key9},
+								1: {key10, key11},
 							},
 							autoStake: map[string]bool{
 								key:   true,
@@ -2550,8 +2553,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2583,7 +2586,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -2592,16 +2595,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -2643,8 +2646,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2655,7 +2658,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key26, key27, key28, key29,
@@ -2665,17 +2668,17 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 									key60, key61, key62, key63,
 									key70, key71, key72, key73, key74, key75, key76,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 									key21, key24, key25,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -2716,8 +2719,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -2858,7 +2861,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
 			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash,
-			key91: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash})
+			key91: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+		0)
 
 	type fields struct {
 		BeaconCommitteeStateV3 *BeaconCommitteeStateV3
@@ -2885,7 +2889,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -2894,16 +2898,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -2950,8 +2954,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113},
-						1: []string{key114, key115},
+						0: {key112, key113},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -2962,7 +2966,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -2971,16 +2975,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3027,8 +3031,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113, key91},
-						1: []string{key114, key115, key90, key92, key93, key94, key95, key96, key97, key98},
+						0: {key112, key113, key91},
+						1: {key114, key115, key90, key92, key93, key94, key95, key96, key97, key98},
 					},
 				},
 			},
@@ -3072,7 +3076,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3081,16 +3085,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3138,8 +3142,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113, key93, key98},
-						1: []string{key114, key115, key90, key91, key92, key94, key95, key96, key97},
+						0: {key112, key113, key93, key98},
+						1: {key114, key115, key90, key91, key92, key94, key95, key96, key97},
 					},
 				},
 			},
@@ -3150,7 +3154,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3159,16 +3163,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key98, key71, key72, key73, key74, key75, key112, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key97, key114, key12, key13, key91, key14, key15,
 								},
 							},
@@ -3216,8 +3220,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key113, key93},
-						1: []string{key115, key90, key92, key94, key95, key96},
+						0: {key113, key93},
+						1: {key115, key90, key92, key94, key95, key96},
 					},
 				},
 			},
@@ -3265,7 +3269,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3274,16 +3278,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3325,8 +3329,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -3337,7 +3341,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key26, key27, key28, key29,
@@ -3347,17 +3351,17 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key60, key61, key62, key63,
 									key70, key71, key72, key73, key74, key75, key76,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 									key21, key24, key25,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3398,8 +3402,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key12, key13},
-						1: []string{key14, key15},
+						0: {key12, key13},
+						1: {key14, key15},
 					},
 				},
 			},
@@ -3456,7 +3460,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3465,13 +3469,13 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{},
-								1: []string{
+								0: {},
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3513,8 +3517,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113, key93, key98},
-						1: []string{key114, key115, key90, key91, key92, key94, key95, key96, key97},
+						0: {key112, key113, key93, key98},
+						1: {key114, key115, key90, key91, key92, key94, key95, key96, key97},
 					},
 				},
 			},
@@ -3525,7 +3529,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3534,13 +3538,13 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key54, key56, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{key98, key112},
-								1: []string{
+								0: {key98, key112},
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3579,8 +3583,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key113, key93},
-						1: []string{key114, key115, key90, key91, key92, key94, key95, key96, key97},
+						0: {key113, key93},
+						1: {key114, key115, key90, key91, key92, key94, key95, key96, key97},
 					},
 				},
 			},
@@ -3636,7 +3640,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3645,16 +3649,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3700,8 +3704,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113},
-						1: []string{key114, key115},
+						0: {key112, key113},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -3712,7 +3716,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3721,16 +3725,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3785,8 +3789,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113},
-						1: []string{key114, key115},
+						0: {key112, key113},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -3831,7 +3835,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3840,16 +3844,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3896,8 +3900,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113, key116},
-						1: []string{key114, key115},
+						0: {key112, key113, key116},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -3908,7 +3912,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -3917,16 +3921,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key116, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -3973,8 +3977,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113},
-						1: []string{key114, key115},
+						0: {key112, key113},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -4023,7 +4027,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
@@ -4032,16 +4036,16 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
 									key60, key61, key62, key63,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -4087,8 +4091,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113},
-						1: []string{key114, key115},
+						0: {key112, key113},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -4099,7 +4103,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
-								0: []string{
+								0: {
 									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key26, key27, key28, key29,
@@ -4109,17 +4113,17 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key60, key61, key62, key63,
 									key70, key71, key72, key73, key74, key75, key76,
 								},
-								1: []string{
+								1: {
 									key4, key5, key6, key7,
 								},
 							},
 							shardSubstitute: map[byte][]string{
-								0: []string{
+								0: {
 									key77, key78, key79,
 									key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 									key21, key24, key25,
 								},
-								1: []string{
+								1: {
 									key12, key13, key14, key15,
 								},
 							},
@@ -4162,8 +4166,8 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 						swapRule:                   &swapRuleV3{},
 					},
 					syncPool: map[byte][]string{
-						0: []string{key112, key113},
-						1: []string{key114, key115},
+						0: {key112, key113},
+						1: {key114, key115},
 					},
 				},
 			},
@@ -4260,12 +4264,12 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
+							0: {key0, key},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key3, key4},
+					0: {key3, key4},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -4273,12 +4277,12 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key4, key},
+							0: {key0, key4, key},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key3},
+					0: {key3},
 				},
 			},
 			args: args{
@@ -4300,12 +4304,12 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
+							0: {key0, key},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key4},
+					0: {key4},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -4313,12 +4317,12 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key4, key},
+							0: {key0, key4, key},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{},
+					0: {},
 				},
 			},
 			args: args{
@@ -4340,14 +4344,14 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
-							1: []string{key10, key11},
+							0: {key0, key},
+							1: {key10, key11},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key3, key4, key5},
-					1: []string{key13, key14},
+					0: {key3, key4, key5},
+					1: {key13, key14},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -4355,14 +4359,14 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key3, key0, key4, key5, key},
-							1: []string{key10, key11},
+							0: {key3, key0, key4, key5, key},
+							1: {key10, key11},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{},
-					1: []string{key13, key14},
+					0: {},
+					1: {key13, key14},
 				},
 			},
 			args: args{
@@ -4390,14 +4394,14 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
-							1: []string{key10, key11},
+							0: {key0, key},
+							1: {key10, key11},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key3, key4, key5},
-					1: []string{key13, key14},
+					0: {key3, key4, key5},
+					1: {key13, key14},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -4405,14 +4409,14 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key3, key0, key4, key},
-							1: []string{key10, key11},
+							0: {key3, key0, key4, key},
+							1: {key10, key11},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key5},
-					1: []string{key13, key14},
+					0: {key5},
+					1: {key13, key14},
 				},
 			},
 			args: args{
@@ -4437,14 +4441,14 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{},
-							1: []string{key10, key11},
+							0: {},
+							1: {key10, key11},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{key3, key4, key5},
-					1: []string{key13, key14},
+					0: {key3, key4, key5},
+					1: {key13, key14},
 				},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
@@ -4452,14 +4456,14 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key3, key5, key4},
-							1: []string{key10, key11},
+							0: {key3, key5, key4},
+							1: {key10, key11},
 						},
 					},
 				},
 				syncPool: map[byte][]string{
-					0: []string{},
-					1: []string{key13, key14},
+					0: {},
+					1: {key13, key14},
 				},
 			},
 			args: args{
@@ -4517,8 +4521,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove 2 validators, 1 syncPool error",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0},
-					1: []string{key10, key11, key12},
+					0: {key0},
+					1: {key10, key11, key12},
 				},
 			},
 			args: args{
@@ -4527,8 +4531,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{key0},
-					1: []string{key10, key11, key12},
+					0: {key0},
+					1: {key10, key11, key12},
 				},
 			},
 			wantErr: true,
@@ -4537,8 +4541,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove 2 validators, 1 syncPool no error",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0},
-					1: []string{key10, key11, key12},
+					0: {key0},
+					1: {key10, key11, key12},
 				},
 			},
 			args: args{
@@ -4547,8 +4551,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{},
-					1: []string{key10, key11, key12},
+					0: {},
+					1: {key10, key11, key12},
 				},
 			},
 			wantErr: false,
@@ -4557,8 +4561,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove 1 validators, 2 syncPool",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0, key5},
-					1: []string{key10, key11, key12},
+					0: {key0, key5},
+					1: {key10, key11, key12},
 				},
 			},
 			args: args{
@@ -4567,8 +4571,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{key5},
-					1: []string{key10, key11, key12},
+					0: {key5},
+					1: {key10, key11, key12},
 				},
 			},
 			wantErr: false,
@@ -4577,8 +4581,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove validators not in syncPool",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0, key5},
-					1: []string{key10, key11, key12},
+					0: {key0, key5},
+					1: {key10, key11, key12},
 				},
 			},
 			args: args{
@@ -4587,8 +4591,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{key0, key5},
-					1: []string{key10, key11, key12},
+					0: {key0, key5},
+					1: {key10, key11, key12},
 				},
 			},
 			wantErr: true,
@@ -4597,8 +4601,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove all validators must be removed from syncPool",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0, key, key3, key2, key5},
-					1: []string{key10, key11, key12},
+					0: {key0, key, key3, key2, key5},
+					1: {key10, key11, key12},
 				},
 			},
 			args: args{
@@ -4607,8 +4611,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{},
-					1: []string{key10, key11, key12},
+					0: {},
+					1: {key10, key11, key12},
 				},
 			},
 			wantErr: false,
@@ -4617,8 +4621,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove 3 validators, 5 sync pool",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0, key, key3, key2, key5},
-					1: []string{key10, key11, key12},
+					0: {key0, key, key3, key2, key5},
+					1: {key10, key11, key12},
 				},
 			},
 			args: args{
@@ -4627,8 +4631,8 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{key, key2},
-					1: []string{key10, key11, key12},
+					0: {key, key2},
+					1: {key10, key11, key12},
 				},
 			},
 			wantErr: false,
@@ -4695,6 +4699,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		0,
 	)
 
 	type fields struct {
@@ -4767,8 +4772,8 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key},
-							1: []string{key3},
+							0: {key},
+							1: {key3},
 						},
 						stakingTx: map[string]common.Hash{
 							key2: *hash,
@@ -4788,8 +4793,8 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key, key2},
-							1: []string{key3},
+							0: {key, key2},
+							1: {key3},
 						},
 						stakingTx: map[string]common.Hash{
 							key2: *hash,
@@ -4825,8 +4830,8 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key},
-							1: []string{key3},
+							0: {key},
+							1: {key3},
 						},
 						stakingTx: map[string]common.Hash{
 							key0: *hash,
@@ -4855,8 +4860,8 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key, key2, key0},
-							1: []string{key3},
+							0: {key, key2, key0},
+							1: {key3},
 						},
 						stakingTx: map[string]common.Hash{
 							key0: *hash,

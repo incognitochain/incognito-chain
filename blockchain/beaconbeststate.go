@@ -18,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
@@ -482,6 +483,20 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
 	}
 
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) GetPortalStateV4() *portalprocessv4.CurrentPortalStateV4 {
+	if beaconBestState.portalStateV4 != nil {
+		return beaconBestState.portalStateV4.Copy()
+	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) GetPortalStateV3() *portalprocessv3.CurrentPortalState {
+	if beaconBestState.portalStateV3 != nil {
+		return beaconBestState.portalStateV3.Copy()
+	}
 	return nil
 }
 
@@ -1254,6 +1269,64 @@ func GetMaxCommitteeSize(currentMaxShardCommittee int, triggerFeature map[string
 		return 48
 	}
 	return currentMaxShardCommittee
+}
+
+func (beaconBestState *BeaconBestState) CommitTrieToDisk(batch incdb.Batch) error {
+
+	consensusRootHash, _, err := beaconBestState.consensusStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.ConsensusStateDBRootHash = consensusRootHash
+
+	featureRootHash, _, err := beaconBestState.featureStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.slashStateDB.Database().TrieDB().Commit(featureRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.FeatureStateDBRootHash = featureRootHash
+
+	rewardRootHash, _, err := beaconBestState.rewardStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.featureStateDB.Database().TrieDB().Commit(rewardRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.RewardStateDBRootHash = rewardRootHash
+
+	slashRootHash, _, err := beaconBestState.slashStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	if err := beaconBestState.rewardStateDB.Database().TrieDB().Commit(slashRootHash, false, nil); err != nil {
+		return err
+	}
+	beaconBestState.SlashStateDBRootHash = slashRootHash
+
+	//State Root Hash
+	bRH := BeaconRootHash{
+		ConsensusStateDBRootHash: consensusRootHash,
+		FeatureStateDBRootHash:   featureRootHash,
+		RewardStateDBRootHash:    rewardRootHash,
+		SlashStateDBRootHash:     slashRootHash,
+	}
+
+	beaconBestState.consensusStateDB.ClearObjects()
+	beaconBestState.rewardStateDB.ClearObjects()
+	beaconBestState.featureStateDB.ClearObjects()
+	beaconBestState.slashStateDB.ClearObjects()
+
+	if err := rawdbv2.StoreBeaconRootsHash(batch, beaconBestState.BestBlockHash, bRH); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+
+	return nil
 }
 
 func (curView *BeaconBestState) GetProposerLength() int {

@@ -2,12 +2,29 @@ package statedb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
-// Database wraps access to tries and contract code.
+type FlatFile interface {
+	//append item into flat file, return item index
+	Append([]byte) (uint64, error)
+
+	//read item in flatfile with specific index (return from append)
+	Read(index uint64) ([]byte, error)
+
+	//read recent data, return data channel, errpr channel, and cancel function
+	ReadRecently(index uint64) (chan []byte, chan uint64, func())
+
+	//truncate flat file system
+	Truncate(lastIndex uint64) error
+
+	Size() uint64
+}
+
+// IntermediateWriter wraps access to tries and contract code.
 type DatabaseAccessWarper interface {
 	// OpenTrie opens the main account trie.
 	//OpenTrie(root common.Hash) (Trie, error)
@@ -48,7 +65,7 @@ type Trie interface {
 
 	// Commit writes all nodes to the trie's memory database, tracking the internal
 	// and external (for account tries) references.
-	Commit(onleaf trie.LeafCallback) (common.Hash, error)
+	Commit(onleaf trie.LeafCallback) (common.Hash, int, error)
 
 	// NodeIterator returns an iterator that returns nodes of the trie. Iteration
 	// starts at the key after the given start key.
@@ -69,6 +86,10 @@ type accessorWarper struct {
 }
 
 func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
+	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
+}
+
+func NewDatabaseAccessWrapperWithConfig(syncMode string, database incdb.Database, journalPath string, size int) DatabaseAccessWarper {
 	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
 }
 

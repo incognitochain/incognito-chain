@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"log"
-	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -66,6 +67,10 @@ type CrossShardTokenPrivacyMetaData struct {
 
 func (block CrossShardBlock) GetProducer() string {
 	return block.Header.Producer
+}
+
+func (block CrossShardBlock) ToBytes() ([]byte, error) {
+	return json.Marshal(block)
 }
 
 func (block CrossShardBlock) GetVersion() int {

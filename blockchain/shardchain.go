@@ -3,14 +3,17 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
+	"path"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/blockstorage"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -24,6 +27,8 @@ import (
 type ShardChain struct {
 	shardID   int
 	multiView *multiview.MultiView
+	// flatfileDB *flatfile.FlatFileManager
+	blkManager blockstorage.BlockService
 
 	BlockGen    *BlockGenerator
 	Blockchain  *BlockChain
@@ -46,14 +51,22 @@ func NewShardChain(
 	tp txpool.TxPool,
 	tv txpool.TxVerifier,
 ) *ShardChain {
+	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/rawfinalblock", shardID))
+	ffFinalBlk, err := flatfile.NewFlatFile(p, 5*config.Param().EpochParam.NumberOfBlockInEpoch)
+	if err != nil {
+		panic(err)
+	}
+	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk, shardID)
 	return &ShardChain{
-		shardID:     shardID,
-		multiView:   multiView,
+		shardID:   shardID,
+		multiView: multiView,
+		// flatfileDB:  ff,
 		BlockGen:    blockGen,
 		Blockchain:  blockchain,
 		ChainName:   chainName,
 		TxPool:      tp,
 		TxsVerifier: tv,
+		blkManager:  blkM,
 	}
 }
 
@@ -357,10 +370,16 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 }
 
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
-	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
+	if hasBlock := chain.CheckExistedBlkHash(previousBlockHash); !hasBlock {
+		// This block is not inserted yet, no need to replace
+		return nil
+	}
+	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, chain.shardID, newValidationData); err != nil {
 		Logger.log.Error(err)
 		return err
 	}
+	Logger.log.Infof("SHARD %+v | Shard Hash %+v, Replace Previous ValidationData with newValidationData %+v",
+		chain.shardID, previousBlockHash.String(), newValidationData)
 
 	return nil
 }
@@ -372,8 +391,13 @@ func (chain *ShardChain) GetBlockByHash(hash common.Hash) (types.BlockInterface,
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
-	return err == nil
+	exist, _ := chain.blkManager.CheckBlockByHash(blkHash)
+	return exist
+}
+
+func (chain *ShardChain) CheckExistedBlkHash(blkHash common.Hash) bool {
+	exist, _ := chain.blkManager.CheckBlockByHash(&blkHash)
+	return exist
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {

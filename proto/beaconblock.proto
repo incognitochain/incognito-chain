@@ -1,0 +1,51 @@
+syntax = "proto3";
+import "proto/shardblock.proto";
+option go_package="./proto";
+
+message ShardStateBytes {
+    bytes ValidationData = 1;
+    bytes CommitteeFromBlock = 2;
+    uint64 Height = 3;
+    bytes Hash = 4;
+    bytes CrossShard = 5;
+    sint64 ProposerTime = 6;
+    int32 Version = 7;
+}
+
+message ListShardStateBytes {
+    repeated ShardStateBytes Data = 1;
+}
+
+message BeaconBodyBytes {
+    map<int32, ListShardStateBytes> ShardState  = 1;
+    repeated InstrucstionTmp Instrucstions = 2;
+}
+
+message BeaconHeaderBytes {
+    int32 Version = 1;
+    uint64 Height = 2;
+    uint64 Epoch = 3;
+    int32 Round = 4;
+    sint64 Timestamp = 5;
+    bytes  PreviousBlockHash = 6;
+    bytes InstructionHash = 7;
+    bytes ShardStateHash = 8;
+    bytes InstructionMerkleRoot = 9;
+    bytes BeaconCommitteeAndValidatorRoot = 10;
+    bytes BeaconCandidateRoot = 11;
+    bytes ShardCandidateRoot = 12;
+    bytes ShardCommitteeAndValidatorRoot = 13;
+    bytes AutoStakingRoot = 14;
+    bytes ShardSyncValidatorRoot = 15;
+    string ConsensusType = 16;
+    int32 Producer = 17;
+    int32 Proposer = 18;
+    sint64 ProposeTime = 19;
+    uint64 FinalityHeight = 20;
+}
+
+message BeaconBlockBytes {
+    bytes ValidationData = 1;
+    BeaconHeaderBytes Header = 2;
+    BeaconBodyBytes Body = 3;
+}
