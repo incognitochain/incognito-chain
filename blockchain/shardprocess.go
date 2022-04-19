@@ -1262,7 +1262,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, newFinalView.(*ShardBestState)); err != nil {
 		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
-	if (len(committeeChange.ShardCommitteeAdded[shardID]) > 0) || (len(committeeChange.ShardCommitteeReplaced[shardID]) > 0) {
+	if (len(committeeChange.ShardCommitteeAdded[shardID]) > 0) || (len(committeeChange.ShardCommitteeReplaced[shardID][common.REPLACE_IN]) > 0) {
 		newShardState.updateCommitteeChangeCheckpoint(newShardState.Epoch, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
 		key := getCommitteeCacheKeyByEpoch(newShardState.Epoch, shardID)
 		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v", newShardState.Epoch, shardID)
