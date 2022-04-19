@@ -1339,12 +1339,17 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 ) {
 	if cID != common.BeaconChainSyncID {
 		sBestView := blockchain.ShardChain[cID].GetBestState()
+		for k, v := range sBestView.CommitteeChangeCheckpoint {
+			Logger.log.Infof("[debugcommitteecheckpoint] k %+v, value %+v", k, v)
+		}
 		if chkPoint, ok := sBestView.CommitteeChangeCheckpoint[epoch]; ok {
 			if chkPoint.Height > height {
 				epoch--
 			}
 		} else {
-			return nil, errors.Errorf("Can not identify exactly epoch for block height %v of shard %v", height, cID)
+			if _, ok := sBestView.CommitteeChangeCheckpoint[epoch-1]; !ok {
+				return nil, errors.Errorf("Can not identify exactly epoch for block height %v of shard %v", height, cID)
+			}
 		}
 	}
 	key := getCommitteeCacheKeyByEpoch(epoch, cID)
