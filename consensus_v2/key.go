@@ -168,7 +168,7 @@ func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusT
 	}
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (engine *Engine) ValidateBlockCommitteeSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	return blsbft.ValidateCommitteeSig(block, committees)
 }
 

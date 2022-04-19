@@ -309,7 +309,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteeSig(block, committees); err != nil {
 		return err
 	}
 	return nil
@@ -468,7 +468,8 @@ func (chain *ShardChain) GetSigningCommittees(
 	proposerIndex int, committees []incognitokey.CommitteePublicKey, blockVersion int,
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+	// TODO: @hung if blockProducingV3 work with Instant Finality set Version >= types.BLOCK_PRODUCINGV3_VERSION
+	if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
 		res = FilterSigningCommitteeV3(committees, proposerIndex)
 	} else {
 		res = append(res, committees...)

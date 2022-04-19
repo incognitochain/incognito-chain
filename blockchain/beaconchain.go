@@ -315,7 +315,7 @@ func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, co
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteeSig(block, committees); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
@@ -499,4 +499,3 @@ func (chain *BeaconChain) SimulateView(beaconBestState *BeaconBestState, proof *
 
 	return nil
 }
-

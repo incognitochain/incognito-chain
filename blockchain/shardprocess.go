@@ -205,8 +205,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, reP
 		}
 	}
 	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteeSig(shardBlock, signingCommittees); err != nil {
+		Logger.log.Errorf("Validate shard %v, block %v, hash %+v, validation field %s, with committee %v return error %v", shardBlock.GetShardID(), shardBlock.GetHeight(), *shardBlock.Hash(), shardBlock.GetValidationField(), committeesStr, err)
 		return err
 	}
 
@@ -529,7 +529,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// Verify Transaction
 	//get beacon height from shard block
 	// beaconHeight := shardBlock.Header.BeaconHeight
-	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
+	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, shardBlock.Header.Height, len(shardBlock.Body.Transactions), shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 	st := time.Now()
 	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)

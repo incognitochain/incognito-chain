@@ -18,7 +18,7 @@ func VerifyCrossShardBlock(crossShardBlock *types.CrossShardBlock, blockchain *B
 	if err != nil {
 		return err
 	}
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committeesForSigning); err != nil {
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteeSig(crossShardBlock, committeesForSigning); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := types.VerifyCrossShardBlockUTXO(crossShardBlock); !ok {
