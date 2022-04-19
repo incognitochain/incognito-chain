@@ -62,7 +62,7 @@ func ValidateProposerSig(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	if block.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		if err := validateSingleBriSig(block.GetProposedBlockHash(), valData.ProposedBlockBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+		if err := validateSingleBriSig(block.ProposedHash(), valData.ProposedBlockBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 			return NewConsensusError(UnExpectedError, err)
 		}
 	}

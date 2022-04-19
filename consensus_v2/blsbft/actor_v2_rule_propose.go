@@ -150,15 +150,15 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		reProposeProof,
 	)
 	//get vote for this propose block (case receive vote faster)
-	votes, err := GetVotesByBlockHashFromDB(env.block.Hash().String())
+	votes, err := GetVotesByBlockHashFromDB(env.block.ProposedHash().String())
 	if err != nil {
 		p.logger.Error("Cannot get vote by block hash for rebuild", err)
 		return nil, err
 	}
 	proposeBlockInfo.Votes = votes
 
-	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, finality height %+v, isValidLemma2 %+v",
-		env.block.GetHeight(), env.block.Hash().String(), env.block.GetFinalityHeight(), isValidLemma2)
+	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, proposedHash %+v, finality height %+v, isValidLemma2 %+v",
+		env.block.GetHeight(), env.block.Hash().String(), env.block.ProposedHash().String(), env.block.GetFinalityHeight(), isValidLemma2)
 	if isValidLemma2 {
 		if err := p.addFinalityProof(env.block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof); err != nil {
 			return nil, err
@@ -345,15 +345,14 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 	if currentTimeSlot-beginTimeSlot > MAX_FINALITY_PROOF {
 		return nil
 	}
-
 	nextBlockFinalityProof, ok := p.nextBlockFinalityProof[previousHash.String()]
 	if !ok {
 		nextBlockFinalityProof = make(map[int64]string)
 	}
 
 	nextBlockFinalityProof[currentTimeSlot] = reProposeHashSignature
-	p.logger.Infof("Add Finality Proof | Block %+v, %+v, Current Block Sig for Timeslot: %+v",
-		block.GetHeight(), block.Hash().String(), currentTimeSlot)
+	p.logger.Infof("Add Finality Proof | Block %+v, %+v, Proposed Hash %+v, Current Block Sig for Timeslot: %+v",
+		block.GetHeight(), block.Hash().String(), block.ProposedHash().String(), currentTimeSlot)
 
 	index := 0
 	var err error
@@ -364,8 +363,8 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 			if err != nil {
 				return err
 			}
-			p.logger.Infof("Add Finality Proof | Block %+v, %+v, Previous Proof for Timeslot: %+v",
-				block.GetHeight(), block.Hash().String(), timeSlot)
+			p.logger.Infof("Add Finality Proof | Block %+v, %+v, Proposed Hash %+v, Previous Proof for Timeslot: %+v",
+				block.GetHeight(), block.Hash().String(), block.ProposedHash().String(), timeSlot)
 		}
 		index++
 	}

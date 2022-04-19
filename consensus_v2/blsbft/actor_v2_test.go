@@ -271,7 +271,7 @@ var _ = func() (_ struct{}) {
 //		currentTimeSlot      int64
 //		chain                Chain
 //		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//		receiveBlockByHash   map[string]*ProposeBlockInfo
+//		receiveBlockByProposedHash   map[string]*ProposeBlockInfo
 //		voteHistory          map[uint64]types.BlockInterface
 //		node                 NodeInterface
 //	}
@@ -289,7 +289,7 @@ var _ = func() (_ struct{}) {
 //			name: "just validate recently",
 //			fields: fields{
 //				currentTimeSlot:    tc1CurrentTimeSlot,
-//				receiveBlockByHash: tc1ReceiveBlockByHash,
+//				receiveBlockByProposedHash: tc1ReceiveBlockByHash,
 //			},
 //			args: args{
 //				tc1MockView,
@@ -300,7 +300,7 @@ var _ = func() (_ struct{}) {
 //			name: "not propose in time slot",
 //			fields: fields{
 //				currentTimeSlot:    tc2CurrentTimeSlot,
-//				receiveBlockByHash: tc2ReceiveBlockByHash,
+//				receiveBlockByProposedHash: tc2ReceiveBlockByHash,
 //			},
 //			args: args{
 //				tc2MockView,
@@ -311,7 +311,7 @@ var _ = func() (_ struct{}) {
 //			name: "not connect to best height",
 //			fields: fields{
 //				currentTimeSlot:    tc3CurrentTimeSlot,
-//				receiveBlockByHash: tc3ReceiveBlockByHash,
+//				receiveBlockByProposedHash: tc3ReceiveBlockByHash,
 //			},
 //			args: args{
 //				tc3MockView,
@@ -322,7 +322,7 @@ var _ = func() (_ struct{}) {
 //			name: "producer time < current timeslot",
 //			fields: fields{
 //				currentTimeSlot:    tc4CurrentTimeSlot,
-//				receiveBlockByHash: tc4ReceiveBlockByHash,
+//				receiveBlockByProposedHash: tc4ReceiveBlockByHash,
 //			},
 //			args: args{
 //				tc4MockView,
@@ -333,7 +333,7 @@ var _ = func() (_ struct{}) {
 //			name: "propose block info height < final view",
 //			fields: fields{
 //				currentTimeSlot:    tc5CurrentTimeSlot,
-//				receiveBlockByHash: tc5ReceiveBlockByHash,
+//				receiveBlockByProposedHash: tc5ReceiveBlockByHash,
 //				chain:              tc5Chain,
 //			},
 //			args: args{
@@ -345,7 +345,7 @@ var _ = func() (_ struct{}) {
 //			name: "add valid propose block info",
 //			fields: fields{
 //				currentTimeSlot:    tc6CurrentTimeSlot,
-//				receiveBlockByHash: tc6ReceiveBlockByHash,
+//				receiveBlockByProposedHash: tc6ReceiveBlockByHash,
 //				chain:              tc6Chain,
 //			},
 //			args: args{
@@ -358,7 +358,7 @@ var _ = func() (_ struct{}) {
 //		t.Run(tt.name, func(t *testing.T) {
 //			a := &actorV2{
 //				currentTimeSlot:    tt.fields.currentTimeSlot,
-//				receiveBlockByHash: tt.fields.receiveBlockByHash,
+//				receiveBlockByProposedHash: tt.fields.receiveBlockByProposedHash,
 //				chain:              tt.fields.chain,
 //				voteHistory:        tt.fields.voteHistory,
 //				node:               tt.fields.node,

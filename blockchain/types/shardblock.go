@@ -131,12 +131,14 @@ func (shardBlock ShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (shardBlock ShardBlock) GetProposedBlockHash() *common.Hash {
+func (shardBlock ShardBlock) ProposedHash() *common.Hash {
 
 	headerHash := shardBlock.Header.Hash()
-	t := headerHash.String() + shardBlock.Header.Proposer
-	t += fmt.Sprintf("%d", shardBlock.Header.ProposeTime)
-
+	t := headerHash.String()
+	if shardBlock.GetVersion() >= INSTANT_FINALITY_VERSION {
+		t += shardBlock.Header.Proposer
+		t += fmt.Sprintf("%d", shardBlock.Header.ProposeTime)
+	}
 	hash := common.HashH([]byte(t))
 
 	return &hash

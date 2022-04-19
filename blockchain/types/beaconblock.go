@@ -146,11 +146,13 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (beaconBlock BeaconBlock) GetProposedBlockHash() *common.Hash {
+func (beaconBlock BeaconBlock) ProposedHash() *common.Hash {
 
-	headerHash := beaconBlock.Header.Hash()
-	t := headerHash.String() + beaconBlock.Header.Proposer
-	t += fmt.Sprintf("%d", beaconBlock.Header.ProposeTime)
+	t := beaconBlock.Header.Hash().String()
+	if beaconBlock.GetVersion() >= INSTANT_FINALITY_VERSION {
+		t += beaconBlock.Header.Proposer
+		t += fmt.Sprintf("%d", beaconBlock.Header.ProposeTime)
+	}
 
 	hash := common.HashH([]byte(t))
 

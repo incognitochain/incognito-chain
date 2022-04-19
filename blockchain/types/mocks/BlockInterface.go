@@ -190,22 +190,6 @@ func (_m *BlockInterface) GetProposeTime() int64 {
 	return r0
 }
 
-// GetProposedBlockHash provides a mock function with given fields:
-func (_m *BlockInterface) GetProposedBlockHash() *common.Hash {
-	ret := _m.Called()
-
-	var r0 *common.Hash
-	if rf, ok := ret.Get(0).(func() *common.Hash); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*common.Hash)
-		}
-	}
-
-	return r0
-}
-
 // GetProposer provides a mock function with given fields:
 func (_m *BlockInterface) GetProposer() string {
 	ret := _m.Called()
@@ -292,6 +276,22 @@ func (_m *BlockInterface) GetVersion() int {
 
 // Hash provides a mock function with given fields:
 func (_m *BlockInterface) Hash() *common.Hash {
+	ret := _m.Called()
+
+	var r0 *common.Hash
+	if rf, ok := ret.Get(0).(func() *common.Hash); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.Hash)
+		}
+	}
+
+	return r0
+}
+
+// ProposedHash provides a mock function with given fields:
+func (_m *BlockInterface) ProposedHash() *common.Hash {
 	ret := _m.Called()
 
 	var r0 *common.Hash

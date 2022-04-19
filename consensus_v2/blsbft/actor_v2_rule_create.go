@@ -52,8 +52,8 @@ func (n NormalCreateBlockRule) CreateBlock(
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
-		n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(),
+		n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v, ProposedBlockHash %+v | "+
+			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(), newBlock.ProposedHash().String(),
 			proposerKeySetIndex, proposerKeySetSubsetID)
 
 		return newBlock, nil
@@ -65,9 +65,9 @@ func (n NormalCreateBlockRule) CreateBlock(
 		producerKeySet := producerCommitteePK[0].GetMiningKeyBase58(consensusName)
 		producerKeySetIndex, producerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, producerKeySet, consensusName)
 
-		n.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v | "+
+		n.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v, ProposedBlockHash %+v | "+
 			"Producer Index %+v, Producer SubsetID %+v | "+
-			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.Hash().String(),
+			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.Hash().String(), block.ProposedHash().String(),
 			producerKeySetIndex, producerKeySetSubsetID, proposerKeySetIndex, proposerKeySetSubsetID)
 		newBlock, err := n.chain.CreateNewBlockFromOldBlock(block, b58Str, currentTime, isValidRePropose)
 		if err != nil {
@@ -113,8 +113,8 @@ func (n OnlyCreateBlockRule) CreateBlock(
 	if err != nil {
 		return nil, NewConsensusError(BlockCreationError, err)
 	}
-	n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-		"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(),
+	n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v, Proposed Block Hash %+v | "+
+		"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(), newBlock.ProposedHash().String(),
 		proposerKeySetIndex, proposerKeySetSubsetID)
 
 	return newBlock, nil

@@ -138,7 +138,7 @@ func CreateVote(
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
-	vote.BlockHash = block.Hash().String()
+	vote.ProposedBlockHash = block.ProposedHash().String()
 	vote.Validator = userBLSPk
 	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
 	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())

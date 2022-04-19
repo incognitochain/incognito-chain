@@ -47,9 +47,9 @@ type actorV2 struct {
 	currentTime     int64
 	currentTimeSlot int64
 
-	proposeHistory     map[int64]struct{}
-	receiveBlockByHash map[string]*ProposeBlockInfo    //blockHash -> blockInfo
-	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
+	proposeHistory             map[int64]struct{}
+	receiveBlockByProposedHash map[string]*ProposeBlockInfo    //blockHash -> blockInfo
+	voteHistory                map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
 	ruleDirector *ActorV2RuleDirector
 	blockVersion int
@@ -100,7 +100,7 @@ func newActorV2WithValue(
 	if err != nil {
 		panic(err) //must not error
 	}
-	a.receiveBlockByHash, err = InitReceiveBlockByHash(chainID)
+	a.receiveBlockByProposedHash, err = InitReceiveBlockByProposedHash(chainID)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -121,7 +121,7 @@ func newActorV2WithValue(
 
 func (a *actorV2) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBlockInfo {
 	tmp := []*ProposeBlockInfo{}
-	for _, proposeInfo := range a.receiveBlockByHash {
+	for _, proposeInfo := range a.receiveBlockByProposedHash {
 		if proposeInfo.block.GetHeight() == blockHeight {
 			tmp = append(tmp, proposeInfo)
 		}
@@ -132,7 +132,7 @@ func (a *actorV2) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBl
 	return tmp
 }
 
-func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
+func InitReceiveBlockByProposedHash(chainID int) (map[string]*ProposeBlockInfo, error) {
 
 	data, err := rawdb_consensus.GetAllReceiveBlockByHash(
 		rawdb_consensus.GetConsensusDatabase(),
@@ -160,7 +160,7 @@ func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
 		}
 
 		//restore votes by block hash
-		votes, err := GetVotesByBlockHashFromDB(proposeBlockInfo.block.Hash().String())
+		votes, err := GetVotesByBlockHashFromDB(proposeBlockInfo.block.ProposedHash().String())
 		if err != nil {
 			return nil, err
 		}
@@ -172,22 +172,9 @@ func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
 	return res, nil
 }
 
-func AddVoteByBlockHashToDB(blockHash string, bftVote BFTVote) error {
-	data, err := json.Marshal(bftVote)
-	if err != nil {
-		return err
-	}
+func (a *actorV2) AddReceiveBlockByProposedHash(blockHash string, proposeBlockInfo *ProposeBlockInfo) error {
 
-	if err = rawdb_consensus.StoreVoteByBlockHash(rawdb_consensus.GetConsensusDatabase(), blockHash, bftVote.Validator, data); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *ProposeBlockInfo) error {
-
-	a.receiveBlockByHash[blockHash] = proposeBlockInfo
+	a.receiveBlockByProposedHash[blockHash] = proposeBlockInfo
 
 	data, err := json.Marshal(proposeBlockInfo)
 	if err != nil {
@@ -205,25 +192,8 @@ func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *Prop
 	return nil
 }
 
-func GetVotesByBlockHashFromDB(blockHash string) (map[string]*BFTVote, error) {
-	votes, err := rawdb_consensus.GetVotesByBlockHash(rawdb_consensus.GetConsensusDatabase(), blockHash)
-	if err != nil {
-		return nil, err
-	}
-	res := map[string]*BFTVote{}
-	for validator, vData := range votes {
-		v := &BFTVote{}
-		err := json.Unmarshal(vData, v)
-		if err != nil {
-			continue
-		}
-		res[validator] = v
-	}
-	return res, nil
-}
-
 func (a *actorV2) GetReceiveBlockByHash(blockHash string) (*ProposeBlockInfo, bool) {
-	res, ok := a.receiveBlockByHash[blockHash]
+	res, ok := a.receiveBlockByProposedHash[blockHash]
 	return res, ok
 }
 
@@ -237,12 +207,42 @@ func (a *actorV2) CleanReceiveBlockByHash(blockHash string) error {
 		return err
 	}
 
-	delete(a.receiveBlockByHash, blockHash)
+	delete(a.receiveBlockByProposedHash, blockHash)
 
 	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), blockHash); err != nil {
 		return err
 	}
 	return nil
+}
+
+func AddVoteByBlockHashToDB(proposedBlockHash string, bftVote BFTVote) error {
+	data, err := json.Marshal(bftVote)
+	if err != nil {
+		return err
+	}
+
+	if err = rawdb_consensus.StoreVoteByBlockHash(rawdb_consensus.GetConsensusDatabase(), proposedBlockHash, bftVote.Validator, data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetVotesByBlockHashFromDB(proposedBlockHash string) (map[string]*BFTVote, error) {
+	votes, err := rawdb_consensus.GetVotesByBlockHash(rawdb_consensus.GetConsensusDatabase(), proposedBlockHash)
+	if err != nil {
+		return nil, err
+	}
+	res := map[string]*BFTVote{}
+	for validator, vData := range votes {
+		v := &BFTVote{}
+		err := json.Unmarshal(vData, v)
+		if err != nil {
+			continue
+		}
+		res[validator] = v
+	}
+	return res, nil
 }
 
 func InitVoteHistory(chainID int) (map[uint64]types.BlockInterface, error) {
@@ -659,7 +659,7 @@ func (a *actorV2) run() error {
 				/*
 					Check for 2/3 vote to commit
 				*/
-				for k, v := range a.receiveBlockByHash {
+				for k, v := range a.receiveBlockByProposedHash {
 					a.processIfBlockGetEnoughVote(k, v)
 				}
 			}
@@ -767,7 +767,11 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 		return err
 	}
 
-	if err := a.CleanReceiveBlockByHash(v.block.GetPrevHash().String()); err != nil {
+	previousBlock, err := a.chain.GetBlockByHash(v.block.GetPrevHash())
+	if err != nil {
+		return err
+	}
+	if err := a.CleanReceiveBlockByHash(previousBlock.ProposedHash().String()); err != nil {
 		a.logger.Errorf("clean receive block by hash error %+v", err)
 	}
 
@@ -784,7 +788,11 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 	isInsertWithPreviousData := false
 	v.block.(BlockValidation).AddValidationField(validationData)
 	// validate and previous block
-	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
+	previousBlock, err := a.chain.GetBlockByHash(v.block.GetPrevHash())
+	if err != nil {
+		return err
+	}
+	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposedHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
 		previousProposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(previousProposeBlockInfo)
@@ -805,7 +813,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
 				v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
 
-			if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
+			if err := a.CleanReceiveBlockByHash(previousBlock.ProposedHash().String()); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}
 		}
@@ -882,7 +890,7 @@ func (a *actorV2) voteValidBlock(
 			} else {
 				if !proposeBlockInfo.IsVoted { //not update database if field is already set
 					proposeBlockInfo.IsVoted = true
-					if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+					if err := a.AddReceiveBlockByProposedHash(proposeBlockInfo.block.ProposedHash().String(), proposeBlockInfo); err != nil {
 						return err
 					}
 				}
@@ -1024,7 +1032,7 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 	}
 	validationData.PortalSig = portalSigs
 	validationData.ProposerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
-	validationData.ProposedBlockBLSSig, _ = userMiningKey.BriSignData(block.GetProposedBlockHash().GetBytes())
+	validationData.ProposedBlockBLSSig, _ = userMiningKey.BriSignData(block.ProposedHash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(BlockValidation).AddValidationField(validationDataString)
 
@@ -1181,9 +1189,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	block := blockInfo.(types.BlockInterface)
 
-	blockHash := block.Hash().String()
-
-	_, ok := a.GetReceiveBlockByHash(blockHash)
+	_, ok := a.GetReceiveBlockByHash(block.ProposedHash().String())
 	if ok {
 		return errors.New("Already receive block")
 	}
@@ -1253,7 +1259,6 @@ func (a *actorV2) handleNewProposeMsg(
 	proposerPublicBLSMiningKey string,
 ) error {
 
-	blockHash := block.Hash().String()
 	env := NewProposeMessageEnvironment(
 		block,
 		previousBlock,
@@ -1271,7 +1276,7 @@ func (a *actorV2) handleNewProposeMsg(
 		return err
 	}
 
-	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
+	if err := a.AddReceiveBlockByProposedHash(block.ProposedHash().String(), newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
 	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
@@ -1301,15 +1306,15 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 
 func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 	voteMsg.IsValid = 0
-	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(voteMsg.BlockHash); ok { //if received block is already initiated
+	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(voteMsg.ProposedBlockHash); ok { //if received block is already initiated
 		if _, ok := proposeBlockInfo.Votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 			proposeBlockInfo.Votes[voteMsg.Validator] = &voteMsg // store it
 			vid, v := a.getValidatorIndex(proposeBlockInfo.SigningCommittees, voteMsg.Validator)
 			if v != nil {
 				vbase58, _ := v.ToBase58()
-				a.logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].Votes), voteMsg.BlockHash, vid, vbase58)
+				a.logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", a.chainKey, len(a.receiveBlockByProposedHash[voteMsg.ProposedBlockHash].Votes), voteMsg.ProposedBlockHash, vid, vbase58)
 			} else {
-				a.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].Votes), voteMsg.BlockHash, voteMsg.Validator)
+				a.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", a.chainKey, len(a.receiveBlockByProposedHash[voteMsg.ProposedBlockHash].Votes), voteMsg.ProposedBlockHash, voteMsg.Validator)
 			}
 			proposeBlockInfo.HasNewVote = true
 		}
@@ -1327,7 +1332,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 								a.logger.Error(err)
 							} else {
 								proposeBlockInfo.ProposerSendVote = true
-								if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+								if err := a.AddReceiveBlockByProposedHash(proposeBlockInfo.block.ProposedHash().String(), proposeBlockInfo); err != nil {
 									return err
 								}
 							}
@@ -1342,7 +1347,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 	}
 
 	// record new votes for restore
-	if err := AddVoteByBlockHashToDB(voteMsg.BlockHash, voteMsg); err != nil {
+	if err := AddVoteByBlockHashToDB(voteMsg.ProposedBlockHash, voteMsg); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
 	return nil
@@ -1358,7 +1363,7 @@ func (a *actorV2) handleCleanMem() {
 		}
 	}
 
-	for h, proposeBlk := range a.receiveBlockByHash {
+	for h, proposeBlk := range a.receiveBlockByProposedHash {
 		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && (proposeBlk.block == nil || proposeBlk.block.GetHeight() <= a.chain.GetFinalView().GetHeight()) {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
@@ -1395,7 +1400,7 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 		bestViewHeight,
 		a.chain.GetFinalView().GetHeight(),
 		a.currentTimeSlot,
-		a.receiveBlockByHash,
+		a.receiveBlockByProposedHash,
 	)
 
 	for _, invalidProposeBlock := range invalidProposeBlocks {

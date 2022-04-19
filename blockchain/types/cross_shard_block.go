@@ -80,7 +80,7 @@ func (block *CrossShardBlock) AddValidationField(validationData string) {
 	panic("Not implement")
 }
 
-func (block CrossShardBlock) GetProposedBlockHash() *common.Hash {
+func (block CrossShardBlock) ProposedHash() *common.Hash {
 	panic("Not implement")
 }
 

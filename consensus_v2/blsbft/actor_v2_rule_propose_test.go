@@ -1490,7 +1490,7 @@ func TestProposeRuleLemma2_verifyLemma2ReProposeBlockNextHeight(t *testing.T) {
 				nextBlockFinalityProof: tt.fields.nextBlockFinalityProof,
 				chain:                  tt.fields.chain,
 			}
-			got, err := p.verifyLemma2ReProposeBlockNextHeight(tt.args.proposeMsg, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
+			_, got, err := p.verifyLemma2ReProposeBlockNextHeight(tt.args.proposeMsg, tt.args.block, tt.args.committees, config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("verifyLemma2ReProposeBlockNextHeight() error = %v, wantErr %v", err, tt.wantErr)
 				return
