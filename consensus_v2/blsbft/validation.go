@@ -3,8 +3,6 @@ package blsbft
 import (
 	"errors"
 	"fmt"
-	"log"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -22,33 +20,6 @@ type vote struct {
 type BlockValidation interface {
 	types.BlockInterface
 	AddValidationField(validationData string)
-}
-
-//valdiate combine vote
-func (a *actorV2) validateAfterCombineVote(v *ProposeBlockInfo) error {
-	err := ValidateCommitteeSig(v.block, v.SigningCommittees)
-	if err != nil {
-		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(v.SigningCommittees, common.BlsConsensus)
-		blsPKList := []blsmultisig.PublicKey{}
-		for _, pk := range v.SigningCommittees {
-			blsK := make([]byte, len(pk.MiningPubKey[common.BlsConsensus]))
-			copy(blsK, pk.MiningPubKey[common.BlsConsensus])
-			blsPKList = append(blsPKList, blsK)
-		}
-		for pk, vote := range v.Votes {
-			log.Println(common.IndexOfStr(vote.Validator, committeeBLSString), vote.Validator, vote.BLS)
-			index := common.IndexOfStr(pk, committeeBLSString)
-			if index != -1 {
-				err := validateSingleBLSSig(v.block.Hash(), vote.BLS, index, blsPKList)
-				if err != nil {
-					a.logger.Errorf("Can not validate vote from validator %v, pk %v, blkHash from vote %v, blk hash %v ", index, pk, vote.BlockHash, v.block.Hash())
-					vote.IsValid = -1
-				}
-			}
-		}
-		return errors.New("ValidateCommitteeSig from combine signature fail")
-	}
-	return nil
 }
 
 func ValidateProducerSigV1(block types.BlockInterface) error {
