@@ -579,6 +579,7 @@ func (coinService CoinService) GetOutputCoinByIndex(tokenID common.Hash, idxList
 		}
 
 		outCoin := jsonresult.NewOutCoin(otaCoin)
+		outCoin.Index = base58.Base58Check{}.Encode(new(big.Int).SetUint64(idx).Bytes(), 0)
 
 		result[idx] = outCoin
 	}
