@@ -1329,6 +1329,11 @@ func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePubli
 	return m
 }
 
+var (
+	totalGet []uint64 = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	totalHit []uint64 = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+)
+
 func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 	epoch uint64,
 	height uint64,
@@ -1450,6 +1455,7 @@ func (blockchain *BlockChain) getShardValidators(
 	err error,
 ) {
 	if beaconHash.IsZeroValue() {
+		totalGet[cID]++
 		res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
 		if err != nil {
 			Logger.log.Error(err)
@@ -1464,6 +1470,8 @@ func (blockchain *BlockChain) getShardValidators(
 			if len(res) > 0 {
 				if !equal2list(res, c) {
 					return nil, errors.Errorf("Something wrong with cache, cache %+v, db %+v", res, c)
+				} else {
+					totalHit[cID]++
 				}
 			}
 		}
