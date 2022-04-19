@@ -29,9 +29,8 @@ type RejectedConvertTokenToUnifiedToken struct {
 
 type AcceptedConvertTokenToUnifiedToken struct {
 	ConvertTokenToUnifiedTokenRequest
-	TxReqID         common.Hash `json:"TxReqID"`
-	ExternalTokenID []byte      `json:"ExternalTokenID"`
-	IncDecimal      uint        `json:"IncDecimal"`
+	TxReqID    common.Hash `json:"TxReqID"`
+	MintAmount uint64      `json:"MintAmount"`
 }
 
 func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {

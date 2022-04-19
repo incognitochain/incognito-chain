@@ -170,27 +170,17 @@ func (sp *stateProducer) convert(
 			err = errors.New("TokenID is invalid")
 			return
 		}
-		err = vault.convert(md.Amount)
+		mintAmount, e := vault.convert(md.Amount)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			errorType = InvalidConvertAmountError
-			return
-		}
-		decimal := vault.Decimal()
-		if decimal > config.Param().BridgeAggParam.BaseDecimal {
-			decimal = config.Param().BridgeAggParam.BaseDecimal
-		}
-		var externalTokenID []byte
-		externalTokenID, err = GetExternalTokenIDByIncTokenID(md.TokenID, sDBs[common.BeaconChainID])
-		if err != nil {
-			errorType = NotFoundTokenIDInNetworkError
+			err = e
 			return
 		}
 		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{
 			ConvertTokenToUnifiedTokenRequest: *md,
 			TxReqID:                           action.TxReqID,
-			IncDecimal:                        decimal,
-			ExternalTokenID:                   externalTokenID,
+			MintAmount:                        mintAmount,
 		}
 		var content []byte
 		content, err = json.Marshal(acceptedContent)
@@ -495,8 +485,11 @@ func (sp *stateProducer) addToken(
 			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true
 		}
-		addToken.NewListTokens = newListTokens
+		if len(incTokenIDs) != 0 {
+			addToken.NewListTokens = newListTokens
+		}
 	}
+
 	if len(addToken.NewListTokens) != 0 {
 		var err error
 		res, err = addToken.StringSlice()

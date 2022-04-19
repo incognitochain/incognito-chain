@@ -467,23 +467,24 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	var prvReceivers []*privacy.PaymentInfo
 	if arrayParams[1] != nil {
-		prvReceiversStr, ok := arrayParams[1].(map[string]interface{})
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("prv receivers are invalid"))
+		temp := make(map[string]uint64)
+		raw, err := json.Marshal(arrayParams[1])
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 		}
-		if len(prvReceiversStr) != 0 {
-			for k, v := range prvReceiversStr {
-				number, err := common.AssertAndConvertStrToNumber(v)
-				if err != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("prv receivers amount are invalid"))
-				}
+		err = json.Unmarshal(raw, &temp)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		if len(temp) != 0 {
+			for k, v := range temp {
 				key, err := wallet.Base58CheckDeserialize(k)
 				if err != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("prv payment addresses amount are invalid"))
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 				}
 				prvReceiver := &privacy.PaymentInfo{
 					PaymentAddress: key.KeySet.PaymentAddress,
-					Amount:         number,
+					Amount:         v,
 				}
 				prvReceivers = append(prvReceivers, prvReceiver)
 			}
@@ -506,9 +507,9 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	if len(prvReceivers) != 0 {
 		// amount by token
-		paramSelect.Token.PaymentInfos = burnPayments
+		paramSelect.Token.PaymentInfos = prvReceivers
 		// amount by PRV
-		paramSelect.SetTokenReceivers(prvReceivers)
+		paramSelect.SetTokenReceivers(burnPayments)
 	} else {
 		paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
 		paramSelect.SetTokenReceivers(burnPayments)

@@ -485,33 +485,25 @@ func (blockchain *BlockChain) processConvertReq(
 	if err != nil {
 		return nil, err
 	}
-	amount, err := bridgeagg.CalculateAmountByDecimal(
-		*big.NewInt(0).SetUint64(acceptedContent.Amount), acceptedContent.IncDecimal, bridgeagg.AddOperator,
-	)
-	if err != nil {
-		return nil, err
-	}
-	convertedAmount := amount.Uint64()
 	updatingInfo, found := updatingInfoByTokenID[acceptedContent.TokenID]
 	if found {
 		updatingInfo.DeductAmt += acceptedContent.Amount
 	} else {
 		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:      0,
-			DeductAmt:       acceptedContent.Amount,
-			TokenID:         acceptedContent.TokenID,
-			ExternalTokenID: acceptedContent.ExternalTokenID,
-			IsCentralized:   false,
+			CountUpAmt:    0,
+			DeductAmt:     acceptedContent.Amount,
+			TokenID:       acceptedContent.TokenID,
+			IsCentralized: false,
 		}
 	}
 	updatingInfoByTokenID[acceptedContent.TokenID] = updatingInfo
 
 	updatingInfo, found = updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
 	if found {
-		updatingInfo.CountUpAmt += convertedAmount
+		updatingInfo.CountUpAmt += acceptedContent.MintAmount
 	} else {
 		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:      convertedAmount,
+			CountUpAmt:      acceptedContent.MintAmount,
 			DeductAmt:       0,
 			TokenID:         acceptedContent.UnifiedTokenID,
 			ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),

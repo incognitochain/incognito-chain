@@ -126,16 +126,16 @@ func (v *Vault) increaseReserve(amount uint64) error {
 	return nil
 }
 
-func (v *Vault) convert(amount uint64) error {
+func (v *Vault) convert(amount uint64) (uint64, error) {
 	decimal := CalculateIncDecimal(v.Decimal(), config.Param().BridgeAggParam.BaseDecimal)
 	tmpAmount, err := CalculateAmountByDecimal(*big.NewInt(0).SetUint64(amount), decimal, AddOperator)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if tmpAmount.Cmp(big.NewInt(0)) == 0 {
-		return fmt.Errorf("amount %d is not enough for converting", amount)
+		return 0, fmt.Errorf("amount %d is not enough for converting", amount)
 	}
-	return v.increaseReserve(tmpAmount.Uint64())
+	return tmpAmount.Uint64(), v.increaseReserve(tmpAmount.Uint64())
 }
 
 func (v *Vault) shield(amount uint64) (uint64, error) {
