@@ -759,10 +759,13 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 ) error {
 	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.GetValidationField(), v.Votes)
 	if err != nil {
-		a.logger.Error(err)
 		return err
 	}
 	v.block.AddValidationField(validationData)
+
+	if err := a.validateAfterCombineVote(v); err != nil {
+		return err
+	}
 
 	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
@@ -776,14 +779,16 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 }
 
 func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
-
 	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.GetValidationField(), v.Votes)
 	if err != nil {
 		a.logger.Error(err)
 		return err
 	}
 	isInsertWithPreviousData := false
-	v.block.AddValidationField(validationData)
+	v.block.(BlockValidation).AddValidationField(validationData)
+	if err := a.validateAfterCombineVote(v); err != nil {
+		return err
+	}
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
