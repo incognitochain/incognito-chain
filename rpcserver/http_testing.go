@@ -88,6 +88,7 @@ func (httpServer *HttpServer) handleSetAutoEnableFeatureConfig(params interface{
 		return nil, rpcservice.NewRPCError(-1, err)
 	}
 	config.Param().AutoEnableFeature = v
+	httpServer.GetBlockchain().SendFeatureStat()
 	return nil, nil
 }
 
