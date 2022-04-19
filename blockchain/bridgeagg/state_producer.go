@@ -334,12 +334,12 @@ func (sp *stateProducer) unshield(
 	var errorType int
 	var contents [][]byte
 	var burningInsts [][]string
-	var buringAmount uint64
+	var burningAmount uint64
 	defer func() {
 		if err != nil {
 			rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
 				TokenID:  md.TokenID,
-				Amount:   buringAmount,
+				Amount:   burningAmount,
 				Receiver: md.Receiver,
 			}
 			Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
@@ -372,7 +372,7 @@ func (sp *stateProducer) unshield(
 	var listAcceptedUnshieldRequestData []metadataBridge.AcceptedUnshieldRequestData
 
 	for index, data := range md.Data {
-		buringAmount += data.BurningAmount
+		burningAmount += data.BurningAmount
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
 		if e != nil {
 			errorType = NotFoundNetworkIDError

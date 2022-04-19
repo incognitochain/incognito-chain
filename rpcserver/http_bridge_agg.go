@@ -458,13 +458,38 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		burningAmount += data.BurningAmount
 	}
 
-	// burn selling amount for order, plus fee
 	burnPayments := []*privacy.PaymentInfo{
 		{
 			PaymentAddress: burnAddr,
 			Amount:         burningAmount,
 		},
 	}
+
+	var prvReceivers []*privacy.PaymentInfo
+	if arrayParams[1] != nil {
+		prvReceiversStr, ok := arrayParams[1].(map[string]interface{})
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("prv receivers are invalid"))
+		}
+		if len(prvReceiversStr) != 0 {
+			for k, v := range prvReceiversStr {
+				number, err := common.AssertAndConvertStrToNumber(v)
+				if err != nil {
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("prv receivers amount are invalid"))
+				}
+				key, err := wallet.Base58CheckDeserialize(k)
+				if err != nil {
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("prv payment addresses amount are invalid"))
+				}
+				prvReceiver := &privacy.PaymentInfo{
+					PaymentAddress: key.KeySet.PaymentAddress,
+					Amount:         number,
+				}
+				prvReceivers = append(prvReceivers, prvReceiver)
+			}
+		}
+	}
+
 	if len(mdReader.Receivers) != 0 {
 		for k, v := range mdReader.Receivers {
 			key, err := wallet.Base58CheckDeserialize(k)
@@ -478,8 +503,16 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 			burnPayments = append(burnPayments, temp)
 		}
 	}
-	paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
-	paramSelect.SetTokenReceivers(burnPayments)
+
+	if len(prvReceivers) != 0 {
+		// amount by token
+		paramSelect.Token.PaymentInfos = burnPayments
+		// amount by PRV
+		paramSelect.SetTokenReceivers(prvReceivers)
+	} else {
+		paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+		paramSelect.SetTokenReceivers(burnPayments)
+	}
 
 	// create transaction
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)

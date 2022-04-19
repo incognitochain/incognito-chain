@@ -289,6 +289,10 @@ func (sp *stateProcessor) addToken(
 		if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
 			unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 		}
+		err = statedb.UpdateBridgeTokenInfo(sDB, unifiedTokenID, GetExternalTokenIDForUnifiedToken(), false, 0, "+")
+		if err != nil {
+			return unifiedTokenInfos, err
+		}
 		for networkID, vault := range vaults {
 			tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 			if err != nil {
