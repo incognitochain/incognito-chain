@@ -78,7 +78,10 @@ type ShardBestState struct {
 	BlockMaxCreateTime     time.Duration
 	MetricBlockHeight      uint64
 
-	CommitteeChangeCheckpoint map[uint64]CommitteeCheckPoint `json:"CmtChkP"`
+	CommitteeChangeCheckpoint struct {
+		Data   map[uint64]CommitteeCheckPoint
+		Epochs []uint64
+	} `json:"CmtChkP"`
 
 	//================================ StateDB Method
 	// block height => root hash
@@ -844,12 +847,21 @@ func (curView *ShardBestState) GetProposerLength() int {
 func (shardBestState *ShardBestState) updateCommitteeChangeCheckpoint(epoch, height uint64, rootHash common.Hash) {
 	newMap := map[uint64]CommitteeCheckPoint{}
 	Logger.log.Infof("[debugcachecommittee] updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", shardBestState.ShardID, epoch, height)
-	for k, v := range shardBestState.CommitteeChangeCheckpoint {
+	for k, v := range shardBestState.CommitteeChangeCheckpoint.Data {
 		newMap[k] = v
 	}
 	newMap[epoch] = CommitteeCheckPoint{
 		Height:   height,
 		RootHash: rootHash,
 	}
-	shardBestState.CommitteeChangeCheckpoint = newMap
+	newEpochs := make([]uint64, len(shardBestState.CommitteeChangeCheckpoint.Epochs)+1)
+	copy(newEpochs, shardBestState.CommitteeChangeCheckpoint.Epochs)
+	newEpochs[len(shardBestState.CommitteeChangeCheckpoint.Epochs)] = epoch
+	shardBestState.CommitteeChangeCheckpoint = struct {
+		Data   map[uint64]CommitteeCheckPoint
+		Epochs []uint64
+	}{
+		Data:   newMap,
+		Epochs: newEpochs,
+	}
 }

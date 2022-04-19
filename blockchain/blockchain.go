@@ -1339,16 +1339,42 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 ) {
 	if cID != common.BeaconChainSyncID {
 		sBestView := blockchain.ShardChain[cID].GetBestState()
-		for k, v := range sBestView.CommitteeChangeCheckpoint {
+		for k, v := range sBestView.CommitteeChangeCheckpoint.Data {
 			Logger.log.Infof("[debugcommitteecheckpoint] k %+v, value %+v", k, v)
 		}
-		if chkPoint, ok := sBestView.CommitteeChangeCheckpoint[epoch]; ok {
-			if chkPoint.Height > height {
-				epoch--
+		epochs := sBestView.CommitteeChangeCheckpoint.Epochs
+		idx, existed := SearchUint64(epochs, epoch)
+		if existed {
+			chkPoint := sBestView.CommitteeChangeCheckpoint.Data[epoch]
+			if height < chkPoint.Height {
+				if idx == 0 {
+					return nil, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, cID)
+				}
+				epoch = epochs[idx-1]
 			}
 		} else {
-			if _, ok := sBestView.CommitteeChangeCheckpoint[epoch-1]; !ok {
-				return nil, errors.Errorf("Can not identify exactly epoch for block height %v of shard %v", height, cID)
+			rightChkPnt := CommitteeCheckPoint{
+				Height:   10e9,
+				RootHash: common.EmptyRoot,
+			}
+			leftChkPnt := CommitteeCheckPoint{
+				Height:   10e9,
+				RootHash: common.EmptyRoot,
+			}
+			if idx > 0 {
+				leftChkPnt = sBestView.CommitteeChangeCheckpoint.Data[epochs[idx-1]]
+				if height >= leftChkPnt.Height {
+					epoch = epochs[idx-1]
+				}
+			}
+			if idx < len(epochs) {
+				rightChkPnt = sBestView.CommitteeChangeCheckpoint.Data[epochs[idx]]
+				if height >= rightChkPnt.Height {
+					epoch = epochs[idx]
+				}
+			}
+			if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
+				return nil, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, cID)
 			}
 		}
 	}
