@@ -48,7 +48,8 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 
 	for id, vote := range proposeBlockInfo.Votes {
 		dsaKey := []byte{}
-		if vote.IsValid == 0 {
+		switch vote.IsValid {
+		case 0:
 			if value, ok := committees[vote.Validator]; ok {
 				dsaKey = proposeBlockInfo.SigningCommittees[value].MiningPubKey[common.BridgeConsensus]
 			} else {
@@ -70,8 +71,10 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 				proposeBlockInfo.Votes[id].IsValid = 1
 				validVote++
 			}
-		} else {
+		case 1:
 			validVote++
+		case -1:
+			errVote++
 		}
 	}
 

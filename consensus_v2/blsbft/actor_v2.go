@@ -757,15 +757,11 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 func (a *actorV2) processWithEnoughVotesBeaconChain(
 	v *ProposeBlockInfo,
 ) error {
-	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.GetValidationField(), v.Votes)
+	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.Hash(), v.block.GetValidationField(), v.Votes)
 	if err != nil {
 		return err
 	}
 	v.block.AddValidationField(validationData)
-
-	if err := a.validateAfterCombineVote(v); err != nil {
-		return err
-	}
 
 	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
@@ -779,16 +775,12 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 }
 
 func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
-	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.GetValidationField(), v.Votes)
+	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.Hash(), v.block.GetValidationField(), v.Votes)
 	if err != nil {
-		a.logger.Error(err)
 		return err
 	}
 	isInsertWithPreviousData := false
 	v.block.(BlockValidation).AddValidationField(validationData)
-	if err := a.validateAfterCombineVote(v); err != nil {
-		return err
-	}
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -797,6 +789,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 
 		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
 			previousProposeBlockInfo.SigningCommittees,
+			previousProposeBlockInfo.block.Hash(),
 			previousProposeBlockInfo.block.GetValidationField(),
 			previousProposeBlockInfo.Votes)
 		if err != nil {
@@ -839,6 +832,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 
 func (a *actorV2) createBLSAggregatedSignatures(
 	committees []incognitokey.CommitteePublicKey,
+	blockHash *common.Hash,
 	tempValidationData string,
 	votes map[string]*BFTVote,
 ) (string, error) {
@@ -862,6 +856,34 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	valData.ValidatiorsIdx = validatorIdx
 	valData.PortalSig = portalSigs
 	validationData, _ := consensustypes.EncodeValidationData(*valData)
+
+	//post verify after combine vote
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committees {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
+	}
+
+	if err := validateBLSSig(blockHash, valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		blsPKList := []blsmultisig.PublicKey{}
+		for _, pk := range committees {
+			blsK := make([]byte, len(pk.MiningPubKey[common.BlsConsensus]))
+			copy(blsK, pk.MiningPubKey[common.BlsConsensus])
+			blsPKList = append(blsPKList, blsK)
+		}
+		for pk, vote := range votes {
+			log.Println(common.IndexOfStr(vote.Validator, committeeBLSString), vote.Validator, vote.BLS)
+			index := common.IndexOfStr(pk, committeeBLSString)
+			if index != -1 {
+				err := validateSingleBLSSig(blockHash, vote.BLS, index, blsPKList)
+				if err != nil {
+					a.logger.Errorf("Can not validate vote from validator %v, pk %v, blkHash from vote %v, blk hash %v ", index, pk, vote.BlockHash, blockHash.String())
+					vote.IsValid = -1
+				}
+			}
+		}
+		return "", errors.New("ValidateCommitteeSig from combine signature fail")
+	}
+
 	return validationData, err
 }
 
