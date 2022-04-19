@@ -446,12 +446,15 @@ func (sp *stateProducer) addToken(
 	addToken := metadataBridge.AddToken{}
 	configUnifiedTokens := config.UnifiedToken()
 	var clonedAC *metadata.AccumulatedValues
+	var newListTokens map[common.Hash]map[uint]config.Vault
 	if unifiedTokens, found := configUnifiedTokens[beaconHeight]; found {
 		clonedUnifiedTokenInfos := CloneUnifiedTokenInfos(unifiedTokenInfos)
 		unifiedTokenIDs := make(map[string]bool)
 		incTokenIDs := make(map[string]bool)
+		newListTokens = make(map[common.Hash]map[uint]config.Vault)
 		clonedAC = ac.Clone()
 		for unifiedTokenID, vaults := range unifiedTokens {
+			newListTokens[unifiedTokenID] = make(map[uint]config.Vault)
 			if unifiedTokenIDs[unifiedTokenID.String()] {
 				Logger.log.Warnf("Duplicate unifiedTokenID %s", unifiedTokenID.String())
 				return res, unifiedTokenInfos, ac, nil
@@ -487,10 +490,12 @@ func (sp *stateProducer) addToken(
 				clonedUnifiedTokenInfos[unifiedTokenID][networkID] = v
 				incTokenIDs[vault.IncTokenID] = true
 				clonedAC.DBridgeTokenPair[vault.IncTokenID] = externalTokenID
+				clonedAC.DBridgeTokenPair[unifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
+				newListTokens[unifiedTokenID][networkID] = vault
 			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true
 		}
-		addToken.NewListTokens = unifiedTokens
+		addToken.NewListTokens = newListTokens
 	}
 	if len(addToken.NewListTokens) != 0 {
 		var err error

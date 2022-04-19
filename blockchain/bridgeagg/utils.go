@@ -111,12 +111,21 @@ func CalculateShieldActualAmount(x, y, deltaX uint64, isPaused bool) (uint64, er
 }
 
 func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) (uint64, error) {
+	if x == 0 || x == 1 {
+		return 0, fmt.Errorf("x is 0 or 1")
+	}
 	if burntAmount == 0 {
 		return 0, errors.New("Cannot process with burntAmount = 0")
 	}
 	if y == 0 || isPaused {
 		if burntAmount > x {
 			return 0, fmt.Errorf("BurntAmount %d is > x %d", burntAmount, x)
+		}
+		if burntAmount == x {
+			burntAmount -= 1
+		}
+		if burntAmount == 0 {
+			return 0, fmt.Errorf("Receive actualAmount is 0")
 		}
 		return burntAmount, nil
 	}
@@ -328,7 +337,7 @@ func shieldEVM(
 	case common.FTMNetworkID:
 		ac.UniqFTMTxsUsed = append(ac.UniqFTMTxsUsed, uniqTx)
 	}
-	ac.DBridgeTokenPair[incTokenID.String()] = []byte(common.UnifiedTokenPrefix)
+	ac.DBridgeTokenPair[incTokenID.String()] = GetExternalTokenIDForUnifiedToken()
 	return actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
 }
 
@@ -385,28 +394,6 @@ func CalculateAmountByDecimal(amount big.Int, decimal uint, operator byte) (*big
 	}
 
 	return res, nil
-}
-
-func CalculateUnshieldAmount(
-	amount big.Int, unifiedTokenID, tokenID common.Hash,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
-	prefix string, networkType uint, token []byte,
-) (uint64, error) {
-	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
-		for _, vault := range vaults {
-			if vault.tokenID == tokenID {
-				amt := amount.Mul(&amount, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
-				amt.Div(amt, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(vault.Decimal())), nil))
-				if !amt.IsUint64() {
-					return 0, errors.New("Out of range uint64")
-				}
-				return amt.Uint64(), nil
-			}
-		}
-	} else {
-		return 0, errors.New("Not found unifiedTokenID")
-	}
-	return 0, errors.New("Not found tokenID")
 }
 
 func unshieldEVM(
@@ -581,4 +568,8 @@ func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewa
 		return 0, 0, errors.New("Out of range uint64")
 	}
 	return resLastUpdatedRewardReserve, tmpRewardReserve.Uint64(), nil
+}
+
+func GetExternalTokenIDForUnifiedToken() []byte {
+	return []byte(common.UnifiedTokenPrefix)
 }

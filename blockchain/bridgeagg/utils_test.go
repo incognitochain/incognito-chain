@@ -174,8 +174,25 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "x == 0",
+			args: args{
+				x: 0,
+			},
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name: "x == 1",
+			args: args{
+				x: 1,
+			},
+			want:    0,
+			wantErr: true,
+		},
+		{
 			name: "burntAmount == 0",
 			args: args{
+				x:           100,
 				burntAmount: 0,
 			},
 			want:    0,
@@ -184,7 +201,8 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 		{
 			name: "y == 0, burntAmount > x",
 			args: args{
-				burntAmount: 10,
+				x:           10,
+				burntAmount: 100,
 			},
 			want:    0,
 			wantErr: true,
@@ -196,6 +214,15 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				burntAmount: 100,
 			},
 			want:    100,
+			wantErr: false,
+		},
+		{
+			name: "y == 0, burntAmount = x",
+			args: args{
+				x:           100,
+				burntAmount: 100,
+			},
+			want:    99,
 			wantErr: false,
 		},
 		{
