@@ -490,9 +490,9 @@ func Test_updateRewardReserve(t *testing.T) {
 				currentRewardReserve:     10,
 				newRewardReserve:         90,
 			},
-			want:    90,
+			want:    0,
 			want1:   0,
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "Not change value",
@@ -577,6 +577,17 @@ func TestCalculateDeltaY(t *testing.T) {
 				operator: SubOperator,
 			},
 			want:    0,
+			wantErr: false,
+		},
+		{
+			name: "Try to shield to y = 0",
+			args: args{
+				y:        100,
+				deltaX:   10000000000000000000,
+				x:        1000,
+				operator: AddOperator,
+			},
+			want:    99,
 			wantErr: false,
 		},
 	}

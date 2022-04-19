@@ -556,6 +556,9 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 			})
 		}
 	}
+	if len(res.Data) == 0 && res.Status == 0 && res.ErrorCode == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not found status"))
+	}
 	return res, nil
 }
 

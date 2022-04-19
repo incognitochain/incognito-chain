@@ -172,3 +172,14 @@ func (v *Vault) unshield(amount, expectedAmount uint64) (uint64, error) {
 	}
 	return actualAmount, nil
 }
+
+func (v *Vault) updateRewardReserve(newRewardReserve uint64, isPaused bool) error {
+	newLastUpdatedRewardReserve, newCurrentRewardReserve, err := updateRewardReserve(v.LastUpdatedRewardReserve(), v.CurrentRewardReserve(), newRewardReserve)
+	if err != nil {
+		return err
+	}
+	v.SetLastUpdatedRewardReserve(newLastUpdatedRewardReserve)
+	v.SetCurrentRewardReserve(newCurrentRewardReserve)
+	v.SetIsPaused(isPaused)
+	return nil
+}

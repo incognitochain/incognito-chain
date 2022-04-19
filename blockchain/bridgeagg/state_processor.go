@@ -44,7 +44,8 @@ func (sp *stateProcessor) modifyRewardReserve(
 				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
 					return unifiedTokenInfos, errors.New("Cannot find vault")
 				} else {
-					err := UpdateRewardReserve(unifiedTokenInfos, vault.RewardReserve, unifiedTokenID, vault.NetworkID(), vault.IsPaused)
+					v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
+					err = v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
 					if err != nil {
 						return unifiedTokenInfos, err
 					}

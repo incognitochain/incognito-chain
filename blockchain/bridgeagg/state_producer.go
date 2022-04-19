@@ -81,7 +81,8 @@ func (sp *stateProducer) modifyRewardReserve(
 				}
 				return temp, unifiedTokenInfos, nil
 			}
-			err := UpdateRewardReserve(unifiedTokenInfos, vault.RewardReserve, unifiedTokenID, networkID, vault.IsPaused)
+			v := clonedUnifiedTokenInfos[unifiedTokenID][networkID]
+			err := v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
 			if err != nil {
 				Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid err %v", action.TxReqID.String(), err)
 				rejectContent.ErrorCode = ErrCodeMessage[InvalidRewardReserveError].Code
@@ -91,6 +92,7 @@ func (sp *stateProducer) modifyRewardReserve(
 				}
 				return temp, unifiedTokenInfos, nil
 			}
+			clonedUnifiedTokenInfos[unifiedTokenID][networkID] = v
 			resMD.Vaults[unifiedTokenID] = append(resMD.Vaults[unifiedTokenID], metadataBridge.Vault{
 				RewardReserve: vault.RewardReserve,
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
