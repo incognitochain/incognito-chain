@@ -1463,6 +1463,8 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 		return err
 	}
 
+	proposeBlockInfo.LastValidateTime = time.Now()
+	
 	if !isValid {
 		a.logger.Debugf("can't vote for this block %v height %v timeslot %v",
 			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blockProduceTimeSlot)
