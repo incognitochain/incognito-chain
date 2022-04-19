@@ -566,6 +566,9 @@ func CloneUnifiedTokenInfos(unifiedTokenInfos map[common.Hash]map[uint]*Vault) m
 }
 
 func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
+	if lastUpdatedRewardReserve == currentRewardReserve && lastUpdatedRewardReserve == newRewardReserve && newRewardReserve == 0 {
+		return 0, 0, nil
+	}
 	var resLastUpdatedRewardReserve uint64
 	tmp := big.NewInt(0).Sub(big.NewInt(0).SetUint64(lastUpdatedRewardReserve), big.NewInt(0).SetUint64(currentRewardReserve))
 	if tmp.Cmp(big.NewInt(0).SetUint64(newRewardReserve)) >= 0 {
