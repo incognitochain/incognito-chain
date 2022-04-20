@@ -421,7 +421,7 @@ func unshieldEVM(
 		prefix = common.BSCPrefix
 	case common.PLGNetworkID:
 		if data.IsDepositToSC {
-			burningMetaType = metadata.BurningPLGForDepositToSCRequestMeta
+			burningMetaType = metadata.BurningPLGConfirmForDepositToSCMeta
 		} else {
 			burningMetaType = metadata.BurningPLGConfirmMeta
 		}

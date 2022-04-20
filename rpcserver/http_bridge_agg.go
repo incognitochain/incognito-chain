@@ -716,9 +716,10 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	}
 	// metadata object format to read from RPC parameters
 	Reader := &struct {
-		TxReqID   common.Hash `json:"TxReqID"`
-		DataIndex *int        `json:"DataIndex"`
-		NetworkID uint        `json:"NetworkID"`
+		TxReqID       common.Hash `json:"TxReqID"`
+		DataIndex     *int        `json:"DataIndex"`
+		NetworkID     uint        `json:"NetworkID"`
+		IsDepositToSC bool        `json:"IsDepositToSC"`
 	}{}
 	rawData, err := json.Marshal(arrayParams[0])
 	if err != nil {
@@ -739,16 +740,31 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	}
 	switch Reader.NetworkID {
 	case common.ETHNetworkID:
-		burningConfirmMeta = metadata.BurningConfirmMeta
-		if onBeacon {
+		if Reader.IsDepositToSC {
+			burningConfirmMeta = metadata.BurningConfirmForDepositToSCMetaV2
+		} else {
 			burningConfirmMeta = metadata.BurningConfirmMetaV2
 		}
 	case common.BSCNetworkID:
-		burningConfirmMeta = metadata.BurningBSCConfirmMeta
+		if Reader.IsDepositToSC {
+			burningConfirmMeta = metadata.BurningPBSCConfirmForDepositToSCMeta
+		} else {
+			burningConfirmMeta = metadata.BurningBSCConfirmMeta
+		}
 	case common.PLGNetworkID:
-		burningConfirmMeta = metadata.BurningPLGConfirmMeta
+		if Reader.IsDepositToSC {
+			burningConfirmMeta = metadata.BurningPLGConfirmForDepositToSCMeta
+		} else {
+			burningConfirmMeta = metadata.BurningPLGConfirmMeta
+		}
 	case common.FTMNetworkID:
-		burningConfirmMeta = metadata.BurningFantomConfirmMeta
+		if Reader.IsDepositToSC {
+			burningConfirmMeta = metadata.BurningFantomConfirmForDepositToSCMeta
+		} else {
+			burningConfirmMeta = metadata.BurningFantomConfirmMeta
+		}
+	case common.DefaultNetworkID:
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid networkID"))
 	}
 	return retrieveBurnProof(burningConfirmMeta, onBeacon, height, &txReqID, httpServer)
 }
