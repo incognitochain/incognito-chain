@@ -1263,7 +1263,10 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 	sCommitteeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
 	if len(sCommitteeKeys) > 0 {
 		if !equal2list(sCommitteeKeys, sCommitteeKeys2) {
-			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache get from epoch %v, db %+v", epoch, sID, epochForCache))
+			blsList1 := incognitokey.CommitteeKeyListToStringList(sCommitteeKeys)
+			blsList2 := incognitokey.CommitteeKeyListToStringList(sCommitteeKeys2)
+
+			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache get from epoch %v, cache %+v db %+v", epoch, sID, epochForCache, blsList1, blsList2))
 		}
 	}
 
