@@ -146,7 +146,7 @@ func (sp *stateProcessor) shield(
 	var txReqID common.Hash
 	var errorCode uint
 	var suffix []byte
-	var amount, reward uint64
+	var shieldStatusData []ShieldStatusData
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
@@ -161,19 +161,21 @@ func (sp *stateProcessor) shield(
 		}
 		for _, data := range acceptedInst.Data {
 			vault := unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] // check available before
+			statusData := ShieldStatusData{}
 			if acceptedInst.IsReward {
 				err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
-				reward += data.IssuingAmount
+				statusData.Reward = data.IssuingAmount
 			} else {
 				err = vault.increaseReserve(data.IssuingAmount)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
-				amount += data.IssuingAmount
+				statusData.Amount = data.IssuingAmount
 			}
+			shieldStatusData = append(shieldStatusData, statusData)
 			unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
@@ -194,8 +196,7 @@ func (sp *stateProcessor) shield(
 	shieldStatus := ShieldStatus{
 		Status:    status,
 		ErrorCode: errorCode,
-		Amount:    amount,
-		Reward:    reward,
+		Data:      shieldStatusData,
 	}
 	contentBytes, _ := json.Marshal(shieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
@@ -214,7 +215,7 @@ func (sp *stateProcessor) unshield(
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
-	var fee, amount uint64
+	var unshieldStatusData []UnshieldStatusData
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
@@ -242,8 +243,10 @@ func (sp *stateProcessor) unshield(
 			status = common.AcceptedStatusByte
 			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
 			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.TokenID
-			amount += data.Amount
-			fee += data.Fee
+			unshieldStatusData = append(unshieldStatusData, UnshieldStatusData{
+				ReceivedAmount: data.Amount,
+				Fee:            data.Fee,
+			})
 		}
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
@@ -257,10 +260,9 @@ func (sp *stateProcessor) unshield(
 		return unifiedTokenInfos, errors.New("Can not recognize status")
 	}
 	unshieldStatus := UnshieldStatus{
-		Status:         status,
-		Fee:            fee,
-		ReceivedAmount: amount,
-		ErrorCode:      errorCode,
+		Status:    status,
+		Data:      unshieldStatusData,
+		ErrorCode: errorCode,
 	}
 	contentBytes, _ := json.Marshal(unshieldStatus)
 	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(

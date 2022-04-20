@@ -37,10 +37,24 @@ func (c *ConvertTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	c.testCases = make(map[string]*ConvertTestCase)
+	c.actualResults = make(map[string]ActualResult)
+}
+
+func (c *ConvertTestSuite) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	c.sDB = sDB
 }
 
 func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
+	fmt.Println("testName:", testName)
+	c.currentTestCaseName = testName
 	testCase := c.testCases[c.currentTestCaseName]
 	actions := []string{}
 	for i, v := range testCase.Metadatas {
@@ -91,18 +105,6 @@ func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
 		c.testCases[c.currentTestCaseName].ActualStatues = append(c.testCases[c.currentTestCaseName].ActualStatues, status)
 	}
-}
-
-func (c *ConvertTestSuite) SetupTest() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
-	emptyRoot := common.HexToHash(common.HexEmptyRoot)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	c.sDB = sDB
 }
 
 func (c *ConvertTestSuite) TestAccepted() {

@@ -547,18 +547,7 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 	}
 	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	type ShieldStatusData struct {
-		Amount uint64 `json:"Amount,omitempty"`
-		Reward uint64 `json:"Reward,omitempty"`
-	}
-
-	type ShieldStatus struct {
-		Status    byte               `json:"Status"`
-		Data      []ShieldStatusData `json:"Data,omitempty"`
-		ErrorCode uint               `json:"ErrorCode,omitempty"`
-	}
-
-	res := ShieldStatus{}
+	res := bridgeagg.ShieldStatus{}
 	prefixValues := [][]byte{
 		{},
 		{common.BoolToByte(false)},
@@ -584,10 +573,14 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 			res.Data = nil
 			res.ErrorCode = status.ErrorCode
 		} else {
-			res.Data = append(res.Data, ShieldStatusData{
-				Amount: status.Amount,
-				Reward: status.Reward,
-			})
+			if len(res.Data) == 0 {
+				res.Data = make([]bridgeagg.ShieldStatusData, len(status.Data))
+			}
+			for i, v := range status.Data {
+				res.Data[i].Amount += v.Amount
+				res.Data[i].Reward += v.Reward
+			}
+
 		}
 	}
 	if len(res.Data) == 0 && res.Status == 0 && res.ErrorCode == 0 {

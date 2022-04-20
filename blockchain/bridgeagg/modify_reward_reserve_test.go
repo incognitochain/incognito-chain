@@ -28,7 +28,32 @@ type ModifyRewardReserveTestSuite struct {
 	TestSuite
 }
 
+func (m *ModifyRewardReserveTestSuite) SetupSuite() {
+	config.AbortParam()
+	config.Param().BridgeAggParam.BaseDecimal = 9
+
+	rawTestCases, _ := readTestCases("modify_reward_reserve.json")
+	err := json.Unmarshal(rawTestCases, &m.testCases)
+	if err != nil {
+		panic(err)
+	}
+	m.actualResults = make(map[string]ActualResult)
+}
+
+func (m *ModifyRewardReserveTestSuite) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	m.sDB = sDB
+}
+
 func (m *ModifyRewardReserveTestSuite) BeforeTest(suiteName, testName string) {
+	m.currentTestCaseName = testName
 	testCase := m.testCases[m.currentTestCaseName]
 	actions := []string{}
 	for i, v := range testCase.Metadatas {
@@ -84,30 +109,6 @@ func (m *ModifyRewardReserveTestSuite) BeforeTest(suiteName, testName string) {
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
 		m.testCases[m.currentTestCaseName].ActualStatues = append(m.testCases[m.currentTestCaseName].ActualStatues, status)
 	}
-}
-
-func (m *ModifyRewardReserveTestSuite) SetupSuite() {
-	config.AbortParam()
-	config.Param().BridgeAggParam.BaseDecimal = 9
-
-	rawTestCases, _ := readTestCases("modify_reward_reserve.json")
-	err := json.Unmarshal(rawTestCases, &m.testCases)
-	if err != nil {
-		panic(err)
-	}
-	m.actualResults = make(map[string]ActualResult)
-}
-
-func (m *ModifyRewardReserveTestSuite) SetupTest() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
-	emptyRoot := common.HexToHash(common.HexEmptyRoot)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	m.sDB = sDB
 }
 
 func (m *ModifyRewardReserveTestSuite) TestAccepted() {

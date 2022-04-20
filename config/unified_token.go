@@ -81,7 +81,6 @@ func LoadUnifiedToken(data []byte) {
 				unifiedToken[beaconHeight][*unifiedTokenHash][uint(networkID)] = vault
 			}
 		}
-
 	}
 }
 

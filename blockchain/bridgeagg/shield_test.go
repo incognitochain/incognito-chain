@@ -21,8 +21,8 @@ import (
 type ShieldTestCase struct {
 	TestCase
 	Metadatas                 []*metadataBridge.ShieldRequest `json:"metadatas"`
-	ExpectedStatuses          []TestShieldStatus              `json:"expected_statuses"`
-	ActualStatues             []TestShieldStatus
+	ExpectedStatuses          []ShieldStatus                  `json:"expected_statuses"`
+	ActualStatues             []ShieldStatus
 	ExpectedAccumulatedValues *metadata.AccumulatedValues `json:"expected_accumulated_values"`
 	ActualAccumulatedValues   *metadata.AccumulatedValues
 }
@@ -30,17 +30,6 @@ type ShieldTestCase struct {
 type ShieldTestSuite struct {
 	testCases map[string]*ShieldTestCase
 	TestSuite
-}
-
-type TestShieldStatusData struct {
-	Amount uint64 `json:"Amount,omitempty"`
-	Reward uint64 `json:"Reward,omitempty"`
-}
-
-type TestShieldStatus struct {
-	Status    byte                   `json:"Status"`
-	Data      []TestShieldStatusData `json:"Data,omitempty"`
-	ErrorCode uint                   `json:"ErrorCode,omitempty"`
 }
 
 func (s *ShieldTestSuite) SetupSuite() {
@@ -62,10 +51,23 @@ func (s *ShieldTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	s.testCases = make(map[string]*ShieldTestCase)
+	s.actualResults = make(map[string]ActualResult)
+}
+
+func (s *ShieldTestSuite) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	s.sDB = sDB
 }
 
 func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
+	s.currentTestCaseName = testName
 	testCase := s.testCases[s.currentTestCaseName]
 	actions := []string{}
 	for i, v := range testCase.Metadatas {
@@ -123,7 +125,7 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 		ProcessorState: processorState,
 	}
 	for _, txID := range testCase.TxIDs {
-		shieldStatus := TestShieldStatus{}
+		shieldStatus := ShieldStatus{}
 		prefixValues := [][]byte{
 			{},
 			{common.BoolToByte(false)},
@@ -147,26 +149,17 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 				shieldStatus.Data = nil
 				shieldStatus.ErrorCode = status.ErrorCode
 			} else {
-				shieldStatus.Data = append(shieldStatus.Data, TestShieldStatusData{
-					Amount: status.Amount,
-					Reward: status.Reward,
-				})
+				if len(shieldStatus.Data) == 0 {
+					shieldStatus.Data = make([]ShieldStatusData, len(status.Data))
+				}
+				for i, v := range status.Data {
+					shieldStatus.Data[i].Amount += v.Amount
+					shieldStatus.Data[i].Reward += v.Reward
+				}
 			}
 		}
 		s.testCases[s.currentTestCaseName].ActualStatues = append(s.testCases[s.currentTestCaseName].ActualStatues, shieldStatus)
 	}
-}
-
-func (s *ShieldTestSuite) SetupTest() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
-	emptyRoot := common.HexToHash(common.HexEmptyRoot)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	s.sDB = sDB
 }
 
 func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NativeToken() {

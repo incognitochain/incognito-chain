@@ -1,5 +1,5 @@
-[
-    {
+{
+    "TestAccepted": {
         "name": "Accepted",
         "metadatas": [
             {
@@ -170,7 +170,7 @@
             }
         ]
     },
-    {
+    "TestRejectedInvalidTokenID": {
         "name": "Rejected invalid tokenID",
         "metadatas": [
             {
@@ -342,4 +342,4 @@
             }
         ]
     }
-]
+}    

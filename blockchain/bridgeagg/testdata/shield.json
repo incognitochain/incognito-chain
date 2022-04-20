@@ -1,5 +1,5 @@
-[
-    {
+{
+    "TestAcceptedNotEqualTo0NativeToken": {
         "name": "Accepted, 1 valid tx, y != 0, native token",
         "metadatas": [
             {
@@ -92,9 +92,7 @@
                 "Status": 1,
                 "Data": [
                     {
-                        "Amount": 50000000
-                    },
-                    {
+                        "Amount": 50000000,
                         "Reward": 99
                     }
                 ]
@@ -115,7 +113,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestAcceptedNotEqualTo0NotNativeToken": {
         "name": "Accepted, 1 valid tx, y != 0, not native token",
         "metadatas": [
             {
@@ -206,9 +204,7 @@
                 "Status": 1,
                 "Data": [
                     {
-                        "Amount": 609
-                    },
-                    {
+                        "Amount": 609,
                         "Reward": 99
                     }
                 ]
@@ -229,7 +225,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestAcceptedYEqualTo0NativeToken": {
         "name": "Accepted, 1 valid tx, y = 0, native token",
         "metadatas": [
             {
@@ -338,7 +334,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseExternalDecimal": {
         "name": "Accepted, 1 valid tx, y = 0, not native token decimal > base external decimal = 9",
         "metadatas": [
             {
@@ -445,7 +441,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseExternalDecimal": {
         "name": "Accepted, 1 valid tx, y = 0, not native token decimal < base external decimal = 9",
         "metadatas": [
             {
@@ -552,7 +548,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestRejectedInvalidExternalTokenID": {
         "name": "Rejected, invalid external tokenID",
         "metadatas": [
             {
@@ -655,7 +651,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestRejectedInvalidTokenID": {
         "name": "Rejected invalid TokenID",
         "metadatas": [
             {
@@ -758,7 +754,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestRejectedTwoProofs": {
         "name": "Rejected 2 same proofs",
         "metadatas": [
             {
@@ -892,7 +888,7 @@
             "InitTokens": []
         }
     },
-    {
+    "TestRejectedTwoProofsInOneRequest": {
         "name": "Rejected 2 same proofs in one request",
         "metadatas": [
             {
@@ -1004,5 +1000,5 @@
             "CBridgeTokens": [],
             "InitTokens": []
         }
-    }
-]
+    } 
+}

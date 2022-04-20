@@ -20,18 +20,26 @@ import (
 	"github.com/incognitochain/incognito-chain/utils"
 )
 
+type ShieldStatusData struct {
+	Amount uint64 `json:"Amount"`
+	Reward uint64 `json:"Reward"`
+}
+
 type ShieldStatus struct {
-	Status    byte   `json:"Status"`
-	Amount    uint64 `json:"Amount"`
-	Reward    uint64 `json:"Reward"`
-	ErrorCode uint   `json:"ErrorCode,omitempty"`
+	Status    byte               `json:"Status"`
+	Data      []ShieldStatusData `json:"Data,omitempty"`
+	ErrorCode uint               `json:"ErrorCode,omitempty"`
+}
+
+type UnshieldStatusData struct {
+	ReceivedAmount uint64 `json:"ReceivedAmount"`
+	Fee            uint64 `json:"Fee"`
 }
 
 type UnshieldStatus struct {
-	Status         byte   `json:"Status"`
-	ReceivedAmount uint64 `json:"ReceivedAmount"`
-	Fee            uint64 `json:"Fee"`
-	ErrorCode      uint   `json:"ErrorCode,omitempty"`
+	Status    byte                 `json:"Status"`
+	Data      []UnshieldStatusData `json:"Data,omitempty"`
+	ErrorCode uint                 `json:"ErrorCode,omitempty"`
 }
 
 type ModifyRewardReserveStatus struct {
@@ -129,34 +137,32 @@ func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) 
 		}
 		return burntAmount, nil
 	}
-	X := big.NewFloat(0).SetUint64(x)
-	Y := big.NewFloat(0).SetUint64(y)
-	Z := big.NewFloat(0).SetUint64(burntAmount)
-	t1 := big.NewFloat(0).Add(X, Y)
+	X := big.NewInt(0).SetUint64(x)
+	Y := big.NewInt(0).SetUint64(y)
+	Z := big.NewInt(0).SetUint64(burntAmount)
+	t1 := big.NewInt(0).Add(X, Y)
 	t1 = t1.Add(t1, Z)
-	t2 := big.NewFloat(0).Mul(X, X)
-	temp := big.NewFloat(0).Sub(Y, Z)
+	t2 := big.NewInt(0).Mul(X, X)
+	temp := big.NewInt(0).Sub(Y, Z)
 	temp = temp.Mul(temp, X)
-	temp = temp.Mul(temp, big.NewFloat(2))
+	temp = temp.Mul(temp, big.NewInt(2))
 	t2 = t2.Add(t2, temp)
-	temp = big.NewFloat(0).Add(Y, Z)
+	temp = big.NewInt(0).Add(Y, Z)
 	temp = temp.Mul(temp, temp)
 	t2 = t2.Add(t2, temp)
-	t2 = big.NewFloat(0).Sqrt(t2)
+	t2 = big.NewInt(0).Sqrt(t2)
 
-	A1 := big.NewFloat(0).Add(t1, t2)
-	A1 = A1.Quo(A1, big.NewFloat(2))
-	A2 := big.NewFloat(0).Sub(t1, t2)
-	A2 = A2.Quo(A2, big.NewFloat(2))
+	A1 := big.NewInt(0).Add(t1, t2)
+	A1 = A1.Div(A1, big.NewInt(2))
+	A2 := big.NewInt(0).Sub(t1, t2)
+	A2 = A2.Div(A2, big.NewInt(2))
 	var a1, a2 uint64
-	A1Int, _ := A1.Int(big.NewInt(0))
-	A2Int, _ := A2.Int(big.NewInt(0))
 
-	if A1Int.IsUint64() {
-		a1 = A1Int.Uint64()
+	if A1.IsUint64() {
+		a1 = A1.Uint64()
 	}
-	if A2Int.IsUint64() {
-		a2 = A2Int.Uint64()
+	if A2.IsUint64() {
+		a2 = A2.Uint64()
 	}
 	if a1 > burntAmount {
 		a1 = 0

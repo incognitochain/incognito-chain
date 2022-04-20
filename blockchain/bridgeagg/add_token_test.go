@@ -5,59 +5,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"
 )
 
-type AddTokenTestCase struct {
-	UnifiedTokens map[uint64]map[common.Hash]map[uint]config.Vault `json:"unified_tokens"`
-	BeaconHeight  uint64                                           `json:"beacon_height"`
-	TestCase
+type ConfigVault struct {
+	ExternalDecimal uint   `json:"external_decimal"`
+	ExternalTokenID string `json:"external_token_id"`
+	IncTokenID      string `json:"inc_token_id"`
 }
 
-func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
-	testCase := a.testCases[testName]
-	config.AbortUnifiedToken()
-	config.SetUnifiedToken(testCase.UnifiedTokens)
+type AddTokenTestCase struct {
+	ConfigedUnifiedTokens    map[string]map[string]map[string]ConfigVault  `json:"configed_unified_tokens"`
+	BeaconHeight             uint64                                        `json:"beacon_height"`
+	ExpectedBridgeTokensInfo map[common.Hash]*statedb.BridgeTokenInfoState `json:"expected_bridge_tokens_info"`
 
-	assert := a.Assert()
-
-	accumulatedValues := &metadata.AccumulatedValues{
-		UniqETHTxsUsed:    [][]byte{},
-		UniqBSCTxsUsed:    [][]byte{},
-		UniqPLGTxsUsed:    [][]byte{},
-		UniqPRVEVMTxsUsed: [][]byte{},
-		UniqFTMTxsUsed:    [][]byte{},
-		DBridgeTokenPair:  map[string][]byte{},
-		CBridgeTokens:     []*common.Hash{},
-		InitTokens:        []*common.Hash{},
-	}
-
-	state := NewState()
-	producerState := state.Clone()
-	processorState := state.Clone()
-	actualInstruction, accumulatedValues, err := producerState.BuildAddTokenInstruction(
-		testCase.BeaconHeight,
-		map[int]*statedb.StateDB{
-			common.BeaconChainID: a.sDB,
-		},
-		accumulatedValues,
-	)
-	assert.NoError(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process([][]string{actualInstruction}, a.sDB)
-	assert.NoError(err, fmt.Sprintf("Error in process instructions %v", err))
-	a.actualResults[testName] = ActualResult{
-		Instructions:      [][]string{actualInstruction},
-		ProducerState:     producerState,
-		ProcessorState:    processorState,
-		AccumulatedValues: accumulatedValues,
-	}
+	TestCase
 }
 
 type AddTokenTestSuite struct {
@@ -86,15 +55,78 @@ func (a *AddTokenTestSuite) SetupTest() {
 	a.sDB = sDB
 }
 
+func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
+	a.currentTestCaseName = testName
+	testCase := a.testCases[testName]
+	config.AbortUnifiedToken()
+	configedUnifiedTokens := make(map[uint64]map[common.Hash]map[uint]config.Vault)
+	for beaconHeightStr, unifiedTokens := range testCase.ConfigedUnifiedTokens {
+		beaconHeight, err := strconv.ParseUint(beaconHeightStr, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		configedUnifiedTokens[beaconHeight] = make(map[common.Hash]map[uint]config.Vault)
+		for unifiedTokenID, vaults := range unifiedTokens {
+			unifiedTokenHash, err := common.Hash{}.NewHashFromStr(unifiedTokenID)
+			if err != nil {
+				panic(err)
+			}
+			configedUnifiedTokens[beaconHeight][*unifiedTokenHash] = make(map[uint]config.Vault)
+			for networkIDStr, vault := range vaults {
+				networkID, err := strconv.Atoi(networkIDStr)
+				if err != nil {
+					panic(err)
+				}
+				configedUnifiedTokens[beaconHeight][*unifiedTokenHash][uint(networkID)] = config.Vault{
+					ExternalDecimal: vault.ExternalDecimal,
+					ExternalTokenID: vault.ExternalTokenID,
+					IncTokenID:      vault.IncTokenID,
+				}
+			}
+		}
+
+	}
+	config.SetUnifiedToken(configedUnifiedTokens)
+	assert := a.Assert()
+
+	state := NewState()
+	producerState := state.Clone()
+	processorState := state.Clone()
+	actualInstruction, accumulatedValues, err := producerState.BuildAddTokenInstruction(
+		testCase.BeaconHeight,
+		map[int]*statedb.StateDB{
+			common.BeaconChainID: a.sDB,
+		},
+		testCase.AccumulatedValues,
+	)
+	assert.NoError(err, fmt.Sprintf("Error in build instructions %v", err))
+	err = processorState.Process([][]string{actualInstruction}, a.sDB)
+	assert.NoError(err, fmt.Sprintf("Error in process instructions %v", err))
+	a.actualResults[testName] = ActualResult{
+		Instructions:      [][]string{actualInstruction},
+		ProducerState:     producerState,
+		ProcessorState:    processorState,
+		AccumulatedValues: accumulatedValues,
+	}
+}
+
+func (a *AddTokenTestSuite) AfterTest(suiteName, testName string) {
+}
+
 func (a *AddTokenTestSuite) TestAccepted() {
 	assert := a.Assert()
 	testCase := a.testCases[a.currentTestCaseName]
 	actualResult := a.actualResults[a.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func TestAddTokenTestSuite(t *testing.T) {

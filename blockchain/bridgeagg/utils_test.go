@@ -33,6 +33,7 @@ type TestCase struct {
 	ExpectedUnifiedTokens     map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
 	TxIDs                     []common.Hash                                 `json:"tx_ids"`
 	BridgeTokensInfo          map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+	AccumulatedValues         *metadata.AccumulatedValues                   `json:"accumulated_values"`
 	ExpectedAccumulatedValues *metadata.AccumulatedValues                   `json:"expected_accumulated_values"`
 }
 
@@ -236,7 +237,7 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				y:           100,
 				burntAmount: 111,
 			},
-			want:    99,
+			want:    100,
 			wantErr: false,
 		},
 		{
@@ -266,7 +267,7 @@ func TestEstimateActualAmountByBurntAmount(t *testing.T) {
 				y:           91,
 				burntAmount: 109,
 			},
-			want:    99,
+			want:    100,
 			wantErr: false,
 		},
 		{

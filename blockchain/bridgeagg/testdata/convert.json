@@ -1,5 +1,5 @@
-[
-    {
+{
+    "TestAccepted": {
         "name": "Accepted - 2 valid tx",
         "metadatas": [
             {
@@ -104,7 +104,7 @@
             }
         ]
     },
-    {
+    "TestRejectedInvalidNetworkID": {
         "name": "Rejected - invalid networkID",
         "metadatas": [
             {
@@ -192,7 +192,7 @@
             }
         ]
     },
-    {
+    "TestRejectedByInvalidTokenID" : {
         "name": "Rejected - invalid token id",
         "metadatas": [
             {
@@ -280,7 +280,7 @@
             }
         ]
     },
-    {
+    "TestRejectedByInvalidUnifiedTokenID": {
         "name": "Rejected - invalid unified token id",
         "metadatas": [
             {
@@ -368,7 +368,7 @@
             }
         ]
     },
-    {
+    "TestRejectedThenAccepted": {
         "name": "Rejected then accepted",
         "metadatas": [
             {
@@ -472,4 +472,4 @@
             }
         ]
     }
-]
+}
