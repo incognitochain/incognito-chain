@@ -39,7 +39,26 @@
                         "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
                     }]
                 },
-                "orderrewards": {},
+                "orderrewards": {
+                    "0000000000000000000000000000000000000000000000000000000000000000": {
+                        "UncollectedRewards": {
+                            "0000000000000000000000000000000000000000000000000000000000000004": {
+                                "Receiver": "15zYJBeZMMdQqyGgdsgLLNJVUs9ibYP8v4j9iYJbdAF5bMmsWyrgoFqUx6uYYbJceYAsRqczbW5ZNMpTcpeHWh2hRM3fDfAaFvxqBerjx132mfNB4nFPvo4NrqNGNuTwjN28XrpxRAhLdWtp",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000100": {
+                                "Receiver": "16WkgRpHJCHso3wvGaDa2QeafZwFECsWtHoYwQ1RJ5pWse8c1djL8JGfRr8AS4u3vjQYg46GuLD9WsLf6ZLXuDcDs4uuQswANjNKuoQWqe27n3WovJedwvwNPfwUNDjk7MqrZFVZvTLkpU2q",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000200": {
+                                "Receiver": "15ZE7v7rHsqBGHk2ept7UtDqXHVhz6asxRzQGXQ2zPjbk37rgVR3qjuRCALek2gFosiqk3ci8CwwQpxiJj1w1WZMZoBd9GG44743NkeTjmWs2cBfCvjmZhmKjqwCa33TuM2bFDSiJ8aB2aXe",
+                                "Amount": 0
+                            }
+                        },
+                        "WithdrawnStatus": 1,
+                        "TxReqID": "0000000000000000000000000000000000000000000000000000000000000aa2"
+                    }
+                },
                 "makingvolume": {}
             }
         }
@@ -85,7 +104,26 @@
                         "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
                     }]
                 },
-                "orderrewards": {},
+                "orderrewards": {
+                    "0000000000000000000000000000000000000000000000000000000000000000": {
+                        "UncollectedRewards": {
+                            "0000000000000000000000000000000000000000000000000000000000000004": {
+                                "Receiver": "15zYJBeZMMdQqyGgdsgLLNJVUs9ibYP8v4j9iYJbdAF5bMmsWyrgoFqUx6uYYbJceYAsRqczbW5ZNMpTcpeHWh2hRM3fDfAaFvxqBerjx132mfNB4nFPvo4NrqNGNuTwjN28XrpxRAhLdWtp",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000100": {
+                                "Receiver": "16WkgRpHJCHso3wvGaDa2QeafZwFECsWtHoYwQ1RJ5pWse8c1djL8JGfRr8AS4u3vjQYg46GuLD9WsLf6ZLXuDcDs4uuQswANjNKuoQWqe27n3WovJedwvwNPfwUNDjk7MqrZFVZvTLkpU2q",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000200": {
+                                "Receiver": "15ZE7v7rHsqBGHk2ept7UtDqXHVhz6asxRzQGXQ2zPjbk37rgVR3qjuRCALek2gFosiqk3ci8CwwQpxiJj1w1WZMZoBd9GG44743NkeTjmWs2cBfCvjmZhmKjqwCa33TuM2bFDSiJ8aB2aXe",
+                                "Amount": 0
+                            }
+                        },
+                        "WithdrawnStatus": 1,
+                        "TxReqID": "0000000000000000000000000000000000000000000000000000000000000aa2"
+                    }
+                },
                 "makingvolume": {}
             }
         }
@@ -131,7 +169,26 @@
                         "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
                     }]
                 },
-                "orderrewards": {},
+                "orderrewards": {
+                    "0000000000000000000000000000000000000000000000000000000000000000": {
+                        "UncollectedRewards": {
+                            "0000000000000000000000000000000000000000000000000000000000000004": {
+                                "Receiver": "15zYJBeZMMdQqyGgdsgLLNJVUs9ibYP8v4j9iYJbdAF5bMmsWyrgoFqUx6uYYbJceYAsRqczbW5ZNMpTcpeHWh2hRM3fDfAaFvxqBerjx132mfNB4nFPvo4NrqNGNuTwjN28XrpxRAhLdWtp",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000100": {
+                                "Receiver": "16WkgRpHJCHso3wvGaDa2QeafZwFECsWtHoYwQ1RJ5pWse8c1djL8JGfRr8AS4u3vjQYg46GuLD9WsLf6ZLXuDcDs4uuQswANjNKuoQWqe27n3WovJedwvwNPfwUNDjk7MqrZFVZvTLkpU2q",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000200": {
+                                "Receiver": "15ZE7v7rHsqBGHk2ept7UtDqXHVhz6asxRzQGXQ2zPjbk37rgVR3qjuRCALek2gFosiqk3ci8CwwQpxiJj1w1WZMZoBd9GG44743NkeTjmWs2cBfCvjmZhmKjqwCa33TuM2bFDSiJ8aB2aXe",
+                                "Amount": 0
+                            }
+                        },
+                        "WithdrawnStatus": 1,
+                        "TxReqID": "0000000000000000000000000000000000000000000000000000000000000aa2"
+                    }
+                },
                 "makingvolume": {}
             }
         }

@@ -36,6 +36,7 @@ type TxTokenParams struct {
 	HasPrivacyToken    bool
 	ShardID            byte
 	Info               []byte
+	*GenericParams
 }
 
 // CustomTokenParamTx - use for rpc request json body
@@ -76,6 +77,7 @@ func NewTxTokenParams(senderKey *privacy.PrivateKey,
 		SenderKey:          senderKey,
 		TokenParams:        tokenParams,
 		Info:               info,
+		GenericParams:      NewGenericParams(),
 	}
 	return params
 }

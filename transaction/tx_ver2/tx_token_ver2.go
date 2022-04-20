@@ -30,8 +30,8 @@ type TxTokenDataVersion2 struct {
 	PropertyID     common.Hash
 	PropertyName   string
 	PropertySymbol string
-	SigPubKey      []byte `json:"SigPubKey,omitempty"` // 33 bytes
-	Sig            []byte `json:"Sig,omitempty"`       //
+	SigPubKey      []byte `json:"SigPubKey,omitempty"`
+	Sig            []byte `json:"Sig,omitempty"`
 	Proof          privacy.Proof
 
 	Type     int
@@ -324,6 +324,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				nil,
 				nil,
 			)
+			txParams.GenericParams = params.GenericParams
 			isBurning, err := txNormal.proveToken(txParams)
 			if err != nil {
 				return utils.NewTransactionErr(utils.PrivacyTokenInitTokenDataError, err)
@@ -605,7 +606,7 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 
 	// Reform Ring
 	sumOutputCoinsWithFee := tx_generic.CalculateSumOutputsWithFee(txFee.GetProof().GetOutputCoins(), txFee.GetTxFee())
-	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txFee.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
+	ring, _, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(txFee.GetValidationEnv(), sumOutputCoinsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
@@ -1297,4 +1298,37 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 		return result[i].String() < result[j].String()
 	})
 	return result
+}
+
+func (txToken TxToken) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash]privacy.Point, error) {
+	isBurn, burnedPRVCoin, burnedTokenCoin, _, err := txToken.GetTxFullBurnData()
+	if !isBurn || err != nil {
+		return nil, fmt.Errorf("txToken burns no coin")
+	}
+
+	shardID := common.GetShardIDFromLastByte(txToken.Tx.PubKeyLastByteSender)
+	result := make(map[common.Hash]privacy.Point)
+	if burnedPRVCoin != nil {
+		pk, err := getDerivableInputFromSigPubKey(txToken.Tx.SigPubKey, common.PRVCoinID, txToken.Hash(), shardID, transactionStateDB)
+		if err != nil {
+			return nil, err
+		}
+		if pk != nil {
+			result[common.PRVCoinID] = *pk
+		}
+	}
+
+	if burnedTokenCoin != nil {
+		// token inputs without a plain tokenID are deemed not derivable
+		if txToken.TokenData.PropertyID != common.ConfidentialAssetID {
+			pk, err := getDerivableInputFromSigPubKey(txToken.TokenData.SigPubKey, txToken.TokenData.PropertyID, txToken.Hash(), shardID, transactionStateDB)
+			if err != nil {
+				return nil, err
+			}
+			if pk != nil {
+				result[txToken.TokenData.PropertyID] = *pk
+			}
+		}
+	}
+	return result, nil
 }
