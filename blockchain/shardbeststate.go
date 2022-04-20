@@ -846,8 +846,6 @@ func (curView *ShardBestState) GetProposerLength() int {
 
 func (shardBestState *ShardBestState) updateCommitteeChangeCheckpoint(epoch, height uint64, rootHash common.Hash) {
 	newMap := map[uint64]CommitteeCheckPoint{}
-	Logger.log.Infof("[debugcachecommittee] updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", shardBestState.ShardID, epoch, height)
-	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet %v/%v cache committee for shard %v", totalHit[shardBestState.ShardID], totalGet[shardBestState.ShardID], shardBestState.ShardID)
 	for k, v := range shardBestState.CommitteeChangeCheckpoint.Data {
 		newMap[k] = v
 	}

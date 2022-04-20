@@ -1349,9 +1349,6 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 ) {
 	if cID != common.BeaconChainSyncID {
 		sBestView := blockchain.ShardChain[cID].GetBestState()
-		for k, v := range sBestView.CommitteeChangeCheckpoint.Data {
-			Logger.log.Infof("[debugcommitteecheckpoint] k %+v, value %+v", k, v)
-		}
 		epochs := sBestView.CommitteeChangeCheckpoint.Epochs
 		idx, existed := SearchUint64(epochs, epoch)
 		if existed {
@@ -1465,20 +1462,12 @@ func (blockchain *BlockChain) getShardValidators(
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
-			// return res, err
+			return res, err
 		}
 
 		c, err := blockchain.getShardValidatorsFromPrevHash(epoch, prevHash, cID)
 		if err != nil {
 			return nil, err
-		} else {
-			if len(res) > 0 {
-				if !equal2list(res, c) {
-					return nil, errors.Errorf("Something wrong with cache, cache %+v, db %+v", res, c)
-				} else {
-					totalHit[cID]++
-				}
-			}
 		}
 		return c, nil
 	}
@@ -1549,33 +1538,4 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
-}
-
-func equal2list(listA, listB []incognitokey.CommitteePublicKey) bool {
-	tmp := map[string]struct{}{}
-	for _, k := range listA {
-		str, err := k.ToBase58()
-		if err != nil {
-			// panic(err)
-			return false
-		}
-		tmp[str] = struct{}{}
-	}
-	// committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-	if len(listA) != len(listB) {
-		return false
-		// panic("aaaaaaaaaa")
-	}
-	for _, k := range listB {
-		str, err := k.ToBase58()
-		if err != nil {
-			// panic(err)
-			return false
-		}
-		if _, ok := tmp[str]; !ok {
-			// panic("bbbbbbbbbbbb")
-			return false
-		}
-	}
-	return true
 }
