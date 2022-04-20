@@ -1278,6 +1278,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		Logger.log.Infof("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epohc %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
 		newShardState.updateCommitteeChangeCheckpoint(epochForCache, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
 		key := getCommitteeCacheKeyByEpoch(newShardState.Epoch, shardID)
+		pkList, _ := incognitokey.CommitteeKeyListToString(newShardState.GetCommittee())
+		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v, height %v, pklist %+v", newShardState.Epoch, shardID, shardBlock.GetHeight()+1, pkList)
 		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v", newShardState.Epoch, shardID)
 		blockchain.committeeByEpochCache.Add(key, newShardState.GetCommittee())
 	}
