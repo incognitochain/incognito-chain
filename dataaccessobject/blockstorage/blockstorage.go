@@ -112,11 +112,11 @@ func (blkM *BlockManager) GetBlockByHash(
 ) {
 	if config.Config().EnableFFStorage {
 		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
-		// if v, has := blkM.cacher.Get(hash.String()); has {
-		// 	if res, ok := v.([]byte); ok && (len(res) > 0) {
-		// 		return res, nil
-		// 	}
-		// }
+		if v, has := blkM.cacher.Get(hash.String()); has {
+			if res, ok := v.([]byte); ok && (len(res) > 0) {
+				return res, nil
+			}
+		}
 		blkIdBytes, err := blkM.sRDB.Get(keyIdx)
 		if (err != nil) || (len(blkIdBytes) == 0) {
 			return nil, errors.Errorf("Can not get index for block hash %v, got %v, error %v", hash.String(), blkIdBytes, err)
@@ -168,7 +168,7 @@ func (blkM *BlockManager) StoreBlock(
 		if err != nil {
 			return err
 		}
-		// blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
+		blkM.cacher.Set(blkHash.String(), blkBytes, int64(len(blkBytes)))
 	} else {
 		if blkType == proto.BlkType_BlkShard {
 			err = rawdbv2.StoreShardBlock(blkM.rDB, *blkHash, blkData)
