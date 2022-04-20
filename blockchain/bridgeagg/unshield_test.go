@@ -24,7 +24,7 @@ type UnshieldTestCase struct {
 }
 
 type UnshieldTestSuite struct {
-	testCases []UnshieldTestCase
+	testCases map[string]*UnshieldTestCase
 	TestSuite
 }
 
@@ -37,21 +37,11 @@ func (u *UnshieldTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	u.currentTestCaseIndex = -1
+	u.testCases = make(map[string]*UnshieldTestCase)
 }
 
-func (u *UnshieldTestSuite) SetupTest() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
-	emptyRoot := common.HexToHash(common.HexEmptyRoot)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-
-	u.currentTestCaseIndex++
-	testCase := u.testCases[u.currentTestCaseIndex]
+func (u *UnshieldTestSuite) BeforeTest(suiteName, testName string) {
+	testCase := u.testCases[u.currentTestCaseName]
 	actions := []string{}
 	for i, v := range testCase.Metadatas {
 		tx := &metadataMocks.Transaction{}
@@ -67,19 +57,19 @@ func (u *UnshieldTestSuite) SetupTest() {
 		actions = append(actions, reqActions...)
 	}
 	for tokenID, v := range testCase.BridgeTokensInfo {
-		err := statedb.UpdateBridgeTokenInfo(sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
+		err := statedb.UpdateBridgeTokenInfo(u.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	assert := u.Assert()
-	_, err = sDB.Commit(false)
+	_, err := u.sDB.Commit(false)
 	assert.Nil(err, fmt.Sprintf("Error in commit db %v", err))
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
-			common.BeaconChainID: sDB,
+			common.BeaconChainID: u.sDB,
 		},
 		unshieldActions: [][]string{actions},
 	}
@@ -90,16 +80,16 @@ func (u *UnshieldTestSuite) SetupTest() {
 	processorState.ClearCache()
 	actualInstructions, _, err := producerState.BuildInstructions(env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, sDB)
+	err = processorState.Process(actualInstructions, u.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
-	u.actualResults = append(u.actualResults, ActualResult{
+	u.actualResults[testName] = ActualResult{
 		Instructions:   actualInstructions,
 		ProducerState:  producerState,
 		ProcessorState: processorState,
-	})
+	}
 	for _, txID := range testCase.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
-			sDB,
+			u.sDB,
 			statedb.BridgeAggUnshieldStatusPrefix(),
 			txID.Bytes(),
 		)
@@ -107,14 +97,26 @@ func (u *UnshieldTestSuite) SetupTest() {
 		var status UnshieldStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		u.testCases[u.currentTestCaseIndex].ActualStatues = append(u.testCases[u.currentTestCaseIndex].ActualStatues, status)
+		u.testCases[u.currentTestCaseName].ActualStatues = append(u.testCases[u.currentTestCaseName].ActualStatues, status)
 	}
+}
+
+func (u *UnshieldTestSuite) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	u.sDB = sDB
 }
 
 func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenDepositToSC() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -135,8 +137,8 @@ func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenDepositToSC() {
 
 func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -157,8 +159,8 @@ func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {
 
 func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -179,8 +181,8 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {
 
 func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -201,8 +203,8 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
 
 func (u *UnshieldTestSuite) TestRejectedInvalidNetworkID() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -216,8 +218,8 @@ func (u *UnshieldTestSuite) TestRejectedInvalidNetworkID() {
 
 func (u *UnshieldTestSuite) TestRejectedInvalidTokenID() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -231,8 +233,8 @@ func (u *UnshieldTestSuite) TestRejectedInvalidTokenID() {
 
 func (u *UnshieldTestSuite) TestRejectedNotEnoughExpectedAmount() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -246,8 +248,8 @@ func (u *UnshieldTestSuite) TestRejectedNotEnoughExpectedAmount() {
 
 func (u *UnshieldTestSuite) TestRejectedNotEnoughVaultValue() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -261,8 +263,8 @@ func (u *UnshieldTestSuite) TestRejectedNotEnoughVaultValue() {
 
 func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
 	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseIndex]
-	actualResult := u.actualResults[u.currentTestCaseIndex]
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses

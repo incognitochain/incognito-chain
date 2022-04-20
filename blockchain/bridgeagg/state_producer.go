@@ -449,12 +449,17 @@ func (sp *stateProducer) addToken(
 				Logger.log.Warnf("Duplicate unifiedTokenID %s", unifiedTokenID.String())
 				return res, unifiedTokenInfos, ac, nil
 			}
+			unifiedTokenIDs[unifiedTokenID.String()] = true
 			if _, found := clonedUnifiedTokenInfos[unifiedTokenID]; !found {
 				clonedUnifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
 			}
 			for networkID, vault := range vaults {
 				if incTokenIDs[vault.IncTokenID] {
 					Logger.log.Warnf("Duplicate incTokenID %s", vault.IncTokenID)
+					return res, unifiedTokenInfos, ac, nil
+				}
+				if unifiedTokenIDs[vault.IncTokenID] {
+					Logger.log.Warnf("Duplicate incTokenID with unifiedTokenID %s", vault.IncTokenID)
 					return res, unifiedTokenInfos, ac, nil
 				}
 				err := validateConfigVault(sDBs, networkID, vault)
@@ -483,7 +488,6 @@ func (sp *stateProducer) addToken(
 				clonedAC.DBridgeTokenPair[unifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
 				newListTokens[unifiedTokenID][networkID] = vault
 			}
-			unifiedTokenIDs[unifiedTokenID.String()] = true
 		}
 		if len(incTokenIDs) != 0 {
 			addToken.NewListTokens = newListTokens

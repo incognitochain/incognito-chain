@@ -24,7 +24,7 @@ type ConvertTestCase struct {
 }
 
 type ConvertTestSuite struct {
-	testCases []ConvertTestCase
+	testCases map[string]*ConvertTestCase
 	TestSuite
 }
 
@@ -37,7 +37,60 @@ func (c *ConvertTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	c.currentTestCaseIndex = -1
+	c.testCases = make(map[string]*ConvertTestCase)
+}
+
+func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
+	testCase := c.testCases[c.currentTestCaseName]
+	actions := []string{}
+	for i, v := range testCase.Metadatas {
+		content, err := metadataCommon.NewActionWithValue(v, testCase.TxIDs[i], nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
+		if err != nil {
+			panic(err)
+		}
+		actions = append(actions, content[1])
+	}
+	for tokenID, v := range testCase.BridgeTokensInfo {
+		err := statedb.UpdateBridgeTokenInfo(c.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	assert := c.Assert()
+	env := &stateEnvironment{
+		beaconHeight: 10,
+		stateDBs: map[int]*statedb.StateDB{
+			common.BeaconChainID: c.sDB,
+		},
+		convertActions: [][]string{actions},
+	}
+	state := NewState()
+	state.unifiedTokenInfos = testCase.UnifiedTokens
+	producerState := state.Clone()
+	processorState := state.Clone()
+	actualInstructions, _, err := producerState.BuildInstructions(env)
+	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
+	err = processorState.Process(actualInstructions, c.sDB)
+	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
+
+	c.actualResults[testName] = ActualResult{
+		Instructions:   actualInstructions,
+		ProducerState:  producerState,
+		ProcessorState: processorState,
+	}
+	for _, txID := range testCase.TxIDs {
+		data, err := statedb.GetBridgeAggStatus(
+			c.sDB,
+			statedb.BridgeAggConvertStatusPrefix(),
+			txID.Bytes(),
+		)
+		assert.Nil(err, fmt.Sprintf("get bridge agg status %v", err))
+		var status ConvertStatus
+		err = json.Unmarshal(data, &status)
+		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
+		c.testCases[c.currentTestCaseName].ActualStatues = append(c.testCases[c.currentTestCaseName].ActualStatues, status)
+	}
 }
 
 func (c *ConvertTestSuite) SetupTest() {
@@ -49,64 +102,13 @@ func (c *ConvertTestSuite) SetupTest() {
 	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
 	emptyRoot := common.HexToHash(common.HexEmptyRoot)
 	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-
-	c.currentTestCaseIndex++
-	testCase := c.testCases[c.currentTestCaseIndex]
-	actions := []string{}
-	for i, v := range testCase.Metadatas {
-		content, err := metadataCommon.NewActionWithValue(v, testCase.TxIDs[i], nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
-		if err != nil {
-			panic(err)
-		}
-		actions = append(actions, content[1])
-	}
-	for tokenID, v := range testCase.BridgeTokensInfo {
-		err := statedb.UpdateBridgeTokenInfo(sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	assert := c.Assert()
-	env := &stateEnvironment{
-		beaconHeight: 10,
-		stateDBs: map[int]*statedb.StateDB{
-			common.BeaconChainID: sDB,
-		},
-		convertActions: [][]string{actions},
-	}
-	state := NewState()
-	state.unifiedTokenInfos = testCase.UnifiedTokens
-	producerState := state.Clone()
-	processorState := state.Clone()
-	actualInstructions, _, err := producerState.BuildInstructions(env)
-	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, sDB)
-	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
-
-	c.actualResults = append(c.actualResults, ActualResult{
-		Instructions:   actualInstructions,
-		ProducerState:  producerState,
-		ProcessorState: processorState,
-	})
-	for _, txID := range testCase.TxIDs {
-		data, err := statedb.GetBridgeAggStatus(
-			sDB,
-			statedb.BridgeAggConvertStatusPrefix(),
-			txID.Bytes(),
-		)
-		assert.Nil(err, fmt.Sprintf("get bridge agg status %v", err))
-		var status ConvertStatus
-		err = json.Unmarshal(data, &status)
-		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		c.testCases[c.currentTestCaseIndex].ActualStatues = append(c.testCases[c.currentTestCaseIndex].ActualStatues, status)
-	}
+	c.sDB = sDB
 }
 
 func (c *ConvertTestSuite) TestAccepted() {
 	assert := c.Assert()
-	testCase := c.testCases[c.currentTestCaseIndex]
-	actualResult := c.actualResults[c.currentTestCaseIndex]
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -119,8 +121,8 @@ func (c *ConvertTestSuite) TestAccepted() {
 
 func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
 	assert := c.Assert()
-	testCase := c.testCases[c.currentTestCaseIndex]
-	actualResult := c.actualResults[c.currentTestCaseIndex]
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -133,8 +135,8 @@ func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
 
 func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
 	assert := c.Assert()
-	testCase := c.testCases[c.currentTestCaseIndex]
-	actualResult := c.actualResults[c.currentTestCaseIndex]
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -147,8 +149,8 @@ func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
 
 func (c *ConvertTestSuite) TestRejectedInvalidNetworkID() {
 	assert := c.Assert()
-	testCase := c.testCases[c.currentTestCaseIndex]
-	actualResult := c.actualResults[c.currentTestCaseIndex]
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -161,8 +163,8 @@ func (c *ConvertTestSuite) TestRejectedInvalidNetworkID() {
 
 func (c *ConvertTestSuite) TestRejectedThenAccepted() {
 	assert := c.Assert()
-	testCase := c.testCases[c.currentTestCaseIndex]
-	actualResult := c.actualResults[c.currentTestCaseIndex]
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses

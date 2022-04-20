@@ -28,7 +28,7 @@ type ShieldTestCase struct {
 }
 
 type ShieldTestSuite struct {
-	testCases []ShieldTestCase
+	testCases map[string]*ShieldTestCase
 	TestSuite
 }
 
@@ -62,21 +62,11 @@ func (s *ShieldTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	s.currentTestCaseIndex = -1
+	s.testCases = make(map[string]*ShieldTestCase)
 }
 
-func (s *ShieldTestSuite) SetupTest() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
-	emptyRoot := common.HexToHash(common.HexEmptyRoot)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-
-	s.currentTestCaseIndex++
-	testCase := s.testCases[s.currentTestCaseIndex]
+func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
+	testCase := s.testCases[s.currentTestCaseName]
 	actions := []string{}
 	for i, v := range testCase.Metadatas {
 		tx := &metadataMocks.Transaction{}
@@ -92,7 +82,7 @@ func (s *ShieldTestSuite) SetupTest() {
 		actions = append(actions, reqActions...)
 	}
 	for tokenID, v := range testCase.BridgeTokensInfo {
-		err := statedb.UpdateBridgeTokenInfo(sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
+		err := statedb.UpdateBridgeTokenInfo(s.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
 		}
@@ -113,7 +103,7 @@ func (s *ShieldTestSuite) SetupTest() {
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
-			common.BeaconChainID: sDB,
+			common.BeaconChainID: s.sDB,
 		},
 		shieldActions:     [][]string{actions},
 		accumulatedValues: accumulatedValues,
@@ -123,15 +113,15 @@ func (s *ShieldTestSuite) SetupTest() {
 	producerState := state.Clone()
 	processorState := state.Clone()
 	actualInstructions, ac, err := producerState.BuildInstructions(env)
-	s.testCases[s.currentTestCaseIndex].ActualAccumulatedValues = ac
+	s.testCases[s.currentTestCaseName].ActualAccumulatedValues = ac
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, sDB)
+	err = processorState.Process(actualInstructions, s.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
-	s.actualResults = append(s.actualResults, ActualResult{
+	s.actualResults[s.currentTestCaseName] = ActualResult{
 		Instructions:   actualInstructions,
 		ProducerState:  producerState,
 		ProcessorState: processorState,
-	})
+	}
 	for _, txID := range testCase.TxIDs {
 		shieldStatus := TestShieldStatus{}
 		prefixValues := [][]byte{
@@ -142,7 +132,7 @@ func (s *ShieldTestSuite) SetupTest() {
 		for _, prefixValue := range prefixValues {
 			suffix := append(txID.Bytes(), prefixValue...)
 			data, err := statedb.GetBridgeAggStatus(
-				sDB,
+				s.sDB,
 				statedb.BridgeAggShieldStatusPrefix(),
 				suffix,
 			)
@@ -163,14 +153,26 @@ func (s *ShieldTestSuite) SetupTest() {
 				})
 			}
 		}
-		s.testCases[s.currentTestCaseIndex].ActualStatues = append(s.testCases[s.currentTestCaseIndex].ActualStatues, shieldStatus)
+		s.testCases[s.currentTestCaseName].ActualStatues = append(s.testCases[s.currentTestCaseName].ActualStatues, shieldStatus)
 	}
+}
+
+func (s *ShieldTestSuite) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	s.sDB = sDB
 }
 
 func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NativeToken() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -186,8 +188,8 @@ func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NativeToken() {
 
 func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NotNativeToken() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -203,8 +205,8 @@ func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NotNativeToken() {
 
 func (s *ShieldTestSuite) TestAcceptedYEqualTo0NativeToken() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -220,8 +222,8 @@ func (s *ShieldTestSuite) TestAcceptedYEqualTo0NativeToken() {
 
 func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseExternalDecimal() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -237,8 +239,8 @@ func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseE
 
 func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseExternalDecimal() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -254,8 +256,8 @@ func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseE
 
 func (s *ShieldTestSuite) TestRejectedInvalidExternalTokenID() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -271,8 +273,8 @@ func (s *ShieldTestSuite) TestRejectedInvalidExternalTokenID() {
 
 func (s *ShieldTestSuite) TestRejectedInvalidTokenID() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -288,8 +290,8 @@ func (s *ShieldTestSuite) TestRejectedInvalidTokenID() {
 
 func (s *ShieldTestSuite) TestRejectedTwoProofs() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -305,8 +307,8 @@ func (s *ShieldTestSuite) TestRejectedTwoProofs() {
 
 func (s *ShieldTestSuite) TestRejectedTwoProofsInOneRequest() {
 	assert := s.Assert()
-	testCase := s.testCases[s.currentTestCaseIndex]
-	actualResult := s.actualResults[s.currentTestCaseIndex]
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses

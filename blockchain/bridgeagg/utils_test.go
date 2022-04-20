@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/utils"
@@ -22,21 +23,25 @@ import (
 type TestSuite struct {
 	suite.Suite
 	currentTestCaseIndex int
-	actualResults        []ActualResult
+	currentTestCaseName  string
+	actualResults        map[string]ActualResult
+	sDB                  *statedb.StateDB
 }
 
 type TestCase struct {
-	ExpectedInstructions  [][]string                                    `json:"expected_instructions"`
-	UnifiedTokens         map[common.Hash]map[uint]*Vault               `json:"unified_tokens"`
-	ExpectedUnifiedTokens map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
-	TxIDs                 []common.Hash                                 `json:"tx_ids"`
-	BridgeTokensInfo      map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+	ExpectedInstructions      [][]string                                    `json:"expected_instructions"`
+	UnifiedTokens             map[common.Hash]map[uint]*Vault               `json:"unified_tokens"`
+	ExpectedUnifiedTokens     map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
+	TxIDs                     []common.Hash                                 `json:"tx_ids"`
+	BridgeTokensInfo          map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+	ExpectedAccumulatedValues *metadata.AccumulatedValues                   `json:"expected_accumulated_values"`
 }
 
 type ActualResult struct {
-	Instructions   [][]string
-	ProducerState  *State
-	ProcessorState *State
+	Instructions      [][]string
+	ProducerState     *State
+	ProcessorState    *State
+	AccumulatedValues *metadata.AccumulatedValues
 }
 
 var _ = func() (_ struct{}) {

@@ -24,34 +24,12 @@ type ModifyRewardReserveTestCase struct {
 }
 
 type ModifyRewardReserveTestSuite struct {
-	testCases []ModifyRewardReserveTestCase
+	testCases map[string]*ModifyRewardReserveTestCase
 	TestSuite
 }
 
-func (m *ModifyRewardReserveTestSuite) SetupSuite() {
-	config.AbortParam()
-	config.Param().BridgeAggParam.BaseDecimal = 9
-
-	rawTestCases, _ := readTestCases("modify_reward_reserve.json")
-	err := json.Unmarshal(rawTestCases, &m.testCases)
-	if err != nil {
-		panic(err)
-	}
-	m.currentTestCaseIndex = -1
-}
-
-func (m *ModifyRewardReserveTestSuite) SetupTest() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
-	emptyRoot := common.HexToHash(common.HexEmptyRoot)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-
-	m.currentTestCaseIndex++
-	testCase := m.testCases[m.currentTestCaseIndex]
+func (m *ModifyRewardReserveTestSuite) BeforeTest(suiteName, testName string) {
+	testCase := m.testCases[m.currentTestCaseName]
 	actions := []string{}
 	for i, v := range testCase.Metadatas {
 		tx := &metadataMocks.Transaction{}
@@ -67,7 +45,7 @@ func (m *ModifyRewardReserveTestSuite) SetupTest() {
 		actions = append(actions, reqActions...)
 	}
 	for tokenID, v := range testCase.BridgeTokensInfo {
-		err := statedb.UpdateBridgeTokenInfo(sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
+		err := statedb.UpdateBridgeTokenInfo(m.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
 		}
@@ -77,7 +55,7 @@ func (m *ModifyRewardReserveTestSuite) SetupTest() {
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
-			common.BeaconChainID: sDB,
+			common.BeaconChainID: m.sDB,
 		},
 		modifyRewardReserveActions: [][]string{actions},
 	}
@@ -87,17 +65,16 @@ func (m *ModifyRewardReserveTestSuite) SetupTest() {
 	processorState := state.Clone()
 	actualInstructions, _, err := producerState.BuildInstructions(env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, sDB)
+	err = processorState.Process(actualInstructions, m.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
-
-	m.actualResults = append(m.actualResults, ActualResult{
+	m.actualResults[testName] = ActualResult{
 		Instructions:   actualInstructions,
 		ProducerState:  producerState,
 		ProcessorState: processorState,
-	})
+	}
 	for _, txID := range testCase.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
-			sDB,
+			m.sDB,
 			statedb.BridgeAggRewardReserveModifyingStatusPrefix(),
 			txID.Bytes(),
 		)
@@ -105,14 +82,38 @@ func (m *ModifyRewardReserveTestSuite) SetupTest() {
 		var status ModifyRewardReserveStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		m.testCases[m.currentTestCaseIndex].ActualStatues = append(m.testCases[m.currentTestCaseIndex].ActualStatues, status)
+		m.testCases[m.currentTestCaseName].ActualStatues = append(m.testCases[m.currentTestCaseName].ActualStatues, status)
 	}
+}
+
+func (m *ModifyRewardReserveTestSuite) SetupSuite() {
+	config.AbortParam()
+	config.Param().BridgeAggParam.BaseDecimal = 9
+
+	rawTestCases, _ := readTestCases("modify_reward_reserve.json")
+	err := json.Unmarshal(rawTestCases, &m.testCases)
+	if err != nil {
+		panic(err)
+	}
+	m.actualResults = make(map[string]ActualResult)
+}
+
+func (m *ModifyRewardReserveTestSuite) SetupTest() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "bridgeagg_test_statedb_")
+	if err != nil {
+		panic(err)
+	}
+	diskBD, _ := incdb.Open("leveldb", dbPath)
+	warperDBStatedbTest := statedb.NewDatabaseAccessWarper(diskBD)
+	emptyRoot := common.HexToHash(common.HexEmptyRoot)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	m.sDB = sDB
 }
 
 func (m *ModifyRewardReserveTestSuite) TestAccepted() {
 	assert := m.Assert()
-	testCase := m.testCases[m.currentTestCaseIndex]
-	actualResult := m.actualResults[m.currentTestCaseIndex]
+	testCase := m.testCases[m.currentTestCaseName]
+	actualResult := m.actualResults[m.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
@@ -125,8 +126,8 @@ func (m *ModifyRewardReserveTestSuite) TestAccepted() {
 
 func (m *ModifyRewardReserveTestSuite) TestRejectedInvalidTokenID() {
 	assert := m.Assert()
-	testCase := m.testCases[m.currentTestCaseIndex]
-	actualResult := m.actualResults[m.currentTestCaseIndex]
+	testCase := m.testCases[m.currentTestCaseName]
+	actualResult := m.actualResults[m.currentTestCaseName]
 	expectedState := NewState()
 	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
