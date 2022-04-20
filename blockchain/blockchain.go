@@ -1263,15 +1263,13 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 	sCommitteeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
 	if len(sCommitteeKeys) > 0 {
 		if !equal2list(sCommitteeKeys, sCommitteeKeys2) {
-			sCommitteeKeys0, epochForCacheNew, _ := bc.GetShardCommitteeKeysByEpoch(epoch-1, sID)
-			blsList0, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys0)
 			blsList1, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys)
 			blsList2, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys2)
-
-			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache get from epoch %v, cache %+v db %+v, prev epoch %+v, %v", epoch, sID, epochForCache, blsList1, blsList2, blsList0, epochForCacheNew))
+			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache get from epoch %v", epoch, sID, epochForCache))
+			Logger.log.Errorf("Debugs committee: epoch %v from cache: %v", epochForCache, blsList1)
+			Logger.log.Errorf("Debugs committee: epoch %v from bc DB %v", epoch, blsList2)
 		}
 	}
-
 	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, sCommitteeKeys2)
 	return committeeState, nil
 }
