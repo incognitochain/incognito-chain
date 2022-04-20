@@ -164,11 +164,6 @@ func (req PortalV4ShieldingRequest) ValidateSanityData(chainRetriever ChainRetri
 		if !otaReceiver.IsValid() {
 			return false, false, NewMetadataTxError(metadataCommon.PortalV4ShieldRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
 		}
-		if tx.GetSenderAddrLastByte() != otaReceiver.GetShardID() {
-			return false, false, metadataCommon.NewMetadataTxError(
-				metadataCommon.PortalV4ShieldRequestValidateSanityDataError,
-				fmt.Errorf("expect receiver to be in shard %d, got %v", tx.GetSenderAddrLastByte(), otaReceiver.GetShardID()))
-		}
 		otaReceiverBytes, _ := otaReceiver.Bytes()
 
 		// 1.2

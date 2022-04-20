@@ -22,7 +22,7 @@ func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 	shardID byte,
 ) (metadata.Transaction, error) {
 	prefix := fmt.Sprintf("[buildPortalAcceptedShieldingRequestTx]")
-	Logger.log.Infof("%v ContentStr: %v\n", contentStr)
+	Logger.log.Infof("%v ContentStr: %v\n", prefix, contentStr)
 	contentBytes := []byte(contentStr)
 	var acceptedShieldingReq metadata.PortalShieldingRequestContent
 	err := json.Unmarshal(contentBytes, &acceptedShieldingReq)

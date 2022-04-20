@@ -239,19 +239,21 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		otaReceiver := new(privacy.OTAReceiver)
 		_ = otaReceiver.FromString(issuingEVMBridgeReqAction.Meta.Receiver) // error has been handle at shard side
 		otaReceiverBytes, _ := otaReceiver.Bytes()
+		pkBytes := otaReceiver.PublicKey.ToBytesS()
+		shardID = common.GetShardIDFromLastByte(pkBytes[len(pkBytes)-1])
 
 		depositPubKey, err := new(operation.Point).FromBytesS(depositKeyBytes)
 		if err != nil {
 			Logger.log.Warn("WARNING: invalid OTDepositPubKey %v", addressStr)
 			return append(instructions, rejectedInst), nil, nil
 		}
-		schnorrKey := new(privacy.SchnorrPublicKey)
-		schnorrKey.Set(depositPubKey)
+		sigPubKey := new(privacy.SchnorrPublicKey)
+		sigPubKey.Set(depositPubKey)
 
-		schnorrSig := new(schnorr.SchnSignature)
-		_ = schnorrSig.SetBytes(issuingEVMBridgeReqAction.Meta.Signature) // error has been handle at shard side
+		tmpSig := new(schnorr.SchnSignature)
+		_ = tmpSig.SetBytes(issuingEVMBridgeReqAction.Meta.Signature) // error has been handle at shard side
 
-		if isValid := schnorrKey.Verify(schnorrSig, common.HashB(otaReceiverBytes)); !isValid {
+		if isValid := sigPubKey.Verify(tmpSig, common.HashB(otaReceiverBytes)); !isValid {
 			Logger.log.Warn("invalid signature", issuingEVMBridgeReqAction.Meta.Signature)
 			return append(instructions, rejectedInst), nil, nil
 		}

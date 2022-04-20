@@ -222,11 +222,6 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 		if !otaReceiver.IsValid() {
 			return false, false, NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, fmt.Errorf("invalid OTAReceiver"))
 		}
-		if tx.GetSenderAddrLastByte() != otaReceiver.GetShardID() {
-			return false, false, metadataCommon.NewMetadataTxError(
-				metadataCommon.IssuingEvmRequestValidateSanityDataError,
-				fmt.Errorf("expect receiver to be in shard %d, got %v", tx.GetSenderAddrLastByte(), otaReceiver.GetShardID()))
-		}
 	}
 
 	if iReq.Signature != nil {

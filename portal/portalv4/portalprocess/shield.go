@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
@@ -105,6 +106,12 @@ func buildPortalShieldingRequestInstV4(
 	status string,
 	errorStr string,
 ) []string {
+	if requestMeta.OTDepositPubKey != "" {
+		receiver := new(coin.OTAReceiver)
+		_ = receiver.FromString(requestMeta.Receiver)
+		pubKeyBytes := receiver.PublicKey.ToBytesS()
+		shardID = common.GetShardIDFromLastByte(pubKeyBytes[len(pubKeyBytes)-1])
+	}
 	shieldingReqContent := metadata.PortalShieldingRequestContent{
 		TokenID:         requestMeta.TokenID,
 		OTDepositPubKey: requestMeta.OTDepositPubKey,
