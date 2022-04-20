@@ -1269,7 +1269,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				epochForCache = bBlk.Header.Epoch
 			} else {
 				if blockchain.GetLastBeaconHeightInEpoch(epochForCache) == bBlk.GetHeight() {
-					epochForCache++
+					epochForCache = bBlk.Header.Epoch + 1
 				}
 			}
 		}
