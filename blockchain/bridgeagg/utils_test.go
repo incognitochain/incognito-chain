@@ -22,10 +22,9 @@ import (
 
 type TestSuite struct {
 	suite.Suite
-	currentTestCaseIndex int
-	currentTestCaseName  string
-	actualResults        map[string]ActualResult
-	sDB                  *statedb.StateDB
+	currentTestCaseName string
+	actualResults       map[string]ActualResult
+	sDB                 *statedb.StateDB
 }
 
 type TestCase struct {
