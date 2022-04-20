@@ -18,6 +18,10 @@ func (pc *Pdexv3ContributionState) PairHash() string {
 	return pc.pairHash
 }
 
+func (pc *Pdexv3ContributionState) SetValue(value rawdbv2.Pdexv3Contribution) {
+	pc.value = value
+}
+
 func (pc *Pdexv3ContributionState) Value() rawdbv2.Pdexv3Contribution {
 	return pc.value
 }

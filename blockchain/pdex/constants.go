@@ -46,3 +46,9 @@ const (
 	addOperator = byte(0)
 	subOperator = byte(1)
 )
+
+const (
+	DefaultWithdrawnOrderReward = byte(0)
+	WaitToWithdrawOrderReward   = byte(1)
+	WithdrawnOrderReward        = byte(2)
+)

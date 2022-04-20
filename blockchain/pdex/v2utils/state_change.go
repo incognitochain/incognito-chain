@@ -97,6 +97,7 @@ func NewMakingVolumeChange() *MakingVolumeChange {
 }
 
 type OrderRewardChange struct {
+	IsChanged         bool
 	UncollectedReward map[string]bool
 }
 

@@ -272,7 +272,7 @@ const (
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
 	//
 
-	// pDex v3
+	// pDex v3 methods
 	pdexv3MintNft                         = "pdexv3_txMintNft"
 	getPdexv3State                        = "pdexv3_getState"
 	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
@@ -303,6 +303,7 @@ const (
 	getPdexv3EstimatedStakingPoolReward            = "pdexv3_getEstimatedStakingPoolReward"
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
+	// end of pdex v3 methods
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

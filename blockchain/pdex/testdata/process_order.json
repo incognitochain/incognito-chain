@@ -2,7 +2,7 @@
     "name": "Process accepted order",
     "data": {
         "instructions": [
-            ["287", "1", "0", "8a65ee67e2de4146a0555007599aeb170b720743784f8c51fdcf9f70ecc9d600", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"8a65ee67e2de4146a0555007599aeb170b720743784f8c51fdcf9f70ecc9d600\",\"NftID\":\"0000000000000000000000000000000000000000000000000000000000000333\",\"Token0Rate\":1050,\"Token1Rate\":800,\"Token0Balance\":1050,\"Token1Balance\":0,\"TradeDirection\":0,\"Receiver\":[\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\"]}}"]
+            ["287", "1", "0", "6d7b75826ad1d4361778251cadd4c410cfe39d8651fe2be33c25d9cc693622cb", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"6d7b75826ad1d4361778251cadd4c410cfe39d8651fe2be33c25d9cc693622cb\",\"NftID\":\"0000000000000000000000000000000000000000000000000000000000000333\",\"Token0Rate\":1050,\"Token1Rate\":800,\"Token0Balance\":1050,\"Token1Balance\":0,\"TradeDirection\":0,\"Receiver\":[\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\"],\"RewardReceiver\":{\"0000000000000000000000000000000000000000000000000000000000000004\":\"16KbpcRQka9FXcy3LMdt9aNgPgdD6jb6bfLPxow2mDhyCAQLmGDxh2PLdETJGCxtTXhQw1x7PtuK2YHP7Xx7eZaRwPaiPaQZWJUmXGtWJXgEz37aB1tn4BphTb2XT6QbHBb7vXR7f3E9qPc8\",\"0000000000000000000000000000000000000000000000000000000000000200\":\"16cUXUPk2PrVogeiujJBta6n7TguKJkmsJwNLJDWj4DwqzdWx5iXn2odMhcVXst2ge6bMGse1mLTFzvNyexhkka8cqdarBuQiE8LiqFHEdKik5o8fkw61Ejhmm3p6jgAwzpZDHNqmJVcGN2u\"}}}"]
         ]
     },
     "expected": {
@@ -20,7 +20,7 @@
                 },
                 "orderbook": {
                     "orders": [{
-                        "Id": "8a65ee67e2de4146a0555007599aeb170b720743784f8c51fdcf9f70ecc9d600",
+                        "Id": "6d7b75826ad1d4361778251cadd4c410cfe39d8651fe2be33c25d9cc693622cb",
                         "NftID": "0000000000000000000000000000000000000000000000000000000000000333",
                         "Token0Rate": 1050,
                         "Token1Rate": 800,
@@ -48,7 +48,40 @@
                         "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
                     }]
                 },
-                "orderrewards": {},
+                "orderrewards": {
+                    "0000000000000000000000000000000000000000000000000000000000000000": {
+                        "UncollectedRewards": {
+                            "0000000000000000000000000000000000000000000000000000000000000004": {
+                                "Receiver": "15zYJBeZMMdQqyGgdsgLLNJVUs9ibYP8v4j9iYJbdAF5bMmsWyrgoFqUx6uYYbJceYAsRqczbW5ZNMpTcpeHWh2hRM3fDfAaFvxqBerjx132mfNB4nFPvo4NrqNGNuTwjN28XrpxRAhLdWtp",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000100": {
+                                "Receiver": "16WkgRpHJCHso3wvGaDa2QeafZwFECsWtHoYwQ1RJ5pWse8c1djL8JGfRr8AS4u3vjQYg46GuLD9WsLf6ZLXuDcDs4uuQswANjNKuoQWqe27n3WovJedwvwNPfwUNDjk7MqrZFVZvTLkpU2q",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000200": {
+                                "Receiver": "15ZE7v7rHsqBGHk2ept7UtDqXHVhz6asxRzQGXQ2zPjbk37rgVR3qjuRCALek2gFosiqk3ci8CwwQpxiJj1w1WZMZoBd9GG44743NkeTjmWs2cBfCvjmZhmKjqwCa33TuM2bFDSiJ8aB2aXe",
+                                "Amount": 0
+                            }
+                        },
+                        "WithdrawnStatus": 1,
+                        "TxReqID": "0000000000000000000000000000000000000000000000000000000000000aa2"
+                    },
+                    "0000000000000000000000000000000000000000000000000000000000000333": {
+                        "UncollectedRewards": {
+                            "0000000000000000000000000000000000000000000000000000000000000004": {
+                                "Receiver": "16KbpcRQka9FXcy3LMdt9aNgPgdD6jb6bfLPxow2mDhyCAQLmGDxh2PLdETJGCxtTXhQw1x7PtuK2YHP7Xx7eZaRwPaiPaQZWJUmXGtWJXgEz37aB1tn4BphTb2XT6QbHBb7vXR7f3E9qPc8",
+                                "Amount": 0
+                            },
+                            "0000000000000000000000000000000000000000000000000000000000000200": {
+                                "Receiver": "16cUXUPk2PrVogeiujJBta6n7TguKJkmsJwNLJDWj4DwqzdWx5iXn2odMhcVXst2ge6bMGse1mLTFzvNyexhkka8cqdarBuQiE8LiqFHEdKik5o8fkw61Ejhmm3p6jgAwzpZDHNqmJVcGN2u",
+                                "Amount": 0
+                            }
+                        },
+                        "WithdrawnStatus": 1,
+                        "TxReqID": "6d7b75826ad1d4361778251cadd4c410cfe39d8651fe2be33c25d9cc693622cb"
+                    }
+                },
                 "makingvolume": {}
             }
         }

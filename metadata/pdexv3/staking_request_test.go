@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataCommonMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
+	"github.com/incognitochain/incognito-chain/privacy"
 	coinMocks "github.com/incognitochain/incognito-chain/privacy/coin/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -59,7 +61,7 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		MetadataBase metadataCommon.MetadataBase
 		tokenID      string
 		otaReceiver  string
-		nftID        string
+		AccessOption AccessOption
 		tokenAmount  uint64
 	}
 	type args struct {
@@ -114,53 +116,12 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid NftID",
-			fields: fields{
-				tokenID: tokenHash.String(),
-				nftID:   "asbc",
-			},
-			args: args{
-
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Empty NftID",
-			fields: fields{
-				tokenID: tokenHash.String(),
-				nftID:   common.Hash{}.String(),
-			},
-			args: args{
-
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
-			name: "Invalid OtaReceiver",
-			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
-				otaReceiver: "123",
-			},
-			args: args{
-
-				chainRetriever: validChainRetriever,
-			},
-			want:    false,
-			want1:   false,
-			wantErr: true,
-		},
-		{
 			name: "Not burn tx",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -174,8 +135,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Burnt Token != tokenID",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -190,8 +153,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Token amount = 0",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -206,13 +171,14 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "requet.tokenAmount != burnCoin.GetValue()",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
-				tx: notMactchAmountTx1,
-
+				tx:             notMactchAmountTx1,
 				chainRetriever: validChainRetriever,
 			},
 			want:    false,
@@ -222,8 +188,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "normatl tx && tokenID != prv",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -238,8 +206,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "custom token tx && tokenID == prv",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -254,8 +224,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "invalid tx type",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -269,8 +241,10 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid input",
 			fields: fields{
-				tokenID:     tokenHash.String(),
-				nftID:       nftHash.String(),
+				tokenID: tokenHash.String(),
+				AccessOption: AccessOption{
+					NftID: nftHash,
+				},
 				otaReceiver: validOTAReceiver0,
 			},
 			args: args{
@@ -288,7 +262,7 @@ func TestStakingRequest_ValidateSanityData(t *testing.T) {
 				MetadataBase: tt.fields.MetadataBase,
 				tokenID:      tt.fields.tokenID,
 				otaReceiver:  tt.fields.otaReceiver,
-				nftID:        tt.fields.nftID,
+				AccessOption: tt.fields.AccessOption,
 				tokenAmount:  tt.fields.tokenAmount,
 			}
 			got, got1, err := request.ValidateSanityData(tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.beaconHeight, tt.args.tx)
@@ -311,8 +285,9 @@ func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 		MetadataBase metadataCommon.MetadataBase
 		tokenID      string
 		otaReceiver  string
-		nftID        string
-		tokenAmount  uint64
+		otaReceivers map[common.Hash]privacy.OTAReceiver // receive tokens
+		AccessOption
+		tokenAmount uint64
 	}
 	tests := []struct {
 		name   string
@@ -344,11 +319,77 @@ func TestStakingRequest_ValidateMetadataByItself(t *testing.T) {
 				MetadataBase: tt.fields.MetadataBase,
 				tokenID:      tt.fields.tokenID,
 				otaReceiver:  tt.fields.otaReceiver,
-				nftID:        tt.fields.nftID,
+				otaReceivers: tt.fields.otaReceivers,
+				AccessOption: tt.fields.AccessOption,
 				tokenAmount:  tt.fields.tokenAmount,
 			}
 			if got := request.ValidateMetadataByItself(); got != tt.want {
 				t.Errorf("StakingRequest.ValidateMetadataByItself() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStakingRequest_ValidateTxWithBlockChain(t *testing.T) {
+	initTestParam(t)
+	nftID, err := common.Hash{}.NewHashFromStr("123456")
+	assert.Nil(t, err)
+	type fields struct {
+		MetadataBase metadataCommon.MetadataBase
+		tokenID      string
+		otaReceiver  string
+		otaReceivers map[common.Hash]privacy.OTAReceiver
+		AccessOption AccessOption
+		tokenAmount  uint64
+	}
+	type args struct {
+		tx                  metadataCommon.Transaction
+		chainRetriever      metadataCommon.ChainRetriever
+		shardViewRetriever  metadataCommon.ShardViewRetriever
+		beaconViewRetriever metadataCommon.BeaconViewRetriever
+		shardID             byte
+		transactionStateDB  *statedb.StateDB
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "NftID and AccessID exist at same time",
+			fields: fields{
+				MetadataBase: metadataCommon.MetadataBase{
+					Type: metadataCommon.Pdexv3StakingRequestMeta,
+				},
+				AccessOption: AccessOption{
+					NftID:    nftID,
+					AccessID: nftID,
+				},
+			},
+			args:    args{},
+			want:    false,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &StakingRequest{
+				MetadataBase: tt.fields.MetadataBase,
+				tokenID:      tt.fields.tokenID,
+				otaReceiver:  tt.fields.otaReceiver,
+				otaReceivers: tt.fields.otaReceivers,
+				AccessOption: tt.fields.AccessOption,
+				tokenAmount:  tt.fields.tokenAmount,
+			}
+			got, err := request.ValidateTxWithBlockChain(tt.args.tx, tt.args.chainRetriever, tt.args.shardViewRetriever, tt.args.beaconViewRetriever, tt.args.shardID, tt.args.transactionStateDB)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("StakingRequest.ValidateTxWithBlockChain() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("StakingRequest.ValidateTxWithBlockChain() = %v, want %v", got, tt.want)
 			}
 		})
 	}

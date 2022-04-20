@@ -40,8 +40,8 @@ func (a *AcceptUserMintNft) FromStringSlice(source []string) error {
 	if source[0] != strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, source[0])
 	}
-	if source[1] != common.Pdexv3AcceptUserMintNftStatus {
-		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptUserMintNftStatus, source[1])
+	if source[1] != common.Pdexv3AcceptStringStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptStringStatus, source[1])
 	}
 	err := json.Unmarshal([]byte(source[2]), a)
 	if err != nil {
@@ -53,7 +53,7 @@ func (a *AcceptUserMintNft) FromStringSlice(source []string) error {
 func (a *AcceptUserMintNft) StringSlice() ([]string, error) {
 	res := []string{}
 	res = append(res, strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta))
-	res = append(res, common.Pdexv3AcceptUserMintNftStatus)
+	res = append(res, common.Pdexv3AcceptStringStatus)
 	data, err := json.Marshal(a)
 	if err != nil {
 		return res, err

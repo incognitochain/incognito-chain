@@ -63,8 +63,8 @@ func (response *StakingResponse) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	if response.status != common.Pdexv3RejectStakingStatus {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
+	if response.status != common.Pdexv3RejectStringStatus {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status cannot be empty"))
 	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
 	if err != nil {
@@ -160,7 +160,7 @@ func (response *StakingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instContributionStatus := inst[1]
-		if instContributionStatus != response.status || response.status != common.Pdexv3RejectStakingStatus {
+		if instContributionStatus != response.status || response.status != common.Pdexv3RejectStringStatus {
 			continue
 		}
 

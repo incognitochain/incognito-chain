@@ -96,7 +96,43 @@ func TestProduceOrder(t *testing.T) {
 
 			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
 			// manually add nftID
-			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			if testdata.Metadata.NftID != nil {
+				testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			}
+
+			instructions, err := testState.BuildInstructions(env)
+			NoError(t, err)
+			Equal(t, expected, TestResult{instructions})
+		})
+	}
+}
+
+func TestProduceWithdrawOrder(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Metadata metadataPdexv3.WithdrawOrderRequest `json:"metadata"`
+	}
+
+	type TestResult struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	var testcases []Testcase = mustReadTestcases("produce_withdraw_order.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state.json")
+
+			env := skipToProduce([]metadataCommon.Metadata{&testdata.Metadata}, 0)
+			// manually add nftID
+			if testdata.Metadata.NftID != nil {
+				testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			}
 
 			instructions, err := testState.BuildInstructions(env)
 			NoError(t, err)
@@ -130,7 +166,7 @@ func TestAutoWithdraw(t *testing.T) {
 				DefaultFeeRateBPS: 30,
 			})
 
-			instructions, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
+			instructions, _, _, err := testState.producer.withdrawAllMatchedOrders(testState.poolPairs, testdata.Limit)
 			NoError(t, err)
 			Equal(t, expected, TestResult{instructions})
 		})
@@ -169,7 +205,9 @@ func TestOrderOverNftIDLimit(t *testing.T) {
 
 			env := skipToProduce(mds, 0)
 			// manually add nftID
-			testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			if testdata.Metadata.NftID != nil {
+				testState.nftIDs[testdata.Metadata.NftID.String()] = 100
+			}
 			// set order count per NFT to 2 for this test
 			testState.params.MaxOrdersPerNft = 2
 
@@ -206,6 +244,35 @@ func TestProcessOrder(t *testing.T) {
 			var result TestResult
 			result.FromState(testState)
 			Equal(t, expected, result)
+		})
+	}
+}
+
+func TestProcessOrderReward(t *testing.T) {
+	setTestTradeConfig()
+	type TestData struct {
+		Instructions [][]string `json:"instructions"`
+	}
+
+	type TestResult StateFormatter
+
+	var testcases []Testcase = mustReadTestcases("process_trade_order_reward.json")
+	for _, testcase := range testcases {
+		t.Run(testcase.Name, func(t *testing.T) {
+			var testdata TestData
+			err := json.Unmarshal(testcase.Data, &testdata)
+			NoError(t, err)
+			var expected TestResult
+			err = json.Unmarshal(testcase.Expected, &expected)
+			NoError(t, err)
+			testState := mustReadState("test_state_order_reward.json", "params.json")
+
+			env := skipToProcess(testdata.Instructions)
+			err = testState.Process(env)
+			NoError(t, err)
+			result := (*TestResult)((&StateFormatter{}).FromState(testState))
+
+			Equal(t, expected, *result)
 		})
 	}
 }

@@ -99,9 +99,10 @@ const (
 	Pdexv3StakerLastRewardPerShareObjectType  = 63
 	Pdexv3PoolPairMakingVolumeObjectType      = 64
 	Pdexv3PoolPairOrderRewardObjectType       = 65
-	Pdexv3ShareLastLmRewardPerShareObjectType = 67
-	Pdexv3PoolPairLmRewardPerShareObjectType  = 68
-	Pdexv3PoolPairLmLockedShareObjectType     = 69
+	Pdexv3PoolPairOrderRewardDetailObjectType = 67
+	Pdexv3ShareLastLmRewardPerShareObjectType = 68
+	Pdexv3PoolPairLmRewardPerShareObjectType  = 69
+	Pdexv3PoolPairLmLockedShareObjectType     = 71
 )
 
 // Prefix length

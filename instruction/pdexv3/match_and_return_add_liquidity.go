@@ -17,6 +17,7 @@ type MatchAndReturnAddLiquidity struct {
 	existedTokenActualAmount uint64
 	existedTokenReturnAmount uint64
 	existedTokenID           common.Hash
+	accessOTA                []byte
 }
 
 func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
@@ -26,7 +27,7 @@ func NewMatchAndReturnAddLiquidity() *MatchAndReturnAddLiquidity {
 func NewMatchAndReturnAddLiquidityWithValue(
 	contribution statedb.Pdexv3ContributionState,
 	shareAmount, returnAmount, existedTokenActualAmount, existedTokenReturnAmount uint64,
-	existedTokenID common.Hash,
+	existedTokenID common.Hash, accessOTA []byte,
 ) *MatchAndReturnAddLiquidity {
 	return &MatchAndReturnAddLiquidity{
 		shareAmount:              shareAmount,
@@ -35,6 +36,7 @@ func NewMatchAndReturnAddLiquidityWithValue(
 		existedTokenActualAmount: existedTokenActualAmount,
 		existedTokenID:           existedTokenID,
 		existedTokenReturnAmount: existedTokenReturnAmount,
+		accessOTA:                accessOTA,
 	}
 }
 
@@ -75,6 +77,7 @@ func (m *MatchAndReturnAddLiquidity) MarshalJSON() ([]byte, error) {
 		ExistedTokenActualAmount uint64                           `json:"ExistedTokenActualAmount"`
 		ExistedTokenReturnAmount uint64                           `json:"ExistedTokenReturnAmount"`
 		ExistedTokenID           common.Hash                      `json:"ExistedTokenID"`
+		AccessOTA                []byte                           `json:"AccessOTA,omitempty"`
 	}{
 		ShareAmount:              m.shareAmount,
 		Contribution:             &m.contribution,
@@ -82,6 +85,7 @@ func (m *MatchAndReturnAddLiquidity) MarshalJSON() ([]byte, error) {
 		ExistedTokenActualAmount: m.existedTokenActualAmount,
 		ExistedTokenReturnAmount: m.existedTokenReturnAmount,
 		ExistedTokenID:           m.existedTokenID,
+		AccessOTA:                m.accessOTA,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -97,6 +101,7 @@ func (m *MatchAndReturnAddLiquidity) UnmarshalJSON(data []byte) error {
 		ExistedTokenActualAmount uint64                           `json:"ExistedTokenActualAmount"`
 		ExistedTokenReturnAmount uint64                           `json:"ExistedTokenReturnAmount"`
 		ExistedTokenID           common.Hash                      `json:"ExistedTokenID"`
+		AccessOTA                []byte                           `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -110,6 +115,7 @@ func (m *MatchAndReturnAddLiquidity) UnmarshalJSON(data []byte) error {
 	m.existedTokenActualAmount = temp.ExistedTokenActualAmount
 	m.existedTokenReturnAmount = temp.ExistedTokenReturnAmount
 	m.existedTokenID = temp.ExistedTokenID
+	m.accessOTA = temp.AccessOTA
 	return nil
 }
 
@@ -135,4 +141,8 @@ func (m *MatchAndReturnAddLiquidity) Contribution() statedb.Pdexv3ContributionSt
 
 func (m *MatchAndReturnAddLiquidity) ShareAmount() uint64 {
 	return m.shareAmount
+}
+
+func (m *MatchAndReturnAddLiquidity) AccessOTA() []byte {
+	return m.accessOTA
 }

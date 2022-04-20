@@ -2,6 +2,7 @@ package pdexv3
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -17,7 +18,8 @@ type AddOrderRequest struct {
 	SellAmount          uint64                              `json:"SellAmount"`
 	MinAcceptableAmount uint64                              `json:"MinAcceptableAmount"`
 	Receiver            map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
-	NftID               common.Hash                         `json:"NftID"`
+	RewardReceiver      map[common.Hash]privacy.OTAReceiver `json:"RewardReceiver,omitempty"`
+	AccessOption
 	metadataCommon.MetadataBase
 }
 
@@ -27,7 +29,8 @@ func NewAddOrderRequest(
 	sellAmount uint64,
 	minAcceptableAmount uint64,
 	recv map[common.Hash]privacy.OTAReceiver,
-	nftID common.Hash,
+	rewardReceivers map[common.Hash]privacy.OTAReceiver,
+	accessOption AccessOption,
 	metaType int,
 ) (*AddOrderRequest, error) {
 	r := &AddOrderRequest{
@@ -36,7 +39,8 @@ func NewAddOrderRequest(
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
 		Receiver:            recv,
-		NftID:               nftID,
+		RewardReceiver:      rewardReceivers,
+		AccessOption:        accessOption,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -45,11 +49,14 @@ func NewAddOrderRequest(
 }
 
 func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	err := beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
+	ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(req.PoolPairID)
 	if err != nil {
-		return false, err
+		return ok, err
 	}
-	err = beaconViewRetriever.IsValidNftID(req.NftID.String())
+	if !ok {
+		return ok, fmt.Errorf("PoolPairID %s is not valid", req.PoolPairID)
+	}
+	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, false, false, "")
 	if err != nil {
 		return false, err
 	}
@@ -59,6 +66,11 @@ func (req AddOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transactio
 func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
+	}
+
+	if req.TokenToSell == common.PdexAccessCoinID {
+		return false, false, metadataCommon.NewMetadataTxError(
+			metadataCommon.PDEInvalidMetadataValueError, errors.New("cannot sell pdex access token"))
 	}
 
 	// OTAReceiver check
@@ -71,6 +83,26 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			return false, false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Invalid shard %d for Receiver - must equal sender shard",
+					item.GetShardID()))
+		}
+	}
+
+	if req.UseNft() {
+		if req.RewardReceiver != nil {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("cannot use reward receiver with nftID"))
+		}
+	}
+
+	// reward receivers check
+	for _, item := range req.RewardReceiver {
+		if !item.IsValid() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid reward receiver %v", item))
+		}
+		if tx.GetSenderAddrLastByte() != item.GetShardID() {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Invalid shard %d for reward Receiver - must equal sender shard",
 					item.GetShardID()))
 		}
 	}
@@ -97,6 +129,14 @@ func (req AddOrderRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			return false, false, metadataCommon.NewMetadataTxError(
 				metadataCommon.PDEInvalidMetadataValueError,
 				fmt.Errorf("Missing refund OTAReceiver for token %v", tokenID))
+		}
+	}
+	if req.RewardReceiver != nil {
+		_, exists := req.RewardReceiver[common.PRVCoinID]
+		if !exists {
+			return false, false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Missing reward receiver for token %v", common.PRVCoinID))
 		}
 	}
 
@@ -166,6 +206,14 @@ func (req *AddOrderRequest) CalculateSize() uint64 {
 func (req *AddOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for currentTokenID, val := range req.Receiver {
+		if currentTokenID != common.PRVCoinID {
+			currentTokenID = common.ConfidentialAssetID
+		}
+		result = append(result, metadataCommon.OTADeclaration{
+			PublicKey: val.PublicKey.ToBytes(), TokenID: currentTokenID,
+		})
+	}
+	for currentTokenID, val := range req.RewardReceiver {
 		if currentTokenID != common.PRVCoinID {
 			currentTokenID = common.ConfidentialAssetID
 		}
