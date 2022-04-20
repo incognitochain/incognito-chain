@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"testing"
 )
@@ -72,6 +73,29 @@ func TestDecodeAndValidateSig(t *testing.T) {
 	}
 	hash, _ := common.Hash{}.NewHashFromStr("030bcfa39a9da5dc525c2424c44bf7a58480c5bb9e82f50c81a0f9a5093fc69c")
 	if err := validateSingleBriSig(hash, valData.ProposerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateCommitteeSig1(t *testing.T) {
+	validationData := `{"ProducerBLSSig":"8plF/+pBNjl2s6Pqxb8nPL+hjNVfy3SEIwVja9B83eRx19Vy8OzkS01LV3a1I7rE5cWYRvPQUzFkqqvVA2JiGgE=","ProposedBlockBLSSig":"AobW1B7tvesDvmP5wrHx24oL60BtIsGzsLbvEsswZ1F6WOpluAzOCKpUpH7DL+u6mnUn/vJFJAvdxuRn+AZk3AA=","ValidatiorsIdx":[0,1,2,3],"AggSig":"GlYVgIlHCWs2kkDDBVKPE54lLdN4i3fPLdKMhJ9Rt1A=","BridgeSig":["","","",""],"PortalSig":null}`
+	valData, err := consensustypes.DecodeValidationData(validationData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	committee := []string{
+		"121VhftSAygpEJZ6i9jGk4diwdFxA6whUVx3P9GmT35Lw6txpbDmeVgSJ4qUwSHPAep8FedvNrZfGB1eoXZXnCwwHVQs7htn7XigUSowaRJyXVf9n42Auhk65GJbxnE7C2t8HWjW3N97m4TejbAQoR5WoWSeaixXRSimadBeWVF4cgZxPUvLuPsSfGYWi4DQ4GwJhpSLNEbite3NseJBDM5N7DGas6mn9roe2jcSYSVyFRR87fqHMfPhhyMQ7k21up58RtMa3tRsEBDBRmKZgeaKr67MuBbEFKJw1Hh8fwbRVaFKeD38EAG9oykANrTmBvZXk4gU8Dvm3uJEJLX7iwDLVxgSDaNYtaYAoePD4dbgWmvotELQW2kJaQ7DEmttV7ZgukQCVPg36pHbDF8oijr5bobgLhft3ajJy5x8mMpuRDYy",
+		"121VhftSAygpEJZ6i9jGkGco4dFKpqVXZA6nmGjRKYWR7Q5NngQSX1adAfYY3EGtS32c846sAxYSKGCpqouqmJghfjtYfHEPZTRXctAcc6bYhR3d1YpB6m3nNjEdTYWf85agBq5QnVShMjBRFf54dK25MAazxBSYmpowxwiaEnEikpQah2W4LY9P9vF9HJuLUZ4BnknoXXK3BVkGHsimy5RXtvNet2LqXZgZWHX5CDj31q7kQ2jUGJHr862MgsaHfT4Qq8o4u71nhgtzKBYgw9fvXqJUU6EVynqJCVdqaDXmUvjanGkaZb9vQjaXVoHyf6XRxVSbQBTS5G7eb4D4V3RucXRLQp34KTadmmNQUxnCoPQztVcuDQwNqy9zRXPPAdw7pWvv7P7p4HuQVAHKqvJskMNk3v971WBH5VpZA1XMkmtu",
+		"121VhftSAygpEJZ6i9jGkB6Dizgqq7pbFeDL2QEMpXrQHhLLnnCW7JqM1mvpwtvPShhao3HL22hLBznXV89tuHaZiuB1jfd7fE7uBTgpaW23gpQCN6xcmJ5tDipxqdDQ4qsYswGe2qfAy9z6SyAwihD23RukBE2JPoqwuzzHNdQgoaU3nFuZMj51ZxrBU1K3QrVT5Xs9rSZzQkf1AP16WyDXBS7xDYFVbLNRJ14STqRsTDnbpgtdNCuVB7NvpFeVNLFHF5FoxwyLr6iD4sUZNapF4XMcxH28abWD9Vxw4xjH6iDJkY2Ht5duMaqCASMB4YBn8sQzFoGLpAUQWqs49sH118Fi7uMRbKVymgaQRzC3zasNfxQDd3pkAfMHkNqW6XFW23S1mETyyft9ZYtuzWvzeo366eMRCAdVTJAKEp7g3zJ7",
+		"121VhftSAygpEJZ6i9jGkRjV8czErtzomv6v8WPf2FSkDkes6dqgqP1Y3ebAoEWtm97KFoScxbN8kmBpwQVRDFzqrdbuPeQZMaTMBoXiJteAC8ZrUuKbrLxQWEKgoJvqUkZg9u2Dd2EAyDoreD6W7qYTUUjSXdS9NroR5C7RAztUhQt6TrzvVLzzRtHv4qTWyfdhaHP5tkqPNGXarMZvDCoSBXnR4WXL1uWD872PPXBP2WF62wRhMQN4aA7FSBtbfUsxqvM2HuZZ8ryhCeXb6VyeogWUDxRwNDmhaUMK2sUgez9DJpQ8Lcy2cW7yqco6BR8aUVzME1LetYKp7htB74fRTmGwx7KJUzNH4hiEL7FzTthbes1KyNZabyDH8HHL1zxGqAnDX3R6jKYinsvXtJHGpX1SpHwXfGUuTWn3VqSL7NVv",
+	}
+	committeeKeys, _ := incognitokey.CommitteeBase58KeyListToStruct(committee)
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committeeKeys {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
+	}
+	hash := common.Hash{}.NewHashFromStr2("2b34c742cf7865c64b9a704d7300c956ed4124205734589223ad2cd7cc037091")
+	if err := validateBLSSig(&hash, valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		t.Fatal(err)
 	}
 }

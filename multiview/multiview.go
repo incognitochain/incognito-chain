@@ -100,7 +100,8 @@ func (multiView *MultiView) ClearBranch() {
 
 func (multiView *MultiView) removeOutdatedView() {
 	for h, v := range multiView.viewByHash {
-		if v.GetHeight() < multiView.finalView.GetHeight() {
+		if v.GetHeight() < multiView.finalView.GetHeight() ||
+			(v.GetBlock().GetVersion() == types.INSTANT_FINALITY_VERSION && v.GetHeight() == multiView.finalView.GetHeight()) {
 			delete(multiView.viewByHash, h)
 			delete(multiView.viewByPrevHash, h)
 			delete(multiView.viewByPrevHash, *v.GetPreviousHash())
@@ -438,7 +439,7 @@ func (multiView *MultiView) ShardAddViewAndFinalizeV2(view View, proof *RePropos
 	ch := make(chan result)
 
 	multiView.actionCh <- func() {
-		if multiView.bestView.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
+		if view.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
 			err := errors.New("Instant finality do not support this view version")
 			ch <- result{v: nil, err: err}
 			return
@@ -460,6 +461,7 @@ func (multiView *MultiView) tryInstantFinalizeShard(finalizedIndex map[uint64]co
 
 	for i := 0; i < len(finalizedIndex); i++ {
 		nextHeight := finalHeight + 1
+
 		hash, ok := finalizedIndex[nextHeight]
 		if !ok {
 			break
@@ -468,8 +470,10 @@ func (multiView *MultiView) tryInstantFinalizeShard(finalizedIndex map[uint64]co
 		if !ok {
 			break
 		}
-		multiView.finalView = finalView
 		deletedView = append(deletedView, *finalView.GetPreviousHash())
+		multiView.finalView = finalView
+
+		finalHeight = nextHeight
 	}
 
 	for _, hash := range deletedView {
@@ -493,15 +497,15 @@ func (multiView *MultiView) calculateShardBestView() (View, error) {
 	chains := [][]View{}
 	getAllBranches(*multiView.finalView.GetHash(), multiView.viewByPrevHash, &chains, []View{multiView.finalView})
 
-	confirmableChains := [][]View{}
-	for _, v := range chains {
-		_, isConfirmable := isConfirmableChain(v, multiView.finalityProof)
-		if isConfirmable {
-			confirmableChains = append(confirmableChains, v)
-		}
-	}
+	//confirmableChains := [][]View{}
+	//for _, v := range chains {
+	//	_, isConfirmable := isConfirmableChain(v, multiView.finalityProof)
+	//	if isConfirmable {
+	//		confirmableChains = append(confirmableChains, v)
+	//	}
+	//}
 
-	bestChain, err := multiView.shardForkChoiceRule(confirmableChains)
+	bestChain, err := multiView.shardForkChoiceRule(chains)
 	if err != nil {
 		return nil, err
 	}
@@ -531,14 +535,18 @@ func (multiView *MultiView) GetBestConfirmableShardBranch() ([]types.BlockInterf
 			}
 		}
 
-		bestBranch, err := multiView.shardForkChoiceRule(branches)
+		bestBranch, err := multiView.shardForkChoiceRule(confirmableChains)
 		if err != nil {
 			ch <- result{blocks: nil, err: err}
 			return
 		}
 
 		res := []types.BlockInterface{}
-		for _, v := range bestBranch {
+		for i, v := range bestBranch {
+			// discard final view
+			if i == 0 {
+				continue
+			}
 			res = append(res, v.GetBlock())
 		}
 
@@ -673,6 +681,7 @@ func (multiView *MultiView) IsBelongToConfirmableChain(branch []types.BlockInter
 		}
 
 		// this branch must belong to a finalized branch
+		// calculate if the chain from child block to the latest view contain at least a finalized chain
 		v := multiView.viewByHash[*childBlock.Hash()]
 		branches := [][]View{}
 		getAllBranches(*childBlock.Hash(), multiView.viewByPrevHash, &branches, []View{v})

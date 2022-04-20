@@ -172,9 +172,9 @@ func InitReceiveBlockByProposedHash(chainID int) (map[string]*ProposeBlockInfo, 
 	return res, nil
 }
 
-func (a *actorV2) AddReceiveBlockByProposedHash(blockHash string, proposeBlockInfo *ProposeBlockInfo) error {
+func (a *actorV2) AddReceiveBlockByProposedHash(proposedBlockHash string, proposeBlockInfo *ProposeBlockInfo) error {
 
-	a.receiveBlockByProposedHash[blockHash] = proposeBlockInfo
+	a.receiveBlockByProposedHash[proposedBlockHash] = proposeBlockInfo
 
 	data, err := json.Marshal(proposeBlockInfo)
 	if err != nil {
@@ -184,7 +184,7 @@ func (a *actorV2) AddReceiveBlockByProposedHash(blockHash string, proposeBlockIn
 	if err := rawdb_consensus.StoreReceiveBlockByHash(
 		rawdb_consensus.GetConsensusDatabase(),
 		a.chainID,
-		blockHash,
+		proposedBlockHash,
 		data,
 	); err != nil {
 		return err
@@ -192,24 +192,24 @@ func (a *actorV2) AddReceiveBlockByProposedHash(blockHash string, proposeBlockIn
 	return nil
 }
 
-func (a *actorV2) GetReceiveBlockByHash(blockHash string) (*ProposeBlockInfo, bool) {
-	res, ok := a.receiveBlockByProposedHash[blockHash]
+func (a *actorV2) GetReceiveBlockByHash(proposedBlockHash string) (*ProposeBlockInfo, bool) {
+	res, ok := a.receiveBlockByProposedHash[proposedBlockHash]
 	return res, ok
 }
 
-func (a *actorV2) CleanReceiveBlockByHash(blockHash string) error {
+func (a *actorV2) CleanReceiveBlockByHash(proposedBlockHash string) error {
 
 	if err := rawdb_consensus.DeleteReceiveBlockByHash(
 		rawdb_consensus.GetConsensusDatabase(),
 		a.chainID,
-		blockHash,
+		proposedBlockHash,
 	); err != nil {
 		return err
 	}
 
-	delete(a.receiveBlockByProposedHash, blockHash)
+	delete(a.receiveBlockByProposedHash, proposedBlockHash)
 
-	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), blockHash); err != nil {
+	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), proposedBlockHash); err != nil {
 		return err
 	}
 	return nil

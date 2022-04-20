@@ -139,6 +139,7 @@ func CreateVote(
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
 	vote.ProposedBlockHash = block.ProposedHash().String()
+	vote.BlockHash = block.Hash().String()
 	vote.Validator = userBLSPk
 	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
 	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
@@ -214,7 +215,7 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 
 func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
 	i.logger.Criticalf("NO VOTE")
-	return nil, fmt.Errorf("No vote for block %+v, %+v", block.GetHeight(), block.Hash().String())
+	return nil, fmt.Errorf("No vote for block %+v, %+v, proposed hash %+v", block.GetHeight(), block.Hash().String(), block.ProposedHash().String())
 }
 
 type IHandleVoteMessageRule interface {

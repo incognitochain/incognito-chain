@@ -462,7 +462,7 @@ func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	receiveBlockByHash, err := blsbft.InitReceiveBlockByHash(chainID)
+	receiveBlockByHash, err := blsbft.InitReceiveBlockByProposedHash(chainID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

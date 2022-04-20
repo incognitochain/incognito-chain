@@ -633,7 +633,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
+		return nil, nil, nil, nil, NewBlockChainError(CountMissingSignatureError, err)
 	}
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
@@ -794,6 +794,9 @@ func (curView *BeaconBestState) countMissingSignatureV3(
 	shardID byte,
 	shardState types.ShardState,
 ) error {
+	if shardState.PreviousValidationData == "" {
+		return nil
+	}
 
 	if shardState.Height == 1 {
 		return nil
@@ -1149,13 +1152,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
-	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		for shardID, shardStates := range beaconBlock.Body.ShardState {
-			for _, shardState := range shardStates {
-				err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
-				if err != nil {
-					return NewBlockChainError(StoreBeaconBlockError, err)
-				}
+	for shardID, shardStates := range beaconBlock.Body.ShardState {
+		for _, shardState := range shardStates {
+			err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+			if err != nil {
+				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
 		}
 	}

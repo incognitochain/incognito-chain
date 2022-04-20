@@ -206,7 +206,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, reP
 	}
 	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteeSig(shardBlock, signingCommittees); err != nil {
-		Logger.log.Errorf("Validate shard %v, block %v, hash %+v, validation field %s, with committee %v return error %v", shardBlock.GetShardID(), shardBlock.GetHeight(), *shardBlock.Hash(), shardBlock.GetValidationField(), committeesStr, err)
+		Logger.log.Errorf("Validate shard %v, block %v, hash %+v, reproposed hash %+v, validation field %s, with committee %v return error %v", shardBlock.GetShardID(), shardBlock.GetHeight(), *shardBlock.Hash(), *shardBlock.ProposedHash(), shardBlock.GetValidationField(), committeesStr, err)
 		return err
 	}
 

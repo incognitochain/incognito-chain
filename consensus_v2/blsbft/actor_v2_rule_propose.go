@@ -241,13 +241,15 @@ func (p *ProposeRuleLemma2) verifyLemma2FirstBlockNextHeight(
 			proposeMsg.ReProposeHashSignature, block.GetProposer())
 	}
 
-	finalityHeight := block.GetFinalityHeight()
-	previousBlockHeight := block.GetHeight() - 1
-	if finalityHeight != previousBlockHeight {
-		return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight expect %+v, but got %+v",
-			previousBlockHeight, finalityHeight)
+	if block.GetVersion() < types.INSTANT_FINALITY_VERSION {
+		finalityHeight := block.GetFinalityHeight()
+		previousBlockHeight := block.GetHeight() - 1
+		if finalityHeight != previousBlockHeight {
+			return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight expect %+v, but got %+v",
+				previousBlockHeight, finalityHeight)
+		}
 	}
-
+	
 	return nil
 }
 
@@ -272,17 +274,19 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 		return nil, false, err
 	}
 
-	finalityHeight := block.GetFinalityHeight()
-	if isValidProof {
-		previousBlockHeight := block.GetHeight() - 1
-		if finalityHeight != previousBlockHeight {
-			return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
-				previousBlockHeight, finalityHeight)
-		}
-	} else {
-		if finalityHeight != 0 {
-			return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
-				0, finalityHeight)
+	if block.GetVersion() < types.INSTANT_FINALITY_VERSION {
+		finalityHeight := block.GetFinalityHeight()
+		if isValidProof {
+			previousBlockHeight := block.GetHeight() - 1
+			if finalityHeight != previousBlockHeight {
+				return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+					previousBlockHeight, finalityHeight)
+			}
+		} else {
+			if finalityHeight != 0 {
+				return nil, false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+					0, finalityHeight)
+			}
 		}
 	}
 

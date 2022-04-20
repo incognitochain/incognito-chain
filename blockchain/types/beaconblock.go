@@ -96,7 +96,9 @@ type ShardState struct {
 	Version                int
 }
 
-func NewShardState(validationData string,
+func NewShardState(
+	validationData string,
+	previousValidationData string,
 	committeeFromBlock common.Hash,
 	height uint64,
 	hash common.Hash,
@@ -107,13 +109,14 @@ func NewShardState(validationData string,
 	newCrossShard := make([]byte, len(crossShard))
 	copy(newCrossShard, crossShard)
 	return ShardState{
-		ValidationData:     validationData,
-		CommitteeFromBlock: committeeFromBlock,
-		Height:             height,
-		Hash:               hash,
-		CrossShard:         newCrossShard,
-		ProposerTime:       proposerTime,
-		Version:            version,
+		ValidationData:         validationData,
+		PreviousValidationData: previousValidationData,
+		CommitteeFromBlock:     committeeFromBlock,
+		Height:                 height,
+		Hash:                   hash,
+		CrossShard:             newCrossShard,
+		ProposerTime:           proposerTime,
+		Version:                version,
 	}
 }
 

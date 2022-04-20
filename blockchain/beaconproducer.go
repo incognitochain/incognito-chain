@@ -325,9 +325,14 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	bridgeInstructions := [][]string{}
 
 	acceptedRewardInstruction := curView.getAcceptBlockRewardInstruction(shardID, shardBlock, blockchain)
+	previousShardBlock, _, err := blockchain.GetShardBlockByHash(*shardBlock.Hash())
+	if err != nil {
+		Logger.log.Errorf("Get Previous Validation data failed: %s", err.Error())
+	}
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
+		previousShardBlock.ValidationData,
 		shardBlock.Header.CommitteeFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),

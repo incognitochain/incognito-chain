@@ -76,7 +76,9 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewHash commo
 		}
 
 		// lemma 2
-		if proposeBlockInfo.IsValidLemma2Proof {
+		if proposeBlockInfo.IsValidLemma2Proof &&
+			(proposeBlockInfo.block.GetVersion() == types.BLOCK_PRODUCINGV3_VERSION ||
+				proposeBlockInfo.block.GetVersion() == types.LEMMA2_VERSION) {
 			if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
 				c.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
 					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
@@ -84,7 +86,9 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewHash commo
 				continue
 			}
 		}
-		if !proposeBlockInfo.IsValidLemma2Proof {
+		if !proposeBlockInfo.IsValidLemma2Proof &&
+			(proposeBlockInfo.block.GetVersion() == types.BLOCK_PRODUCINGV3_VERSION ||
+				proposeBlockInfo.block.GetVersion() == types.LEMMA2_VERSION) {
 			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
 				c.logger.Errorf("Block %+v %+v, root hash %+v, previous block hash %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
 					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.Hash().String(),
@@ -122,7 +126,7 @@ func (c ConsensusValidatorLemma2) ValidateBlock(lastVotedBlock types.BlockInterf
 	}
 
 	if !proposeBlockInfo.IsValid {
-		c.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
+		c.logger.Infof("validate block: %+v, proposedHash %+v, \n", proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.ProposedHash().String())
 		if err := c.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, proposeBlockInfo.Committees); err != nil {
 			c.logger.Error(err)
 			return false, err
@@ -135,8 +139,9 @@ func (c ConsensusValidatorLemma2) ValidateBlock(lastVotedBlock types.BlockInterf
 func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.BlockInterface, isVoteNextHeight bool, proposeBlockInfo *ProposeBlockInfo) bool {
 
 	if !isVoteNextHeight {
-		c.logger.Infof("Block %+v is valid with because no block in height is voted yet %+v",
+		c.logger.Infof("Block %+v is valid with because no block in height is voted yet %+v, proposed hash %+v",
 			*proposeBlockInfo.block.Hash(),
+			*proposeBlockInfo.block.ProposedHash(),
 			proposeBlockInfo.block.GetHeight())
 		return true
 	}
@@ -145,30 +150,33 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
 	if blockProduceTimeSlot < lastBlockProduceTimeSlot {
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
-		c.logger.Infof("Block %+v is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
-			*proposeBlockInfo.block.Hash(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
+		c.logger.Infof("Block %+v, propose hash %+v, is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
+			*proposeBlockInfo.block.Hash(), *proposeBlockInfo.block.ProposedHash(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		return true
 	} else if blockProduceTimeSlot == lastBlockProduceTimeSlot &&
 		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
-		c.logger.Infof("Block %+v is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
+		c.logger.Infof("Block %+v, propose hash %+v, is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
 			*proposeBlockInfo.block.Hash(),
+			*proposeBlockInfo.block.ProposedHash(),
 			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
 			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {
-		c.logger.Infof("Block %+v is valid with rule 3, Block Produce Time %+v, < Last Block Produce Time %+v",
+		c.logger.Infof("Block %+v, proposedHash %+v, is valid with rule 3, Block Produce Time %+v, < Last Block Produce Time %+v",
 			*proposeBlockInfo.block.Hash(),
+			*proposeBlockInfo.block.ProposedHash(),
 			blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		// blockProduceTimeSlot is larger or equal than voted block
 		return true
 	} // if not swap committees => do nothing
 
-	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | "+
+	c.logger.Infof("ValidateConsensusRules failed, hash %+v, proposed hash %+v, height %+v | "+
 		"blockProduceTs %+v, lastBlockProduceTs %+v |"+
 		"blockProposeTs %+v, lastBlockProposeTs %+v | "+
 		"isSameCommittee %+v",
 		*proposeBlockInfo.block.Hash(),
+		*proposeBlockInfo.block.ProposedHash(),
 		proposeBlockInfo.block.GetHeight(),
 		blockProduceTimeSlot,
 		lastBlockProduceTimeSlot,
@@ -263,7 +271,7 @@ func (c ConsensusValidatorLemma1) ValidateBlock(lastVotedBlock types.BlockInterf
 	}
 
 	if !proposeBlockInfo.IsValid {
-		c.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
+		c.logger.Infof("validate block: %+v, proposed hash: %+v \n", proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.ProposedHash().String())
 		if err := c.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, proposeBlockInfo.Committees); err != nil {
 			c.logger.Error(err)
 			return false, err
@@ -276,8 +284,9 @@ func (c ConsensusValidatorLemma1) ValidateBlock(lastVotedBlock types.BlockInterf
 func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.BlockInterface, isVoteNextHeight bool, proposeBlockInfo *ProposeBlockInfo) bool {
 
 	if !isVoteNextHeight {
-		c.logger.Infof("Block %+v is valid with because no block in height is voted yet %+v",
+		c.logger.Infof("Block %+v, proposed hash %+v, is valid with because no block in height is voted yet %+v",
 			*proposeBlockInfo.block.Hash(),
+			*proposeBlockInfo.block.ProposedHash(),
 			proposeBlockInfo.block.GetHeight())
 		return true
 	}
@@ -286,31 +295,34 @@ func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.Bl
 	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
 
 	if blockProduceTimeSlot < common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) {
-		c.logger.Infof("Block %+v is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
-			*proposeBlockInfo.block.Hash(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
+		c.logger.Infof("Block %+v, proposed hash %+v, is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
+			*proposeBlockInfo.block.Hash(), *proposeBlockInfo.block.ProposedHash(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
 		return true
 	} else if blockProduceTimeSlot == common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) &&
 		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
-		c.logger.Infof("Block %+v is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
+		c.logger.Infof("Block %+v, proposed hash %+v, is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
 			*proposeBlockInfo.block.Hash(),
+			*proposeBlockInfo.block.ProposedHash(),
 			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
 			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {
 		// blockProduceTimeSlot is larger or equal than voted block
-		c.logger.Infof("Block %+v is valid with rule 3, Block Produce Time %+v, < Last Block Produce Time %+v",
+		c.logger.Infof("Block %+v, proposed hash %+v, is valid with rule 3, Block Produce Time %+v, < Last Block Produce Time %+v",
 			*proposeBlockInfo.block.Hash(),
+			*proposeBlockInfo.block.ProposedHash(),
 			blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		return true
 	} // if not swap committees => do nothing
 
-	c.logger.Infof("ValidateConsensusRules failed, hash %+v, height %+v | "+
+	c.logger.Infof("ValidateConsensusRules failed, hash %+v, proposed hash %+v, height %+v | "+
 		"blockProduceTs %+v, lastBlockProduceTs %+v |"+
 		"blockProposeTs %+v, lastBlockProposeTs %+v | "+
 		"isSameCommittee %+v",
 		*proposeBlockInfo.block.Hash(),
+		*proposeBlockInfo.block.ProposedHash(),
 		proposeBlockInfo.block.GetHeight(),
 		blockProduceTimeSlot,
 		lastBlockProduceTimeSlot,

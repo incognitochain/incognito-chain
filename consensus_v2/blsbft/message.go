@@ -28,6 +28,7 @@ type BFTVote struct {
 	PrevBlockHash      string
 	BlockHeight        uint64
 	ProposedBlockHash  string
+	BlockHash          string
 	Validator          string
 	BLS                []byte
 	BRI                []byte
@@ -65,6 +66,7 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 		data = append(data, s.BRI...)
 	} else {
 		data = append(data, s.ProposedBlockHash...)
+		data = append(data, s.BlockHash...)
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
 		data = append(data, common.Uint64ToBytes(s.BlockHeight)...)
@@ -92,6 +94,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 		data = append(data, s.BRI...)
 	} else {
 		data = append(data, s.ProposedBlockHash...)
+		data = append(data, s.BlockHash...)
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
 		data = append(data, common.Uint64ToBytes(s.BlockHeight)...)

@@ -204,7 +204,7 @@ func (chain *BeaconChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
-	if version >= types.LEMMA2_VERSION {
+	if version == types.LEMMA2_VERSION || version == types.BLOCK_PRODUCINGV3_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
