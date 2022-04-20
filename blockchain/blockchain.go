@@ -1358,7 +1358,7 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 	if cID != common.BeaconChainSyncID {
 		sBestView := blockchain.ShardChain[cID].GetBestState()
 		for k, v := range sBestView.CommitteeChangeCheckpoint.Data {
-			Logger.log.Infof("[debugcommitteecheckpoint] k %+v, value %+v", k, v)
+			Logger.log.Infof("[debugcommitteecheckpoint] sID %v k %+v, value %+v", cID, k, v)
 		}
 		epochs := sBestView.CommitteeChangeCheckpoint.Epochs
 		idx, existed := SearchUint64(epochs, epoch)

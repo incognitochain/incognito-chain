@@ -1264,7 +1264,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 	if (len(committeeChange.ShardCommitteeAdded[shardID]) > 0) || (len(committeeChange.ShardCommitteeReplaced[shardID][common.REPLACE_IN]) > 0) {
 		epochForCache := newShardState.Epoch
+		epochs := []uint64{}
 		for _, bBlk := range beaconBlocks {
+			epochs = append(epochs, bBlk.GetCurrentEpoch())
 			if bBlk.Header.Epoch > epochForCache {
 				epochForCache = bBlk.Header.Epoch
 			} else {
@@ -1273,6 +1275,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				}
 			}
 		}
+		Logger.log.Infof("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epohc %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
 		newShardState.updateCommitteeChangeCheckpoint(epochForCache, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
 		key := getCommitteeCacheKeyByEpoch(newShardState.Epoch, shardID)
 		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v", newShardState.Epoch, shardID)
