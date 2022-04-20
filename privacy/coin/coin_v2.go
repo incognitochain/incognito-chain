@@ -554,6 +554,9 @@ func (c *CoinV2) CheckCoinValid(paymentAdd key.PaymentAddress, sharedRandom []by
 
 // Check whether the utxo is from this keyset
 func (c *CoinV2) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *operation.Point) {
+	if keySet == nil {
+		return false, nil
+	}
 	_, txOTARandomPoint, index, err1 := c.GetTxRandomDetail()
 	if err1 != nil {
 		return false, nil

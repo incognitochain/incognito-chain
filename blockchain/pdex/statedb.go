@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 func InitStatesFromDB(
@@ -107,10 +108,15 @@ func initStateV2FromDB(
 	if err != nil {
 		return nil, err
 	}
-	return newStateV2WithValue(
+	result := newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs, params, stakingPools, nftIDs,
-	), nil
+	)
+	result.nftAssetTags, err = result.nftAssetTags.FromIDs(nftIDs)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
@@ -168,8 +174,21 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			for tokenID, amount := range value {
-				orderReward[nftID].uncollectedRewards[tokenID] = amount
+			orderReward[nftID].txReqID = value.TxReqID()
+			orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
+			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+			if err != nil {
+				return nil, err
+			}
+			for tokenID, value := range rewardDetail {
+				receiver := privacy.OTAReceiver{}
+				err := receiver.FromString(value.Receiver())
+				if err != nil {
+					return nil, err
+				}
+				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
+					receiver, value.Value(),
+				)
 			}
 		}
 		lmRewardsPerShare, err := statedb.GetPdexv3PoolPairLmRewardPerShares(stateDB, poolPairID)
@@ -211,7 +230,7 @@ func initShares(poolPairID string, stateDB *statedb.StateDB) (map[string]*Share,
 			return nil, err
 		}
 		res[nftID] = NewShareWithValue(
-			shareState.Amount(), shareState.LmLockedAmount(), tradingFees, lastLPFeesPerShare, lastLmRewardsPerShare,
+			shareState.Amount(), shareState.LmLockedAmount(), shareState.AccessOTA(), tradingFees, lastLPFeesPerShare, lastLmRewardsPerShare,
 		)
 	}
 	return res, nil
@@ -234,7 +253,9 @@ func initStakers(stakingPoolID string, stateDB *statedb.StateDB) (map[string]*St
 		if err != nil {
 			return res, totalLiquidity, err
 		}
-		res[nftID] = NewStakerWithValue(stakerState.Liquidity(), rewards, lastRewardsPerShare)
+		res[nftID] = NewStakerWithValue(
+			stakerState.Liquidity(), stakerState.AccessOTA(), rewards, lastRewardsPerShare,
+		)
 	}
 	return res, totalLiquidity, nil
 }
@@ -350,8 +371,20 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			for tokenID, amount := range value {
-				orderReward[nftID].uncollectedRewards[tokenID] = amount
+			orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
+			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+			if err != nil {
+				return nil, err
+			}
+			for tokenID, value := range rewardDetail {
+				receiver := privacy.OTAReceiver{}
+				err := receiver.FromString(value.Receiver())
+				if err != nil {
+					return nil, err
+				}
+				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
+					receiver, value.Value(),
+				)
 			}
 		}
 		orderbook := &Orderbook{[]*Order{}}
@@ -453,6 +486,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			makingVolume[tokenID].volume[nftID] = amount
 		}
 	}
+
 	tempOrderReward, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
 	if err != nil {
 		return nil, err
@@ -462,8 +496,20 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 		if orderReward[nftID] == nil {
 			orderReward[nftID] = NewOrderReward()
 		}
-		for tokenID, amount := range value {
-			orderReward[nftID].uncollectedRewards[tokenID] = amount
+		orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
+		rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+		if err != nil {
+			return nil, err
+		}
+		for tokenID, value := range rewardDetail {
+			receiver := privacy.OTAReceiver{}
+			err := receiver.FromString(value.Receiver())
+			if err != nil {
+				return nil, err
+			}
+			orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
+				receiver, value.Value(),
+			)
 		}
 	}
 	orderbook := &Orderbook{[]*Order{}}
@@ -523,10 +569,22 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 	}
 
 	orderRewards := map[string]*OrderReward{}
-	for orderID, reward := range rewards {
-		orderRewards[orderID] = NewOrderReward()
-		for tokenID, amount := range reward {
-			orderRewards[orderID].uncollectedRewards[tokenID] = amount
+	for nftID, reward := range rewards {
+		orderRewards[nftID] = NewOrderReward()
+		orderRewards[nftID].withdrawnStatus = reward.WithdrawnStatus()
+		rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
+		if err != nil {
+			return nil, err
+		}
+		for tokenID, value := range rewardDetail {
+			receiver := privacy.OTAReceiver{}
+			err := receiver.FromString(value.Receiver())
+			if err != nil {
+				return nil, err
+			}
+			orderRewards[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
+				receiver, value.Value(),
+			)
 		}
 	}
 	return orderRewards, nil

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -440,10 +441,12 @@ func (s *stateV1) Validator() StateValidator {
 	return s
 }
 
-func (s *stateV1) IsValidPoolPairID(poolPairID string) error {
+func (s *stateV1) IsValidPdexv3PoolPairID(poolPairID string) (bool, error) {
 	poolPair, found := s.poolPairs[poolPairID]
 	if !found || poolPair == nil {
-		return fmt.Errorf("%v pool pair ID can not be found", poolPairID)
+		return false, fmt.Errorf("pool pair ID %v can not be found", poolPairID)
 	}
-	return nil
+	return true, nil
 }
+
+func (s *stateV1) NFTAssetTags() (map[string]*common.Hash, error) { return nil, nil }

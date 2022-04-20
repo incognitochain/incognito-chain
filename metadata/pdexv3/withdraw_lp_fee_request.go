@@ -9,23 +9,25 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type WithdrawalLPFeeRequest struct {
 	metadataCommon.MetadataBase
-	PoolPairID string                              `json:"PoolPairID"`
-	NftID      common.Hash                         `json:"NftID"`
-	Receivers  map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
+	PoolPairID string `json:"PoolPairID"`
+	AccessOption
+	Receivers map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
 }
 
 type WithdrawalLPFeeContent struct {
-	PoolPairID string       `json:"PoolPairID"`
-	NftID      common.Hash  `json:"NftID"`
+	PoolPairID string `json:"PoolPairID"`
+	AccessOption
 	TokenID    common.Hash  `json:"TokenID"`
 	Receiver   ReceiverInfo `json:"Receiver"`
 	IsLastInst bool         `json:"IsLastInst"`
-	TxReqID    common.Hash  `json:"TxReqID"`
+	TxReqID    common.Hash  `json:"TxReqID,omitempty"`
 	ShardID    byte         `json:"ShardID"`
+	AccessOTA  []byte       `json:"AccessOTA,omitempty"`
 }
 
 type WithdrawalLPFeeStatus struct {
@@ -36,7 +38,7 @@ type WithdrawalLPFeeStatus struct {
 func NewPdexv3WithdrawalLPFeeRequest(
 	metaType int,
 	pairID string,
-	nftID common.Hash,
+	accessOption AccessOption,
 	receivers map[common.Hash]privacy.OTAReceiver,
 ) (*WithdrawalLPFeeRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
@@ -44,7 +46,7 @@ func NewPdexv3WithdrawalLPFeeRequest(
 	return &WithdrawalLPFeeRequest{
 		MetadataBase: *metadataBase,
 		PoolPairID:   pairID,
-		NftID:        nftID,
+		AccessOption: accessOption,
 		Receivers:    receivers,
 	}, nil
 }
@@ -57,13 +59,59 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(withdrawal.NftID.String())
+	err := withdrawal.AccessOption.IsValid(tx, withdrawal.Receivers, beaconViewRetriever, db, true, false, "")
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPoolPairID(withdrawal.PoolPairID)
-	if err != nil {
-		return false, err
+	// validate burn tx, tokenID & amount = 1
+	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
+	if err != nil || !isBurn {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
+	}
+	burningAmt := burnedCoin.GetValue()
+	expectBurntTokenID := common.Hash{}
+	if withdrawal.AccessOption.UseNft() {
+		expectBurntTokenID = *withdrawal.NftID
+		_, isExisted := withdrawal.Receivers[*withdrawal.NftID]
+		if !isExisted {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
+		}
+	} else {
+		expectBurntTokenID = common.PdexAccessCoinID
+	}
+	burningTokenID := burnedToken
+	if burningAmt != 1 || *burningTokenID != expectBurntTokenID {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
+	}
+
+	if len(withdrawal.Receivers) > MaxPoolPairWithdrawalReceiver {
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
+	}
+
+	// Check OTA address string and tx random is valid
+	for _, receiver := range withdrawal.Receivers {
+		_, err = isValidOTAReceiver(receiver, shardID)
+		if err != nil {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
+	}
+	ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(withdrawal.PoolPairID)
+	if err != nil || !ok {
+		if !ok {
+			err = fmt.Errorf("Can not find poolPairID %v", withdrawal.PoolPairID)
+		}
+		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+	}
+	if !withdrawal.UseNft() {
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
+				withdrawal.PoolPairID,
+				*withdrawal.AccessID,
+				withdrawal.BurntOTA.ToBytesS(),
+				metadataCommon.Pdexv3WithdrawLPFeeRequestMeta,
+				utils.EmptyString,
+			),
+		)
 	}
 	return true, nil
 }
@@ -86,35 +134,6 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateSanityData(
 
 	if tx.GetVersion() != 2 {
 		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 LP fee withdrawal must be version 2"))
-	}
-
-	// validate burn tx, tokenID & amount = 1
-	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
-	if err != nil || !isBurn {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
-	}
-	burningAmt := burnedCoin.GetValue()
-	burningTokenID := burnedToken
-	if burningAmt != 1 || *burningTokenID != withdrawal.NftID {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
-	}
-
-	if len(withdrawal.Receivers) > MaxPoolPairWithdrawalReceiver {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Too many receivers"))
-	}
-
-	// Check OTA address string and tx random is valid
-	shardID := byte(tx.GetValidationEnv().ShardID())
-	for _, receiver := range withdrawal.Receivers {
-		_, err = isValidOTAReceiver(receiver, shardID)
-		if err != nil {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
-	}
-
-	_, isExisted := withdrawal.Receivers[withdrawal.NftID]
-	if !isExisted {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
 	}
 
 	return true, true, nil

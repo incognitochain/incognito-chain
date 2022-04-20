@@ -36,10 +36,10 @@ staking_amount_shard: 1750000000000
 active_shards: 1
 basic_reward: 400000000
 epoch_param:
-  number_of_block_in_epoch: 50
+  number_of_block_in_epoch: 10
   number_of_block_in_epoch_v2: 1000000000000
   epoch_v2_break_point: 1000000000000
-  random_time: 25
+  random_time: 5
   random_time_v2: 1000000000000
 eth_contract_address: "0x7bebc8445C6223b41B7BB4b0aE9742e2Fd2f47F3"
 bsc_contract_address: "0xb51B25e6a0AEEC950379795bD80E2d42Bd7726Fb"
@@ -107,7 +107,6 @@ pdex_param:
     trading_staking_pool_reward_percent: 10
     staking_pool_share: 
       - "0000000000000000000000000000000000000000000000000000000000000004": 10
-      - "0000000000000000000000000000000000000000000000000000000000000006": 20
     mint_nft_require_amount: 1000000000
     max_orders_per_nft: 10
     auto_withdraw_order_limit_amount: 10
