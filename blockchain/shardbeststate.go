@@ -847,7 +847,7 @@ func (curView *ShardBestState) GetProposerLength() int {
 func (shardBestState *ShardBestState) updateCommitteeChangeCheckpoint(epoch, height uint64, rootHash common.Hash) {
 	newMap := map[uint64]CommitteeCheckPoint{}
 	Logger.log.Infof("[debugcachecommittee] updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", shardBestState.ShardID, epoch, height)
-	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet cache committee for shard %v", totalHit[shardBestState.ShardID], totalGet[shardBestState.ShardID], shardBestState.ShardID)
+	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet %v/%v cache committee for shard %v", totalHit[shardBestState.ShardID], totalGet[shardBestState.ShardID], shardBestState.ShardID)
 	for k, v := range shardBestState.CommitteeChangeCheckpoint.Data {
 		newMap[k] = v
 	}
@@ -866,4 +866,25 @@ func (shardBestState *ShardBestState) updateCommitteeChangeCheckpoint(epoch, hei
 		Data:   newMap,
 		Epochs: newEpochs,
 	}
+}
+
+func (shardBestState *ShardBestState) GetCheckpointChangeCommitteeByEpoch(epoch uint64) (
+	epochCheckpoint uint64,
+	dbRootHash common.Hash,
+) {
+	epochs := shardBestState.CommitteeChangeCheckpoint.Epochs
+	if len(epochs) == 0 {
+		return 0, common.Hash{0}
+	}
+	idx, existed := SearchUint64(epochs, epoch)
+	if existed {
+		return epoch, shardBestState.CommitteeChangeCheckpoint.Data[epoch].RootHash
+	}
+	if idx > len(epochs) {
+		return epochs[len(epochs)-1], shardBestState.CommitteeChangeCheckpoint.Data[epochs[len(epochs)-1]].RootHash
+	}
+	if idx > 0 {
+		return epochs[idx-1], shardBestState.CommitteeChangeCheckpoint.Data[epochs[idx-1]].RootHash
+	}
+	return 0, common.Hash{0}
 }

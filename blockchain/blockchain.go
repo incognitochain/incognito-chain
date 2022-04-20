@@ -1217,9 +1217,37 @@ func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [
 	return validFinishedSyncValidators
 }
 
+func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, sID byte) (
+	[]incognitokey.CommitteePublicKey,
+	uint64,
+	error,
+) {
+	sChain := bc.ShardChain[sID]
+	if sBestState := sChain.GetBestState(); sBestState != nil {
+		epochForCache, sConsensusRootHash := sBestState.GetCheckpointChangeCommitteeByEpoch(epoch)
+		if epochForCache != 0 {
+			key := getCommitteeCacheKeyByEpoch(epochForCache, sID)
+			if committeesI, has := bc.committeeByEpochCache.Peek(key); has {
+				if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
+					return committees, epochForCache, nil
+				}
+			}
+			sConsensusStateDB, err := statedb.NewWithPrefixTrie(sConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+			if err != nil {
+				return nil, epochForCache, NewBlockChainError(ProcessSalaryInstructionsError, err)
+			}
+			res := statedb.GetOneShardCommittee(sConsensusStateDB, sID)
+			bc.committeeByEpochCache.Add(key, res)
+			return res, epochForCache, nil
+		} else {
+			return nil, 0, errors.Errorf("Can not get committee info from shard %v beststate", sID)
+		}
+	}
+	return nil, 0, errors.Errorf("Can not get shard %v best view", sID)
+}
+
 func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*statedb.StakerInfo, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
-	// var beaconConsensusRootHash common.Hash
 	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
 	if err != nil {
 		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
@@ -1228,36 +1256,13 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 	if err != nil {
 		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
-	// committeeKeys, err := bc.getValidatorsFromCacheByEpoch(epoch, sID)
-	committeeKeys := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-	// if err != nil {
-	// 	Logger.log.Error(err)
-	// 	key := getCommitteeCacheKeyByEpoch(epoch, sID)
-	// 	bc.committeeByEpochCache.Add(key, committeeKeys)
-	// } else {
-	// 	tmp := map[string]struct{}{}
-	// 	for _, k := range committeeKeys {
-	// 		str, err := k.ToBase58()
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-	// 		tmp[str] = struct{}{}
-	// 	}
-	// 	committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-	// 	if len(committeeKeys2) != len(committeeKeys) {
-	// 		panic("aaaaaaaaaa")
-	// 	}
-	// 	for _, k := range committeeKeys2 {
-	// 		str, err := k.ToBase58()
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-	// 		if _, ok := tmp[str]; !ok {
-	// 			panic("bbbbbbbbbbbb")
-	// 		}
-	// 	}
-	// }
-	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, committeeKeys)
+	sCommitteeKeys, _, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
+	if err != nil {
+		Logger.log.Error(err)
+
+		sCommitteeKeys = statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+	}
+	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, sCommitteeKeys)
 	return committeeState, nil
 }
 
