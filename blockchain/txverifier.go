@@ -237,6 +237,7 @@ func (v *TxsVerifier) FullValidateTransactions(
 	shardViewRetriever metadata.ShardViewRetriever,
 	beaconViewRetriever metadata.BeaconViewRetriever,
 	txs []metadata.Transaction,
+	addToPool bool,
 ) (bool, error) {
 	Logger.log.Infof("Total txs %v\n", len(txs))
 	txs = v.FilterWhitelistTxs(txs)
@@ -249,7 +250,8 @@ func (v *TxsVerifier) FullValidateTransactions(
 	}
 	validTxs, newTxs := v.txPool.CheckValidatedTxs(txs)
 	errCh := make(chan error)
-	doneCh := make(chan interface{}, len(txs)+len(newTxs))
+	doneCh := make(chan txpool.TxInfoDetail, len(txs)+len(newTxs))
+	vInfors := map[string]txpool.TxInfoDetail{}
 	numOfValidGoroutine := 0
 	totalMsgDone := 0
 	timeout := time.After(config.Param().BlockTime.MinShardBlockInterval / 2)
@@ -281,14 +283,28 @@ func (v *TxsVerifier) FullValidateTransactions(
 		case err := <-errCh:
 			Logger.log.Error(err)
 			return false, err
-		case <-doneCh:
+		case infor := <-doneCh:
 			numOfValidGoroutine++
 			Logger.log.Debugf(" %v %v\n", numOfValidGoroutine, len(txs))
+			if i, ok := vInfors[infor.Hash]; ok {
+				i.VTime += infor.VTime
+				vInfors[infor.Hash] = i
+			} else {
+				vInfors[infor.Hash] = infor
+			}
 			if numOfValidGoroutine == totalMsgDone {
 				ok, err := v.checkDoubleSpendInListTxs(txs)
 				if (!ok) || (err != nil) {
 					Logger.log.Error(err)
 					return false, err
+				}
+				if addToPool {
+					for _, tx := range newTxs {
+						txHash := tx.Hash().String()
+						if i, ok := vInfors[txHash]; ok {
+							go v.txPool.AddValidTx(tx, i.VTime)
+						}
+					}
 				}
 				return true, nil
 			}
@@ -302,18 +318,23 @@ func (v *TxsVerifier) FullValidateTransactions(
 func (v *TxsVerifier) validateTxsWithoutChainstate(
 	txs []metadata.Transaction,
 	errCh chan error,
-	doneCh chan interface{},
+	doneCh chan txpool.TxInfoDetail,
 ) {
 	for _, tx := range txs {
 		go func(target metadata.Transaction) {
+			start := time.Now()
 			ok, err := v.ValidateWithoutChainstate(target)
+			vTime := time.Since(start)
 			if !ok || err != nil {
 				if errCh != nil {
 					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
-					doneCh <- nil
+					doneCh <- txpool.TxInfoDetail{
+						Hash:  target.Hash().String(),
+						VTime: vTime,
+					}
 				}
 			}
 		}(tx)
@@ -326,13 +347,14 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
 	errCh chan error,
-	doneCh chan interface{},
+	doneCh chan txpool.TxInfoDetail,
 ) {
 	// MAX := runtime.NumCPU() - 1
 	// nWorkers := make(chan int, MAX)
 	for _, tx := range txs {
 		// nWorkers <- 1
 		go func(target metadata.Transaction) {
+			start := time.Now()
 			ok, err := v.ValidateWithChainState(
 				target,
 				cView,
@@ -340,13 +362,17 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 				bcView,
 				sView.GetBeaconHeight(),
 			)
+			vTime := time.Since(start)
 			if !ok || err != nil {
 				if errCh != nil {
 					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
-					doneCh <- nil
+					doneCh <- txpool.TxInfoDetail{
+						Hash:  target.Hash().String(),
+						VTime: vTime,
+					}
 				}
 			}
 			// <-nWorkers

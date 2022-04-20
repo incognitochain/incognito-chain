@@ -36,6 +36,7 @@ type TxPoolManager interface {
 
 type TxPool interface {
 	UpdateTxVerifier(tv TxVerifier)
+	AddValidTx(tx metadata.Transaction, validationTime time.Duration)
 	Start()
 	Stop()
 	GetInbox() chan metadata.Transaction
@@ -74,15 +75,15 @@ type TxPool interface {
 	RemoveTx(txHash string)
 }
 
-type BlockTxsVerifier interface {
-	FullValidateTransactions(
-		txP TxPool,
-		sView interface{},
-		bcView interface{},
-		txs []metadata.Transaction,
-	) (bool, error)
-	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
-}
+// type BlockTxsVerifier interface {
+// 	FullValidateTransactions(
+// 		txP TxPool,
+// 		sView interface{},
+// 		bcView interface{},
+// 		txs []metadata.Transaction,
+// 	) (bool, error)
+// 	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
+// }
 
 type FeeEstimator interface {
 	RegisterBlock(block *types.ShardBlock) error
@@ -104,6 +105,7 @@ type TxVerifier interface {
 		shardViewRetriever metadata.ShardViewRetriever,
 		beaconViewRetriever metadata.BeaconViewRetriever,
 		txs []metadata.Transaction,
+		addToPool bool,
 	) (bool, error)
 	LoadCommitment(
 		tx metadata.Transaction,

@@ -48,3 +48,23 @@ func (blockchain *BlockChain) GetTransactionsByHashesWithShardID(
 	}
 	return res, nil
 }
+
+func SearchUint64(list []uint64, target uint64) (int, bool) {
+	// search returns the leftmost position where f returns true, or len(x) if f
+	// returns false for all x. This is the insertion position for target in x,
+	// and could point to an element that's either == target or not.
+	l := 0
+	r := len(list) - 1
+	for l <= r {
+		m := l + (r-l)/2
+		if list[m] == target {
+			return m, true
+		}
+		if list[m] > target {
+			r = m - 1
+		} else {
+			l = m + 1
+		}
+	}
+	return l, false
+}

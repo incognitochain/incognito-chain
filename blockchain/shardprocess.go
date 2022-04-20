@@ -220,8 +220,8 @@ WAITFORBEACON:
 	}
 
 	if shouldValidate {
-		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
+			committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 			Logger.log.Errorf("Validate block %v shard %v, hash %+v, validationData %+v, with committee %v return error %v", shardBlock.GetHeight(), *shardBlock.Hash(), shardBlock.GetValidationField(), shardBlock.GetShardID(), committeesStr, err)
 			return err
 		}
@@ -248,7 +248,7 @@ WAITFORBEACON:
 	if config.Config().IsFullValidation {
 		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
-		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
+		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView, false); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
 		}
 		if len(shardBlock.Body.Transactions) > 0 {
@@ -279,6 +279,14 @@ WAITFORBEACON:
 
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	err = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange, beaconBlocks)
+	if err != nil {
+		return err
+	}
+	blk, _, err := blockchain.GetShardBlockByHashWithShardID(*shardBlock.Hash(), shardID)
+	if err != nil {
+		return err
+	}
+	err = blockchain.ShardChain[shardID].ValidateBlockSignatures(blk, signingCommittees)
 	if err != nil {
 		return err
 	}
@@ -535,7 +543,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// beaconHeight := shardBlock.Header.BeaconHeight
 	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 	st := time.Now()
-	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
+	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView, true); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	if len(shardBlock.Body.Transactions) > 0 {
@@ -967,23 +975,19 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	txs []metadata.Transaction,
 	beaconHash common.Hash,
 	curView *ShardBestState,
+	addToBool bool,
 ) error {
 	if len(txs) == 0 {
 		return nil
 	}
 	st := time.Now()
-	// isEmpty := blockchain.config.TempTxPool.EmptyPool()
-	// if !isEmpty {
-	// 	panic("TempTxPool Is not Empty")
-	// }
-	// defer blockchain.config.TempTxPool.EmptyPool()
 	_, beaconHeight, err := blockchain.GetBeaconBlockByHash(beaconHash)
 	if err != nil {
 		Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 		return err
 	}
 	st = time.Now()
-	err = blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, beaconHeight, beaconHash, curView)
+	err = blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, beaconHeight, beaconHash, curView, addToBool)
 	Logger.log.Infof("[validatetxs] verifyTransactionIndividuallyFromNewBlock cost %v", time.Since(st))
 	return err
 }
@@ -999,7 +1003,7 @@ func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 	return false
 }
 
-func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight uint64, beaconHash common.Hash, curView *ShardBestState) error {
+func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight uint64, beaconHash common.Hash, curView *ShardBestState, addToPool bool) error {
 	if blockchain.config.usingNewPool {
 		isIncludePdexv3 := false
 		for _, tx := range txs {
@@ -1020,6 +1024,7 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 			curView,
 			bView,
 			txs,
+			addToPool,
 		)
 		if !ok || (err != nil) {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
@@ -1256,6 +1261,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, newFinalView.(*ShardBestState)); err != nil {
 		return NewBlockChainError(CommitTrieToDiskError, err)
+	}
+	if (len(committeeChange.ShardCommitteeAdded[shardID]) > 0) || (len(committeeChange.ShardCommitteeReplaced[shardID][common.REPLACE_IN]) > 0) {
+		newShardState.updateCommitteeChangeCheckpoint(newShardState.Epoch, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
+		key := getCommitteeCacheKeyByEpoch(newShardState.Epoch, shardID)
+		blockchain.committeeByEpochCache.Add(key, newShardState.GetCommittee())
 	}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)

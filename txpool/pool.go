@@ -168,17 +168,8 @@ func (tp *TxsPool) Start() {
 			f(tp)
 			Logger.Debugf("Total txs in pool %v after func\n", len(tp.Data.TxInfos))
 		case validTx := <-cValidTxs:
-			isDoubleSpend, needToRemove, txToRemove, listKeyCoin := tp.CheckDoubleSpendWithCurMem(validTx.tx)
-			if isDoubleSpend {
-				if needToRemove {
-					tp.removeDoubleSpendTx(txToRemove)
-					tp.addTx(validTx, listKeyCoin)
-				}
-			} else {
-				tp.addTx(validTx, listKeyCoin)
-			}
+			tp.AddValidTx(validTx.tx, validTx.vt)
 			total++
-
 		}
 	}
 }
@@ -266,7 +257,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 
 func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 	tp.CData.locker.Lock()
-	tp.CData.locker.Unlock()
+	defer tp.CData.locker.Unlock()
 	txH := validTx.tx.Hash().String()
 	tp.Data.TxByHash[txH] = validTx.tx
 	tp.Data.TxInfos[txH] = TxInfo{
@@ -282,7 +273,7 @@ func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 
 func (tp *TxsPool) removeDoubleSpendTx(txH string) {
 	tp.CData.locker.Lock()
-	tp.CData.locker.Unlock()
+	defer tp.CData.locker.Unlock()
 	delete(tp.Data.TxByHash, txH)
 	delete(tp.Data.TxInfos, txH)
 	if keyList, ok := tp.CData.CoinsByTxHash[txH]; ok {
@@ -313,6 +304,21 @@ func (tp *TxsPool) RemoveTxs(txHashes []string) {
 			delete(tpTemp.Data.TxByHash, tx)
 			delete(tpTemp.Data.TxInfos, tx)
 		}
+	}
+}
+
+func (tp *TxsPool) AddValidTx(tx metadata.Transaction, vTime time.Duration) {
+	tp.action <- func(tpTemp *TxsPool) {
+		Logger.Debugf("Add valid tx %v to newpool", tx.Hash().String())
+		isDoubleSpend, needToRemove, txToRemove, listKeyCoin := tp.CheckDoubleSpendWithCurMem(tx)
+		if isDoubleSpend {
+			if needToRemove {
+				tp.removeDoubleSpendTx(txToRemove)
+			} else {
+				return
+			}
+		}
+		tp.addTx(txInfoTemp{tx: tx, vt: vTime}, listKeyCoin)
 	}
 }
 

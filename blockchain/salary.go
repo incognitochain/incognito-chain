@@ -97,11 +97,11 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 				if shardReceiveRewardV3.Epoch() != 0 {
 					if confirmBeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
-						cInfos, err := blockchain.GetAllCommitteeStakeInfo(shardReceiveRewardV3.Epoch())
+						cInfos, err := blockchain.GetShardCommitteeStakeInfo(shardReceiveRewardV3.Epoch(), shardID)
 						if err != nil {
 							return NewBlockChainError(ProcessSalaryInstructionsError, err)
 						}
-						shardSubsetStakerInfo := getCommitteeToPayRewardMultiset(cInfos[int(shardReceiveRewardV3.ShardID())], shardReceiveRewardV3)
+						shardSubsetStakerInfo := getCommitteeToPayRewardMultiset(cInfos, shardReceiveRewardV3)
 						err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), shardSubsetStakerInfo)
 						if err != nil {
 							return err
@@ -181,11 +181,11 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				if confirmBeaconHeight < config.Param().ConsensusParam.EnableSlashingHeightV2 {
-					cInfos, err := blockchain.GetAllCommitteeStakeInfo(shardRewardInfo.Epoch)
+					cInfos, err := blockchain.GetShardCommitteeStakeInfo(shardRewardInfo.Epoch, byte(shardToProcess))
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
+					err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos)
 					if err != nil {
 						return err
 					}

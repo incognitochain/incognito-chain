@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1226,6 +1227,23 @@ func (stateDB *StateDB) getShardsCommitteeState(sIDs []int) (currentValidator ma
 		currentValidator[shardID] = tempCurrentValidator
 	}
 	return currentValidator
+}
+
+func (stateDB *StateDB) getOneShardCommitteeInfo(curValidator []incognitokey.CommitteePublicKey) (curValidatorInfo []*StakerInfo) {
+	curValidatorInfo = []*StakerInfo{}
+	for _, c := range curValidator {
+		cPKBytes, _ := c.RawBytes()
+		s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
+		if err != nil {
+			panic(err)
+		}
+		if !has || s == nil {
+			res, err2 := c.ToBase58()
+			panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+		}
+		curValidatorInfo = append(curValidatorInfo, s)
+	}
+	return curValidatorInfo
 }
 
 func (stateDB *StateDB) getShardsCommitteeInfo(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfo) {

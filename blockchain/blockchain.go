@@ -1217,6 +1217,55 @@ func verifyFinishedSyncValidatorsSign(committeePublicKeys []string, signatures [
 	return validFinishedSyncValidators
 }
 
+func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, sID byte) (
+	[]incognitokey.CommitteePublicKey,
+	uint64,
+	error,
+) {
+	sChain := bc.ShardChain[sID]
+	if sBestState := sChain.GetBestState(); sBestState != nil {
+		epochForCache, sConsensusRootHash := sBestState.GetCheckpointChangeCommitteeByEpoch(epoch)
+		if epochForCache != 0 {
+			key := getCommitteeCacheKeyByEpoch(epochForCache, sID)
+			if committeesI, has := bc.committeeByEpochCache.Peek(key); has {
+				if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
+					return committees, epochForCache, nil
+				}
+			}
+			sConsensusStateDB, err := statedb.NewWithPrefixTrie(sConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+			if err != nil {
+				return nil, epochForCache, NewBlockChainError(ProcessSalaryInstructionsError, err)
+			}
+			res := statedb.GetOneShardCommittee(sConsensusStateDB, sID)
+			bc.committeeByEpochCache.Add(key, res)
+			return res, epochForCache, nil
+		} else {
+			return nil, 0, errors.Errorf("Can not get committee info from shard %v beststate", sID)
+		}
+	}
+	return nil, 0, errors.Errorf("Can not get shard %v best view", sID)
+}
+
+func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*statedb.StakerInfo, error) {
+	height := bc.GetLastBeaconHeightInEpoch(epoch)
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	sCommitteeKeys, _, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
+	if err != nil {
+		Logger.log.Error(err)
+
+		sCommitteeKeys = statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+	}
+	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, sCommitteeKeys)
+	return committeeState, nil
+}
+
 func (bc *BlockChain) GetAllCommitteeStakeInfo(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
 	height := bc.GetLastBeaconHeightInEpoch(epoch)
 	var beaconConsensusRootHash common.Hash
@@ -1285,13 +1334,57 @@ func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePubli
 	return m
 }
 
+var (
+	totalGet []uint64 = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	totalHit []uint64 = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+)
+
 func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 	epoch uint64,
+	height uint64,
 	cID byte,
 ) (
 	res []incognitokey.CommitteePublicKey,
 	err error,
 ) {
+	if cID != common.BeaconChainSyncID {
+		sBestView := blockchain.ShardChain[cID].GetBestState()
+		epochs := sBestView.CommitteeChangeCheckpoint.Epochs
+		idx, existed := SearchUint64(epochs, epoch)
+		if existed {
+			chkPoint := sBestView.CommitteeChangeCheckpoint.Data[epoch]
+			if height < chkPoint.Height {
+				if idx == 0 {
+					return nil, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, cID)
+				}
+				epoch = epochs[idx-1]
+			}
+		} else {
+			rightChkPnt := CommitteeCheckPoint{
+				Height:   10e9,
+				RootHash: common.EmptyRoot,
+			}
+			leftChkPnt := CommitteeCheckPoint{
+				Height:   10e9,
+				RootHash: common.EmptyRoot,
+			}
+			if idx > 0 {
+				leftChkPnt = sBestView.CommitteeChangeCheckpoint.Data[epochs[idx-1]]
+				if height >= leftChkPnt.Height {
+					epoch = epochs[idx-1]
+				}
+			}
+			if idx < len(epochs) {
+				rightChkPnt = sBestView.CommitteeChangeCheckpoint.Data[epochs[idx]]
+				if height >= rightChkPnt.Height {
+					epoch = epochs[idx]
+				}
+			}
+			if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
+				return nil, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, cID)
+			}
+		}
+	}
 	key := getCommitteeCacheKeyByEpoch(epoch, cID)
 	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
 		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
@@ -1305,18 +1398,19 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 
 func (blockchain *BlockChain) getBeaconValidators(
 	epoch uint64,
+	height uint64,
 	prevHash common.Hash,
 ) (
 	res []incognitokey.CommitteePublicKey,
 	err error,
 ) {
-	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, common.BeaconChainSyncID)
-	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
+	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, common.BeaconChainSyncID)
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
 		return res, err
 	}
+	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
 	if v := blockchain.BeaconChain.GetViewByHash(prevHash); v != nil {
 		res = v.GetCommittee()
 
@@ -1340,16 +1434,8 @@ func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
 	res []incognitokey.CommitteePublicKey,
 	err error,
 ) {
-	res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, cID)
-	if err != nil {
-		Logger.log.Error(err)
-	} else {
-		return res, err
-	}
-	key := getCommitteeCacheKeyByEpoch(epoch, cID)
 	if v := blockchain.ShardChain[cID].GetViewByHash(prevHash); v != nil {
 		res = v.GetCommittee()
-		blockchain.committeeByEpochCache.Add(key, res)
 		return res, nil
 	}
 	consensusDB, err := getShardConsensusStateDB(blockchain.GetShardChainDatabase(cID), cID, prevHash)
@@ -1357,7 +1443,6 @@ func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
 		return nil, err
 	}
 	res = statedb.GetOneShardCommittee(consensusDB, cID)
-	blockchain.committeeByEpochCache.Add(key, res)
 	return res, nil
 }
 
@@ -1365,13 +1450,26 @@ func (blockchain *BlockChain) getShardValidators(
 	epoch uint64,
 	beaconHash common.Hash,
 	prevHash common.Hash,
+	height uint64,
 	cID byte,
 ) (
 	res []incognitokey.CommitteePublicKey,
 	err error,
 ) {
 	if beaconHash.IsZeroValue() {
-		return blockchain.getShardValidatorsFromPrevHash(epoch, prevHash, cID)
+		totalGet[cID]++
+		res, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
+		if err != nil {
+			Logger.log.Error(err)
+		} else {
+			return res, err
+		}
+
+		c, err := blockchain.getShardValidatorsFromPrevHash(epoch, prevHash, cID)
+		if err != nil {
+			return nil, err
+		}
+		return c, nil
 	}
 	return blockchain.GetShardCommitteeFromBeaconHash(beaconHash, cID)
 }
@@ -1381,14 +1479,15 @@ func (blockchain *BlockChain) GetValidatorIndex(
 	cID byte,
 	beaconHash common.Hash,
 	prevHash common.Hash,
+	height uint64,
 	epoch uint64,
 ) (int, error) {
 	var cList []incognitokey.CommitteePublicKey
 	var err error = nil
 	if cID == common.BeaconChainSyncID {
-		cList, err = blockchain.getBeaconValidators(epoch, prevHash)
+		cList, err = blockchain.getBeaconValidators(epoch, height, prevHash)
 	} else {
-		cList, err = blockchain.getShardValidators(epoch, beaconHash, prevHash, cID)
+		cList, err = blockchain.getShardValidators(epoch, beaconHash, prevHash, height, cID)
 	}
 
 	if err != nil {
@@ -1411,14 +1510,15 @@ func (blockchain *BlockChain) GetValidatorFromIndex(
 	cID byte,
 	beaconHash common.Hash,
 	prevHash common.Hash,
+	height uint64,
 	epoch uint64,
 ) (string, error) {
 	var cList []incognitokey.CommitteePublicKey
 	var err error = nil
 	if cID == common.BeaconChainSyncID {
-		cList, err = blockchain.getBeaconValidators(epoch, prevHash)
+		cList, err = blockchain.getBeaconValidators(epoch, height, prevHash)
 	} else {
-		cList, err = blockchain.getShardValidators(epoch, beaconHash, prevHash, cID)
+		cList, err = blockchain.getShardValidators(epoch, beaconHash, prevHash, height, cID)
 	}
 	if err != nil {
 		return "", err
