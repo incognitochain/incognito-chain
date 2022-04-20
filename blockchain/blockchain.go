@@ -1256,14 +1256,14 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 	if err != nil {
 		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
-	sCommitteeKeys, _, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
+	sCommitteeKeys, epochForCache, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 	sCommitteeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
 	if len(sCommitteeKeys) > 0 {
 		if !equal2list(sCommitteeKeys, sCommitteeKeys2) {
-			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache %+v, db %+v", epoch, sID, sCommitteeKeys, sCommitteeKeys2))
+			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache get from epoch %v, db %+v", epoch, sID, epochForCache))
 		}
 	}
 
