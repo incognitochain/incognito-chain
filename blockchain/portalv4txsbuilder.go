@@ -33,7 +33,7 @@ func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 	}
 	if acceptedShieldingReq.ShardID != shardID {
 		Logger.log.Errorf("%v expected shardID %v, got %v\n", prefix, shardID, acceptedShieldingReq.ShardID)
-		return nil, fmt.Errorf("%v expected shardID %v, got %v", prefix, shardID, acceptedShieldingReq.ShieldingUTXO)
+		return nil, nil
 	}
 
 	meta := metadata.NewPortalShieldingResponse(
