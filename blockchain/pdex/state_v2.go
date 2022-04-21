@@ -656,10 +656,12 @@ func NewContributionWithMetaData(
 		if metaData.AccessOption.AccessID != nil {
 			accessID = *metaData.AccessOption.AccessID
 		} else {
-			accessID = metadataPdexv3.GenAccessID(metaData.OtaReceivers()[common.PdexAccessCoinID])
-			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.OtaReceivers()[common.PdexAccessCoinID])
-			if err != nil {
-				return nil, err
+			if otaReceiver, found := metaData.OtaReceivers()[common.PdexAccessCoinID]; found {
+				accessID = metadataPdexv3.GenAccessID(otaReceiver)
+				accessOTA, err = metadataPdexv3.GenAccessOTA(otaReceiver)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

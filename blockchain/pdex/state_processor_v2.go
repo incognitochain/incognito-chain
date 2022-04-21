@@ -705,20 +705,17 @@ func (sp *stateProcessorV2) addOrder(
 		newOrder := rawdbv2.NewPdexv3OrderWithValue(md.OrderID, rk, md.AccessOTA, md.Token0Rate, md.Token1Rate,
 			md.Token0Balance, md.Token1Balance, md.TradeDirection, md.Receiver)
 		pair.orderbook.InsertOrder(newOrder)
-		orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
-		status := byte(0)
-		if md.RewardReceiver != nil && len(md.RewardReceiver) != 0 {
+		if len(md.RewardReceiver) != 0 {
+			orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
 			for k, v := range md.RewardReceiver {
 				orderRewardDetails[k] = NewOrderRewardDetailWithValue(v, 0)
 			}
-			status = WaitToWithdrawOrderReward
 			txReqID, _ = common.Hash{}.NewHashFromStr(md.OrderID)
-		} else {
-			status = DefaultWithdrawnOrderReward
+			pair.orderRewards[md.NftID.String()] = NewOrderRewardWithValue(
+				WaitToWithdrawOrderReward, orderRewardDetails, txReqID,
+			)
 		}
-		pair.orderRewards[md.NftID.String()] = NewOrderRewardWithValue(
-			status, orderRewardDetails, txReqID,
-		)
+
 		// write changes to state
 		pairs[md.PoolPairID] = pair
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):

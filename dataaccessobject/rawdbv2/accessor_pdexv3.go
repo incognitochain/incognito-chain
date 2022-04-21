@@ -54,6 +54,10 @@ func (contribution *Pdexv3Contribution) AccessOTA() []byte {
 	return contribution.accessOTA
 }
 
+func (contribution *Pdexv3Contribution) SetAccessOTA(accessOTA []byte) {
+	contribution.accessOTA = accessOTA
+}
+
 func (contribution *Pdexv3Contribution) TokenID() common.Hash {
 	return contribution.tokenID
 }
@@ -171,7 +175,7 @@ func (contribution *Pdexv3Contribution) UseNft() bool {
 
 // This contribution use accessOTA to contribute for creating new LP
 func (contribution *Pdexv3Contribution) UseAccessOTANewLP() bool {
-	return len(contribution.accessOTA) != 0 && contribution.otaReceiver != utils.EmptyString
+	return len(contribution.otaReceivers) != 0 && contribution.otaReceiver != utils.EmptyString
 }
 
 // This contribution use accessOTA to contribute for adding liquidity to old LP
