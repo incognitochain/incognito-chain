@@ -546,7 +546,7 @@ func (bc *BlockChain) initCommitChangeCheckpoint() error {
 		data:   map[byte]CommitteeChangeCheckpoint{},
 		locker: &sync.RWMutex{},
 	}
-	for sID := byte(0); sID < byte(bc.GetActiveShardNumber()); sID++ {
+	for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
 		bc.committeeChangeCheckpoint.data[sID] = CommitteeChangeCheckpoint{
 			Data:   map[uint64]CommitteeCheckPoint{},
 			Epochs: []uint64{},
