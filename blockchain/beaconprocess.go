@@ -791,6 +791,27 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 	return nil
 }
 
+func (blockchain *BlockChain) tryUpdateCommitteeCheckPoint(
+	newBestState *BeaconBestState,
+	allCommitteeChange *committeestate.CommitteeChange,
+) {
+	epochForCache := newBestState.Epoch
+	for sID := 0; sID < blockchain.GetActiveShardNumber(); sID++ {
+		if (len(allCommitteeChange.ShardCommitteeAdded[byte(sID)]) > 0) || (len(allCommitteeChange.ShardCommitteeReplaced[byte(sID)][common.REPLACE_IN]) > 0) {
+			Logger.log.Infof("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v", sID, epochForCache)
+			blockchain.updateCommitteeChangeCheckpointByBC(byte(sID), epochForCache, newBestState.ConsensusStateDBRootHash)
+			key := getCommitteeCacheKeyByEpoch(epochForCache, byte(sID))
+			blockchain.committeeByEpochCache.Add(key, newBestState.GetAShardCommittee(byte(sID)))
+		}
+	}
+	if (len(allCommitteeChange.BeaconCommitteeAdded) > 0) || (len(allCommitteeChange.BeaconCommitteeReplaced[common.REPLACE_IN]) > 0) {
+		Logger.log.Infof("[debugcachecommittee] Update committee for beacon, epoch for cache %v", epochForCache)
+		blockchain.updateCommitteeChangeCheckpointByBC(common.BeaconChainSyncID, epochForCache, newBestState.ConsensusStateDBRootHash)
+		key := getCommitteeCacheKeyByEpoch(epochForCache, common.BeaconChainSyncID)
+		blockchain.committeeByEpochCache.Add(key, newBestState.GetCommittee())
+	}
+}
+
 func (blockchain *BlockChain) processStoreBeaconBlock(
 	curView *BeaconBestState,
 	newBestState *BeaconBestState,
@@ -1063,6 +1084,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
+
+	blockchain.tryUpdateCommitteeCheckPoint(newBestState, committeeChange)
 
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {

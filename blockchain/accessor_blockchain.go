@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -525,4 +526,142 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 //GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+}
+
+type CommitteeCheckPoint struct {
+	Height   uint64      `json:"h"`
+	RootHash common.Hash `json:"rh"`
+}
+
+type CommitteeChangeCheckpoint struct {
+	Data   map[uint64]CommitteeCheckPoint
+	Epochs []uint64
+}
+
+func (bc *BlockChain) initCommitChangeCheckpoint() error {
+	bc.committeeChangeCheckpoint = struct {
+		data   map[byte]CommitteeChangeCheckpoint
+		locker *sync.RWMutex
+	}{
+		data:   map[byte]CommitteeChangeCheckpoint{},
+		locker: &sync.RWMutex{},
+	}
+	for sID := byte(0); sID < byte(bc.GetActiveShardNumber()); sID++ {
+		bc.committeeChangeCheckpoint.data[sID] = CommitteeChangeCheckpoint{
+			Data:   map[uint64]CommitteeCheckPoint{},
+			Epochs: []uint64{},
+		}
+	}
+	bc.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)] = CommitteeChangeCheckpoint{
+		Data:   map[uint64]CommitteeCheckPoint{},
+		Epochs: []uint64{},
+	}
+	return nil
+}
+
+func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64, rootHash common.Hash) {
+	bc.committeeChangeCheckpoint.locker.Lock()
+	defer bc.committeeChangeCheckpoint.locker.Unlock()
+	Logger.log.Infof("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch)
+	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet %v/%v cache committee for shard %v", totalHit[sID], totalGet[sID], sID)
+	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
+	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
+		chkPnt.RootHash = rootHash
+		sCommitteeChange.Data[epoch] = chkPnt
+	} else {
+		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
+			Height:   10e9,
+			RootHash: rootHash,
+		}
+		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
+	}
+}
+
+func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height uint64) {
+	bc.committeeChangeCheckpoint.locker.Lock()
+	defer bc.committeeChangeCheckpoint.locker.Unlock()
+	Logger.log.Infof("[debugcachecommittee] shard updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch, height)
+	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet %v/%v cache committee for shard %v", totalHit[sID], totalGet[sID], sID)
+	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
+	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
+		chkPnt.Height = height
+		sCommitteeChange.Data[epoch] = chkPnt
+	} else {
+		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
+			Height:   height,
+			RootHash: common.EmptyRoot,
+		}
+		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
+	}
+}
+
+func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64) (
+	epochCheckpoint uint64,
+	dbRootHash common.Hash,
+) {
+	bc.committeeChangeCheckpoint.locker.RLock()
+	defer bc.committeeChangeCheckpoint.locker.RUnlock()
+	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
+	epochs := sCommitteeChange.Epochs
+	if len(epochs) == 0 {
+		return 0, common.Hash{0}
+	}
+	idx, existed := SearchUint64(epochs, epoch)
+	if existed {
+		return epoch, sCommitteeChange.Data[epoch].RootHash
+	}
+	if idx > len(epochs) {
+		return epochs[len(epochs)-1], sCommitteeChange.Data[epochs[len(epochs)-1]].RootHash
+	}
+	if idx > 0 {
+		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]].RootHash
+	}
+	return 0, common.Hash{0}
+}
+
+func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epoch, height uint64) (
+	epochCheckpoint uint64,
+	dbRootHash common.Hash,
+	err error,
+) {
+	bc.committeeChangeCheckpoint.locker.RLock()
+	defer bc.committeeChangeCheckpoint.locker.RUnlock()
+	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
+	epochs := sCommitteeChange.Epochs
+	epochCheckpoint = epoch
+	idx, existed := SearchUint64(epochs, epochCheckpoint)
+	if existed {
+		chkPoint := sCommitteeChange.Data[epochCheckpoint]
+		if height < chkPoint.Height {
+			if idx == 0 {
+				return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, sID)
+			}
+			epochCheckpoint = epochs[idx-1]
+		}
+	} else {
+		rightChkPnt := CommitteeCheckPoint{
+			Height:   10e9,
+			RootHash: common.EmptyRoot,
+		}
+		leftChkPnt := CommitteeCheckPoint{
+			Height:   10e9,
+			RootHash: common.EmptyRoot,
+		}
+		if idx > 0 {
+			leftChkPnt = sCommitteeChange.Data[epochs[idx-1]]
+			if height >= leftChkPnt.Height {
+				epochCheckpoint = epochs[idx-1]
+			}
+		}
+		if idx < len(epochs) {
+			rightChkPnt = sCommitteeChange.Data[epochs[idx]]
+			if height >= rightChkPnt.Height {
+				epochCheckpoint = epochs[idx]
+			}
+		}
+		if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
+			return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, sID)
+		}
+	}
+	return epochCheckpoint, sCommitteeChange.Data[epochCheckpoint].RootHash, nil
 }
