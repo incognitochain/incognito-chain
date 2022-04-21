@@ -1278,10 +1278,17 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		Logger.log.Infof("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epohc %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
 		newShardState.updateCommitteeChangeCheckpoint(epochForCache, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
 		key := getCommitteeCacheKeyByEpoch(newShardState.Epoch, shardID)
-		pkList, _ := incognitokey.CommitteeKeyListToString(newShardState.GetCommittee())
+		sCommitteeKeys := newShardState.GetCommittee()
+		pkList, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys)
+		stateDB, _ := statedb.NewWithPrefixTrie(newShardState.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetShardChainDatabase(shardID)))
+		sCommitteeKeys2 := statedb.GetOneShardCommittee(stateDB, shardID)
+		pkList2, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys2)
 		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v, height %v, pklist %+v", newShardState.Epoch, shardID, shardBlock.GetHeight()+1, pkList)
-		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v", newShardState.Epoch, shardID)
+		Logger.log.Infof("[debugcachecommittee] Add new committee epoch %v, shardID %v pList from db %v", newShardState.Epoch, shardID, pkList2)
 		blockchain.committeeByEpochCache.Add(key, newShardState.GetCommittee())
+		if !equal2list(sCommitteeKeys, sCommitteeKeys2) {
+			panic("wut")
+		}
 	}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
