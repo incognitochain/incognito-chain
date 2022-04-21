@@ -82,6 +82,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.SigningCommittees = tempShardBlock.Alias.SigningCommittees
 		p.UserKeySet = tempShardBlock.Alias.UserKeySet
 		p.IsValid = tempShardBlock.Alias.IsValid
+		p.HasNewVote = true //force check 2/3+1 after init
 		p.IsVoted = tempShardBlock.Alias.IsVoted
 		p.IsCommitted = tempShardBlock.Alias.IsCommitted
 		p.ValidVotes = tempShardBlock.Alias.ValidVotes
