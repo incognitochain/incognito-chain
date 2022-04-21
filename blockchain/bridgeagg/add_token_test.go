@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/stretchr/testify/suite"
@@ -111,6 +112,17 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (a *AddTokenTestSuite) AfterTest(suiteName, testName string) {
+	assert := a.Assert()
+	_, err := a.sDB.Commit(false)
+	assert.NoError(err, fmt.Sprintf("Error in commit db %v", err))
+	bridgeTokenInfos := make(map[common.Hash]*rawdbv2.BridgeTokenInfo)
+	tokens, err := statedb.GetBridgeTokens(a.sDB)
+	assert.NoError(err, fmt.Sprintf("Error in get bridge tokens from db %v", err))
+	for _, token := range tokens {
+		bridgeTokenInfos[*token.TokenID] = token
+	}
+	expectedBridgeTokensInfo := a.testCases[a.currentTestCaseName].ExpectedBridgeTokensInfo
+	assert.Equal(expectedBridgeTokensInfo, bridgeTokenInfos, fmt.Errorf("Expected bridgeTokenInfos %v but get %v", expectedBridgeTokensInfo, bridgeTokenInfos).Error())
 }
 
 func (a *AddTokenTestSuite) TestAccepted() {

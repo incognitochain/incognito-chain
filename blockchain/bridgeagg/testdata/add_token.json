@@ -40,11 +40,33 @@
                 }
             }
         },
-        "bridge_tokens_info": {
-
-        },
+        "bridge_tokens_info": {},
         "expected_bridge_tokens_info": {
-            
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            },
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "ExternalTokenID": [85, 84],
+                "Amount": 0
+            },
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111",
+                "ExternalTokenID": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            },
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
+                "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580",
+                "ExternalTokenID": [85, 84],
+                "Amount": 0
+            },
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
         },
         "accumulated_values": {
             "UniqETHTxsUsed":    [],
