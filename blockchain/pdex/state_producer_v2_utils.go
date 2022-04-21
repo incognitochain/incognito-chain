@@ -24,6 +24,9 @@ func (sp *stateProducerV2) validateContributions(
 		if contribution0.NftID().String() != contribution1.NftID().String() {
 			return errors.New("contribution 0 and contribution 1 need to be same nftID")
 		}
+		if contribution0.NftID().IsZeroValue() {
+			return errors.New("contribution nftID cannot be empty")
+		}
 	} else if contribution0.UseAccessOTANewLP() && contribution1.UseAccessOTANewLP() {
 		if contribution0.OtaReceiver() != contribution1.OtaReceiver() {
 			return errors.New("contribution 0 and contribution 1 need to be same otaReceiver")
@@ -57,4 +60,24 @@ func (sp *stateProducerV2) validateContributions(
 	}
 
 	return nil
+}
+
+func getAccessIDAndAccessOTA(contribution0, contribution1 rawdbv2.Pdexv3Contribution) (common.Hash, []byte) {
+	hash := common.Hash{}
+	var accessOTA []byte
+
+	if contribution0.UseNft() {
+		hash = contribution0.NftID()
+	} else if contribution0.UseAccessOTANewLP() {
+		if contribution0.AccessOTA() == nil && contribution0.NftID().IsZeroValue() {
+			hash = contribution1.NftID()
+			accessOTA = contribution1.AccessOTA()
+		} else {
+			hash = contribution0.NftID()
+			accessOTA = contribution0.AccessOTA()
+		}
+	} else if contribution0.UseAccessOTAOldLP() {
+		hash = contribution0.NftID()
+	}
+	return hash, accessOTA
 }

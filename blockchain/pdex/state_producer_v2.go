@@ -89,6 +89,7 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, refundInsts...)
 			continue
 		}
+		accessID, accessOTA := getAccessIDAndAccessOTA(waitingContribution, incomingContribution)
 
 		poolPairID := utils.EmptyString
 		if waitingContribution.PoolPairID() == utils.EmptyString {
@@ -98,7 +99,7 @@ func (sp *stateProducerV2) addLiquidity(
 		}
 		rootPoolPair, found := poolPairs[poolPairID]
 		if !found || rootPoolPair == nil {
-			if waitingContribution.PoolPairID() == utils.EmptyString && !waitingContribution.NftID().IsZeroValue() && !incomingContribution.NftID().IsZeroValue() {
+			if waitingContribution.PoolPairID() == utils.EmptyString {
 				newPoolPair := initPoolPairState(waitingContribution, incomingContribution)
 				tempAmt := big.NewInt(0).Mul(
 					big.NewInt(0).SetUint64(waitingContribution.Amount()),
@@ -111,10 +112,10 @@ func (sp *stateProducerV2) addLiquidity(
 					continue
 				}
 				_, err := newPoolPair.addShare(
-					waitingContribution.NftID(),
+					accessID,
 					shareAmount, beaconHeight, 0,
 					waitingContribution.TxReqID().String(),
-					waitingContribution.AccessOTA(),
+					accessOTA,
 				)
 				if err != nil {
 					Logger.log.Warnf("tx %v add share err %v", tx.Hash().String(), err)
@@ -126,7 +127,7 @@ func (sp *stateProducerV2) addLiquidity(
 					incomingContributionState, poolPairID,
 					waitingContribution.TxReqID(), waitingContribution.ShardID(),
 					waitingContribution.UseAccessOTANewLP(),
-					waitingContribution.NftID(),
+					accessID, accessOTA,
 				)
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
@@ -156,9 +157,9 @@ func (sp *stateProducerV2) addLiquidity(
 			continue
 		}
 		if waitingContribution.UseAccessOTAOldLP() {
-			if !rootPoolPair.existLP(waitingContribution.NftID().String()) {
+			if !rootPoolPair.existLP(accessID.String()) {
 				Logger.log.Warnf("tx %v accessID %v is not in poolPair %v",
-					tx.Hash().String(), waitingContribution.NftID().String(), waitingContribution.PoolPairID())
+					tx.Hash().String(), accessID.String(), waitingContribution.PoolPairID())
 				res = append(res, refundInsts...)
 				continue
 			}
@@ -194,10 +195,10 @@ func (sp *stateProducerV2) addLiquidity(
 			lmLockedBlocks = params.MiningRewardPendingBlocks
 		}
 
-		accessOTA, err := poolPair.addShare(
-			waitingContribution.NftID(),
+		accessOTA, err = poolPair.addShare(
+			accessID,
 			shareAmount, beaconHeight, lmLockedBlocks,
-			waitingContribution.TxReqID().String(), waitingContribution.AccessOTA(),
+			waitingContribution.TxReqID().String(), accessOTA,
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v add share err %v:", tx.Hash().String(), err)
@@ -213,7 +214,7 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContribution.TxReqID(),
 			waitingContribution.ShardID(), accessOTA,
 			waitingContribution.UseAccessOTANewLP(),
-			waitingContribution.NftID(),
+			accessID,
 		)
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
@@ -667,15 +668,13 @@ TransactionLoop:
 			orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
 		}
 		var rewardReceivers map[common.Hash]privacy.OTAReceiver
-		rewardReceiverTokenIDs := []common.Hash{tokenToBuy}
-		if tokenToBuy != common.PRVCoinID {
-			rewardReceiverTokenIDs = append(rewardReceiverTokenIDs, common.PRVCoinID)
-		}
-		rewardReceivers = map[common.Hash]privacy.OTAReceiver{}
-		orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
-		status := byte(0)
-		var txReqID *common.Hash
 		if !currentOrderReq.UseNft() {
+			rewardReceiverTokenIDs := []common.Hash{tokenToBuy}
+			if tokenToBuy != common.PRVCoinID {
+				rewardReceiverTokenIDs = append(rewardReceiverTokenIDs, common.PRVCoinID)
+			}
+			rewardReceivers = map[common.Hash]privacy.OTAReceiver{}
+			orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
 			for _, v := range rewardReceiverTokenIDs {
 				if receiver, found := currentOrderReq.RewardReceiver[v]; found {
 					rewardReceivers[v] = receiver
@@ -686,14 +685,10 @@ TransactionLoop:
 					continue TransactionLoop
 				}
 			}
-			status = WaitToWithdrawOrderReward
-			txReqID = tx.Hash()
-		} else {
-			status = DefaultWithdrawnOrderReward
+			pair.orderRewards[nftID.String()] = NewOrderRewardWithValue(
+				WaitToWithdrawOrderReward, orderRewardDetails, tx.Hash(),
+			)
 		}
-		pair.orderRewards[nftID.String()] = NewOrderRewardWithValue(
-			status, orderRewardDetails, txReqID,
-		)
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,

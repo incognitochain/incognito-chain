@@ -115,7 +115,7 @@ pdex_param:
 is_enable_bpv3_stats: false
 auto_enable_feature:
   - nextaccessota:
-      min_trigger: 4280000
+      min_trigger: 4270000
       force_trigger: 1000000000
       require_percentage: 0
   - maxcommitteesize48:
