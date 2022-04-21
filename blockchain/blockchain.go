@@ -1434,7 +1434,13 @@ func (blockchain *BlockChain) getBeaconValidators(
 	} else {
 		return res, err
 	}
-	return blockchain.getValidatorsFromDBByEpoch(epoch, height, common.BeaconChainSyncID)
+	res, err = blockchain.getBeaconValidatorsFromPrevHash(epoch, prevHash, common.BeaconChainSyncID)
+	if err != nil {
+		return nil, err
+	}
+	key := getCommitteeCacheKeyByEpoch(epoch, common.BeaconChainSyncID)
+	blockchain.committeeByEpochCache.Add(key, res)
+	return res, err
 }
 
 func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
@@ -1454,6 +1460,26 @@ func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
 		return nil, err
 	}
 	res = statedb.GetOneShardCommittee(consensusDB, cID)
+	return res, nil
+}
+
+func (blockchain *BlockChain) getBeaconValidatorsFromPrevHash(
+	epoch uint64,
+	prevHash common.Hash,
+	cID byte,
+) (
+	res []incognitokey.CommitteePublicKey,
+	err error,
+) {
+	if v := blockchain.BeaconChain.GetViewByHash(prevHash); v != nil {
+		res = v.GetCommittee()
+		return res, nil
+	}
+	consensusDB, err := getBeaconConsensusStateDB(blockchain.GetBeaconChainDatabase(), prevHash)
+	if err != nil {
+		return nil, err
+	}
+	res = statedb.GetBeaconCommittee(consensusDB)
 	return res, nil
 }
 
