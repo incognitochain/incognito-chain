@@ -633,7 +633,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 	if existed {
 		chkPoint := sCommitteeChange.Data[epochCheckpoint]
 		if height < chkPoint.Height {
-			if idx == 0 {
+			if (idx == 0) || (chkPoint.Height == 10e9) {
 				return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, sID)
 			}
 			epochCheckpoint = epochs[idx-1]
