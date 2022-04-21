@@ -111,11 +111,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(50)
 	blockchain.committeeByEpochCache, _ = lru.New(50)
-	err := blockchain.initCommitChangeCheckpoint()
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	err = wallet.InitPublicKeyBurningAddressByte()
+
+	err := wallet.InitPublicKeyBurningAddressByte()
 	if err != nil {
 		Logger.log.Error(err)
 		panic(err)
@@ -136,6 +133,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 	if err := blockchain.InitChainState(); err != nil {
 		return err
+	}
+	err = blockchain.initCommitChangeCheckpoint()
+	if err != nil {
+		Logger.log.Error(err)
 	}
 	blockchain.cQuitSync = make(chan struct{})
 

@@ -556,6 +556,11 @@ func (bc *BlockChain) initCommitChangeCheckpoint() error {
 		Data:   map[uint64]CommitteeCheckPoint{},
 		Epochs: []uint64{},
 	}
+	bestState := bc.GetBeaconBestState()
+	bc.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)].Data[bc.GetEpochByHeight(bestState.GetBeaconHeight())] = CommitteeCheckPoint{
+		Height:   bestState.GetBeaconHeight(),
+		RootHash: bestState.ConsensusStateDBRootHash,
+	}
 	return nil
 }
 
