@@ -174,20 +174,16 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			orderReward[nftID].txReqID = value.TxReqID()
-			orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
-			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
-			if err != nil {
-				return nil, err
-			}
-			for tokenID, value := range rewardDetail {
+			for tokenID, v := range value {
+				orderReward[nftID].txReqID = v.TxReqID()
+				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 				receiver := privacy.OTAReceiver{}
-				err := receiver.FromString(value.Receiver())
+				err := receiver.FromString(v.Receiver())
 				if err != nil {
 					return nil, err
 				}
 				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
-					receiver, value.Value(),
+					receiver, v.Value(),
 				)
 			}
 		}
@@ -371,19 +367,16 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 			if orderReward[nftID] == nil {
 				orderReward[nftID] = NewOrderReward()
 			}
-			orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
-			rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
-			if err != nil {
-				return nil, err
-			}
-			for tokenID, value := range rewardDetail {
+			for tokenID, v := range value {
+				orderReward[nftID].txReqID = v.TxReqID()
+				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 				receiver := privacy.OTAReceiver{}
-				err := receiver.FromString(value.Receiver())
+				err := receiver.FromString(v.Receiver())
 				if err != nil {
 					return nil, err
 				}
 				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
-					receiver, value.Value(),
+					receiver, v.Value(),
 				)
 			}
 		}
@@ -496,19 +489,16 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 		if orderReward[nftID] == nil {
 			orderReward[nftID] = NewOrderReward()
 		}
-		orderReward[nftID].withdrawnStatus = value.WithdrawnStatus()
-		rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
-		if err != nil {
-			return nil, err
-		}
-		for tokenID, value := range rewardDetail {
+		for tokenID, v := range value {
+			orderReward[nftID].txReqID = v.TxReqID()
+			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 			receiver := privacy.OTAReceiver{}
-			err := receiver.FromString(value.Receiver())
+			err := receiver.FromString(v.Receiver())
 			if err != nil {
 				return nil, err
 			}
 			orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
-				receiver, value.Value(),
+				receiver, v.Value(),
 			)
 		}
 	}
@@ -568,26 +558,25 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 		return nil, err
 	}
 
-	orderRewards := map[string]*OrderReward{}
-	for nftID, reward := range rewards {
-		orderRewards[nftID] = NewOrderReward()
-		orderRewards[nftID].withdrawnStatus = reward.WithdrawnStatus()
-		rewardDetail, err := statedb.GetPdexv3PoolPairOrderRewardDetail(stateDB, poolPairID, nftID)
-		if err != nil {
-			return nil, err
+	orderReward := make(map[string]*OrderReward)
+	for nftID, value := range rewards {
+		if orderReward[nftID] == nil {
+			orderReward[nftID] = NewOrderReward()
 		}
-		for tokenID, value := range rewardDetail {
+		for tokenID, v := range value {
+			orderReward[nftID].txReqID = v.TxReqID()
+			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 			receiver := privacy.OTAReceiver{}
-			err := receiver.FromString(value.Receiver())
+			err := receiver.FromString(v.Receiver())
 			if err != nil {
 				return nil, err
 			}
-			orderRewards[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
-				receiver, value.Value(),
+			orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
+				receiver, v.Value(),
 			)
 		}
 	}
-	return orderRewards, nil
+	return orderReward, nil
 }
 
 func InitStateV2FromDBWithoutNftIDs(stateDB *statedb.StateDB, beaconHeight uint64) (*stateV2, error) {

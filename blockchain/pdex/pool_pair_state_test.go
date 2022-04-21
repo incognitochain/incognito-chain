@@ -1204,11 +1204,9 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				},
 				OrderRewards: map[string]*v2utils.OrderRewardChange{
 					common.PRVIDStr: {
-						IsChanged:         false,
 						UncollectedReward: map[string]bool{},
 					},
 					common.PDEXIDStr: {
-						IsChanged: true,
 						UncollectedReward: map[string]bool{
 							common.PDEXIDStr: true,
 						},
@@ -1236,8 +1234,14 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				stakingPoolFees: tt.fields.stakingPoolFees,
 			}
 			got, got1 := p.getDiff(tt.args.poolPairID, tt.args.comparePoolPair, tt.args.poolPairChange, tt.args.stateChange)
-			if !reflect.DeepEqual(got.OrderRewards, tt.want.OrderRewards) {
-				t.Errorf("PoolPairState.getDiff() got = %v, want %v", got.OrderRewards, tt.want.OrderRewards)
+			if !reflect.DeepEqual(got, tt.want) {
+				for k, v := range got.OrderRewards {
+					if !reflect.DeepEqual(v, tt.want.OrderRewards[k]) {
+						t.Errorf("PoolPairState.getDiff() got = %v, want %v", v, tt.want.OrderRewards[k])
+					}
+				}
+
+				t.Errorf("PoolPairState.getDiff() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("PoolPairState.getDiff() got1 = %v, want %v", got1, tt.want1)
@@ -1272,21 +1276,15 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 		sDB, "id",
 		statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
 			common.PDEXIDStr, DefaultWithdrawnOrderReward, nil,
-		),
-	)
-	assert.Nil(t, err)
-
-	err = statedb.StorePdexv3PoolPairOrderRewardDetail(
-		sDB, "id", common.PDEXIDStr,
-		statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
 			common.PRVCoinID, 200, utils.EmptyString,
 		),
 	)
 	assert.Nil(t, err)
 
-	err = statedb.StorePdexv3PoolPairOrderRewardDetail(
-		sDB, "id", common.PDEXIDStr,
-		statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
+	err = statedb.StorePdexv3PoolPairOrderReward(
+		sDB, "id",
+		statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
+			common.PDEXIDStr, DefaultWithdrawnOrderReward, nil,
 			common.PDEXCoinID, 200, utils.EmptyString,
 		),
 	)

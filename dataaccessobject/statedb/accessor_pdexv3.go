@@ -260,33 +260,16 @@ func DeletePdexv3PoolPairStakingPoolFee(
 func StorePdexv3PoolPairOrderReward(
 	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairOrderRewardState,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, state.nftID)
+	key := GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, state.nftID, state.tokenID)
 	return stateDB.SetStateObject(Pdexv3PoolPairOrderRewardObjectType, key, state)
 }
 
-func StorePdexv3PoolPairOrderRewardDetail(
-	stateDB *StateDB, poolPairID, nftID string, state *Pdexv3PoolPairOrderRewardDetailState,
-) error {
-	key := GeneratePdexv3PoolPairOrderRewardDetailObjectKey(poolPairID, nftID, state.tokenID)
-	return stateDB.SetStateObject(Pdexv3PoolPairOrderRewardDetailObjectType, key, state)
-}
-
 func DeletePdexv3PoolPairOrderReward(
-	stateDB *StateDB, poolPairID, nftID string,
-) error {
-	key := GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, nftID)
-	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardObjectType, key) {
-		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v", poolPairID, nftID)
-	}
-	return nil
-}
-
-func DeletePdexv3PoolPairOrderRewardDetail(
 	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
-	key := GeneratePdexv3PoolPairOrderRewardDetailObjectKey(poolPairID, nftID, tokenID)
-	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardDetailObjectType, key) {
-		return fmt.Errorf("Cannot delete pool pair order reward detail with ID %v - %v", poolPairID, nftID)
+	key := GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, nftID, tokenID)
+	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairOrderRewardObjectType, key) {
+		return fmt.Errorf("Cannot delete pool pair order reward with ID %v - %v", poolPairID, nftID)
 	}
 	return nil
 }
@@ -525,17 +508,10 @@ func GetPdexv3PoolPairLmLockedShare(stateDB *StateDB, poolPairID string) (
 }
 
 func GetPdexv3PoolPairOrderReward(stateDB *StateDB, poolPairID string) (
-	map[string]Pdexv3PoolPairOrderRewardState, error,
+	map[string]map[common.Hash]Pdexv3PoolPairOrderRewardState, error,
 ) {
 	prefixHash := generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
 	return stateDB.iterateWithPdexv3PoolPairOrderReward(prefixHash)
-}
-
-func GetPdexv3PoolPairOrderRewardDetail(stateDB *StateDB, poolPairID, nftID string) (
-	map[common.Hash]Pdexv3PoolPairOrderRewardDetailState, error,
-) {
-	prefixHash := generatePdexv3PoolPairOrderRewardDetailObjectPrefix(poolPairID, nftID)
-	return stateDB.iterateWithPdexv3PoolPairOrderRewardDetail(prefixHash)
 }
 
 func GetPdexv3ShareTradingFees(stateDB *StateDB, poolPairID, nftID string) (

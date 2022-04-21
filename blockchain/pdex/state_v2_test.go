@@ -1070,13 +1070,7 @@ func Test_stateV2_BuildInstructions(t *testing.T) {
 								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderRewards: map[string]*OrderReward{
-							nftID1: &OrderReward{
-								uncollectedRewards: map[common.Hash]*OrderRewardDetail{},
-								withdrawnStatus:    DefaultWithdrawnOrderReward,
-								txReqID:            nil,
-							},
-						},
+						orderRewards: map[string]*OrderReward{},
 						makingVolume: map[common.Hash]*MakingVolume{},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
@@ -2075,12 +2069,7 @@ func Test_stateV2_Process(t *testing.T) {
 								lastLmRewardsPerShare: map[common.Hash]*big.Int{},
 							},
 						},
-						orderRewards: map[string]*OrderReward{
-							nftID1: {
-								uncollectedRewards: map[common.Hash]*OrderRewardDetail{},
-								withdrawnStatus:    DefaultWithdrawnOrderReward,
-							},
-						},
+						orderRewards: map[string]*OrderReward{},
 						makingVolume: map[common.Hash]*MakingVolume{},
 						orderbook: Orderbook{[]*Order{
 							rawdbv2.NewPdexv3OrderWithValue(
@@ -2532,10 +2521,10 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			},
 			want1: &StateChange{
 				PoolPairs: map[string]*v2utils.PoolPairChange{
-					poolPairID: &v2utils.PoolPairChange{
+					poolPairID: {
 						IsChanged: true,
 						Shares: map[string]*v2utils.ShareChange{
-							nftID1: &v2utils.ShareChange{
+							nftID1: {
 								IsChanged: true,
 								TradingFees: map[string]bool{
 									common.PRVIDStr: true,
@@ -2565,7 +2554,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs: map[string]*PoolPairState{
-					poolPairID: &PoolPairState{
+					poolPairID: {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 200, 0, 100, 400,
 							big.NewInt(0).SetUint64(200),
@@ -2615,7 +2604,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					MintNftRequireAmount: 1000000000,
 				},
 				stakingPoolStates: map[string]*StakingPoolState{
-					common.PRVIDStr: &StakingPoolState{},
+					common.PRVIDStr: {},
 				},
 				nftIDs:    map[string]uint64{},
 				producer:  stateProducerV2{},
@@ -2627,7 +2616,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 					waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 					deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 					poolPairs: map[string]*PoolPairState{
-						poolPairID: &PoolPairState{
+						poolPairID: {
 							state: *rawdbv2.NewPdexv3PoolPairWithValue(
 								*token0ID, *token1ID, 200, 0, 100, 400,
 								big.NewInt(0).SetUint64(200),
@@ -2669,7 +2658,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 						MintNftRequireAmount: 1000000000,
 					},
 					stakingPoolStates: map[string]*StakingPoolState{
-						common.PRVIDStr: &StakingPoolState{},
+						common.PRVIDStr: {},
 					},
 					nftIDs:    map[string]uint64{},
 					producer:  stateProducerV2{},
@@ -2685,7 +2674,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 				waitingContributions:        map[string]rawdbv2.Pdexv3Contribution{},
 				deletedWaitingContributions: map[string]rawdbv2.Pdexv3Contribution{},
 				poolPairs: map[string]*PoolPairState{
-					poolPairID: &PoolPairState{
+					poolPairID: {
 						state: *rawdbv2.NewPdexv3PoolPairWithValue(
 							*token0ID, *token1ID, 200, 0, 100, 400,
 							big.NewInt(0).SetUint64(200),
@@ -2728,7 +2717,7 @@ func Test_stateV2_GetDiff(t *testing.T) {
 			},
 			want1: &StateChange{
 				PoolPairs: map[string]*v2utils.PoolPairChange{
-					poolPairID: &v2utils.PoolPairChange{
+					poolPairID: {
 						IsChanged:         false,
 						Shares:            map[string]*v2utils.ShareChange{},
 						OrderIDs:          map[string]bool{},
@@ -2744,7 +2733,6 @@ func Test_stateV2_GetDiff(t *testing.T) {
 								},
 							},
 							nftID1: {
-								IsChanged: true,
 								UncollectedReward: map[string]bool{
 									common.PRVIDStr: true,
 								},

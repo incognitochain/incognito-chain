@@ -2332,9 +2332,9 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLmLockedShare(prefix []byte) (
 }
 
 func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderReward(prefix []byte) (
-	map[string]Pdexv3PoolPairOrderRewardState, error,
+	map[string]map[common.Hash]Pdexv3PoolPairOrderRewardState, error,
 ) {
-	res := map[string]Pdexv3PoolPairOrderRewardState{}
+	res := map[string]map[common.Hash]Pdexv3PoolPairOrderRewardState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -2346,27 +2346,10 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderReward(prefix []byte) (
 		if err != nil {
 			return res, err
 		}
-		res[orderRewardState.nftID] = *orderRewardState
-	}
-	return res, nil
-}
-
-func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderRewardDetail(prefix []byte) (
-	map[common.Hash]Pdexv3PoolPairOrderRewardDetailState, error,
-) {
-	res := map[common.Hash]Pdexv3PoolPairOrderRewardDetailState{}
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		orderRewardDetailState := NewPdexv3PoolPairOrderRewardDetailState()
-		err := json.Unmarshal(newValue, orderRewardDetailState)
-		if err != nil {
-			return res, err
+		if res[orderRewardState.nftID] == nil {
+			res[orderRewardState.nftID] = make(map[common.Hash]Pdexv3PoolPairOrderRewardState)
 		}
-		res[orderRewardDetailState.tokenID] = *orderRewardDetailState
+		res[orderRewardState.nftID][orderRewardState.tokenID] = *orderRewardState
 	}
 	return res, nil
 }

@@ -745,18 +745,6 @@ func (p *PoolPairState) updateToDB(
 
 	for accessID, orderRewardChange := range poolPairChange.OrderRewards {
 		if _, found := p.orderRewards[accessID]; found {
-			if orderRewardChange.IsChanged {
-				err := statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
-					statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-						accessID,
-						p.orderRewards[accessID].withdrawnStatus,
-						p.orderRewards[accessID].txReqID,
-					),
-				)
-				if err != nil {
-					return err
-				}
-			}
 			for tokenID, isChanged := range orderRewardChange.UncollectedReward {
 				if isChanged {
 					tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
@@ -768,9 +756,11 @@ func (p *PoolPairState) updateToDB(
 						if err != nil {
 							return err
 						}
-						err = statedb.StorePdexv3PoolPairOrderRewardDetail(
-							env.StateDB(), poolPairID, accessID,
-							statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
+						err = statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
+							statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
+								accessID,
+								p.orderRewards[accessID].withdrawnStatus,
+								p.orderRewards[accessID].txReqID,
 								*tokenHash, reward.amount, receiver,
 							),
 						)
@@ -778,7 +768,7 @@ func (p *PoolPairState) updateToDB(
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, accessID, *tokenHash)
+						err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, accessID, *tokenHash)
 						if err != nil {
 							return err
 						}
@@ -786,16 +776,12 @@ func (p *PoolPairState) updateToDB(
 				}
 			}
 		} else {
-			err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, accessID)
-			if err != nil {
-				return err
-			}
 			for tokenID := range orderRewardChange.UncollectedReward {
 				tokenHash, err := common.Hash{}.NewHashFromStr(tokenID)
 				if err != nil {
 					return err
 				}
-				err = statedb.DeletePdexv3PoolPairOrderRewardDetail(env.StateDB(), poolPairID, accessID, *tokenHash)
+				err = statedb.DeletePdexv3PoolPairOrderReward(env.StateDB(), poolPairID, accessID, *tokenHash)
 				if err != nil {
 					return err
 				}
