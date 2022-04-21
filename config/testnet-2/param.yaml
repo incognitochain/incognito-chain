@@ -114,6 +114,10 @@ pdex_param:
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
 auto_enable_feature:
+  - nextaccessota:
+      min_trigger: 4280000
+      force_trigger: 1000000000
+      require_percentage: 0
   - maxcommitteesize48:
       min_trigger: 3965040
       force_trigger: 1000000000
