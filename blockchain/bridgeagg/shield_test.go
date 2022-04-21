@@ -90,17 +90,6 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 		}
 	}
 
-	accumulatedValues := &metadata.AccumulatedValues{
-		UniqETHTxsUsed:    [][]byte{},
-		UniqBSCTxsUsed:    [][]byte{},
-		UniqPLGTxsUsed:    [][]byte{},
-		UniqPRVEVMTxsUsed: [][]byte{},
-		UniqFTMTxsUsed:    [][]byte{},
-		DBridgeTokenPair:  map[string][]byte{},
-		CBridgeTokens:     []*common.Hash{},
-		InitTokens:        []*common.Hash{},
-	}
-
 	assert := s.Assert()
 	env := &stateEnvironment{
 		beaconHeight: 10,
@@ -108,7 +97,7 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 			common.BeaconChainID: s.sDB,
 		},
 		shieldActions:     [][]string{actions},
-		accumulatedValues: accumulatedValues,
+		accumulatedValues: testCase.AccumulatedValues,
 	}
 	state := NewState()
 	state.unifiedTokenInfos = testCase.UnifiedTokens

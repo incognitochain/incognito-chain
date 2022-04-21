@@ -80,6 +80,16 @@
                 }
             }
         },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                 "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
@@ -192,6 +202,16 @@
                 }
             }
         },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                 "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
@@ -302,6 +322,16 @@
                 }
             }
         },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                 "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
@@ -409,6 +439,16 @@
                 }
             }
         },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                 "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
@@ -515,6 +555,16 @@
                     "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
                 }
             }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
         },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
@@ -625,6 +675,16 @@
                 }
             }
         },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                 "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
@@ -727,6 +787,16 @@
                     "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
                 }
             }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
         },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
@@ -852,6 +922,16 @@
                 }
             }
         },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                 "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
@@ -974,6 +1054,16 @@
                     "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
                 }
             }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
         },
         "bridge_tokens_info": {
             "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {

@@ -430,8 +430,7 @@ func (sp *stateProducer) unshield(
 func (sp *stateProducer) addToken(
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64,
 	sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues,
-) ([]string, map[common.Hash]map[uint]*Vault, *metadata.AccumulatedValues, error) {
-	res := []string{}
+) ([][]string, map[common.Hash]map[uint]*Vault, *metadata.AccumulatedValues, error) {
 	var clonedUnifiedTokenInfos map[common.Hash]map[uint]*Vault
 	addToken := metadataBridge.AddToken{}
 	configUnifiedTokens := config.UnifiedToken()
@@ -447,7 +446,7 @@ func (sp *stateProducer) addToken(
 			newListTokens[unifiedTokenID] = make(map[uint]config.Vault)
 			if unifiedTokenIDs[unifiedTokenID.String()] {
 				Logger.log.Warnf("Duplicate unifiedTokenID %s", unifiedTokenID.String())
-				return res, unifiedTokenInfos, ac, nil
+				return [][]string{}, unifiedTokenInfos, ac, nil
 			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true
 			if _, found := clonedUnifiedTokenInfos[unifiedTokenID]; !found {
@@ -456,16 +455,16 @@ func (sp *stateProducer) addToken(
 			for networkID, vault := range vaults {
 				if incTokenIDs[vault.IncTokenID] {
 					Logger.log.Warnf("Duplicate incTokenID %s", vault.IncTokenID)
-					return res, unifiedTokenInfos, ac, nil
+					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				if unifiedTokenIDs[vault.IncTokenID] {
 					Logger.log.Warnf("Duplicate incTokenID with unifiedTokenID %s", vault.IncTokenID)
-					return res, unifiedTokenInfos, ac, nil
+					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				err := validateConfigVault(sDBs, networkID, vault)
 				if err != nil {
 					Logger.log.Warnf("Validate config vault fail by error %v", err)
-					return res, unifiedTokenInfos, ac, nil
+					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				if _, found := unifiedTokenInfos[unifiedTokenID][networkID]; found {
 					continue
@@ -473,12 +472,12 @@ func (sp *stateProducer) addToken(
 				externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
 				if err != nil {
 					Logger.log.Warnf("Cannot get externalTokenID error %v", err)
-					return res, unifiedTokenInfos, ac, nil
+					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 				if err != nil {
 					Logger.log.Warnf("tokenID %s is not a valid hash %v", vault.IncTokenID, err)
-					return res, unifiedTokenInfos, ac, nil
+					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
 				v := NewVaultWithValue(*state, *tokenID)
@@ -495,13 +494,12 @@ func (sp *stateProducer) addToken(
 	}
 
 	if len(addToken.NewListTokens) != 0 {
-		var err error
-		res, err = addToken.StringSlice()
+		temp, err := addToken.StringSlice()
 		if err != nil {
 			Logger.log.Warnf("Error in building instruction %v", err)
-			return []string{}, unifiedTokenInfos, ac, nil
+			return [][]string{}, unifiedTokenInfos, ac, nil
 		}
-		return res, clonedUnifiedTokenInfos, clonedAC, nil
+		return [][]string{temp}, clonedUnifiedTokenInfos, clonedAC, nil
 	}
-	return res, unifiedTokenInfos, ac, nil
+	return [][]string{}, unifiedTokenInfos, ac, nil
 }

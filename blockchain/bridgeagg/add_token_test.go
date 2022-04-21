@@ -23,9 +23,9 @@ type ConfigVault struct {
 }
 
 type AddTokenTestCase struct {
-	ConfigedUnifiedTokens    map[string]map[string]map[string]ConfigVault  `json:"configed_unified_tokens"`
-	BeaconHeight             uint64                                        `json:"beacon_height"`
-	ExpectedBridgeTokensInfo map[common.Hash]*statedb.BridgeTokenInfoState `json:"expected_bridge_tokens_info"`
+	ConfigedUnifiedTokens    map[string]map[string]map[string]ConfigVault `json:"configed_unified_tokens"`
+	BeaconHeight             uint64                                       `json:"beacon_height"`
+	ExpectedBridgeTokensInfo map[common.Hash]*rawdbv2.BridgeTokenInfo     `json:"expected_bridge_tokens_info"`
 
 	TestCase
 }
@@ -93,7 +93,7 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 	state := NewState()
 	producerState := state.Clone()
 	processorState := state.Clone()
-	actualInstruction, accumulatedValues, err := producerState.BuildAddTokenInstruction(
+	actualInstructions, accumulatedValues, err := producerState.BuildAddTokenInstruction(
 		testCase.BeaconHeight,
 		map[int]*statedb.StateDB{
 			common.BeaconChainID: a.sDB,
@@ -101,10 +101,10 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 		testCase.AccumulatedValues,
 	)
 	assert.NoError(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process([][]string{actualInstruction}, a.sDB)
+	err = processorState.Process(actualInstructions, a.sDB)
 	assert.NoError(err, fmt.Sprintf("Error in process instructions %v", err))
 	a.actualResults[testName] = ActualResult{
-		Instructions:      [][]string{actualInstruction},
+		Instructions:      actualInstructions,
 		ProducerState:     producerState,
 		ProcessorState:    processorState,
 		AccumulatedValues: accumulatedValues,
@@ -126,6 +126,22 @@ func (a *AddTokenTestSuite) AfterTest(suiteName, testName string) {
 }
 
 func (a *AddTokenTestSuite) TestAccepted() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedInvalidBeaconHeight() {
 	assert := a.Assert()
 	testCase := a.testCases[a.currentTestCaseName]
 	actualResult := a.actualResults[a.currentTestCaseName]
