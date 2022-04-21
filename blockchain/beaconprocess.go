@@ -796,6 +796,7 @@ func (blockchain *BlockChain) tryUpdateCommitteeCheckPoint(
 	allCommitteeChange *committeestate.CommitteeChange,
 ) {
 	epochForCache := newBestState.Epoch
+	Logger.log.Infof("[debugcachebeaconcommittee] Try Update committee change, beacon added %v", len(allCommitteeChange.BeaconCommitteeAdded))
 	for sID := 0; sID < blockchain.GetActiveShardNumber(); sID++ {
 		if (len(allCommitteeChange.ShardCommitteeAdded[byte(sID)]) > 0) || (len(allCommitteeChange.ShardCommitteeReplaced[byte(sID)][common.REPLACE_IN]) > 0) {
 			Logger.log.Infof("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v", sID, epochForCache)
@@ -1040,7 +1041,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := newBestState.CommitTrieToDisk(batch); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-
+	blockchain.tryUpdateCommitteeCheckPoint(newBestState, committeeChange)
 	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
@@ -1084,8 +1085,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
-
-	blockchain.tryUpdateCommitteeCheckPoint(newBestState, committeeChange)
 
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
