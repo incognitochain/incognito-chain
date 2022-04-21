@@ -575,6 +575,7 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 		}
 		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
 	}
+	bc.committeeChangeCheckpoint.data[sID] = sCommitteeChange
 }
 
 func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height uint64) {
@@ -593,6 +594,7 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height
 		}
 		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
 	}
+	bc.committeeChangeCheckpoint.data[sID] = sCommitteeChange
 }
 
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64) (
