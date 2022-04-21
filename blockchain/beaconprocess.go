@@ -802,7 +802,11 @@ func (curView *BeaconBestState) countMissingSignatureV3(
 		return nil
 	}
 
-	previousBlock, err := bc.GetShardBlockByHeightV1(shardState.Height-1, shardID)
+	block, _, err := bc.GetShardBlockByHashWithShardID(shardState.Hash, shardID)
+	if err != nil {
+		return err
+	}
+	previousBlock, _, err := bc.GetShardBlockByHashWithShardID(block.GetPrevHash(), shardID)
 	if err != nil {
 		return err
 	}
