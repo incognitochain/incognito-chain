@@ -53,6 +53,9 @@ func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 		NftID:           state.nftID,
 		WithdrawnStatus: state.withdrawnStatus,
 		TxReqID:         state.txReqID,
+		TokenID:         state.tokenID,
+		Value:           state.value,
+		Receiver:        state.receiver,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -76,6 +79,9 @@ func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	state.nftID = temp.NftID
 	state.withdrawnStatus = temp.WithdrawnStatus
 	state.txReqID = temp.TxReqID
+	state.tokenID = temp.TokenID
+	state.value = temp.Value
+	state.receiver = temp.Receiver
 	return nil
 }
 

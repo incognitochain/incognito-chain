@@ -678,14 +678,15 @@ func (orderReward *OrderReward) getDiff(
 		newOrderRewardChange = v2utils.NewOrderRewardChange()
 	}
 	if compareOrderReward == nil {
+		newOrderRewardChange.UncollectedReward = make(map[string]bool)
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
 	} else {
 		if orderReward.withdrawnStatus != compareOrderReward.withdrawnStatus ||
 			orderReward.txReqID != compareOrderReward.txReqID {
+			newOrderRewardChange.UncollectedReward = make(map[string]bool)
 			for k := range orderReward.uncollectedRewards {
-				newOrderRewardChange.UncollectedReward = make(map[string]bool)
 				newOrderRewardChange.UncollectedReward[k.String()] = true
 			}
 		}
