@@ -648,17 +648,41 @@ func (multiView *MultiView) IsBelongToConfirmableChain(branch []types.BlockInter
 	ch := make(chan result)
 
 	multiView.actionCh <- func() {
-		firstBlock := branch[0]
-		if firstBlock.GetPrevHash() != *multiView.finalView.GetHash() {
+
+		childBlock := branch[0]
+		isConnected := false
+		multiView.viewByHash[*multiView.finalView.GetHash()] = multiView.finalView
+
+		defer func() {
+			delete(multiView.viewByHash, *multiView.finalView.GetHash())
+		}()
+
+		// check connected to final view
+		previousView := multiView.viewByHash[childBlock.GetPrevHash()]
+		for previousView != nil {
+			if *previousView.GetHash() == childBlock.GetPrevHash() {
+				isConnected = true
+				break
+			}
+			childBlock = previousView.GetBlock()
+		}
+		if !isConnected {
 			ch <- result{confirmable: false, reason: fmt.Errorf("first block %+v %+v, previous %+v, do not connect to final view %+v %+v",
-				*firstBlock.Hash(), firstBlock.GetHeight(), firstBlock.GetPrevHash(), *multiView.finalView.GetHash(), multiView.finalView.GetHeight())}
+				*childBlock.Hash(), childBlock.GetHeight(), childBlock.GetPrevHash(), *multiView.finalView.GetHash(), multiView.finalView.GetHeight())}
 			return
 		}
 
-		childBlock := branch[len(branch)-1]
+		// every block must have a known parent and connect to each other
+		childBlock = branch[len(branch)-1]
 		var parentBlock types.BlockInterface
 		if len(branch) == 1 {
-			parentBlock = multiView.finalView.GetBlock()
+			parentView, ok := multiView.viewByHash[childBlock.GetPrevHash()]
+			if !ok {
+				ch <- result{confirmable: false, reason: fmt.Errorf("confirm 1 block %+v %+v, previous %+v, do not find multiview %+v %+v",
+					*childBlock.Hash(), childBlock.GetHeight(), childBlock.GetPrevHash(), childBlock.GetPrevHash(), childBlock.GetHeight()-1)}
+				return
+			}
+			parentBlock = parentView.GetBlock()
 		} else {
 			parentBlock = branch[len(branch)-2]
 			for i := len(branch) - 1; i >= 1; i-- {
@@ -681,7 +705,7 @@ func (multiView *MultiView) IsBelongToConfirmableChain(branch []types.BlockInter
 		}
 
 		// this branch must belong to a finalized branch
-		// calculate if the chain from child block to the latest view contain at least a finalized chain
+		// calculate if the chain from child block to the latest previousView contain at least a finalized chain
 		v := multiView.viewByHash[*childBlock.Hash()]
 		branches := [][]View{}
 		getAllBranches(*childBlock.Hash(), multiView.viewByPrevHash, &branches, []View{v})
