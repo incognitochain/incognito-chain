@@ -180,6 +180,7 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 				var receiver *privacy.OTAReceiver
 				if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+					receiver := new(privacy.OTAReceiver)
 					err := receiver.FromString(v.Receiver())
 					if err != nil {
 						return nil, err
@@ -375,6 +376,7 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 				var receiver *privacy.OTAReceiver
 				if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+					receiver := new(privacy.OTAReceiver)
 					err := receiver.FromString(v.Receiver())
 					if err != nil {
 						return nil, err
@@ -499,6 +501,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 			var receiver *privacy.OTAReceiver
 			if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+				receiver := new(privacy.OTAReceiver)
 				err := receiver.FromString(v.Receiver())
 				if err != nil {
 					return nil, err
@@ -575,6 +578,7 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 			var receiver *privacy.OTAReceiver
 			if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+				receiver := new(privacy.OTAReceiver)
 				err := receiver.FromString(v.Receiver())
 				if err != nil {
 					return nil, err

@@ -715,7 +715,6 @@ func (sp *stateProcessorV2) addOrder(
 				WaitToWithdrawOrderReward, orderRewardDetails, txReqID,
 			)
 		}
-		Logger.log.Info("[bridgeagg] pair.orderRewards[nftID.String()]:", pair.orderRewards[md.NftID.String()])
 
 		// write changes to state
 		pairs[md.PoolPairID] = pair

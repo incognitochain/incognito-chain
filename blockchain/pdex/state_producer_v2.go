@@ -689,7 +689,6 @@ TransactionLoop:
 				WaitToWithdrawOrderReward, orderRewardDetails, tx.Hash(),
 			)
 		}
-		Logger.log.Info("[bridgeagg] pair.orderRewards[nftID.String()]:", pair.orderRewards[nftID.String()])
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
