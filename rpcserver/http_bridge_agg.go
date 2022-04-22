@@ -746,8 +746,8 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	case common.DefaultNetworkID:
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid networkID"))
 	}
-	res, err := retrieveBurnProof(burningConfirmMeta0, onBeacon, height, &txReqID, httpServer)
-	if err != nil {
+	res, _ := retrieveBurnProof(burningConfirmMeta0, onBeacon, height, &txReqID, httpServer)
+	if res == nil {
 		return retrieveBurnProof(burningConfirmMeta1, onBeacon, height, &txReqID, httpServer)
 	}
 	return res, nil
