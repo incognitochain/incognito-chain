@@ -40,3 +40,20 @@ func DeleteTrieNode(db incdb.KeyValueWriter, hash common.Hash) {
 		dataaccessobject.Logger.Log.Critical("Failed to delete trie node", "err", err)
 	}
 }
+
+func StoreCommitteeChangeCheckpoint(db incdb.KeyValueWriter, data []byte) error {
+	key := GetCommitteeCheckpointKey()
+	if err := db.Put(key, data); err != nil {
+		return NewRawdbError(StoreShardBestStateError, err)
+	}
+	return nil
+}
+
+func GetCommitteeChangeCheckpoint(db incdb.KeyValueReader) ([]byte, error) {
+	key := GetCommitteeCheckpointKey()
+	shardBestStateBytes, err := db.Get(key)
+	if err != nil {
+		return nil, NewRawdbError(StoreShardBestStateError, err)
+	}
+	return shardBestStateBytes, nil
+}
