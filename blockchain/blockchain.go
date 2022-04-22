@@ -340,10 +340,17 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
-	// bestState := bc.GetBeaconBestState()
-	blockchain.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)].Data[initBeaconBestState.BestBlock.Header.Epoch] = CommitteeCheckPoint{
+	epochs := []uint64{}
+	epochs = append(epochs, initBeaconBestState.BestBlock.Header.Epoch)
+	data := CommitteeCheckPoint{
 		Height:   initBeaconBestState.GetBeaconHeight(),
 		RootHash: initBeaconBestState.ConsensusStateDBRootHash,
+	}
+	blockchain.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)] = CommitteeChangeCheckpoint{
+		Data: map[uint64]CommitteeCheckPoint{
+			initBeaconBestState.BestBlock.Header.Epoch: data,
+		},
+		Epochs: epochs,
 	}
 
 	committees := initBeaconBestState.GetShardCommitteeFlattenList()
