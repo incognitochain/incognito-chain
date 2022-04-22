@@ -130,11 +130,11 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 	//initialize feature statistic
 	blockchain.InitFeatureStat()
-
+	err = blockchain.initCommitChangeCheckpoint()
 	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
-	err = blockchain.initCommitChangeCheckpoint()
+
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -338,6 +338,12 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetBeaconCommittee()); err != nil {
 		return err
+	}
+
+	// bestState := bc.GetBeaconBestState()
+	blockchain.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)].Data[blockchain.GetEpochByHeight(initBeaconBestState.GetBeaconHeight())] = CommitteeCheckPoint{
+		Height:   initBeaconBestState.GetBeaconHeight(),
+		RootHash: initBeaconBestState.ConsensusStateDBRootHash,
 	}
 
 	committees := initBeaconBestState.GetShardCommitteeFlattenList()
