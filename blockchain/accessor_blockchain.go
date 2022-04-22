@@ -628,7 +628,7 @@ func (bc *BlockChain) restoreCheckpoint() error {
 		return err
 	}
 	committeeCheckpoint := map[byte]CommitteeChangeCheckpoint{}
-	err = json.Unmarshal(data, committeeCheckpoint)
+	err = json.Unmarshal(data, &committeeCheckpoint)
 	if err != nil {
 		panic(err)
 		return err
