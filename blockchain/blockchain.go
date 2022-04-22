@@ -352,6 +352,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 		},
 		Epochs: epochs,
 	}
+	err = blockchain.backupCheckpoint()
+	if err != nil {
+		return err
+	}
 
 	committees := initBeaconBestState.GetShardCommitteeFlattenList()
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
@@ -739,6 +743,10 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				return err
 			}
 		}
+	}
+	err = blockchain.restoreCheckpoint()
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -576,6 +576,10 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
 	}
 	bc.committeeChangeCheckpoint.data[sID] = sCommitteeChange
+	err := bc.backupCheckpoint()
+	if err != nil {
+		Logger.log.Error(err)
+	}
 }
 
 func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height uint64) {
@@ -595,6 +599,48 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height
 		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
 	}
 	bc.committeeChangeCheckpoint.data[sID] = sCommitteeChange
+	err := bc.backupCheckpoint()
+	if err != nil {
+		Logger.log.Error(err)
+	}
+}
+
+func (bc *BlockChain) backupCheckpoint() error {
+	data, err := json.Marshal(bc.committeeChangeCheckpoint.data)
+	if err != nil {
+		panic(err)
+		return err
+	}
+	db := bc.GetBeaconChainDatabase()
+	err = rawdbv2.StoreCommitteeChangeCheckpoint(db, data)
+	if err != nil {
+		panic(err)
+		return err
+	}
+	return nil
+}
+
+func (bc *BlockChain) restoreCheckpoint() error {
+	db := bc.GetBeaconChainDatabase()
+	data, err := rawdbv2.GetCommitteeChangeCheckpoint(db)
+	if err != nil {
+		panic(err)
+		return err
+	}
+	committeeCheckpoint := map[byte]CommitteeChangeCheckpoint{}
+	err = json.Unmarshal(data, committeeCheckpoint)
+	if err != nil {
+		panic(err)
+		return err
+	}
+	bc.committeeChangeCheckpoint = struct {
+		data   map[byte]CommitteeChangeCheckpoint
+		locker *sync.RWMutex
+	}{
+		data:   committeeCheckpoint,
+		locker: &sync.RWMutex{},
+	}
+	return nil
 }
 
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64) (
