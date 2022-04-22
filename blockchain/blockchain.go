@@ -1277,7 +1277,11 @@ func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, cID byte) (
 		return nil, epochForCache, NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
 	res := statedb.GetOneShardCommittee(bcConsensusStateDB, cID)
-	bc.committeeByEpochCache.Add(key, res)
+	if len(res) == 0 {
+		panic(fmt.Sprintf("GetShardCommitteeKeysByEpoch shard %v epoch %v cache nil committee", cID, epoch))
+	} else {
+		bc.committeeByEpochCache.Add(key, res)
+	}
 	return res, epoch, nil
 }
 
@@ -1495,12 +1499,15 @@ func (blockchain *BlockChain) getShardValidators(
 			res2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, cID)
 			list1, _ := incognitokey.CommitteeKeyListToString(res)
 			list2, _ := incognitokey.CommitteeKeyListToString(res2)
-			if !equal2list(res, res2) {
+			if (len(res2) > 0) && (!equal2list(res, res2)) {
 				Logger.log.Info(list1)
 				Logger.log.Info(list2)
 				panic(errors.Errorf("Data from statedb at shard %v at epoch %v is different from beacon db", cID, epochForCache))
 			}
 			key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
+			if len(res) == 0 {
+				panic(fmt.Sprintf("Getshard at epoch %v cache nil shard %v committee", epochForCache, cID))
+			}
 			blockchain.committeeByEpochCache.Add(key, res)
 		}
 		return res, nil

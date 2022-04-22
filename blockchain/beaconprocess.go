@@ -801,14 +801,23 @@ func (blockchain *BlockChain) tryUpdateCommitteeCheckPoint(
 			Logger.log.Debugf("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v", sID, epochForCache)
 			blockchain.updateCommitteeChangeCheckpointByBC(byte(sID), epochForCache, newBestState.ConsensusStateDBRootHash)
 			key := getCommitteeCacheKeyByEpoch(epochForCache, byte(sID))
-			blockchain.committeeByEpochCache.Add(key, newBestState.GetAShardCommittee(byte(sID)))
+			committee := newBestState.GetAShardCommittee(byte(sID))
+			if len(committee) == 0 {
+				panic(fmt.Sprintf("Beacon %v  at epoch %v cache nil shard %v committee", newBestState.GetBeaconHeight(), epochForCache, sID))
+			}
+			blockchain.committeeByEpochCache.Add(key, committee)
 		}
 	}
 	if (len(allCommitteeChange.BeaconCommitteeAdded) > 0) || (len(allCommitteeChange.BeaconCommitteeReplaced[common.REPLACE_IN]) > 0) {
 		Logger.log.Debugf("[debugcachecommittee] Update committee for beacon, epoch for cache %v", epochForCache)
 		blockchain.updateCommitteeChangeCheckpointByBC(common.BeaconChainSyncID, epochForCache, newBestState.ConsensusStateDBRootHash)
 		key := getCommitteeCacheKeyByEpoch(epochForCache, common.BeaconChainSyncID)
-		blockchain.committeeByEpochCache.Add(key, newBestState.GetCommittee())
+		committee := newBestState.GetCommittee()
+		if len(committee) == 0 {
+			panic(fmt.Sprintf("Beacon %v  at epoch %v cache nil committee", newBestState.GetBeaconHeight(), epochForCache))
+		} else {
+			blockchain.committeeByEpochCache.Add(key, newBestState.GetCommittee())
+		}
 	}
 }
 
