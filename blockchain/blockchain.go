@@ -341,7 +341,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// bestState := bc.GetBeaconBestState()
-	blockchain.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)].Data[blockchain.GetEpochByHeight(initBeaconBestState.GetBeaconHeight())] = CommitteeCheckPoint{
+	blockchain.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)].Data[initBeaconBestState.BestBlock.Header.Epoch] = CommitteeCheckPoint{
 		Height:   initBeaconBestState.GetBeaconHeight(),
 		RootHash: initBeaconBestState.ConsensusStateDBRootHash,
 	}
