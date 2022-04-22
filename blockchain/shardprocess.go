@@ -1275,7 +1275,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				}
 			}
 		}
-		Logger.log.Infof("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epohc %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
+		Logger.log.Debugf("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epoch %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
 		blockchain.updateCommitteeChangeCheckpointByS(shardID, epochForCache, shardBlock.GetHeight()+1)
 	}
 

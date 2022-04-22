@@ -1291,21 +1291,13 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 	if err != nil {
 		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
-	sCommitteeKeys, epochForCache, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
+	sCommitteeKeys, _, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
 	if err != nil {
 		Logger.log.Error(err)
+		sCommitteeKeys = statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
 	}
-	sCommitteeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-	if len(sCommitteeKeys) > 0 {
-		if !equal2list(sCommitteeKeys, sCommitteeKeys2) {
-			blsList1, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys)
-			blsList2, _ := incognitokey.CommitteeKeyListToString(sCommitteeKeys2)
-			Logger.log.Error(errors.Errorf("Something wrong with cache at epoch %v for shard %v, cache get from epoch %v", epoch, sID, epochForCache))
-			Logger.log.Errorf("Debugs committee: epoch %v from cache: %v", epochForCache, blsList1)
-			Logger.log.Errorf("Debugs committee: epoch %v from bc DB %v", epoch, blsList2)
-		}
-	}
-	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, sCommitteeKeys2)
+
+	committeeState := statedb.GetOneCommitteeStakeInfo(beaconConsensusStateDB, sCommitteeKeys)
 	return committeeState, nil
 }
 
@@ -1375,45 +1367,6 @@ func (blockchain *BlockChain) GetShardFixedNodes() []incognitokey.CommitteePubli
 	}
 
 	return m
-}
-
-var (
-	totalGet []uint64 = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	totalHit []uint64 = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-)
-
-func (blockchain *BlockChain) getValidatorsFromDBByEpoch(
-	epoch uint64,
-	height uint64,
-	cID byte,
-) (
-	res []incognitokey.CommitteePublicKey,
-	err error,
-) {
-	epochForCache, bcRootHash, err := blockchain.GetCheckpointChangeCommitteeByEpochAndHeight(cID, epoch, height)
-	if err == nil {
-		epoch = epochForCache
-	}
-	if bcRootHash == common.EmptyRoot {
-		bcHeight := blockchain.GetLastBeaconHeightInEpoch(epoch)
-		bcRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), bcHeight)
-		if err != nil {
-			return nil, err
-		}
-	}
-	stateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, err
-	}
-	var committees []incognitokey.CommitteePublicKey
-	if cID != common.BeaconChainSyncID {
-		committees = statedb.GetOneShardCommittee(stateDB, cID)
-	} else {
-		committees = statedb.GetBeaconCommittee(stateDB)
-	}
-	key := getCommitteeCacheKeyByEpoch(epoch, cID)
-	blockchain.committeeByEpochCache.Add(key, committees)
-	return committees, nil
 }
 
 func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
@@ -1520,33 +1473,23 @@ func (blockchain *BlockChain) getShardValidators(
 	err error,
 ) {
 	if beaconHash.IsZeroValue() {
-		totalGet[cID]++
 		epochForCache := uint64(0)
 		res, epochForCache, _, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
-			// return res, err
+			return res, err
 		}
 
-		c, err := blockchain.getShardValidatorsFromPrevHash(prevHash, cID)
+		res, err = blockchain.getShardValidatorsFromPrevHash(prevHash, cID)
 		if err != nil {
 			return nil, err
-		} else {
-			if len(res) > 0 {
-				if !equal2list(res, c) {
-					return nil, errors.Errorf("Something wrong with cache, cache %+v, db %+v", res, c)
-				} else {
-					totalHit[cID]++
-				}
-			}
 		}
 		if epochForCache > 0 {
 			key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
-			blockchain.committeeByEpochCache.Add(key, c)
+			blockchain.committeeByEpochCache.Add(key, res)
 		}
-
-		return c, nil
+		return res, nil
 	}
 	return blockchain.GetShardCommitteeFromBeaconHash(beaconHash, cID)
 }
@@ -1615,33 +1558,4 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
-}
-
-func equal2list(listA, listB []incognitokey.CommitteePublicKey) bool {
-	tmp := map[string]struct{}{}
-	for _, k := range listA {
-		str, err := k.ToBase58()
-		if err != nil {
-			// panic(err)
-			return false
-		}
-		tmp[str] = struct{}{}
-	}
-	// committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-	if len(listA) != len(listB) {
-		return false
-		// panic("aaaaaaaaaa")
-	}
-	for _, k := range listB {
-		str, err := k.ToBase58()
-		if err != nil {
-			// panic(err)
-			return false
-		}
-		if _, ok := tmp[str]; !ok {
-			// panic("bbbbbbbbbbbb")
-			return false
-		}
-	}
-	return true
 }

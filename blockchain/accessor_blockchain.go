@@ -562,8 +562,7 @@ func (bc *BlockChain) initCommitChangeCheckpoint() error {
 func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64, rootHash common.Hash) {
 	bc.committeeChangeCheckpoint.locker.Lock()
 	defer bc.committeeChangeCheckpoint.locker.Unlock()
-	Logger.log.Infof("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch)
-	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet %v/%v cache committee for shard %v", totalHit[sID], totalGet[sID], sID)
+	Logger.log.Debugf("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch)
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
 		chkPnt.RootHash = rootHash
@@ -585,8 +584,7 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height uint64) {
 	bc.committeeChangeCheckpoint.locker.Lock()
 	defer bc.committeeChangeCheckpoint.locker.Unlock()
-	Logger.log.Infof("[debugcachecommittee] shard updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch, height)
-	Logger.log.Infof("[debugcachecommittee] TotalHit/TotalGet %v/%v cache committee for shard %v", totalHit[sID], totalGet[sID], sID)
+	Logger.log.Debugf("[debugcachecommittee] shard updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch, height)
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
 		chkPnt.Height = height
@@ -682,9 +680,6 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 		chkPoint := sCommitteeChange.Data[epochCheckpoint]
 		if height < chkPoint.Height {
 			if (idx == 0) || (chkPoint.Height == 10e9) {
-				for k, v := range sCommitteeChange.Data {
-					Logger.log.Infof("debugcommitteecache %v - %+v", k, v)
-				}
 				return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v, epoch %v; %v", height, sID, epochCheckpoint, len(sCommitteeChange.Data))
 			}
 			epochCheckpoint = epochs[idx-1]
@@ -711,9 +706,6 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 			}
 		}
 		if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
-			for k, v := range sCommitteeChange.Data {
-				Logger.log.Infof("debugcommitteecache %v - %+v", k, v)
-			}
 			return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache by epoch %v for block %v, cID %v, len chkpnt %v", epochCheckpoint, height, sID, len(sCommitteeChange.Data))
 		}
 	}
