@@ -904,5 +904,153 @@
                 ]
             }
         ]
+    },
+    "TestRejectedByDecimalSmallerThanBaseDecimalYNotEqualTo0": {
+        "name": "Rejected by decimal smaller then base decimal",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BurningAmount": 10000,
+                        "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                        "NetworkID": 1,
+                        "ExpectedAmount": 0,
+                        "IsDepositToSC": false
+                    }
+                ],
+                "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "Type": 346
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "346", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwNSwiRGF0YSI6ImV5SlViMnRsYmtsRUlqb2lZemhoWldaaE5tSXpORGRpWWpFM05ERXhOakEyTUdSaE5qRTNNV1ZpTWpNME56Wm1ORFEwWW1JelptWXhORE0yWlRnNU5EQmlNamRsWkRGaFpqVTNNQ0lzSWtGdGIzVnVkQ0k2TVRBd01EQXNJbEpsWTJWcGRtVnlJam9pTVRWeldHOTViemhyUTFwRFNHcDFjazVETmpsaU9GZFdNbXBOUTNabU5YUldjbU5STlcxVU1XVklPVTV0TXpVeFdGSnFSVEZDU0RSWFNFaE1SMWxRV25rNVpIaFVVMHhwUzFGa05rdGtabTlIY1RSNVlqUm5VREZCVlRKdllVcFVaVzlIZVcxelJYcHZibmxwTVZoVFZ6SktNbFUzVEdWQlZtcFRNVk15WjJwaVRrUnJNWFF6WmpsUlZXY3laMnMwSW4wPSJ9"
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 100,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 100,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                }
+            }
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            },
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "ExternalTokenID": [85, 84],
+                "Amount": 100000
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1005
+            }
+        ]
+    },
+    "TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0": {
+        "name": "Rejected by decimal smaller then base decimal",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BurningAmount": 700,
+                        "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                        "NetworkID": 1,
+                        "ExpectedAmount": 0,
+                        "IsDepositToSC": false
+                    }
+                ],
+                "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "Type": 346
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "346", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwNSwiRGF0YSI6ImV5SlViMnRsYmtsRUlqb2lZemhoWldaaE5tSXpORGRpWWpFM05ERXhOakEyTUdSaE5qRTNNV1ZpTWpNME56Wm1ORFEwWW1JelptWXhORE0yWlRnNU5EQmlNamRsWkRGaFpqVTNNQ0lzSWtGdGIzVnVkQ0k2TnpBd0xDSlNaV05sYVhabGNpSTZJakUxYzFodmVXODRhME5hUTBocWRYSk9Relk1WWpoWFZqSnFUVU4yWmpWMFZuSmpVVFZ0VkRGbFNEbE9iVE0xTVZoU2FrVXhRa2cwVjBoSVRFZFpVRnA1T1dSNFZGTk1hVXRSWkRaTFpHWnZSM0UwZVdJMFoxQXhRVlV5YjJGS1ZHVnZSM2x0YzBWNmIyNTVhVEZZVTFjeVNqSlZOMHhsUVZacVV6RlRNbWRxWWs1RWF6RjBNMlk1VVZWbk1tZHJOQ0o5In0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 1,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 1,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                }
+            }
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            },
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "ExternalTokenID": [85, 84],
+                "Amount": 100000
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1005
+            }
+        ]
     }
 }

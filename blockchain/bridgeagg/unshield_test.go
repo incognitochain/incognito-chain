@@ -285,6 +285,52 @@ func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
 	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
+func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0() {
+	assert := u.Assert()
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	expectedState.ClearCache()
+	for i, v := range testCase.TxIDs {
+		if i == 0 {
+			continue
+		}
+		for index := range testCase.Metadatas[i].Data {
+			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+		}
+	}
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+}
+
+/*func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYNotEqualTo0() {*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*expectedState := NewState()*/
+/*expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens*/
+/*expectedStatuses := testCase.ExpectedStatuses*/
+/*actualStatuses := testCase.ActualStatues*/
+/*assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())*/
+/*assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())*/
+/*expectedState.ClearCache()*/
+/*for i, v := range testCase.TxIDs {*/
+/*if i == 0 {*/
+/*continue*/
+/*}*/
+/*for index := range testCase.Metadatas[i].Data {*/
+/*expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID*/
+/*}*/
+/*}*/
+/*assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())*/
+/*assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())*/
+/*}*/
+
 func TestUnshieldTestSuite(t *testing.T) {
 	suite.Run(t, new(UnshieldTestSuite))
 }
