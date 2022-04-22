@@ -639,7 +639,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 				for k, v := range sCommitteeChange.Data {
 					Logger.log.Infof("debugcommitteecache %v - %+v", k, v)
 				}
-				return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, sID)
+				return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v, epoch %v; %v", height, sID, epochCheckpoint, len(sCommitteeChange.Data))
 			}
 			epochCheckpoint = epochs[idx-1]
 		}
@@ -665,7 +665,10 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 			}
 		}
 		if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
-			return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v", height, sID)
+			for k, v := range sCommitteeChange.Data {
+				Logger.log.Infof("debugcommitteecache %v - %+v", k, v)
+			}
+			return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache by epoch %v for block %v, cID %v, len chkpnt %v", epochCheckpoint, height, sID, len(sCommitteeChange.Data))
 		}
 	}
 	return epochCheckpoint, sCommitteeChange.Data[epochCheckpoint].RootHash, nil
