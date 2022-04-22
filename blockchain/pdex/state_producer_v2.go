@@ -89,7 +89,12 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, refundInsts...)
 			continue
 		}
-		accessID, accessOTA := getAccessIDAndAccessOTA(waitingContribution, incomingContribution)
+		accessID, accessOTA, err := getAccessIDAndAccessOTA(waitingContribution, incomingContribution)
+		if err != nil {
+			Logger.log.Warnf("tx %v is invalid err %v", tx.Hash().String(), err)
+			res = append(res, refundInsts...)
+			continue
+		}
 
 		poolPairID := utils.EmptyString
 		if waitingContribution.PoolPairID() == utils.EmptyString {

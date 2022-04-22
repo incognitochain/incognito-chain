@@ -62,7 +62,7 @@ func (sp *stateProducerV2) validateContributions(
 	return nil
 }
 
-func getAccessIDAndAccessOTA(contribution0, contribution1 rawdbv2.Pdexv3Contribution) (common.Hash, []byte) {
+func getAccessIDAndAccessOTA(contribution0, contribution1 rawdbv2.Pdexv3Contribution) (common.Hash, []byte, error) {
 	hash := common.Hash{}
 	var accessOTA []byte
 
@@ -72,12 +72,14 @@ func getAccessIDAndAccessOTA(contribution0, contribution1 rawdbv2.Pdexv3Contribu
 		if contribution0.AccessOTA() == nil && contribution0.NftID().IsZeroValue() {
 			hash = contribution1.NftID()
 			accessOTA = contribution1.AccessOTA()
-		} else {
+		} else if contribution1.AccessOTA() == nil && contribution1.NftID().IsZeroValue() {
 			hash = contribution0.NftID()
 			accessOTA = contribution0.AccessOTA()
+		} else {
+			return common.Hash{}, nil, errors.New("contribution0 and contribution1 format are not right")
 		}
 	} else if contribution0.UseAccessOTAOldLP() {
 		hash = contribution0.NftID()
 	}
-	return hash, accessOTA
+	return hash, accessOTA, nil
 }

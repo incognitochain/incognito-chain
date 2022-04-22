@@ -677,19 +677,12 @@ func (orderReward *OrderReward) getDiff(
 	if newOrderRewardChange == nil {
 		newOrderRewardChange = v2utils.NewOrderRewardChange()
 	}
+	newOrderRewardChange.UncollectedReward = make(map[string]bool)
 	if compareOrderReward == nil {
-		newOrderRewardChange.UncollectedReward = make(map[string]bool)
 		for tokenID := range orderReward.uncollectedRewards {
 			newOrderRewardChange.UncollectedReward[tokenID.String()] = true
 		}
 	} else {
-		if orderReward.withdrawnStatus != compareOrderReward.withdrawnStatus ||
-			orderReward.txReqID != compareOrderReward.txReqID {
-			newOrderRewardChange.UncollectedReward = make(map[string]bool)
-			for k := range orderReward.uncollectedRewards {
-				newOrderRewardChange.UncollectedReward[k.String()] = true
-			}
-		}
 		orderRewardAmount := make(map[common.Hash]uint64)
 		compareOrderRewardAmount := make(map[common.Hash]uint64)
 		for k, v := range orderReward.uncollectedRewards {
@@ -699,6 +692,12 @@ func (orderReward *OrderReward) getDiff(
 			compareOrderRewardAmount[k] = v.amount
 		}
 		newOrderRewardChange.UncollectedReward = v2utils.DifMapHashUint64(orderRewardAmount).GetDiff(v2utils.DifMapHashUint64(compareOrderRewardAmount))
+		if orderReward.withdrawnStatus != compareOrderReward.withdrawnStatus ||
+			orderReward.txReqID != compareOrderReward.txReqID {
+			for k := range orderReward.uncollectedRewards {
+				newOrderRewardChange.UncollectedReward[k.String()] = true
+			}
+		}
 	}
 	return newOrderRewardChange
 }
