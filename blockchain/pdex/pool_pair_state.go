@@ -752,9 +752,12 @@ func (p *PoolPairState) updateToDB(
 						return err
 					}
 					if reward, found := p.orderRewards[accessID].uncollectedRewards[*tokenHash]; found {
-						receiver, err := reward.receiver.String()
-						if err != nil {
-							return err
+						var receiver string
+						if reward.receiver != nil {
+							receiver, err = reward.receiver.String()
+							if err != nil {
+								return err
+							}
 						}
 						err = statedb.StorePdexv3PoolPairOrderReward(env.StateDB(), poolPairID,
 							statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
