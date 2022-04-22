@@ -1010,7 +1010,7 @@
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                 "1": {
                     "State": {
-                        "Reserve": 1,
+                        "Reserve": 1000,
                         "LastUpdatedRewardReserve": 0,
                         "CurrentRewardReserve": 0,
                         "Decimal": 6,
@@ -1024,7 +1024,7 @@
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                 "1": {
                     "State": {
-                        "Reserve": 1,
+                        "Reserve": 1000,
                         "LastUpdatedRewardReserve": 0,
                         "CurrentRewardReserve": 0,
                         "Decimal": 6,

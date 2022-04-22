@@ -629,14 +629,14 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
 }
 
-func (beaconBestState *BeaconBestState) BridgeAggIsValidBurntAmount(burntAmount uint64, unifiedTokenID common.Hash, networkID uint) (bool, error) {
+func (beaconBestState *BeaconBestState) BridgeAggIsValidBurntAmount(burntAmount uint64, unifiedTokenID common.Hash, networkID uint, operator byte) (bool, error) {
 	sDB := beaconBestState.GetBeaconFeatureStateDB()
 	vault, err := bridgeagg.GetVaultByUnifiedTokenIDAndNetworkID(unifiedTokenID, networkID, sDB)
 	if err != nil {
 		return false, err
 	}
 	decimal := bridgeagg.CalculateIncDecimal(vault.Decimal(), config.Param().BridgeAggParam.BaseDecimal)
-	amt, err := bridgeagg.CalculateAmountByDecimal(*big.NewInt(0).SetUint64(burntAmount), decimal, bridgeagg.AddOperator)
+	amt, err := bridgeagg.CalculateAmountByDecimal(*big.NewInt(0).SetUint64(burntAmount), decimal, operator)
 	if err != nil {
 		return false, err
 	}

@@ -472,6 +472,9 @@ func unshieldEVM(
 	if err != nil {
 		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}
+	if unshieldAmount.Cmp(big.NewInt(0)) == 0 {
+		return common.Hash{}, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot received unshield amount equal to 0"))
+	}
 
 	return vault.tokenID, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }

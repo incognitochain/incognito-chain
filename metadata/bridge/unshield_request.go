@@ -83,13 +83,6 @@ func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 		if data.BurningAmount < data.ExpectedAmount {
 			return false, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount)
 		}
-		ok, err := beaconViewRetriever.BridgeAggIsValidBurntAmount(data.BurningAmount, request.TokenID, data.NetworkID)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, fmt.Errorf("BurningAmount is not valid")
-		}
 		totalBurningAmount += data.BurningAmount
 	}
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()

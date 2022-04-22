@@ -61,7 +61,7 @@ func (request *ConvertTokenToUnifiedTokenRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	return beaconViewRetriever.BridgeAggIsValidBurntAmount(request.Amount, request.UnifiedTokenID, request.NetworkID)
+	return true, nil
 }
 
 func (request *ConvertTokenToUnifiedTokenRequest) ValidateSanityData(
