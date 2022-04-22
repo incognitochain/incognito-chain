@@ -301,7 +301,6 @@ func (multiView *MultiView) BeaconSimulateAddViewV2(view View, proof *ReProposeP
 	return res.m, res.err
 }
 
-// TODO: @hung review handle add view when init view or restore view
 func (multiView *MultiView) BeaconAddViewAndFinalizeV2(view View, proof *ReProposeProof) (View, error) {
 	type result struct {
 		v   View
@@ -428,7 +427,6 @@ func (multiView *MultiView) ShardRestoreViewV2(view View) error {
 	return <-ch
 }
 
-// TODO: @hung review handle add view when init view or restore view
 func (multiView *MultiView) ShardAddViewAndFinalizeV2(view View, proof *ReProposeProof, finalizedIndex map[uint64]common.Hash) (View, error) {
 
 	type result struct {
@@ -496,14 +494,6 @@ func (multiView *MultiView) calculateShardBestView() (View, error) {
 	// get all chains from final view including the final view
 	chains := [][]View{}
 	getAllBranches(*multiView.finalView.GetHash(), multiView.viewByPrevHash, &chains, []View{multiView.finalView})
-
-	//confirmableChains := [][]View{}
-	//for _, v := range chains {
-	//	_, isConfirmable := isConfirmableChain(v, multiView.finalityProof)
-	//	if isConfirmable {
-	//		confirmableChains = append(confirmableChains, v)
-	//	}
-	//}
 
 	bestChain, err := multiView.shardForkChoiceRule(chains)
 	if err != nil {
