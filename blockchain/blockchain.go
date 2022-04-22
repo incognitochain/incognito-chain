@@ -1431,7 +1431,7 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 			Logger.log.Errorf("Can not convert data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
 		}
 	}
-	return nil, epochForCache, bcRootHash, errors.Errorf("Can not found data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
+	return nil, epochForCache, bcRootHash, errors.Errorf("Can not found data from cache (epoch %v) to committee public key list, epoch %v, cID %v", epochForCache, epoch, cID)
 
 }
 
