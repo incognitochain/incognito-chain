@@ -896,13 +896,6 @@ func (p *PoolPairState) getChangedOrderRewards(compareOrderReward map[string]*Or
 	for accessID, orderReward := range compareOrderReward {
 		res[accessID] = orderReward.getDiff(p.orderRewards[accessID], res[accessID])
 	}
-	for k, v := range res {
-		Logger.log.Info("[bridgeagg] k:", k)
-		for key, value := range v.UncollectedReward {
-			Logger.log.Info("[bridgeagg] key:", key)
-			Logger.log.Info("[bridgeagg] value:", value)
-		}
-	}
 	return res
 }
 
