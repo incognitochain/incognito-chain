@@ -1474,7 +1474,8 @@ func (blockchain *BlockChain) getShardValidators(
 ) {
 	if beaconHash.IsZeroValue() {
 		epochForCache := uint64(0)
-		res, epochForCache, _, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
+		var bcRootHash common.Hash
+		res, epochForCache, bcRootHash, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
@@ -1486,6 +1487,19 @@ func (blockchain *BlockChain) getShardValidators(
 			return nil, err
 		}
 		if epochForCache > 0 {
+			bcDB := blockchain.GetBeaconChainDatabase()
+			beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+			if err != nil {
+				panic(err)
+			}
+			res2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, cID)
+			list1, _ := incognitokey.CommitteeKeyListToString(res)
+			list2, _ := incognitokey.CommitteeKeyListToString(res2)
+			if !equal2list(res, res2) {
+				Logger.log.Info(list1)
+				Logger.log.Info(list2)
+				panic(errors.Errorf("Data from statedb at shard %v at epoch %v is different from beacon db", cID, epochForCache))
+			}
 			key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
 			blockchain.committeeByEpochCache.Add(key, res)
 		}
@@ -1558,4 +1572,33 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
+}
+
+func equal2list(listA, listB []incognitokey.CommitteePublicKey) bool {
+	tmp := map[string]struct{}{}
+	for _, k := range listA {
+		str, err := k.ToBase58()
+		if err != nil {
+			// panic(err)
+			return false
+		}
+		tmp[str] = struct{}{}
+	}
+	// committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
+	if len(listA) != len(listB) {
+		return false
+		// panic("aaaaaaaaaa")
+	}
+	for _, k := range listB {
+		str, err := k.ToBase58()
+		if err != nil {
+			// panic(err)
+			return false
+		}
+		if _, ok := tmp[str]; !ok {
+			// panic("bbbbbbbbbbbb")
+			return false
+		}
+	}
+	return true
 }
