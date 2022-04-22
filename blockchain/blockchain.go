@@ -1422,16 +1422,16 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 	if err != nil {
 		return nil, epochFromCache, bcRootHash, err
 	}
-	epoch = epochForCache
+	epochForCache = epochFromCache
 	key := getCommitteeCacheKeyByEpoch(epoch, cID)
 	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
 		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
-			return committees, epoch, bcRootHash, nil
+			return committees, epochForCache, bcRootHash, nil
 		} else {
 			Logger.log.Errorf("Can not convert data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
 		}
 	}
-	return nil, epochFromCache, bcRootHash, errors.Errorf("Can not found data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
+	return nil, epochForCache, bcRootHash, errors.Errorf("Can not found data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
 
 }
 
