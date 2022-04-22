@@ -678,7 +678,7 @@ TransactionLoop:
 			for _, v := range rewardReceiverTokenIDs {
 				if receiver, found := currentOrderReq.RewardReceiver[v]; found {
 					rewardReceivers[v] = receiver
-					orderRewardDetails[v] = NewOrderRewardDetailWithValue(receiver, 0)
+					orderRewardDetails[v] = NewOrderRewardDetailWithValue(&receiver, 0)
 				} else {
 					Logger.log.Warnf("RewardReceivers is not enough")
 					result = append(result, refundInstructions...)
@@ -999,8 +999,11 @@ func (sp *stateProducerV2) withdrawPendingOrderRewards(
 				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
 				var shardID byte
 				for k, v := range orderReward.uncollectedRewards {
+					if v.receiver == nil {
+						return res, poolPairs, errors.New("receiver cannot be null for orderReward")
+					}
 					receiversInfo[k] = metadataPdexv3.ReceiverInfo{
-						Address: v.receiver,
+						Address: *v.receiver,
 						Amount:  v.amount,
 					}
 					shardID = v.receiver.GetShardID()

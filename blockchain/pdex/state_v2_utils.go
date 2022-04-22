@@ -506,7 +506,7 @@ func (share *Share) deleteFromDB(
 }
 
 type OrderRewardDetail struct {
-	receiver privacy.OTAReceiver
+	receiver *privacy.OTAReceiver
 	amount   uint64
 }
 
@@ -522,7 +522,7 @@ func (o *OrderRewardDetail) Clone() *OrderRewardDetail {
 }
 
 func NewOrderRewardDetailWithValue(
-	receiver privacy.OTAReceiver, amount uint64,
+	receiver *privacy.OTAReceiver, amount uint64,
 ) *OrderRewardDetail {
 	return &OrderRewardDetail{
 		amount:   amount,
@@ -532,8 +532,8 @@ func NewOrderRewardDetailWithValue(
 
 func (o *OrderRewardDetail) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Receiver privacy.OTAReceiver `json:"Receiver"`
-		Amount   uint64              `json:"Amount"`
+		Receiver *privacy.OTAReceiver `json:"Receiver,omitempty"`
+		Amount   uint64               `json:"Amount"`
 	}{
 		Receiver: o.receiver,
 		Amount:   o.amount,
@@ -546,8 +546,8 @@ func (o *OrderRewardDetail) MarshalJSON() ([]byte, error) {
 
 func (o *OrderRewardDetail) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Receiver privacy.OTAReceiver `json:"Receiver"`
-		Amount   uint64              `json:"Amount"`
+		Receiver *privacy.OTAReceiver `json:"Receiver,omitempty"`
+		Amount   uint64               `json:"Amount"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -563,7 +563,7 @@ func (o *OrderRewardDetail) Amount() uint64 {
 }
 
 func (o *OrderRewardDetail) Receiver() privacy.OTAReceiver {
-	return o.receiver
+	return *o.receiver
 }
 
 type OrderReward struct {

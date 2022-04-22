@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 func InitStatesFromDB(
@@ -177,10 +178,12 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 			for tokenID, v := range value {
 				orderReward[nftID].txReqID = v.TxReqID()
 				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
-				receiver := privacy.OTAReceiver{}
-				err := receiver.FromString(v.Receiver())
-				if err != nil {
-					return nil, err
+				var receiver *privacy.OTAReceiver
+				if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+					err := receiver.FromString(v.Receiver())
+					if err != nil {
+						return nil, err
+					}
 				}
 				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 					receiver, v.Value(),
@@ -370,10 +373,12 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 			for tokenID, v := range value {
 				orderReward[nftID].txReqID = v.TxReqID()
 				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
-				receiver := privacy.OTAReceiver{}
-				err := receiver.FromString(v.Receiver())
-				if err != nil {
-					return nil, err
+				var receiver *privacy.OTAReceiver
+				if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+					err := receiver.FromString(v.Receiver())
+					if err != nil {
+						return nil, err
+					}
 				}
 				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 					receiver, v.Value(),
@@ -492,10 +497,12 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 		for tokenID, v := range value {
 			orderReward[nftID].txReqID = v.TxReqID()
 			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
-			receiver := privacy.OTAReceiver{}
-			err := receiver.FromString(v.Receiver())
-			if err != nil {
-				return nil, err
+			var receiver *privacy.OTAReceiver
+			if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+				err := receiver.FromString(v.Receiver())
+				if err != nil {
+					return nil, err
+				}
 			}
 			orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 				receiver, v.Value(),
@@ -566,10 +573,12 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 		for tokenID, v := range value {
 			orderReward[nftID].txReqID = v.TxReqID()
 			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
-			receiver := privacy.OTAReceiver{}
-			err := receiver.FromString(v.Receiver())
-			if err != nil {
-				return nil, err
+			var receiver *privacy.OTAReceiver
+			if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
+				err := receiver.FromString(v.Receiver())
+				if err != nil {
+					return nil, err
+				}
 			}
 			orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
 				receiver, v.Value(),

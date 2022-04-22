@@ -708,7 +708,7 @@ func (sp *stateProcessorV2) addOrder(
 		if len(md.RewardReceiver) != 0 {
 			orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
 			for k, v := range md.RewardReceiver {
-				orderRewardDetails[k] = NewOrderRewardDetailWithValue(v, 0)
+				orderRewardDetails[k] = NewOrderRewardDetailWithValue(&v, 0)
 			}
 			txReqID, _ = common.Hash{}.NewHashFromStr(md.OrderID)
 			pair.orderRewards[md.NftID.String()] = NewOrderRewardWithValue(
