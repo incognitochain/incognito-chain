@@ -1,0 +1,6 @@
+{
+    "AutoWithdrawOrderLimitAmount": 10,
+    "OrderMiningRewardRatioBPS": {
+        "pair0": 100
+    }
+}

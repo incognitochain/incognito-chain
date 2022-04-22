@@ -16,7 +16,7 @@ type WithdrawOrderRequest struct {
 	OrderID    string                              `json:"OrderID"`
 	Amount     uint64                              `json:"Amount"`
 	Receiver   map[common.Hash]privacy.OTAReceiver `json:"Receiver"`
-	NftID      common.Hash                         `json:"NftID"`
+	AccessOption
 	metadataCommon.MetadataBase
 }
 
@@ -24,15 +24,15 @@ func NewWithdrawOrderRequest(
 	pairID, orderID string,
 	amount uint64,
 	recv map[common.Hash]privacy.OTAReceiver,
-	nftID common.Hash,
+	accessOption AccessOption,
 	metaType int,
 ) (*WithdrawOrderRequest, error) {
 	r := &WithdrawOrderRequest{
-		PoolPairID: pairID,
-		OrderID:    orderID,
-		Amount:     amount,
-		Receiver:   recv,
-		NftID:      nftID,
+		PoolPairID:   pairID,
+		OrderID:      orderID,
+		Amount:       amount,
+		Receiver:     recv,
+		AccessOption: accessOption,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metaType,
 		},
@@ -41,13 +41,63 @@ func NewWithdrawOrderRequest(
 }
 
 func (req WithdrawOrderRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(req.NftID.String())
+	ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(req.PoolPairID)
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPoolPairID(req.PoolPairID)
+	if !ok {
+		return ok, fmt.Errorf("PoolPairID %s is not valid", req.PoolPairID)
+	}
+	err = req.AccessOption.IsValid(tx, req.Receiver, beaconViewRetriever, transactionStateDB, true, false, "")
 	if err != nil {
 		return false, err
+	}
+
+	if req.UseNft() {
+		_, isReceivingNFT := req.Receiver[*req.NftID]
+		if !isReceivingNFT {
+			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Invalid Pdex Access; missing receiver for NftID %s", req.NftID.String()))
+		}
+		// Burned coin check
+		isBurn, burnedPRVCoin, burnedCoin, burnedTokenID, err := tx.GetTxFullBurnData()
+		if err != nil || !isBurn {
+			return false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Burned coins not found in trade request - %v", err))
+		}
+		if *burnedTokenID != *req.NftID {
+			return false, metadataCommon.NewMetadataTxError(
+				metadataCommon.PDEInvalidMetadataValueError,
+				fmt.Errorf("Burned nftID mismatch - %v vs %v on metadata", *burnedTokenID, req.NftID))
+		}
+		// Type vs burned token id + amount check
+		switch tx.GetType() {
+		case common.TxCustomTokenPrivacyType:
+			if burnedCoin == nil || burnedPRVCoin != nil {
+				return false, metadataCommon.NewMetadataTxError(
+					metadataCommon.PDEInvalidMetadataValueError,
+					fmt.Errorf("Burned token invalid - must be %v only", req.NftID))
+			}
+			if burnedCoin.GetValue() <= 0 {
+				return false, metadataCommon.NewMetadataTxError(
+					metadataCommon.PDEInvalidMetadataValueError,
+					fmt.Errorf("Invalid burned NFT amount %d",
+						burnedCoin.GetValue()))
+			}
+		default:
+			return false, fmt.Errorf("Invalid transaction type %v for withdrawOrder request", tx.GetType())
+		}
+	}
+	if !req.UseNft() {
+		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
+			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
+				req.PoolPairID,
+				*req.AccessID,
+				req.BurntOTA.ToBytesS(),
+				metadataCommon.Pdexv3WithdrawOrderRequestMeta,
+				req.OrderID,
+			),
+		)
 	}
 	return true, nil
 }
@@ -71,47 +121,6 @@ func (req WithdrawOrderRequest) ValidateSanityData(chainRetriever metadataCommon
 		}
 	}
 
-	// Burned coin check
-	isBurn, burnedPRVCoin, burnedCoin, burnedTokenID, err := tx.GetTxFullBurnData()
-	if err != nil || !isBurn {
-		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError,
-			fmt.Errorf("Burned coins not found in trade request - %v", err))
-	}
-	if *burnedTokenID != req.NftID {
-		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError,
-			fmt.Errorf("Burned nftID mismatch - %v vs %v on metadata", *burnedTokenID, req.NftID))
-	}
-	receivingTokenList := []common.Hash{req.NftID}
-	for _, tokenID := range receivingTokenList {
-		_, exists := req.Receiver[tokenID]
-		if !exists {
-			return false, false, metadataCommon.NewMetadataTxError(
-				metadataCommon.PDEInvalidMetadataValueError,
-				fmt.Errorf("Missing OTAReceiver for token %v", tokenID))
-		}
-	}
-
-	// Type vs burned token id + amount check
-	switch tx.GetType() {
-	case common.TxCustomTokenPrivacyType:
-		if burnedCoin == nil || burnedPRVCoin != nil {
-			return false, false, metadataCommon.NewMetadataTxError(
-				metadataCommon.PDEInvalidMetadataValueError,
-				fmt.Errorf("Burned token invalid - must be %v only", req.NftID))
-		}
-
-		// accept any positive governance-NFT amount
-		if burnedCoin.GetValue() <= 0 {
-			return false, false, metadataCommon.NewMetadataTxError(
-				metadataCommon.PDEInvalidMetadataValueError,
-				fmt.Errorf("Invalid burned NFT amount %d",
-					burnedCoin.GetValue()))
-		}
-	default:
-		return false, false, fmt.Errorf("Invalid transaction type %v for withdrawOrder request", tx.GetType())
-	}
 	return true, true, nil
 }
 

@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,6 +89,7 @@ func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID by
 	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
+// HasSerialNumbers checks if a list of serial numbers have been spent. The serial number list can either be base58- or base64-encoded.
 func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
 	if int(shardID) >= common.MaxShardNumber {
 		return nil, fmt.Errorf("shardID %v is out of range [0 - %v]", shardID, common.MaxShardNumber-1)
@@ -96,11 +98,14 @@ func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []int
 	for _, item := range serialNumbersStr {
 		itemStr, okParam := item.(string)
 		if !okParam {
-			return nil, fmt.Errorf("Invalid serial number param, %+v", item)
+			return nil, fmt.Errorf("invalid serial number param, %+v", item)
 		}
 		serialNumber, _, err := base58.Base58Check{}.Decode(itemStr)
 		if err != nil {
-			return nil, fmt.Errorf("Decode serial number failed, %+v", itemStr)
+			serialNumber, err = base64.StdEncoding.DecodeString(itemStr)
+			if err != nil {
+				return nil, fmt.Errorf("decode serial number failed, %+v", itemStr)
+			}
 		}
 		transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardID)
@@ -627,6 +632,7 @@ func (txService TxService) BuildRawTransaction(
 		meta,
 		params.Info,
 	)
+	txPrivacyParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, err := transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -1180,7 +1186,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
 		beaconView.GetBeaconFeatureStateDB())
-
+	txTokenParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
 		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
@@ -1242,7 +1248,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interf
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
 		beaconView.GetBeaconFeatureStateDB())
-
+	txTokenParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
 		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
@@ -2221,6 +2227,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 		nil, // use for prv coin -> nil is valid
 		meta, nil,
 	)
+	txPrivacyParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, err := transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -2576,7 +2583,7 @@ func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(param
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
 		beaconView.GetBeaconFeatureStateDB())
-
+	txTokenParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
 		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
@@ -2597,4 +2604,16 @@ func isTxRelateCommittee(tx metadata.Transaction) bool {
 		}
 	}
 	return false
+}
+
+func (txService TxService) DefaultRingFilters() []privacy.RingDecoyFilter {
+	var result []privacy.RingDecoyFilter
+	f, err := txService.BlockChain.GetBeaconBestState().NftIDCoinFilter()
+	if err != nil {
+		Logger.log.Warnf("RPCService: NftIDCoinFilter not found, removing from default filters - %v", err)
+	} else {
+		result = append(result, f)
+	}
+	result = append(result, privacy.NonPrivateTokenCoinFilter)
+	return result
 }

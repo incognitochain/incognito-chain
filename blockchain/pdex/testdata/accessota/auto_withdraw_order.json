@@ -1,0 +1,101 @@
+[{
+    "name": "Auto withdraw 2 orders -> 3 instructions",
+    "data": {
+        "limit": 3,
+        "state": {
+            "poolPairs": {
+                "pair0": {
+                    "state": {
+                        "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+                        "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                        "Token0RealAmount": 400,
+                        "Token1RealAmount": 1000,
+                        "CurrentContributionID": 0,
+                        "Token0VirtualAmount": 1000,
+                        "Token1VirtualAmount": 2200,
+                        "Amplifier": 21000,
+                        "ProtocolFees": {},
+                        "LpFeesPerShare": {},
+                        "StakingPoolFees": {},
+                        "ShareAmount": 0
+                    },
+                    "orderbook": {
+                        "orders": [{
+                            "Id": "0000000000000000000000000000000000000000000000000000000000000aa1",
+                            "Token0Rate": 100,
+                            "Token1Rate": 100,
+                            "Token0Balance": 0,
+                            "Token1Balance": 2000,
+                            "TradeDirection": 0,
+                            "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                        }, {
+                            "Id": "0000000000000000000000000000000000000000000000000000000000000aa2",
+                            "Token0Rate": 1000,
+                            "Token1Rate": 2000,
+                            "Token0Balance": 1000,
+                            "Token1Balance": 1,
+                            "TradeDirection": 1,
+                            "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                        }]
+                    }
+                }
+            }
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["289", "1", "0", "0000000000000000000000000000000000000000000000000000000000000aa1", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa1\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":2000}}"],
+            ["289", "1", "0", "0000000000000000000000000000000000000000000000000000000000000aa2", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa2\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":1000}}"],
+            ["289", "1", "0", "0000000000000000000000000000000000000000000000000000000000000aa2", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa2\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":1}}"]
+        ]
+    }
+}, {
+    "name": "Auto withdraw 2 orders, the 2nd exceeds limit",
+    "data": {
+        "limit": 2,
+        "state": {
+            "poolPairs": {
+                "pair0": {
+                    "state": {
+                        "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+                        "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                        "Token0RealAmount": 400,
+                        "Token1RealAmount": 1000,
+                        "CurrentContributionID": 0,
+                        "Token0VirtualAmount": 1000,
+                        "Token1VirtualAmount": 2200,
+                        "Amplifier": 21000,
+                        "ProtocolFees": {},
+                        "LpFeesPerShare": {},
+                        "StakingPoolFees": {},
+                        "ShareAmount": 0
+                    },
+                    "orderbook": {
+                        "orders": [{
+                            "Id": "0000000000000000000000000000000000000000000000000000000000000aa1",
+                            "Token0Rate": 100,
+                            "Token1Rate": 100,
+                            "Token0Balance": 0,
+                            "Token1Balance": 2000,
+                            "TradeDirection": 0,
+                            "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                        }, {
+                            "Id": "0000000000000000000000000000000000000000000000000000000000000aa2",
+                            "Token0Rate": 1000,
+                            "Token1Rate": 2000,
+                            "Token0Balance": 1000,
+                            "Token1Balance": 1,
+                            "TradeDirection": 1,
+                            "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                        }]
+                    }
+                }
+            }
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["289", "1", "0", "0000000000000000000000000000000000000000000000000000000000000aa1", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa1\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":2000}}"]
+        ]
+    }
+}]

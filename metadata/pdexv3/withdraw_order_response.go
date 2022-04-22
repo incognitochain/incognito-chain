@@ -31,6 +31,7 @@ type AcceptedWithdrawOrder struct {
 	TokenID    common.Hash         `json:"TokenID"`
 	Receiver   privacy.OTAReceiver `json:"Receiver"`
 	Amount     uint64              `json:"Amount"`
+	AccessOTA  []byte              `json:"AccessOTA,omitempty"`
 }
 
 func (md AcceptedWithdrawOrder) GetType() int {
@@ -42,8 +43,9 @@ func (md AcceptedWithdrawOrder) GetStatus() int {
 }
 
 type RejectedWithdrawOrder struct {
-	PoolPairID string              `json:"PoolPairID"`
-	OrderID    string              `json:"OrderID"`
+	PoolPairID string `json:"PoolPairID"`
+	OrderID    string `json:"OrderID"`
+	AccessOTA  []byte `json:"AccessOTA,omitempty"`
 }
 
 func (md RejectedWithdrawOrder) GetType() int {
