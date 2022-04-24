@@ -1479,12 +1479,12 @@ func (blockchain *BlockChain) getShardValidators(
 	if beaconHash.IsZeroValue() {
 		epochForCache := uint64(0)
 		var bcRootHash common.Hash
-		res, epochForCache, bcRootHash, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
-		if err != nil {
-			Logger.log.Error(err)
-		} else {
-			return res, err
-		}
+		// res, epochForCache, bcRootHash, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
+		// if err != nil {
+		// 	Logger.log.Error(err)
+		// } else {
+		// 	return res, err
+		// }
 
 		res, err = blockchain.getShardValidatorsFromPrevHash(prevHash, cID)
 		if err != nil {
@@ -1502,7 +1502,7 @@ func (blockchain *BlockChain) getShardValidators(
 			if (len(res2) > 0) && (!equal2list(res, res2)) {
 				Logger.log.Info(list1)
 				Logger.log.Info(list2)
-				panic(errors.Errorf("Data from statedb at shard %v at epoch %v is different from beacon db", cID, epochForCache))
+				panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, bcRootHash.String()))
 			}
 			key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
 			if len(res) == 0 {

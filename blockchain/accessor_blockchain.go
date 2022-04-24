@@ -631,6 +631,12 @@ func (bc *BlockChain) restoreCheckpoint() error {
 		panic(err)
 		return err
 	}
+	for cID, chkpnt := range committeeCheckpoint {
+		Logger.log.Infof("[debugcheckpoint] committee check point of cID %v", cID)
+		for epoch, data := range chkpnt.Data {
+			Logger.log.Infof("[debugcheckpoint]\t cmt:%v epoch %v, height %v", cID, epoch, data.Height)
+		}
+	}
 	bc.committeeChangeCheckpoint = struct {
 		data   map[byte]CommitteeChangeCheckpoint
 		locker *sync.RWMutex
