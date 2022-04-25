@@ -531,6 +531,7 @@ func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*sta
 type CommitteeCheckPoint struct {
 	Height   uint64      `json:"h"`
 	RootHash common.Hash `json:"rh"`
+	FromBC   bool
 }
 
 type CommitteeChangeCheckpoint struct {
@@ -565,29 +566,36 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 	Logger.log.Debugf("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v", sID, epoch)
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
-
 		sCommitteeChange.Data[epoch] = chkPnt
 		if sID != common.BeaconChainSyncID {
-			bcDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
-			if err != nil {
-				panic(err)
-			}
-			sKeys1 := statedb.GetOneShardCommittee(bcDB, sID)
-			sDB, err := statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(sID)))
-			sKeys2 := statedb.GetOneShardCommittee(sDB, sID)
-			if !equal2list(sKeys1, sKeys2) {
-				list1, _ := incognitokey.CommitteeKeyListToString(sKeys1)
-				list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
-				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
-				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, chkPnt.RootHash.String(), list2)
-				panic("Data from stateDB is different from beaconDB")
+			if !chkPnt.FromBC {
+
+				bcDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+				if err != nil {
+					panic(err)
+				}
+				sKeys1 := statedb.GetOneShardCommittee(bcDB, sID)
+				sDB, err := statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(sID)))
+				if err != nil {
+					panic(err)
+				}
+				sKeys2 := statedb.GetOneShardCommittee(sDB, sID)
+				if !equal2list(sKeys1, sKeys2) {
+					list1, _ := incognitokey.CommitteeKeyListToString(sKeys1)
+					list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
+					Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
+					Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, chkPnt.RootHash.String(), list2)
+					panic("Data from stateDB is different from beaconDB")
+				}
 			}
 		}
 		chkPnt.RootHash = rootHash
+		chkPnt.FromBC = false
 	} else {
 		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
 			Height:   10e9,
 			RootHash: rootHash,
+			FromBC:   true,
 		}
 		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
 	}
@@ -607,24 +615,27 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height
 		chkPnt.Height = height
 		sCommitteeChange.Data[epoch] = chkPnt
 		if sID != common.BeaconChainSyncID {
-			bcDB, err := statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
-			if err != nil {
-				panic(err)
-			}
-			sKeys1 := statedb.GetOneShardCommittee(bcDB, sID)
-			sDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(sID)))
-			sKeys2 := statedb.GetOneShardCommittee(sDB, sID)
-			if !equal2list(sKeys1, sKeys2) {
-				list1, _ := incognitokey.CommitteeKeyListToString(sKeys1)
-				list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
-				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
-				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list2)
+			if chkPnt.FromBC {
+				bcDB, err := statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+				if err != nil {
+					panic(err)
+				}
+				sKeys1 := statedb.GetOneShardCommittee(bcDB, sID)
+				sDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(sID)))
+				sKeys2 := statedb.GetOneShardCommittee(sDB, sID)
+				if !equal2list(sKeys1, sKeys2) {
+					list1, _ := incognitokey.CommitteeKeyListToString(sKeys1)
+					list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
+					Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
+					Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list2)
+				}
 			}
 		}
 	} else {
 		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
 			Height:   height,
 			RootHash: common.EmptyRoot,
+			FromBC:   false,
 		}
 		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
 	}
