@@ -285,6 +285,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	var shardCommitteeState committeestate.ShardCommitteeState
 
 	initShardState := NewBestStateShardWithConfig(shardID, shardCommitteeState)
+	initShardState.blockChain = blockchain
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -746,6 +747,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			fmt.Println("block ", block)
 			panic(err)
 		}
+		v.blockChain = blockchain
 		v.BestBlock = block
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {

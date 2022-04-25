@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"sort"
 	"time"
@@ -37,6 +38,7 @@ type ShardRootHash struct {
 }
 
 type ShardBestState struct {
+	blockChain                       *BlockChain
 	BestBlockHash                    common.Hash       `json:"BestBlockHash"` // hash of block.
 	BestBlock                        *types.ShardBlock `json:"BestBlock"`     // block data
 	BestBeaconHash                   common.Hash       `json:"BestBeaconHash"`
@@ -328,6 +330,7 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
 	shardBestState.shardCommitteeState = target.shardCommitteeState.Clone()
 	shardBestState.BestBlock = target.BestBlock
+	shardBestState.blockChain = target.blockChain
 	return nil
 }
 
@@ -597,6 +600,29 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 		}
 	}
 	return nil
+}
+
+func (x *ShardBestState) CompareCommitteeFromBlock(_y multiview.View) int {
+	//if equal
+	y := _y.(*ShardBestState)
+	if x.CommitteeFromBlock().String() == y.CommitteeFromBlock().String() {
+		return 0
+	}
+	//if not equal
+	xCommitteeBlock, _, err := x.blockChain.GetBeaconBlockByHash(x.BestBlock.Header.CommitteeFromBlock)
+	if err != nil {
+		Logger.log.Error("Cannot find committee from block!")
+		return 0
+	}
+	yCommitteeBlock, _, err := x.blockChain.GetBeaconBlockByHash(y.BestBlock.Header.CommitteeFromBlock)
+	if err != nil {
+		Logger.log.Error("Cannot find committee from block!")
+		return 0
+	}
+	if xCommitteeBlock.GetHeight() > yCommitteeBlock.GetHeight() {
+		return 1
+	}
+	return -1
 }
 
 func (curView *ShardBestState) getUntriggerFeature() []string {
