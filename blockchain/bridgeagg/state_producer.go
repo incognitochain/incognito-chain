@@ -324,9 +324,12 @@ func (sp *stateProducer) unshield(
 	var errorType int
 	var contents [][]byte
 	var burningInsts [][]string
-	var burningAmount uint64
 	defer func() {
 		if err != nil {
+			var burningAmount uint64
+			for _, data := range md.Data {
+				burningAmount += data.BurningAmount
+			}
 			rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
 				TokenID:  md.TokenID,
 				Amount:   burningAmount,
@@ -362,7 +365,6 @@ func (sp *stateProducer) unshield(
 	var listAcceptedUnshieldRequestData []metadataBridge.AcceptedUnshieldRequestData
 
 	for index, data := range md.Data {
-		burningAmount += data.BurningAmount
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
 		if e != nil {
 			errorType = NotFoundNetworkIDError
