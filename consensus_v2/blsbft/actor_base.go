@@ -44,7 +44,7 @@ func NewActorWithValue(
 	switch version {
 	case types.BFT_VERSION:
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION, types.BLOCK_PRODUCINGV3_VERSION:
+	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION, types.BLOCK_PRODUCINGV3_VERSION, types.INSTANT_FINALITY_VERSION:
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 	default:
 		panic("Bft version is not valid")

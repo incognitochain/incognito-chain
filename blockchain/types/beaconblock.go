@@ -145,6 +145,14 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
+//propose hash of beacon contain consensus info
+func (beaconBlock BeaconBlock) ProposeHash() *common.Hash {
+	return beaconBlock.Hash()
+}
+func (beaconBlock BeaconBlock) FullHashString() string {
+	return beaconBlock.Hash().String()
+}
+
 func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 	return beaconBlock.Header.Epoch
 }
