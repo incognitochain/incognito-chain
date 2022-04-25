@@ -70,10 +70,19 @@ func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenI
 	x := vault.Reserve()
 	y := vault.CurrentRewardReserve()
 	expectedAmount, err := bridgeagg.EstimateActualAmountByBurntAmount(x, y, burntAmount, vault.IsPaused())
+	if err != nil {
+		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
+	}
+	_, err = bridgeagg.CalculateReceivedAmount(expectedAmount, *vault, networkID, beaconBestView.GetBeaconFeatureStateDB())
+	if err != nil {
+		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
+	}
+	maxReceivedAmount, err := bridgeagg.CalculateMaxReceivedAmount(*vault)
 	return &jsonresult.BridgeAggEstimateFee{
-		ExpectedAmount: expectedAmount,
-		Fee:            burntAmount - expectedAmount,
-		BurntAmount:    burntAmount,
+		MaxReceivedAmount: maxReceivedAmount,
+		ExpectedAmount:    expectedAmount,
+		Fee:               burntAmount - expectedAmount,
+		BurntAmount:       burntAmount,
 	}, err
 }
 
@@ -95,10 +104,16 @@ func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTok
 	if !burntAmount.IsUint64() {
 		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Value is not unit64"))
 	}
+	_, err = bridgeagg.CalculateReceivedAmount(burntAmount.Uint64(), *vault, networkID, beaconBestView.GetBeaconFeatureStateDB())
+	if err != nil {
+		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, err)
+	}
+	maxReceivedAmount, err := bridgeagg.CalculateMaxReceivedAmount(*vault)
 	return &jsonresult.BridgeAggEstimateFee{
-		ExpectedAmount: amount,
-		Fee:            fee,
-		BurntAmount:    burntAmount.Uint64(),
+		MaxReceivedAmount: maxReceivedAmount,
+		ExpectedAmount:    amount,
+		Fee:               fee,
+		BurntAmount:       burntAmount.Uint64(),
 	}, err
 }
 

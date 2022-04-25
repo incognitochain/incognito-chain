@@ -26,6 +26,9 @@ type AddTokenTestCase struct {
 	ConfigedUnifiedTokens    map[string]map[string]map[string]ConfigVault `json:"configed_unified_tokens"`
 	BeaconHeight             uint64                                       `json:"beacon_height"`
 	ExpectedBridgeTokensInfo map[common.Hash]*rawdbv2.BridgeTokenInfo     `json:"expected_bridge_tokens_info"`
+	PrivacyTokens            map[common.Hash]struct {
+		TokenID common.Hash `json:"token_id"`
+	} `json:"privacy_tokens"`
 
 	TestCase
 }
@@ -85,10 +88,24 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 				}
 			}
 		}
-
 	}
 	config.SetUnifiedToken(configedUnifiedTokens)
 	assert := a.Assert()
+
+	for tokenID, v := range testCase.BridgeTokensInfo {
+		err := statedb.UpdateBridgeTokenInfo(a.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
+		if err != nil {
+			panic(err)
+		}
+	}
+	for tokenID := range testCase.PrivacyTokens {
+		err := statedb.StorePrivacyToken(a.sDB, tokenID, "", "", 0, false, 0, []byte{}, common.Hash{})
+		if err != nil {
+			panic(err)
+		}
+	}
+	_, err := a.sDB.Commit(false)
+	assert.NoError(err, fmt.Sprintf("Error in commit db %v", err))
 
 	state := NewState()
 	producerState := state.Clone()
@@ -142,6 +159,150 @@ func (a *AddTokenTestSuite) TestAccepted() {
 }
 
 func (a *AddTokenTestSuite) TestRejectedInvalidBeaconHeight() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedAvailableTokenIDByBridgeTokenIDCheck() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedAvailableTokenIDByPrivacyTokenIDCheck() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedDuplicateTokenIDs() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedDuplicateUnifiedTokenIDAndTokenID() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedDecimalBy0() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedEmptyTokenIDStr() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedNullUnifiedTokenID() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedEmptyUnifiedTokenID() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedEmptyTokenID() {
 	assert := a.Assert()
 	testCase := a.testCases[a.currentTestCaseName]
 	actualResult := a.actualResults[a.currentTestCaseName]

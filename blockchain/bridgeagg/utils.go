@@ -491,11 +491,14 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault co
 		return fmt.Errorf("ExternalTokenID cannot be 0")
 	}
 	if vault.IncTokenID == utils.EmptyString {
-		return fmt.Errorf("IncTokenID cannot empty")
+		return fmt.Errorf("IncTokenID cannot be null")
 	}
 	incTokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 	if err != nil {
 		return err
+	}
+	if incTokenID.IsZeroValue() {
+		return fmt.Errorf("IncTokenID cannot be empty")
 	}
 	bridgeTokenInfoIndex, externalTokenIDIndex, err := GetBridgeTokenIndex(sDBs[common.BeaconChainID])
 	if err != nil {
@@ -537,6 +540,8 @@ func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]by
 		prefix = common.PLGPrefix
 	case common.FTMNetworkID:
 		prefix = common.FTMPrefix
+	default:
+		return nil, errors.New("Invalid networkID")
 	}
 	networkType, err := metadataBridge.GetNetworkTypeByNetworkID(networkID)
 	if err != nil {
@@ -581,4 +586,51 @@ func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewa
 
 func GetExternalTokenIDForUnifiedToken() []byte {
 	return []byte(common.UnifiedTokenPrefix)
+}
+
+func getPrefixByNetworkID(networkID uint) (string, error) {
+	var prefix string
+	switch networkID {
+	case common.ETHNetworkID:
+		prefix = utils.EmptyString
+	case common.BSCNetworkID:
+		prefix = common.BSCPrefix
+	case common.PLGNetworkID:
+		prefix = common.PLGPrefix
+	case common.FTMNetworkID:
+		prefix = common.FTMPrefix
+	default:
+		return utils.EmptyString, errors.New("Invalid networkID")
+	}
+	return prefix, nil
+}
+
+func CalculateReceivedAmount(amount uint64, vault Vault, networkID uint, sDB *statedb.StateDB) (uint64, error) {
+	decimal := vault.Decimal()
+	prefix, err := getPrefixByNetworkID(networkID)
+	if err != nil {
+		return 0, err
+	}
+	externalTokenID, err := GetExternalTokenIDByIncTokenID(vault.tokenID, sDB)
+	if err != nil {
+		return 0, err
+	}
+
+	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
+		if decimal > config.Param().BridgeAggParam.BaseDecimal {
+			decimal = config.Param().BridgeAggParam.BaseDecimal
+		}
+	}
+	unshieldAmount, err := CalculateAmountByDecimal(*big.NewInt(0).SetUint64(amount), decimal, SubOperator)
+	if err != nil {
+		return 0, err
+	}
+	if unshieldAmount.Cmp(big.NewInt(0)) == 0 {
+		return 0, errors.New("Received amount is 0")
+	}
+	return unshieldAmount.Uint64(), nil
+}
+
+func CalculateMaxReceivedAmount(vault Vault) (uint64, error) {
+	return 0, nil
 }

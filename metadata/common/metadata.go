@@ -115,7 +115,6 @@ type BeaconViewRetriever interface {
 	IsValidPdexv3StakingPool(string) error
 	IsValidPdexv3UnstakingAmount(string, string, uint64) error
 	IsValidPdexv3ShareAmount(string, string, uint64) error
-	BridgeAggIsValidBurntAmount(uint64, common.Hash, uint, byte) (bool, error)
 }
 
 type ShardViewRetriever interface {

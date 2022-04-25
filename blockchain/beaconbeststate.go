@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"reflect"
 	"time"
 
@@ -627,23 +626,6 @@ func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
 	poolPairID, nftID string, shareAmount uint64,
 ) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
-}
-
-func (beaconBestState *BeaconBestState) BridgeAggIsValidBurntAmount(burntAmount uint64, unifiedTokenID common.Hash, networkID uint, operator byte) (bool, error) {
-	sDB := beaconBestState.GetBeaconFeatureStateDB()
-	vault, err := bridgeagg.GetVaultByUnifiedTokenIDAndNetworkID(unifiedTokenID, networkID, sDB)
-	if err != nil {
-		return false, err
-	}
-	decimal := bridgeagg.CalculateIncDecimal(vault.Decimal(), config.Param().BridgeAggParam.BaseDecimal)
-	amt, err := bridgeagg.CalculateAmountByDecimal(*big.NewInt(0).SetUint64(burntAmount), decimal, operator)
-	if err != nil {
-		return false, err
-	}
-	if amt.Cmp(big.NewInt(0)) == 0 {
-		return false, fmt.Errorf("BurntAmount %d is not enough for decimal %d", burntAmount, vault.Decimal())
-	}
-	return true, nil
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

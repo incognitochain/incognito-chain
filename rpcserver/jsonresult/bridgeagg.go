@@ -13,9 +13,10 @@ type BridgeAggState struct {
 }
 
 type BridgeAggEstimateFee struct {
-	BurntAmount    uint64 `json:"BurntAmount"`
-	ExpectedAmount uint64 `json:"ExpectedAmount"`
-	Fee            uint64 `json:"Fee"`
+	MaxReceivedAmount uint64 `json:"MaxReceivedAmount"`
+	BurntAmount       uint64 `json:"BurntAmount"`
+	ExpectedAmount    uint64 `json:"ExpectedAmount"`
+	Fee               uint64 `json:"Fee"`
 }
 
 type BridgeAggEstimateReward struct {

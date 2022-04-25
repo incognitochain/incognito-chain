@@ -373,7 +373,7 @@ func (sp *stateProducer) unshield(
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			TokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, action.TxReqID)
+			tokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, action.TxReqID)
 			if e != nil {
 				errorType = et
 				err = e
@@ -395,7 +395,7 @@ func (sp *stateProducer) unshield(
 				data.RemoteAddress,
 				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
 				newTxReqID.String(),
-				base58.Base58Check{}.Encode(TokenID[:], 0x00),
+				base58.Base58Check{}.Encode(tokenID[:], 0x00),
 				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 			}
 			burningInsts = append(burningInsts, burningInst)
@@ -445,9 +445,17 @@ func (sp *stateProducer) addToken(
 		newListTokens = make(map[common.Hash]map[uint]config.Vault)
 		clonedAC = ac.Clone()
 		for unifiedTokenID, vaults := range unifiedTokens {
+			if unifiedTokenID.IsZeroValue() {
+				Logger.log.Warnf("Found empty unifiedTokenID")
+				return [][]string{}, unifiedTokenInfos, ac, nil
+			}
 			newListTokens[unifiedTokenID] = make(map[uint]config.Vault)
 			if unifiedTokenIDs[unifiedTokenID.String()] {
 				Logger.log.Warnf("Duplicate unifiedTokenID %s", unifiedTokenID.String())
+				return [][]string{}, unifiedTokenInfos, ac, nil
+			}
+			if incTokenIDs[unifiedTokenID.String()] {
+				Logger.log.Warnf("Duplicate incTokenID %s", unifiedTokenID.String())
 				return [][]string{}, unifiedTokenInfos, ac, nil
 			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true

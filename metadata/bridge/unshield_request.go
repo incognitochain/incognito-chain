@@ -69,33 +69,6 @@ func NewUnshieldRequestWithValue(
 }
 
 func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	totalBurningAmount := uint64(0)
-	for _, data := range request.Data {
-		if _, err := hex.DecodeString(data.RemoteAddress); err != nil {
-			return false, err
-		}
-		if data.BurningAmount == 0 {
-			return false, fmt.Errorf("wrong request info's burned amount")
-		}
-		if data.NetworkID != common.BSCNetworkID && data.NetworkID != common.ETHNetworkID && data.NetworkID != common.PLGNetworkID && data.NetworkID != common.FTMNetworkID {
-			return false, fmt.Errorf("Invalid networkID")
-		}
-		if data.BurningAmount < data.ExpectedAmount {
-			return false, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount)
-		}
-		totalBurningAmount += data.BurningAmount
-	}
-	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
-	if err != nil || !isBurned {
-		return false, fmt.Errorf("it is not transaction burn. Error %v", err)
-	}
-	if !bytes.Equal(burnedTokenID[:], request.TokenID[:]) {
-		return false, fmt.Errorf("wrong request info's token id and token burned")
-	}
-	burnAmount := burnCoin.GetValue()
-	if burnAmount != totalBurningAmount || burnAmount == 0 {
-		return false, fmt.Errorf("burn amount is incorrect %v", burnAmount)
-	}
 	return true, nil
 }
 
@@ -111,6 +84,36 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 	}
 	if request.Receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("otaReceiver shardID is different from txShardID"))
+	}
+	totalBurningAmount := uint64(0)
+	for _, data := range request.Data {
+		if _, err := hex.DecodeString(data.RemoteAddress); err != nil {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, err)
+		}
+		if data.BurningAmount == 0 {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("wrong request info's burned amount"))
+		}
+		if data.NetworkID != common.BSCNetworkID && data.NetworkID != common.ETHNetworkID && data.NetworkID != common.PLGNetworkID && data.NetworkID != common.FTMNetworkID {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Invalid networkID"))
+		}
+		if data.BurningAmount < data.ExpectedAmount {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount))
+		}
+		totalBurningAmount += data.BurningAmount
+		if totalBurningAmount < data.BurningAmount {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Out of range uint64"))
+		}
+	}
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("it is not transaction burn. Error %v", err))
+	}
+	if !bytes.Equal(burnedTokenID[:], request.TokenID[:]) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("wrong request info's token id and token burned"))
+	}
+	burnAmount := burnCoin.GetValue()
+	if burnAmount != totalBurningAmount || burnAmount == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burn amount is incorrect %v", burnAmount))
 	}
 
 	switch tx.GetType() {
