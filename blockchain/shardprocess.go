@@ -19,7 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -1272,12 +1271,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
-	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
-
-	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
-	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-
+	newFinalView, _ := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
 	storeBlock := newFinalView.GetBlock()
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
@@ -1298,22 +1292,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		} else {
 			storeBlock = newFinalView.GetBlock()
 		}
-		if stats.IsEnableBPV3Stats {
-			committeesStoreBlock, err := blockchain.getShardCommitteeFromBeaconHash(storeBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
-			if err != nil {
-				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
-			}
-			err2 := stats.UpdateBPV3Stats(
-				blockchain.GetShardChainDatabase(shardID),
-				storeBlock.(*types.ShardBlock),
-				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), newFinalView.(*ShardBestState).GetProposerLength()),
-				committeesStoreBlock,
-			)
-			if err2 != nil {
-				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
-			}
-		}
 	}
+
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")
@@ -1322,6 +1302,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err := batchData.Write(); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
+	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
+	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
 	if !config.Config().ForceBackup {
 		return nil

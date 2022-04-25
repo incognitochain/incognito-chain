@@ -8,6 +8,32 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+func StoreBeaconConfirmInstantFinalityShardBlock(db incdb.KeyValueWriter, sid byte, index uint64, hash common.Hash) error {
+	keyHash := GetBeaconConfirmShardBlockPrefix(sid, index)
+	if err := db.Put(keyHash, hash.Bytes()); err != nil {
+		return NewRawdbError(StoreShardBlockIndexError, err)
+	}
+	return nil
+}
+
+func HasBeaconConfirmInstantFinalityShardBlock(db incdb.KeyValueReader, sid byte, index uint64) (bool, error) {
+	keyHash := GetBeaconConfirmShardBlockPrefix(sid, index)
+	return db.Has(keyHash)
+}
+
+func GetBeaconConfirmInstantFinalityShardBlock(db incdb.KeyValueReader, sid byte, index uint64) (*common.Hash, error) {
+	keyHash := GetBeaconConfirmShardBlockPrefix(sid, index)
+	val, err := db.Get(keyHash)
+	if err != nil {
+		return nil, NewRawdbError(GetShardBlockByIndexError, err)
+	}
+	h, err := common.Hash{}.NewHash(val)
+	if err != nil {
+		return nil, NewRawdbError(GetShardBlockByIndexError, err)
+	}
+	return h, nil
+}
+
 // StoreShardBlock store block hash => block value and block index => block hash
 // record1: prefix-shardid-index-hash => empty
 // record2: prefix-hash => block value

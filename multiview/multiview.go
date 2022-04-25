@@ -1,6 +1,7 @@
 package multiview
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,8 +31,9 @@ type MultiView struct {
 	actionCh       chan func()
 
 	//state
-	finalView View
-	bestView  View
+	rootView  View //view that must not be revert
+	finalView View //view at this time seen as final view (shardchain could revert from beacon view)
+	bestView  View // best view from final view
 }
 
 func NewMultiView() *MultiView {
@@ -58,16 +60,20 @@ func NewMultiView() *MultiView {
 }
 
 func (multiView *MultiView) Clone() *MultiView {
-	s := NewMultiView()
-	for h, v := range multiView.viewByHash {
-		s.viewByHash[h] = v
+	res := make(chan *MultiView)
+	multiView.actionCh <- func() {
+		s := NewMultiView()
+		for h, v := range multiView.viewByHash {
+			s.viewByHash[h] = v
+		}
+		for h, v := range multiView.viewByPrevHash {
+			s.viewByPrevHash[h] = v
+		}
+		s.finalView = multiView.finalView
+		s.bestView = multiView.bestView
+		res <- s
 	}
-	for h, v := range multiView.viewByPrevHash {
-		s.viewByPrevHash[h] = v
-	}
-	s.finalView = multiView.finalView
-	s.bestView = multiView.bestView
-	return s
+	return <-res
 }
 
 func (multiView *MultiView) Reset() {
@@ -100,6 +106,69 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 		}
 	}
 	return <-res
+}
+
+//forward root to specific view
+//Instant finality: call after insert beacon block. Beacon chain will forward to final view. Shard chain will forward to shard view that beacon confirm
+//need to check if it is still compatible with final&best view
+func (multiView *MultiView) ForwardRoot(rootHash common.Hash) error {
+
+	rootView, ok := multiView.viewByHash[rootHash]
+	if !ok {
+		return errors.New("Cannot find view by hash " + rootHash.String())
+	}
+
+	//recheck rootView is on the same view with final view
+	notLink := true
+	for {
+		if rootView.GetHash().String() == multiView.finalView.GetHash().String() {
+			notLink = false
+			break
+		}
+		prevView := *multiView.finalView.GetPreviousHash()
+		if _, ok := multiView.viewByHash[prevView]; !ok {
+			break
+		}
+	}
+
+	//if not link on the same branch with final view, reorg the multiview
+	if notLink {
+		queue := []View{multiView.rootView}
+		resCh := make(chan []View)
+
+		multiView.actionCh <- func() {
+			res := []View{}
+			for {
+				if len(queue) == 0 {
+					break
+				}
+				firstItem := queue[0]
+				if firstItem == nil {
+					break
+				}
+				for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
+					queue = append(queue, v)
+				}
+				res = append(res, firstItem)
+				queue = queue[1:]
+			}
+			resCh <- res
+		}
+
+		newOrgMultiView := <-resCh
+		multiView.Reset()
+		for _, view := range newOrgMultiView {
+			multiView.updateViewState(view)
+		}
+	}
+
+	return nil
+}
+
+func (multiView *MultiView) SimulateAddView(view View) (finalView View, bestView View) {
+	cloneMultiView := multiView.Clone()
+	cloneMultiView.updateViewState(view)
+	return cloneMultiView.finalView, cloneMultiView.bestView
 }
 
 //Only add view if view is validated (at least enough signature)
@@ -143,6 +212,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 	}()
 
 	if multiView.finalView == nil {
+		multiView.rootView = newView
 		multiView.bestView = newView
 		multiView.finalView = newView
 		return
