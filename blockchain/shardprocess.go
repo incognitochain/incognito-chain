@@ -230,7 +230,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	//only validate all tx if we have env variable FULL_VALIDATION = 1
 	if config.Config().IsFullValidation {
-		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
+		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v",
+			shardID, blockHeight, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
+
 		st := time.Now()
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
@@ -1271,7 +1273,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-	newFinalView, _ := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
+	simulatedMultiView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
+	newFinalView := simulatedMultiView.GetFinalView()
 	storeBlock := newFinalView.GetBlock()
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
@@ -1304,6 +1307,15 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
+	if shardBlock.GetVersion() > types.INSTANT_FINALITY_VERSION {
+		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetShardChainDatabase(shardID), shardID, blockHeight)
+		if err == nil && confirmHash.String() == blockHash.String() {
+			blockchain.ShardChain[shardBlock.Header.ShardID].multiView.ForwardRoot(*confirmHash)
+		}
+	} else {
+		blockchain.ShardChain[shardBlock.Header.ShardID].multiView.ForwardRoot(*simulatedMultiView.GetFinalView().GetHash())
+	}
+
 	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 

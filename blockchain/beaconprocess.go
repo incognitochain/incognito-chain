@@ -178,9 +178,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	if beaconBlock.Header.Height%50 == 0 {
-		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
-	}
 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
@@ -1089,7 +1086,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
-	newFinalView, _ := blockchain.BeaconChain.multiView.SimulateAddView(newBestState)
+	simulateMultiview := blockchain.BeaconChain.multiView.SimulateAddView(newBestState)
+	newFinalView := simulateMultiview.GetFinalView()
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
 	//store beacon confirm shard block
@@ -1132,17 +1130,17 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
-	err = blockchain.BackupBeaconViews(batch)
+	err = blockchain.BackupBeaconViews(batch, simulateMultiview)
 	if err != nil {
+
 		return err
 	}
-
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
 	blockchain.BeaconChain.multiView.AddView(newBestState)
-	blockchain.BeaconChain.multiView.ForwardRoot(*newFinalView.GetHash())
+	blockchain.BeaconChain.multiView.ForwardRoot(*simulateMultiview.GetFinalView().GetHash())
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
