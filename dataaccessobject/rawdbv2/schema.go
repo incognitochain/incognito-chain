@@ -13,6 +13,7 @@ var (
 	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
 	viewPrefix                         = []byte("V" + string(splitter))
 	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
+	beaconConfirmShardBlockPrefix      = []byte("b-c-s" + string(splitter))
 	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
 	beaconHashToBlockPrefix            = []byte("b-b-h" + string(splitter))
 	beaconIndexToBlockHashPrefix       = []byte("b-b-i" + string(splitter))
@@ -240,6 +241,16 @@ func GetShardCommitteeRewardRootHashKey(shardID byte, height uint64) []byte {
 	temp = append(temp, shardCommitteeRewardRootHashPrefix...)
 	key := append(rootHashPrefix, temp...)
 	key = append(key, shardID)
+	key = append(key, splitter...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetBeaconConfirmShardBlockPrefix(shardID byte, index uint64) []byte {
+	buf := common.Uint64ToBytes(index)
+	temp := make([]byte, 0, len(beaconConfirmShardBlockPrefix))
+	temp = append(temp, beaconConfirmShardBlockPrefix...)
+	key := append(temp, shardID)
 	key = append(key, splitter...)
 	key = append(key, buf...)
 	return key

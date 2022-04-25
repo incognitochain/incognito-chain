@@ -1089,10 +1089,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
-	blockchain.BeaconChain.multiView.AddView(newBestState)
+	newFinalView, _ := blockchain.BeaconChain.multiView.SimulateAddView(newBestState)
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
-	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
+	//store beacon confirm shard block
+	for shardID, shardStates := range newFinalView.GetBlock().(*types.BeaconBlock).Body.ShardState {
+		for _, shardState := range shardStates {
+			err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+			if err != nil {
+				return NewBlockChainError(StoreBeaconBlockError, err)
+			}
+		}
+	}
+
 	storeBlock := newFinalView.GetBlock()
 	finalizedBlocks := []*types.BeaconBlock{}
 
@@ -1131,6 +1140,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+
+	blockchain.BeaconChain.multiView.AddView(newBestState)
+	blockchain.BeaconChain.multiView.ForwardRoot(*newFinalView.GetHash())
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
