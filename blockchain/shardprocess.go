@@ -1276,7 +1276,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			}
 		}
 		Logger.log.Debugf("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epoch %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
-		blockchain.updateCommitteeChangeCheckpointByS(shardID, epochForCache, shardBlock.GetHeight()+1)
+		blockchain.updateCommitteeChangeCheckpointByS(shardID, epochForCache, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
 	}
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)

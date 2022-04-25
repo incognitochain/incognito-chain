@@ -562,11 +562,26 @@ func (bc *BlockChain) initCommitChangeCheckpoint() error {
 func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64, rootHash common.Hash) {
 	bc.committeeChangeCheckpoint.locker.Lock()
 	defer bc.committeeChangeCheckpoint.locker.Unlock()
-	Logger.log.Debugf("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch)
+	Logger.log.Debugf("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v", sID, epoch)
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
 		chkPnt.RootHash = rootHash
 		sCommitteeChange.Data[epoch] = chkPnt
+		if sID != common.BeaconChainSyncID {
+			bcDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+			if err != nil {
+				panic(err)
+			}
+			sKeys1 := statedb.GetOneShardCommittee(bcDB, sID)
+			sDB, err := statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(sID)))
+			sKeys2 := statedb.GetOneShardCommittee(sDB, sID)
+			if !equal2list(sKeys1, sKeys2) {
+				list1, _ := incognitokey.CommitteeKeyListToString(sKeys1)
+				list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
+				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
+				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, chkPnt.RootHash.String(), list2)
+			}
+		}
 	} else {
 		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
 			Height:   10e9,
@@ -581,7 +596,7 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 	}
 }
 
-func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height uint64) {
+func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height uint64, rootHash common.Hash) {
 	bc.committeeChangeCheckpoint.locker.Lock()
 	defer bc.committeeChangeCheckpoint.locker.Unlock()
 	Logger.log.Debugf("[debugcachecommittee] shard updateCommitteeChangeCheckpoint for shard %v, epoch %v, height %v", sID, epoch, height)
@@ -589,6 +604,21 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height
 	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
 		chkPnt.Height = height
 		sCommitteeChange.Data[epoch] = chkPnt
+		if sID != common.BeaconChainSyncID {
+			bcDB, err := statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+			if err != nil {
+				panic(err)
+			}
+			sKeys1 := statedb.GetOneShardCommittee(bcDB, sID)
+			sDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(sID)))
+			sKeys2 := statedb.GetOneShardCommittee(sDB, sID)
+			if !equal2list(sKeys1, sKeys2) {
+				list1, _ := incognitokey.CommitteeKeyListToString(sKeys1)
+				list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
+				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
+				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list2)
+			}
+		}
 	} else {
 		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
 			Height:   height,

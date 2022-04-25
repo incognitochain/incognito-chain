@@ -1258,7 +1258,7 @@ func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, cID byte) (
 	if epochForCache != 0 {
 		epoch = epochForCache
 	}
-	if bcConsensusRootHash == common.EmptyRoot {
+	if bcConsensusRootHash.String() == common.EmptyRoot.String() {
 		bcHeight := bc.GetLastBeaconHeightInEpoch(epoch)
 		bcRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), bcHeight)
 		if err != nil {
