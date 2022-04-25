@@ -1253,18 +1253,24 @@ func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, cID byte) (
 	uint64,
 	error,
 ) {
-	epochForCache, bcConsensusRootHash := bc.GetCheckpointChangeCommitteeByEpoch(cID, epoch)
-	var key string
-	if epochForCache != 0 {
-		epoch = epochForCache
-	}
-	if bcConsensusRootHash.String() == common.EmptyRoot.String() {
+	epochForCache, chkPnt, err := bc.GetCheckpointChangeCommitteeByEpoch(cID, epoch)
+	var (
+		key         string
+		consensusDB *statedb.StateDB
+		dbWarper    statedb.DatabaseAccessWarper
+
+		consensusRootHash common.Hash
+	)
+	if err != nil {
+		Logger.log.Error(err)
 		bcHeight := bc.GetLastBeaconHeightInEpoch(epoch)
-		bcRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), bcHeight)
-		if err != nil {
+		bcRootHash, e := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), bcHeight)
+		if e != nil {
 			return nil, 0, err
 		}
-		bcConsensusRootHash = bcRootHash
+		consensusRootHash = bcRootHash
+	} else {
+		epoch = epochForCache
 	}
 	key = getCommitteeCacheKeyByEpoch(epoch, cID)
 	if committeesI, has := bc.committeeByEpochCache.Peek(key); has {
@@ -1272,11 +1278,30 @@ func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, cID byte) (
 			return committees, epoch, nil
 		}
 	}
-	bcConsensusStateDB, err := statedb.NewWithPrefixTrie(bcConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 	if err != nil {
-		return nil, epochForCache, NewBlockChainError(ProcessSalaryInstructionsError, err)
+		Logger.log.Error(err)
+		bcHeight := bc.GetLastBeaconHeightInEpoch(epoch)
+		bcRootHash, e := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), bcHeight)
+		if e != nil {
+			return nil, 0, err
+		}
+		consensusRootHash = bcRootHash
+		dbWarper = statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
+	} else {
+		if chkPnt.FromBC {
+			consensusRootHash = chkPnt.RootHash
+			dbWarper = statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
+		} else {
+			consensusRootHash = chkPnt.RootHash
+			dbWarper = statedb.NewDatabaseAccessWarper(bc.GetShardChainDatabase(cID))
+		}
 	}
-	res := statedb.GetOneShardCommittee(bcConsensusStateDB, cID)
+	consensusDB, err = statedb.NewWithPrefixTrie(consensusRootHash, dbWarper)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	res := statedb.GetOneShardCommittee(consensusDB, cID)
 	if len(res) == 0 {
 		panic(fmt.Sprintf("GetShardCommitteeKeysByEpoch shard %v epoch %v cache nil committee", cID, epoch))
 	} else {

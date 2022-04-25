@@ -691,27 +691,28 @@ func (bc *BlockChain) restoreCheckpoint() error {
 }
 
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64) (
-	epochCheckpoint uint64,
-	dbRootHash common.Hash,
+	epochForCache uint64,
+	chkPnt CommitteeCheckPoint,
+	err error,
 ) {
 	bc.committeeChangeCheckpoint.locker.RLock()
 	defer bc.committeeChangeCheckpoint.locker.RUnlock()
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	epochs := sCommitteeChange.Epochs
 	if len(epochs) == 0 {
-		return 0, common.Hash{0}
+		return 0, CommitteeCheckPoint{}, errors.Errorf("Committee change for epoch %v cID %v not found", epoch, sID)
 	}
 	idx, existed := SearchUint64(epochs, epoch)
 	if existed {
-		return epoch, sCommitteeChange.Data[epoch].RootHash
+		return epochs[idx], sCommitteeChange.Data[epoch], nil
 	}
 	if idx > len(epochs) {
-		return epochs[len(epochs)-1], sCommitteeChange.Data[epochs[len(epochs)-1]].RootHash
+		return epochs[len(epochs)-1], sCommitteeChange.Data[epochs[len(epochs)-1]], nil
 	}
 	if idx > 0 {
-		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]].RootHash
+		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]], nil
 	}
-	return 0, common.Hash{0}
+	return 0, CommitteeCheckPoint{}, errors.Errorf("Committee change for epoch %v cID %v not found", epoch, sID)
 }
 
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epoch, height uint64) (
