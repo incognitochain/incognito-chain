@@ -23,6 +23,7 @@ type View interface {
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
+	CompareCommitteeFromBlock(View) int
 }
 
 type MultiView struct {
@@ -223,9 +224,17 @@ func (multiView *MultiView) updateViewState(newView View) {
 		multiView.bestView = newView
 	}
 
-	//get bestview with min produce time
-	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlock().GetProduceTime() < multiView.bestView.GetBlock().GetProduceTime() {
-		multiView.bestView = newView
+	//get bestview with min produce time or better committee from block
+	if newView.GetHeight() == multiView.bestView.GetHeight() {
+		switch newView.CompareCommitteeFromBlock(multiView.bestView) {
+		case 0:
+			if newView.GetBlock().GetProduceTime() < multiView.bestView.GetBlock().GetProduceTime() {
+				multiView.bestView = newView
+			}
+		case 1:
+			multiView.bestView = newView
+		case -1:
+		}
 	}
 
 	if newView.GetBlock().GetVersion() == types.BFT_VERSION {

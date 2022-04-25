@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"time"
 
@@ -1262,4 +1263,8 @@ func (curView *BeaconBestState) GetProposerLength() int {
 
 func (curView *BeaconBestState) GetShardProposerLength() int {
 	return curView.NumberOfFixedShardBlockValidator
+}
+
+func (x *BeaconBestState) CompareCommitteeFromBlock(_y multiview.View) int {
+	return 0
 }
