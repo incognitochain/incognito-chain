@@ -53,7 +53,7 @@ func (n NormalCreateBlockRule) CreateBlock(
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 		n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(),
+			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.FullHashString(),
 			proposerKeySetIndex, proposerKeySetSubsetID)
 
 		return newBlock, nil
@@ -67,7 +67,7 @@ func (n NormalCreateBlockRule) CreateBlock(
 
 		n.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v | "+
 			"Producer Index %+v, Producer SubsetID %+v | "+
-			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.Hash().String(),
+			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.FullHashString(),
 			producerKeySetIndex, producerKeySetSubsetID, proposerKeySetIndex, proposerKeySetSubsetID)
 		newBlock, err := n.chain.CreateNewBlockFromOldBlock(block, b58Str, currentTime, isValidRePropose)
 		if err != nil {
@@ -114,7 +114,7 @@ func (n OnlyCreateBlockRule) CreateBlock(
 		return nil, NewConsensusError(BlockCreationError, err)
 	}
 	n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-		"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.Hash().String(),
+		"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.FullHashString(),
 		proposerKeySetIndex, proposerKeySetSubsetID)
 
 	return newBlock, nil

@@ -26,7 +26,7 @@ type BFTVote struct {
 	RoundKey           string
 	PrevBlockHash      string
 	BlockHeight        uint64
-	BlockHash          string
+	BlockHash          string //this is propose block hash
 	Validator          string
 	BLS                []byte
 	BRI                []byte

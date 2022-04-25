@@ -76,9 +76,21 @@ func (block CrossShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
 
+//consensus interface
+func (block CrossShardBlock) ProposeHash() *common.Hash {
+	panic("Not implement")
+}
+
 func (block *CrossShardBlock) AddValidationField(validationData string) {
 	panic("Not implement")
 }
+
+func (block CrossShardBlock) FullHashString() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+//end consensus interface
 
 func (block CrossShardBlock) GetShardID() int {
 	return int(block.Header.ShardID)
