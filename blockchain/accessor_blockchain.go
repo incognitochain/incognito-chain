@@ -565,7 +565,7 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 	Logger.log.Debugf("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v", sID, epoch)
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	if chkPnt, ok := sCommitteeChange.Data[epoch]; ok {
-		chkPnt.RootHash = rootHash
+
 		sCommitteeChange.Data[epoch] = chkPnt
 		if sID != common.BeaconChainSyncID {
 			bcDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
@@ -580,8 +580,10 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 				list2, _ := incognitokey.CommitteeKeyListToString(sKeys2)
 				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from BC roothash %v: %v", sID, chkPnt.Height, epoch, rootHash.String(), list1)
 				Logger.log.Infof("Committee key for shard %v at epoch %v-%v from shardroothash %v: %v", sID, chkPnt.Height, epoch, chkPnt.RootHash.String(), list2)
+				panic("Data from stateDB is different from beaconDB")
 			}
 		}
+		chkPnt.RootHash = rootHash
 	} else {
 		sCommitteeChange.Data[epoch] = CommitteeCheckPoint{
 			Height:   10e9,

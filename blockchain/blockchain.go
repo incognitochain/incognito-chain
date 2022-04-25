@@ -1296,7 +1296,7 @@ func (bc *BlockChain) GetShardCommitteeStakeInfo(epoch uint64, sID byte) ([]*sta
 		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 	}
 	sCommitteeKeys, _, err := bc.GetShardCommitteeKeysByEpoch(epoch, sID)
-	if err != nil {
+	if (err != nil) || (len(sCommitteeKeys) == 0) {
 		Logger.log.Error(err)
 		sCommitteeKeys = statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
 	}
