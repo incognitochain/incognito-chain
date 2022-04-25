@@ -3,6 +3,7 @@ package multiview
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -45,7 +46,7 @@ func NewMultiView() *MultiView {
 	}
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 10)
+		ticker := time.NewTicker(time.Minute)
 		for {
 			select {
 			case f := <-s.actionCh:
@@ -88,7 +89,7 @@ func (multiView *MultiView) ClearBranch() {
 
 func (multiView *MultiView) removeOutdatedView() {
 	for h, v := range multiView.viewByHash {
-		if v.GetHeight() < multiView.finalView.GetHeight() {
+		if v.GetHeight() < multiView.rootView.GetHeight() {
 			delete(multiView.viewByHash, h)
 			delete(multiView.viewByPrevHash, h)
 			delete(multiView.viewByPrevHash, *v.GetPreviousHash())
@@ -100,7 +101,7 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 	res := make(chan View)
 	multiView.actionCh <- func() {
 		view, _ := multiView.viewByHash[hash]
-		if view == nil || view.GetHeight() < multiView.finalView.GetHeight() {
+		if view == nil || view.GetHeight() < multiView.rootView.GetHeight() {
 			res <- nil
 		} else {
 			res <- view
@@ -113,7 +114,6 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 //Instant finality: call after insert beacon block. Beacon chain will forward to final view. Shard chain will forward to shard view that beacon confirm
 //need to check if it is still compatible with final&best view
 func (multiView *MultiView) ForwardRoot(rootHash common.Hash) error {
-
 	rootView, ok := multiView.viewByHash[rootHash]
 	if !ok {
 		return errors.New("Cannot find view by hash " + rootHash.String())
@@ -134,42 +134,21 @@ func (multiView *MultiView) ForwardRoot(rootHash common.Hash) error {
 
 	//if not link on the same branch with final view, reorg the multiview
 	if notLink {
-		queue := []View{multiView.rootView}
-		resCh := make(chan []View)
-
-		multiView.actionCh <- func() {
-			res := []View{}
-			for {
-				if len(queue) == 0 {
-					break
-				}
-				firstItem := queue[0]
-				if firstItem == nil {
-					break
-				}
-				for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
-					queue = append(queue, v)
-				}
-				res = append(res, firstItem)
-				queue = queue[1:]
-			}
-			resCh <- res
-		}
-
-		newOrgMultiView := <-resCh
+		newOrgMultiView := multiView.GetAllViewsWithBFS()
 		multiView.Reset()
 		for _, view := range newOrgMultiView {
 			multiView.updateViewState(view)
 		}
 	}
 
+	multiView.rootView = rootView
 	return nil
 }
 
-func (multiView *MultiView) SimulateAddView(view View) (finalView View, bestView View) {
+func (multiView *MultiView) SimulateAddView(view View) (cloneMultiview *MultiView) {
 	cloneMultiView := multiView.Clone()
 	cloneMultiView.updateViewState(view)
-	return cloneMultiView.finalView, cloneMultiView.bestView
+	return cloneMultiView
 }
 
 //Only add view if view is validated (at least enough signature)
@@ -205,12 +184,6 @@ func (multiView *MultiView) GetFinalView() View {
 
 //update view whenever there is new view insert into system
 func (multiView *MultiView) updateViewState(newView View) {
-	defer func() {
-		if multiView.viewByHash[*multiView.finalView.GetPreviousHash()] != nil {
-			delete(multiView.viewByHash, *multiView.finalView.GetPreviousHash())
-			delete(multiView.viewByPrevHash, *multiView.finalView.GetPreviousHash())
-		}
-	}()
 
 	if multiView.finalView == nil {
 		multiView.rootView = newView
@@ -248,6 +221,27 @@ func (multiView *MultiView) updateViewState(newView View) {
 			return
 		}
 		multiView.finalView = prev1View
+	} else if newView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		////update finalView: consensus 2
+		prev1Hash := multiView.bestView.GetPreviousHash()
+		prev1View := multiView.viewByHash[*prev1Hash]
+
+		//if no prev1View, return, something wrong, add view need to link to
+		if prev1View == nil {
+			log.Println("Previous view is nil, something wrong")
+			return
+		}
+
+		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
+			multiView.finalView = multiView.bestView
+		}
+
+		if multiView.bestView.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
+			multiView.finalView = multiView.bestView
+		}
+
 	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
 		////update finalView: consensus 2
 		prev1Hash := multiView.bestView.GetPreviousHash()
@@ -275,7 +269,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 }
 
 func (multiView *MultiView) GetAllViewsWithBFS() []View {
-	queue := []View{multiView.finalView}
+	queue := []View{multiView.rootView}
 	resCh := make(chan []View)
 
 	multiView.actionCh <- func() {

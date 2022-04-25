@@ -356,7 +356,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 
 	// Insert new block into beacon chain
 	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
-	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase()); err != nil {
+	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase(), blockchain.BeaconChain.multiView); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.GetBeaconBestState().BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -604,9 +604,9 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 /*
 Backup all BeaconView into Database
 */
-func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
+func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, multiView *multiview.MultiView) error {
 	allViews := []*BeaconBestState{}
-	for _, v := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
+	for _, v := range multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
 	b, _ := json.Marshal(allViews)

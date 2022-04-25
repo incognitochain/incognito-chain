@@ -156,7 +156,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		if insertCnt > 0 {
 			s.insertShardBlockFromPool()
 		} else {
-			time.AfterFunc(time.Second*2, s.insertShardBlockFromPool)
+			time.AfterFunc(time.Millisecond*500, s.insertShardBlockFromPool)
 		}
 	}()
 
@@ -171,14 +171,6 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
 			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
 				continue
-			}
-
-			//fullnode delay 1 block (make sure insert final block)
-			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
-				if len(preBlk) == 0 {
-					continue
-				}
 			}
 
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
