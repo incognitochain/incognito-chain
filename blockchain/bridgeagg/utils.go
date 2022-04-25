@@ -605,13 +605,12 @@ func getPrefixByNetworkID(networkID uint) (string, error) {
 	return prefix, nil
 }
 
-func CalculateReceivedAmount(amount uint64, vault Vault, networkID uint, sDB *statedb.StateDB) (uint64, error) {
-	decimal := vault.Decimal()
+func CalculateReceivedAmount(amount uint64, tokenID common.Hash, decimal uint, networkID uint, sDB *statedb.StateDB) (uint64, error) {
 	prefix, err := getPrefixByNetworkID(networkID)
 	if err != nil {
 		return 0, err
 	}
-	externalTokenID, err := GetExternalTokenIDByIncTokenID(vault.tokenID, sDB)
+	externalTokenID, err := GetExternalTokenIDByIncTokenID(tokenID, sDB)
 	if err != nil {
 		return 0, err
 	}
@@ -631,6 +630,9 @@ func CalculateReceivedAmount(amount uint64, vault Vault, networkID uint, sDB *st
 	return unshieldAmount.Uint64(), nil
 }
 
-func CalculateMaxReceivedAmount(vault Vault) (uint64, error) {
-	return 0, nil
+func CalculateMaxReceivedAmount(x, y uint64) (uint64, error) {
+	if x <= 1 {
+		return 0, nil
+	}
+	return x - 1, nil
 }
