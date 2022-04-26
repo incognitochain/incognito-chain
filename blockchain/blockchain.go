@@ -115,12 +115,12 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 
 	//initialize feature statistic
-	blockchain.InitFeatureStat()
 
 	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
+	blockchain.InitFeatureStat()
 
 	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
 	if EnableIndexingCoinByOTAKey {
