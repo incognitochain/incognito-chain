@@ -37,10 +37,10 @@ var ErrCodeMessage = map[int]struct {
 	FailToExtractDataError:              {1007, "Fail to extract data"},
 	FailToVerifyTokenPairError:          {1008, "Fail to verify token pair"},
 	OutOfRangeUni64Error:                {1009, "Out of range uint64"},
-	FailToBuildModifyRewardReserveError: {1100, "Fail to build modify reward reserve instruction"},
-	FailToConvertTokenError:             {1200, "Fail to convert token instruction"},
-	FailToShieldError:                   {1100, "Fail to shield instruction"},
-	FailToUnshieldError:                 {1100, "Fail to unshield instruction"},
+	FailToBuildModifyRewardReserveError: {1010, "Fail to build modify reward reserve instruction"},
+	FailToConvertTokenError:             {1011, "Fail to convert token instruction"},
+	FailToShieldError:                   {1012, "Fail to shield instruction"},
+	FailToUnshieldError:                 {1013, "Fail to unshield instruction"},
 }
 
 type BridgeAggError struct {
