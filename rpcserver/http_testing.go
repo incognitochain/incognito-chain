@@ -466,10 +466,15 @@ func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
+	receiveBlockByHeight, err := blsbft.InitReceiveBlockByHeight(chainID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
 	return map[string]interface{}{
-		"voteHistory":        voteHistory,
-		"proposeHistory":     proposeHistory,
-		"receiveBlockByHash": receiveBlockByHash,
+		"voteHistory":          voteHistory,
+		"proposeHistory":       proposeHistory,
+		"receiveBlockByHash":   receiveBlockByHash,
+		"receiveBlockByHeight": receiveBlockByHeight,
 	}, nil
 }
 
