@@ -2,7 +2,6 @@ package pdexv3
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -47,12 +46,9 @@ func NewTradeRequest(
 
 func (req TradeRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	for _, poolPairID := range req.TradePath {
-		ok, err := beaconViewRetriever.IsValidPdexv3PoolPairID(poolPairID)
+		err := beaconViewRetriever.IsValidPoolPairID(poolPairID)
 		if err != nil {
-			return ok, err
-		}
-		if !ok {
-			return ok, errors.New("PoolPairID is not valid")
+			return false, err
 		}
 	}
 	return true, nil
@@ -62,12 +58,7 @@ func (req TradeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRe
 	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconHeight) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("Feature pdexv3 has not been activated yet"))
 	}
-
-	if req.TokenToSell == common.PdexAccessCoinID {
-		return false, false, metadataCommon.NewMetadataTxError(
-			metadataCommon.PDEInvalidMetadataValueError, errors.New("Cannot sell pdex access token"))
-	}
-
+	
 	// OTAReceiver check
 	for _, item := range req.Receiver {
 		if !item.IsValid() {

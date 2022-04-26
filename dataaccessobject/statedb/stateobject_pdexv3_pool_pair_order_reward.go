@@ -9,17 +9,17 @@ import (
 )
 
 type Pdexv3PoolPairOrderRewardState struct {
-	nftID           string
-	withdrawnStatus byte
-	txReqID         *common.Hash
+	tokenID common.Hash
+	nftID   string
+	value   uint64
 }
 
-func (state *Pdexv3PoolPairOrderRewardState) TxReqID() *common.Hash {
-	return state.txReqID
+func (state *Pdexv3PoolPairOrderRewardState) Value() uint64 {
+	return state.value
 }
 
-func (state *Pdexv3PoolPairOrderRewardState) WithdrawnStatus() byte {
-	return state.withdrawnStatus
+func (state *Pdexv3PoolPairOrderRewardState) TokenID() common.Hash {
+	return state.tokenID
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
@@ -28,13 +28,13 @@ func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
 
 func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		NftID           string       `json:"NftID"`
-		WithdrawnStatus byte         `json:"WithdrawnStatus"`
-		TxReqID         *common.Hash `json:"TxReqID,omitempty"`
+		TokenID common.Hash `json:"TokenID"`
+		NftID   string      `json:"NftID"`
+		Value   uint64      `json:"Value"`
 	}{
-		NftID:           state.nftID,
-		WithdrawnStatus: state.withdrawnStatus,
-		TxReqID:         state.txReqID,
+		TokenID: state.tokenID,
+		NftID:   state.nftID,
+		Value:   state.value,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -44,25 +44,25 @@ func (state *Pdexv3PoolPairOrderRewardState) MarshalJSON() ([]byte, error) {
 
 func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		NftID           string       `json:"NftID"`
-		WithdrawnStatus byte         `json:"WithdrawnStatus"`
-		TxReqID         *common.Hash `json:"TxReqID,omitempty"`
+		TokenID common.Hash `json:"TokenID"`
+		NftID   string      `json:"NftID"`
+		Value   uint64      `json:"Value"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	state.tokenID = temp.TokenID
 	state.nftID = temp.NftID
-	state.withdrawnStatus = temp.WithdrawnStatus
-	state.txReqID = temp.TxReqID
+	state.value = temp.Value
 	return nil
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) Clone() *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
-		nftID:           state.nftID,
-		withdrawnStatus: state.withdrawnStatus,
-		txReqID:         state.txReqID,
+		tokenID: state.tokenID,
+		nftID:   state.nftID,
+		value:   state.value,
 	}
 }
 
@@ -71,12 +71,12 @@ func NewPdexv3PoolPairOrderRewardState() *Pdexv3PoolPairOrderRewardState {
 }
 
 func NewPdexv3PoolPairOrderRewardStateWithValue(
-	nftID string, withdrawnStatus byte, txReqID *common.Hash,
+	tokenID common.Hash, nftID string, value uint64,
 ) *Pdexv3PoolPairOrderRewardState {
 	return &Pdexv3PoolPairOrderRewardState{
-		nftID:           nftID,
-		withdrawnStatus: withdrawnStatus,
-		txReqID:         txReqID,
+		tokenID: tokenID,
+		nftID:   nftID,
+		value:   value,
 	}
 }
 
@@ -143,9 +143,9 @@ func generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID string) []byte {
 	return h[:prefixHashKeyLength]
 }
 
-func GeneratePdexv3PoolPairOrderRewardObjectKey(poolPairID, nftID string) common.Hash {
+func GeneratePdexv3PoolPairOrderRewardObjectPrefix(poolPairID, nftID string, tokenID common.Hash) common.Hash {
 	prefixHash := generatePdexv3PoolPairOrderRewardObjectPrefix(poolPairID)
-	valueHash := common.HashH([]byte(nftID))
+	valueHash := common.HashH(append([]byte(nftID), []byte(tokenID.String())...))
 	return common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
 }
 

@@ -31,7 +31,7 @@ func TestStakingResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "Invalid status",
 			fields: fields{
-				status: common.Pdexv3AcceptStringStatus,
+				status: common.Pdexv3AcceptStakingStatus,
 			},
 			args:    args{},
 			want:    false,
@@ -41,7 +41,7 @@ func TestStakingResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "txReqID is invalid",
 			fields: fields{
-				status: common.Pdexv3RejectStringStatus,
+				status: common.Pdexv3RejectStakingStatus,
 			},
 			args:    args{},
 			want:    false,
@@ -51,7 +51,7 @@ func TestStakingResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "txReqID is empty",
 			fields: fields{
-				status:  common.Pdexv3RejectStringStatus,
+				status:  common.Pdexv3RejectStakingStatus,
 				txReqID: common.Hash{}.String(),
 			},
 			args:    args{},
@@ -62,7 +62,7 @@ func TestStakingResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid Input",
 			fields: fields{
-				status:  common.Pdexv3RejectStringStatus,
+				status:  common.Pdexv3RejectStakingStatus,
 				txReqID: common.PRVIDStr,
 			},
 			args:    args{},

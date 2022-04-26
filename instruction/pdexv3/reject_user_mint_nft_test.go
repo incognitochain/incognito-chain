@@ -65,7 +65,7 @@ func TestRejectUserMintNft_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta),
-					common.Pdexv3AcceptStringStatus,
+					common.Pdexv3AcceptUserMintNftStatus,
 					string(dataBytes),
 				},
 			},
@@ -77,7 +77,7 @@ func TestRejectUserMintNft_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta),
-					common.Pdexv3RejectStringStatus,
+					common.Pdexv3RejectUserMintNftStatus,
 					string(dataBytes),
 				},
 			},
@@ -151,7 +151,7 @@ func TestRejectUserMintNft_StringSlice(t *testing.T) {
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UserMintNftRequestMeta),
-				common.Pdexv3RejectStringStatus,
+				common.Pdexv3RejectUserMintNftStatus,
 				string(dataBytes),
 			},
 			wantErr: false,

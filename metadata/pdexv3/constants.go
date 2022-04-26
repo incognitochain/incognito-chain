@@ -33,5 +33,4 @@ const (
 	WithdrawOrderRejectedStatus = 0
 
 	MaxTradePathLength = 5
-	MinPdexv3AccessBurn = 1
 )

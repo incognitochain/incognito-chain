@@ -15,12 +15,10 @@ import (
 )
 
 func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
-	initTestParam(t)
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0,
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
-			accessOTA.ToBytesS(), nil,
 		), "pair_hash",
 	)
 	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id")
@@ -111,12 +109,10 @@ func TestMatchAddLiquidity_FromStringSlice(t *testing.T) {
 }
 
 func TestMatchAddLiquidity_StringSlice(t *testing.T) {
-	initTestParam(t)
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0,
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
-			accessOTA.ToBytesS(), nil,
 		), "pair_hash",
 	)
 	inst := NewMatchAddLiquidityWithValue(contributionState, "pool_pair_id")

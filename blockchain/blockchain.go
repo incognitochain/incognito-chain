@@ -32,7 +32,6 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -460,7 +459,6 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	hasAssetTags := true
-	attempts := privacy.MaxPrivacyAttempts
 	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
@@ -473,34 +471,9 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 
 		publicKey := coinDB.GetPublicKey()
-		// we do not use burned, burn-only, or NFTID coins since they will reduce the privacy level of the transaction.
-		canUseCoin := true
+		// we do not use burned coins since they will reduce the privacy level of the transaction.
 		if common.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
-			canUseCoin = false
-		}
-		if *tokenID != common.PRVCoinID {
-			if pass := privacy.NonPrivateTokenCoinFilter.CanUseAsRingDecoy(coinDB); !pass {
-				canUseCoin = false
-				Logger.log.Infof("RandomCommitment: discard coin %v of non-private token, asset tag %v", publicKey, coinDB.GetAssetTag())
-			} else {
-				f, err := blockchain.GetBeaconBestState().NftIDCoinFilter()
-				if err == nil {
-					if pass := f.CanUseAsRingDecoy(coinDB); !pass {
-						canUseCoin = false
-						Logger.log.Infof("RandomCommitment: discard coin %v with NFTID, asset tag %v", publicKey, coinDB.GetAssetTag())
-					}
-				} else {
-					Logger.log.Infof("Cannot get NFTID filter from beacon state - %v", err)
-				}
-			}
-		}
-		// when the sampled coin cannot be used, retry (or exit if attempts run out)
-		if !canUseCoin {
 			i--
-			attempts--
-			if attempts <= 0 {
-				break
-			}
 			continue
 		}
 
