@@ -8,25 +8,22 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
-	initTestParam(t)
 	acceptUnstakingInst := NewAcceptUnstakingWithValue(
-		common.PRVCoinID, 50, validOTAReceiver0,
-		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, accessOTA.ToBytesS(),
+		common.PRVCoinID, common.PRVCoinID, 50, validOTAReceiver0,
+		common.PRVCoinID, 1,
 	)
 	data, err := json.Marshal(&acceptUnstakingInst)
 	assert.Nil(t, err)
 
 	type fields struct {
 		stakingPoolID common.Hash
-		AccessOption  metadataPdexv3.AccessOption
+		nftID         common.Hash
 		amount        uint64
 		otaReceiver   string
-		accessOTA     []byte
 		txReqID       common.Hash
 		shardID       byte
 	}
@@ -54,7 +51,7 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityResponseMeta),
-					common.Pdexv3AcceptStringStatus,
+					common.Pdexv3AcceptUnstakingStatus,
 					string(data),
 				},
 			},
@@ -66,19 +63,16 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-					common.Pdexv3AcceptStringStatus,
+					common.Pdexv3AcceptUnstakingStatus,
 					string(data),
 				},
 			},
 			wantErr: false,
 			fieldsAfterProcess: fields{
-				AccessOption: metadataPdexv3.AccessOption{
-					NftID: &common.PRVCoinID,
-				},
+				nftID:         common.PRVCoinID,
 				stakingPoolID: common.PRVCoinID,
 				amount:        50,
 				otaReceiver:   validOTAReceiver0,
-				accessOTA:     accessOTA.ToBytesS(),
 				txReqID:       common.PRVCoinID,
 				shardID:       1,
 			},
@@ -88,10 +82,9 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AcceptUnstaking{
 				stakingPoolID: tt.fields.stakingPoolID,
-				AccessOption:  tt.fields.AccessOption,
+				nftID:         tt.fields.nftID,
 				amount:        tt.fields.amount,
 				otaReceiver:   tt.fields.otaReceiver,
-				accessOTA:     tt.fields.accessOTA,
 				txReqID:       tt.fields.txReqID,
 				shardID:       tt.fields.shardID,
 			}
@@ -99,8 +92,8 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 				t.Errorf("AcceptUnstaking.FromStringSlice() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr {
-				if !reflect.DeepEqual(tt.fieldsAfterProcess.AccessOption, a.AccessOption) {
-					t.Errorf("AccessOption got = %v, err %v", a.AccessOption, tt.fieldsAfterProcess.AccessOption)
+				if !reflect.DeepEqual(tt.fieldsAfterProcess.nftID, a.nftID) {
+					t.Errorf("nftID got = %v, err %v", a.nftID, tt.fieldsAfterProcess.nftID)
 					return
 				}
 				if !reflect.DeepEqual(tt.fieldsAfterProcess.stakingPoolID, a.stakingPoolID) {
@@ -129,20 +122,18 @@ func TestAcceptUnstaking_FromStringSlice(t *testing.T) {
 }
 
 func TestAcceptUnstaking_StringSlice(t *testing.T) {
-	initTestParam(t)
 	acceptUnstakingInst := NewAcceptUnstakingWithValue(
-		common.PRVCoinID, 50, validOTAReceiver0,
-		common.PRVCoinID, 1, metadataPdexv3.AccessOption{NftID: &common.PRVCoinID}, accessOTA.ToBytesS(),
+		common.PRVCoinID, common.PRVCoinID, 50, validOTAReceiver0,
+		common.PRVCoinID, 1,
 	)
 	data, err := json.Marshal(&acceptUnstakingInst)
 	assert.Nil(t, err)
 
 	type fields struct {
 		stakingPoolID common.Hash
-		AccessOption  metadataPdexv3.AccessOption
+		nftID         common.Hash
 		amount        uint64
 		otaReceiver   string
-		accessOTA     []byte
 		txReqID       common.Hash
 		shardID       byte
 	}
@@ -156,18 +147,15 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 			name: "Valid input",
 			fields: fields{
 				stakingPoolID: common.PRVCoinID,
-				AccessOption: metadataPdexv3.AccessOption{
-					NftID: &common.PRVCoinID,
-				},
-				amount:      50,
-				otaReceiver: validOTAReceiver0,
-				accessOTA:   accessOTA.ToBytesS(),
-				txReqID:     common.PRVCoinID,
-				shardID:     1,
+				nftID:         common.PRVCoinID,
+				amount:        50,
+				otaReceiver:   validOTAReceiver0,
+				txReqID:       common.PRVCoinID,
+				shardID:       1,
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-				common.Pdexv3AcceptStringStatus,
+				common.Pdexv3AcceptUnstakingStatus,
 				string(data),
 			},
 			wantErr: false,
@@ -177,10 +165,9 @@ func TestAcceptUnstaking_StringSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AcceptUnstaking{
 				stakingPoolID: tt.fields.stakingPoolID,
-				AccessOption:  tt.fields.AccessOption,
+				nftID:         tt.fields.nftID,
 				amount:        tt.fields.amount,
 				otaReceiver:   tt.fields.otaReceiver,
-				accessOTA:     tt.fields.accessOTA,
 				txReqID:       tt.fields.txReqID,
 				shardID:       tt.fields.shardID,
 			}

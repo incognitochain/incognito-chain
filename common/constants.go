@@ -70,7 +70,6 @@ var (
 	ConfidentialAssetName = "CA"
 	PDEXCoinID            = Hash{6}
 	PDEXCoinName          = "PDEX"
-	PdexAccessCoinID      = Hash{7}
 	MaxShardNumber        = 0
 )
 
@@ -182,8 +181,12 @@ const (
 )
 
 const (
-	Pdexv3RejectStringStatus = "rejected"
-	Pdexv3AcceptStringStatus = "accept"
+	Pdexv3RejectUserMintNftStatus = "rejected"
+	Pdexv3AcceptUserMintNftStatus = "accept"
+	Pdexv3RejectStakingStatus     = "rejected"
+	Pdexv3AcceptStakingStatus     = "accept"
+	Pdexv3RejectUnstakingStatus   = "rejected"
+	Pdexv3AcceptUnstakingStatus   = "accept"
 
 	Pdexv3AcceptStatus = byte(1)
 	Pdexv3RejectStatus = byte(2)
@@ -191,7 +194,6 @@ const (
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
-const PdexAccessIDStr = "0000000000000000000000000000000000000000000000000000000000000007"
 const PDEXDenominatingDecimal = 9
 
 const ETHChainName = "eth"

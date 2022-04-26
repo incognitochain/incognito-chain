@@ -14,10 +14,9 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 		stakers   map[string]*Staker
 	}
 	type args struct {
-		accessID     string
+		nftID        string
 		liquidity    uint64
 		beaconHeight uint64
-		accessOTA    []byte
 		operator     byte
 	}
 	tests := []struct {
@@ -34,7 +33,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				stakers:   map[string]*Staker{},
 			},
 			args: args{
-				accessID:     nftID,
+				nftID:        nftID1,
 				liquidity:    50,
 				beaconHeight: 20,
 				operator:     subOperator,
@@ -48,7 +47,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				stakers:   map[string]*Staker{},
 			},
 			args: args{
-				accessID:     nftID,
+				nftID:        nftID1,
 				liquidity:    100,
 				beaconHeight: 20,
 				operator:     addOperator,
@@ -56,7 +55,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 			fieldsAfterProcess: fields{
 				liquidity: 100,
 				stakers: map[string]*Staker{
-					nftID: &Staker{
+					nftID1: &Staker{
 						liquidity:           100,
 						rewards:             map[common.Hash]uint64{},
 						lastRewardsPerShare: map[common.Hash]*big.Int{},
@@ -78,7 +77,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				},
 			},
 			args: args{
-				accessID:     nftID1,
+				nftID:        nftID1,
 				liquidity:    50,
 				beaconHeight: 30,
 				operator:     addOperator,
@@ -108,7 +107,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				},
 			},
 			args: args{
-				accessID:     nftID,
+				nftID:        nftID,
 				liquidity:    50,
 				beaconHeight: 30,
 				operator:     addOperator,
@@ -143,7 +142,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				},
 			},
 			args: args{
-				accessID:     nftID1,
+				nftID:        nftID1,
 				liquidity:    50,
 				beaconHeight: 30,
 				operator:     subOperator,
@@ -178,7 +177,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				},
 			},
 			args: args{
-				accessID:     nftID1,
+				nftID:        nftID1,
 				liquidity:    50,
 				beaconHeight: 30,
 				operator:     subOperator,
@@ -208,7 +207,7 @@ func TestStakingPoolState_updateLiquidity(t *testing.T) {
 				stakers:         tt.fields.stakers,
 				rewardsPerShare: map[common.Hash]*big.Int{},
 			}
-			if err := s.updateLiquidity(tt.args.accessID, tt.args.liquidity, tt.args.beaconHeight, tt.args.accessOTA, tt.args.operator); (err != nil) != tt.wantErr {
+			if err := s.updateLiquidity(tt.args.nftID, tt.args.liquidity, tt.args.beaconHeight, tt.args.operator); (err != nil) != tt.wantErr {
 				t.Errorf("StakingPoolState.updateLiquidity() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr && !reflect.DeepEqual(tt.fieldsAfterProcess.liquidity, s.liquidity) {

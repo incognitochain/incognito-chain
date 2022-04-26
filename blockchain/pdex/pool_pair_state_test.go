@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
-	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +50,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -70,7 +69,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -99,7 +98,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -118,7 +117,7 @@ func TestPoolPairState_updateReserveAndCalculateShare(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -203,7 +202,7 @@ func TestPoolPairState_calculateShareAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -273,7 +272,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -292,7 +291,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -321,7 +320,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -340,7 +339,7 @@ func TestPoolPairState_updateReserveData(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					"123": {
+					"123": &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -400,11 +399,9 @@ func TestPoolPairState_deductShare(t *testing.T) {
 		stakingPoolFees map[common.Hash]uint64
 	}
 	type args struct {
-		accessID     string
+		nftID        string
 		shareAmount  uint64
 		beaconHeight uint64
-		accessOption metadataPdexv3.AccessOption
-		accessOTA    []byte
 	}
 	tests := []struct {
 		name               string
@@ -427,7 +424,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -439,7 +436,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				stakingPoolFees: map[common.Hash]uint64{},
 			},
 			args: args{
-				accessID:     nftID,
+				nftID:        nftID,
 				shareAmount:  100,
 				beaconHeight: 20,
 			},
@@ -480,7 +477,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -492,7 +489,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				stakingPoolFees: map[common.Hash]uint64{},
 			},
 			args: args{
-				accessID:     nftID,
+				nftID:        nftID,
 				shareAmount:  100,
 				beaconHeight: 20,
 			},
@@ -533,7 +530,7 @@ func TestPoolPairState_deductShare(t *testing.T) {
 				protocolFees:    tt.fields.protocolFees,
 				stakingPoolFees: tt.fields.stakingPoolFees,
 			}
-			got, got1, got2, err := p.deductShare(tt.args.accessID, tt.args.shareAmount, tt.args.beaconHeight, tt.args.accessOption, tt.args.accessOTA)
+			got, got1, got2, err := p.deductShare(tt.args.nftID, tt.args.shareAmount)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PoolPairState.deductShare() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -598,7 +595,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -625,7 +622,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					metadataPdexv3.BaseAmplifier,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -648,7 +645,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -675,7 +672,7 @@ func TestPoolPairState_deductReserveData(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -763,7 +760,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -783,7 +780,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -813,7 +810,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -833,7 +830,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             300,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -863,7 +860,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -883,7 +880,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -913,7 +910,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -933,7 +930,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -963,7 +960,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -982,7 +979,7 @@ func TestPoolPairState_updateSingleTokenAmount(t *testing.T) {
 					20000,
 				),
 				shares: map[string]*Share{
-					nftID: {
+					nftID: &Share{
 						amount:             200,
 						tradingFees:        map[common.Hash]uint64{},
 						lastLPFeesPerShare: map[common.Hash]*big.Int{},
@@ -1072,18 +1069,18 @@ func TestPoolPairState_getDiff(t *testing.T) {
 			name: "Delete share, share reward, order reward, making volume",
 			fields: fields{
 				makingVolume: map[common.Hash]*MakingVolume{
-					common.PRVCoinID: {
+					common.PRVCoinID: &MakingVolume{
 						volume: map[string]*big.Int{
 							common.PRVIDStr: big.NewInt(300),
 						},
 					},
-					common.PDEXCoinID: {
+					common.PDEXCoinID: &MakingVolume{
 						volume: map[string]*big.Int{},
 					},
 				},
 				state: *state,
 				shares: map[string]*Share{
-					common.PRVIDStr: {
+					common.PRVIDStr: &Share{
 						amount: 100,
 						tradingFees: map[common.Hash]uint64{
 							common.PRVCoinID: 200,
@@ -1097,11 +1094,9 @@ func TestPoolPairState_getDiff(t *testing.T) {
 					},
 				},
 				orderRewards: map[string]*OrderReward{
-					common.PRVIDStr: {
-						uncollectedRewards: map[common.Hash]*OrderRewardDetail{
-							common.PRVCoinID: {
-								amount: 100,
-							},
+					common.PRVIDStr: &OrderReward{
+						uncollectedRewards: Reward{
+							common.PRVCoinID: 300,
 						},
 					},
 				},
@@ -1118,12 +1113,12 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				stateChange:    v2utils.NewStateChange(),
 				comparePoolPair: &PoolPairState{
 					makingVolume: map[common.Hash]*MakingVolume{
-						common.PRVCoinID: {
+						common.PRVCoinID: &MakingVolume{
 							volume: map[string]*big.Int{
 								common.PRVIDStr: big.NewInt(200),
 							},
 						},
-						common.PDEXCoinID: {
+						common.PDEXCoinID: &MakingVolume{
 							volume: map[string]*big.Int{
 								common.PDEXIDStr: big.NewInt(200),
 							},
@@ -1131,7 +1126,7 @@ func TestPoolPairState_getDiff(t *testing.T) {
 					},
 					state: *compareState,
 					shares: map[string]*Share{
-						common.PRVIDStr: {
+						common.PRVIDStr: &Share{
 							amount: 100,
 							tradingFees: map[common.Hash]uint64{
 								common.PRVCoinID:  100,
@@ -1145,18 +1140,14 @@ func TestPoolPairState_getDiff(t *testing.T) {
 						},
 					},
 					orderRewards: map[string]*OrderReward{
-						common.PRVIDStr: {
-							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
-								common.PRVCoinID: {
-									amount: 100,
-								},
+						common.PRVIDStr: &OrderReward{
+							uncollectedRewards: Reward{
+								common.PRVCoinID: 100,
 							},
 						},
-						common.PDEXIDStr: {
-							uncollectedRewards: map[common.Hash]*OrderRewardDetail{
-								common.PDEXCoinID: {
-									amount: 100,
-								},
+						common.PDEXIDStr: &OrderReward{
+							uncollectedRewards: Reward{
+								common.PDEXCoinID: 100,
 							},
 						},
 					},
@@ -1171,7 +1162,7 @@ func TestPoolPairState_getDiff(t *testing.T) {
 			want: &v2utils.PoolPairChange{
 				IsChanged: false,
 				Shares: map[string]*v2utils.ShareChange{
-					common.PRVIDStr: {
+					common.PRVIDStr: &v2utils.ShareChange{
 						IsChanged: false,
 						TradingFees: map[string]bool{
 							common.PRVIDStr:   true,
@@ -1191,24 +1182,24 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				ProtocolFees:    map[string]bool{},
 				StakingPoolFees: map[string]bool{},
 				MakingVolume: map[string]*v2utils.MakingVolumeChange{
-					common.PRVIDStr: {
+					common.PRVIDStr: &v2utils.MakingVolumeChange{
 						Volume: map[string]bool{
 							common.PRVIDStr: true,
 						},
 					},
-					common.PDEXIDStr: {
+					common.PDEXIDStr: &v2utils.MakingVolumeChange{
 						Volume: map[string]bool{
 							common.PDEXIDStr: true,
 						},
 					},
 				},
 				OrderRewards: map[string]*v2utils.OrderRewardChange{
-					common.PRVIDStr: {
-						IsChanged:         false,
-						UncollectedReward: map[string]bool{},
+					common.PRVIDStr: &v2utils.OrderRewardChange{
+						UncollectedReward: map[string]bool{
+							common.PRVIDStr: true,
+						},
 					},
-					common.PDEXIDStr: {
-						IsChanged: true,
+					common.PDEXIDStr: &v2utils.OrderRewardChange{
 						UncollectedReward: map[string]bool{
 							common.PDEXIDStr: true,
 						},
@@ -1236,8 +1227,8 @@ func TestPoolPairState_getDiff(t *testing.T) {
 				stakingPoolFees: tt.fields.stakingPoolFees,
 			}
 			got, got1 := p.getDiff(tt.args.poolPairID, tt.args.comparePoolPair, tt.args.poolPairChange, tt.args.stateChange)
-			if !reflect.DeepEqual(got.OrderRewards, tt.want.OrderRewards) {
-				t.Errorf("PoolPairState.getDiff() got = %v, want %v", got.OrderRewards, tt.want.OrderRewards)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PoolPairState.getDiff() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("PoolPairState.getDiff() got1 = %v, want %v", got1, tt.want1)
@@ -1271,23 +1262,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 	err = statedb.StorePdexv3PoolPairOrderReward(
 		sDB, "id",
 		statedb.NewPdexv3PoolPairOrderRewardStateWithValue(
-			common.PDEXIDStr, DefaultWithdrawnOrderReward, nil,
-		),
-	)
-	assert.Nil(t, err)
-
-	err = statedb.StorePdexv3PoolPairOrderRewardDetail(
-		sDB, "id", common.PDEXIDStr,
-		statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
-			common.PRVCoinID, 200, utils.EmptyString,
-		),
-	)
-	assert.Nil(t, err)
-
-	err = statedb.StorePdexv3PoolPairOrderRewardDetail(
-		sDB, "id", common.PDEXIDStr,
-		statedb.NewPdexv3PoolPairOrderRewardDetailStateWithValue(
-			common.PDEXCoinID, 200, utils.EmptyString,
+			common.PDEXCoinID, common.PDEXIDStr, 100,
 		),
 	)
 	assert.Nil(t, err)
@@ -1329,23 +1304,23 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 			name: "delete makingVolume and orderRewards",
 			fields: fields{
 				makingVolume: map[common.Hash]*MakingVolume{
-					common.PRVCoinID: {
+					common.PRVCoinID: &MakingVolume{
 						volume: map[string]*big.Int{
 							common.PRVIDStr: big.NewInt(300),
 						},
 					},
-					*token0ID: {
+					*token0ID: &MakingVolume{
 						volume: map[string]*big.Int{
 							token0ID.String(): big.NewInt(200),
 						},
 					},
-					common.PDEXCoinID: {
+					common.PDEXCoinID: &MakingVolume{
 						volume: map[string]*big.Int{},
 					},
 				},
 				state: *state,
 				shares: map[string]*Share{
-					common.PRVIDStr: {
+					common.PRVIDStr: &Share{
 						amount: 100,
 						tradingFees: map[common.Hash]uint64{
 							common.PRVCoinID: 200,
@@ -1358,18 +1333,14 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 					},
 				},
 				orderRewards: map[string]*OrderReward{
-					common.PRVIDStr: {
-						uncollectedRewards: map[common.Hash]*OrderRewardDetail{
-							common.PRVCoinID: {
-								amount: 300,
-							},
+					common.PRVIDStr: &OrderReward{
+						uncollectedRewards: Reward{
+							common.PRVCoinID: 300,
 						},
 					},
-					token0ID.String(): {
-						uncollectedRewards: map[common.Hash]*OrderRewardDetail{
-							*token0ID: {
-								amount: 300,
-							},
+					token0ID.String(): &OrderReward{
+						uncollectedRewards: Reward{
+							*token0ID: 300,
 						},
 					},
 				},
@@ -1386,7 +1357,7 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 				poolPairChange: &v2utils.PoolPairChange{
 					IsChanged: false,
 					Shares: map[string]*v2utils.ShareChange{
-						common.PRVIDStr: {
+						common.PRVIDStr: &v2utils.ShareChange{
 							IsChanged: false,
 							TradingFees: map[string]bool{
 								common.PRVIDStr:   true,
@@ -1405,34 +1376,34 @@ func TestPoolPairState_updateToDB(t *testing.T) {
 					ProtocolFees:    map[string]bool{},
 					StakingPoolFees: map[string]bool{},
 					MakingVolume: map[string]*v2utils.MakingVolumeChange{
-						token0ID.String(): {
+						token0ID.String(): &v2utils.MakingVolumeChange{
 							Volume: map[string]bool{
 								token0ID.String(): true,
 							},
 						},
-						common.PRVIDStr: {
+						common.PRVIDStr: &v2utils.MakingVolumeChange{
 							Volume: map[string]bool{
 								common.PRVIDStr: true,
 							},
 						},
-						common.PDEXIDStr: {
+						common.PDEXIDStr: &v2utils.MakingVolumeChange{
 							Volume: map[string]bool{
 								common.PDEXIDStr: true,
 							},
 						},
 					},
 					OrderRewards: map[string]*v2utils.OrderRewardChange{
-						token0ID.String(): {
+						token0ID.String(): &v2utils.OrderRewardChange{
 							UncollectedReward: map[string]bool{
 								token0ID.String(): true,
 							},
 						},
-						common.PRVIDStr: {
+						common.PRVIDStr: &v2utils.OrderRewardChange{
 							UncollectedReward: map[string]bool{
 								common.PRVIDStr: true,
 							},
 						},
-						common.PDEXIDStr: {
+						common.PDEXIDStr: &v2utils.OrderRewardChange{
 							UncollectedReward: map[string]bool{
 								common.PDEXIDStr: true,
 							},
