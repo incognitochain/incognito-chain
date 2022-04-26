@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
@@ -320,9 +321,20 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	bridgeInstructions := [][]string{}
 
 	acceptedRewardInstruction := curView.getAcceptBlockRewardInstruction(shardID, shardBlock, blockchain)
+
+	prevShardBlockValidatorIndex := ""
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
+		}
+		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+	}
+
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
+		prevShardBlockValidatorIndex,
 		shardBlock.Header.CommitteeFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),

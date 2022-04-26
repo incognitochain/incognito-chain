@@ -586,6 +586,15 @@ func IndexOfUint64(target uint64, arr []uint64) int {
 	return -1
 }
 
+func IndexOfInt(target int, arr []int) int {
+	for i, v := range arr {
+		if v == target {
+			return i
+		}
+	}
+	return -1
+}
+
 func TokenHashToString(h *Hash) string {
 	var propertyID [HashSize]byte
 	copy(propertyID[:], h[:])
