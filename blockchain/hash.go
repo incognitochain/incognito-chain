@@ -301,6 +301,9 @@ func generateHashFromShardState(allShardState map[byte][]types.ShardState, versi
 			res += string(crossShard)
 			if version != committeestate.SELF_SWAP_SHARD_VERSION {
 				res += shardState.ValidationData
+				if shardState.PreviousValidationData != "" {
+					res += shardState.PreviousValidationData
+				}
 				res += shardState.CommitteeFromBlock.String()
 			}
 		}
