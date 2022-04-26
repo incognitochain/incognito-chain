@@ -9,25 +9,23 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type WithdrawalStakingRewardRequest struct {
 	metadataCommon.MetadataBase
-	StakingPoolID string `json:"StakingPoolID"`
-	AccessOption
-	Receivers map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
+	StakingPoolID string                              `json:"StakingPoolID"`
+	NftID         common.Hash                         `json:"NftID"`
+	Receivers     map[common.Hash]privacy.OTAReceiver `json:"Receivers"`
 }
 
 type WithdrawalStakingRewardContent struct {
-	StakingPoolID string `json:"StakingPoolID"`
-	AccessOption
-	TokenID    common.Hash  `json:"TokenID"`
-	Receiver   ReceiverInfo `json:"Receiver"`
-	IsLastInst bool         `json:"IsLastInst"`
-	TxReqID    common.Hash  `json:"TxReqID"`
-	ShardID    byte         `json:"ShardID"`
-	AccessOTA  []byte       `json:"AccessOTA,omitempty"`
+	StakingPoolID string       `json:"StakingPoolID"`
+	NftID         common.Hash  `json:"NftID"`
+	TokenID       common.Hash  `json:"TokenID"`
+	Receiver      ReceiverInfo `json:"Receiver"`
+	IsLastInst    bool         `json:"IsLastInst"`
+	TxReqID       common.Hash  `json:"TxReqID"`
+	ShardID       byte         `json:"ShardID"`
 }
 
 type WithdrawalStakingRewardStatus struct {
@@ -38,7 +36,7 @@ type WithdrawalStakingRewardStatus struct {
 func NewPdexv3WithdrawalStakingRewardRequest(
 	metaType int,
 	stakingToken string,
-	accessOption AccessOption,
+	nftID common.Hash,
 	receivers map[common.Hash]privacy.OTAReceiver,
 ) (*WithdrawalStakingRewardRequest, error) {
 	metadataBase := metadataCommon.NewMetadataBase(metaType)
@@ -46,7 +44,7 @@ func NewPdexv3WithdrawalStakingRewardRequest(
 	return &WithdrawalStakingRewardRequest{
 		MetadataBase:  *metadataBase,
 		StakingPoolID: stakingToken,
-		AccessOption:  accessOption,
+		NftID:         nftID,
 		Receivers:     receivers,
 	}, nil
 }
@@ -59,59 +57,13 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
-	err := withdrawal.AccessOption.IsValid(tx, withdrawal.Receivers, beaconViewRetriever, db, true, false, "")
+	err := beaconViewRetriever.IsValidNftID(withdrawal.NftID.String())
 	if err != nil {
 		return false, err
 	}
-	// validate burn tx, tokenID & amount = 1
-	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
-	if err != nil || !isBurn {
-		return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
-	}
-	burningAmt := burnedCoin.GetValue()
-	expectBurntTokenID := common.Hash{}
-	if withdrawal.AccessOption.UseNft() {
-		expectBurntTokenID = *withdrawal.NftID
-		_, isExisted := withdrawal.Receivers[*withdrawal.NftID]
-		if !isExisted {
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawLPFeeValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
-		}
-	} else {
-		expectBurntTokenID = common.PdexAccessCoinID
-	}
-	burningTokenID := burnedToken
-	if burningAmt != 1 || *burningTokenID != expectBurntTokenID {
-		return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
-	}
-
-	if len(withdrawal.Receivers) > MaxStakingRewardWithdrawalReceiver {
-		return false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Too many receivers"))
-	}
-
-	// Check OTA address string and tx random is valid
-	for _, receiver := range withdrawal.Receivers {
-		_, err = isValidOTAReceiver(receiver, shardID)
-		if err != nil {
-			return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-		}
-	}
-	ok, err := beaconViewRetriever.IsValidPdexv3StakingPool(withdrawal.StakingPoolID)
-	if err != nil || !ok {
-		if !ok {
-			err = fmt.Errorf("Cannot find stakingPoolID %s", withdrawal.StakingPoolID)
-		}
-		return false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
-	}
-	if !withdrawal.UseNft() {
-		return beaconViewRetriever.IsValidAccessOTAWithPdexState(
-			*metadataCommon.NewPdexv3ExtendAccessIDWithValue(
-				withdrawal.StakingPoolID,
-				*withdrawal.AccessID,
-				withdrawal.BurntOTA.ToBytesS(),
-				metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta,
-				utils.EmptyString,
-			),
-		)
+	err = beaconViewRetriever.IsValidPdexv3StakingPool(withdrawal.StakingPoolID)
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
@@ -135,6 +87,36 @@ func (withdrawal WithdrawalStakingRewardRequest) ValidateSanityData(
 	if tx.GetVersion() != 2 {
 		return false, false, metadataCommon.NewMetadataTxError(0, errors.New("Tx pDex v3 staking reward withdrawal must be version 2"))
 	}
+
+	// validate burn tx, tokenID & amount = 1
+	isBurn, _, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
+	if err != nil || !isBurn {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Tx is not a burn tx. Error %v", err))
+	}
+	burningAmt := burnedCoin.GetValue()
+	burningTokenID := burnedToken
+	if burningAmt != 1 || *burningTokenID != withdrawal.NftID {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Burning token ID or amount is wrong. Error %v", err))
+	}
+
+	if len(withdrawal.Receivers) > MaxStakingRewardWithdrawalReceiver {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Too many receivers"))
+	}
+
+	// Check OTA address string and tx random is valid
+	shardID := byte(tx.GetValidationEnv().ShardID())
+	for _, receiver := range withdrawal.Receivers {
+		_, err = isValidOTAReceiver(receiver, shardID)
+		if err != nil {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, err)
+		}
+	}
+
+	_, isExisted := withdrawal.Receivers[withdrawal.NftID]
+	if !isExisted {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.Pdexv3WithdrawStakingRewardValidateSanityDataError, fmt.Errorf("Nft Receiver is not existed"))
+	}
+
 	return true, true, nil
 }
 

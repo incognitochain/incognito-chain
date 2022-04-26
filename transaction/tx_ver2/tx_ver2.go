@@ -181,9 +181,6 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
-	if !params.HasPrivacy {
-		ringSize = 1
-	}
 
 	// Generate Ring
 	piBig, piErr := common.RandBigIntMaxRange(big.NewInt(int64(ringSize)))
@@ -261,7 +258,10 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	return err
 }
 
-// deprecated
+// func (tx *Tx) proveASM(params *tx_generic.TxPrivacyInitParamsForASM) error {
+// 	return tx.prove(&params.txParam)
+// }
+
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
 func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
 	txSigPubKey := new(SigPubKey)
@@ -271,6 +271,10 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 	}
 	indexes := txSigPubKey.Indexes
 	n := len(indexes)
+	if n == 0 {
+		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+	}
+
 	m := len(indexes[0])
 
 	ring := make([][]*privacy.Point, n)
@@ -349,21 +353,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 					}
 
 					// we do not use burned coins since they will reduce the privacy level of the transaction.
-					canUseCoin := true
-					if common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
-						canUseCoin = false
-					}
-					filters := params.RingDecoyFilters()
-					// filter out unwanted coins from ring
-					for _, f := range filters {
-						if !f.CanUseAsRingDecoy(coinDB) {
-							canUseCoin = false
-							utils.Logger.Log.Infof("SignTX: discard coin %+v from PRV ring - by filter %#v", coinDB, f)
-							break
-						}
-					}
-					// when the random coin cannot be used in ring, retry
-					if canUseCoin {
+					if !common.IsPublicKeyBurningAddress(coinDB.GetPublicKey().ToBytesS()) {
 						break
 					}
 					attempts++
@@ -405,21 +395,10 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 
 	// Reform Ring
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
-	ring, coinsInRing, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(tx.GetValidationEnv(), sumOutputsWithFee, transactionStateDB)
+	ring, err := getRingFromSigPubKeyAndLastColumnCommitmentV2(tx.GetValidationEnv(), sumOutputsWithFee, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
 		return false, err
-	}
-	switch len(coinsInRing) {
-	case privacy.RingSize:
-		// private PRV transfer
-	case 1:
-		if valid, err := privacy.ValidateNonPrivateTransfer(common.PRVCoinID, tx.GetProof()); !valid {
-			return false, fmt.Errorf("invalid non-private transfer - %v", err)
-		}
-	default:
-		utils.Logger.Log.Errorf("Invalid ring size %d, expect %d or %d", len(coinsInRing), privacy.RingSize, 1)
-		return false, fmt.Errorf("invalid ring size %d", len(coinsInRing))
 	}
 
 	// Reform MLSAG Signature
@@ -845,21 +824,4 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 		}
 	}
 	return nil
-}
-
-func (tx Tx) DerivableBurnInput(transactionStateDB *statedb.StateDB) (map[common.Hash]privacy.Point, error) {
-	isBurn, burnedPRVCoin, _, _, err := tx.GetTxFullBurnData()
-	if !isBurn || err != nil || burnedPRVCoin == nil {
-		return nil, fmt.Errorf("tx burns no coin")
-	}
-
-	result := make(map[common.Hash]privacy.Point)
-	pk, err := getDerivableInputFromSigPubKey(tx.SigPubKey, common.PRVCoinID, tx.Hash(), common.GetShardIDFromLastByte(tx.PubKeyLastByteSender), transactionStateDB)
-	if err != nil {
-		return nil, err
-	}
-	if pk != nil {
-		result[common.PRVCoinID] = *pk
-	}
-	return result, nil
 }

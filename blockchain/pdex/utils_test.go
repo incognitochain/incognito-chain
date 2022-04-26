@@ -8,24 +8,19 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
-	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
-	wrarperDB    statedb.DatabaseAccessWarper
-	diskDB       incdb.Database
-	otaReceiver0 privacy.OTAReceiver
+	wrarperDB statedb.DatabaseAccessWarper
+	diskDB    incdb.Database
 )
 
 const (
@@ -39,13 +34,7 @@ const (
 	poolPairID        = "0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000456-0000000000000000000000000000000000000000000000000000000000000abc"
 	poolPairPRV       = "0000000000000000000000000000000000000000000000000000000000000004-0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000bcd"
 	newPoolPairID     = "0000000000000000000000000000000000000000000000000000000000000123-0000000000000000000000000000000000000000000000000000000000000456-0000000000000000000000000000000000000000000000000000000000111000"
-	validAccessOTA    = "5xbO6s+gO8pn/Irevhdy6l7S3A64oKGKkAENpRTI5MA="
 )
-
-func initTestParams(t *testing.T) {
-	err := otaReceiver0.FromString(validOTAReceiver0)
-	assert.Nil(t, err)
-}
 
 func initDB() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "data")
@@ -177,42 +166,4 @@ func getStrStakingPoolState(p *StakingPoolState) string {
 		result += fmt.Sprintf(" %v: %v\n", tokenID, value)
 	}
 	return result
-}
-
-func Test_getSortedOrderRewardAccessIDs(t *testing.T) {
-	type args struct {
-		orderRewards map[string]*OrderReward
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		{
-			name: "Valid input",
-			args: args{
-				orderRewards: map[string]*OrderReward{
-					"97b7f87ae141fba242e6d8d92bb8fafec971224db00b2a0e7e79100e57460701": nil,
-					"b14b843227a71743845c4aca0e36eb7d914a6b09f7b250f49827f7ae35fac27d": nil,
-					"babbc5ef38567801d3642f02a89648c70259eabb4799e5d9d144c0f0bf8caa2e": nil,
-					"c656cee2a77208c0e15196d9ce3993faf4af0cddd005da5c9a7b669d21e6b3c7": nil,
-					"e1b72b16a82b0fb745c8d15cfcf8f3734d208d439963fb9099bbab008380f418": nil,
-				},
-			},
-			want: []string{
-				"97b7f87ae141fba242e6d8d92bb8fafec971224db00b2a0e7e79100e57460701",
-				"b14b843227a71743845c4aca0e36eb7d914a6b09f7b250f49827f7ae35fac27d",
-				"babbc5ef38567801d3642f02a89648c70259eabb4799e5d9d144c0f0bf8caa2e",
-				"c656cee2a77208c0e15196d9ce3993faf4af0cddd005da5c9a7b669d21e6b3c7",
-				"e1b72b16a82b0fb745c8d15cfcf8f3734d208d439963fb9099bbab008380f418",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getSortedOrderRewardAccessIDs(tt.args.orderRewards); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSortedOrderRewardAccessIDs() = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }

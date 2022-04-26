@@ -1,7 +1,6 @@
 package pdex
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,25 +41,19 @@ func (sp *stateProducerV2) addLiquidity(
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.AddLiquidityRequest)
-		newContribution, err := NewContributionWithMetaData(*metaData, *tx.Hash(), shardID)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		incomingContribution := *newContribution
+		incomingContribution := *NewContributionWithMetaData(*metaData, *tx.Hash(), shardID)
 		incomingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			incomingContribution, metaData.PairHash(),
 		)
-		if metaData.AccessOption.UseNft() {
-			_, validNFT := nftIDs[metaData.AccessOption.NftID.String()]
-			if !validNFT {
-				Logger.log.Warnf("tx %v cannot find nftID", tx.Hash().String())
-				refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
-				if err != nil {
-					return nil, nil, nil, err
-				}
-				res = append(res, refundInst)
-				continue
+		_, found := nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			refundInst, err := instruction.NewRefundAddLiquidityWithValue(incomingContributionState).StringSlice()
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
 			}
+			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
+			res = append(res, refundInst)
+			continue
 		}
 		waitingContribution, found := waitingContributions[metaData.PairHash()]
 		if !found {
@@ -69,7 +62,7 @@ func (sp *stateProducerV2) addLiquidity(
 			if err != nil {
 				return res, poolPairs, waitingContributions, err
 			}
-			Logger.log.Warnf("tx %v can not build instruction add waitingContribution", tx.Hash().String())
+			Logger.log.Warnf("tx %v not found previous contribution", tx.Hash().String())
 			res = append(res, inst)
 			continue
 		}
@@ -77,17 +70,23 @@ func (sp *stateProducerV2) addLiquidity(
 		waitingContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			waitingContribution, metaData.PairHash(),
 		)
-		refundInsts, err := v2utils.BuildRefundAddLiquidityInstructions(
-			waitingContributionState, incomingContributionState,
-		)
+		if waitingContribution.TokenID().String() == incomingContribution.TokenID().String() ||
+			waitingContribution.Amplifier() != incomingContribution.Amplifier() ||
+			waitingContribution.PoolPairID() != incomingContribution.PoolPairID() ||
+			waitingContribution.NftID().String() != incomingContribution.NftID().String() {
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				waitingContributionState, incomingContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
+			Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
+			res = append(res, insts...)
+			continue
+		}
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
-		}
-		err = sp.validateContributions(waitingContribution, incomingContribution)
-		if err != nil {
-			Logger.log.Warnf("tx %v is invalid err %v", tx.Hash().String(), err)
-			res = append(res, refundInsts...)
-			continue
 		}
 
 		poolPairID := utils.EmptyString
@@ -98,48 +97,53 @@ func (sp *stateProducerV2) addLiquidity(
 		}
 		rootPoolPair, found := poolPairs[poolPairID]
 		if !found || rootPoolPair == nil {
-			if waitingContribution.PoolPairID() == utils.EmptyString && !waitingContribution.NftID().IsZeroValue() && !incomingContribution.NftID().IsZeroValue() {
+			if waitingContribution.PoolPairID() == utils.EmptyString {
 				newPoolPair := initPoolPairState(waitingContribution, incomingContribution)
 				tempAmt := big.NewInt(0).Mul(
 					big.NewInt(0).SetUint64(waitingContribution.Amount()),
 					big.NewInt(0).SetUint64(incomingContribution.Amount()),
 				)
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
-				if metaData.AccessOption.AccessID != nil {
-					Logger.log.Warnf("tx %v can not have NftID but found", tx.Hash().String())
-					res = append(res, refundInsts...)
-					continue
-				}
-				_, err := newPoolPair.addShare(
-					waitingContribution.NftID(),
-					shareAmount, beaconHeight, 0,
-					waitingContribution.TxReqID().String(),
-					waitingContribution.AccessOTA(),
+				err = newPoolPair.addShare(
+					*nftHash,
+					shareAmount,
+					beaconHeight,
+					0,
 				)
 				if err != nil {
+					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
+						waitingContribution, metaData.PairHash(),
+					)
+					token1ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
+						incomingContribution, metaData.PairHash(),
+					)
+					insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+						token0ContributionState, token1ContributionState,
+					)
 					Logger.log.Warnf("tx %v add share err %v", tx.Hash().String(), err)
-					res = append(res, refundInsts...)
+					res = append(res, insts...)
 					continue
 				}
 				poolPairs[poolPairID] = newPoolPair
-				insts, err := v2utils.BuildMatchAddLiquidityInstructions(
-					incomingContributionState, poolPairID,
-					waitingContribution.TxReqID(), waitingContribution.ShardID(),
-					waitingContribution.UseAccessOTANewLP(),
-					waitingContribution.NftID(),
+				insts, err := v2utils.BuildMatchAddLiquidityInstructions(incomingContributionState, poolPairID, *nftHash)
+				if err != nil {
+					return res, poolPairs, waitingContributions, err
+				}
+				Logger.log.Warnf("tx %v is not valid input", tx.Hash().String())
+				res = append(res, insts...)
+				continue
+			} else {
+				insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+					waitingContributionState, incomingContributionState,
 				)
 				if err != nil {
 					return res, poolPairs, waitingContributions, err
 				}
+				Logger.log.Warnf("tx %v init a pool pair with poolPairID is not null", tx.Hash().String())
 				res = append(res, insts...)
-				continue
-			} else {
-				Logger.log.Warnf("tx %v init a pool pair with poolPairID is not empty", tx.Hash().String())
-				res = append(res, refundInsts...)
 				continue
 			}
 		}
-
 		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
@@ -149,34 +153,31 @@ func (sp *stateProducerV2) addLiquidity(
 		token1ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
 			token1Contribution, metaData.PairHash(),
 		)
-		if token0Contribution.TokenID().String() != rootPoolPair.state.Token0ID().String() ||
-			token1Contribution.TokenID().String() != rootPoolPair.state.Token1ID().String() {
-			Logger.log.Warnf("tx %v contributed tokens is not valid with pool tokens", tx.Hash().String())
-			res = append(res, refundInsts...)
-			continue
-		}
-		if waitingContribution.UseAccessOTAOldLP() {
-			if !rootPoolPair.existLP(waitingContribution.NftID().String()) {
-				Logger.log.Warnf("tx %v accessID %v is not in poolPair %v",
-					tx.Hash().String(), waitingContribution.NftID().String(), waitingContribution.PoolPairID())
-				res = append(res, refundInsts...)
-				continue
-			}
-		}
-
 		actualToken0ContributionAmount,
 			returnedToken0ContributionAmount,
 			actualToken1ContributionAmount,
 			returnedToken1ContributionAmount, err := rootPoolPair.
 			computeActualContributedAmounts(&token0Contribution, &token1Contribution)
 		if err != nil {
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
 			Logger.log.Warnf("tx %v compute contributed amount err %v", tx.Hash().String(), err)
-			res = append(res, refundInsts...)
+			res = append(res, insts...)
 			continue
 		}
 		if actualToken0ContributionAmount == 0 || actualToken1ContributionAmount == 0 {
+			insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err != nil {
+				return res, poolPairs, waitingContributions, err
+			}
 			Logger.log.Warnf("tx %v calculate contribution amount equal to 0", tx.Hash().String())
-			res = append(res, refundInsts...)
+			res = append(res, insts...)
 			continue
 		}
 		poolPair := rootPoolPair.Clone()
@@ -185,23 +186,35 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount, actualToken1ContributionAmount,
 		)
 		if err != nil {
+			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err1 != nil {
+				return res, poolPairs, waitingContributions, err
+			}
 			Logger.log.Warnf("tx %v add reserve data err %v", tx.Hash().String(), err)
-			res = append(res, refundInsts...)
+			res = append(res, insts...)
 			continue
 		}
 		lmLockedBlocks := uint64(0)
 		if _, exists := params.PDEXRewardPoolPairsShare[poolPairID]; exists {
 			lmLockedBlocks = params.MiningRewardPendingBlocks
 		}
-
-		accessOTA, err := poolPair.addShare(
-			waitingContribution.NftID(),
-			shareAmount, beaconHeight, lmLockedBlocks,
-			waitingContribution.TxReqID().String(), waitingContribution.AccessOTA(),
+		err = poolPair.addShare(
+			*nftHash,
+			shareAmount,
+			beaconHeight,
+			lmLockedBlocks,
 		)
 		if err != nil {
+			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
+				token0ContributionState, token1ContributionState,
+			)
+			if err1 != nil {
+				return res, poolPairs, waitingContributions, err
+			}
 			Logger.log.Warnf("tx %v add share err %v:", tx.Hash().String(), err)
-			res = append(res, refundInsts...)
+			res = append(res, insts...)
 			continue
 		}
 		insts, err := v2utils.BuildMatchAndReturnAddLiquidityInstructions(
@@ -210,10 +223,7 @@ func (sp *stateProducerV2) addLiquidity(
 			actualToken0ContributionAmount,
 			returnedToken1ContributionAmount,
 			actualToken1ContributionAmount,
-			waitingContribution.TxReqID(),
-			waitingContribution.ShardID(), accessOTA,
-			waitingContribution.UseAccessOTANewLP(),
-			waitingContribution.NftID(),
+			*nftHash,
 		)
 		if err != nil {
 			return res, poolPairs, waitingContributions, err
@@ -572,36 +582,18 @@ TransactionLoop:
 			return result, pairs, fmt.Errorf("Error preparing trade refund %v", err)
 		}
 
-		var nftID *common.Hash = nil
-		var ota []byte = nil
-		var mintAccessInstruction []string // only minting access token when accepted
-		accessByNFT := currentOrderReq.UseNft()
-		if accessByNFT {
-			nftID = currentOrderReq.NftID
-			// check that the nftID has not exceeded its order count limit
-			if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
-				Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
-					currentOrderReq.NftID.String(), params.MaxOrdersPerNft)
-				result = append(result, refundInstructions...)
-				continue TransactionLoop
-			}
-		} else {
-			accessReceiver, found := currentOrderReq.Receiver[common.PdexAccessCoinID]
-			if !found {
-				Logger.log.Warnf("AddOrder: cannot find pdex access coin receiver")
-				result = append(result, refundInstructions...)
-				continue TransactionLoop
-			}
-			ota = accessReceiver.PublicKey.ToBytesS()
-			recvStr, _ := accessReceiver.String() // receivers created using UnmarshalJSON are valid
-			mintAccessInstruction, err = instruction.NewMintAccessTokenWithValue(
-				recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3AddOrderRequestMeta))
-			if err != nil {
-				return result, pairs, err
-			}
-			accessID := metadataPdexv3.GenAccessID(accessReceiver)
-			nftID = &accessID
+		// check that the nftID exists
+		if _, exists := nftIDs[currentOrderReq.NftID.String()]; !exists {
+			Logger.log.Warnf("Cannot find nftID %s for new order", currentOrderReq.NftID.String())
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
+		}
+		// check that the nftID has not exceeded its order count limit
+		if orderCountByNftID[currentOrderReq.NftID.String()] >= params.MaxOrdersPerNft {
+			Logger.log.Warnf("AddOrder: NftID %s has reached order count limit of %d",
+				currentOrderReq.NftID.String(), params.MaxOrdersPerNft)
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
 		}
 
 		pair, exists := pairs[currentOrderReq.PoolPairID]
@@ -662,51 +654,19 @@ TransactionLoop:
 		token0RecvStr, _ := currentOrderReq.Receiver[pair.state.Token0ID()].String()
 		token1RecvStr, _ := currentOrderReq.Receiver[pair.state.Token1ID()].String()
 
-		if accessByNFT {
-			// increment order count to keep same-block requests from exceeding limit
-			orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
-		}
-		var rewardReceivers map[common.Hash]privacy.OTAReceiver
-		rewardReceiverTokenIDs := []common.Hash{tokenToBuy}
-		if tokenToBuy != common.PRVCoinID {
-			rewardReceiverTokenIDs = append(rewardReceiverTokenIDs, common.PRVCoinID)
-		}
-		rewardReceivers = map[common.Hash]privacy.OTAReceiver{}
-		orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
-		status := byte(0)
-		var txReqID *common.Hash
-		if !currentOrderReq.UseNft() {
-			for _, v := range rewardReceiverTokenIDs {
-				if receiver, found := currentOrderReq.RewardReceiver[v]; found {
-					rewardReceivers[v] = receiver
-					orderRewardDetails[v] = NewOrderRewardDetailWithValue(receiver, 0)
-				} else {
-					Logger.log.Warnf("RewardReceivers is not enough")
-					result = append(result, refundInstructions...)
-					continue TransactionLoop
-				}
-			}
-			status = WaitToWithdrawOrderReward
-			txReqID = tx.Hash()
-		} else {
-			status = DefaultWithdrawnOrderReward
-		}
-		pair.orderRewards[nftID.String()] = NewOrderRewardWithValue(
-			status, orderRewardDetails, txReqID,
-		)
+		// increment order count to keep same-block requests from exceeding limit
+		orderCountByNftID[currentOrderReq.NftID.String()] = orderCountByNftID[currentOrderReq.NftID.String()] + 1
 
 		acceptedMd := metadataPdexv3.AcceptedAddOrder{
 			PoolPairID:     currentOrderReq.PoolPairID,
 			OrderID:        orderID,
-			NftID:          nftID,
-			AccessOTA:      ota,
+			NftID:          currentOrderReq.NftID,
 			Token0Rate:     token0Rate,
 			Token1Rate:     token1Rate,
 			Token0Balance:  token0Balance,
 			Token1Balance:  token1Balance,
 			TradeDirection: tradeDirection,
 			Receiver:       [2]string{token0RecvStr, token1RecvStr},
-			RewardReceiver: rewardReceivers,
 		}
 
 		acceptedAction := instruction.NewAction(
@@ -715,9 +675,6 @@ TransactionLoop:
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 		result = append(result, acceptedAction.StringSlice())
-		if mintAccessInstruction != nil {
-			result = append(result, mintAccessInstruction)
-		}
 	}
 
 	Logger.log.Warnf("AddOrder instructions: %v", result)
@@ -735,84 +692,43 @@ TransactionLoop:
 		if !ok {
 			return result, pairs, errors.New("Cannot parse AddOrder metadata")
 		}
-		// default to reject
-		refundMd := &metadataPdexv3.RejectedWithdrawOrder{
-			PoolPairID: currentOrderReq.PoolPairID,
-			OrderID:    currentOrderReq.OrderID,
+
+		// always return NFT in response
+		nftReceiver, exists := currentOrderReq.Receiver[currentOrderReq.NftID]
+		if !exists {
+			return result, pairs, fmt.Errorf("NFT receiver not found in WithdrawOrder Request")
 		}
+		recvStr, _ := nftReceiver.String() // error handled in tx validation
+
+		mintInstruction, err := instruction.NewMintNftWithValue(
+			currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
+		).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
+		result = append(result, mintInstruction)
+		if err != nil {
+			return result, pairs, err
+		}
+
+		// default to reject
 		refundAction := instruction.NewAction(
-			refundMd,
+			&metadataPdexv3.RejectedWithdrawOrder{
+				PoolPairID: currentOrderReq.PoolPairID,
+				OrderID:    currentOrderReq.OrderID,
+			},
 			*tx.Hash(),
 			byte(tx.GetValidationEnv().ShardID()), // sender & receiver shard must be the same
 		)
 
-		var mintAccessInstruction []string // only minting access token when accepted
-		var nextAccessOTA []byte
-		var err error
-		// when accessing using NftID, mint NFT in response
-		var accessID common.Hash
-		accessByNFT := currentOrderReq.UseNft()
-		if accessByNFT {
-			accessID = *currentOrderReq.NftID
-			nftReceiver, exists := currentOrderReq.Receiver[*currentOrderReq.NftID]
-			if !exists {
-				return result, pairs, fmt.Errorf("Unexpected missing receiver for NftID %s", currentOrderReq.NftID.String())
-			}
-			recvStr, _ := nftReceiver.String() // error handled in tx validation
-			mintInstruction, err := instruction.NewMintNftWithValue(
-				*currentOrderReq.NftID, recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
-			result = append(result, mintInstruction)
-			if err != nil {
-				return result, pairs, err
-			}
-		} else {
-			accessID = *currentOrderReq.AccessOption.AccessID
-			accessReceiver, found := currentOrderReq.Receiver[common.PdexAccessCoinID]
-			if !found {
-				Logger.log.Warnf("WithdrawOrder: cannot find pdex access coin receiver")
-				result = append(result, refundAction.StringSlice())
-				continue TransactionLoop
-			}
-			nextAccessOTA = accessReceiver.PublicKey.ToBytesS()
-			recvStr, _ := accessReceiver.String() // receivers created using UnmarshalJSON are valid
-			mintAccessInstruction, err = instruction.NewMintAccessTokenWithValue(
-				recvStr, byte(tx.GetValidationEnv().ShardID()), *tx.Hash(),
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawOrderRequestMeta))
-			if err != nil {
-				return result, pairs, err
-			}
-		}
-
 		pair, exists := pairs[currentOrderReq.PoolPairID]
 		if !exists {
-			Logger.log.Warnf("Cannot find pair %s for withdraw order", currentOrderReq.PoolPairID)
+			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
 			result = append(result, refundAction.StringSlice())
 			continue TransactionLoop
 		}
 
 		orderID := currentOrderReq.OrderID
-		shouldMintAccessCoin := false
 		for _, ord := range pair.orderbook.orders {
 			if ord.Id() == orderID {
-				if ord.NftID() == accessID {
-					if !accessByNFT {
-						if currentOrderReq.BurntOTA == nil {
-							Logger.log.Warnf("Unexpected invalid access for order %s", orderID)
-							result = append(result, refundAction.StringSlice())
-							continue TransactionLoop
-						}
-						if !bytes.Equal(currentOrderReq.BurntOTA.ToBytesS(), ord.AccessOTA()) {
-							Logger.log.Warnf("Incorrect AccessOTA %s burned for order %s", currentOrderReq.BurntOTA.String(), orderID)
-							result = append(result, refundAction.StringSlice())
-							continue TransactionLoop
-						}
-						// access successful -> always mint access token & change NextOTA in state
-						shouldMintAccessCoin = true
-						refundMd.AccessOTA = nextAccessOTA
-						ord.SetAccessOTA(nextAccessOTA)
-					}
-
+				if ord.NftID() == currentOrderReq.NftID {
 					withdrawResults := make(map[common.Hash]uint64)
 					_, withdrawToken0 := currentOrderReq.Receiver[pair.state.Token0ID()]
 					_, withdrawToken1 := currentOrderReq.Receiver[pair.state.Token1ID()]
@@ -822,9 +738,6 @@ TransactionLoop:
 						if currentOrderReq.Amount != 0 {
 							Logger.log.Warnf("Invalid amount %v withdrawing both tokens from order %s (expect %d)",
 								currentOrderReq.Amount, orderID, 0)
-							if shouldMintAccessCoin {
-								result = append(result, mintAccessInstruction)
-							}
 							result = append(result, refundAction.StringSlice())
 							continue TransactionLoop
 						}
@@ -855,19 +768,6 @@ TransactionLoop:
 							accepted = true
 						}
 					}
-					if ord.IsEmpty() {
-						if orderReward, found := pair.orderRewards[ord.NftID().String()]; found {
-							orderReward.withdrawnStatus = WithdrawnOrderReward
-							if len(ord.AccessOTA()) == 0 {
-								orderReward.withdrawnStatus = DefaultWithdrawnOrderReward
-							}
-							pair.orderRewards[ord.NftID().String()] = orderReward
-						}
-						shouldMintAccessCoin = false
-					}
-					if shouldMintAccessCoin {
-						result = append(result, mintAccessInstruction)
-					}
 
 					if !accepted {
 						Logger.log.Warnf("Invalid withdraw tokenID %v for order %s",
@@ -887,7 +787,6 @@ TransactionLoop:
 								Receiver:   currentOrderReq.Receiver[tokenID],
 								TokenID:    tokenID,
 								Amount:     withdrawAmount,
-								AccessOTA:  nextAccessOTA, // is nil when using NftID
 							},
 							*tx.Hash(),
 							byte(tx.GetValidationEnv().ShardID()),
@@ -913,12 +812,10 @@ TransactionLoop:
 
 func (sp *stateProducerV2) withdrawAllMatchedOrders(
 	pairs map[string]*PoolPairState, limitTxsPerShard uint,
-) ([][]string, map[string]*PoolPairState, []string, error) {
+) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	pairIDs := getSortedPoolPairIDs(pairs)
-	for _, pairID := range pairIDs {
-		pair := pairs[pairID] // no need to check found sorted from poolPairs list before
+	for pairID, pair := range pairs {
 		for _, ord := range pair.orderbook.orders {
 			temp := &v2utils.MatchingOrder{ord}
 			// check if this order can be matched any further
@@ -946,7 +843,6 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 						Receiver:   token0Recv,
 						TokenID:    pair.state.Token0ID(),
 						Amount:     currentBalance,
-						AccessOTA:  ord.AccessOTA(),
 					},
 					*txHash,
 					shardID,
@@ -962,7 +858,6 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 						Receiver:   token1Recv,
 						TokenID:    pair.state.Token1ID(),
 						Amount:     currentBalance,
-						AccessOTA:  ord.AccessOTA(),
 					},
 					*txHash,
 					shardID,
@@ -977,64 +872,13 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 			// apply orderbook changes & accept withdrawal(s)
 			ord.SetToken0Balance(0)
 			ord.SetToken1Balance(0)
-			if _, found := pair.orderRewards[ord.NftID().String()]; found {
-				pair.orderRewards[ord.NftID().String()].withdrawnStatus = WaitToWithdrawOrderReward
-			}
 			pairs[pairID] = pair
 			result = append(result, outputInstructions...)
 		}
 	}
 
 	Logger.log.Warnf("WithdrawAllMatchedOrder instructions: %v", result)
-	return result, pairs, pairIDs, nil
-}
-
-func (sp *stateProducerV2) withdrawPendingOrderRewards(
-	poolPairs map[string]*PoolPairState, limitTxsPerShard uint, sortedPairIDs []string,
-) ([][]string, map[string]*PoolPairState, error) {
-	res := [][]string{}
-	numberTxsPerShard := make(map[byte]uint)
-	for _, poolPairID := range sortedPairIDs {
-		poolPair := poolPairs[poolPairID] // no need to check found sorted from poolPairs list before
-		accessIDs := getSortedOrderRewardAccessIDs(poolPair.orderRewards)
-		for _, accessID := range accessIDs {
-			orderReward := poolPair.orderRewards[accessID] // no need to check found sorted from poolPairs list before
-			if orderReward.withdrawnStatus == WithdrawnOrderReward {
-				receiversInfo := map[common.Hash]metadataPdexv3.ReceiverInfo{}
-				var shardID byte
-				for k, v := range orderReward.uncollectedRewards {
-					receiversInfo[k] = metadataPdexv3.ReceiverInfo{
-						Address: v.receiver,
-						Amount:  v.amount,
-					}
-					shardID = v.receiver.GetShardID()
-				}
-				accessHash, err := common.Hash{}.NewHashFromStr(accessID)
-				if err != nil {
-					return res, poolPairs, err
-				}
-				inst := v2utils.BuildWithdrawLPFeeInsts(
-					poolPairID,
-					*metadataPdexv3.NewAccessOptionWithValue(nil, accessHash, nil),
-					receiversInfo,
-					shardID,
-					*orderReward.txReqID,
-					metadataPdexv3.RequestAcceptedChainStatus,
-					nil,
-				)
-				if numberTxsPerShard[shardID]+uint(len(inst)) > limitTxsPerShard {
-					continue
-				}
-				numberTxsPerShard[shardID] += uint(len(inst))
-				res = append(res, inst...)
-				delete(poolPair.orderRewards, accessID)
-				for tokenID := range poolPair.makingVolume {
-					delete(poolPair.makingVolume[tokenID].volume, accessID)
-				}
-			}
-		}
-	}
-	return res, poolPairs, nil
+	return result, pairs, nil
 }
 
 func (sp *stateProducerV2) withdrawLPFee(
@@ -1051,34 +895,29 @@ func (sp *stateProducerV2) withdrawLPFee(
 			return instructions, pairs, errors.New("Can not parse withdrawal LP fee metadata")
 		}
 
-		var err error
-		var accessOTA []byte
-
-		if metaData.AccessOption.UseNft() {
-			addressStr, err := metaData.Receivers[*metaData.NftID].String()
-			if err != nil {
-				return instructions, pairs, fmt.Errorf("NFT receiver invalid in WithdrawalLPFeeRequest")
-			}
-			mintNftInst := instruction.NewMintNftWithValue(*metaData.NftID, addressStr, shardID, txReqID)
-			mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
-			if err != nil {
-				return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
-			}
-			instructions = append(instructions, mintNftInstStr)
-		} else {
-			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
-			if err != nil {
-				return instructions, pairs, err
-			}
+		_, isExisted := metaData.Receivers[metaData.NftID]
+		if !isExisted {
+			return instructions, pairs, fmt.Errorf("NFT receiver not found in WithdrawalLPFeeRequest")
 		}
+		addressStr, err := metaData.Receivers[metaData.NftID].String()
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("NFT receiver invalid in WithdrawalLPFeeRequest")
+		}
+		mintNftInst := instruction.NewMintNftWithValue(metaData.NftID, addressStr, shardID, txReqID)
+		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
+		if err != nil {
+			return instructions, pairs, fmt.Errorf("Can not parse mint NFT instruction")
+		}
+
+		instructions = append(instructions, mintNftInstStr)
+
 		rejectInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
-			metaData.AccessOption,
+			metaData.NftID,
 			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
-			nil,
 		)
 
 		// check conditions
@@ -1087,73 +926,28 @@ func (sp *stateProducerV2) withdrawLPFee(
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
-		shouldMintAccessCoin := false
-		mintAccessCoinInst := utils.EmptyStringArray
 
-		accessID := common.Hash{}
-		if metaData.AccessOption.UseNft() {
-			accessID = *metaData.NftID
-		} else {
-			accessID = *metaData.AccessID
-		}
 		lpReward := map[common.Hash]uint64{}
-		share, isExistedShare := poolPair.shares[accessID.String()]
+		share, isExistedShare := poolPair.shares[metaData.NftID.String()]
 		if isExistedShare {
 			// compute amount of received LP reward
-			lpReward, err = poolPair.RecomputeLPRewards(accessID)
+			lpReward, err = poolPair.RecomputeLPRewards(metaData.NftID)
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
-			}
-			if !metaData.AccessOption.UseNft() {
-				if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); !ok || err != nil {
-					instructions = append(instructions, rejectInst...)
-					continue
-				}
-				shouldMintAccessCoin = true
-				otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
-				if err != nil {
-					return instructions, pairs, err
-				}
-				mintAccessCoinInst, err = instruction.NewMintAccessTokenWithValue(
-					otaReceiverStr, shardID, txReqID,
-				).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLPFeeRequestMeta))
-				if err != nil {
-					return instructions, pairs, fmt.Errorf("Can not generate mint access instruction")
-				}
-				rejectInst = v2utils.BuildWithdrawLPFeeInsts(
-					metaData.PoolPairID,
-					metaData.AccessOption,
-					map[common.Hash]metadataPdexv3.ReceiverInfo{},
-					shardID,
-					txReqID,
-					metadataPdexv3.RequestRejectedChainStatus,
-					accessOTA,
-				)
 			}
 		}
 
 		orderReward := map[common.Hash]uint64{}
-		order, isExistedOrderReward := poolPair.orderRewards[accessID.String()]
+		order, isExistedOrderReward := poolPair.orderRewards[metaData.NftID.String()]
 		if isExistedOrderReward {
-			if order.withdrawnStatus == WithdrawnOrderReward || order.withdrawnStatus == WaitToWithdrawOrderReward {
-				Logger.log.Infof("Cannot withdraw order reward actively with accessOTA")
-				instructions = append(instructions, rejectInst...)
-				continue
-			}
 			// compute amount of received LOP reward
-			for k, v := range order.uncollectedRewards {
-				orderReward[k] = v.amount
-			}
+			orderReward = order.uncollectedRewards
 		}
 
 		reward := CombineReward(lpReward, orderReward)
 
 		if reward == nil || len(reward) == 0 {
 			Logger.log.Infof("No reward to withdraw")
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				instructions = append(instructions, mintAccessCoinInst)
-			}
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
@@ -1172,44 +966,30 @@ func (sp *stateProducerV2) withdrawLPFee(
 		}
 		if notEnoughOTA {
 			Logger.log.Warnf("Not enough OTA in withdraw LP fee request")
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				instructions = append(instructions, mintAccessCoinInst)
-			}
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
 
 		acceptedInst := v2utils.BuildWithdrawLPFeeInsts(
 			metaData.PoolPairID,
-			metaData.AccessOption,
+			metaData.NftID,
 			receiversInfo,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
-			accessOTA,
 		)
 
 		// update state after fee withdrawal
 		if isExistedShare {
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
-			share.setAccessOTA(accessOTA)
 			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
-			if share.isEmpty() {
-				shouldMintAccessCoin = false
-				delete(poolPair.shares, accessID.String())
-			}
 		}
 
 		if isExistedOrderReward {
 			delete(poolPair.orderRewards, metaData.NftID.String())
 		}
 
-		if shouldMintAccessCoin {
-			share.setAccessOTA(accessOTA)
-			instructions = append(instructions, mintAccessCoinInst)
-		}
 		instructions = append(instructions, acceptedInst...)
 	}
 
@@ -1283,7 +1063,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
-	beaconHeight, lmLockedBlocks uint64,
+	lmLockedBlocks uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -1295,18 +1075,16 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.WithdrawLiquidityRequest)
 		txReqID := *tx.Hash()
 
-		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, nil)
+		rejectInsts, err := v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID)
 		if err != nil {
 			return res, poolPairs, err
 		}
 
-		if metaData.AccessOption.UseNft() {
-			_, validNFT := nftIDs[metaData.AccessOption.NftID.String()]
-			if !validNFT {
-				Logger.log.Warnf("tx %v cannot find nftID", tx.Hash().String())
-				res = append(res, rejectInsts...)
-				continue
-			}
+		_, found := nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
 		}
 		rootPoolPair, ok := poolPairs[metaData.PoolPairID()]
 		if !ok || rootPoolPair == nil {
@@ -1314,97 +1092,37 @@ func (sp *stateProducerV2) withdrawLiquidity(
 			res = append(res, rejectInsts...)
 			continue
 		}
-
-		var share *Share
-		accessID := common.Hash{}
-		var accessOTA []byte
-		if metaData.AccessOption.UseNft() {
-			share, ok = rootPoolPair.shares[metaData.AccessOption.NftID.String()]
-			accessID = *metaData.AccessOption.NftID
-		} else {
-			accessID = *metaData.AccessOption.AccessID
-			share, ok = rootPoolPair.shares[accessID.String()]
-
-		}
-
-		if share == nil || !ok {
-			Logger.log.Warnf("tx %v not found LP", tx.Hash().String())
-			res = append(res, rejectInsts...)
-			continue
-		}
-		shouldMintAccessCoin := false
-		mintAccessCoinInst := utils.EmptyStringArray
-
-		if !metaData.AccessOption.UseNft() {
-			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); !ok || err != nil {
-				res = append(res, rejectInsts...)
-				continue
-			}
-			shouldMintAccessCoin = true
-			accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
-			if err != nil {
-				return res, poolPairs, err
-			}
-			mintAccessCoinInst, err = instruction.NewMintAccessTokenWithValue(
-				metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawLiquidityRequestMeta))
-			if err != nil {
-				return res, poolPairs, err
-			}
-			rejectInsts, err = v2utils.BuildRejectWithdrawLiquidityInstructions(*metaData, txReqID, shardID, accessOTA)
-			if err != nil {
-				return res, poolPairs, err
-			}
-		}
 		if rootPoolPair.isEmpty() {
 			Logger.log.Warnf("tx %v poolPair is empty", tx.Hash().String())
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				res = append(res, mintAccessCoinInst)
-			}
 			res = append(res, rejectInsts...)
 			continue
 		}
-		if share.amount == 0 || metaData.ShareAmount() == 0 {
-			share.setAccessOTA(accessOTA)
+		shares, ok := rootPoolPair.shares[metaData.NftID()]
+		if !ok || shares == nil {
+			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		if shares.amount == 0 || metaData.ShareAmount() == 0 {
 			Logger.log.Warnf("tx %v share amount is invalid", tx.Hash().String())
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				res = append(res, mintAccessCoinInst)
-			}
 			res = append(res, rejectInsts...)
 			continue
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			accessID.String(), metaData.ShareAmount(), beaconHeight, metaData.AccessOption,
-			accessOTA,
+			metaData.NftID(), metaData.ShareAmount(),
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				res = append(res, mintAccessCoinInst)
-			}
 			res = append(res, rejectInsts...)
 			continue
-		}
-		newShare := poolPair.shares[accessID.String()]
-		if newShare.isEmpty() {
-			delete(poolPair.shares, accessID.String())
-			shouldMintAccessCoin = false
-		}
-		if shouldMintAccessCoin {
-			newShare.accessOTA = accessOTA
-			res = append(res, mintAccessCoinInst)
 		}
 
 		insts, err := v2utils.BuildAcceptWithdrawLiquidityInstructions(
 			*metaData,
 			poolPair.state.Token0ID(), poolPair.state.Token1ID(),
 			token0Amount, token1Amount, shareAmount,
-			txReqID, shardID, accessOTA,
-		)
+			txReqID, shardID)
 		if err != nil {
 			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
 			res = append(res, rejectInsts...)
@@ -1419,7 +1137,6 @@ func (sp *stateProducerV2) withdrawLiquidity(
 func (sp *stateProducerV2) userMintNft(
 	txs []metadata.Transaction,
 	nftIDs map[string]uint64,
-	nftAssetTags *v2utils.NFTAssetTagsCache,
 	beaconHeight, mintNftRequireAmount uint64,
 ) ([][]string, map[string]uint64, uint64, error) {
 	res := [][]string{}
@@ -1440,7 +1157,6 @@ func (sp *stateProducerV2) userMintNft(
 		} else {
 			nftID := genNFT(uint64(len(nftIDs)), beaconHeight)
 			nftIDs[nftID.String()] = metaData.Amount()
-			nftAssetTags.Add(nftID)
 			inst, err = instruction.NewAcceptUserMintNftWithValue(
 				metaData.OtaReceiver(), metaData.Amount(), shardID, nftID, txReqID,
 			).StringSlice()
@@ -1469,23 +1185,12 @@ func (sp *stateProducerV2) staking(
 		if err != nil {
 			return res, stakingPoolStates, err
 		}
-		otaReceiver := metaData.OtaReceiver()
-		if otaReceiver == utils.EmptyString {
-			otaReceiver, _ = metaData.OtaReceivers()[*stakingTokenHash].String() //verify in metadata of tx
-		}
 		rejectInst, err := instruction.NewRejectStakingWithValue(
-			otaReceiver, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
+			metaData.OtaReceiver(), *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 		).StringSlice()
 		if err != nil {
 			Logger.log.Infof("tx hash %s error %v", txReqID, err)
 			return res, stakingPoolStates, err
-		}
-		if metaData.AccessOption.UseNft() {
-			_, validNFT := nftIDs[metaData.AccessOption.NftID.String()]
-			if !validNFT {
-				res = append(res, rejectInst)
-				continue
-			}
 		}
 		rootStakingPoolState, found := stakingPoolStates[metaData.TokenID()]
 		if !found || rootStakingPoolState == nil {
@@ -1493,54 +1198,30 @@ func (sp *stateProducerV2) staking(
 			res = append(res, rejectInst)
 			continue
 		}
-		accessID := common.Hash{}
-		var accessOTA []byte
-		if metaData.AccessOption.UseNft() {
-			accessID = *metaData.AccessOption.NftID
-		} else {
-			if metaData.AccessOption.AccessID != nil {
-				if !rootStakingPoolState.existStaker(metaData.AccessOption.AccessID.String()) {
-					Logger.log.Warnf("tx %v can not find accessID", tx.Hash().String())
-					res = append(res, rejectInst)
-					continue
-				}
-				accessID = *metaData.AccessOption.AccessID
-			} else {
-				accessID = metadataPdexv3.GenAccessID(metaData.OtaReceivers()[common.PdexAccessCoinID])
-				accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.OtaReceivers()[common.PdexAccessCoinID])
-				if err != nil {
-					Logger.log.Warnf("tx %v can not gen ota", tx.Hash().String())
-					res = append(res, rejectInst)
-					continue
-				}
-			}
+		_, found = nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			Logger.log.Warnf("tx %v not found nftID ", tx.Hash().String())
+			res = append(res, rejectInst)
+			continue
 		}
-
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(accessID.String(), metaData.TokenAmount(), beaconHeight, accessOTA, addOperator)
+		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.TokenAmount(), beaconHeight, addOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v update liquidity err %v ", tx.Hash().String(), err)
 			res = append(res, rejectInst)
 			continue
 		}
-		inst, err := instruction.NewAcceptStakingWithAccessID(
-			*stakingTokenHash, txReqID, shardID, metaData.TokenAmount(), accessOTA,
-			metaData.AccessOption, accessID,
+		nftHash, err := common.Hash{}.NewHashFromStr(metaData.NftID())
+		if err != nil {
+			return res, stakingPoolStates, err
+		}
+		inst, err := instruction.NewAcceptStakingWtihValue(
+			*nftHash, *stakingTokenHash, txReqID, shardID, metaData.TokenAmount(),
 		).StringSlice()
 		if err != nil {
 			return res, stakingPoolStates, err
 		}
 		res = append(res, inst)
-		if metaData.AccessOption.AccessID == nil && metaData.AccessOption.NftID == nil {
-			otaReceiver, _ = metaData.OtaReceivers()[common.PdexAccessCoinID].String() //verify in metadata of tx
-			inst, err = instruction.NewMintAccessTokenWithValue(
-				otaReceiver, shardID, txReqID,
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta))
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
-			res = append(res, inst)
-		}
 		stakingPoolStates[metaData.TokenID()] = stakingPoolState
 	}
 	return res, stakingPoolStates, nil
@@ -1558,106 +1239,54 @@ func (sp *stateProducerV2) unstaking(
 		metaData, _ := tx.GetMetadata().(*metadataPdexv3.UnstakingRequest)
 		txReqID := *tx.Hash()
 		stakingPoolID, _ := common.Hash{}.NewHashFromStr(metaData.StakingPoolID())
-		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID, nil)
+		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
+		rejectInsts, err := v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID)
 		if err != nil {
 			return res, stakingPoolStates, err
 		}
-		accessID := common.Hash{}
-		if metaData.AccessOption.UseNft() {
-			accessID = *metaData.AccessOption.NftID
-			_, validNFT := nftIDs[accessID.String()]
-			if !validNFT {
-				Logger.log.Warnf("tx %v cannot find nftID", tx.Hash().String())
-				res = append(res, rejectInsts...)
-				continue
-			}
-		} else {
-			accessID = *metaData.AccessOption.AccessID
-		}
-		rootStakingPoolState, found := stakingPoolStates[metaData.StakingPoolID()]
 		if !found || rootStakingPoolState == nil {
 			Logger.log.Warnf("tx %v not found poolPair", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
-		staker, found := rootStakingPoolState.stakers[accessID.String()]
+		_, found = nftIDs[metaData.NftID()]
+		if metaData.NftID() == utils.EmptyString || !found {
+			Logger.log.Warnf("tx %v not found nftID", tx.Hash().String())
+			res = append(res, rejectInsts...)
+			continue
+		}
+		staker, found := rootStakingPoolState.stakers[metaData.NftID()]
 		if !found || staker == nil {
 			Logger.log.Warnf("tx %v not found staker", tx.Hash().String())
 			res = append(res, rejectInsts...)
 			continue
 		}
-		var accessOTA []byte
-		shouldMintAccessCoin := false
-		mintAccessCoinInst := utils.EmptyStringArray
-
-		if !metaData.AccessOption.UseNft() {
-			if ok, err := staker.isValidAccessOTA(*metaData.AccessOption.BurntOTA); !ok || err != nil {
-				res = append(res, rejectInsts...)
-				continue
-			}
-			accessOTA, err = metadataPdexv3.GenAccessOTAByStr(metaData.OtaReceivers()[common.PdexAccessIDStr])
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
-			mintAccessCoinInst, err = instruction.NewMintAccessTokenWithValue(
-				metaData.OtaReceivers()[common.PdexAccessIDStr], shardID, txReqID,
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta))
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
-			shouldMintAccessCoin = true
-			rejectInsts, err = v2.BuildRejectUnstakingInstructions(*metaData, txReqID, shardID, accessOTA)
-			if err != nil {
-				return res, stakingPoolStates, err
-			}
-		}
-
 		if staker.liquidity == 0 || metaData.UnstakingAmount() == 0 || rootStakingPoolState.liquidity == 0 {
 			Logger.log.Warnf("tx %v unstaking amount is 0", tx.Hash().String())
-			if shouldMintAccessCoin {
-				staker.setAccessOTA(accessOTA)
-				res = append(res, mintAccessCoinInst)
-			}
 			res = append(res, rejectInsts...)
 			continue
 		}
 		stakingPoolState := rootStakingPoolState.Clone()
-		err = stakingPoolState.updateLiquidity(accessID.String(), metaData.UnstakingAmount(), beaconHeight, accessOTA, subOperator)
+		err = stakingPoolState.updateLiquidity(metaData.NftID(), metaData.UnstakingAmount(), beaconHeight, subOperator)
 		if err != nil {
 			Logger.log.Warnf("tx %v updateLiquidity err %v", tx.Hash().String(), err)
-			if shouldMintAccessCoin {
-				staker.setAccessOTA(accessOTA)
-				res = append(res, mintAccessCoinInst)
-			}
 			res = append(res, rejectInsts...)
 			continue
 		}
 		if metaData.OtaReceivers()[metaData.StakingPoolID()] == utils.EmptyString {
 			Logger.log.Warnf("tx %v ota receiver is invalid", tx.Hash().String())
-			if shouldMintAccessCoin {
-				staker.setAccessOTA(accessOTA)
-				res = append(res, mintAccessCoinInst)
-			}
 			res = append(res, rejectInsts...)
 			continue
 		}
-		newStaker := stakingPoolState.stakers[accessID.String()]
-		if newStaker.isEmpty() {
-			delete(stakingPoolState.stakers, accessID.String())
-			shouldMintAccessCoin = false
-		}
-		if shouldMintAccessCoin {
-			newStaker.setAccessOTA(accessOTA)
-			res = append(res, mintAccessCoinInst)
-		}
+		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
 		insts, err := v2.BuildAcceptUnstakingInstructions(
-			*stakingPoolID, *metaData,
-			txReqID, shardID, accessOTA,
+			*stakingPoolID, *nftHash, metaData.UnstakingAmount(),
+			metaData.OtaReceivers()[metaData.NftID()],
+			metaData.OtaReceivers()[metaData.StakingPoolID()],
+			txReqID, shardID,
 		)
 		if err != nil {
-			Logger.log.Warnf("tx %v fail to build accept instruction %v", tx.Hash().String(), err)
-			res = append(res, rejectInsts...)
-			continue
+			return res, stakingPoolStates, err
 		}
 		res = append(res, insts...)
 		stakingPoolStates[metaData.StakingPoolID()] = stakingPoolState
@@ -1751,34 +1380,29 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			return instructions, pools, errors.New("Can not parse withdrawal staking reward metadata")
 		}
 
-		var err error
-		var accessOTA []byte
-		if metaData.AccessOption.UseNft() {
-			addressStr, err := metaData.Receivers[*metaData.NftID].String()
-			if err != nil {
-				return instructions, pools, fmt.Errorf("NFT receiver invalid in WithdrawalStakingRewardRequest")
-			}
-			mintNftInst := instruction.NewMintNftWithValue(*metaData.NftID, addressStr, shardID, txReqID)
-			mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
-			if err != nil {
-				return instructions, pools, fmt.Errorf("Can not parse mint NFT instruction")
-			}
-			instructions = append(instructions, mintNftInstStr)
-		} else {
-			accessOTA, err = metadataPdexv3.GenAccessOTA(metaData.Receivers[common.PdexAccessCoinID])
-			if err != nil {
-				return instructions, pools, fmt.Errorf("Can't gen new accessOTA")
-			}
+		_, isExisted := metaData.Receivers[metaData.NftID]
+		if !isExisted {
+			return instructions, pools, fmt.Errorf("NFT receiver not found in WithdrawalStakingRewardRequest")
 		}
+		addressStr, err := metaData.Receivers[metaData.NftID].String()
+		if err != nil {
+			return instructions, pools, fmt.Errorf("NFT receiver invalid in WithdrawalStakingRewardRequest")
+		}
+		mintNftInst := instruction.NewMintNftWithValue(metaData.NftID, addressStr, shardID, txReqID)
+		mintNftInstStr, err := mintNftInst.StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
+		if err != nil {
+			return instructions, pools, fmt.Errorf("Can not parse mint NFT instruction")
+		}
+
+		instructions = append(instructions, mintNftInstStr)
 
 		rejectInst := v2utils.BuildWithdrawStakingRewardInsts(
 			metaData.StakingPoolID,
-			metaData.AccessOption,
+			metaData.NftID,
 			map[common.Hash]metadataPdexv3.ReceiverInfo{},
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestRejectedChainStatus,
-			nil,
 		)
 
 		// check conditions
@@ -1788,58 +1412,20 @@ func (sp *stateProducerV2) withdrawStakingReward(
 			continue
 		}
 
-		shouldMintAccessCoin := false
-		mintAccessCoinInst := utils.EmptyStringArray
-		accessID := common.Hash{}
-		if metaData.AccessOption.UseNft() {
-			accessID = *metaData.NftID
-		} else {
-			accessID = *metaData.AccessID
-		}
-		share, isExisted := pool.stakers[accessID.String()]
+		share, isExisted := pool.stakers[metaData.NftID.String()]
 		if !isExisted {
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
-		if !metaData.AccessOption.UseNft() {
-			if ok, err := share.isValidAccessOTA(*metaData.AccessOption.BurntOTA); !ok || err != nil {
-				instructions = append(instructions, rejectInst...)
-				continue
-			}
-			shouldMintAccessCoin = true
-			otaReceiverStr, err := metaData.Receivers[common.PdexAccessCoinID].String()
-			if err != nil {
-				return instructions, pools, err
-			}
-			mintAccessCoinInst, err = instruction.NewMintAccessTokenWithValue(
-				otaReceiverStr, shardID, txReqID,
-			).StringSlice(strconv.Itoa(metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta))
-			if err != nil {
-				return instructions, pools, fmt.Errorf("Can not generate mint access instruction")
-			}
-			rejectInst = v2utils.BuildWithdrawStakingRewardInsts(
-				metaData.StakingPoolID,
-				metaData.AccessOption,
-				map[common.Hash]metadataPdexv3.ReceiverInfo{},
-				shardID,
-				txReqID,
-				metadataPdexv3.RequestRejectedChainStatus,
-				accessOTA,
-			)
-		}
 
 		// compute amount of received staking reward
-		reward, err := pool.RecomputeStakingRewards(accessID)
+		reward, err := pool.RecomputeStakingRewards(metaData.NftID)
 		if err != nil {
 			return instructions, pools, fmt.Errorf("Could not track staking reward: %v\n", err)
 		}
 
 		if reward == nil || len(reward) == 0 {
 			Logger.log.Infof("No staking reward to withdraw")
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				instructions = append(instructions, mintAccessCoinInst)
-			}
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
@@ -1858,36 +1444,22 @@ func (sp *stateProducerV2) withdrawStakingReward(
 		}
 		if notEnoughOTA {
 			Logger.log.Warnf("Not enough OTA in withdrawal staking reward request")
-			if shouldMintAccessCoin {
-				share.setAccessOTA(accessOTA)
-				instructions = append(instructions, mintAccessCoinInst)
-			}
 			instructions = append(instructions, rejectInst...)
 			continue
 		}
 
 		acceptedInst := v2utils.BuildWithdrawStakingRewardInsts(
 			metaData.StakingPoolID,
-			metaData.AccessOption,
+			metaData.NftID,
 			receiversInfo,
 			shardID,
 			txReqID,
 			metadataPdexv3.RequestAcceptedChainStatus,
-			accessOTA,
 		)
 
 		// update state after fee withdrawal
 		share.rewards = resetKeyValueToZero(share.rewards)
 		share.lastRewardsPerShare = pool.RewardsPerShare()
-		share.setAccessOTA(accessOTA)
-		if share.isEmpty() {
-			delete(pool.stakers, accessID.String())
-			shouldMintAccessCoin = false
-		}
-		if shouldMintAccessCoin {
-			share.setAccessOTA(accessOTA)
-			instructions = append(instructions, mintAccessCoinInst)
-		}
 
 		instructions = append(instructions, acceptedInst...)
 	}

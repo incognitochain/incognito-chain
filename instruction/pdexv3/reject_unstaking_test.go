@@ -12,7 +12,7 @@ import (
 )
 
 func TestRejectUnstaking_FromStringSlice(t *testing.T) {
-	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1, "", nil, nil)
+	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1)
 	data, err := json.Marshal(&rejectUnstaking)
 	assert.Nil(t, err)
 
@@ -44,7 +44,7 @@ func TestRejectUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
-					common.Pdexv3RejectStringStatus,
+					common.Pdexv3RejectUnstakingStatus,
 					string(data),
 				},
 			},
@@ -56,7 +56,7 @@ func TestRejectUnstaking_FromStringSlice(t *testing.T) {
 			args: args{
 				source: []string{
 					strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-					common.Pdexv3RejectStringStatus,
+					common.Pdexv3RejectUnstakingStatus,
 					string(data),
 				},
 			},
@@ -91,7 +91,7 @@ func TestRejectUnstaking_FromStringSlice(t *testing.T) {
 }
 
 func TestRejectUnstaking_StringSlice(t *testing.T) {
-	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1, "", nil, nil)
+	rejectUnstaking := NewRejectUnstakingWithValue(common.PRVCoinID, 1)
 	data, err := json.Marshal(&rejectUnstaking)
 	assert.Nil(t, err)
 
@@ -113,7 +113,7 @@ func TestRejectUnstaking_StringSlice(t *testing.T) {
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3UnstakingRequestMeta),
-				common.Pdexv3RejectStringStatus,
+				common.Pdexv3RejectStakingStatus,
 				string(data),
 			},
 			wantErr: false,

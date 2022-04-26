@@ -102,6 +102,7 @@ pdex_param:
     trading_staking_pool_reward_percent: 10
     staking_pool_share: 
       - "0000000000000000000000000000000000000000000000000000000000000004": 10
+      - "0000000000000000000000000000000000000000000000000000000000000006": 20
     mint_nft_require_amount: 1000000000
     max_orders_per_nft: 10
     auto_withdraw_order_limit_amount: 10

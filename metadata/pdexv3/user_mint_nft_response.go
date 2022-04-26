@@ -61,8 +61,8 @@ func (response *UserMintNftResponse) ValidateSanityData(
 	beaconHeight uint64,
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
-	if response.status != common.Pdexv3AcceptStringStatus && response.status != common.Pdexv3RejectStringStatus {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status cannot be empty"))
+	if response.status != common.Pdexv3AcceptUserMintNftStatus && response.status != common.Pdexv3RejectUserMintNftStatus {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
 	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
 	if err != nil {
@@ -165,7 +165,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instContributionStatus := inst[1]
-		if instContributionStatus != response.status || (instContributionStatus != common.Pdexv3AcceptStringStatus && instContributionStatus != common.Pdexv3RejectStringStatus) {
+		if instContributionStatus != response.status || (instContributionStatus != common.Pdexv3AcceptUserMintNftStatus && instContributionStatus != common.Pdexv3RejectUserMintNftStatus) {
 			continue
 		}
 
@@ -176,7 +176,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var otaReceiverStr, txReqID string
 		var amount uint64
 		switch inst[1] {
-		case common.Pdexv3RejectStringStatus:
+		case common.Pdexv3RejectUserMintNftStatus:
 			var instContent refundUserMintNft
 			err := json.Unmarshal(contentBytes, &instContent)
 			if err != nil {
@@ -188,7 +188,7 @@ func (response *UserMintNftResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			otaReceiverStr = instContent.OtaReceiver
 			amount = instContent.Amount
 			txReqID = instContent.TxReqID.String()
-		case common.Pdexv3AcceptStringStatus:
+		case common.Pdexv3AcceptUserMintNftStatus:
 			var instContent acceptUserMintNft
 			err := json.Unmarshal(contentBytes, &instContent)
 			if err != nil {

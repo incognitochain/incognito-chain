@@ -42,7 +42,7 @@ func TestUserMintNftResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "TxReqID is invalid",
 			fields: fields{
-				status: common.Pdexv3AcceptStringStatus,
+				status: common.Pdexv3AcceptUserMintNftStatus,
 			},
 			args:    args{},
 			want:    false,
@@ -52,7 +52,7 @@ func TestUserMintNftResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "TxReqID is empty hash",
 			fields: fields{
-				status:  common.Pdexv3AcceptStringStatus,
+				status:  common.Pdexv3AcceptUserMintNftStatus,
 				txReqID: common.Hash{}.String(),
 			},
 			args:    args{},
@@ -63,7 +63,7 @@ func TestUserMintNftResponse_ValidateSanityData(t *testing.T) {
 		{
 			name: "Valid input",
 			fields: fields{
-				status:  common.Pdexv3AcceptStringStatus,
+				status:  common.Pdexv3AcceptUserMintNftStatus,
 				txReqID: txReqID.String(),
 			},
 			args:    args{},

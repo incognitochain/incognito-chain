@@ -89,21 +89,20 @@ func BuildMintBlockRewardInst(
 
 func BuildWithdrawLPFeeInsts(
 	pairID string,
-	accessOption metadataPdexv3.AccessOption,
+	nftID common.Hash,
 	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
 	reqTxID common.Hash,
-	status string, accessOTA []byte,
+	status string,
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
-			PoolPairID:   pairID,
-			AccessOption: accessOption,
-			TokenID:      common.Hash{},
-			Receiver:     metadataPdexv3.ReceiverInfo{},
-			TxReqID:      reqTxID,
-			ShardID:      shardID,
-			AccessOTA:    accessOTA,
+			PoolPairID: pairID,
+			NftID:      nftID,
+			TokenID:    common.Hash{},
+			Receiver:   metadataPdexv3.ReceiverInfo{},
+			TxReqID:    reqTxID,
+			ShardID:    shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		inst := []string{
@@ -130,14 +129,13 @@ func BuildWithdrawLPFeeInsts(
 	for i, tokenID := range keys {
 		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalLPFeeContent{
-			PoolPairID:   pairID,
-			AccessOption: accessOption,
-			TokenID:      tokenID,
-			Receiver:     receivers[tokenID],
-			IsLastInst:   isLastInstOfReqTx,
-			TxReqID:      reqTxID,
-			ShardID:      shardID,
-			AccessOTA:    accessOTA,
+			PoolPairID: pairID,
+			NftID:      nftID,
+			TokenID:    tokenID,
+			Receiver:   receivers[tokenID],
+			IsLastInst: isLastInstOfReqTx,
+			TxReqID:    reqTxID,
+			ShardID:    shardID,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{
@@ -235,22 +233,20 @@ func BuildDistributeStakingRewardInst(
 
 func BuildWithdrawStakingRewardInsts(
 	stakingPoolID string,
-	accessOption metadataPdexv3.AccessOption,
+	nftID common.Hash,
 	receivers map[common.Hash]metadataPdexv3.ReceiverInfo,
 	shardID byte,
 	reqTxID common.Hash,
 	status string,
-	nextAccessOTA []byte,
 ) [][]string {
 	if status == metadataPdexv3.RequestRejectedChainStatus {
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,
-			AccessOption:  accessOption,
+			NftID:         nftID,
 			TokenID:       common.Hash{},
 			Receiver:      metadataPdexv3.ReceiverInfo{},
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
-			AccessOTA:     nextAccessOTA,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		inst := []string{
@@ -274,18 +270,16 @@ func BuildWithdrawStakingRewardInsts(
 	})
 
 	insts := [][]string{}
-
 	for i, tokenID := range keys {
 		isLastInstOfReqTx := i == len(keys)-1
 		reqContent := metadataPdexv3.WithdrawalStakingRewardContent{
 			StakingPoolID: stakingPoolID,
-			AccessOption:  accessOption,
+			NftID:         nftID,
 			TokenID:       tokenID,
 			Receiver:      receivers[tokenID],
 			IsLastInst:    isLastInstOfReqTx,
 			TxReqID:       reqTxID,
 			ShardID:       shardID,
-			AccessOTA:     nextAccessOTA,
 		}
 		reqContentBytes, _ := json.Marshal(reqContent)
 		insts = append(insts, []string{
