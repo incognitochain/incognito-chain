@@ -122,7 +122,6 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	if isFirstBlockNextHeight {
 		err := p.verifyLemma2FirstBlockNextHeight(proposeMsg, env.block)
 		if err != nil {
-			p.logger.Error("Verify lemma2 first block next height error", err)
 			return nil, err
 		}
 		isValidLemma2 = true
@@ -131,7 +130,6 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		if isReProposeFirstBlockNextHeight {
 			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 			if err != nil {
-				p.logger.Error("Verify lemma2 error", err)
 				return nil, err
 			}
 		}
@@ -146,16 +144,10 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		env.proposerPublicBLSMiningKey,
 		isValidLemma2,
 	)
-	//get vote for this propose block (case receive vote faster)
-	votes, err := GetVotesByBlockHashFromDB(env.block.Hash().String())
-	if err != nil {
-		p.logger.Error("Cannot get vote by block hash for rebuild", err)
-		return nil, err
-	}
-	proposeBlockInfo.Votes = votes
 
 	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, finality height %+v, isValidLemma2 %+v",
 		env.block.GetHeight(), env.block.Hash().String(), env.block.GetFinalityHeight(), isValidLemma2)
+
 	if isValidLemma2 {
 		if err := p.addFinalityProof(env.block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof); err != nil {
 			return nil, err
