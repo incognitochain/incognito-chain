@@ -7,41 +7,27 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 )
 
 type AcceptStaking struct {
-	metadataPdexv3.AccessOption
+	nftID         common.Hash
 	stakingPoolID common.Hash
 	liquidity     uint64
-	accessOTA     []byte
 	shardID       byte
 	txReqID       common.Hash
 }
 
 func NewAcceptStaking() *AcceptStaking { return &AcceptStaking{} }
 
-func NewAcceptStakingWithAccessID(
-	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, nextAccessOTA []byte,
-	accessOption metadataPdexv3.AccessOption, accessID common.Hash,
-) *AcceptStaking {
-	if !accessOption.UseNft() && !accessID.IsZeroValue() {
-		accessOption.AccessID = &accessID
-	}
-	return NewAcceptStakingWithValue(stakingPoolID, txReqID, shardID, liquidity, nextAccessOTA, accessOption)
-}
-
-func NewAcceptStakingWithValue(
-	stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64, nextAccessOTA []byte,
-	accessOption metadataPdexv3.AccessOption,
+func NewAcceptStakingWtihValue(
+	nftID, stakingPoolID, txReqID common.Hash, shardID byte, liquidity uint64,
 ) *AcceptStaking {
 	return &AcceptStaking{
-		accessOTA:     nextAccessOTA,
+		nftID:         nftID,
 		stakingPoolID: stakingPoolID,
 		txReqID:       txReqID,
 		shardID:       shardID,
 		liquidity:     liquidity,
-		AccessOption:  accessOption,
 	}
 }
 
@@ -52,8 +38,8 @@ func (a *AcceptStaking) FromStringSlice(source []string) error {
 	if source[0] != strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta) {
 		return fmt.Errorf("Expect metaType %v but get %s", metadataCommon.Pdexv3StakingRequestMeta, source[0])
 	}
-	if source[1] != common.Pdexv3AcceptStringStatus {
-		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptStringStatus, source[1])
+	if source[1] != common.Pdexv3AcceptStakingStatus {
+		return fmt.Errorf("Expect status %s but get %v", common.Pdexv3AcceptStakingStatus, source[1])
 	}
 	err := json.Unmarshal([]byte(source[2]), a)
 	if err != nil {
@@ -65,7 +51,7 @@ func (a *AcceptStaking) FromStringSlice(source []string) error {
 func (a *AcceptStaking) StringSlice() ([]string, error) {
 	res := []string{}
 	res = append(res, strconv.Itoa(metadataCommon.Pdexv3StakingRequestMeta))
-	res = append(res, common.Pdexv3AcceptStringStatus)
+	res = append(res, common.Pdexv3AcceptStakingStatus)
 	data, err := json.Marshal(a)
 	if err != nil {
 		return res, err
@@ -76,18 +62,16 @@ func (a *AcceptStaking) StringSlice() ([]string, error) {
 
 func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		metadataPdexv3.AccessOption
+		NftID         common.Hash `json:"NftID"`
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
-		AccessOTA     []byte      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{
-		AccessOption:  a.AccessOption,
+		NftID:         a.nftID,
 		StakingPoolID: a.stakingPoolID,
 		ShardID:       a.shardID,
 		Liquidity:     a.liquidity,
-		AccessOTA:     a.accessOTA,
 		TxReqID:       a.txReqID,
 	})
 	if err != nil {
@@ -98,10 +82,9 @@ func (a *AcceptStaking) MarshalJSON() ([]byte, error) {
 
 func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		metadataPdexv3.AccessOption
+		NftID         common.Hash `json:"NftID"`
 		StakingPoolID common.Hash `json:"StakingPoolID"`
 		Liquidity     uint64      `json:"Liquidity"`
-		AccessOTA     []byte      `json:"AccessOTA,omitempty"`
 		ShardID       byte        `json:"ShardID"`
 		TxReqID       common.Hash `json:"TxReqID"`
 	}{}
@@ -111,15 +94,10 @@ func (a *AcceptStaking) UnmarshalJSON(data []byte) error {
 	}
 	a.stakingPoolID = temp.StakingPoolID
 	a.liquidity = temp.Liquidity
-	a.AccessOption = temp.AccessOption
+	a.nftID = temp.NftID
 	a.shardID = temp.ShardID
 	a.txReqID = temp.TxReqID
-	a.accessOTA = temp.AccessOTA
 	return nil
-}
-
-func (a *AcceptStaking) AccessOTA() []byte {
-	return a.accessOTA
 }
 
 func (a *AcceptStaking) Liquidity() uint64 {
@@ -138,6 +116,6 @@ func (a *AcceptStaking) TxReqID() common.Hash {
 	return a.txReqID
 }
 
-func (a AcceptStaking) NftID() *common.Hash {
-	return a.AccessOption.NftID
+func (a *AcceptStaking) NftID() common.Hash {
+	return a.nftID
 }

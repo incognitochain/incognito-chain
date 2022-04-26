@@ -81,7 +81,6 @@ const (
 	ErrInvalidPdexv3StakerLastRewardPerShareStateType  = "invalid pdex v3 staker last reward per share state type"
 	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
-	ErrInvalidPdexv3PoolPairOrderRewardDetailStateType = "invalid pdex v3 pool pair order reward detail state type"
 	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
 )
 const (

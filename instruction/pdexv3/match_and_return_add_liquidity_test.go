@@ -15,7 +15,6 @@ import (
 )
 
 func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
-	initTestParam(t)
 	tokenHash, err := common.Hash{}.NewHashFromStr("abc")
 	assert.Nil(t, err)
 
@@ -23,13 +22,12 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0,
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
-			accessOTA.ToBytesS(), nil,
 		), "pair_hash",
 	)
 	inst := NewMatchAndReturnAddLiquidityWithValue(
 		contributionState,
 		100, 100, 200, 100,
-		*tokenHash, accessOTA.ToBytesS(),
+		*tokenHash,
 	)
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
@@ -121,19 +119,17 @@ func TestMatchAndReturnAddLiquidity_FromStringSlice(t *testing.T) {
 }
 
 func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
-	initTestParam(t)
 	tokenHash, _ := common.Hash{}.NewHashFromStr("abc")
 	contributionState := *statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"pool_pair_id", validOTAReceiver0,
 			common.PRVCoinID, common.PRVCoinID, common.Hash{}, 100, metadataPdexv3.BaseAmplifier, 1,
-			accessOTA.ToBytesS(), nil,
 		), "pair_hash",
 	)
 	inst := NewMatchAndReturnAddLiquidityWithValue(
 		contributionState,
 		100, 100, 200, 100,
-		*tokenHash, accessOTA.ToBytesS(),
+		*tokenHash,
 	)
 	data, err := json.Marshal(inst)
 	assert.Nil(t, err)
@@ -146,7 +142,6 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 		existedTokenReturnAmount uint64
 		existedTokenID           common.Hash
 		nftID                    common.Hash
-		accessOTA                []byte
 	}
 	tests := []struct {
 		name    string
@@ -164,7 +159,6 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				existedTokenReturnAmount: 100,
 				existedTokenID:           *tokenHash,
 				nftID:                    common.PRVCoinID,
-				accessOTA:                accessOTA.ToBytesS(),
 			},
 			want: []string{
 				strconv.Itoa(metadataCommon.Pdexv3AddLiquidityRequestMeta),
@@ -183,7 +177,6 @@ func TestMatchAndReturnAddLiquidity_StringSlice(t *testing.T) {
 				existedTokenActualAmount: tt.fields.existedTokenActualAmount,
 				existedTokenReturnAmount: tt.fields.existedTokenReturnAmount,
 				existedTokenID:           tt.fields.existedTokenID,
-				accessOTA:                tt.fields.accessOTA,
 			}
 			got, err := m.StringSlice()
 			if (err != nil) != tt.wantErr {
