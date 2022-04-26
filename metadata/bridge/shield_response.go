@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type ShieldResponseData struct {
@@ -88,51 +87,41 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 
-		var shardIDFromInst byte
-		var txReqIDFromInst common.Hash
-		var address privacy.PaymentAddress
-		var receivingAmtFromInst uint64
-		var receivingTokenID common.Hash
-
-		if tempInst.Status == common.AcceptedStatusStr {
-			contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
-			if err != nil {
-				return false, err
-			}
-			acceptedContent := AcceptedShieldRequest{}
-			err = json.Unmarshal(contentBytes, &acceptedContent)
-			if err != nil {
-				return false, err
-			}
-			shardIDFromInst = tempInst.ShardID
-			txReqIDFromInst = acceptedContent.TxReqID
-			receivingTokenID = acceptedContent.TokenID
-			address = acceptedContent.Receiver
-			for index, data := range acceptedContent.Data {
-				if !bytes.Equal(data.UniqTx, response.Data[index].UniqTx) {
-					continue
-				}
-				if !bytes.Equal(data.ExternalTokenID, response.Data[index].ExternalTokenID) {
-					continue
-				}
-				if data.NetworkID != response.Data[index].NetworkID {
-					continue
-				}
-				receivingAmtFromInst += data.IssuingAmount
-			}
-		} else {
+		if tempInst.Status != common.AcceptedStatusStr {
 			continue
 		}
-		if !bytes.Equal(response.RequestedTxID[:], txReqIDFromInst[:]) || shardID != shardIDFromInst {
+		contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
+		if err != nil {
+			return false, err
+		}
+		acceptedContent := AcceptedShieldRequest{}
+		err = json.Unmarshal(contentBytes, &acceptedContent)
+		if err != nil {
+			return false, err
+		}
+		var receivingAmtFromInst uint64
+		if !bytes.Equal(response.RequestedTxID[:], acceptedContent.TxReqID[:]) || shardID != tempInst.ShardID {
 			continue
+		}
+		for index, data := range acceptedContent.Data {
+			if !bytes.Equal(data.UniqTx, response.Data[index].UniqTx) {
+				return false, fmt.Errorf("expect uniqTx %v but get %v", data.UniqTx, response.Data[index].UniqTx)
+			}
+			if !bytes.Equal(data.ExternalTokenID, response.Data[index].ExternalTokenID) {
+				return false, fmt.Errorf("expect externalTokenID %v but get %v", data.ExternalTokenID, response.Data[index].ExternalTokenID)
+			}
+			if data.NetworkID != response.Data[index].NetworkID {
+				return false, fmt.Errorf("expect networkID %v but get %v", data.NetworkID, response.Data[index].NetworkID)
+			}
+			receivingAmtFromInst += data.IssuingAmount
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted || coinID.String() != receivingTokenID.String() {
-			continue
+		if err != nil || !isMinted || coinID.String() != acceptedContent.TokenID.String() {
+			return false, fmt.Errorf("Invalid coinID")
 		}
-		if ok := mintCoin.CheckCoinValid(address, response.SharedRandom, receivingAmtFromInst); !ok {
-			continue
+		if ok := mintCoin.CheckCoinValid(acceptedContent.Receiver, response.SharedRandom, receivingAmtFromInst); !ok {
+			return false, fmt.Errorf("Invalid coin")
 		}
 
 		idx = i

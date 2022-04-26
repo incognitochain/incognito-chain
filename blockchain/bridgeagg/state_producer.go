@@ -445,6 +445,10 @@ func (sp *stateProducer) addToken(
 		newListTokens = make(map[common.Hash]map[uint]config.Vault)
 		clonedAC = ac.Clone()
 		for unifiedTokenID, vaults := range unifiedTokens {
+			if unifiedTokenID == common.PRVCoinID || unifiedTokenID == common.PDEXCoinID {
+				Logger.log.Warnf("unifiedTokenID is prv or pdex")
+				return [][]string{}, unifiedTokenInfos, ac, nil
+			}
 			if unifiedTokenID.IsZeroValue() {
 				Logger.log.Warnf("Found empty unifiedTokenID")
 				return [][]string{}, unifiedTokenInfos, ac, nil

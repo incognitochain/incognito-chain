@@ -506,6 +506,9 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault co
 	if incTokenID.IsZeroValue() {
 		return fmt.Errorf("IncTokenID cannot be empty")
 	}
+	if *incTokenID == common.PRVCoinID || *incTokenID == common.PDEXCoinID {
+		return fmt.Errorf("incTokenID is prv or pdex")
+	}
 	bridgeTokenInfoIndex, externalTokenIDIndex, err := GetBridgeTokenIndex(sDBs[common.BeaconChainID])
 	if err != nil {
 		return err

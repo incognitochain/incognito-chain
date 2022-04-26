@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
@@ -109,42 +108,25 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		if err := tempInst.FromStringSlice(inst); err != nil {
 			return false, err
 		}
-
-		var shardIDFromInst byte
-		var txReqIDFromInst common.Hash
-		var otaReceiver privacy.OTAReceiver
-		var receivingAmtFromInst uint64
-		var receivingTokenID common.Hash
-
-		switch tempInst.Status {
-		case common.RejectedStatusStr:
-			rejectContent := metadataCommon.NewRejectContent()
-			if err := rejectContent.FromString(tempInst.Content); err != nil {
-				return false, err
-			}
-			var rejectedData RejectedUnshieldRequest
-			if err := json.Unmarshal(rejectContent.Data, &rejectedData); err != nil {
-				return false, err
-			}
-			shardIDFromInst = tempInst.ShardID
-			txReqIDFromInst = rejectContent.TxReqID
-			otaReceiver = rejectedData.Receiver
-			receivingTokenID = rejectedData.TokenID
-			receivingAmtFromInst = rejectedData.Amount
-		default:
+		if tempInst.Status != common.RejectedStatusStr {
 			continue
 		}
-
-		if response.RequestedTxID.String() != txReqIDFromInst.String() {
-			metadataCommon.Logger.Log.Infof("BUGLOG txReqID: %v, %v\n", response.RequestedTxID.String(), txReqIDFromInst.String())
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(tempInst.Content); err != nil {
+			return false, err
+		}
+		var rejectedData RejectedUnshieldRequest
+		if err := json.Unmarshal(rejectContent.Data, &rejectedData); err != nil {
+			return false, err
+		}
+		if shardID != tempInst.ShardID {
+			metadataCommon.Logger.Log.Infof("BUGLOG shardID: %v, %v\n", shardID, tempInst.ShardID)
 			continue
 		}
-
-		if shardID != shardIDFromInst {
-			metadataCommon.Logger.Log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
+		if response.RequestedTxID.String() != rejectContent.TxReqID.String() {
+			metadataCommon.Logger.Log.Infof("BUGLOG txReqID: %v, %v\n", response.RequestedTxID.String(), rejectContent.TxReqID.String())
 			continue
 		}
-
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 		if err != nil {
 			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while get tx mint data: ", err)
@@ -158,20 +140,20 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		paidAmount := mintCoin.GetValue()
 		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
 
-		if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) {
+		if !bytes.Equal(rejectedData.Receiver.PublicKey.ToBytesS(), pk[:]) {
 			return false, errors.New("OTAReceiver public key is invalid")
 		}
 
-		if receivingAmtFromInst != paidAmount {
-			return false, fmt.Errorf("Amount is invalid receive %d paid %d", receivingAmtFromInst, paidAmount)
+		if rejectedData.Amount != paidAmount {
+			return false, fmt.Errorf("Amount is invalid receive %d paid %d", rejectedData.Amount, paidAmount)
 		}
 
-		if !bytes.Equal(txR[:], otaReceiver.TxRandom[:]) {
+		if !bytes.Equal(txR[:], rejectedData.Receiver.TxRandom[:]) {
 			return false, fmt.Errorf("otaReceiver tx random is invalid")
 		}
 
-		if receivingTokenID.String() != coinID.String() {
-			return false, fmt.Errorf("Coin is invalid receive %s expect %s", receivingTokenID.String(), coinID.String())
+		if rejectedData.TokenID.String() != coinID.String() {
+			return false, fmt.Errorf("Coin is invalid receive %s expect %s", rejectedData.TokenID.String(), coinID.String())
 		}
 		idx = i
 		break

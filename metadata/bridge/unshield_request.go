@@ -76,7 +76,7 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 	if request.TokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("TokenID can not be empty"))
 	}
-	if len(request.Data) <= 0 || len(request.Data) >= config.Param().BridgeAggParam.MaxLenOfPath {
+	if len(request.Data) <= 0 || len(request.Data) > config.Param().BridgeAggParam.MaxLenOfPath {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
 	if !request.Receiver.IsValid() {
@@ -116,18 +116,13 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burn amount is incorrect %v", burnAmount))
 	}
 
-	switch tx.GetType() {
-	case common.TxNormalType:
-		if request.TokenID != common.PRVCoinID {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, fmt.Errorf("With tx normal privacy, the tokenIDStr should be PRV, not custom token"))
-		}
-	case common.TxCustomTokenPrivacyType:
-		if request.TokenID == common.PRVCoinID {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, fmt.Errorf("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token"))
-		}
-	default:
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidTxTypeError, fmt.Errorf("Not recognize tx type"))
+	if tx.GetType() != common.TxCustomTokenPrivacyType {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("tx is not custom token privacy type"))
 	}
+	if request.TokenID == common.PRVCoinID {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("tokenID must not be prv"))
+	}
+
 	return true, true, nil
 }
 
