@@ -487,11 +487,17 @@ func CalculateIncDecimal(decimal, baseDecimal uint) uint {
 }
 
 func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault config.Vault) error {
+	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID && networkID != common.FTMNetworkID {
+		return fmt.Errorf("Cannot find networkID %d", networkID)
+	}
 	if vault.ExternalDecimal == 0 {
 		return fmt.Errorf("ExternalTokenID cannot be 0")
 	}
 	if vault.IncTokenID == utils.EmptyString {
 		return fmt.Errorf("IncTokenID cannot be null")
+	}
+	if vault.ExternalTokenID == utils.EmptyString {
+		return fmt.Errorf("ExternalTokenID can not be empty")
 	}
 	incTokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
 	if err != nil {

@@ -426,6 +426,9 @@ func (i *Instruction) StringSlice() []string {
 }
 
 func (i *Instruction) FromStringSlice(source []string) error {
+	if len(source) != 4 {
+		return fmt.Errorf("Expect length of instructions is %d but get %d", 4, len(source))
+	}
 	metaType, err := strconv.Atoi(source[0])
 	if err != nil {
 		return err

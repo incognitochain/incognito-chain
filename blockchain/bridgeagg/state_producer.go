@@ -458,6 +458,15 @@ func (sp *stateProducer) addToken(
 				Logger.log.Warnf("Duplicate incTokenID %s", unifiedTokenID.String())
 				return [][]string{}, unifiedTokenInfos, ac, nil
 			}
+			isExisted, err := statedb.CheckTokenIDExisted(sDBs, unifiedTokenID)
+			if err != nil {
+				Logger.log.Warnf("WARNING: Error in finding unifiedTokenID %s", unifiedTokenID.String())
+				return [][]string{}, unifiedTokenInfos, ac, nil
+			}
+			if isExisted {
+				Logger.log.Warnf("WARNING: unifiedTokenID %s has existed", unifiedTokenID.String())
+				return [][]string{}, unifiedTokenInfos, ac, nil
+			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true
 			if _, found := clonedUnifiedTokenInfos[unifiedTokenID]; !found {
 				clonedUnifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
