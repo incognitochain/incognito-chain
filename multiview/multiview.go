@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -30,7 +31,7 @@ type View interface {
 type MultiView struct {
 	viewByHash     map[common.Hash]View //viewByPrevHash map[common.Hash][]View
 	viewByPrevHash map[common.Hash][]View
-	actionCh       chan func()
+	lock           *sync.RWMutex
 
 	//state
 	rootView  View //view that must not be revert
@@ -42,40 +43,41 @@ func NewMultiView() *MultiView {
 	s := &MultiView{
 		viewByHash:     make(map[common.Hash]View),
 		viewByPrevHash: make(map[common.Hash][]View),
-		actionCh:       make(chan func()),
+		lock:           new(sync.RWMutex),
 	}
 
+	return s
+}
+
+func (s *MultiView) RunCleanProcess() {
 	go func() {
-		ticker := time.NewTicker(time.Minute)
+		ticker := time.NewTicker(time.Second)
 		for {
 			select {
-			case f := <-s.actionCh:
-				f()
 			case <-ticker.C:
-				if len(s.viewByHash) > 100 {
+				if len(s.viewByHash) > 1 {
 					s.removeOutdatedView()
 				}
 			}
 		}
 	}()
-	return s
 }
 
 func (multiView *MultiView) Clone() *MultiView {
-	res := make(chan *MultiView)
-	multiView.actionCh <- func() {
-		s := NewMultiView()
-		for h, v := range multiView.viewByHash {
-			s.viewByHash[h] = v
-		}
-		for h, v := range multiView.viewByPrevHash {
-			s.viewByPrevHash[h] = v
-		}
-		s.finalView = multiView.finalView
-		s.bestView = multiView.bestView
-		res <- s
+	multiView.lock.RLock()
+	defer multiView.lock.RUnlock()
+	s := NewMultiView()
+	for h, v := range multiView.viewByHash {
+		s.viewByHash[h] = v
 	}
-	return <-res
+	for h, v := range multiView.viewByPrevHash {
+		s.viewByPrevHash[h] = v
+	}
+	s.finalView = multiView.finalView
+	s.bestView = multiView.bestView
+	s.rootView = multiView.rootView
+
+	return s
 }
 
 func (multiView *MultiView) Reset() {
@@ -88,6 +90,8 @@ func (multiView *MultiView) ClearBranch() {
 }
 
 func (multiView *MultiView) removeOutdatedView() {
+	multiView.lock.Lock()
+	defer multiView.lock.Unlock()
 	for h, v := range multiView.viewByHash {
 		if v.GetHeight() < multiView.rootView.GetHeight() {
 			delete(multiView.viewByHash, h)
@@ -98,22 +102,23 @@ func (multiView *MultiView) removeOutdatedView() {
 }
 
 func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
-	res := make(chan View)
-	multiView.actionCh <- func() {
-		view, _ := multiView.viewByHash[hash]
-		if view == nil || view.GetHeight() < multiView.rootView.GetHeight() {
-			res <- nil
-		} else {
-			res <- view
-		}
+	multiView.lock.RLock()
+	defer multiView.lock.RUnlock()
+	view, _ := multiView.viewByHash[hash]
+	if view == nil || view.GetHeight() < multiView.rootView.GetHeight() {
+		return nil
+	} else {
+		return view
 	}
-	return <-res
+
 }
 
 //forward root to specific view
 //Instant finality: call after insert beacon block. Beacon chain will forward to final view. Shard chain will forward to shard view that beacon confirm
 //need to check if it is still compatible with final&best view
 func (multiView *MultiView) ForwardRoot(rootHash common.Hash) error {
+	multiView.lock.Lock()
+	defer multiView.lock.Unlock()
 	rootView, ok := multiView.viewByHash[rootHash]
 	if !ok {
 		return errors.New("Cannot find view by hash " + rootHash.String())
@@ -140,7 +145,6 @@ func (multiView *MultiView) ForwardRoot(rootHash common.Hash) error {
 			multiView.updateViewState(view)
 		}
 	}
-
 	multiView.rootView = rootView
 	return nil
 }
@@ -153,25 +157,23 @@ func (multiView *MultiView) SimulateAddView(view View) (cloneMultiview *MultiVie
 
 //Only add view if view is validated (at least enough signature)
 func (multiView *MultiView) AddView(view View) bool {
-	res := make(chan bool)
-	multiView.actionCh <- func() {
-		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
+	multiView.lock.Lock()
+	defer multiView.lock.Unlock()
+	if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
+		multiView.viewByHash[*view.GetHash()] = view
+		multiView.updateViewState(view)
+		return true
+	} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
+		if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
 			multiView.viewByHash[*view.GetHash()] = view
+			multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 			multiView.updateViewState(view)
-			res <- true
-			return
-		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
-			if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
-				multiView.viewByHash[*view.GetHash()] = view
-				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
-				multiView.updateViewState(view)
-				res <- true
-				return
-			}
+
+			return true
 		}
-		res <- false
 	}
-	return <-res
+	return false
+
 }
 
 func (multiView *MultiView) GetBestView() View {
@@ -270,26 +272,24 @@ func (multiView *MultiView) updateViewState(newView View) {
 
 func (multiView *MultiView) GetAllViewsWithBFS() []View {
 	queue := []View{multiView.rootView}
-	resCh := make(chan []View)
 
-	multiView.actionCh <- func() {
-		res := []View{}
-		for {
-			if len(queue) == 0 {
-				break
-			}
-			firstItem := queue[0]
-			if firstItem == nil {
-				break
-			}
-			for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
-				queue = append(queue, v)
-			}
-			res = append(res, firstItem)
-			queue = queue[1:]
+	multiView.lock.RLock()
+	defer multiView.lock.RUnlock()
+
+	res := []View{}
+	for {
+		if len(queue) == 0 {
+			break
 		}
-		resCh <- res
+		firstItem := queue[0]
+		if firstItem == nil {
+			break
+		}
+		for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
+			queue = append(queue, v)
+		}
+		res = append(res, firstItem)
+		queue = queue[1:]
 	}
-
-	return <-resCh
+	return res
 }

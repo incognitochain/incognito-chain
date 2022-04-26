@@ -26,6 +26,7 @@ import (
 
 const (
 	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
+	INSTANT_FINALITY_FEATURE      = "instantfinality"
 )
 
 // BestState houses information about the current best block and other info
