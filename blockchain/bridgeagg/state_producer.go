@@ -420,8 +420,9 @@ func (sp *stateProducer) unshield(
 		TxReqID: action.TxReqID,
 		Data:    listAcceptedUnshieldRequestData,
 	}
-	content, err := json.Marshal(acceptedContent)
-	if err != nil {
+	content, e := json.Marshal(acceptedContent)
+	if e != nil {
+		err = e
 		errorType = OtherError
 		burningInsts = [][]string{}
 		return
