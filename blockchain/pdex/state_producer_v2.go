@@ -815,7 +815,9 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	for pairID, pair := range pairs {
+	pairIDs := getSortedPoolPairIDs(pairs)
+	for _, pairID := range pairIDs {
+		pair := pairs[pairID] // no need to check found sorted from poolPairs list before
 		for _, ord := range pair.orderbook.orders {
 			temp := &v2utils.MatchingOrder{ord}
 			// check if this order can be matched any further
