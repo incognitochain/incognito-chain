@@ -369,6 +369,7 @@ func (sp *stateProducer) unshield(
 		if e != nil {
 			errorType = NotFoundNetworkIDError
 			err = errors.New("Not found networkID")
+			burningInsts = [][]string{}
 			return
 		}
 		switch networkType {
