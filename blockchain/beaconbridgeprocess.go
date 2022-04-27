@@ -283,16 +283,14 @@ func (blockchain *BlockChain) processBurningReq(
 		return updatingInfoByTokenID, err
 	}
 	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
-	isUnifiedToken := false
 	_, err = curView.bridgeAggState.UnifiedTokenIDCached(*txReqID)
-	if err != nil {
-		if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
-			amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-		} else {
-			amount = amt.Uint64()
-		}
+	if err == nil {
+		return updatingInfoByTokenID, nil
+	}
+	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
+		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else {
-		isUnifiedToken = true
+		amount = amt.Uint64()
 	}
 
 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, *incTokenID, false)
@@ -305,24 +303,21 @@ func (blockchain *BlockChain) processBurningReq(
 		return updatingInfoByTokenID, nil
 	}
 
-	if !isUnifiedToken {
-		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
-		if found {
-			updatingInfo.DeductAmt += amount
-		} else {
-			updatingInfo = metadata.UpdatingInfo{
-				CountUpAmt:      0,
-				DeductAmt:       amount,
-				TokenID:         *incTokenID,
-				ExternalTokenID: externalTokenID,
-				IsCentralized:   false,
-			}
+	updatingInfo, found := updatingInfoByTokenID[*incTokenID]
+	if found {
+		updatingInfo.DeductAmt += amount
+	} else {
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:      0,
+			DeductAmt:       amount,
+			TokenID:         *incTokenID,
+			ExternalTokenID: externalTokenID,
+			IsCentralized:   false,
 		}
-		updatingInfoByTokenID[*incTokenID] = updatingInfo
-		tmpBytes, _ := json.Marshal(updatingInfo)
-		Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", incTokenID.String(), string(tmpBytes))
 	}
-
+	updatingInfoByTokenID[*incTokenID] = updatingInfo
+	tmpBytes, _ := json.Marshal(updatingInfo)
+	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", incTokenID.String(), string(tmpBytes))
 	return updatingInfoByTokenID, nil
 }
 
@@ -332,6 +327,7 @@ func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, inst
 		for _, meta := range metas {
 			if inst[0] == meta {
 				found = true
+				break
 			}
 		}
 

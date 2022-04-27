@@ -409,6 +409,7 @@ func (sp *stateProducer) unshield(
 		default:
 			errorType = NotFoundNetworkIDError
 			err = errors.New("Not found networkID")
+			burningInsts = [][]string{}
 			return
 		}
 	}
@@ -422,6 +423,7 @@ func (sp *stateProducer) unshield(
 	content, err := json.Marshal(acceptedContent)
 	if err != nil {
 		errorType = OtherError
+		burningInsts = [][]string{}
 		return
 	}
 	contents = append(contents, content)

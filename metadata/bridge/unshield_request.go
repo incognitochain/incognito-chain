@@ -27,7 +27,7 @@ type AcceptedUnshieldRequest struct {
 
 type AcceptedUnshieldRequestData struct {
 	Amount        uint64 `json:"BurningAmount"`
-	NetworkID     uint   `json:"NetworkID,omitempty"`
+	NetworkID     uint   `json:"NetworkID"`
 	Fee           uint64 `json:"Fee"`
 	IsDepositToSC bool   `json:"IsDepositToSC"`
 }
