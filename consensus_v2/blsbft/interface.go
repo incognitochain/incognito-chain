@@ -28,7 +28,7 @@ type NodeInterface interface {
 
 type Chain interface {
 	BestViewCommitteeFromBlock() common.Hash
-	GetMultiView() *multiview.MultiView
+	GetMultiView() multiview.MultiView
 	GetFinalView() multiview.View
 	GetBestView() multiview.View
 	GetEpoch() uint64

@@ -18,7 +18,7 @@ import (
 )
 
 type BeaconChain struct {
-	multiView *multiview.MultiView
+	multiView multiview.MultiView
 
 	BlockGen            *BlockGenerator
 	Blockchain          *BlockChain
@@ -30,7 +30,7 @@ type BeaconChain struct {
 	insertLock sync.Mutex
 }
 
-func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
+func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
 	committeeInfoCache, _ := lru.New(100)
 	return &BeaconChain{
 		multiView:           multiView,
@@ -52,15 +52,15 @@ func (chain *BeaconChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
-func (chain *BeaconChain) GetMultiView() *multiview.MultiView {
+func (chain *BeaconChain) GetMultiView() multiview.MultiView {
 	return chain.multiView
 }
 
-func (chain *BeaconChain) CloneMultiView() *multiview.MultiView {
+func (chain *BeaconChain) CloneMultiView() multiview.MultiView {
 	return chain.multiView.Clone()
 }
 
-func (chain *BeaconChain) SetMultiView(multiView *multiview.MultiView) {
+func (chain *BeaconChain) SetMultiView(multiView multiview.MultiView) {
 	chain.multiView = multiView
 }
 

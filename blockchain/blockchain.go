@@ -158,7 +158,7 @@ func (blockchain *BlockChain) InitChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
-	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
+	blockchain.BeaconChain = NewBeaconChain(multiview.NewBeaconMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	blockchain.BeaconChain.multiView.RunCleanProcess()
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
@@ -214,7 +214,7 @@ func (blockchain *BlockChain) InitChainState() error {
 			nil,
 		)
 		tp.UpdateTxVerifier(tv)
-		blockchain.ShardChain[shardID] = NewShardChain(int(shardID), multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
+		blockchain.ShardChain[shardID] = NewShardChain(int(shardID), multiview.NewShardMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
 		blockchain.ShardChain[shardID].multiView.RunCleanProcess()
 		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
 		if err != nil {
@@ -606,7 +606,7 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 /*
 Backup all BeaconView into Database
 */
-func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, multiView *multiview.MultiView) error {
+func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, multiView multiview.MultiView) error {
 	allViews := []*BeaconBestState{}
 	for _, v := range multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*BeaconBestState))
@@ -670,7 +670,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 
 		// finish reproduce
-		if !blockchain.BeaconChain.multiView.AddView(v) {
+		if _, err := blockchain.BeaconChain.multiView.AddView(v); err != nil {
 			panic("Restart beacon views fail")
 		}
 	}
@@ -689,9 +689,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 /*
 Backup shard views
 */
-func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte) error {
+func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte, simulatedMultiView multiview.MultiView) error {
 	allViews := []*ShardBestState{}
-	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
+	for _, v := range simulatedMultiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
 	// fmt.Println("debug BackupShardViews", len(allViews))
@@ -749,7 +749,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if v.NumberOfFixedShardBlockValidator == 0 {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
-		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
+		if _, err := blockchain.ShardChain[shardID].multiView.AddView(v); err != nil {
 			panic("Restart shard views fail")
 		}
 	}
