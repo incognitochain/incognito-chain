@@ -103,6 +103,12 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		if !bytes.Equal(response.RequestedTxID[:], acceptedContent.TxReqID[:]) || shardID != tempInst.ShardID {
 			continue
 		}
+		if response.Type == metadataCommon.IssuingUnifiedRewardResponseMeta && !acceptedContent.IsReward {
+			continue
+		}
+		if response.Type == metadataCommon.IssuingUnifiedTokenResponseMeta && acceptedContent.IsReward {
+			continue
+		}
 		for index, data := range acceptedContent.Data {
 			if !bytes.Equal(data.UniqTx, response.Data[index].UniqTx) {
 				return false, fmt.Errorf("expect uniqTx %v but get %v", data.UniqTx, response.Data[index].UniqTx)
