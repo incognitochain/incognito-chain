@@ -437,6 +437,7 @@ func (share *Share) updateToDB(
 					return err
 				}
 			} else {
+				Logger.log.Infof("DeletePdexv3ShareLastLpFeePerShare poolPairID %s nftID %s tokenID %s", poolPairID, nftID, tokenID)
 				err := statedb.DeletePdexv3ShareLastLpFeePerShare(
 					env.StateDB(), poolPairID, nftID, tokenID,
 				)
@@ -494,6 +495,7 @@ func (share *Share) deleteFromDB(
 	}
 	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
 		if isChanged {
+			Logger.log.Infof("DeletePdexv3ShareLastLpFeePerShare poolPairID %s nftID %s tokenID %s", poolPairID, nftID, tokenID)
 			err = statedb.DeletePdexv3ShareLastLpFeePerShare(
 				env.StateDB(), poolPairID, nftID, tokenID,
 			)
