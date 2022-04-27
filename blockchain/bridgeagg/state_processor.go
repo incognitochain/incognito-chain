@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -38,18 +39,18 @@ func (sp *stateProcessor) modifyRewardReserve(
 		for unifiedTokenID, vaults := range acceptedInst.Vaults {
 			_, found := unifiedTokenInfos[unifiedTokenID]
 			if !found {
-				unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
+				return unifiedTokenInfos, fmt.Errorf("Cannot find unifiedTokenID %s", unifiedTokenID.String())
 			}
 			for _, vault := range vaults {
 				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
-					return unifiedTokenInfos, errors.New("Cannot find vault")
-				} else {
-					v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
-					err = v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
-					if err != nil {
-						return unifiedTokenInfos, err
-					}
+					return unifiedTokenInfos, fmt.Errorf("Cannot find vault tokenID %s", vault.TokenID().String())
 				}
+				v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
+				err = v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
+				if err != nil {
+					return unifiedTokenInfos, err
+				}
+				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
 			}
 		}
 		txReqID = acceptedInst.TxReqID
