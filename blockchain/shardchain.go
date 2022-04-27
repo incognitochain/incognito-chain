@@ -23,7 +23,7 @@ import (
 
 type ShardChain struct {
 	shardID   int
-	multiView *multiview.MultiView
+	multiView multiview.MultiView
 
 	BlockGen    *BlockGenerator
 	Blockchain  *BlockChain
@@ -39,7 +39,7 @@ type ShardChain struct {
 
 func NewShardChain(
 	shardID int,
-	multiView *multiview.MultiView,
+	multiView multiview.MultiView,
 	blockGen *BlockGenerator,
 	blockchain *BlockChain,
 	chainName string,
@@ -61,15 +61,15 @@ func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
-func (chain *ShardChain) GetMultiView() *multiview.MultiView {
+func (chain *ShardChain) GetMultiView() multiview.MultiView {
 	return chain.multiView
 }
 
-func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
+func (chain *ShardChain) CloneMultiView() multiview.MultiView {
 	return chain.multiView.Clone()
 }
 
-func (chain *ShardChain) SetMultiView(multiView *multiview.MultiView) {
+func (chain *ShardChain) SetMultiView(multiView multiview.MultiView) {
 	chain.multiView = multiView
 }
 
@@ -91,8 +91,8 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 
 func (chain *ShardChain) AddView(view multiview.View) bool {
 	curBestView := chain.multiView.GetBestView()
-	added := chain.multiView.AddView(view)
-	if (curBestView != nil) && (added) {
+	added, err := chain.multiView.AddView(view)
+	if (curBestView != nil) && (added == 1) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()
 			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
@@ -113,7 +113,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 			}
 		}(chain, curBestView)
 	}
-	return added
+	return err == nil
 }
 
 func (s *ShardChain) GetEpoch() uint64 {
