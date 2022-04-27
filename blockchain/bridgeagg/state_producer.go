@@ -35,12 +35,7 @@ func (sp *stateProducer) modifyRewardReserve(
 	if err != nil {
 		return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(OtherError, err)
 	}
-	resMD := &metadataBridge.ModifyRewardReserve{
-		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
-			MetadataBase: md.MetadataBase,
-		},
-		Vaults: make(map[common.Hash][]metadataBridge.Vault),
-	}
+	resVaults := make(map[common.Hash][]metadataBridge.Vault)
 	inst := metadataCommon.NewInstructionWithValue(
 		metadataCommon.BridgeAggModifyRewardReserveMeta,
 		common.AcceptedStatusStr,
@@ -93,7 +88,7 @@ func (sp *stateProducer) modifyRewardReserve(
 				return temp, unifiedTokenInfos, nil
 			}
 			clonedUnifiedTokenInfos[unifiedTokenID][networkID] = v
-			resMD.Vaults[unifiedTokenID] = append(resMD.Vaults[unifiedTokenID], metadataBridge.Vault{
+			resVaults[unifiedTokenID] = append(resVaults[unifiedTokenID], metadataBridge.Vault{
 				RewardReserve: vault.RewardReserve,
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
 					vault.TokenID(), networkID,
@@ -103,8 +98,8 @@ func (sp *stateProducer) modifyRewardReserve(
 		}
 	}
 	acceptedContent := metadataBridge.AcceptedModifyRewardReserve{
-		ModifyRewardReserve: *resMD,
-		TxReqID:             action.TxReqID,
+		Vaults:  resVaults,
+		TxReqID: action.TxReqID,
 	}
 	contentBytes, err := json.Marshal(acceptedContent)
 	if err != nil {

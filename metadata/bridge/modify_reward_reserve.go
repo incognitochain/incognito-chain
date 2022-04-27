@@ -14,12 +14,12 @@ import (
 
 type ModifyRewardReserve struct {
 	metadataCommon.MetadataBaseWithSignature
-	Vaults map[common.Hash][]Vault `json:"Vaults"` // unifiedTokenID -> list tokenID
+	Vaults map[common.Hash][]Vault `json:"Vaults"` // unifiedTokenID -> list vaults
 }
 
 type AcceptedModifyRewardReserve struct {
-	ModifyRewardReserve
-	TxReqID common.Hash `json:"TxReqID"`
+	Vaults  map[common.Hash][]Vault `json:"Vaults"` // unifiedTokenID -> list vaults
+	TxReqID common.Hash             `json:"TxReqID"`
 }
 
 func NewModifyRewardReserve() *ModifyRewardReserve {
