@@ -424,14 +424,17 @@ func (p *param) LoadKeyByNetwork(network string) {
 		p.LoadKey(MainnetKeylist, Mainnetv2Keylist) //if there is keylist file in config folder, this default keylist will be not used
 		initTx.load(MainnetInitTx)                  //if there is init_tx file in config folder, this default init_tx  will be not used
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+		LoadUnifiedToken(mainnetUnifiedToken)
 	case "testnet-1":
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet1InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+		LoadUnifiedToken(testnet1UnifiedToken)
 	case "testnet-2", "local":
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet2InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+		LoadUnifiedToken(localUnifiedToken)
 	case "local-dcs":
 		p.LoadKey(LocalDCSKeyList, LocalDCSV2Keylist)
 		initTx.load(LocalDCSInitTx)

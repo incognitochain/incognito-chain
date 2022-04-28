@@ -621,7 +621,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
-
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
@@ -906,8 +905,17 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
+
+	// update bridge aggreator state
+	// always process bridgeAggState before update other process for bridge instructions
+	newBestState.bridgeAggState.ClearCache()
+	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	if err != nil {
+		return NewBlockChainError(ProcessBridgeInstructionError, err)
+	}
+
 	// execute, store
-	err = blockchain.processBridgeInstructions(newBestState.featureStateDB, beaconBlock)
+	err = blockchain.processBridgeInstructions(newBestState, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
@@ -1013,6 +1021,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 				blockchain.GetPortalParamsV4(beaconBlock.Header.Height))
 			if err != nil {
 				Logger.log.Error(err)
+				return err
+			}
+		}
+	}
+
+	if newBestState.bridgeAggState != nil {
+		diffState, stateChange, err := newBestState.bridgeAggState.GetDiff(curView.bridgeAggState)
+		if err != nil {
+			return err
+		}
+		if diffState != nil {
+			err = diffState.UpdateToDB(newBestState.featureStateDB, stateChange)
+			if err != nil {
 				return err
 			}
 		}
