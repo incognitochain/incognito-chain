@@ -336,7 +336,7 @@ func DeletePdexv3ShareLastLpFeePerShare(
 	stateDB *StateDB, poolPairID, nftID, tokenID string,
 ) error {
 	key := GeneratePdexv3ShareLastLpFeePerShareObjectKey(poolPairID, nftID, tokenID)
-	if !stateDB.MarkDeleteStateObject(Pdexv3ShareTradingFeeObjectType, key) {
+	if !stateDB.MarkDeleteStateObject(Pdexv3ShareLastLPFeesPerShareObjectType, key) {
 		return fmt.Errorf("Cannot delete share last lp fee per share with ID %v - %v - %v", poolPairID, nftID, tokenID)
 	}
 	return nil
