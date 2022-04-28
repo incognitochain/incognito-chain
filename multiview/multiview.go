@@ -3,7 +3,6 @@ package multiview
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -33,6 +32,7 @@ type MultiView interface {
 	SimulateAddView(view View) (cloneMultiview MultiView)
 	GetBestView() View
 	GetFinalView() View
+	FinalizeView(hashToFinalize common.Hash) error
 	GetExpectedFinalView() View
 	GetAllViewsWithBFS() []View
 	RunCleanProcess()
@@ -151,14 +151,20 @@ func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 	}
 
 	//if not link on the same branch with final view, reorg the multiview
+	//this must be not happen with our flow
 	if notLink {
+		panic("This must not happen!")
 		newOrgMultiView := s.getAllViewsWithBFS(viewToFinalize)
 		s.Reset()
 		for _, view := range newOrgMultiView {
 			s.updateViewState(view)
 		}
 	} else {
-		s.finalView = viewToFinalize
+		//if current final view is less than the specified view
+		if s.finalView.GetHeight() < viewToFinalize.GetHeight() {
+			s.finalView = viewToFinalize
+		}
+
 	}
 
 	return nil
@@ -244,24 +250,28 @@ func (s *multiView) updateViewState(newView View) {
 		}
 		s.expectedFinalView = prev1View
 	} else if newView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		////update expectedFinalView: consensus 2
-		prev1Hash := s.bestView.GetPreviousHash()
-		prev1View := s.viewByHash[*prev1Hash]
+		//we traverse backward to update expected final view
+		currentViewPoint := s.bestView
+		for {
+			prev1Hash := s.bestView.GetPreviousHash()
+			prev1View := s.viewByHash[*prev1Hash]
 
-		//if no prev1View, return, something wrong, add view need to link to
-		if prev1View == nil {
-			log.Println("Previous view is nil, something wrong")
-			return
-		}
+			if prev1View == nil {
+				s.expectedFinalView = currentViewPoint
+				return
+			}
 
-		bestViewTimeSlot := common.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-		if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
-			s.expectedFinalView = s.bestView
-		}
+			bestViewTimeSlot := common.CalculateTimeSlot(currentViewPoint.GetBlock().GetProposeTime())
+			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
 
-		if s.bestView.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
-			s.expectedFinalView = s.bestView
+			if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
+				s.expectedFinalView = s.bestView
+				break
+			} else if s.bestView.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
+				s.expectedFinalView = s.bestView
+				break
+			}
+			currentViewPoint = prev1View
 		}
 
 	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {

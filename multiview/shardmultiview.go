@@ -14,17 +14,19 @@ func NewShardMultiView() *ShardMultiView {
 	sv.multiView = NewMultiView()
 	return sv
 }
-func (s *ShardMultiView) AddViewWithFinalizedHash(v View, newFinalizedHash *common.Hash) (int, error) {
-	s.multiView.addView(v)
+func (s *ShardMultiView) AddViewWithFinalizedHash(v View, newFinalizedHash *common.Hash) (res int, err error) {
+	added := s.multiView.addView(v)
 	shardBlock := v.GetBlock()
 
 	if shardBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
 		if newFinalizedHash != nil {
-			s.FinalizeView(*newFinalizedHash)
+			err = s.FinalizeView(*newFinalizedHash)
 		}
 	} else {
-		s.FinalizeView(*s.GetExpectedFinalView().GetHash())
+		err = s.FinalizeView(*s.GetExpectedFinalView().GetHash())
 	}
-
-	return 0, nil
+	if added {
+		res = 1
+	}
+	return res, err
 }

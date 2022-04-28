@@ -11,7 +11,11 @@ func NewBeaconMultiView() *BeaconMultiView {
 }
 
 func (s *BeaconMultiView) AddView(v View) (int, error) {
-	s.multiView.addView(v)
-	s.FinalizeView(*s.GetExpectedFinalView().GetHash())
-	return 0, nil
+	added := s.multiView.addView(v)
+	err := s.FinalizeView(*s.GetExpectedFinalView().GetHash())
+	res := 0
+	if added {
+		res = 1
+	}
+	return res, err
 }

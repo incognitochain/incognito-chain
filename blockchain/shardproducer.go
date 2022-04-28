@@ -83,8 +83,27 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconProcessHeight               uint64
 		err                               error
 	)
-
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
+	//check if expected final view is not confirmed by beacon for too far
+	beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+	if beaconFinalView.BestShardHeight[shardID]+100 < blockchain.ShardChain[shardID].multiView.GetExpectedFinalView().GetHeight() {
+		return nil, fmt.Errorf("Shard %v | Wait for beacon shardstate %v, the unconfirmed view %v is too far away",
+			shardID, beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
+	}
+
+	//check if bestview is on the same branch with beacon shardstate
+	blockByView, _ := blockchain.GetShardBlockByView(curView, beaconFinalView.BestShardHeight[shardID], shardID)
+	if blockByView == nil {
+		return nil, fmt.Errorf("Shard %v | Cannot get block by height: %v from view %v",
+			shardID, beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
+	}
+	if blockByView.GetHeight() != 1 && blockByView.Hash().String() != beaconFinalView.BestShardHash[shardID].String() {
+		//update view
+		blockchain.ShardChain[shardID].multiView.FinalizeView(beaconFinalView.BestShardHash[shardID])
+		return nil, fmt.Errorf("Shard %v | Create block from view that is not on same branch with beacon shardstate, expect view %v height %v, got %v",
+			shardID, beaconFinalView.BestShardHash[shardID].String(), beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
+	}
+
 	// Clone best state value into new variable
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err

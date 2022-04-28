@@ -201,7 +201,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 }
 
 func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height uint64, shardID byte) (*types.ShardBlock, error) {
-	blkhash, err := blockchain.GetShardBlockHashByView(blockchain.ShardChain[shardID].GetFinalView(), height)
+	blkhash, err := blockchain.GetShardBlockHashByView(view, height)
 	if err != nil {
 		return nil, err
 	}
