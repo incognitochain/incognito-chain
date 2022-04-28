@@ -160,12 +160,13 @@ func (sp *stateProducer) convert(
 		err = errors.New("Cannot find networkID")
 		return
 	} else {
-		if vault.tokenID.String() != md.TokenID.String() {
+		v := vault.Clone()
+		if v.tokenID.String() != md.TokenID.String() {
 			errorType = NotFoundTokenIDInNetworkError
 			err = errors.New("TokenID is invalid")
 			return
 		}
-		mintAmount, e := vault.convert(md.Amount)
+		mintAmount, e := v.convert(md.Amount)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
 			errorType = InvalidConvertAmountError
@@ -183,7 +184,7 @@ func (sp *stateProducer) convert(
 			errorType = OtherError
 			return
 		}
-		resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID] = vault
+		resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID] = v
 		contents = append(contents, content)
 	}
 	return
