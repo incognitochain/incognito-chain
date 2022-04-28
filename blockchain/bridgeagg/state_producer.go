@@ -438,7 +438,7 @@ func (sp *stateProducer) addToken(
 	var clonedAC *metadata.AccumulatedValues
 	var newListTokens map[common.Hash]map[uint]config.Vault
 	if unifiedTokens, found := configUnifiedTokens[beaconHeight]; found {
-		clonedUnifiedTokenInfos := CloneUnifiedTokenInfos(unifiedTokenInfos)
+		clonedUnifiedTokenInfos = CloneUnifiedTokenInfos(unifiedTokenInfos)
 		unifiedTokenIDs := make(map[string]bool)
 		incTokenIDs := make(map[string]bool)
 		newListTokens = make(map[common.Hash]map[uint]config.Vault)
