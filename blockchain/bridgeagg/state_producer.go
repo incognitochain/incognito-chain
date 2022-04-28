@@ -60,7 +60,7 @@ func (sp *stateProducer) modifyRewardReserve(
 		}
 		for _, vault := range vaults {
 			networkID, found := vaultIndex[vault.TokenID()]
-			if !found || networkID == common.DefaultNetworkID {
+			if !found {
 				rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
 				temp, err := inst.StringSliceWithRejectContent(rejectContent)
 				if err != nil {
@@ -227,8 +227,9 @@ func (sp *stateProducer) shield(
 		err = nil
 	}()
 
-	vaults, err := CloneVaults(resUnifiedTokenInfos, md.TokenID)
-	if err != nil {
+	vaults, e := CloneVaults(resUnifiedTokenInfos, md.TokenID)
+	if e != nil {
+		err = e
 		errorType = NotFoundTokenIDInNetworkError
 		return
 	}
@@ -237,7 +238,6 @@ func (sp *stateProducer) shield(
 	acceptedShieldRequestData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
 	acceptedShieldRequestRewardData := make([]metadataBridge.AcceptedShieldRequestData, len(md.Data))
 	var rewardAmount uint64
-
 	paymentAddress := ""
 	for index, data := range md.Data {
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
@@ -285,8 +285,9 @@ func (sp *stateProducer) shield(
 			return
 		}
 	}
-	key, err := wallet.Base58CheckDeserialize(paymentAddress)
-	if err != nil {
+	key, e := wallet.Base58CheckDeserialize(paymentAddress)
+	if e != nil {
+		err = e
 		errorType = OtherError
 		return
 	}

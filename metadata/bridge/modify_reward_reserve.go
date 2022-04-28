@@ -55,7 +55,7 @@ func (request *ModifyRewardReserve) ValidateSanityData(
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(config.Param().BridgeAggParam.AdminAddress)
 	if err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Requester incognito address is invalid"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, err)
 	}
 	incAddr := keyWallet.KeySet.PaymentAddress
 	if len(incAddr.Pk) == 0 {
@@ -63,7 +63,7 @@ func (request *ModifyRewardReserve) ValidateSanityData(
 	}
 
 	if ok, err := request.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, errors.New("Sender is unauthorized"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("Sender is unauthorized err %v", err))
 	}
 
 	// check tx type and version

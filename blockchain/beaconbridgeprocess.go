@@ -420,15 +420,17 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 		}
 
 		for _, data := range acceptedShieldRequest.Data {
-			var insertEVMTxHashIssued func(*statedb.StateDB, []byte) error
-			if data.NetworkID != common.DefaultNetworkID {
-				insertEVMTxHashIssued = bridgeagg.InsertTxHashIssuedByNetworkID(data.NetworkID)
-			}
-
-			err = insertEVMTxHashIssued(curView.featureStateDB, data.UniqTx)
-			if err != nil {
-				Logger.log.Warn("WARNING: an error occured while inserting EVM tx hash issued to leveldb: ", err)
-				return updatingInfoByTokenID, err
+			// only issuing amount not reward instruction have uniqTx in payload
+			if !acceptedShieldRequest.IsReward {
+				insertEVMTxHashIssued := bridgeagg.InsertTxHashIssuedByNetworkID(data.NetworkID)
+				if insertEVMTxHashIssued == nil {
+					return updatingInfoByTokenID, fmt.Errorf("cannot find networkID %d", data.NetworkID)
+				}
+				err = insertEVMTxHashIssued(curView.featureStateDB, data.UniqTx)
+				if err != nil {
+					Logger.log.Warn("WARNING: an error occured while inserting EVM tx hash issued to leveldb: ", err)
+					return updatingInfoByTokenID, err
+				}
 			}
 
 			updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.TokenID]
