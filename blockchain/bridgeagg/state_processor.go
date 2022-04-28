@@ -103,7 +103,7 @@ func (sp *stateProcessor) convert(
 			if vault, found := vaults[acceptedContent.NetworkID]; found {
 				err := vault.increaseReserve(acceptedContent.MintAmount)
 				if err != nil {
-					return unifiedTokenInfos, err
+					return unifiedTokenInfos, NewBridgeAggErrorWithValue(InvalidConvertAmountError, err)
 				}
 				unifiedTokenInfos[acceptedContent.UnifiedTokenID][acceptedContent.NetworkID] = vault
 			} else {
