@@ -672,7 +672,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if v.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 			includePdexv3 = true
 		}
-		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3); err != nil {
+		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
 		if v.NumberOfFixedShardBlockValidator == 0 {
@@ -902,7 +902,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
 		shardID := byte(i)
 		beaconView.NumberOfShardBlock[shardID] = 0
 	}
-	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3)
+	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3, false)
 	if err != nil {
 		Logger.log.Error(err)
 	}

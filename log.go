@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
@@ -87,6 +88,7 @@ var (
 	instructionLogger      = backendLog.Logger("Instruction log ", false)
 	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
 	pdexLogger             = backendLog.Logger("Pdex log ", false)
+	bridgeAggLogger        = backendLog.Logger("BridgeAgg log ", false)
 	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
 
 	portalLogger          = backendLog.Logger("Portal log ", false)
@@ -148,6 +150,7 @@ func init() {
 	instruction.Logger.Init(instructionLogger)
 	committeestate.Logger.Init(committeeStateLogger)
 	pdex.Logger.Init(pdexLogger)
+	bridgeagg.Logger.Init(bridgeAggLogger)
 
 	portal.Logger.Init(portalLogger)
 	portalrelaying.Logger.Init(portalRelayingLogger)

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -22,6 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -479,6 +481,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
 				}
+
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
 				if len(inst) >= 4 && inst[2] == portalcommonv3.PortalRequestRejectedChainStatus {
@@ -570,6 +573,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						shardID,
 						curView.GetCopiedTransactionStateDB(),
 						beaconBlock.Header.Height,
+					)
+				} else if metadataBridge.IsBridgeAggMetaType(metaType) {
+					newTx, err = bridgeagg.TxBuilder{}.Build(
+						metaType, inst, producerPrivateKey, shardID, curView.GetCopiedTransactionStateDB(),
 					)
 				}
 			}
