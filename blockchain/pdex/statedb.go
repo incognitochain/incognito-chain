@@ -180,15 +180,13 @@ func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairSta
 				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 				var receiver *privacy.OTAReceiver
 				if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
-					receiver := new(privacy.OTAReceiver)
+					receiver = new(privacy.OTAReceiver)
 					err := receiver.FromString(v.Receiver())
 					if err != nil {
 						return nil, err
 					}
 				}
-				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(
-					receiver, v.Value(),
-				)
+				orderReward[nftID].uncollectedRewards[tokenID] = NewOrderRewardDetailWithValue(receiver, v.Value())
 			}
 		}
 		lmRewardsPerShare, err := statedb.GetPdexv3PoolPairLmRewardPerShares(stateDB, poolPairID)
@@ -376,7 +374,7 @@ func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPai
 				orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 				var receiver *privacy.OTAReceiver
 				if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
-					receiver := new(privacy.OTAReceiver)
+					receiver = new(privacy.OTAReceiver)
 					err := receiver.FromString(v.Receiver())
 					if err != nil {
 						return nil, err
@@ -501,7 +499,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 			var receiver *privacy.OTAReceiver
 			if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
-				receiver := new(privacy.OTAReceiver)
+				receiver = new(privacy.OTAReceiver)
 				err := receiver.FromString(v.Receiver())
 				if err != nil {
 					return nil, err
@@ -578,7 +576,7 @@ func InitPoolPairOrderRewards(stateDB *statedb.StateDB, poolPairID string) (map[
 			orderReward[nftID].withdrawnStatus = v.WithdrawnStatus()
 			var receiver *privacy.OTAReceiver
 			if v.Receiver() != utils.EmptyString && v.WithdrawnStatus() != DefaultWithdrawnOrderReward {
-				receiver := new(privacy.OTAReceiver)
+				receiver = new(privacy.OTAReceiver)
 				err := receiver.FromString(v.Receiver())
 				if err != nil {
 					return nil, err
