@@ -1,10 +1,12 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"math/big"
+	"sort"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -433,12 +435,39 @@ func (sp *stateProducer) unshield(
 func (sp *stateProducer) addToken(
 	unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64,
 	sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues,
+	triggeredFeature map[string]uint64,
 ) ([][]string, map[common.Hash]map[uint]*Vault, *metadata.AccumulatedValues, error) {
 	var clonedUnifiedTokenInfos map[common.Hash]map[uint]*Vault
 	addToken := metadataBridge.AddToken{}
 	configUnifiedTokens := config.UnifiedToken()
 	var clonedAC *metadata.AccumulatedValues
 	var newListTokens map[common.Hash]map[uint]config.Vault
+
+	checkpoints := []uint64{}
+	for k := range triggeredFeature {
+		if len(k) > len(unifiedTokenTriggerPrefix) {
+			if bytes.Equal([]byte(k[:len(unifiedTokenTriggerPrefix)]), []byte(unifiedTokenTriggerPrefix)) {
+				checkpoint, err := strconv.ParseUint(k[len(unifiedTokenTriggerPrefix):], 10, 64)
+				if err != nil {
+					return [][]string{}, unifiedTokenInfos, ac, err
+				}
+				checkpoints = append(checkpoints, checkpoint)
+			}
+		}
+	}
+	if len(checkpoints) == 0 {
+		return [][]string{}, unifiedTokenInfos, ac, nil
+	}
+	sort.Slice(checkpoints, func(i, j int) bool {
+		return checkpoints[i] > checkpoints[j]
+	})
+
+	if beaconHeight != triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoints[0], 10)]+1 {
+		Logger.log.Info("[bridgeagg] beaconHeight:", beaconHeight)
+		Logger.log.Info("[bridgeagg] triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoints[0], 10)]:", triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoints[0], 10)])
+		Logger.log.Info("[bridgeagg] triggeredFeature.beaconHeight is not right")
+		return [][]string{}, unifiedTokenInfos, ac, nil
+	}
 	if unifiedTokens, found := configUnifiedTokens[beaconHeight]; found {
 		clonedUnifiedTokenInfos = CloneUnifiedTokenInfos(unifiedTokenInfos)
 		unifiedTokenIDs := make(map[string]bool)

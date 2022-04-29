@@ -115,7 +115,7 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 		map[int]*statedb.StateDB{
 			common.BeaconChainID: a.sDB,
 		},
-		testCase.AccumulatedValues,
+		testCase.AccumulatedValues, map[string]uint64{},
 	)
 	assert.NoError(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorState.Process(actualInstructions, a.sDB)
