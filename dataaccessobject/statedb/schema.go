@@ -93,6 +93,16 @@ var (
 	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
 	pdexv3PoolPairLmLockedSharePrefix       = []byte("pdexv3-poolpair-lmlockedshare-")
 
+	// bridge agg
+	bridgeAggStatusPrefix                       = []byte("bridgeagg-status-")
+	bridgeAggRewardReserveModifyingStatusPrefix = []byte("bridgeagg-rewardreservemodifyingstatus-")
+	bridgeAggConvertStatusPrefix                = []byte("bridgeagg-convertstatus-")
+	bridgeAggShieldStatusPrefix                 = []byte("bridgeagg-shieldStatus-")
+	bridgeAggUnshieldStatusPrefix               = []byte("bridgeagg-unshieldStatus-")
+	bridgeAggUnifiedTokenprefix                 = []byte("bridgeagg-unifiedtoken-")
+	bridgeAggConvertedTokenPrefix               = []byte("bridgeagg-convertedtoken-")
+	bridgeAggVaultPrefix                        = []byte("bridgeagg-vault-")
+
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
 	portalExchangeRatesRequestStatusPrefix               = []byte("portalexchangeratesrequeststatus-")
@@ -833,6 +843,42 @@ func PortalUnshielFeeReplacementBatchStatusPrefix() []byte {
 
 func PortalSubmitConfirmedTxStatusPrefix() []byte {
 	return portalUnshielSubmitConfirmedTxStatusPrefix
+}
+
+func GetBridgeAggStatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(bridgeAggStatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func BridgeAggRewardReserveModifyingStatusPrefix() []byte {
+	return bridgeAggRewardReserveModifyingStatusPrefix
+}
+
+func BridgeAggConvertStatusPrefix() []byte {
+	return bridgeAggConvertStatusPrefix
+}
+
+func BridgeAggShieldStatusPrefix() []byte {
+	return bridgeAggShieldStatusPrefix
+}
+
+func BridgeAggUnshieldStatusPrefix() []byte {
+	return bridgeAggUnshieldStatusPrefix
+}
+
+func GetBridgeAggUnifiedTokenPrefix() []byte {
+	hash := common.HashH(bridgeAggUnifiedTokenprefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggConvertedTokenPrefix() []byte {
+	hash := common.HashH(bridgeAggConvertedTokenPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggVaultPrefix() []byte {
+	hash := common.HashH(bridgeAggVaultPrefix)
+	return hash[:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {
