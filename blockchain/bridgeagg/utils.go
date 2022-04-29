@@ -263,7 +263,7 @@ func shieldEVM(
 	var txReceipt *types.Receipt
 	err := json.Unmarshal(extraData, &txReceipt)
 	if err != nil {
-		return 0, 0, 0, nil, nil, "", ac, OtherError, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestUnmarshalJsonError, err)
+		return 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 	var listTxUsed [][]byte
 	var contractAddress, prefix string
