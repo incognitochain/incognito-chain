@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/proto"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"io/ioutil"
 	"strconv"
