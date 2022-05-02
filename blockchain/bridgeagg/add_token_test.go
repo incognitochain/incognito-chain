@@ -29,6 +29,7 @@ type AddTokenTestCase struct {
 	PrivacyTokens            map[common.Hash]struct {
 		TokenID common.Hash `json:"token_id"`
 	} `json:"privacy_tokens"`
+	TriggeredFeature map[string]uint64 `json:"triggered_feature"`
 
 	TestCase
 }
@@ -64,24 +65,24 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 	testCase := a.testCases[testName]
 	config.AbortUnifiedToken()
 	configedUnifiedTokens := make(map[uint64]map[common.Hash]map[uint]config.Vault)
-	for beaconHeightStr, unifiedTokens := range testCase.ConfigedUnifiedTokens {
-		beaconHeight, err := strconv.ParseUint(beaconHeightStr, 10, 64)
+	for checkpointStr, unifiedTokens := range testCase.ConfigedUnifiedTokens {
+		checkpoint, err := strconv.ParseUint(checkpointStr, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		configedUnifiedTokens[beaconHeight] = make(map[common.Hash]map[uint]config.Vault)
+		configedUnifiedTokens[checkpoint] = make(map[common.Hash]map[uint]config.Vault)
 		for unifiedTokenID, vaults := range unifiedTokens {
 			unifiedTokenHash, err := common.Hash{}.NewHashFromStr(unifiedTokenID)
 			if err != nil {
 				panic(err)
 			}
-			configedUnifiedTokens[beaconHeight][*unifiedTokenHash] = make(map[uint]config.Vault)
+			configedUnifiedTokens[checkpoint][*unifiedTokenHash] = make(map[uint]config.Vault)
 			for networkIDStr, vault := range vaults {
 				networkID, err := strconv.Atoi(networkIDStr)
 				if err != nil {
 					panic(err)
 				}
-				configedUnifiedTokens[beaconHeight][*unifiedTokenHash][uint(networkID)] = config.Vault{
+				configedUnifiedTokens[checkpoint][*unifiedTokenHash][uint(networkID)] = config.Vault{
 					ExternalDecimal: vault.ExternalDecimal,
 					ExternalTokenID: vault.ExternalTokenID,
 					IncTokenID:      vault.IncTokenID,
@@ -115,7 +116,7 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 		map[int]*statedb.StateDB{
 			common.BeaconChainID: a.sDB,
 		},
-		testCase.AccumulatedValues, map[string]uint64{},
+		testCase.AccumulatedValues, testCase.TriggeredFeature,
 	)
 	assert.NoError(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorState.Process(actualInstructions, a.sDB)

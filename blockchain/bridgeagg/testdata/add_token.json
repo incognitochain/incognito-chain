@@ -94,9 +94,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -117,6 +117,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedInvalidBeaconHeight": {
@@ -148,7 +151,7 @@
         },
         "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -169,6 +172,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 8
         }
     },
     "TestRejectedAvailableTokenIDByBridgeTokenIDCheck": {
@@ -209,9 +215,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -237,6 +243,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedAvailableTokenIDByPrivacyTokenIDCheck": {
@@ -270,9 +279,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -298,6 +307,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedDuplicateTokenIDs": {
@@ -327,9 +339,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -355,6 +367,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedDuplicateUnifiedTokenIDAndTokenID": {
@@ -384,9 +399,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730": {
                     "1": {
                         "external_decimal": 18,
@@ -412,6 +427,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedDecimalBy0": {
@@ -441,9 +459,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -469,6 +487,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedEmptyTokenIDStr": {
@@ -498,9 +519,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -526,6 +547,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedEmptyTokenID": {
@@ -555,9 +579,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -583,6 +607,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedNullUnifiedTokenID": {
@@ -612,9 +639,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "": {
                     "1": {
                         "external_decimal": 18,
@@ -640,6 +667,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedEmptyUnifiedTokenID": {
@@ -669,9 +699,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "0000000000000000000000000000000000000000000000000000000000000000": {
                     "1": {
                         "external_decimal": 18,
@@ -697,6 +727,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedUnifiedTokenIDAvailableInPrivacyTokenList": {
@@ -731,9 +764,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -759,6 +792,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedNotFoundNetworkID": {
@@ -788,9 +824,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -816,6 +852,9 @@
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
     "TestRejectedEmptyExternalTokenID": {
@@ -845,9 +884,9 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 2,
+        "beacon_height": 10,
         "configed_unified_tokens": {
-            "2": {
+            "202205021100": {
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "1": {
                         "external_decimal": 18,
@@ -874,5 +913,8 @@
                 }
             }
         }
+    },
+    "triggered_feature": {
+        "unified_token_202205021100": 9
     }
 }
