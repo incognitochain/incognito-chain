@@ -657,7 +657,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 
 		//check config
-		Logger.log.Info("[bridgeagg] config.Param().AutoEnableFeature:", config.Param().AutoEnableFeature)
 		for feature, height := range v.TriggeredFeature {
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
 				return errors.New("No config in triggered feature")

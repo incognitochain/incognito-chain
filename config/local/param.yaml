@@ -118,7 +118,7 @@ auto_enable_feature:
       min_trigger: 1e9
       force_trigger: 1e9
       require_percentage: 100
-  - unified_token_20220429:
+  - unified_token_202205021100:
       min_trigger: 5
       force_trigger: 1000000000
       require_percentage: 90
