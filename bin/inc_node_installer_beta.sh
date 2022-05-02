@@ -18,6 +18,8 @@
 # ============================================================================================
 
 # ============================= CHANGE CONFIG HERE ===========================================
+DBMODE="archive"
+FFSTORAGE="false"
 VALIDATOR_K=("validator_key_1,validator_key_2,validator_key_3"
   "! Input validator keys here, multiple validator keys must be separated by commas (no spaces):\n\t> ")
 GETH_NAME=("https://mainnet.infura.io/v3/xxxyyy"
@@ -46,12 +48,10 @@ SERVICE="/etc/systemd/system/IncognitoUpdater.service"
 TIMER="/etc/systemd/system/IncognitoUpdater.timer"
 USER_NAME="incognito"
 INC_HOME="/home/$USER_NAME"
-DATA_DIR="$INC_HOME/node_data"
+DATA_DIR="$INC_HOME/node_data_${DBMODE}_FF${FFSTORAGE}"
 TMP="$INC_HOME/inc_node_latest_tag"
 KEY_FILE="$INC_HOME/validator_keys"
 SCRIPT="$INC_HOME/run_node.sh"
-DBMODE="archive"
-FFSTORAGE="false"
 
 # check super user
 if [ $(whoami) != root ]; then
@@ -93,8 +93,8 @@ EOF
     systemctl disable $(basename $TIMER)
     systemctl daemon-reload
     echo " # Stop and remove docker images + containers"
-    docker container stop $(docker container ls -aqf name=inc_mainnet)
-    docker container rm $(docker container ls -aqf name=inc_mainnet)
+    docker container stop $(docker container ls -aqf name=${DBMODE}_ff${FFSTORAGE}_inc_mainnet)
+    docker container rm $(docker container ls -aqf name=${DBMODE}_ff${FFSTORAGE}_inc_mainnet)
     docker image rm -f $(docker images -q incognitochain/incognito-mainnet)
     echo " # Removing user"
     deluser $USER_NAME
@@ -283,7 +283,7 @@ cat << 'EOF' >> $SCRIPT
   latest_tag=$1
   current_tag=$2
   backup_log=0
-  container_name=inc_mainnet
+  container_name=(${dbmode}_ff${ffstorage}_inc_mainnet)
   count=0
 
   if [ -z "$node_port" ]; then
@@ -326,7 +326,7 @@ cat << 'EOF' >> $SCRIPT
 
 current_latest_tag=$(cat $TMP)
 echo "Getting Incognito docker tags"
-tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags | jq ".[].name")
+tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags | jq ".[].name" | grep "_newdb_")
 tags=${tags//\"/}
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
 latest_tag=${sorted_tags[0]}
