@@ -13,9 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
-	coinIndexer "github.com/incognitochain/incognito-chain/transaction/coin_indexer"
-
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
