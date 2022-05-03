@@ -465,12 +465,19 @@ func (sp *stateProducer) addToken(
 	// after beacon generate autoenablefeature instruction, TriggerFeature will mark the height of the trigger time.
 	// we only need to process once at the mark time (block after trigger)
 	//ex: trigger at 8, block 9 will process punified config
-	if beaconHeight != triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoints[0], 10)]+1 {
+	checkpointIndex := -1
+	for index, checkpoint := range checkpoints {
+		if beaconHeight == triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoint, 10)]+1 {
+			checkpointIndex = index
+			break
+		}
+	}
+	if checkpointIndex == -1 {
 		return [][]string{}, unifiedTokenInfos, ac, nil
 	}
 
 	//at beacon height after trigger punified , we get param from configUnifiedTokens (retrieving by date key, ex 20220422)
-	if unifiedTokens, found := configUnifiedTokens[checkpoints[0]]; found {
+	if unifiedTokens, found := configUnifiedTokens[checkpoints[checkpointIndex]]; found {
 		clonedUnifiedTokenInfos = CloneUnifiedTokenInfos(unifiedTokenInfos)
 		unifiedTokenIDs := make(map[string]bool)
 		incTokenIDs := make(map[string]bool)
@@ -554,7 +561,7 @@ func (sp *stateProducer) addToken(
 			Logger.log.Warnf("Error in building instruction %v", err)
 			return [][]string{}, unifiedTokenInfos, ac, nil
 		}
-		Logger.log.Info("[bridgeagg] addToken instruction:", temp)
+		Logger.log.Info("bridgeagg addToken instruction:", temp)
 		return [][]string{temp}, clonedUnifiedTokenInfos, clonedAC, nil
 	}
 	return [][]string{}, unifiedTokenInfos, ac, nil
