@@ -63,13 +63,13 @@ func NewVaultChange() *VaultChange {
 
 type StateChange struct {
 	unifiedTokenID map[common.Hash]bool
-	vaultChange    map[common.Hash]map[uint]VaultChange
+	vaultChange    map[common.Hash]map[common.Hash]VaultChange
 }
 
 func NewStateChange() *StateChange {
 	return &StateChange{
 		unifiedTokenID: make(map[common.Hash]bool),
-		vaultChange:    make(map[common.Hash]map[uint]VaultChange),
+		vaultChange:    make(map[common.Hash]map[common.Hash]VaultChange),
 	}
 }
 
@@ -241,10 +241,10 @@ func buildInstruction(
 }
 
 func CloneVaults(
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID common.Hash,
-) (map[uint]*Vault, error) {
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, unifiedTokenID common.Hash,
+) (map[common.Hash]*Vault, error) {
 	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
-		res := make(map[uint]*Vault)
+		res := make(map[common.Hash]*Vault)
 		for networkID, vault := range vaults {
 			res[networkID] = vault.Clone()
 		}
@@ -257,7 +257,7 @@ func CloneVaults(
 func shieldEVM(
 	incTokenID common.Hash, networkID uint, ac *metadata.AccumulatedValues,
 	shardID byte, txReqID common.Hash,
-	vaults map[uint]*Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
+	vaults map[common.Hash]*Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
 	blockHash rCommon.Hash, txIndex uint, currentPaymentAddress string,
 ) (uint64, uint64, byte, []byte, []byte, string, *metadata.AccumulatedValues, int, error) {
 	var txReceipt *types.Receipt
@@ -403,9 +403,7 @@ func CalculateAmountByDecimal(amount big.Int, decimal uint, operator byte) (*big
 }
 
 func unshieldEVM(
-	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB,
-	vaults map[uint]*Vault,
-	txReqID common.Hash,
+	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB, vaults map[common.Hash]*Vault, txReqID common.Hash,
 ) (common.Hash, []byte, *big.Int, uint64, uint64, int, int, error) {
 	var prefix string
 	var burningMetaType int
@@ -445,7 +443,7 @@ func unshieldEVM(
 		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
 	}
 
-	vault, found := vaults[data.NetworkID]
+	vault, found := vaults[data.IncTokenID]
 	if !found {
 		return common.Hash{}, nil, nil, 0, 0, burningMetaType, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
 	}
@@ -486,7 +484,7 @@ func CalculateIncDecimal(decimal, baseDecimal uint) uint {
 	return decimal
 }
 
-func validateConfigVault(sDBs map[int]*statedb.StateDB, networkID uint, vault config.Vault) error {
+func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vault config.Vault) error {
 	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID && networkID != common.FTMNetworkID {
 		return fmt.Errorf("Cannot find networkID %d", networkID)
 	}
@@ -564,12 +562,12 @@ func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]by
 	return res, nil
 }
 
-func CloneUnifiedTokenInfos(unifiedTokenInfos map[common.Hash]map[uint]*Vault) map[common.Hash]map[uint]*Vault {
-	res := make(map[common.Hash]map[uint]*Vault)
+func CloneUnifiedTokenInfos(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault) map[common.Hash]map[common.Hash]*Vault {
+	res := make(map[common.Hash]map[common.Hash]*Vault)
 	for unifiedTokenID, vaults := range unifiedTokenInfos {
-		res[unifiedTokenID] = make(map[uint]*Vault)
-		for networkID, vault := range vaults {
-			res[unifiedTokenID][networkID] = vault.Clone()
+		res[unifiedTokenID] = make(map[common.Hash]*Vault)
+		for tokenID, vault := range vaults {
+			res[unifiedTokenID][tokenID] = vault.Clone()
 		}
 	}
 	return res

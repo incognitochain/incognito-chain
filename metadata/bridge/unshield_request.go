@@ -26,18 +26,18 @@ type AcceptedUnshieldRequest struct {
 }
 
 type AcceptedUnshieldRequestData struct {
-	Amount        uint64 `json:"BurningAmount"`
-	NetworkID     uint   `json:"NetworkID"`
-	Fee           uint64 `json:"Fee"`
-	IsDepositToSC bool   `json:"IsDepositToSC"`
+	Amount        uint64      `json:"BurningAmount"`
+	IncTokenID    common.Hash `json:"IncTokenID"`
+	Fee           uint64      `json:"Fee"`
+	IsDepositToSC bool        `json:"IsDepositToSC"`
 }
 
 type UnshieldRequestData struct {
-	BurningAmount  uint64 `json:"BurningAmount"`
-	RemoteAddress  string `json:"RemoteAddress"`
-	IsDepositToSC  bool   `json:"IsDepositToSC"`
-	NetworkID      uint   `json:"NetworkID"`
-	ExpectedAmount uint64 `json:"ExpectedAmount"`
+	BurningAmount  uint64      `json:"BurningAmount"`
+	RemoteAddress  string      `json:"RemoteAddress"`
+	IsDepositToSC  bool        `json:"IsDepositToSC"`
+	IncTokenID     common.Hash `json:"IncTokenID"`
+	ExpectedAmount uint64      `json:"ExpectedAmount"`
 }
 
 type UnshieldRequest struct {

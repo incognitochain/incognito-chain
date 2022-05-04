@@ -13,22 +13,22 @@ import (
 )
 
 type State struct {
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault // unifiedTokenID -> networkID -> vault
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault // unifiedTokenID -> tokenID -> vault
 	producer          stateProducer
 	processor         stateProcessor
 }
 
-func (s *State) UnifiedTokenInfos() map[common.Hash]map[uint]*Vault {
+func (s *State) UnifiedTokenInfos() map[common.Hash]map[common.Hash]*Vault {
 	return s.unifiedTokenInfos
 }
 
 func NewState() *State {
 	return &State{
-		unifiedTokenInfos: make(map[common.Hash]map[uint]*Vault),
+		unifiedTokenInfos: make(map[common.Hash]map[common.Hash]*Vault),
 	}
 }
 
-func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[uint]*Vault) *State {
+func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault) *State {
 	return &State{
 		unifiedTokenInfos: unifiedTokenInfos,
 	}
@@ -39,7 +39,7 @@ func (s *State) Clone() *State {
 	res.processor = stateProcessor{}
 	res.producer = stateProducer{}
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
+		res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
 		for networkID, vault := range vaults {
 			res.unifiedTokenInfos[unifiedTokenID][networkID] = vault.Clone()
 		}

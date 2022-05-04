@@ -26,10 +26,10 @@ type stateProducer struct {
 
 func (sp *stateProducer) modifyRewardReserve(
 	contentStr string,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDBs map[int]*statedb.StateDB,
 	shardID byte,
-) ([]string, map[common.Hash]map[uint]*Vault, error) {
+) ([]string, map[common.Hash]map[common.Hash]*Vault, error) {
 	action := metadataCommon.NewAction()
 	md := &metadataBridge.ModifyRewardReserve{}
 	action.Meta = md
@@ -56,12 +56,8 @@ func (sp *stateProducer) modifyRewardReserve(
 			}
 			return temp, unifiedTokenInfos, nil
 		}
-		vaultIndex := make(map[common.Hash]uint)
-		for networkID, vault := range clonedUnifiedTokenInfos[unifiedTokenID] {
-			vaultIndex[vault.tokenID] = networkID
-		}
 		for _, vault := range vaults {
-			networkID, found := vaultIndex[vault.TokenID()]
+			v, found := clonedUnifiedTokenInfos[unifiedTokenID][vault.TokenID()]
 			if !found {
 				rejectContent.ErrorCode = ErrCodeMessage[NotFoundTokenIDInNetworkError].Code
 				temp, err := inst.StringSliceWithRejectContent(rejectContent)
@@ -70,15 +66,6 @@ func (sp *stateProducer) modifyRewardReserve(
 				}
 				return temp, unifiedTokenInfos, nil
 			}
-			if _, found := clonedUnifiedTokenInfos[unifiedTokenID][networkID]; !found {
-				rejectContent.ErrorCode = ErrCodeMessage[NotFoundNetworkIDError].Code
-				temp, err := inst.StringSliceWithRejectContent(rejectContent)
-				if err != nil {
-					return []string{}, unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
-				}
-				return temp, unifiedTokenInfos, nil
-			}
-			v := clonedUnifiedTokenInfos[unifiedTokenID][networkID]
 			err := v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
 			if err != nil {
 				Logger.log.Warnf("tx %s UpdatedRewardReserve is invalid err %v", action.TxReqID.String(), err)
@@ -89,11 +76,11 @@ func (sp *stateProducer) modifyRewardReserve(
 				}
 				return temp, unifiedTokenInfos, nil
 			}
-			clonedUnifiedTokenInfos[unifiedTokenID][networkID] = v
+			clonedUnifiedTokenInfos[unifiedTokenID][vault.TokenID()] = v
 			resVaults[unifiedTokenID] = append(resVaults[unifiedTokenID], metadataBridge.Vault{
 				RewardReserve: vault.RewardReserve,
 				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(
-					vault.TokenID(), networkID,
+					vault.TokenID(), v.NetworkID(),
 				),
 				IsPaused: vault.IsPaused,
 			})
@@ -113,8 +100,8 @@ func (sp *stateProducer) modifyRewardReserve(
 }
 
 func (sp *stateProducer) convert(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault, sDBs map[int]*statedb.StateDB, shardID byte,
-) (resInst [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
+	contentStr string, unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, sDBs map[int]*statedb.StateDB, shardID byte,
+) (resInst [][]string, resUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, err error) {
 	var errorType int
 	var contents [][]byte
 	resUnifiedTokenInfos = unifiedTokenInfos
@@ -157,7 +144,7 @@ func (sp *stateProducer) convert(
 		err = errors.New("Cannot find unifiedTokenID")
 		return
 	}
-	if vault, found := resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID]; !found {
+	if vault, found := resUnifiedTokenInfos[md.UnifiedTokenID][md.TokenID]; !found {
 		errorType = NotFoundNetworkIDError
 		err = errors.New("Cannot find networkID")
 		return
@@ -186,19 +173,19 @@ func (sp *stateProducer) convert(
 			errorType = OtherError
 			return
 		}
-		resUnifiedTokenInfos[md.UnifiedTokenID][md.NetworkID] = v
+		resUnifiedTokenInfos[md.UnifiedTokenID][md.TokenID] = v
 		contents = append(contents, content)
 	}
 	return
 }
 
 func (sp *stateProducer) shield(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	contentStr string, unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	ac *metadata.AccumulatedValues, shardID byte,
 	stateDBs map[int]*statedb.StateDB,
 ) (
 	resInst [][]string,
-	resUnifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	resUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	resAC *metadata.AccumulatedValues,
 	err error,
 ) {
@@ -307,10 +294,10 @@ func (sp *stateProducer) shield(
 }
 
 func (sp *stateProducer) unshield(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	contentStr string, unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	beaconHeight uint64, shardID byte,
 	stateDB *statedb.StateDB,
-) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[uint]*Vault, err error) {
+) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, err error) {
 	action := metadataCommon.NewAction()
 	md := &metadataBridge.UnshieldRequest{}
 	action.Meta = md
@@ -402,7 +389,7 @@ func (sp *stateProducer) unshield(
 			acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
 				Fee:           fee,
 				Amount:        amount,
-				NetworkID:     data.NetworkID,
+				IncTokenID:    data.IncTokenID,
 				IsDepositToSC: data.IsDepositToSC,
 			}
 			listAcceptedUnshieldRequestData = append(listAcceptedUnshieldRequestData, acceptedUnshieldRequestData)
@@ -433,15 +420,15 @@ func (sp *stateProducer) unshield(
 }
 
 func (sp *stateProducer) addToken(
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault, beaconHeight uint64,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, beaconHeight uint64,
 	sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues,
 	triggeredFeature map[string]uint64,
-) ([][]string, map[common.Hash]map[uint]*Vault, *metadata.AccumulatedValues, error) {
-	var clonedUnifiedTokenInfos map[common.Hash]map[uint]*Vault
+) ([][]string, map[common.Hash]map[common.Hash]*Vault, *metadata.AccumulatedValues, error) {
+	var clonedUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault
 	addToken := metadataBridge.AddToken{}
 	configUnifiedTokens := config.UnifiedToken()
 	var clonedAC *metadata.AccumulatedValues
-	var newListTokens map[common.Hash]map[uint]config.Vault
+	var newListTokens map[common.Hash]map[common.Hash]config.Vault
 
 	checkpoints := []uint64{}
 	for k := range triggeredFeature {
@@ -481,7 +468,7 @@ func (sp *stateProducer) addToken(
 		clonedUnifiedTokenInfos = CloneUnifiedTokenInfos(unifiedTokenInfos)
 		unifiedTokenIDs := make(map[string]bool)
 		incTokenIDs := make(map[string]bool)
-		newListTokens = make(map[common.Hash]map[uint]config.Vault)
+		newListTokens = make(map[common.Hash]map[common.Hash]config.Vault)
 		clonedAC = ac.Clone()
 		for unifiedTokenID, vaults := range unifiedTokens {
 			if unifiedTokenID == common.PRVCoinID || unifiedTokenID == common.PDEXCoinID {
@@ -492,7 +479,7 @@ func (sp *stateProducer) addToken(
 				Logger.log.Warnf("Found empty unifiedTokenID")
 				return [][]string{}, unifiedTokenInfos, ac, nil
 			}
-			newListTokens[unifiedTokenID] = make(map[uint]config.Vault)
+			newListTokens[unifiedTokenID] = make(map[common.Hash]config.Vault)
 			if unifiedTokenIDs[unifiedTokenID.String()] {
 				Logger.log.Warnf("Duplicate unifiedTokenID %s", unifiedTokenID.String())
 				return [][]string{}, unifiedTokenInfos, ac, nil
@@ -512,42 +499,37 @@ func (sp *stateProducer) addToken(
 			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true
 			if _, found := clonedUnifiedTokenInfos[unifiedTokenID]; !found {
-				clonedUnifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
+				clonedUnifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
 			}
-			for networkID, vault := range vaults {
-				if incTokenIDs[vault.IncTokenID] {
-					Logger.log.Warnf("Duplicate incTokenID %s", vault.IncTokenID)
+			for tokenID, vault := range vaults {
+				if incTokenIDs[tokenID.String()] {
+					Logger.log.Warnf("Duplicate incTokenID %s", tokenID.String())
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
-				if unifiedTokenIDs[vault.IncTokenID] {
-					Logger.log.Warnf("Duplicate incTokenID with unifiedTokenID %s", vault.IncTokenID)
+				if unifiedTokenIDs[tokenID.String()] {
+					Logger.log.Warnf("Duplicate incTokenID with unifiedTokenID %s", tokenID.String())
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
-				err := validateConfigVault(sDBs, networkID, vault)
+				err := validateConfigVault(sDBs, tokenID, vault)
 				if err != nil {
 					Logger.log.Warnf("Validate config vault fail by error %v", err)
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
-				if _, found := unifiedTokenInfos[unifiedTokenID][networkID]; found {
+				if _, found := unifiedTokenInfos[unifiedTokenID][tokenID]; found {
 					continue
 				}
-				externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+				externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, vault.NetworkID)
 				if err != nil {
 					Logger.log.Warnf("Cannot get externalTokenID error %v", err)
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
-				tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
-				if err != nil {
-					Logger.log.Warnf("tokenID %s is not a valid hash %v", vault.IncTokenID, err)
-					return [][]string{}, unifiedTokenInfos, ac, nil
-				}
 				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
-				v := NewVaultWithValue(*state, *tokenID)
-				clonedUnifiedTokenInfos[unifiedTokenID][networkID] = v
-				incTokenIDs[vault.IncTokenID] = true
-				clonedAC.DBridgeTokenPair[vault.IncTokenID] = externalTokenID
+				v := NewVaultWithValue(*state, tokenID, vault.NetworkID)
+				clonedUnifiedTokenInfos[unifiedTokenID][tokenID] = v
+				incTokenIDs[tokenID.String()] = true
+				clonedAC.DBridgeTokenPair[tokenID.String()] = externalTokenID
 				clonedAC.DBridgeTokenPair[unifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
-				newListTokens[unifiedTokenID][networkID] = vault
+				newListTokens[unifiedTokenID][tokenID] = vault
 			}
 		}
 		if len(incTokenIDs) != 0 {

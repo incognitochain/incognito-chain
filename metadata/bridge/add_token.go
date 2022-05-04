@@ -12,7 +12,7 @@ import (
 )
 
 type AddToken struct {
-	NewListTokens map[common.Hash]map[uint]config.Vault `json:"NewListTokens"`
+	NewListTokens map[common.Hash]map[common.Hash]config.Vault `json:"NewListTokens"`
 }
 
 func (a *AddToken) StringSlice() ([]string, error) {

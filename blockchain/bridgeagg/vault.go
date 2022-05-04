@@ -13,21 +13,27 @@ import (
 
 type Vault struct {
 	statedb.BridgeAggVaultState
-	tokenID common.Hash
+	tokenID   common.Hash
+	networkID uint
 }
 
 func (v *Vault) TokenID() common.Hash {
 	return v.tokenID
 }
 
+func (v *Vault) NetworkID() uint {
+	return v.networkID
+}
+
 func NewVault() *Vault {
 	return &Vault{}
 }
 
-func NewVaultWithValue(state statedb.BridgeAggVaultState, tokenID common.Hash) *Vault {
+func NewVaultWithValue(state statedb.BridgeAggVaultState, tokenID common.Hash, networkID uint) *Vault {
 	return &Vault{
 		BridgeAggVaultState: state,
 		tokenID:             tokenID,
+		networkID:           networkID,
 	}
 }
 
@@ -36,6 +42,7 @@ func (v *Vault) Clone() *Vault {
 		BridgeAggVaultState: *v.BridgeAggVaultState.Clone(),
 	}
 	copy(res.tokenID[:], v.tokenID[:])
+	res.networkID = v.networkID
 	return res
 }
 
@@ -48,7 +55,7 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if v.tokenID.String() != compareVault.tokenID.String() {
+	if v.tokenID.String() != compareVault.tokenID.String() || v.networkID != compareVault.networkID {
 		vaultChange.IsChanged = true
 	}
 	if difVaultState != nil {
@@ -62,11 +69,13 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 
 func (v *Vault) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State   *statedb.BridgeAggVaultState `json:"State"`
-		TokenID common.Hash                  `json:"TokenID"`
+		State     *statedb.BridgeAggVaultState `json:"State"`
+		TokenID   common.Hash                  `json:"TokenID"`
+		NetworkID uint                         `json:"NetworkID"`
 	}{
-		State:   &v.BridgeAggVaultState,
-		TokenID: v.tokenID,
+		State:     &v.BridgeAggVaultState,
+		TokenID:   v.tokenID,
+		NetworkID: v.networkID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -76,8 +85,9 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 
 func (v *Vault) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State   *statedb.BridgeAggVaultState `json:"State"`
-		TokenID common.Hash                  `json:"TokenID"`
+		State     *statedb.BridgeAggVaultState `json:"State"`
+		TokenID   common.Hash                  `json:"TokenID"`
+		NetworkID uint                         `json:"NetworkID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -87,6 +97,7 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 		v.BridgeAggVaultState = *temp.State
 	}
 	v.tokenID = temp.TokenID
+	v.networkID = temp.NetworkID
 	return nil
 }
 
