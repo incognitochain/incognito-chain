@@ -15,6 +15,7 @@ import (
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/utils"
 )
 
@@ -707,18 +708,12 @@ func (sp *stateProcessorV2) addOrder(
 		pair.orderbook.InsertOrder(newOrder)
 		if len(md.RewardReceiver) != 0 {
 			orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
-			Logger.log.Info("[bridgeagg] md.RewardReceiver:", md.RewardReceiver)
 			for k, v := range md.RewardReceiver {
-				Logger.log.Info("[bridgeagg] k:", k.String())
-				Logger.log.Info("[bridgeagg] v:", v)
-				orderRewardDetails[k] = NewOrderRewardDetailWithValue(&v, 0)
+				temp := new(privacy.OTAReceiver)
+				*temp = v
+				orderRewardDetails[k] = NewOrderRewardDetailWithValue(temp, 0)
 			}
 			txReqID, _ = common.Hash{}.NewHashFromStr(md.OrderID)
-			Logger.log.Info("[bridgeagg] orderRewardDetails:", orderRewardDetails)
-			for k, v := range orderRewardDetails {
-				Logger.log.Info("[bridgeagg] k:", k.String())
-				Logger.log.Info("[bridgeagg] v.Receiver():", v.Receiver())
-			}
 			pair.orderRewards[md.NftID.String()] = NewOrderRewardWithValue(
 				WaitToWithdrawOrderReward, orderRewardDetails, txReqID,
 			)

@@ -682,8 +682,10 @@ TransactionLoop:
 			orderRewardDetails := make(map[common.Hash]*OrderRewardDetail)
 			for _, v := range rewardReceiverTokenIDs {
 				if receiver, found := currentOrderReq.RewardReceiver[v]; found {
-					rewardReceivers[v] = receiver
-					orderRewardDetails[v] = NewOrderRewardDetailWithValue(&receiver, 0)
+					temp := new(privacy.OTAReceiver)
+					*temp = receiver
+					rewardReceivers[v] = *temp
+					orderRewardDetails[v] = NewOrderRewardDetailWithValue(temp, 0)
 				} else {
 					Logger.log.Warnf("RewardReceivers is not enough")
 					result = append(result, refundInstructions...)
