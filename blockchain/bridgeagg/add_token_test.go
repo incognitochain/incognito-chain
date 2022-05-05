@@ -19,7 +19,7 @@ import (
 type ConfigVault struct {
 	ExternalDecimal uint   `json:"external_decimal"`
 	ExternalTokenID string `json:"external_token_id"`
-	IncTokenID      string `json:"inc_token_id"`
+	NetworkID       uint   `json:"network_id"`
 }
 
 type AddTokenTestCase struct {
@@ -64,28 +64,28 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 	a.currentTestCaseName = testName
 	testCase := a.testCases[testName]
 	config.AbortUnifiedToken()
-	configedUnifiedTokens := make(map[uint64]map[common.Hash]map[uint]config.Vault)
+	configedUnifiedTokens := make(map[uint64]map[common.Hash]map[common.Hash]config.Vault)
 	for checkpointStr, unifiedTokens := range testCase.ConfigedUnifiedTokens {
 		checkpoint, err := strconv.ParseUint(checkpointStr, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		configedUnifiedTokens[checkpoint] = make(map[common.Hash]map[uint]config.Vault)
+		configedUnifiedTokens[checkpoint] = make(map[common.Hash]map[common.Hash]config.Vault)
 		for unifiedTokenID, vaults := range unifiedTokens {
 			unifiedTokenHash, err := common.Hash{}.NewHashFromStr(unifiedTokenID)
 			if err != nil {
 				panic(err)
 			}
-			configedUnifiedTokens[checkpoint][*unifiedTokenHash] = make(map[uint]config.Vault)
-			for networkIDStr, vault := range vaults {
-				networkID, err := strconv.Atoi(networkIDStr)
+			configedUnifiedTokens[checkpoint][*unifiedTokenHash] = make(map[common.Hash]config.Vault)
+			for tokenIDStr, vault := range vaults {
+				tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 				if err != nil {
 					panic(err)
 				}
-				configedUnifiedTokens[checkpoint][*unifiedTokenHash][uint(networkID)] = config.Vault{
+				configedUnifiedTokens[checkpoint][*unifiedTokenHash][*tokenID] = config.Vault{
 					ExternalDecimal: vault.ExternalDecimal,
 					ExternalTokenID: vault.ExternalTokenID,
-					IncTokenID:      vault.IncTokenID,
+					NetworkID:       vault.NetworkID,
 				}
 			}
 		}
@@ -352,6 +352,22 @@ func (a *AddTokenTestSuite) TestRejectedUnifiedTokenIDAvailableInPrivacyTokenLis
 }
 
 func (a *AddTokenTestSuite) TestRejectedEmptyExternalTokenID() {
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", testCase.ExpectedInstructions, actualResult.Instructions).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	}
+	for k, v := range actualResult.ProcessorState.unifiedTokenInfos {
+		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	}
+	assert.Equal(testCase.ExpectedAccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.AccumulatedValues, actualResult.AccumulatedValues).Error())
+}
+
+func (a *AddTokenTestSuite) TestRejectedDuplicateExternalTokenID() {
 	assert := a.Assert()
 	testCase := a.testCases[a.currentTestCaseName]
 	actualResult := a.actualResults[a.currentTestCaseName]

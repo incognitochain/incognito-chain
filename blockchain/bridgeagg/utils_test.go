@@ -29,8 +29,8 @@ type TestSuite struct {
 
 type TestCase struct {
 	ExpectedInstructions      [][]string                                    `json:"expected_instructions"`
-	UnifiedTokens             map[common.Hash]map[uint]*Vault               `json:"unified_tokens"`
-	ExpectedUnifiedTokens     map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
+	UnifiedTokens             map[common.Hash]map[common.Hash]*Vault        `json:"unified_tokens"`
+	ExpectedUnifiedTokens     map[common.Hash]map[common.Hash]*Vault        `json:"expected_unified_tokens"`
 	TxIDs                     []common.Hash                                 `json:"tx_ids"`
 	BridgeTokensInfo          map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
 	AccumulatedValues         *metadata.AccumulatedValues                   `json:"accumulated_values"`

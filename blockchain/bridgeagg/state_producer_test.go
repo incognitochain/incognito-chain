@@ -12,7 +12,7 @@ func Test_stateProducer_unshield(t *testing.T) {
 	initLog()
 	type args struct {
 		contentStr        string
-		unifiedTokenInfos map[common.Hash]map[uint]*Vault
+		unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault
 		beaconHeight      uint64
 		shardID           byte
 		stateDB           *statedb.StateDB
@@ -30,7 +30,7 @@ func Test_stateProducer_unshield(t *testing.T) {
 			sp:   &stateProducer{},
 			args: args{
 				contentStr:        "eyJNZXRhIjp7IlRva2VuSUQiOiJiMzU3NTY0NTJkYzFmYTEyNjA1MTNmYTEyMWMyMGMyYjUxNmE4NjQ1ZjhkNDk2ZmE0MjM1Mjc0ZGFjMGIxYjUyIiwiRGF0YSI6W3siQnVybmluZ0Ftb3VudCI6MzAwLCJSZW1vdGVBZGRyZXNzIjoiY0U0MGNFNTExQTVEMDg0MDE3REJlZTdlM2ZGM2U0NTVlYTMyRDg1YyIsIklzRGVwb3NpdFRvU0MiOmZhbHNlLCJOZXR3b3JrSUQiOjMsIkV4cGVjdGVkQW1vdW50Ijo4fV0sIlJlY2VpdmVyIjoiMTVnbTg4Y1RaYnB6V0R0anc4ZEdCbWJ5U0JRWW5lM3pKTWd0U0ZBSkJpaEs1MXBQTkhwUWNNYWI0ZHZpUEpmemFVTDM4Q1NYSmhhcFRDVzZOc1RBTVZOWTNpMjFXejNDdDQ4REtSdUpyb0M2cUd3S1ZzVll4Mk1kOGd5amNrdU1uUXlROTFkZ3ZwRDY1Q2paIiwiVHlwZSI6MzQ1fSwiVHhSZXFJRCI6ImUyMzkyOGEzZWY1MTIxZDU1Nzg2ZGIxMTdiY2FkMDVhNmRlMmEzYTgyMDhiNmM3OTQ5OTBjMDIxNWNmZjM2ODQifQ==",
-				unifiedTokenInfos: map[common.Hash]map[uint]*Vault{},
+				unifiedTokenInfos: map[common.Hash]map[common.Hash]*Vault{},
 				beaconHeight:      10,
 				shardID:           1,
 				stateDB:           nil,

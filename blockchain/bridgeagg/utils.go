@@ -530,7 +530,7 @@ func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]by
 	case common.FTMNetworkID:
 		prefix = common.FTMPrefix
 	default:
-		return nil, errors.New("Invalid networkID")
+		return nil, fmt.Errorf("Invalid networkID %v", networkID)
 	}
 	networkType, err := metadataBridge.GetNetworkTypeByNetworkID(networkID)
 	if err != nil {

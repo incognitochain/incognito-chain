@@ -2,11 +2,11 @@
     "TestAccepted": {
         "name": "Accepted",
         "expected_instructions": [
-            ["348", "eyJOZXdMaXN0VG9rZW5zIjp7ImM4YWVmYTZiMzQ3YmIxNzQxMTYwNjBkYTYxNzFlYjIzNDc2ZjQ0NGJiM2ZmMTQzNmU4OTQwYjI3ZWQxYWY1NzAiOnsiMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9LCIyIjp7IkV4dGVybmFsRGVjaW1hbCI6NiwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiSW5jVG9rZW5JRCI6IjM3NTgyNWJmODM4NTI3NjEwMTAyYzY5NDMyODI2NDI4MjY5MDE5Mzc2NzlkOGRmNWI1NjM0ZDQzZDU0YTExMTEifX0sImM4YWVmYTZiMzQ3YmIxNzQxMTYwNjBkYTYxNzFlYjIzNDc2ZjQ0NGJiM2ZmMTQzNmU4OTQwYjI3ZWQxYWY1ODAiOnsiMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2MCJ9fX19"]
+            ["348", "eyJOZXdMaXN0VG9rZW5zIjp7ImMzYWY4M2FkMmU3YjllMDQwYTczYTJiOTMzNGY5YTk2NjRjZDEyNjY0NjJmNzViNmJhODRmMzYxMzljZGYzYzYiOnsiYTc2ZDc1N2Q4ZDM4NzA2MDVkMDEyZDY4Y2QyZjA3NjcyMmVkOGUxOWRmYzVlMjliMTJjMDdhMjRhY2QwMjZjMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJOZXR3b3JrSUQiOjF9LCJlNTAzMmMwODNmMGRhNjdjYTE0MTMzMWI2MDA1ZTRhMzc0MGM1MDIxOGYxNTFhNWU4MjllOWQwMzIyN2UzM2UyIjp7IkV4dGVybmFsRGVjaW1hbCI6MTgsIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIk5ldHdvcmtJRCI6Mn19LCJlYmMxYzFiNTgxOWFhNTY0NzE5MmFlZmQ3MjllZjE4Y2Q4ODk0ZDIyNjU2ZThhZGQ2NzhjMGFlZjkzZTQwNGQ0Ijp7IjZlZWQ2OTFjYjE0ZDExMDY2ZjkzOTYzMGZmNjQ3ZjVmMWM4NDNhOGY5NjRkOWE0ZDI5NWZhOWNkMTExMWM0NzQiOnsiRXh0ZXJuYWxEZWNpbWFsIjoxOCwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiTmV0d29ya0lEIjo0fX19fQ=="]
         ],
         "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "1": {
+            "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -14,21 +14,21 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                    "NetworkID": 1
                 },
-                "2": {
+                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
                         "CurrentRewardReserve": 0,
-                        "Decimal": 6,
+                        "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                    "NetworkID": 2
                 }
             },
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                "1": {
+            "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -36,36 +36,36 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
+                    "NetworkID": 4
                 }
             }
         },
         "bridge_tokens_info": {},
         "expected_bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+            "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                "tokenId": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1",
                 "amount": 0,
                 "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             },
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "tokenId": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+            "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                "tokenId": "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4",
                 "amount": 0,
                 "externalTokenId": [85, 84]
             },
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111",
+            "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
                 "amount": 0,
                 "externalTokenId": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             },
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                "tokenId": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580",
+            "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                "tokenId": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6",
                 "amount": 0,
                 "externalTokenId": [85, 84]
             },
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760": {
-                "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760",
+            "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                "tokenId": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474",
                 "amount": 0,
-                "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                "externalTokenId": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             }
         },
         "accumulated_values": {
@@ -85,11 +85,11 @@
 		    "UniqPRVEVMTxsUsed": [],
 		    "UniqFTMTxsUsed":    [],
 		    "DBridgeTokenPair":  {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85,84],
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": [85, 84]
+                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84],
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": [85, 84]
             },
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
@@ -97,23 +97,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
+                        "network_id": 4
                     }
                 }
             }
@@ -144,31 +144,30 @@
 		    "UniqPLGTxsUsed":    [],
 		    "UniqPRVEVMTxsUsed": [],
 		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {
-            },
+		    "DBridgeTokenPair":  {},
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
+                        "network_id": 4
                     }
                 }
             }
@@ -182,15 +181,15 @@
         "expected_instructions": [],
         "expected_unified_tokens": {},
         "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730": {
-                "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730",
+            "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
                 "amount": 0,
                 "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             }
         },
         "expected_bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730": {
-                "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730",
+            "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
                 "amount": 0,
                 "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             }
@@ -218,28 +217,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -251,8 +245,8 @@
     "TestRejectedAvailableTokenIDByPrivacyTokenIDCheck": {
         "name": "Rejected available token id by privacy token id check",
         "privacy_tokens": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730": {
-                "token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+            "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                "token_id": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1"
             }
         },
         "expected_instructions": [],
@@ -282,28 +276,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -313,7 +302,7 @@
         }
     },
     "TestRejectedDuplicateTokenIDs": {
-        "name": "Rejected available token id by privacy token id check",
+        "name": "Rejected duplicate tokenids",
         "privacy_tokens": {},
         "expected_instructions": [],
         "expected_unified_tokens": {},
@@ -342,28 +331,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -373,7 +357,7 @@
         }
     },
     "TestRejectedDuplicateUnifiedTokenIDAndTokenID": {
-        "name": "Rejected available token id by privacy token id check",
+        "name": "Rejected duplicate unified token id and token id",
         "privacy_tokens": {},
         "expected_instructions": [],
         "expected_unified_tokens": {},
@@ -402,28 +386,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5729"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -462,28 +441,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
                         "external_decimal": 0,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -522,28 +496,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": ""
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -582,28 +551,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "0000000000000000000000000000000000000000000000000000000000000000": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "0000000000000000000000000000000000000000000000000000000000000000"
+                        "network_id": 4
                     }
                 }
             }
@@ -643,27 +607,22 @@
         "configed_unified_tokens": {
             "202205021100": {
                 "": {
-                    "1": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -703,27 +662,22 @@
         "configed_unified_tokens": {
             "202205021100": {
                 "0000000000000000000000000000000000000000000000000000000000000000": {
-                    "1": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -736,8 +690,8 @@
         "name": "Rejected unified tokenid has been available in privacy token list",
         "expected_instructions": [],
         "privacy_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "token_id": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570"
+            "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                "token_id": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6"
             }
         },
         "expected_unified_tokens": {},
@@ -767,28 +721,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 2
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -827,28 +776,23 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                        "network_id": 5
                     }
                 },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "100": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 4
                     }
                 }
             }
@@ -887,34 +831,89 @@
         "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                    "1": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
                         "external_decimal": 18,
                         "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        "network_id": 1
                     },
-                    "2": {
-                        "external_decimal": 6,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
-                    }
-                },
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af580": {
-                    "1": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5760"
-                    },
-                    "2": {
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
                         "external_decimal": 18,
                         "external_token_id": "",
-                        "inc_token_id": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5730"
+                        "network_id": 2
+                    }
+                },
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 4
                     }
                 }
             }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
         }
     },
-    "triggered_feature": {
-        "unified_token_202205021100": 9
+    "TestRejectedDuplicateExternalTokenID": {
+        "name": "Rejected duplicate externalTokenID",
+        "expected_instructions": [],
+        "privacy_tokens": {},
+        "expected_unified_tokens": {},
+        "bridge_tokens_info": {},
+        "expected_bridge_tokens_info": {},
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "beacon_height": 10,
+        "configed_unified_tokens": {
+            "202205021100": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 1
+                    },
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 2
+                    },
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e3": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 2
+                    }
+                },
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 4
+                    }
+                }
+            }
+        },
+        "triggered_feature": {
+            "unified_token_202205021100": 9
+        }
     }
 }
