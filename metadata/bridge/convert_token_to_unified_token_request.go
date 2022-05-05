@@ -37,7 +37,7 @@ func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {
 }
 
 func NewConvertTokenToUnifiedTokenRequestWithValue(
-	tokenID, unifiedTokenID common.Hash, networkID uint, amount uint64, receiver privacy.OTAReceiver,
+	tokenID, unifiedTokenID common.Hash, amount uint64, receiver privacy.OTAReceiver,
 ) *ConvertTokenToUnifiedTokenRequest {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,

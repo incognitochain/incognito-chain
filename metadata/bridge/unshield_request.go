@@ -93,8 +93,8 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 		if data.BurningAmount == 0 {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("wrong request info's burned amount"))
 		}
-		if data.NetworkID != common.BSCNetworkID && data.NetworkID != common.ETHNetworkID && data.NetworkID != common.PLGNetworkID && data.NetworkID != common.FTMNetworkID {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Invalid networkID"))
+		if data.IncTokenID.IsZeroValue() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("IncTokenID cannot be empty"))
 		}
 		if data.BurningAmount < data.ExpectedAmount {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount))

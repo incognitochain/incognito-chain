@@ -251,7 +251,7 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 	}
 
 	md := metadataBridge.NewConvertTokenToUnifiedTokenRequestWithValue(
-		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, recv,
+		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.Amount, recv,
 	)
 	paramSelect.SetTokenID(mdReader.TokenID)
 	paramSelect.SetMetadata(md)
@@ -629,7 +629,7 @@ func (httpServer *HttpServer) handleEstimateFeeByBurntAmount(params interface{},
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
-		NetworkID      uint        `json:"NetworkID"`
+		TokenID        common.Hash `json:"TokenID"`
 		BurntAmount    uint64      `json:"BurntAmount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
@@ -640,7 +640,7 @@ func (httpServer *HttpServer) handleEstimateFeeByBurntAmount(params interface{},
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByBurntAmountError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateFeeByBurntAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.BurntAmount)
+	result, err := httpServer.blockService.BridgeAggEstimateFeeByBurntAmount(mdReader.UnifiedTokenID, mdReader.TokenID, mdReader.BurntAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByBurntAmountError, err)
 	}
@@ -656,7 +656,7 @@ func (httpServer *HttpServer) handleEstimateFeeByExpectedAmount(params interface
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
-		NetworkID      uint        `json:"NetworkID"`
+		TokenID        common.Hash `json:"TokenID"`
 		ExpectedAmount uint64      `json:"ExpectedAmount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
@@ -667,7 +667,7 @@ func (httpServer *HttpServer) handleEstimateFeeByExpectedAmount(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByExpectedAmountError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateFeeByExpectedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.ExpectedAmount)
+	result, err := httpServer.blockService.BridgeAggEstimateFeeByExpectedAmount(mdReader.UnifiedTokenID, mdReader.TokenID, mdReader.ExpectedAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByExpectedAmountError, err)
 	}
@@ -683,7 +683,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
-		NetworkID      uint        `json:"NetworkID"`
+		TokenID        common.Hash `json:"TokenID"`
 		Amount         uint64      `json:"Amount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
@@ -694,7 +694,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateReward(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
+	result, err := httpServer.blockService.BridgeAggEstimateReward(mdReader.UnifiedTokenID, mdReader.TokenID, mdReader.Amount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}
@@ -711,6 +711,7 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	Reader := &struct {
 		TxReqID   common.Hash `json:"TxReqID"`
 		DataIndex *int        `json:"DataIndex"`
+		TokenID   common.Hash `json:"TokenID"`
 		NetworkID uint        `json:"NetworkID"`
 	}{}
 	rawData, err := json.Marshal(arrayParams[0])

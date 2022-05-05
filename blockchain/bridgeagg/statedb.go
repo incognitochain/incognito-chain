@@ -14,9 +14,9 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	unifiedTokenInfos := make(map[common.Hash]map[uint]*Vault)
+	unifiedTokenInfos := make(map[common.Hash]map[common.Hash]*Vault)
 	for _, unifiedTokenState := range unifiedTokenStates {
-		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[uint]*Vault)
+		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[common.Hash]*Vault)
 		convertTokens, err := statedb.GetBridgeAggConvertedTokens(sDB, unifiedTokenState.TokenID())
 		if err != nil {
 			return nil, err
@@ -26,8 +26,8 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 			if err != nil {
 				state = statedb.NewBridgeAggVaultState()
 			}
-			vault := NewVaultWithValue(*state, convertToken.TokenID())
-			unifiedTokenInfos[unifiedTokenState.TokenID()][convertToken.NetworkID()] = vault
+			vault := NewVaultWithValue(*state, convertToken.NetworkID())
+			unifiedTokenInfos[unifiedTokenState.TokenID()][convertToken.TokenID()] = vault
 		}
 	}
 	return NewStateWithValue(unifiedTokenInfos), nil
@@ -58,7 +58,7 @@ func GetVaultByUnifiedTokenIDAndNetworkID(unifiedTokenID common.Hash, networkID 
 			return nil, err
 		}
 		state = statedb.NewBridgeAggVaultState()
-		return NewVaultWithValue(*state, convertToken.TokenID()), nil
+		return NewVaultWithValue(*state, convertToken.NetworkID()), nil
 	}
 	return nil, errors.New("Not found vault")
 }

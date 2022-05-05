@@ -184,9 +184,9 @@ func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) 
 	return a, nil
 }
 
-func GetVault(unifiedTokenInfos map[common.Hash]map[uint]*Vault, unifiedTokenID common.Hash, networkID uint) (*Vault, error) {
+func GetVault(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, unifiedTokenID, incTokenID common.Hash) (*Vault, error) {
 	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
-		if vault, found := vaults[networkID]; found {
+		if vault, found := vaults[incTokenID]; found {
 			return vault, nil
 		} else {
 			return nil, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Not found networkID"))
@@ -255,15 +255,15 @@ func CloneVaults(
 }
 
 func shieldEVM(
-	incTokenID common.Hash, networkID uint, ac *metadata.AccumulatedValues,
+	unifiedTokenID, incTokenID common.Hash, networkID uint, ac *metadata.AccumulatedValues,
 	shardID byte, txReqID common.Hash,
-	vaults map[common.Hash]*Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
+	vault *Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
 	blockHash rCommon.Hash, txIndex uint, currentPaymentAddress string,
-) (uint64, uint64, byte, []byte, []byte, string, *metadata.AccumulatedValues, int, error) {
+) (*Vault, uint64, uint64, byte, []byte, []byte, string, *metadata.AccumulatedValues, int, error) {
 	var txReceipt *types.Receipt
 	err := json.Unmarshal(extraData, &txReceipt)
 	if err != nil {
-		return 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
+		return nil, 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 	var listTxUsed [][]byte
 	var contractAddress, prefix string
@@ -291,27 +291,24 @@ func shieldEVM(
 		prefix = common.FTMPrefix
 		isTxHashIssued = statedb.IsFTMTxHashIssued
 	case common.DefaultNetworkID:
-		return 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
+		return nil, 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
 	default:
-		return 0, 0, 0, nil, nil, "", ac, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
+		return nil, 0, 0, 0, nil, nil, "", ac, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
 	}
-	vault, found := vaults[networkID]
-	if !found {
-		return 0, 0, 0, nil, nil, "", ac, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
-	}
+
 	amount, receivingShardID, paymentAddress, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
 		stateDBs[common.BeaconChainID], shardID, listTxUsed,
 		contractAddress, prefix, isTxHashIssued, txReceipt, blockHash, txIndex,
 	)
 	if err != nil {
-		return 0, 0, 0, nil, nil, "", ac, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
+		return nil, 0, 0, 0, nil, nil, "", ac, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
 	}
 	if currentPaymentAddress != "" && currentPaymentAddress != paymentAddress {
-		return 0, 0, 0, nil, nil, "", ac, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, errors.New("PaymentAddress from proofs need to be similar"))
+		return nil, 0, 0, 0, nil, nil, "", ac, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, errors.New("PaymentAddress from proofs need to be similar"))
 	}
-	err = metadataBridge.VerifyTokenPair(stateDBs, ac, vault.tokenID, token)
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, incTokenID, token)
 	if err != nil {
-		return 0, 0, 0, nil, nil, "", ac, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
+		return nil, 0, 0, 0, nil, nil, "", ac, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 	}
 	decimal := vault.Decimal()
 	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
@@ -321,16 +318,15 @@ func shieldEVM(
 	}
 	tmpAmount, err := CalculateAmountByDecimal(*amount, decimal, AddOperator)
 	if err != nil {
-		return 0, 0, 0, nil, nil, "", ac, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
+		return nil, 0, 0, 0, nil, nil, "", ac, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 	}
 	//tmpAmount is uint64 after this function
 
 	actualAmount, err := vault.shield(tmpAmount.Uint64())
 	if err != nil {
 		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, txReqID)
-		return 0, 0, 0, nil, nil, "", ac, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
+		return nil, 0, 0, 0, nil, nil, "", ac, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
 	}
-	vaults[networkID] = vault
 	reward := actualAmount - tmpAmount.Uint64()
 
 	switch networkID {
@@ -344,7 +340,7 @@ func shieldEVM(
 		ac.UniqFTMTxsUsed = append(ac.UniqFTMTxsUsed, uniqTx)
 	}
 	ac.DBridgeTokenPair[incTokenID.String()] = GetExternalTokenIDForUnifiedToken()
-	return actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
+	return vault, actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
 }
 
 func buildAcceptedShieldContents(
@@ -403,12 +399,12 @@ func CalculateAmountByDecimal(amount big.Int, decimal uint, operator byte) (*big
 }
 
 func unshieldEVM(
-	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB, vaults map[common.Hash]*Vault, txReqID common.Hash,
-) (common.Hash, []byte, *big.Int, uint64, uint64, int, int, error) {
+	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB, vault *Vault, txReqID common.Hash,
+) (*Vault, []byte, *big.Int, uint64, uint64, int, int, error) {
 	var prefix string
 	var burningMetaType int
 
-	switch data.NetworkID {
+	switch vault.NetworkID() {
 	case common.ETHNetworkID:
 		if data.IsDepositToSC {
 			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
@@ -438,26 +434,21 @@ func unshieldEVM(
 		}
 		prefix = common.FTMPrefix
 	case common.DefaultNetworkID:
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
+		return nil, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
 	default:
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
-	}
-
-	vault, found := vaults[data.IncTokenID]
-	if !found {
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Cannot detect networkID"))
+		return nil, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
 	}
 
 	// Convert to external tokenID
-	externalTokenID, err := metadataBridge.FindExternalTokenID(stateDB, vault.tokenID, prefix, burningMetaType)
+	externalTokenID, err := metadataBridge.FindExternalTokenID(stateDB, data.IncTokenID, prefix, burningMetaType)
 	if err != nil {
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
+		return nil, nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 	}
 
 	actualAmount, err := vault.unshield(data.BurningAmount, data.ExpectedAmount)
 	if err != nil {
 		Logger.log.Warnf("Calculate unshield amount error: %v tx %s", err, txReqID.String())
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
+		return nil, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
 	}
 	fee := data.BurningAmount - actualAmount
 	decimal := vault.Decimal()
@@ -468,13 +459,13 @@ func unshieldEVM(
 	}
 	unshieldAmount, err := CalculateAmountByDecimal(*big.NewInt(0).SetUint64(actualAmount), decimal, SubOperator)
 	if err != nil {
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
+		return nil, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
 	}
 	if unshieldAmount.Cmp(big.NewInt(0)) == 0 {
-		return common.Hash{}, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot received unshield amount equal to 0"))
+		return nil, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot received unshield amount equal to 0"))
 	}
 
-	return vault.tokenID, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
+	return vault, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }
 
 func CalculateIncDecimal(decimal, baseDecimal uint) uint {
@@ -485,26 +476,17 @@ func CalculateIncDecimal(decimal, baseDecimal uint) uint {
 }
 
 func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vault config.Vault) error {
+	networkID := vault.NetworkID
 	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID && networkID != common.FTMNetworkID {
 		return fmt.Errorf("Cannot find networkID %d", networkID)
 	}
 	if vault.ExternalDecimal == 0 {
 		return fmt.Errorf("ExternalTokenID cannot be 0")
 	}
-	if vault.IncTokenID == utils.EmptyString {
-		return fmt.Errorf("IncTokenID cannot be null")
-	}
 	if vault.ExternalTokenID == utils.EmptyString {
 		return fmt.Errorf("ExternalTokenID can not be empty")
 	}
-	incTokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
-	if err != nil {
-		return err
-	}
-	if incTokenID.IsZeroValue() {
-		return fmt.Errorf("IncTokenID cannot be empty")
-	}
-	if *incTokenID == common.PRVCoinID || *incTokenID == common.PDEXCoinID {
+	if tokenID == common.PRVCoinID || tokenID == common.PDEXCoinID {
 		return fmt.Errorf("incTokenID is prv or pdex")
 	}
 	bridgeTokenInfoIndex, externalTokenIDIndex, err := GetBridgeTokenIndex(sDBs[common.BeaconChainID])
@@ -515,7 +497,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 	if err != nil {
 		return err
 	}
-	if bridgeTokenInfoState, found := bridgeTokenInfoIndex[*incTokenID]; found {
+	if bridgeTokenInfoState, found := bridgeTokenInfoIndex[tokenID]; found {
 		if !bytes.Equal(bridgeTokenInfoState.ExternalTokenID, externalTokenID) {
 			return errors.New("ExternalTokenID is not valid with data from db")
 		}
@@ -524,12 +506,12 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 		if externalTokenIDIndex[encodedExternalTokenID] {
 			return errors.New("ExternalTokenID has existed")
 		}
-		isExisted, err := statedb.CheckTokenIDExisted(sDBs, *incTokenID)
+		isExisted, err := statedb.CheckTokenIDExisted(sDBs, tokenID)
 		if err != nil {
-			return fmt.Errorf("WARNING: Error in finding tokenID %s", incTokenID.String())
+			return fmt.Errorf("WARNING: Error in finding tokenID %s", tokenID.String())
 		}
 		if isExisted {
-			return fmt.Errorf("WARNING: tokenID %s has existed", incTokenID.String())
+			return fmt.Errorf("WARNING: tokenID %s has existed", tokenID.String())
 		}
 	}
 	return nil

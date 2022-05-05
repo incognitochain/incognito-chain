@@ -22,17 +22,19 @@ type AcceptedShieldRequest struct {
 }
 
 type AcceptedShieldRequestData struct {
-	IssuingAmount   uint64 `json:"IssuingAmount"`
-	UniqTx          []byte `json:"UniqTx,omitempty"`
-	ExternalTokenID []byte `json:"ExternalTokenID,omitempty"`
-	NetworkID       uint   `json:"NetworkID"`
+	IssuingAmount   uint64      `json:"IssuingAmount"`
+	UniqTx          []byte      `json:"UniqTx,omitempty"`
+	ExternalTokenID []byte      `json:"ExternalTokenID,omitempty"`
+	NetworkID       uint        `json:"NetworkID"`
+	IncTokenID      common.Hash `json:"IncTokenID"`
 }
 
 type ShieldRequestData struct {
-	BlockHash string   `json:"BlockHash"`
-	TxIndex   uint     `json:"TxIndex"`
-	Proof     []string `json:"Proof"`
-	NetworkID uint     `json:"NetworkID"`
+	BlockHash  string      `json:"BlockHash"`
+	TxIndex    uint        `json:"TxIndex"`
+	Proof      []string    `json:"Proof"`
+	NetworkID  uint        `json:"NetworkID"`
+	IncTokenID common.Hash `json:"IncTokenID"`
 }
 
 type ShieldRequest struct {

@@ -170,22 +170,19 @@ func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error
 				return err
 			}
 		}
-		for networkID, vault := range vaults {
-			if stateChange.vaultChange[unifiedTokenID][networkID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
+		for tokenID, vault := range vaults {
+			if stateChange.vaultChange[unifiedTokenID][tokenID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
 				err := statedb.StoreBridgeAggConvertedToken(
-					sDB, unifiedTokenID, vault.tokenID,
-					statedb.NewBridgeAggConvertedTokenStateWithValue(vault.tokenID, networkID),
+					sDB, unifiedTokenID, tokenID,
+					statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID, vault.networkID),
 				)
 				if err != nil {
 					return err
 				}
 			}
-			if (stateChange.vaultChange[unifiedTokenID][networkID].IsReserveChanged ||
+			if (stateChange.vaultChange[unifiedTokenID][tokenID].IsReserveChanged ||
 				stateChange.unifiedTokenID[unifiedTokenID]) && !vault.BridgeAggVaultState.IsEmpty() {
-				err := statedb.StoreBridgeAggVault(
-					sDB, unifiedTokenID, vault.tokenID,
-					&vault.BridgeAggVaultState,
-				)
+				err := statedb.StoreBridgeAggVault(sDB, unifiedTokenID, tokenID, &vault.BridgeAggVaultState)
 				if err != nil {
 					return err
 				}
@@ -210,12 +207,12 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 		} else {
 			for tokenID, vault := range vaults {
 				if res.unifiedTokenInfos[unifiedTokenID] == nil {
-					res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
+					res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
 				}
 				if compareVault, ok := compareVaults[tokenID]; !ok {
 					res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault
 					if stateChange.vaultChange[unifiedTokenID] == nil {
-						stateChange.vaultChange[unifiedTokenID] = make(map[uint]VaultChange)
+						stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
 					}
 					stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{
 						IsChanged:        true,
@@ -229,7 +226,7 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 					if temp != nil {
 						res.unifiedTokenInfos[unifiedTokenID][tokenID] = temp
 						if stateChange.vaultChange[unifiedTokenID] == nil {
-							stateChange.vaultChange[unifiedTokenID] = make(map[uint]VaultChange)
+							stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
 						}
 						stateChange.vaultChange[unifiedTokenID][tokenID] = *vaultChange
 					}

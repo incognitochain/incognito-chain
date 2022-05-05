@@ -6,19 +6,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type Vault struct {
 	statedb.BridgeAggVaultState
-	tokenID   common.Hash
 	networkID uint
-}
-
-func (v *Vault) TokenID() common.Hash {
-	return v.tokenID
 }
 
 func (v *Vault) NetworkID() uint {
@@ -29,10 +23,9 @@ func NewVault() *Vault {
 	return &Vault{}
 }
 
-func NewVaultWithValue(state statedb.BridgeAggVaultState, tokenID common.Hash, networkID uint) *Vault {
+func NewVaultWithValue(state statedb.BridgeAggVaultState, networkID uint) *Vault {
 	return &Vault{
 		BridgeAggVaultState: state,
-		tokenID:             tokenID,
 		networkID:           networkID,
 	}
 }
@@ -41,7 +34,6 @@ func (v *Vault) Clone() *Vault {
 	res := &Vault{
 		BridgeAggVaultState: *v.BridgeAggVaultState.Clone(),
 	}
-	copy(res.tokenID[:], v.tokenID[:])
 	res.networkID = v.networkID
 	return res
 }
@@ -55,7 +47,7 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if v.tokenID.String() != compareVault.tokenID.String() || v.networkID != compareVault.networkID {
+	if v.networkID != compareVault.networkID {
 		vaultChange.IsChanged = true
 	}
 	if difVaultState != nil {
@@ -70,11 +62,9 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 func (v *Vault) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		State     *statedb.BridgeAggVaultState `json:"State"`
-		TokenID   common.Hash                  `json:"TokenID"`
 		NetworkID uint                         `json:"NetworkID"`
 	}{
 		State:     &v.BridgeAggVaultState,
-		TokenID:   v.tokenID,
 		NetworkID: v.networkID,
 	})
 	if err != nil {
@@ -86,7 +76,6 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 func (v *Vault) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		State     *statedb.BridgeAggVaultState `json:"State"`
-		TokenID   common.Hash                  `json:"TokenID"`
 		NetworkID uint                         `json:"NetworkID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -96,7 +85,6 @@ func (v *Vault) UnmarshalJSON(data []byte) error {
 	if temp.State != nil {
 		v.BridgeAggVaultState = *temp.State
 	}
-	v.tokenID = temp.TokenID
 	v.networkID = temp.NetworkID
 	return nil
 }

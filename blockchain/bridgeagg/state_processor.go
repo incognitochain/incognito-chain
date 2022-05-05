@@ -18,9 +18,9 @@ type stateProcessor struct {
 
 func (sp *stateProcessor) modifyRewardReserve(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[uint]*Vault, error) {
+) (map[common.Hash]map[common.Hash]*Vault, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -42,15 +42,15 @@ func (sp *stateProcessor) modifyRewardReserve(
 				return unifiedTokenInfos, fmt.Errorf("Cannot find unifiedTokenID %s", unifiedTokenID.String())
 			}
 			for _, vault := range vaults {
-				if _, found := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]; !found {
+				if _, found := unifiedTokenInfos[unifiedTokenID][vault.TokenID()]; !found {
 					return unifiedTokenInfos, fmt.Errorf("Cannot find vault tokenID %s", vault.TokenID().String())
 				}
-				v := unifiedTokenInfos[unifiedTokenID][vault.NetworkID()]
+				v := unifiedTokenInfos[unifiedTokenID][vault.TokenID()]
 				err = v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
-				unifiedTokenInfos[unifiedTokenID][vault.NetworkID()] = v
+				unifiedTokenInfos[unifiedTokenID][vault.TokenID()] = v
 			}
 		}
 		txReqID = acceptedInst.TxReqID
@@ -81,9 +81,9 @@ func (sp *stateProcessor) modifyRewardReserve(
 
 func (sp *stateProcessor) convert(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[uint]*Vault, error) {
+) (map[common.Hash]map[common.Hash]*Vault, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -100,12 +100,12 @@ func (sp *stateProcessor) convert(
 			return unifiedTokenInfos, err
 		}
 		if vaults, found := unifiedTokenInfos[acceptedContent.UnifiedTokenID]; found {
-			if vault, found := vaults[acceptedContent.NetworkID]; found {
+			if vault, found := vaults[acceptedContent.TokenID]; found {
 				err := vault.increaseReserve(acceptedContent.MintAmount)
 				if err != nil {
 					return unifiedTokenInfos, NewBridgeAggErrorWithValue(InvalidConvertAmountError, err)
 				}
-				unifiedTokenInfos[acceptedContent.UnifiedTokenID][acceptedContent.NetworkID] = vault
+				unifiedTokenInfos[acceptedContent.UnifiedTokenID][acceptedContent.TokenID] = vault
 			} else {
 				return unifiedTokenInfos, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 			}
@@ -140,9 +140,9 @@ func (sp *stateProcessor) convert(
 
 func (sp *stateProcessor) shield(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[uint]*Vault, error) {
+) (map[common.Hash]map[common.Hash]*Vault, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -161,7 +161,7 @@ func (sp *stateProcessor) shield(
 			return unifiedTokenInfos, err
 		}
 		for _, data := range acceptedInst.Data {
-			vault := unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] // check available before
+			vault := unifiedTokenInfos[acceptedInst.TokenID][data.IncTokenID] // check available before
 			statusData := ShieldStatusData{}
 			if acceptedInst.IsReward {
 				err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
@@ -177,7 +177,7 @@ func (sp *stateProcessor) shield(
 				statusData.Amount = data.IssuingAmount
 			}
 			shieldStatusData = append(shieldStatusData, statusData)
-			unifiedTokenInfos[acceptedInst.TokenID][data.NetworkID] = vault
+			unifiedTokenInfos[acceptedInst.TokenID][data.IncTokenID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
@@ -210,9 +210,9 @@ func (sp *stateProcessor) shield(
 
 func (sp *stateProcessor) unshield(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[uint]*Vault, error) {
+) (map[common.Hash]map[common.Hash]*Vault, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -231,7 +231,7 @@ func (sp *stateProcessor) unshield(
 		}
 		txReqID = acceptedContent.TxReqID
 		for index, data := range acceptedContent.Data {
-			vault := unifiedTokenInfos[acceptedContent.TokenID][data.NetworkID] // check available before
+			vault := unifiedTokenInfos[acceptedContent.TokenID][data.IncTokenID] // check available before
 			err = vault.increaseCurrentRewardReserve(data.Fee)
 			if err != nil {
 				return unifiedTokenInfos, err
@@ -240,7 +240,7 @@ func (sp *stateProcessor) unshield(
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			unifiedTokenInfos[acceptedContent.TokenID][data.NetworkID] = vault
+			unifiedTokenInfos[acceptedContent.TokenID][data.IncTokenID] = vault
 			status = common.AcceptedStatusByte
 			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
 			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.TokenID
@@ -280,9 +280,9 @@ func (sp *stateProcessor) clearCache() {
 
 func (sp *stateProcessor) addToken(
 	inst []string,
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[uint]*Vault, error) {
+) (map[common.Hash]map[common.Hash]*Vault, error) {
 	content := metadataBridge.AddToken{}
 	err := content.FromStringSlice(inst)
 	if err != nil {
@@ -290,28 +290,24 @@ func (sp *stateProcessor) addToken(
 	}
 	for unifiedTokenID, vaults := range content.NewListTokens {
 		if _, found := unifiedTokenInfos[unifiedTokenID]; !found {
-			unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
+			unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
 		}
 		err = statedb.UpdateBridgeTokenInfo(sDB, unifiedTokenID, GetExternalTokenIDForUnifiedToken(), false, 0, "+")
 		if err != nil {
 			return unifiedTokenInfos, err
 		}
-		for networkID, vault := range vaults {
-			tokenID, err := common.Hash{}.NewHashFromStr(vault.IncTokenID)
+		for tokenID, vault := range vaults {
+			externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, vault.NetworkID)
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
-			if err != nil {
-				return unifiedTokenInfos, err
-			}
-			err = statedb.UpdateBridgeTokenInfo(sDB, *tokenID, externalTokenID, false, 0, "+")
+			err = statedb.UpdateBridgeTokenInfo(sDB, tokenID, externalTokenID, false, 0, "+")
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
 			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
-			v := NewVaultWithValue(*state, *tokenID)
-			unifiedTokenInfos[unifiedTokenID][networkID] = v
+			v := NewVaultWithValue(*state, vault.NetworkID)
+			unifiedTokenInfos[unifiedTokenID][tokenID] = v
 		}
 	}
 	return unifiedTokenInfos, nil

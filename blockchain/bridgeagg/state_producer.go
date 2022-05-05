@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -146,15 +147,10 @@ func (sp *stateProducer) convert(
 	}
 	if vault, found := resUnifiedTokenInfos[md.UnifiedTokenID][md.TokenID]; !found {
 		errorType = NotFoundNetworkIDError
-		err = errors.New("Cannot find networkID")
+		err = fmt.Errorf("Cannot find tokenID %s", md.TokenID.String())
 		return
 	} else {
 		v := vault.Clone()
-		if v.tokenID.String() != md.TokenID.String() {
-			errorType = NotFoundTokenIDInNetworkError
-			err = errors.New("TokenID is invalid")
-			return
-		}
 		mintAmount, e := v.convert(md.Amount)
 		if err != nil {
 			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
@@ -229,6 +225,12 @@ func (sp *stateProducer) shield(
 	var rewardAmount uint64
 	paymentAddress := ""
 	for index, data := range md.Data {
+		vault, found := vaults[data.IncTokenID]
+		if !found {
+			err = fmt.Errorf("Not found tokenID %s", data.IncTokenID.String())
+			errorType = NotFoundTokenIDInNetworkError
+			return
+		}
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
 		if e != nil {
 			err = e
@@ -243,9 +245,9 @@ func (sp *stateProducer) shield(
 				errorType = OtherError
 				return
 			}
-			actualAmount, reward, receivingShardID, token, uniqTX, addressStr, tempAC, et, e := shieldEVM(
-				md.TokenID, data.NetworkID, clonedAC, shardID,
-				action.TxReqID, vaults, stateDBs,
+			tempVault, actualAmount, reward, receivingShardID, token, uniqTX, addressStr, tempAC, et, e := shieldEVM(
+				md.TokenID, data.IncTokenID, data.NetworkID, clonedAC, shardID,
+				action.TxReqID, vault, stateDBs,
 				action.ExtraData[index], blockHash, data.TxIndex, paymentAddress,
 			)
 			if e != nil {
@@ -268,6 +270,7 @@ func (sp *stateProducer) shield(
 			receiveShardID = receivingShardID
 			rewardAmount += reward
 			clonedAC = tempAC
+			vault = tempVault
 		default:
 			errorType = OtherError
 			err = errors.New("Not found networkType")
@@ -351,7 +354,13 @@ func (sp *stateProducer) unshield(
 	var listAcceptedUnshieldRequestData []metadataBridge.AcceptedUnshieldRequestData
 
 	for index, data := range md.Data {
-		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
+		vault, found := vaults[data.IncTokenID]
+		if !found {
+			errorType = NotFoundTokenIDInNetworkError
+			err = fmt.Errorf("Not found tokenID %s", data.IncTokenID.String())
+			return
+		}
+		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(vault.NetworkID())
 		if e != nil {
 			errorType = NotFoundNetworkIDError
 			err = errors.New("Not found networkID")
@@ -360,7 +369,7 @@ func (sp *stateProducer) unshield(
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			tokenID, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vaults, action.TxReqID)
+			tempVault, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vault, action.TxReqID)
 			if e != nil {
 				errorType = et
 				err = e
@@ -373,6 +382,7 @@ func (sp *stateProducer) unshield(
 				burningInsts = [][]string{}
 				return
 			}
+			vault = tempVault
 			h := big.NewInt(0).SetUint64(beaconHeight)
 			newTxReqID := common.HashH(append(action.TxReqID.Bytes(), common.IntToBytes(index)...))
 			burningInst := []string{
@@ -382,7 +392,7 @@ func (sp *stateProducer) unshield(
 				data.RemoteAddress,
 				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
 				newTxReqID.String(),
-				base58.Base58Check{}.Encode(tokenID[:], 0x00),
+				base58.Base58Check{}.Encode(data.IncTokenID[:], 0x00),
 				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 			}
 			burningInsts = append(burningInsts, burningInst)
@@ -502,6 +512,10 @@ func (sp *stateProducer) addToken(
 				clonedUnifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
 			}
 			for tokenID, vault := range vaults {
+				if tokenID.IsZeroValue() {
+					Logger.log.Warnf("WARNING: incTokenID cannot be empty")
+					return [][]string{}, unifiedTokenInfos, ac, nil
+				}
 				if incTokenIDs[tokenID.String()] {
 					Logger.log.Warnf("Duplicate incTokenID %s", tokenID.String())
 					return [][]string{}, unifiedTokenInfos, ac, nil
@@ -524,7 +538,7 @@ func (sp *stateProducer) addToken(
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
-				v := NewVaultWithValue(*state, tokenID, vault.NetworkID)
+				v := NewVaultWithValue(*state, vault.NetworkID)
 				clonedUnifiedTokenInfos[unifiedTokenID][tokenID] = v
 				incTokenIDs[tokenID.String()] = true
 				clonedAC.DBridgeTokenPair[tokenID.String()] = externalTokenID
