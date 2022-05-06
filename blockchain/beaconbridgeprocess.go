@@ -433,19 +433,19 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 				}
 			}
 
-			updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.TokenID]
+			updatingInfo, found := updatingInfoByTokenID[acceptedShieldRequest.UnifiedTokenID]
 			if found {
 				updatingInfo.CountUpAmt += data.IssuingAmount
 			} else {
 				updatingInfo = metadata.UpdatingInfo{
 					CountUpAmt:      data.IssuingAmount,
 					DeductAmt:       0,
-					TokenID:         acceptedShieldRequest.TokenID,
+					TokenID:         acceptedShieldRequest.UnifiedTokenID,
 					ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),
 					IsCentralized:   false,
 				}
 			}
-			updatingInfoByTokenID[acceptedShieldRequest.TokenID] = updatingInfo
+			updatingInfoByTokenID[acceptedShieldRequest.UnifiedTokenID] = updatingInfo
 		}
 	} else if inst.Status == common.RejectedStatusStr {
 		rejectContent := metadataCommon.NewRejectContent()
@@ -546,12 +546,12 @@ func (blockchain *BlockChain) processBurningUnifiedReq(
 		return nil, err
 	}
 
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, acceptedContent.TokenID, false)
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, acceptedContent.UnifiedTokenID, false)
 	if err != nil {
 		return nil, err
 	}
 	if !bridgeTokenExisted {
-		return nil, fmt.Errorf("Not found bridge token %s", acceptedContent.TokenID.String())
+		return nil, fmt.Errorf("Not found bridge token %s", acceptedContent.UnifiedTokenID.String())
 	}
 	var amount uint64
 	for _, v := range acceptedContent.Data {
@@ -559,21 +559,21 @@ func (blockchain *BlockChain) processBurningUnifiedReq(
 		amount += v.Fee
 	}
 
-	updatingInfo, found := updatingInfoByTokenID[acceptedContent.TokenID]
+	updatingInfo, found := updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
 	if found {
 		updatingInfo.DeductAmt += amount
 	} else {
 		updatingInfo = metadata.UpdatingInfo{
 			CountUpAmt:      0,
 			DeductAmt:       amount,
-			TokenID:         acceptedContent.TokenID,
+			TokenID:         acceptedContent.UnifiedTokenID,
 			ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),
 			IsCentralized:   false,
 		}
 	}
-	updatingInfoByTokenID[acceptedContent.TokenID] = updatingInfo
+	updatingInfoByTokenID[acceptedContent.UnifiedTokenID] = updatingInfo
 	tmpBytes, _ := json.Marshal(updatingInfo)
-	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", acceptedContent.TokenID.String(), string(tmpBytes))
+	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", acceptedContent.UnifiedTokenID.String(), string(tmpBytes))
 
 	return updatingInfoByTokenID, nil
 }

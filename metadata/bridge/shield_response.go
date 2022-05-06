@@ -123,7 +123,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted || coinID.String() != acceptedContent.TokenID.String() {
+		if err != nil || !isMinted || coinID.String() != acceptedContent.UnifiedTokenID.String() {
 			return false, fmt.Errorf("Invalid coinID")
 		}
 		if ok := mintCoin.CheckCoinValid(acceptedContent.Receiver, response.SharedRandom, receivingAmtFromInst); !ok {

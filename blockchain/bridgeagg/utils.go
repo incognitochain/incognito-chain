@@ -339,22 +339,22 @@ func shieldEVM(
 	case common.FTMNetworkID:
 		ac.UniqFTMTxsUsed = append(ac.UniqFTMTxsUsed, uniqTx)
 	}
-	ac.DBridgeTokenPair[incTokenID.String()] = GetExternalTokenIDForUnifiedToken()
+	ac.DBridgeTokenPair[unifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
 	return vault, actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
 }
 
 func buildAcceptedShieldContents(
 	shieldData, rewardData []metadataBridge.AcceptedShieldRequestData,
-	paymentAddress privacy.PaymentAddress, tokenID, txReqID common.Hash, shardID byte,
+	paymentAddress privacy.PaymentAddress, unifiedTokenID, txReqID common.Hash, shardID byte,
 	shouldBuildRewardContent bool,
 ) ([][]byte, error) {
 	contents := [][]byte{}
 	acceptedContent := metadataBridge.AcceptedShieldRequest{
-		Receiver: paymentAddress,
-		TokenID:  tokenID,
-		TxReqID:  txReqID,
-		ShardID:  shardID,
-		Data:     shieldData,
+		Receiver:       paymentAddress,
+		UnifiedTokenID: unifiedTokenID,
+		TxReqID:        txReqID,
+		ShardID:        shardID,
+		Data:           shieldData,
 	}
 	content, err := json.Marshal(acceptedContent)
 	if err != nil {
@@ -363,12 +363,12 @@ func buildAcceptedShieldContents(
 	contents = append(contents, content)
 	if shouldBuildRewardContent {
 		acceptedRewardContent := metadataBridge.AcceptedShieldRequest{
-			Receiver: paymentAddress,
-			TokenID:  tokenID,
-			TxReqID:  txReqID,
-			ShardID:  shardID,
-			IsReward: true,
-			Data:     rewardData,
+			Receiver:       paymentAddress,
+			UnifiedTokenID: unifiedTokenID,
+			TxReqID:        txReqID,
+			ShardID:        shardID,
+			IsReward:       true,
+			Data:           rewardData,
 		}
 		content, err = json.Marshal(acceptedRewardContent)
 		if err != nil {

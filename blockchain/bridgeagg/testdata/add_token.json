@@ -301,61 +301,6 @@
             "unified_token_202205021100": 9
         }
     },
-    "TestRejectedDuplicateTokenIDs": {
-        "name": "Rejected duplicate tokenids",
-        "privacy_tokens": {},
-        "expected_instructions": [],
-        "expected_unified_tokens": {},
-        "bridge_tokens_info": {},
-        "expected_bridge_tokens_info": {},
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "beacon_height": 10,
-        "configed_unified_tokens": {
-            "202205021100": {
-                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
-                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "network_id": 1
-                    },
-                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "network_id": 2
-                    }
-                },
-                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
-                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "network_id": 4
-                    }
-                }
-            }
-        },
-        "triggered_feature": {
-            "unified_token_202205021100": 9
-        }
-    },
     "TestRejectedDuplicateUnifiedTokenIDAndTokenID": {
         "name": "Rejected duplicate unified token id and token id",
         "privacy_tokens": {},

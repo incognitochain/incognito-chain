@@ -212,7 +212,7 @@ func (sp *stateProducer) shield(
 		err = nil
 	}()
 
-	vaults, e := CloneVaults(resUnifiedTokenInfos, md.TokenID)
+	vaults, e := CloneVaults(resUnifiedTokenInfos, md.UnifiedTokenID)
 	if e != nil {
 		err = e
 		errorType = NotFoundTokenIDInNetworkError
@@ -251,7 +251,7 @@ func (sp *stateProducer) shield(
 				return
 			}
 			tempVault, actualAmount, reward, receivingShardID, token, uniqTX, addressStr, tempAC, et, e := shieldEVM(
-				md.TokenID, data.IncTokenID, data.NetworkID, clonedAC, shardID,
+				md.UnifiedTokenID, data.IncTokenID, data.NetworkID, clonedAC, shardID,
 				action.TxReqID, vault, stateDBs,
 				action.ExtraData[index], blockHash, data.TxIndex, paymentAddress,
 			)
@@ -292,13 +292,13 @@ func (sp *stateProducer) shield(
 	}
 	contents, err = buildAcceptedShieldContents(
 		acceptedShieldRequestData, acceptedShieldRequestRewardData,
-		key.KeySet.PaymentAddress, md.TokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
+		key.KeySet.PaymentAddress, md.UnifiedTokenID, action.TxReqID, receiveShardID, rewardAmount != 0,
 	)
 	if err != nil {
 		errorType = OtherError
 		return
 	}
-	resUnifiedTokenInfos[md.TokenID] = vaults
+	resUnifiedTokenInfos[md.UnifiedTokenID] = vaults
 	resAC = clonedAC
 	return
 }
@@ -327,9 +327,9 @@ func (sp *stateProducer) unshield(
 				burningAmount += data.BurningAmount
 			}
 			rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
-				TokenID:  md.TokenID,
-				Amount:   burningAmount,
-				Receiver: md.Receiver,
+				UnifiedTokenID: md.UnifiedTokenID,
+				Amount:         burningAmount,
+				Receiver:       md.Receiver,
 			}
 			Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
 			content, err := json.Marshal(rejectedUnshieldRequest)
@@ -353,7 +353,7 @@ func (sp *stateProducer) unshield(
 		}
 	}()
 
-	vaults, err := CloneVaults(resUnifiedTokenInfos, md.TokenID)
+	vaults, err := CloneVaults(resUnifiedTokenInfos, md.UnifiedTokenID)
 	if err != nil {
 		errorType = NotFoundTokenIDInNetworkError
 		return
@@ -417,12 +417,12 @@ func (sp *stateProducer) unshield(
 			return
 		}
 	}
-	resUnifiedTokenInfos[md.TokenID] = vaults
+	resUnifiedTokenInfos[md.UnifiedTokenID] = vaults
 
 	acceptedContent := metadataBridge.AcceptedUnshieldRequest{
-		TokenID: md.TokenID,
-		TxReqID: action.TxReqID,
-		Data:    listAcceptedUnshieldRequestData,
+		UnifiedTokenID: md.UnifiedTokenID,
+		TxReqID:        action.TxReqID,
+		Data:           listAcceptedUnshieldRequestData,
 	}
 	content, e := json.Marshal(acceptedContent)
 	if e != nil {
@@ -522,10 +522,6 @@ func (sp *stateProducer) addToken(
 			for tokenID, vault := range vaults {
 				if tokenID.IsZeroValue() {
 					Logger.log.Warnf("BridgeAggAddToken WARNING: incTokenID cannot be empty")
-					return [][]string{}, unifiedTokenInfos, ac, nil
-				}
-				if incTokenIDs[tokenID.String()] {
-					Logger.log.Warnf("BridgeAggAddToken Duplicate incTokenID %s", tokenID.String())
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				if unifiedTokenIDs[tokenID.String()] {

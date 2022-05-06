@@ -3,7 +3,7 @@
         "name": "Accepted, 1 valid tx, y != 0, native token",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
@@ -26,11 +26,11 @@
         "expected_instructions": [
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjUwMDAwMDAwLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjF9XX0="
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjowLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo1MDAwMDAwMCwiVW5pcVR4IjoiY3dDajB5T0dodjVpNVM1L0RDN2hEbFJKZUozV2t0QytFTUNoZnNiMDgwc3giLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiTmV0d29ya0lEIjoxLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9XX0="
             ],
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6dHJ1ZSwiU2hhcmRJRCI6MCwiRGF0YSI6W3siSXNzdWluZ0Ftb3VudCI6OTksIk5ldHdvcmtJRCI6MX1dfQ=="
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOnRydWUsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjk5LCJOZXR3b3JrSUQiOjEsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
             ]
         ],
         "unified_tokens": {
@@ -128,7 +128,7 @@
         "name": "Accepted, 1 valid tx, y != 0, not native token",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
@@ -149,11 +149,11 @@
         "expected_instructions": [
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjYwOSwiVW5pcVR4IjoiQUFBZ2dRQUFKMWIvNnNzRmlIWWt6ZElaWHB6aU41NUYySjY3VXd4Zk5Nb3ciLCJFeHRlcm5hbFRva2VuSUQiOiJSbFJOK3Y3YkJCd04xUG90d05oNmF3bDU3bStucjE4PSIsIk5ldHdvcmtJRCI6NH1dfQ=="
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjoyLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo2MDksIlVuaXFUeCI6IkFBQWdnUUFBSjFiLzZzc0ZpSFlremRJWlhwemlONTVGMko2N1V3eGZOTW93IiwiRXh0ZXJuYWxUb2tlbklEIjoiUmxSTit2N2JCQndOMVBvdHdOaDZhd2w1N20rbnIxOD0iLCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
             ],
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6dHJ1ZSwiU2hhcmRJRCI6MiwiRGF0YSI6W3siSXNzdWluZ0Ftb3VudCI6OTksIk5ldHdvcmtJRCI6NH1dfQ=="
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOnRydWUsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjk5LCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
             ]
         ],
         "unified_tokens": {
@@ -251,7 +251,7 @@
         "name": "Accepted, 1 valid tx, y = 0, native token",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
@@ -274,7 +274,7 @@
         "expected_instructions": [
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjUwMDAwMDAwLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjF9XX0="
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjowLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo1MDAwMDAwMCwiVW5pcVR4IjoiY3dDajB5T0dodjVpNVM1L0RDN2hEbFJKZUozV2t0QytFTUNoZnNiMDgwc3giLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiTmV0d29ya0lEIjoxLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9XX0="
             ]
         ],
         "unified_tokens": {
@@ -371,7 +371,7 @@
         "name": "Accepted, 1 valid tx, y = 0, not native token decimal > base external decimal = 9",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
@@ -392,7 +392,7 @@
         "expected_instructions": [
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjYwOSwiVW5pcVR4IjoiQUFBZ2dRQUFKMWIvNnNzRmlIWWt6ZElaWHB6aU41NUYySjY3VXd4Zk5Nb3ciLCJFeHRlcm5hbFRva2VuSUQiOiJSbFJOK3Y3YkJCd04xUG90d05oNmF3bDU3bStucjE4PSIsIk5ldHdvcmtJRCI6NH1dfQ=="
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjoyLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo2MDksIlVuaXFUeCI6IkFBQWdnUUFBSjFiLzZzc0ZpSFlremRJWlhwemlONTVGMko2N1V3eGZOTW93IiwiRXh0ZXJuYWxUb2tlbklEIjoiUmxSTit2N2JCQndOMVBvdHdOaDZhd2w1N20rbnIxOD0iLCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
             ]
         ],
         "unified_tokens": {
@@ -489,7 +489,7 @@
         "name": "Accepted, 1 valid tx, y = 0, not native token decimal < base external decimal = 9",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
@@ -510,7 +510,7 @@
         "expected_instructions": [
             [
                 "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjYwOTAwMCwiVW5pcVR4IjoiQUFBZ2dRQUFKMWIvNnNzRmlIWWt6ZElaWHB6aU41NUYySjY3VXd4Zk5Nb3ciLCJFeHRlcm5hbFRva2VuSUQiOiJSbFJOK3Y3YkJCd04xUG90d05oNmF3bDU3bStucjE4PSIsIk5ldHdvcmtJRCI6NH1dfQ=="
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjoyLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo2MDkwMDAsIlVuaXFUeCI6IkFBQWdnUUFBSjFiLzZzc0ZpSFlremRJWlhwemlONTVGMko2N1V3eGZOTW93IiwiRXh0ZXJuYWxUb2tlbklEIjoiUmxSTit2N2JCQndOMVBvdHdOaDZhd2w1N20rbnIxOD0iLCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
             ]
         ],
         "unified_tokens": {
@@ -587,7 +587,7 @@
         "name": "Rejected, invalid external tokenID",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
@@ -701,7 +701,7 @@
         "name": "Rejected invalid TokenID",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
@@ -811,11 +811,125 @@
             "InitTokens": []
         }
     },
-    "TestRejectedTwoProofs": {
-        "name": "Rejected 2 same proofs",
+    "TestRejectedInvalidIncTokenID": {
+        "name": "Rejected invalid TokenID",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5789",
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwMCwiRGF0YSI6IjhFRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "NetworkID": 1
+                },
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "NetworkID": 2
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "NetworkID": 1
+                },
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "NetworkID": 2
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1000
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestRejectedTwoProofs": {
+        "name": "Rejected 1 proof in 2 same proofs",
+        "metadatas": [
+            {
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
@@ -832,7 +946,7 @@
                 "Type": 343
             },
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
@@ -856,7 +970,7 @@
         "expected_instructions": [
             [
                 "343", "0", "accepted",
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjUwMDAwMDAwLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjF9XX0="
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjowLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo1MDAwMDAwMCwiVW5pcVR4IjoiY3dDajB5T0dodjVpNVM1L0RDN2hEbFJKZUozV2t0QytFTUNoZnNiMDgwc3giLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiTmV0d29ya0lEIjoxLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9XX0="
             ],
             [
                 "343", "0", "rejected", 
@@ -961,7 +1075,7 @@
         "name": "Rejected 2 same proofs in one request",
         "metadatas": [
             {
-                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                 "Data": [
                     {
                         "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",

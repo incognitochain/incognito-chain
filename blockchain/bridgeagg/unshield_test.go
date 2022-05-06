@@ -128,7 +128,7 @@ func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenDepositToSC() {
 	for i, v := range testCase.TxIDs {
 		for _, md := range testCase.Metadatas {
 			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 			}
 		}
 	}
@@ -150,7 +150,7 @@ func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {
 	for i, v := range testCase.TxIDs {
 		for _, md := range testCase.Metadatas {
 			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 			}
 		}
 	}
@@ -172,7 +172,7 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {
 	for i, v := range testCase.TxIDs {
 		for _, md := range testCase.Metadatas {
 			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 			}
 		}
 	}
@@ -194,7 +194,7 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
 	for i, v := range testCase.TxIDs {
 		for _, md := range testCase.Metadatas {
 			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 			}
 		}
 	}
@@ -202,7 +202,7 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
 	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
 }
 
-func (u *UnshieldTestSuite) TestRejectedInvalidNetworkID() {
+func (u *UnshieldTestSuite) TestRejectedInvalidIncTokenID() {
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
@@ -278,7 +278,7 @@ func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
 			continue
 		}
 		for index := range testCase.Metadatas[i].Data {
-			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 		}
 	}
 	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
@@ -301,7 +301,7 @@ func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0
 			continue
 		}
 		for index := range testCase.Metadatas[i].Data {
-			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 		}
 	}
 	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
@@ -324,7 +324,7 @@ func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {
 			continue
 		}
 		for index := range testCase.Metadatas[i].Data {
-			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
+			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].UnifiedTokenID
 		}
 	}
 	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())

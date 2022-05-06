@@ -14,15 +14,15 @@ import (
 )
 
 type RejectedUnshieldRequest struct {
-	TokenID  common.Hash         `json:"TokenID"`
-	Amount   uint64              `json:"Amount"`
-	Receiver privacy.OTAReceiver `json:"Receiver"`
+	UnifiedTokenID common.Hash         `json:"UnifiedTokenID"`
+	Amount         uint64              `json:"Amount"`
+	Receiver       privacy.OTAReceiver `json:"Receiver"`
 }
 
 type AcceptedUnshieldRequest struct {
-	TokenID common.Hash                   `json:"TokenID"`
-	TxReqID common.Hash                   `json:"TxReqID"`
-	Data    []AcceptedUnshieldRequestData `json:"data"`
+	UnifiedTokenID common.Hash                   `json:"UnifiedTokenID"`
+	TxReqID        common.Hash                   `json:"TxReqID"`
+	Data           []AcceptedUnshieldRequestData `json:"data"`
 }
 
 type AcceptedUnshieldRequestData struct {
@@ -41,9 +41,9 @@ type UnshieldRequestData struct {
 }
 
 type UnshieldRequest struct {
-	TokenID  common.Hash           `json:"TokenID"`
-	Data     []UnshieldRequestData `json:"Data"`
-	Receiver privacy.OTAReceiver   `json:"Receiver"`
+	UnifiedTokenID common.Hash           `json:"UnifiedTokenID"`
+	Data           []UnshieldRequestData `json:"Data"`
+	Receiver       privacy.OTAReceiver   `json:"Receiver"`
 	metadataCommon.MetadataBase
 }
 
@@ -56,12 +56,12 @@ func NewUnshieldRequest() *UnshieldRequest {
 }
 
 func NewUnshieldRequestWithValue(
-	tokenID common.Hash, data []UnshieldRequestData, receiver privacy.OTAReceiver,
+	unifiedTokenID common.Hash, data []UnshieldRequestData, receiver privacy.OTAReceiver,
 ) *UnshieldRequest {
 	return &UnshieldRequest{
-		TokenID:  tokenID,
-		Data:     data,
-		Receiver: receiver,
+		UnifiedTokenID: unifiedTokenID,
+		Data:           data,
+		Receiver:       receiver,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.BurningUnifiedTokenRequestMeta,
 		},
@@ -73,8 +73,9 @@ func (request *UnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 }
 
 func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	if request.TokenID.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("TokenID can not be empty"))
+	usedTokenIDs := make(map[common.Hash]bool)
+	if request.UnifiedTokenID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("UnifiedTokenID can not be empty"))
 	}
 	if len(request.Data) <= 0 || len(request.Data) > config.Param().BridgeAggParam.MaxLenOfPath {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
@@ -85,6 +86,7 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 	if request.Receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("otaReceiver shardID is different from txShardID"))
 	}
+	usedTokenIDs[request.UnifiedTokenID] = true
 	totalBurningAmount := uint64(0)
 	for _, data := range request.Data {
 		if _, err := hex.DecodeString(data.RemoteAddress); err != nil {
@@ -96,6 +98,10 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 		if data.IncTokenID.IsZeroValue() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("IncTokenID cannot be empty"))
 		}
+		if usedTokenIDs[data.IncTokenID] {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Duplicate tokenID %s", data.IncTokenID.String()))
+		}
+		usedTokenIDs[data.IncTokenID] = true
 		if data.BurningAmount < data.ExpectedAmount {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount))
 		}
@@ -108,7 +114,7 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 	if err != nil || !isBurned {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("it is not transaction burn. Error %v", err))
 	}
-	if !bytes.Equal(burnedTokenID[:], request.TokenID[:]) {
+	if !bytes.Equal(burnedTokenID[:], request.UnifiedTokenID[:]) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("wrong request info's token id and token burned"))
 	}
 	burnAmount := burnCoin.GetValue()
@@ -119,8 +125,10 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("tx is not custom token privacy type"))
 	}
-	if request.TokenID == common.PRVCoinID {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("tokenID must not be prv"))
+	for k := range usedTokenIDs {
+		if k == common.PRVCoinID || k == common.PDEXCoinID {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("tokenID must not be special token"))
+		}
 	}
 
 	return true, true, nil

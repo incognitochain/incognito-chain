@@ -161,7 +161,7 @@ func (sp *stateProcessor) shield(
 			return unifiedTokenInfos, err
 		}
 		for _, data := range acceptedInst.Data {
-			vault := unifiedTokenInfos[acceptedInst.TokenID][data.IncTokenID] // check available before
+			vault := unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] // check available before
 			statusData := ShieldStatusData{}
 			if acceptedInst.IsReward {
 				err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
@@ -177,7 +177,7 @@ func (sp *stateProcessor) shield(
 				statusData.Amount = data.IssuingAmount
 			}
 			shieldStatusData = append(shieldStatusData, statusData)
-			unifiedTokenInfos[acceptedInst.TokenID][data.IncTokenID] = vault
+			unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
@@ -231,7 +231,7 @@ func (sp *stateProcessor) unshield(
 		}
 		txReqID = acceptedContent.TxReqID
 		for index, data := range acceptedContent.Data {
-			vault := unifiedTokenInfos[acceptedContent.TokenID][data.IncTokenID] // check available before
+			vault := unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] // check available before
 			err = vault.increaseCurrentRewardReserve(data.Fee)
 			if err != nil {
 				return unifiedTokenInfos, err
@@ -240,10 +240,10 @@ func (sp *stateProcessor) unshield(
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			unifiedTokenInfos[acceptedContent.TokenID][data.IncTokenID] = vault
+			unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] = vault
 			status = common.AcceptedStatusByte
 			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
-			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.TokenID
+			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.UnifiedTokenID
 			unshieldStatusData = append(unshieldStatusData, UnshieldStatusData{
 				ReceivedAmount: data.Amount,
 				Fee:            data.Fee,

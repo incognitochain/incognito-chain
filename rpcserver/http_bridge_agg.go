@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -353,9 +352,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
-	md := metadataBridge.NewShieldRequestWithValue(
-		mdReader.Data, mdReader.TokenID,
-	)
+	md := metadataBridge.NewShieldRequestWithValue(mdReader.Data, mdReader.UnifiedTokenID)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -437,11 +434,11 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.TokenID, mdReader.Data, recv)
+	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.UnifiedTokenID, mdReader.Data, recv)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	paramSelect.SetTokenID(mdReader.TokenID)
+	paramSelect.SetTokenID(mdReader.UnifiedTokenID)
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -711,8 +708,6 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	Reader := &struct {
 		TxReqID   common.Hash `json:"TxReqID"`
 		DataIndex *int        `json:"DataIndex"`
-		TokenID   common.Hash `json:"TokenID"`
-		NetworkID uint        `json:"NetworkID"`
 	}{}
 	rawData, err := json.Marshal(arrayParams[0])
 	if err != nil {
@@ -730,26 +725,5 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var burningConfirmMeta0, burningConfirmMeta1 int
-	switch Reader.NetworkID {
-	case common.ETHNetworkID:
-		burningConfirmMeta0 = metadata.BurningConfirmForDepositToSCMetaV2
-		burningConfirmMeta1 = metadata.BurningConfirmMetaV2
-	case common.BSCNetworkID:
-		burningConfirmMeta0 = metadata.BurningPBSCConfirmForDepositToSCMeta
-		burningConfirmMeta1 = metadata.BurningBSCConfirmMeta
-	case common.PLGNetworkID:
-		burningConfirmMeta0 = metadata.BurningPLGConfirmForDepositToSCMeta
-		burningConfirmMeta1 = metadata.BurningPLGConfirmMeta
-	case common.FTMNetworkID:
-		burningConfirmMeta0 = metadata.BurningFantomConfirmForDepositToSCMeta
-		burningConfirmMeta1 = metadata.BurningFantomConfirmMeta
-	case common.DefaultNetworkID:
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid networkID"))
-	}
-	res, _ := retrieveBurnProof(burningConfirmMeta0, onBeacon, height, &txReqID, httpServer)
-	if res == nil {
-		return retrieveBurnProof(burningConfirmMeta1, onBeacon, height, &txReqID, httpServer)
-	}
-	return res, nil
+	return retrieveBurnProof(0, onBeacon, height, &txReqID, httpServer, false)
 }

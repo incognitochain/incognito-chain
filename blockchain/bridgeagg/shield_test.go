@@ -304,6 +304,23 @@ func (s *ShieldTestSuite) TestRejectedTwoProofsInOneRequest() {
 	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
 }
 
+func (s *ShieldTestSuite) TestRejectedInvalidIncTokenID() {
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	expectedState := NewState()
+	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedStatuses := testCase.ExpectedStatuses
+	actualStatuses := testCase.ActualStatues
+	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
+	actualAccumulatedValues := testCase.ActualAccumulatedValues
+	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
+	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
+	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+}
+
 func TestShieldTestSuite(t *testing.T) {
 	suite.Run(t, new(ShieldTestSuite))
 }

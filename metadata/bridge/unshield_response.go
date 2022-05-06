@@ -152,8 +152,8 @@ func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			return false, fmt.Errorf("otaReceiver tx random is invalid")
 		}
 
-		if rejectedData.TokenID.String() != coinID.String() {
-			return false, fmt.Errorf("Coin is invalid receive %s expect %s", rejectedData.TokenID.String(), coinID.String())
+		if rejectedData.UnifiedTokenID.String() != coinID.String() {
+			return false, fmt.Errorf("Coin is invalid receive %s expect %s", rejectedData.UnifiedTokenID.String(), coinID.String())
 		}
 		idx = i
 		break

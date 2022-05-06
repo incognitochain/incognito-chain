@@ -129,7 +129,7 @@ func buildUnshieldUnifiedTokenResponse(
 			return nil, err
 		}
 		amount = rejectedUnshieldRequest.Amount
-		tokenID = rejectedUnshieldRequest.TokenID
+		tokenID = rejectedUnshieldRequest.UnifiedTokenID
 		otaReceiver = rejectedUnshieldRequest.Receiver
 	default:
 		return nil, nil
@@ -183,7 +183,7 @@ func buildShieldUnifiedTokenResponse(
 			}
 			listShieldResponseData = append(listShieldResponseData, shieldResponseData)
 		}
-		tokenID = acceptedContent.TokenID
+		tokenID = acceptedContent.UnifiedTokenID
 		txReqID = acceptedContent.TxReqID
 		isReward = acceptedContent.IsReward
 	default:
