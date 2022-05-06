@@ -231,6 +231,11 @@ func (sp *stateProducer) shield(
 			errorType = NotFoundTokenIDInNetworkError
 			return
 		}
+		if vault.NetworkID() != data.NetworkID {
+			err = fmt.Errorf("Expect networkID %v but get %v", vault.NetworkID(), data.NetworkID)
+			errorType = NotFoundNetworkIDError
+			return
+		}
 		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(data.NetworkID)
 		if e != nil {
 			err = e
