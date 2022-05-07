@@ -12,6 +12,7 @@ type AccumulatedValues struct {
 	UniqPRVEVMTxsUsed [][]byte
 	UniqPLGTxsUsed    [][]byte
 	UniqFTMTxsUsed    [][]byte
+	UniqLUNTxsUsed    [][]byte
 	DBridgeTokenPair  map[string][]byte
 	CBridgeTokens     []*common.Hash
 	InitTokens        []*common.Hash

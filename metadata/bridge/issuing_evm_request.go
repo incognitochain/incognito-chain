@@ -172,9 +172,10 @@ func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != metadataCommon.IssuingETHRequestMeta && iReq.Type != metadataCommon.IssuingBSCRequestMeta &&
 		iReq.Type != metadataCommon.IssuingPRVERC20RequestMeta && iReq.Type != metadataCommon.IssuingPRVBEP20RequestMeta &&
 		iReq.Type != metadataCommon.IssuingPLGRequestMeta && !(iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta && iReq.NetworkID != common.DefaultNetworkID) &&
-		iReq.Type != metadataCommon.IssuingFantomRequestMeta {
+		iReq.Type != metadataCommon.IssuingFantomRequestMeta && iReq.Type != metadataCommon.IssuingTerraRequestMeta {
 		return false
 	}
+	// thachtb todo: update validation for terra
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		metadataCommon.Logger.Log.Error(metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateTxWithBlockChainError, err))
@@ -202,6 +203,7 @@ func (iReq IssuingEVMRequest) Hash() *common.Hash {
 	return &hash
 }
 
+// thachtb todo: update for terra here
 func (iReq *IssuingEVMRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {

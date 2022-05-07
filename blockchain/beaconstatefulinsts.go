@@ -49,6 +49,7 @@ func collectStatefulActions(
 			metadata.IssuingPRVBEP20RequestMeta,
 			metadata.IssuingPLGRequestMeta,
 			metadata.IssuingFantomRequestMeta,
+			metadata.IssuingTerraRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -316,6 +317,24 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTx)
+				}
+			// thachtb todo: update logic for shielding terra
+			case metadata.IssuingTerraRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqLUNTxsUsed,
+					config.Param().LunContractAddressStr,
+					common.LUNPrefix,
+					statedb.IsLUNTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqLUNTxsUsed = append(accumulatedValues.UniqLUNTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:

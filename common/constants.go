@@ -122,6 +122,7 @@ const (
 	BSCPrefix                 = "BSC"
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
+	LUNPrefix                 = "LUN"
 	ExternalBridgeTokenLength = 20
 	UnifiedTokenPrefix        = "UT"
 )
@@ -245,6 +246,7 @@ const (
 	BSCNetworkID
 	PLGNetworkID
 	FTMNetworkID
+	TerraNetworkID
 )
 
 const (

@@ -487,6 +487,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
 				}
+			case metadata.IssuingTerraRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingTerraResponseMeta, false)
+				}
 
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:

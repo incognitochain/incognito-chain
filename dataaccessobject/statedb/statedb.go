@@ -2568,3 +2568,15 @@ func (stateDB *StateDB) getBridgeFTMTxState(key common.Hash) (*BridgeFTMTxState,
 	}
 	return NewBridgeFTMTxState(), false, nil
 }
+
+// ================================= Terra bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeLUNTxState(key common.Hash) (*BridgeLUNTxState, bool, error) {
+	lunTxState, err := stateDB.getStateObject(BridgeLUNTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if lunTxState != nil {
+		return lunTxState.GetValue().(*BridgeLUNTxState), true, nil
+	}
+	return NewBridgeLUNTxState(), false, nil
+}

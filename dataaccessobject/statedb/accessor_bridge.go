@@ -135,6 +135,31 @@ func IsFTMTxHashIssued(stateDB *StateDB, uniqueFTMTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertLUNTxHashIssued(stateDB *StateDB, uniqueLUNTx []byte) error {
+	key := GenerateBridgeLUNTxObjectKey(uniqueLUNTx)
+	value := NewBridgeLUNTxStateWithValue(uniqueLUNTx)
+	err := stateDB.SetStateObject(BridgeLUNTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertLUNTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsLUNTxHashIssued(stateDB *StateDB, uniqueLUNTx []byte) (bool, error) {
+	key := GenerateBridgeLUNTxObjectKey(uniqueLUNTx)
+	ftmTxState, has, err := stateDB.getBridgeLUNTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsLUNTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(ftmTxState.UniqueLUNTx(), uniqueLUNTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {

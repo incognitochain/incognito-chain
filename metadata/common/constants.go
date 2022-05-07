@@ -214,6 +214,12 @@ const (
 	BurningUnifiedTokenRequestMeta                  = 346
 	BurningUnifiedTokenResponseMeta                 = 347
 	BridgeAggAddTokenMeta                           = 348
+
+	// incognito mode for terra
+	IssuingTerraRequestMeta  = 334
+	IssuingTerraResponseMeta = 335
+	BurningTerraRequestMeta  = 336
+	BurningTerraConfirmMeta  = 156
 )
 
 var minerCreatedMetaTypes = []int{

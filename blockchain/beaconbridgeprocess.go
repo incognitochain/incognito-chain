@@ -55,6 +55,9 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 		case strconv.Itoa(metadata.IssuingFantomRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertFTMTxHashIssued, false)
 
+		case strconv.Itoa(metadata.IssuingTerraRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertLUNTxHashIssued, false)
+
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
@@ -356,7 +359,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
 			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
-			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.IssuingUnifiedTokenRequestMeta {
+			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.IssuingUnifiedTokenRequestMeta ||
+			metaType == metadata.IssuingTerraRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -366,7 +370,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
 			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta ||
-			metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadataCommon.IssuingUnifiedRewardResponseMeta {
+			metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadataCommon.IssuingUnifiedRewardResponseMeta ||
+			metaType == metadata.IssuingTerraResponseMeta {
 			if metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadataCommon.IssuingUnifiedRewardResponseMeta {
 				meta := tx.GetMetadata().(*metadataBridge.ShieldResponse)
 				reqTxID = meta.RequestedTxID

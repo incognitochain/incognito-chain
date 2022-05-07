@@ -211,6 +211,11 @@ const (
 
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
+
+	IssuingTerraRequestMeta  = metadataCommon.IssuingTerraRequestMeta
+	IssuingTerraResponseMeta = metadataCommon.IssuingTerraResponseMeta
+	BurningTerraRequestMeta  = metadataCommon.BurningTerraRequestMeta
+	BurningTerraConfirmMeta  = metadataCommon.BurningTerraConfirmMeta
 )
 
 // export error codes

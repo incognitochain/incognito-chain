@@ -80,6 +80,9 @@ const (
 	// Fantom bridge
 	BridgeFTMTxObjectType = 70
 
+	// terra bridge
+	BridgeLUNTxObjectType = 71
+
 	// pDex v3
 	Pdexv3StatusObjectType                    = 48
 	Pdexv3ParamsObjectType                    = 49

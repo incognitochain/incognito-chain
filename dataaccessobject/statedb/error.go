@@ -38,6 +38,7 @@ const (
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
 	ErrInvalidBridgeFTMTxStateType            = "invalid bridge fantom tx state type"
+	ErrInvalidBridgeLUNTxStateType            = "invalid bridge terra tx state type"
 	// A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -303,6 +304,10 @@ const (
 	// Bridge Agg
 	GetBridgeAggStatusError
 	StoreBridgeAggStatusError
+
+	// Fantom bridge
+	BridgeInsertLUNTxHashIssuedError
+	IsLUNTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -487,6 +492,10 @@ var ErrCodeMessage = map[int]struct {
 	// bridge agg
 	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},
 	StoreBridgeAggStatusError: {-15109, "Store bridge agg status Error"},
+
+	// terra bridge
+	BridgeInsertLUNTxHashIssuedError: {-15106, "Bridge Insert Terra Tx Hash Issued Error"},
+	IsLUNTxHashIssuedError:           {-15107, "Is Terra Tx Hash Issued Error"},
 }
 
 type StatedbError struct {
