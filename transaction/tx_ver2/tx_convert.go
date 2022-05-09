@@ -147,13 +147,13 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 
 	for i := 0; i < len(paymentInfos); i++ {
 		if isPRV {
-			c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
+			c[i], err = privacy.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfos[i]))
 			if err != nil {
 				utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
 				return nil, err
 			}
 		} else {
-			createdCACoin, _, err := createUniqueOTACoinCA(paymentInfos[i], tokenID, db)
+			createdCACoin, _, err := privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(paymentInfos[i]), tokenID)
 			if err != nil {
 				utils.Logger.Log.Errorf("TxConversion cannot create new CA coin - %v", err)
 				return nil, err

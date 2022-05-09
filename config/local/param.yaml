@@ -99,3 +99,4 @@ pdex_param:
     auto_withdraw_order_limit_amount: 10
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
+bc_height_break_point_coin_origin: 1

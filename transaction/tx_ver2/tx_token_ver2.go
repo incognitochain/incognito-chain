@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -234,6 +235,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 
 	switch params.TokenParams.TokenTxType {
 	case utils.CustomTokenInit:
+		// deprecated
 		{
 			temp := txNormal
 			temp.Proof = new(privacy.ProofV2)
@@ -248,7 +250,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				message = params.TokenParams.Receiver[0].Message
 			}
 			tempPaymentInfo := &privacy.PaymentInfo{PaymentAddress: params.TokenParams.Receiver[0].PaymentAddress, Amount: params.TokenParams.Amount, Message: message}
-			createdTokenCoin, errCoin := privacy.NewCoinFromPaymentInfo(tempPaymentInfo)
+			createdTokenCoin, errCoin := privacy.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(tempPaymentInfo))
 			if errCoin != nil {
 				utils.Logger.Log.Errorf("Cannot create new coin based on payment info err %v", errCoin)
 				return errCoin
@@ -342,7 +344,11 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 
 // this signs on the hash of both sub TXs
 func (tx *Tx) provePRV(params *tx_generic.TxPrivacyInitParams) ([]privacy.PlainCoin, []*privacy.CoinV2, error) {
-	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
+	var senderKeySet incognitokey.KeySet
+	_ = senderKeySet.InitFromPrivateKey(params.SenderSK)
+	b := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+
+	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, int(common.GetShardIDFromLastByte(b)), params.TokenID, params.StateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 		return nil, nil, err

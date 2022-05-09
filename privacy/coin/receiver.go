@@ -41,7 +41,6 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 	otaRand := operation.RandomScalar()
 	concealRand := operation.RandomScalar()
 
-	// Increase index until have the right shardID
 	index := uint32(0)
 	publicOTA := addr.GetOTAPublicKey()
 	if publicOTA == nil {
@@ -56,8 +55,8 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 		publicKey := (&operation.Point{}).Add(HrKG, publicSpend)
 
 		pkb := publicKey.ToBytesS()
-		currentShardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
-		if currentShardID == targetShardID {
+		senderShardID, recvShardID, coinPrivacyType, _ := DeriveShardInfoFromCoin(pkb)
+		if recvShardID == int(targetShardID) && senderShardID == int(targetShardID) && coinPrivacyType == PrivacyTypeMint {
 			otaRandomPoint := (&operation.Point{}).ScalarMultBase(otaRand)
 			concealRandomPoint := (&operation.Point{}).ScalarMultBase(concealRand)
 			recv.PublicKey = *publicKey

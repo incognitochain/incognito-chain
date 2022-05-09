@@ -94,7 +94,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		err = keyset.InitFromPrivateKey(&privateKey)
 		assert.Equal(t, nil, err)
 		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, 3000, []byte{})
-		coin, err = NewCoinFromPaymentInfo(paymentInfo)
+		coin, err = NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(paymentInfo))
 		coin.ConcealOutputCoin(keyset.PaymentAddress.GetPublicView())
 		b = coin.Bytes()
 		coinByBytes = new(CoinV2).Init()
@@ -129,7 +129,7 @@ func TestCoinV2CreateCoinAndDecrypt(t *testing.T) {
 
 		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, val, []byte{})
 
-		c, err := NewCoinFromPaymentInfo(paymentInfo)
+		c, err := NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(paymentInfo))
 		assert.Equal(t, val, c.GetValue())
 		assert.Equal(t, nil, err)
 		assert.Equal(t, false, c.IsEncrypted())
@@ -210,7 +210,7 @@ func TestCoinV2_IsCoinBelongToKeySet(t *testing.T) {
 
 	paymentInfo := key.PaymentInfo{Amount: 10000, PaymentAddress: keySet.PaymentAddress, Message: []byte("Hello world")}
 
-	tmpCoinV2, err := NewCoinFromPaymentInfo(&paymentInfo)
+	tmpCoinV2, err := NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(&paymentInfo))
 	assert.Equal(t, nil, err)
 
 	possessed, _ := tmpCoinV2.DoesCoinBelongToKeySet(keySet)

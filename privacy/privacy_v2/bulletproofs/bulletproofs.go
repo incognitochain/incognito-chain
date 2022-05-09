@@ -674,7 +674,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof, gvalLst []*operation.Point) (bo
 			}
 		}
 	}
-	if !check.Eval().IsIdentity() {
+	if check != nil && !check.Eval().IsIdentity() {
 		Logger.Log.Errorf("Verify batch aggregated range proof failed")
 		return false, fmt.Errorf("bulletproofs: batch range proof invalid")
 	}
