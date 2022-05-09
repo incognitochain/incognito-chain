@@ -2,6 +2,9 @@ package blockchain
 
 import (
 	"fmt"
+	"math"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -13,8 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
-	"math"
-	"sort"
 )
 
 type duplicateKeyStakeInstruction struct {

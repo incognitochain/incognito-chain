@@ -179,7 +179,6 @@ const (
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
 	Pdexv3DistributeMiningOrderRewardMeta   = 308
-	Pdexv3MintAccessTokenMeta               = 309
 
 	// pBSC
 	BurningPBSCForDepositToSCRequestMeta = 326
@@ -204,6 +203,17 @@ const (
 	// pFantom ( Fantom )
 	BurningFantomForDepositToSCRequestMeta = 334
 	BurningFantomConfirmForDepositToSCMeta = 156
+
+	// bridgeagg
+	BridgeAggModifyRewardReserveMeta                = 340
+	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
+	IssuingUnifiedTokenRequestMeta                  = 343
+	IssuingUnifiedTokenResponseMeta                 = 344
+	IssuingUnifiedRewardResponseMeta                = 345
+	BurningUnifiedTokenRequestMeta                  = 346
+	BurningUnifiedTokenResponseMeta                 = 347
+	BridgeAggAddTokenMeta                           = 348
 )
 
 var minerCreatedMetaTypes = []int{
@@ -251,7 +261,10 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3StakingResponseMeta,
 	Pdexv3UnstakingResponseMeta,
 	Pdexv3WithdrawStakingRewardResponseMeta,
-	Pdexv3MintAccessTokenMeta,
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
+	IssuingUnifiedTokenResponseMeta,
+	IssuingUnifiedRewardResponseMeta,
+	BurningUnifiedTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

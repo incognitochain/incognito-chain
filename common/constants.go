@@ -70,7 +70,6 @@ var (
 	ConfidentialAssetName = "CA"
 	PDEXCoinID            = Hash{6}
 	PDEXCoinName          = "PDEX"
-	PdexAccessCoinID      = Hash{7}
 	MaxShardNumber        = 0
 )
 
@@ -124,6 +123,7 @@ const (
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
 	ExternalBridgeTokenLength = 20
+	UnifiedTokenPrefix        = "UT"
 )
 
 // Bridge, PDE & Portal statuses for RPCs
@@ -182,16 +182,26 @@ const (
 )
 
 const (
-	Pdexv3RejectStringStatus = "rejected"
-	Pdexv3AcceptStringStatus = "accept"
+	Pdexv3RejectUserMintNftStatus = "rejected"
+	Pdexv3AcceptUserMintNftStatus = "accept"
+	Pdexv3RejectStakingStatus     = "rejected"
+	Pdexv3AcceptStakingStatus     = "accept"
+	Pdexv3RejectUnstakingStatus   = "rejected"
+	Pdexv3AcceptUnstakingStatus   = "accept"
 
 	Pdexv3AcceptStatus = byte(1)
 	Pdexv3RejectStatus = byte(2)
 )
 
+const (
+	RejectedStatusStr  = "rejected"
+	AcceptedStatusStr  = "accepted"
+	RejectedStatusByte = byte(0)
+	AcceptedStatusByte = byte(1)
+)
+
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
-const PdexAccessIDStr = "0000000000000000000000000000000000000000000000000000000000000007"
 const PDEXDenominatingDecimal = 9
 
 const ETHChainName = "eth"
@@ -226,4 +236,17 @@ var TIMESLOT = uint64(0) //need to be set when init chain
 var (
 	BurningAddressByte  []byte
 	BurningAddressByte2 []byte
+)
+
+// Add to the end of the list. DO NOT edit the order
+const (
+	DefaultNetworkID = iota
+	ETHNetworkID
+	BSCNetworkID
+	PLGNetworkID
+	FTMNetworkID
+)
+
+const (
+	EVMNetworkType = iota
 )

@@ -1,7 +1,6 @@
 package pdex
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type stateV2 struct {
@@ -29,9 +29,6 @@ type stateV2 struct {
 	nftIDs                      map[string]uint64
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
-
-	// cached state
-	nftAssetTags *v2utils.NFTAssetTagsCache
 }
 
 func (s *stateV2) readConfig() {
@@ -149,7 +146,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				s.poolPairs,
 			)
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
-			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs, s.nftAssetTags)
+			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
 				continue
 			}
@@ -173,7 +170,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			)
 		case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta:
 			s.poolPairs, err = s.processor.withdrawLiquidity(
-				env.StateDB(), inst, s.poolPairs, beaconHeight, s.params.MiningRewardPendingBlocks,
+				env.StateDB(), inst, s.poolPairs, s.params.MiningRewardPendingBlocks,
 			)
 		case metadataCommon.Pdexv3TradeRequestMeta:
 			s.poolPairs, err = s.processor.trade(env.StateDB(), inst,
@@ -346,7 +343,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	withdrawLiquidityInstructions := [][]string{}
 	withdrawLiquidityInstructions, s.poolPairs, err = s.producer.withdrawLiquidity(
-		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, beaconHeight, s.params.MiningRewardPendingBlocks,
+		withdrawLiquidityTxs, s.poolPairs, s.nftIDs, s.params.MiningRewardPendingBlocks,
 	)
 	if err != nil {
 		return instructions, err
@@ -394,8 +391,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, tradeInstructions...)
 
 	var matchedWithdrawInstructions [][]string
-	sortedPairIDs := []string{}
-	matchedWithdrawInstructions, s.poolPairs, sortedPairIDs, err = s.producer.withdrawAllMatchedOrders(
+	matchedWithdrawInstructions, s.poolPairs, err = s.producer.withdrawAllMatchedOrders(
 		s.poolPairs, s.params.AutoWithdrawOrderLimitAmount,
 	)
 	if err != nil {
@@ -477,7 +473,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	mintNftInstructions := [][]string{}
 	burningPRVAmount := uint64(0)
 	mintNftInstructions, s.nftIDs, burningPRVAmount, err = s.producer.userMintNft(
-		mintNftTxs, s.nftIDs, s.nftAssetTags, beaconHeight, s.params.MintNftRequireAmount)
+		mintNftTxs, s.nftIDs, beaconHeight, s.params.MintNftRequireAmount)
 	if err != nil {
 		return instructions, err
 	}
@@ -496,14 +492,6 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 			return instructions, err
 		}
 		instructions = append(instructions, mintInstructions...)
-	}
-
-	if env.Reward() > 0 {
-		withdrawOrderRewardInstructions := [][]string{}
-		withdrawOrderRewardInstructions, s.poolPairs, err = s.producer.withdrawPendingOrderRewards(
-			s.poolPairs, s.params.AutoWithdrawOrderRewardLimitAmount, sortedPairIDs,
-		)
-		instructions = append(instructions, withdrawOrderRewardInstructions...)
 	}
 
 	// handle modify params
@@ -547,7 +535,6 @@ func (s *stateV2) StoreToDB(env StateEnvironment, stateChange *v2utils.StateChan
 			s.params.DAOContributingPercent,
 			s.params.MiningRewardPendingBlocks,
 			s.params.OrderMiningRewardRatioBPS,
-			s.params.AutoWithdrawOrderRewardLimitAmount,
 		)
 		if err != nil {
 			return err
@@ -637,10 +624,12 @@ func (s *stateV2) Reader() StateReader {
 
 func NewContributionWithMetaData(
 	metaData metadataPdexv3.AddLiquidityRequest, txReqID common.Hash, shardID byte,
-) (*rawdbv2.Pdexv3Contribution, error) {
-	tokenHash, err := common.Hash{}.NewHashFromStr(metaData.TokenID())
-	if err != nil {
-		return nil, err
+) *rawdbv2.Pdexv3Contribution {
+	tokenHash, _ := common.Hash{}.NewHashFromStr(metaData.TokenID())
+	nftID := common.Hash{}
+	if metaData.NftID() != utils.EmptyString {
+		nftHash, _ := common.Hash{}.NewHashFromStr(metaData.NftID())
+		nftID = *nftHash
 	}
 
 	accessID := common.Hash{}
@@ -668,10 +657,10 @@ func NewContributionWithMetaData(
 
 	return rawdbv2.NewPdexv3ContributionWithValue(
 		metaData.PoolPairID(), metaData.OtaReceiver(),
-		*tokenHash, txReqID, accessID,
+		*tokenHash, txReqID, nftID,
 		metaData.TokenAmount(), metaData.Amplifier(),
-		shardID, accessOTA, otaReceivers,
-	), nil
+		shardID,
+	)
 }
 
 func (s *stateV2) WaitingContributions() []byte {
@@ -755,151 +744,67 @@ func (s *stateV2) Validator() StateValidator {
 	return s
 }
 
-func (s *stateV2) IsValidNftID(nftID string) (bool, error) {
+func (s *stateV2) IsValidNftID(nftID string) error {
 	if _, found := s.nftIDs[nftID]; !found {
-		return false, fmt.Errorf("%v nftID can not be found", nftID)
+		return fmt.Errorf("%v nftID can not be found", nftID)
 	}
-	return true, nil
+	return nil
 }
 
-func (s *stateV2) IsValidPoolPairID(poolPairID string) (bool, error) {
+func (s *stateV2) IsValidPoolPairID(poolPairID string) error {
 	if poolPair, found := s.poolPairs[poolPairID]; poolPair == nil || !found {
-		return false, fmt.Errorf("%v pool pair id is not valid", poolPairID)
+		return fmt.Errorf("%v pool pair id is not valid", poolPairID)
 	}
-	return true, nil
+	return nil
 }
 
-func (s *stateV2) IsValidMintNftRequireAmount(amount uint64) (bool, error) {
+func (s *stateV2) IsValidMintNftRequireAmount(amount uint64) error {
 	if s.params.MintNftRequireAmount != amount {
-		return false, fmt.Errorf("Expect mint nft require amount by %v but got %v",
+		return fmt.Errorf("Expect mint nft require amount by %v but got %v",
 			s.params.MintNftRequireAmount, amount)
 	}
-	return true, nil
+	return nil
 }
 
-func (s *stateV2) IsValidStakingPool(stakingPoolID string) (bool, error) {
+func (s *stateV2) IsValidStakingPool(stakingPoolID string) error {
 	if stakingPool, found := s.stakingPoolStates[stakingPoolID]; stakingPool == nil || !found {
-		return false, fmt.Errorf("Can not find stakingPoolID %s", stakingPoolID)
+		return fmt.Errorf("Can not find stakingPoolID %s", stakingPoolID)
 	}
-	return true, nil
+	return nil
 }
 
-func (s *stateV2) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) (bool, error) {
+func (s *stateV2) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error {
 	stakingPoolState, found := s.stakingPoolStates[tokenID]
 	if !found || stakingPoolState == nil {
-		return false, fmt.Errorf("Can not find stakingPoolID %s", tokenID)
+		return fmt.Errorf("Can not find stakingPoolID %s", tokenID)
 	}
 	staker, found := stakingPoolState.Stakers()[nftID]
 	if !found || staker == nil {
-		return false, fmt.Errorf("Can not find nftID %s", nftID)
+		return fmt.Errorf("Can not find nftID %s", nftID)
 	}
 	if staker.Liquidity() < unstakingAmount {
-		return false, errors.New("unstakingAmount > current staker liquidity")
+		return errors.New("unstakingAmount > current staker liquidity")
 	}
 	if staker.Liquidity() == 0 || unstakingAmount == 0 {
-		return false, errors.New("unstakingAmount or staker.Liquidity is 0")
+		return errors.New("unstakingAmount or staker.Liquidity is 0")
 	}
-	return true, nil
+	return nil
 }
 
-func (s *stateV2) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) (bool, error) {
+func (s *stateV2) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error {
 	poolPair, found := s.poolPairs[poolPairID]
 	if !found || poolPair == nil {
-		return false, fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
+		return fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
 	}
 	share, found := poolPair.Shares()[nftID]
 	if !found || share == nil {
-		return false, fmt.Errorf("Can't not find nftID %s", nftID)
+		return fmt.Errorf("Can't not find nftID %s", nftID)
 	}
 	if share.Amount() < shareAmount {
-		return false, errors.New("shareAmount > current share amount")
+		return errors.New("shareAmount > current share amount")
 	}
 	if shareAmount == 0 || share.Amount() == 0 {
-		return false, errors.New("share amount or share.Amount() is 0")
+		return errors.New("share amount or share.Amount() is 0")
 	}
-	return true, nil
-}
-
-func (s *stateV2) IsValidStaker(stakingPoolID, stakerID string) (bool, error) {
-	stakingPool, found := s.stakingPoolStates[stakingPoolID]
-	if stakingPool == nil || !found {
-		return false, fmt.Errorf("Can not find stakingPoolID %s", stakingPoolID)
-	}
-	staker, found := stakingPool.stakers[stakerID]
-	if staker == nil || !found {
-		return false, fmt.Errorf("Can not find stakerID %s", stakerID)
-	}
-	return true, nil
-}
-
-func (s *stateV2) IsValidLP(poolPairID, lpID string) (bool, error) {
-	poolPair, found := s.poolPairs[poolPairID]
-	if !found || poolPair == nil {
-		return false, fmt.Errorf("Can't not find pool pair ID %s", poolPairID)
-	}
-	share, found := poolPair.Shares()[lpID]
-	if !found || share == nil {
-		return false, fmt.Errorf("Can't not find lpID %s", lpID)
-	}
-	return true, nil
-}
-
-func (s *stateV2) NFTAssetTags() (map[string]*common.Hash, error) {
-	if s.nftAssetTags == nil {
-		var err error
-		s.nftAssetTags, err = s.nftAssetTags.FromIDs(s.nftIDs)
-		if err != nil {
-			return nil, fmt.Errorf("NFTAssetTags missing from pdex state - %v", err)
-		}
-	}
-	return *s.nftAssetTags, nil
-}
-
-func (s *stateV2) IsValidAccessOTA(checker metadataCommon.Pdexv3ExtendedAccessID) (bool, error) {
-	var accessOTA []byte
-	switch checker.MetadataType {
-	case metadataCommon.Pdexv3WithdrawLiquidityRequestMeta, metadataCommon.Pdexv3WithdrawLPFeeRequestMeta:
-		poolPair, found := s.poolPairs[checker.PoolID]
-		if !found || poolPair == nil {
-			return false, fmt.Errorf("Cannot find pool pair ID %s", checker.PoolID)
-		}
-		share, found := poolPair.Shares()[checker.AccessID.String()]
-		if !found || share == nil {
-			return false, fmt.Errorf("Cannot find accessID %s", checker.AccessID.String())
-		}
-		accessOTA = share.accessOTA
-	case metadataCommon.Pdexv3UnstakingRequestMeta, metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
-		stakingPool, found := s.stakingPoolStates[checker.PoolID]
-		if stakingPool == nil || !found {
-			return false, fmt.Errorf("Cannot find stakingPoolID %s", checker.PoolID)
-		}
-		staker, found := stakingPool.stakers[checker.AccessID.String()]
-		if staker == nil || !found {
-			return false, fmt.Errorf("Cannot find stakerID %s", checker.AccessID.String())
-		}
-		accessOTA = staker.accessOTA
-	case metadataCommon.Pdexv3WithdrawOrderRequestMeta:
-		poolPair, found := s.poolPairs[checker.PoolID]
-		if !found || poolPair == nil {
-			return false, fmt.Errorf("Cannot find pool pair ID %s", checker.PoolID)
-		}
-		index := -1
-		for i, order := range poolPair.Orderbook().Orders() {
-			if order.Id() == checker.OrderID {
-				index = i
-				accessOTA = order.AccessOTA()
-				if order.NftID().String() != checker.AccessID.String() {
-					return false, fmt.Errorf("Expect accessID %s of order not %s", order.NftID().String(), checker.AccessID.String())
-				}
-				break
-			}
-		}
-		if index == -1 {
-			return false, fmt.Errorf("Cannot find orderID %v", checker.OrderID)
-		}
-	}
-	if !bytes.Equal(accessOTA, checker.AccessOTA) {
-		return false, fmt.Errorf("AccessOTA Expect %v but receive %v", accessOTA, checker.AccessOTA)
-	}
-	return true, nil
+	return nil
 }

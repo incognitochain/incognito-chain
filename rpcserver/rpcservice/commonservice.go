@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -167,7 +168,10 @@ func NewBurningRequestMetadata(
 	bcr metadata.ChainRetriever,
 	beaconHeight uint64,
 	version int8,
-) (*metadata.BurningRequest, *RPCError) {
+	networkID uint,
+	expectedAmount uint64,
+	isDepositToSC *bool,
+) (*metadataBridge.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -187,7 +191,7 @@ func NewBurningRequestMetadata(
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
-	meta, err := metadata.NewBurningRequest(
+	meta, err := metadataBridge.NewBurningRequest(
 		paymentAddr,
 		uint64(voutsAmount),
 		*tokenIDHash,

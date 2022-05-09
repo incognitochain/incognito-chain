@@ -10,24 +10,19 @@ import (
 
 //Pdexv3Contribution Real data store to statedb
 type Pdexv3Contribution struct {
-	poolPairID   string
-	otaReceiver  string
-	otaReceivers map[common.Hash]string
-	tokenID      common.Hash
-	amount       uint64
-	amplifier    uint
-	txReqID      common.Hash
-	nftID        common.Hash // prsent for nftID or accessID
-	shardID      byte
-	accessOTA    []byte
+	poolPairID  string
+	otaReceiver string
+	tokenID     common.Hash
+	amount      uint64
+	amplifier   uint
+	txReqID     common.Hash
+	nftID       common.Hash
+	shardID     byte
+	accessOTA   []byte
 }
 
 func (contribution *Pdexv3Contribution) NftID() common.Hash {
 	return contribution.nftID
-}
-
-func (contribution *Pdexv3Contribution) SetNftID(nftID common.Hash) {
-	contribution.nftID = nftID
 }
 
 func (contribution *Pdexv3Contribution) ShardID() byte {
@@ -66,38 +61,31 @@ func (contribution *Pdexv3Contribution) Amount() uint64 {
 	return contribution.amount
 }
 
-//OtaReceivers read only function
-func (contribution *Pdexv3Contribution) OtaReceivers() map[common.Hash]string {
-	return contribution.otaReceivers
-}
-
 func (contribution *Pdexv3Contribution) SetAmount(amount uint64) {
 	contribution.amount = amount
 }
 
 func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PoolPairID   string                 `json:"PoolPairID"`
-		OtaReceiver  string                 `json:"OtaReceiver,omitempty"`
-		TokenID      common.Hash            `json:"TokenID"`
-		Amount       uint64                 `json:"Amount"`
-		Amplifier    uint                   `json:"Amplifier"`
-		TxReqID      common.Hash            `json:"TxReqID"`
-		NftID        common.Hash            `json:"NftID"`
-		ShardID      byte                   `json:"ShardID"`
-		AccessOTA    []byte                 `json:"AccessOTA,omitempty"`
-		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
+		PoolPairID  string      `json:"PoolPairID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TokenID     common.Hash `json:"TokenID"`
+		Amount      uint64      `json:"Amount"`
+		Amplifier   uint        `json:"Amplifier"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		NftID       common.Hash `json:"NftID"`
+		ShardID     byte        `json:"ShardID"`
+		AccessOTA   []byte      `json:"AccessOTA"`
 	}{
-		PoolPairID:   contribution.poolPairID,
-		OtaReceiver:  contribution.otaReceiver,
-		TokenID:      contribution.tokenID,
-		Amount:       contribution.amount,
-		TxReqID:      contribution.txReqID,
-		Amplifier:    contribution.amplifier,
-		NftID:        contribution.nftID,
-		ShardID:      contribution.shardID,
-		AccessOTA:    contribution.accessOTA,
-		OtaReceivers: contribution.otaReceivers,
+		PoolPairID:  contribution.poolPairID,
+		OtaReceiver: contribution.otaReceiver,
+		TokenID:     contribution.tokenID,
+		Amount:      contribution.amount,
+		TxReqID:     contribution.txReqID,
+		Amplifier:   contribution.amplifier,
+		NftID:       contribution.nftID,
+		ShardID:     contribution.shardID,
+		AccessOTA:   contribution.accessOTA,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -107,16 +95,15 @@ func (contribution *Pdexv3Contribution) MarshalJSON() ([]byte, error) {
 
 func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PoolPairID   string                 `json:"PoolPairID"`
-		OtaReceiver  string                 `json:"OtaReceiver,omitempty"`
-		TokenID      common.Hash            `json:"TokenID"`
-		Amount       uint64                 `json:"Amount"`
-		Amplifier    uint                   `json:"Amplifier"`
-		TxReqID      common.Hash            `json:"TxReqID"`
-		NftID        common.Hash            `json:"NftID"`
-		ShardID      byte                   `json:"ShardID"`
-		AccessOTA    []byte                 `json:"AccessOTA,omitempty"`
-		OtaReceivers map[common.Hash]string `json:"OtaReceivers,omitempty"`
+		PoolPairID  string      `json:"PoolPairID"`
+		OtaReceiver string      `json:"OtaReceiver"`
+		TokenID     common.Hash `json:"TokenID"`
+		Amount      uint64      `json:"Amount"`
+		Amplifier   uint        `json:"Amplifier"`
+		TxReqID     common.Hash `json:"TxReqID"`
+		NftID       common.Hash `json:"NftID"`
+		ShardID     byte        `json:"ShardID"`
+		AccessOTA   []byte      `json:"AccessOTA"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -131,7 +118,6 @@ func (contribution *Pdexv3Contribution) UnmarshalJSON(data []byte) error {
 	contribution.shardID = temp.ShardID
 	contribution.nftID = temp.NftID
 	contribution.accessOTA = temp.AccessOTA
-	contribution.otaReceivers = temp.OtaReceivers
 	return nil
 }
 
@@ -140,7 +126,6 @@ func (contribution *Pdexv3Contribution) Clone() *Pdexv3Contribution {
 		contribution.poolPairID, contribution.otaReceiver,
 		contribution.tokenID, contribution.txReqID, contribution.nftID,
 		contribution.amount, contribution.amplifier, contribution.shardID,
-		contribution.accessOTA, contribution.otaReceivers,
 	)
 }
 
@@ -152,19 +137,16 @@ func NewPdexv3ContributionWithValue(
 	poolPairID, otaReceiver string,
 	tokenID, txReqID, nftID common.Hash,
 	amount uint64, amplifier uint, shardID byte,
-	accessOTA []byte, otaReceivers map[common.Hash]string,
 ) *Pdexv3Contribution {
 	return &Pdexv3Contribution{
-		poolPairID:   poolPairID,
-		otaReceiver:  otaReceiver,
-		tokenID:      tokenID,
-		amount:       amount,
-		txReqID:      txReqID,
-		nftID:        nftID,
-		amplifier:    amplifier,
-		shardID:      shardID,
-		accessOTA:    accessOTA,
-		otaReceivers: otaReceivers,
+		poolPairID:  poolPairID,
+		otaReceiver: otaReceiver,
+		tokenID:     tokenID,
+		amount:      amount,
+		txReqID:     txReqID,
+		nftID:       nftID,
+		amplifier:   amplifier,
+		shardID:     shardID,
 	}
 }
 
@@ -349,7 +331,6 @@ func NewPdexv3PoolPairWithValue(
 type Pdexv3Order struct {
 	id             string
 	nftID          common.Hash
-	accessOTA      []byte
 	token0Rate     uint64
 	token1Rate     uint64
 	token0Balance  uint64
@@ -367,17 +348,14 @@ func (o *Pdexv3Order) Token1Balance() uint64  { return o.token1Balance }
 func (o *Pdexv3Order) TradeDirection() byte   { return o.tradeDirection }
 func (o *Pdexv3Order) Token0Receiver() string { return o.receiver[0] }
 func (o *Pdexv3Order) Token1Receiver() string { return o.receiver[1] }
-func (o *Pdexv3Order) AccessOTA() []byte      { return o.accessOTA }
-func (o *Pdexv3Order) RewardKey() common.Hash { return o.nftID }
 
 // SetToken0Balance() changes the token0 balance of this order. Only balances can be updated,
 // while rates, id & trade direction cannot
 func (o *Pdexv3Order) SetToken0Balance(b uint64) { o.token0Balance = b }
 func (o *Pdexv3Order) SetToken1Balance(b uint64) { o.token1Balance = b }
-func (o *Pdexv3Order) SetAccessOTA(b []byte)     { o.accessOTA = b }
 
 func NewPdexv3OrderWithValue(
-	id string, nftID common.Hash, accessOTA []byte,
+	id string, nftID common.Hash,
 	token0Rate, token1Rate, token0Balance, token1Balance uint64,
 	tradeDirection byte,
 	receiver [2]string,
@@ -385,7 +363,6 @@ func NewPdexv3OrderWithValue(
 	return &Pdexv3Order{
 		id:             id,
 		nftID:          nftID,
-		accessOTA:      accessOTA,
 		token0Rate:     token0Rate,
 		token1Rate:     token1Rate,
 		token0Balance:  token0Balance,
@@ -399,7 +376,6 @@ func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Id             string      `json:"Id"`
 		NftID          common.Hash `json:"NftID"`
-		AccessOTA      []byte      `json:"AccessOTA,omitempty"`
 		Token0Rate     uint64      `json:"Token0Rate"`
 		Token1Rate     uint64      `json:"Token1Rate"`
 		Token0Balance  uint64      `json:"Token0Balance"`
@@ -409,7 +385,6 @@ func (o *Pdexv3Order) MarshalJSON() ([]byte, error) {
 	}{
 		Id:             o.id,
 		NftID:          o.nftID,
-		AccessOTA:      o.accessOTA,
 		Token0Rate:     o.token0Rate,
 		Token1Rate:     o.token1Rate,
 		Token0Balance:  o.token0Balance,
@@ -427,7 +402,6 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 	var temp struct {
 		Id             string      `json:"Id"`
 		NftID          common.Hash `json:"NftID"`
-		AccessOTA      []byte      `json:"AccessOTA,omitempty"`
 		Token0Rate     uint64      `json:"Token0Rate"`
 		Token1Rate     uint64      `json:"Token1Rate"`
 		Token0Balance  uint64      `json:"Token0Balance"`
@@ -443,7 +417,6 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 	*o = Pdexv3Order{
 		id:             temp.Id,
 		nftID:          temp.NftID,
-		accessOTA:      temp.AccessOTA,
 		token0Rate:     temp.Token0Rate,
 		token1Rate:     temp.Token1Rate,
 		token0Balance:  temp.Token0Balance,
@@ -455,10 +428,6 @@ func (o *Pdexv3Order) UnmarshalJSON(data []byte) error {
 }
 
 func (o *Pdexv3Order) Clone() *Pdexv3Order {
-	return NewPdexv3OrderWithValue(o.id, o.nftID, o.accessOTA, o.token0Rate, o.token1Rate,
+	return NewPdexv3OrderWithValue(o.id, o.nftID, o.token0Rate, o.token1Rate,
 		o.token0Balance, o.token1Balance, o.tradeDirection, o.receiver)
-}
-
-func (o *Pdexv3Order) IsEmpty() bool {
-	return o.token0Balance == 0 && o.token1Balance == 0
 }

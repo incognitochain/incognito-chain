@@ -51,7 +51,6 @@ func StorePdexv3Params(
 	daoContributingPercent uint,
 	miningRewardPendingBlocks uint64,
 	orderMiningRewardRatioBPS map[string]uint,
-	autoWithdrawOrderRewardLimitAmount uint,
 ) error {
 	key := GeneratePdexv3ParamsObjectKey()
 	value := NewPdexv3ParamsWithValue(
@@ -73,7 +72,6 @@ func StorePdexv3Params(
 		daoContributingPercent,
 		miningRewardPendingBlocks,
 		orderMiningRewardRatioBPS,
-		autoWithdrawOrderRewardLimitAmount,
 	)
 	err := stateDB.SetStateObject(Pdexv3ParamsObjectType, key, value)
 	if err != nil {
@@ -277,7 +275,7 @@ func DeletePdexv3PoolPairOrderReward(
 func StorePdexv3PoolPairMakingVolume(
 	stateDB *StateDB, poolPairID string, state *Pdexv3PoolPairMakingVolumeState,
 ) error {
-	key := GeneratePdexv3PoolPairMakingVolumeObjectKey(poolPairID, state.tokenID, state.nftID)
+	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, state.tokenID, state.nftID)
 	return stateDB.SetStateObject(Pdexv3PoolPairMakingVolumeObjectType, key, state)
 }
 
@@ -291,7 +289,7 @@ func StorePdexv3PoolPairLmLockedShare(
 func DeletePdexv3PoolPairMakingVolume(
 	stateDB *StateDB, poolPairID, nftID string, tokenID common.Hash,
 ) error {
-	key := GeneratePdexv3PoolPairMakingVolumeObjectKey(poolPairID, tokenID, nftID)
+	key := GeneratePdexv3PoolPairMakingVolumeObjectPrefix(poolPairID, tokenID, nftID)
 	if !stateDB.MarkDeleteStateObject(Pdexv3PoolPairMakingVolumeObjectType, key) {
 		return fmt.Errorf("Cannot delete pool pair making volume with ID %v - %v - %v", poolPairID, tokenID.String(), nftID)
 	}

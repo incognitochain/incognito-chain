@@ -632,7 +632,6 @@ func (txService TxService) BuildRawTransaction(
 		meta,
 		params.Info,
 	)
-	txPrivacyParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, err := transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -1186,7 +1185,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
 		beaconView.GetBeaconFeatureStateDB())
-	txTokenParams.SetRingDecoyFilters(txService.DefaultRingFilters())
+
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
 		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
@@ -1248,7 +1247,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interf
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
 		beaconView.GetBeaconFeatureStateDB())
-	txTokenParams.SetRingDecoyFilters(txService.DefaultRingFilters())
+
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
 		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
@@ -2227,7 +2226,6 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 		nil, // use for prv coin -> nil is valid
 		meta, nil,
 	)
-	txPrivacyParams.SetRingDecoyFilters(txService.DefaultRingFilters())
 	tx, err := transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -2583,7 +2581,7 @@ func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(param
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
 		beaconView.GetBeaconFeatureStateDB())
-	txTokenParams.SetRingDecoyFilters(txService.DefaultRingFilters())
+
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
 		Logger.log.Errorf("Cannot create new transaction token from params, err %v", err)
@@ -2604,16 +2602,4 @@ func isTxRelateCommittee(tx metadata.Transaction) bool {
 		}
 	}
 	return false
-}
-
-func (txService TxService) DefaultRingFilters() []privacy.RingDecoyFilter {
-	var result []privacy.RingDecoyFilter
-	f, err := txService.BlockChain.GetBeaconBestState().NftIDCoinFilter()
-	if err != nil {
-		Logger.log.Warnf("RPCService: NftIDCoinFilter not found, removing from default filters - %v", err)
-	} else {
-		result = append(result, f)
-	}
-	result = append(result, privacy.NonPrivateTokenCoinFilter)
-	return result
 }

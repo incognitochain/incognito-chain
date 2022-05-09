@@ -30,7 +30,6 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -335,6 +334,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
+
 	if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
@@ -425,7 +425,6 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	hasAssetTags := true
-	attempts := privacy.MaxPrivacyAttempts
 	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
@@ -438,34 +437,9 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 
 		publicKey := coinDB.GetPublicKey()
-		// we do not use burned, burn-only, or NFTID coins since they will reduce the privacy level of the transaction.
-		canUseCoin := true
+		// we do not use burned coins since they will reduce the privacy level of the transaction.
 		if common.IsPublicKeyBurningAddress(publicKey.ToBytesS()) {
-			canUseCoin = false
-		}
-		if *tokenID != common.PRVCoinID {
-			if pass := privacy.NonPrivateTokenCoinFilter.CanUseAsRingDecoy(coinDB); !pass {
-				canUseCoin = false
-				Logger.log.Infof("RandomCommitment: discard coin %v of non-private token, asset tag %v", publicKey, coinDB.GetAssetTag())
-			} else {
-				f, err := blockchain.GetBeaconBestState().NftIDCoinFilter()
-				if err == nil {
-					if pass := f.CanUseAsRingDecoy(coinDB); !pass {
-						canUseCoin = false
-						Logger.log.Infof("RandomCommitment: discard coin %v with NFTID, asset tag %v", publicKey, coinDB.GetAssetTag())
-					}
-				} else {
-					Logger.log.Infof("Cannot get NFTID filter from beacon state - %v", err)
-				}
-			}
-		}
-		// when the sampled coin cannot be used, retry (or exit if attempts run out)
-		if !canUseCoin {
 			i--
-			attempts--
-			if attempts <= 0 {
-				break
-			}
 			continue
 		}
 
@@ -664,7 +638,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if v.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 			includePdexv3 = true
 		}
-		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3); err != nil {
+		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
 		if v.NumberOfFixedShardBlockValidator == 0 {
@@ -897,7 +871,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
 		shardID := byte(i)
 		beaconView.NumberOfShardBlock[shardID] = 0
 	}
-	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3)
+	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3, false)
 	if err != nil {
 		Logger.log.Error(err)
 	}

@@ -269,7 +269,7 @@ const (
 	extractPDEInstsFromBeaconBlock             = "extractpdeinstsfrombeaconblock"
 	//
 
-	// pDex v3 methods
+	// pDex v3
 	pdexv3MintNft                         = "pdexv3_txMintNft"
 	getPdexv3State                        = "pdexv3_getState"
 	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
@@ -300,7 +300,21 @@ const (
 	getPdexv3EstimatedStakingPoolReward            = "pdexv3_getEstimatedStakingPoolReward"
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
-	// end of pdex v3 methods
+
+	// bridgeagg method
+	bridgeaggModifyRewardReserve         = "bridgeaggModifyRewardReserve"
+	bridgeaggState                       = "bridgeaggGetState"
+	bridgeaggGetStatusModifyRewarReserve = "bridgeaggGetStatusModifyRewarReserve"
+	bridgeaggConvert                     = "bridgeaggConvert"
+	bridgeaggStatusConvert               = "bridgeaggGetStatusConvert"
+	bridgeaggShield                      = "bridgeaggShield"
+	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
+	bridgeaggUnshield                    = "bridgeaggUnshield"
+	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
+	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
+	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
+	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
+	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

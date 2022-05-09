@@ -102,6 +102,7 @@ pdex_param:
     trading_staking_pool_reward_percent: 10
     staking_pool_share: 
       - "0000000000000000000000000000000000000000000000000000000000000004": 10
+      - "0000000000000000000000000000000000000000000000000000000000000006": 20
     mint_nft_require_amount: 1000000000
     max_orders_per_nft: 10
     auto_withdraw_order_limit_amount: 10
@@ -112,3 +113,7 @@ auto_enable_feature:
       min_trigger: 1e9
       force_trigger: 1e9
       require_percentage: 100
+bridge_agg_param:
+  admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  base_decimal: 9 # Use only one time DONOT edit this after deployed
+  max_len_of_path: 3

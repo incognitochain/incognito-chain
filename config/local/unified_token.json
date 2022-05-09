@@ -1,0 +1,101 @@
+{
+    "2":
+    {
+        "3a526c0fa9abfc3e3e37becc52c5c10abbb7897b0534ad17018e766fc6133590": {
+            "1": {
+                "external_decimal": 6,
+                "external_token_id": "0x07de306FF27a2B630B1141956844eB1552B956B5",
+                "inc_token_id": "fdd928bc86c82bd2a7c54082a68332ebb5f2cde842b1c2e0fa430ededb6e369e"
+            },
+            "2": { 
+                "external_decimal": 18,
+                "external_token_id": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
+                "inc_token_id": "39f2800e2a29413c14fd984e926aa7856bc130fd034aef48fbd51ce3ba72bfba"
+            }
+        },
+        "6fa448f24835b0c72e62004edf391679fdbc391a82e4edb3726d16251509a2d0": {
+            "1": {
+                "external_decimal": 6,
+                "external_token_id": "0x75b0622cec14130172eae9cf166b92e5c112faff",
+                "inc_token_id": "61e1efbf6be9decc46fdf8250cdae5be12bee501b65f774a58af4513b645f6a3"
+            },
+            "2": { 
+                "external_decimal": 18,
+                "external_token_id": "0x64544969ed7EBf5f083679233325356EbE738930",
+                "inc_token_id": "16d51d2feb32f45b152e153ee05142e2cc56b70cd4697cb7fd5ddf9ee5153010"
+            }
+        },
+        "b366fa400c36e6bbcf24ac3e99c90406ddc64346ab0b7ba21e159b83d938812d": {
+            "1": {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "inc_token_id": "ffd8d42dc40a8d166ea4848baf8b5f6e9fe0e9c30d60062eb7d44a8df9e00854"
+            },
+            "2": {
+                "external_decimal": 18,
+                "external_token_id": "0xd66c6b4f0be8ce5b39d52e0fd1344c389929b378",
+                "inc_token_id": "a474ec7214b16ad6a6a355e732f2f511d8f2aa79cb4bd498ca46b05f3cfb0e53"
+            }
+        },
+        "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+            "2": {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "inc_token_id": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+            }
+        },
+        "f5d88e2e3c8f02d6dc1e01b54c90f673d730bef7d941aeec81ad1e1db690961f": {
+            "3": {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "inc_token_id": "dae027b21d8d57114da11209dce8eeb587d01adf59d4fc356a8be5eedc146859"
+            }
+        },
+        "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+            "4": {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "inc_token_id": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+            }
+        },
+        "b35756452dc1fa1260513fa121c20c2b516a8645f8d496fa4235274dac0b1b52": {
+            "1": {
+                "external_decimal": 18,
+                "external_token_id": "0xa36085F69e2889c224210F603D836748e7dC0088",
+                "inc_token_id": "ada22569670a80e4b2751d6996745e6d5098c9614d9f0a5439437a08b1b52e98"
+            },
+            "2": {
+                "external_decimal": 18,
+                "external_token_id": "0x84b9B910527Ad5C03A9Ca831909E21e236EA7b06",
+                "inc_token_id": "9aab38a287d54196b7b174614f7bbd6aff6b86d89badb91728fc02692140a158"
+            },
+            "3": {
+                "external_decimal": 18,
+                "external_token_id": "0x326c977e6efc84e512bb9c30f76e30c160ed06fb",
+                "inc_token_id": "d43a67133bba907d04691c2b0e918c48b04db1a6ac2d03dd10f42b70422f12d6"
+            },
+            "4": {
+                "external_decimal": 18,
+                "external_token_id": "0xfaFedb041c0DD4fA2Dc0d87a6B0979Ee6FA7af5F",
+                "inc_token_id": "b5e3a7e43548a442bebab76c715d81e31edf2df0bbbdc89a26ac1f206baafe78"
+            }
+        },
+        "50092f46f3f9dcebd3176de97c936950977bcc52a22eebb2863b8e4d24261434": {
+            "1": { 
+                "external_decimal": 18,
+                "external_token_id": "0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa",
+                "inc_token_id": "c7545459764224a000a9b323850648acf271186238210ce474b505cd17cc93a0"
+            },
+            "3": { 
+                "external_decimal": 18,
+                "external_token_id": "0x001b3b4d0f3714ca98ba10f6042daebf0b1b7b6f",
+                "inc_token_id": "264cc6c3d58c7f7f0c0570d5aca9e4b33fb3e0b8bcd103df25314660e02d19db"
+            },
+            "4": { 
+                "external_decimal": 18,
+                "external_token_id": "0x9440c3bB6Adb5F0D5b8A460d8a8c010690daC2E8",
+                "inc_token_id": "9a30e84cfe6346cda25c26066c1a4983bc60021e19c29cc0f35a619048313051"
+            }
+        }
+    }
+}

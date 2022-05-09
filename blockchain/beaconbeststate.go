@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -17,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -89,9 +89,10 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeStates     map[uint]pdex.State
-	portalStateV3 *portalprocessv3.CurrentPortalState
-	portalStateV4 *portalprocessv4.CurrentPortalStateV4
+	pdeStates      map[uint]pdex.State
+	portalStateV3  *portalprocessv3.CurrentPortalState
+	portalStateV4  *portalprocessv4.CurrentPortalStateV4
+	bridgeAggState *bridgeagg.State
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -115,6 +116,7 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
+	beaconBestState.bridgeAggState = bridgeagg.NewState()
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
@@ -482,6 +484,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	if target.portalStateV4 != nil {
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
 	}
+	if beaconBestState.bridgeAggState != nil {
+		beaconBestState.bridgeAggState = target.bridgeAggState.Clone()
+	}
 
 	return nil
 }
@@ -587,58 +592,40 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	return slashingPenalty
 }
 
+func (beaconBestState *BeaconBestState) BridgeAggState() *bridgeagg.State {
+	return beaconBestState.bridgeAggState
+}
+
 func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
 	return beaconBestState.pdeStates[version]
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3PoolPairID(poolPairID string) (bool, error) {
+func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidPoolPairID(poolPairID)
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3NftID(nftID string) (bool, error) {
+func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidNftID(nftID)
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3MintNftRequireAmount(amount uint64) (bool, error) {
+func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidMintNftRequireAmount(amount)
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) (bool, error) {
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStakingPool(tokenID)
 }
 
 func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
 	tokenID, nftID string, unstakingAmount uint64,
-) (bool, error) {
+) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
 }
 
 func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
 	poolPairID, nftID string, shareAmount uint64,
-) (bool, error) {
+) error {
 	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
-}
-
-func (beaconBestState *BeaconBestState) IsValidPdexv3Staker(poolPairID, stakerID string) (bool, error) {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStaker(poolPairID, stakerID)
-}
-
-func (beaconBestState *BeaconBestState) IsValidPdexv3LP(poolPairID, lpID string) (bool, error) {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidLP(poolPairID, lpID)
-}
-
-func (beaconBestState *BeaconBestState) IsValidAccessOTAWithPdexState(extendedAccessID metadataCommon.Pdexv3ExtendedAccessID) (bool, error) {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidAccessOTA(extendedAccessID)
-}
-
-func (beaconBestState *BeaconBestState) NftIDCoinFilter() (*privacy.TokenIDRingDecoyFilter, error) {
-	data, err := beaconBestState.pdeStates[pdex.AmplifierVersion].Reader().NFTAssetTags()
-	if err != nil {
-		return nil, err
-	}
-	return &privacy.TokenIDRingDecoyFilter{
-		Data: data,
-	}, nil
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

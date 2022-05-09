@@ -19,7 +19,7 @@ type PoolPairState struct {
 	makingVolume      map[common.Hash]*MakingVolume // tokenID -> MakingVolume
 	state             rawdbv2.Pdexv3PoolPair
 	shares            map[string]*Share
-	orderRewards      map[string]*OrderReward // accessID -> orderReward
+	orderRewards      map[string]*OrderReward // nftID -> orderReward
 	orderbook         Orderbook
 	lpFeesPerShare    map[common.Hash]*big.Int
 	lmRewardsPerShare map[common.Hash]*big.Int
@@ -141,11 +141,6 @@ func (poolPairState *PoolPairState) OrderRewards() map[string]*OrderReward {
 		res[k] = v.Clone()
 	}
 	return res
-}
-
-func (poolPairState *PoolPairState) Orderbook() *Orderbook {
-	res := poolPairState.orderbook.Clone()
-	return &res
 }
 
 func (poolPairState *PoolPairState) MarshalJSON() ([]byte, error) {
@@ -308,11 +303,11 @@ func (p *PoolPairState) addReserveDataAndCalculateShare(
 }
 
 func (p *PoolPairState) addShare(
-	accessID common.Hash,
-	amount, beaconHeight, lmLockedBlocks uint64,
-	txHash string, accessOTA []byte,
-) ([]byte, error) {
-	return p.updateShareValue(amount, beaconHeight, accessID.String(), accessOTA, addOperator, lmLockedBlocks)
+	nftID common.Hash,
+	amount uint64,
+	beaconHeight, lmLockedBlocks uint64,
+) error {
+	return p.updateShareValue(amount, nftID.String(), addOperator, beaconHeight, lmLockedBlocks)
 }
 
 func (p *PoolPairState) Clone() *PoolPairState {
@@ -359,10 +354,10 @@ func (p *PoolPairState) getDiff(
 	newStateChange := stateChange
 	if comparePoolPair == nil {
 		newPoolPairChange.IsChanged = true
-		for accessID, share := range p.shares {
+		for nftID, share := range p.shares {
 			shareChange := v2utils.NewShareChange()
 			shareChange = share.getDiff(nil, shareChange)
-			poolPairChange.Shares[accessID] = shareChange
+			poolPairChange.Shares[nftID] = shareChange
 		}
 		for tokenID := range p.lpFeesPerShare {
 			newPoolPairChange.LpFeesPerShare[tokenID.String()] = true
@@ -373,10 +368,10 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.stakingPoolFees {
 			newPoolPairChange.StakingPoolFees[tokenID.String()] = true
 		}
-		for accessID, orderReward := range p.orderRewards {
+		for nftID, orderReward := range p.orderRewards {
 			orderRewardChange := v2utils.NewOrderRewardChange()
 			orderRewardChange = orderReward.getDiff(nil, orderRewardChange)
-			poolPairChange.OrderRewards[accessID] = orderRewardChange
+			poolPairChange.OrderRewards[nftID] = orderRewardChange
 		}
 		for tokenID, makingVolume := range p.makingVolume {
 			makingVolumeChange := v2utils.NewMakingVolumeChange()
@@ -389,10 +384,10 @@ func (p *PoolPairState) getDiff(
 		for tokenID := range p.lmRewardsPerShare {
 			newPoolPairChange.LmRewardsPerShare[tokenID.String()] = true
 		}
-		for accessID, lockedShares := range p.lmLockedShare {
-			newPoolPairChange.LmLockedShare[accessID] = make(map[uint64]bool)
-			for beaconHeight := range lockedShares {
-				newPoolPairChange.LmLockedShare[accessID][beaconHeight] = true
+		for nftID, lockedShares := range p.lmLockedShare {
+			newPoolPairChange.LmLockedShare[nftID] = make(map[uint64]bool)
+			for beaconHeight, _ := range lockedShares {
+				newPoolPairChange.LmLockedShare[nftID][beaconHeight] = true
 			}
 		}
 	} else {
@@ -421,12 +416,9 @@ func (p *PoolPairState) calculateShareAmount(amount0, amount1 uint64) uint64 {
 }
 
 func (p *PoolPairState) deductShare(
-	accessID string,
-	shareAmount, beaconHeight uint64,
-	accessOption metadataPdexv3.AccessOption,
-	accessOTA []byte,
+	nftID string, shareAmount uint64,
 ) (uint64, uint64, uint64, error) {
-	share := p.shares[accessID]
+	share := p.shares[nftID]
 	if shareAmount == 0 || share.amount == 0 {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
@@ -450,30 +442,27 @@ func (p *PoolPairState) deductShare(
 	if err != nil {
 		return 0, 0, 0, errors.New("shareAmount = 0 or share.amount = 0")
 	}
-	_, err = p.updateShareValue(tempShareAmount, beaconHeight, accessID, accessOTA, subOperator, 0)
+	err = p.updateShareValue(tempShareAmount, nftID, subOperator, 0, 0)
 	return token0Amount.Uint64(), token1Amount.Uint64(), tempShareAmount, err
 }
 
 func (p *PoolPairState) updateShareValue(
-	shareAmount, beaconHeight uint64, accessID string, accessOTA []byte, operator byte, lmLockedBlocks uint64,
-) ([]byte, error) {
-	share, found := p.shares[accessID]
+	shareAmount uint64, nftID string, operator byte, beaconHeight, lmLockedBlocks uint64,
+) error {
+	share, found := p.shares[nftID]
 	if !found {
 		if operator == subOperator {
-			return nil, errors.New("Deduct nil share amount")
+			return errors.New("Deduct nil share amount")
 		}
 		share = NewShare()
 	} else {
-		accessIDBytes, err := common.Hash{}.NewHashFromStr(accessID)
+		nftIDBytes, err := common.Hash{}.NewHashFromStr(nftID)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid accessID: %s", accessID)
+			return fmt.Errorf("Invalid nftID: %s", nftID)
 		}
-		share.tradingFees, err = p.RecomputeLPRewards(*accessIDBytes)
+		share.tradingFees, err = p.RecomputeLPRewards(*nftIDBytes)
 		if err != nil {
-			return nil, fmt.Errorf("Error when tracking LP reward: %v\n", err)
-		}
-		if operator == addOperator {
-			accessOTA = share.accessOTA
+			return fmt.Errorf("Error when tracking LP reward: %v\n", err)
 		}
 	}
 
@@ -483,31 +472,25 @@ func (p *PoolPairState) updateShareValue(
 	var err error
 	share.amount, err = executeOperationUint64(share.amount, shareAmount, operator)
 	if err != nil {
-		return nil, errors.New("newShare.amount is out of range")
+		return errors.New("newShare.amount is out of range")
 	}
-	if accessOTA == nil {
-		accessOTA = share.accessOTA
-	}
-	share.accessOTA = accessOTA
-
 	poolPairShareAmount, err := executeOperationUint64(p.state.ShareAmount(), shareAmount, operator)
 	if err != nil {
-		return nil, errors.New("poolPairShareAmount is out of range")
+		return errors.New("poolPairShareAmount is out of range")
 	}
 	p.state.SetShareAmount(poolPairShareAmount)
-	p.shares[accessID] = share
 
 	if operator == addOperator && lmLockedBlocks > 0 {
 		share.lmLockedAmount, err = executeOperationUint64(share.lmLockedAmount, shareAmount, operator)
 		if err != nil {
-			return accessOTA, errors.New("newShare.lmLockedAmount is out of range")
+			return errors.New("newShare.lmLockedAmount is out of range")
 		}
 		poolPairLmLockedShareAmount, err := executeOperationUint64(p.state.LmLockedShareAmount(), shareAmount, operator)
 		if err != nil {
-			return accessOTA, errors.New("poolPairLmLockedShareAmount is out of range")
+			return errors.New("poolPairLmLockedShareAmount is out of range")
 		}
 		p.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
-		p.addLmLockedShare(accessID, beaconHeight, shareAmount)
+		p.addLmLockedShare(nftID, beaconHeight, shareAmount)
 	} else if operator == subOperator {
 		// releaseAmount = min(share.lmLockedAmount, shareAmount)
 		releaseAmount := share.lmLockedAmount
@@ -516,21 +499,20 @@ func (p *PoolPairState) updateShareValue(
 		}
 		share.lmLockedAmount, err = executeOperationUint64(share.lmLockedAmount, releaseAmount, operator)
 		if err != nil {
-			return accessOTA, errors.New("newShare.lmLockedAmount is out of range")
+			return errors.New("newShare.lmLockedAmount is out of range")
 		}
 		poolPairLmLockedShareAmount, err := executeOperationUint64(p.state.LmLockedShareAmount(), releaseAmount, operator)
 		if err != nil {
-			return accessOTA, errors.New("poolPairLmLockedShareAmount is out of range")
+			return errors.New("poolPairLmLockedShareAmount is out of range")
 		}
 		p.state.SetLmLockedShareAmount(poolPairLmLockedShareAmount)
 	}
 
-	return accessOTA, nil
+	p.shares[nftID] = share
+	return nil
 }
 
-func (p *PoolPairState) updateReserveData(
-	amount0, amount1, shareAmount uint64, operator byte,
-) error {
+func (p *PoolPairState) updateReserveData(amount0, amount1, shareAmount uint64, operator byte) error {
 	err := p.updateSingleTokenAmount(p.state.Token0ID(), amount0, shareAmount, operator)
 	if err != nil {
 		return err
@@ -597,9 +579,9 @@ func (p *PoolPairState) updateSingleTokenAmount(
 }
 
 func (p *PoolPairState) RecomputeLPRewards(
-	accessID common.Hash,
+	nftID common.Hash,
 ) (map[common.Hash]uint64, error) {
-	curShare, ok := p.shares[accessID.String()]
+	curShare, ok := p.shares[nftID.String()]
 	if !ok {
 		return nil, fmt.Errorf("Share not found")
 	}
@@ -661,10 +643,10 @@ func (p *PoolPairState) RecomputeLPRewards(
 	return result, nil
 }
 
-func (p *PoolPairState) cloneShare(accessID string) map[string]*Share {
+func (p *PoolPairState) cloneShare(nftID string) map[string]*Share {
 	res := make(map[string]*Share)
 	for k, v := range p.shares {
-		if k == accessID {
+		if k == nftID {
 			res[k] = v.Clone()
 		} else {
 			res[k] = v
@@ -684,14 +666,14 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 
-	for accessID, shareChange := range poolPairChange.Shares {
-		if share, found := p.shares[accessID]; found {
-			err := share.updateToDB(env, poolPairID, accessID, shareChange)
+	for nftID, shareChange := range poolPairChange.Shares {
+		if share, found := p.shares[nftID]; found {
+			err := share.updateToDB(env, poolPairID, nftID, shareChange)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := share.deleteFromDB(env, poolPairID, accessID, shareChange)
+			err := share.deleteFromDB(env, poolPairID, nftID, shareChange)
 			if err != nil {
 				return err
 			}
@@ -798,27 +780,27 @@ func (p *PoolPairState) updateToDB(
 			return err
 		}
 		if _, found := p.makingVolume[*tokenHash]; !found {
-			for accessID := range makingVolume.Volume {
-				err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, accessID, *tokenHash)
+			for nftID, _ := range makingVolume.Volume {
+				err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			for accessID, isChanged := range makingVolume.Volume {
+			for nftID, isChanged := range makingVolume.Volume {
 				if isChanged {
-					if volume, found := p.makingVolume[*tokenHash].volume[accessID]; found {
+					if volume, found := p.makingVolume[*tokenHash].volume[nftID]; found {
 						err = statedb.StorePdexv3PoolPairMakingVolume(
 							env.StateDB(), poolPairID,
 							statedb.NewPdexv3PoolPairMakingVolumeStateWithValue(
-								accessID, *tokenHash, volume,
+								nftID, *tokenHash, volume,
 							),
 						)
 						if err != nil {
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, accessID, *tokenHash)
+						err = statedb.DeletePdexv3PoolPairMakingVolume(env.StateDB(), poolPairID, nftID, *tokenHash)
 						if err != nil {
 							return err
 						}
@@ -828,10 +810,10 @@ func (p *PoolPairState) updateToDB(
 		}
 	}
 
-	for accessID, lmLockedShareChange := range poolPairChange.LmLockedShare {
-		if _, found := p.lmLockedShare[accessID]; !found {
-			for beaconHeight := range lmLockedShareChange {
-				err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, accessID, beaconHeight)
+	for nftID, lmLockedShareChange := range poolPairChange.LmLockedShare {
+		if _, found := p.lmLockedShare[nftID]; !found {
+			for beaconHeight, _ := range lmLockedShareChange {
+				err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, nftID, beaconHeight)
 				if err != nil {
 					return err
 				}
@@ -839,15 +821,15 @@ func (p *PoolPairState) updateToDB(
 		} else {
 			for beaconHeight, isChanged := range lmLockedShareChange {
 				if isChanged {
-					if amount, found := p.lmLockedShare[accessID][beaconHeight]; found {
+					if amount, found := p.lmLockedShare[nftID][beaconHeight]; found {
 						err := statedb.StorePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID,
-							statedb.NewPdexv3PoolPairLmLockedShareStateWithValue(accessID, beaconHeight, amount),
+							statedb.NewPdexv3PoolPairLmLockedShareStateWithValue(nftID, beaconHeight, amount),
 						)
 						if err != nil {
 							return err
 						}
 					} else {
-						err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, accessID, beaconHeight)
+						err = statedb.DeletePdexv3PoolPairLmLockedShare(env.StateDB(), poolPairID, nftID, beaconHeight)
 						if err != nil {
 							return err
 						}
@@ -883,18 +865,13 @@ func (p *PoolPairState) updateToDB(
 	return nil
 }
 
-func (p *PoolPairState) existLP(lpID string) bool {
-	_, found := p.shares[lpID]
-	return found
-}
-
 func (p *PoolPairState) getChangedOrderRewards(compareOrderReward map[string]*OrderReward) map[string]*v2utils.OrderRewardChange {
 	res := make(map[string]*v2utils.OrderRewardChange)
-	for accessID, orderReward := range p.orderRewards {
-		res[accessID] = orderReward.getDiff(compareOrderReward[accessID], res[accessID])
+	for nftID, orderReward := range p.orderRewards {
+		res[nftID] = orderReward.getDiff(compareOrderReward[nftID], res[nftID])
 	}
-	for accessID, orderReward := range compareOrderReward {
-		res[accessID] = orderReward.getDiff(p.orderRewards[accessID], res[accessID])
+	for nftID, orderReward := range compareOrderReward {
+		res[nftID] = orderReward.getDiff(p.orderRewards[nftID], res[nftID])
 	}
 	return res
 }
@@ -912,11 +889,11 @@ func (p *PoolPairState) getChangedMakingVolume(compareMakingVolume map[common.Ha
 
 func (p *PoolPairState) getChangedShares(compareShare map[string]*Share) map[string]*v2utils.ShareChange {
 	res := make(map[string]*v2utils.ShareChange)
-	for accessID, share := range p.shares {
-		res[accessID] = share.getDiff(compareShare[accessID], res[accessID])
+	for nftID, share := range p.shares {
+		res[nftID] = share.getDiff(compareShare[nftID], res[nftID])
 	}
-	for accessID, share := range compareShare {
-		res[accessID] = share.getDiff(p.shares[accessID], res[accessID])
+	for nftID, share := range compareShare {
+		res[nftID] = share.getDiff(p.shares[nftID], res[nftID])
 	}
 	return res
 }

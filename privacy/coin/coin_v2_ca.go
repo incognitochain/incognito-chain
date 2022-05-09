@@ -102,8 +102,7 @@ func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error {
 //	- rawAssetTags: a pre-computed mapping from a raw assetTag to the tokenId (e.g, HashToPoint(PRV) => PRV).
 func (c *CoinV2) GetTokenId(keySet *incognitokey.KeySet, rawAssetTags map[string]*common.Hash) (*common.Hash, error) {
 	if c.GetAssetTag() == nil {
-		result := common.PRVCoinID
-		return &result, nil
+		return &common.PRVCoinID, nil
 	}
 
 	if asset, ok := rawAssetTags[c.GetAssetTag().String()]; ok {
