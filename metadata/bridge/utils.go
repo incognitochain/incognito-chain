@@ -423,3 +423,22 @@ func GetNetworkTypeByNetworkID(networkID uint) (uint, error) {
 		return 0, errors.New("Not found networkID")
 	}
 }
+
+func IsBurningConfirmMetaType(metaType int) bool {
+	switch metaType {
+	case metadataCommon.BurningConfirmMeta, metadataCommon.BurningConfirmMetaV2:
+		return true
+	case metadataCommon.BurningConfirmForDepositToSCMeta, metadataCommon.BurningConfirmForDepositToSCMetaV2:
+		return true
+	case metadataCommon.BurningBSCConfirmMeta, metadataCommon.BurningPBSCConfirmForDepositToSCMeta:
+		return true
+	case metadataCommon.BurningFantomConfirmForDepositToSCMeta, metadataCommon.BurningFantomConfirmMeta:
+		return true
+	case metadataCommon.BurningPLGConfirmMeta, metadataCommon.BurningPLGConfirmForDepositToSCMeta:
+		return true
+	case metadataCommon.BurningPRVBEP20ConfirmMeta, metadataCommon.BurningPRVERC20ConfirmMeta:
+		return true
+	default:
+		return false
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -324,6 +325,15 @@ func findBurnConfirmInst(
 	for i, inst := range insts {
 		if shouldValidateBurningMetaType {
 			if inst[0] != instType || len(inst) < 5 {
+				continue
+			}
+		} else {
+			metaType, err := strconv.Atoi(inst[0])
+			if err != nil {
+				Logger.log.Warnf("Cannot find burning confirm instruction err %v", err)
+				continue
+			}
+			if !metadataBridge.IsBurningConfirmMetaType(metaType) {
 				continue
 			}
 		}
