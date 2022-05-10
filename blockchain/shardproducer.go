@@ -101,7 +101,10 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 	if blockByView.GetHeight() != 1 && blockByView.Hash().String() != beaconFinalView.BestShardHash[shardID].String() {
 		//update view
-		blockchain.ShardChain[shardID].multiView.FinalizeView(beaconFinalView.BestShardHash[shardID])
+		if err := blockchain.ShardChain[shardID].multiView.FinalizeView(beaconFinalView.BestShardHash[shardID]); err != nil {
+			//request missing view
+			blockchain.config.Server.RequestMissingViewViaStream("", [][]byte{beaconFinalView.BestShardHash[shardID].Bytes()}, int(shardID), blockchain.ShardChain[shardID].GetChainName())
+		}
 		return nil, fmt.Errorf("Shard %v | Create block from view that is not on same branch with beacon shardstate, expect view %v height %v, got %v",
 			shardID, beaconFinalView.BestShardHash[shardID].String(), beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
 	}
