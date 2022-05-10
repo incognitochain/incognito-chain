@@ -1,5 +1,10 @@
 package pdex
 
+import (
+	"github.com/incognitochain/incognito-chain/common"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+)
+
 type State interface {
 	Version() uint
 	Clone() State
@@ -21,13 +26,17 @@ type StateReader interface {
 	TradingFees() map[string]uint64
 	NftIDs() map[string]uint64
 	StakingPools() map[string]*StakingPoolState
+	NFTAssetTags() (map[string]*common.Hash, error)
 }
 
 type StateValidator interface {
-	IsValidNftID(nftID string) error
-	IsValidPoolPairID(poolPairID string) error
-	IsValidMintNftRequireAmount(amount uint64) error
-	IsValidStakingPool(tokenID string) error
-	IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error
-	IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error
+	IsValidNftID(nftID string) (bool, error)
+	IsValidPoolPairID(poolPairID string) (bool, error)
+	IsValidMintNftRequireAmount(amount uint64) (bool, error)
+	IsValidStakingPool(stakingPoolID string) (bool, error)
+	IsValidUnstakingAmount(tokenID, stakerID string, unstakingAmount uint64) (bool, error)
+	IsValidShareAmount(poolPairID, lpID string, shareAmount uint64) (bool, error)
+	IsValidStaker(stakingPoolID, stakerID string) (bool, error)
+	IsValidAccessOTA(metadataCommon.Pdexv3ExtendedAccessID) (bool, error)
+	IsValidLP(poolPairID, lpID string) (bool, error)
 }

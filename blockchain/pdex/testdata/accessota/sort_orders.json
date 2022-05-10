@@ -1,0 +1,381 @@
+[{
+    "name": "Insert 5 shuffled orders with 2 equalities",
+    "data": {
+        "orders": [{
+            "Id": "Order 3",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 3000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 4000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 1",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }]
+    },
+    "expected": {
+        "orders": [{
+            "Id": "Order 1",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 3",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 3000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 4000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }],
+        "MatchTradeBuy0": "Order 4",
+        "MatchTradeBuy1": "Order 2"
+    }
+}, {
+    "name": "Insert 5 orders of distinct rates",
+    "data": {
+        "orders": [{
+            "Id": "Order 3",
+            "Token0Rate": 100,
+            "Token1Rate": 140,
+            "Token0Balance": 3000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "Token0Rate": 100,
+            "Token1Rate": 180,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 0,
+            "Token1Balance": 4000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 1",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }]
+    },
+    "expected": {
+        "orders": [{
+            "Id": "Order 1",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 3",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 140,
+            "Token0Balance": 3000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 0,
+            "Token1Balance": 4000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 180,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }],
+        "MatchTradeBuy0": "Order 3",
+        "MatchTradeBuy1": "Order 4"
+    }
+}, {
+    "name": "Best-rate sell0 order has zero balance to sell",
+    "data": {
+        "orders": [{
+            "Id": "Order 3",
+            "Token0Rate": 100,
+            "Token1Rate": 140,
+            "Token0Balance": 0,
+            "Token1Balance": 3000,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "Token0Rate": 100,
+            "Token1Rate": 180,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 0,
+            "Token1Balance": 4000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 1",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }]
+    },
+    "expected": {
+        "orders": [{
+            "Id": "Order 1",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 3",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 140,
+            "Token0Balance": 0,
+            "Token1Balance": 3000,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 0,
+            "Token1Balance": 4000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 180,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }],
+        "MatchTradeBuy0": "Order 5",
+        "MatchTradeBuy1": "Order 4"
+    }
+}, {
+    "name": "Best-rate sell1 order has non-zero insufficient balance",
+    "data": {
+        "orders": [{
+            "Id": "Order 3",
+            "Token0Rate": 100,
+            "Token1Rate": 140,
+            "Token0Balance": 3000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "Token0Rate": 100,
+            "Token1Rate": 180,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 0,
+            "Token1Balance": 1,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 1",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 1000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }]
+    },
+    "expected": {
+        "orders": [{
+            "Id": "Order 1",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 100,
+            "Token0Balance": 0,
+            "Token1Balance": 1000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 2",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 120,
+            "Token0Balance": 0,
+            "Token1Balance": 2000,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 3",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 140,
+            "Token0Balance": 3000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 4",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 160,
+            "Token0Balance": 0,
+            "Token1Balance": 1,
+            "TradeDirection": 1,
+            "Receiver": ["", ""]
+        }, {
+            "Id": "Order 5",
+            "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+            "Token0Rate": 100,
+            "Token1Rate": 180,
+            "Token0Balance": 5000,
+            "Token1Balance": 0,
+            "TradeDirection": 0,
+            "Receiver": ["", ""]
+        }],
+        "MatchTradeBuy0": "Order 3",
+        "MatchTradeBuy1": "Order 2"
+    }
+}]

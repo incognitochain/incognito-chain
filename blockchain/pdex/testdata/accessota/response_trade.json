@@ -1,0 +1,67 @@
+[{
+    "name": "Build response TX for accepted trade",
+    "data": {
+        "instructions": [
+            ["285", "1", "0", "044bbfdcf9cbfb0d094f73c73933052f6f66b510d3b1c507e8015d31aea2b8a5", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":300,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"PairChanges\":[[0,0]],\"OrderChanges\":[{\"Order 2\":[150,-300]}]},\"RequestTxID\":\"044bbfdcf9cbfb0d094f73c73933052f6f66b510d3b1c507e8015d31aea2b8a5\"}"]
+        ]
+    },
+    "expected": {
+        "Tx": {
+            "Version": 2,
+            "Type": "tp",
+            "LockTime": 0,
+            "Fee": 0,
+            "Info": "",
+            "SigPubKey": "ZSn8Ii+uvJIJo9whPwMIfKribKcaAMPzv/w81838/MY=",
+            "Sig": null,
+            "Proof": null,
+            "PubKeyLastByteSender": 0,
+            "Metadata": {
+                "Status": 1,
+                "RequestTxID": "044bbfdcf9cbfb0d094f73c73933052f6f66b510d3b1c507e8015d31aea2b8a5",
+                "Type": 285
+            }
+        },
+        "TxTokenPrivacyData": {
+            "PropertyID": "0000000000000000000000000000000000000000000000000000000000000200",
+            "PropertyName": "",
+            "PropertySymbol": "",
+            "Proof": "AgAAAUIAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBDwIAIFb04xmt4j7SlBpvQM4x/fbGUKJqO7DHSTDrx/4l/1u5IG7KHlDreSmGu4smFT0UBf7p2cs91zevXmWw+nodJ5HDIAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEzw91b1dtFGtZ2hxd0xiwinfclu1QFqfNj5L9Yu3M7CtvVmyDN44jkHb7UxSsJkUpLDXRzIcEm0dH6bcSkCfrvkQt8JognWDYB3eJV4stOMJ8jTn3b4I+rx1aOcOkE6UG1ZxHcgcgLAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg20VdoUwjaedguwjKgMfL5Xz8IwZ7IKMiPnYw8qAOnxg=",
+            "Type": 0,
+            "Mintable": true
+        }
+    }
+}, {
+    "name": "Build response TX for refunded trade",
+    "data": {
+        "instructions": [
+            ["285", "0", "0", "ad4f87b3a1c8f655d07c240b520cd4c2bd6d703d88aa53107950e8d53c15b451", "{\"Content\":{\"Receiver\":\"15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP\",\"TokenToSell\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"Amount\":5000},\"RequestTxID\":\"ad4f87b3a1c8f655d07c240b520cd4c2bd6d703d88aa53107950e8d53c15b451\"}"]
+        ]
+    },
+    "expected": {
+        "Tx": {
+            "Version": 2,
+            "Type": "tp",
+            "LockTime": 0,
+            "Fee": 0,
+            "Info": "",
+            "SigPubKey": "ZSn8Ii+uvJIJo9whPwMIfKribKcaAMPzv/w81838/MY=",
+            "Sig": null,
+            "Proof": null,
+            "PubKeyLastByteSender": 0,
+            "Metadata": {
+                "Status": 0,
+                "RequestTxID": "ad4f87b3a1c8f655d07c240b520cd4c2bd6d703d88aa53107950e8d53c15b451",
+                "Type": 285
+            }
+        },
+        "TxTokenPrivacyData": {
+            "PropertyID": "0000000000000000000000000000000000000000000000000000000000000100",
+            "PropertyName": "",
+            "PropertySymbol": "",
+            "Proof": "AgAAAUIAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBDwIAIF+g6m3fbe4zj1ZpL8wzGUjE3XZsy9Hc9n0XbfyLiUJTINc9t6Xowaj/CMvMMs8Rf2pceZhP9H1hXv84X6UV88m6IAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEcfOv8K1mdT7dEjorhRggyWwdh1nYX1BZBnJ56f5Sb8egBjpP9a0wnTi6DMg+fmLddQ75fcyDQWBIhndUvy5cuBxscTcgVx8tIWK4DAA6/8zr5YaQXD4XkkcsC7GKqAqe5aXpGAogiBMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg390PDCKliwGvbQsFEWxevszPSAO3EQAaUGFB92TSSSM=",
+            "Type": 0,
+            "Mintable": true
+        }
+    }
+}]

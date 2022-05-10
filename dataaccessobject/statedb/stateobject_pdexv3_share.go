@@ -11,6 +11,7 @@ import (
 type Pdexv3ShareState struct {
 	nftID          common.Hash
 	amount         uint64
+	accessOTA      []byte
 	lmLockedAmount uint64
 }
 
@@ -22,6 +23,10 @@ func (ps *Pdexv3ShareState) Amount() uint64 {
 	return ps.amount
 }
 
+func (ps *Pdexv3ShareState) AccessOTA() []byte {
+	return ps.accessOTA
+}
+
 func (ps *Pdexv3ShareState) LmLockedAmount() uint64 {
 	return ps.lmLockedAmount
 }
@@ -30,10 +35,12 @@ func (ps *Pdexv3ShareState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		NftID          common.Hash `json:"NftID"`
 		Amount         uint64      `json:"Amount"`
+		AccessOTA      []byte      `json:"AccessOTA,omitempty"`
 		LmLockedAmount uint64      `json:"LmLockedAmount,omitempty"`
 	}{
 		NftID:          ps.nftID,
 		Amount:         ps.amount,
+		AccessOTA:      ps.accessOTA,
 		LmLockedAmount: ps.lmLockedAmount,
 	})
 	if err != nil {
@@ -46,12 +53,14 @@ func (ps *Pdexv3ShareState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		NftID          common.Hash `json:"NftID"`
 		Amount         uint64      `json:"Amount"`
+		AccessOTA      []byte      `json:"AccessOTA,omitempty"`
 		LmLockedAmount uint64      `json:"LmLockedAmount,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	ps.accessOTA = temp.AccessOTA
 	ps.nftID = temp.NftID
 	ps.amount = temp.Amount
 	ps.lmLockedAmount = temp.LmLockedAmount
@@ -63,11 +72,12 @@ func NewPdexv3ShareState() *Pdexv3ShareState {
 }
 
 func NewPdexv3ShareStateWithValue(
-	nftID common.Hash, amount, lmLockedAmount uint64,
+	nftID common.Hash, amount uint64, accessOTA []byte, lmLockedAmount uint64,
 ) *Pdexv3ShareState {
 	return &Pdexv3ShareState{
 		nftID:          nftID,
 		amount:         amount,
+		accessOTA:      accessOTA,
 		lmLockedAmount: lmLockedAmount,
 	}
 }
@@ -76,6 +86,7 @@ func (ps *Pdexv3ShareState) Clone() *Pdexv3ShareState {
 	return &Pdexv3ShareState{
 		nftID:          ps.nftID,
 		amount:         ps.amount,
+		accessOTA:      ps.accessOTA,
 		lmLockedAmount: ps.lmLockedAmount,
 	}
 }

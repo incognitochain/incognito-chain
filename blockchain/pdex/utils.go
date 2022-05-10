@@ -995,3 +995,31 @@ func addMakingVolume(
 	}
 	return base
 }
+
+func getSortedPoolPairIDs(poolPairs map[string]*PoolPairState) []string {
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(poolPairs))
+	i := 0
+	for poolPairID := range poolPairs {
+		keys[i] = poolPairID
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
+}
+
+func getSortedOrderRewardAccessIDs(orderRewards map[string]*OrderReward) []string {
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(orderRewards))
+	i := 0
+	for accessID := range orderRewards {
+		keys[i] = accessID
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
+}

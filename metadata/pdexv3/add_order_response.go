@@ -27,15 +27,17 @@ type AddOrderResponse struct {
 
 // AcceptedAddOrder is added as Content for produced beacon instruction after to handling an order successfully
 type AcceptedAddOrder struct {
-	PoolPairID     string      `json:"PoolPairID"`
-	OrderID        string      `json:"OrderID"`
-	NftID          common.Hash `json:"NftID"`
-	Token0Rate     uint64      `json:"Token0Rate"`
-	Token1Rate     uint64      `json:"Token1Rate"`
-	Token0Balance  uint64      `json:"Token0Balance"`
-	Token1Balance  uint64      `json:"Token1Balance"`
-	TradeDirection byte        `json:"TradeDirection"`
-	Receiver       [2]string   `json:"Receiver"`
+	PoolPairID     string                              `json:"PoolPairID"`
+	OrderID        string                              `json:"OrderID"`
+	NftID          *common.Hash                        `json:"NftID,omitempty"`
+	AccessOTA      []byte                              `json:"AccessOTA,omitempty"`
+	Token0Rate     uint64                              `json:"Token0Rate"`
+	Token1Rate     uint64                              `json:"Token1Rate"`
+	Token0Balance  uint64                              `json:"Token0Balance"`
+	Token1Balance  uint64                              `json:"Token1Balance"`
+	TradeDirection byte                                `json:"TradeDirection"`
+	Receiver       [2]string                           `json:"Receiver"`
+	RewardReceiver map[common.Hash]privacy.OTAReceiver `json:"RewardReceiver,omitempty"`
 }
 
 func (md AcceptedAddOrder) GetType() int {

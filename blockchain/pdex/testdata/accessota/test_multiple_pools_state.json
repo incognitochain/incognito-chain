@@ -1,0 +1,99 @@
+{
+    "poolPairs":
+    {
+        "pair0":
+        {
+            "state":
+            {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token0RealAmount": 400,
+                "Token1RealAmount": 1000,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 1000,
+                "Token1VirtualAmount": 2200,
+                "Amplifier": 21000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            },
+            "orderbook":
+            {
+                "orders": [
+                {
+                    "Id": "0000000000000000000000000000000000000000000000000000000000000aa1",
+                    "Token0Rate": 100,
+                    "Token1Rate": 100,
+                    "Token0Balance": 0,
+                    "Token1Balance": 2000,
+                    "TradeDirection": 0,
+                    "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4","15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                },
+                {
+                    "Id": "0000000000000000000000000000000000000000000000000000000000000aa2",
+                    "Token0Rate": 1000,
+                    "Token1Rate": 2000,
+                    "Token0Balance": 0,
+                    "Token1Balance": 2000,
+                    "TradeDirection": 1,
+                    "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4","15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                }]
+            }
+        },
+        "pair1":
+        {
+            "state":
+            {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000300",
+                "Token0RealAmount": 4000,
+                "Token1RealAmount": 4000,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 12000,
+                "Token1VirtualAmount": 12000,
+                "Amplifier": 30000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            },
+            "orderbook":
+            {
+                "orders": [
+                {
+                    "Id": "0000000000000000000000000000000000000000000000000000000000000aa3",
+                    "Token0Rate": 5000,
+                    "Token1Rate": 20000,
+                    "Token0Balance": 0,
+                    "Token1Balance": 20000,
+                    "TradeDirection": 1,
+                    "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4","15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                }
+                ]
+            }
+        },
+        "pair2":
+        {
+            "state":
+            {
+                "Token0ID": "0000000000000000000000000000000000000000000000000000000000000300",
+                "Token1ID": "0000000000000000000000000000000000000000000000000000000000000400",
+                "Token0RealAmount": 4000000,
+                "Token1RealAmount": 4000000,
+                "CurrentContributionID": 0,
+                "Token0VirtualAmount": 12000000,
+                "Token1VirtualAmount": 12000000,
+                "Amplifier": 30000,
+                "ProtocolFees": {},
+                "LpFeesPerShare": {},
+                "StakingPoolFees": {},
+                "ShareAmount": 0
+            },
+            "orderbook":
+            {
+                "orders": []
+            }
+        }
+    }
+}

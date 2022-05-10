@@ -1,22 +1,30 @@
 package pdex
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type Share struct {
 	amount                uint64
+	accessOTA             []byte
 	lmLockedAmount        uint64
 	tradingFees           map[common.Hash]uint64
 	lastLPFeesPerShare    map[common.Hash]*big.Int
 	lastLmRewardsPerShare map[common.Hash]*big.Int
+}
+
+func (share *Share) AccessOTA() []byte {
+	return share.accessOTA
 }
 
 func (share *Share) Amount() uint64 {
@@ -62,11 +70,13 @@ func NewShare() *Share {
 
 func NewShareWithValue(
 	amount, lmLockedAmount uint64,
+	accessOTA []byte,
 	tradingFees map[common.Hash]uint64,
 	lastLPFeesPerShare, lastLmRewardsPerShare map[common.Hash]*big.Int,
 ) *Share {
 	return &Share{
 		amount:                amount,
+		accessOTA:             accessOTA,
 		lmLockedAmount:        lmLockedAmount,
 		tradingFees:           tradingFees,
 		lastLPFeesPerShare:    lastLPFeesPerShare,
@@ -76,6 +86,7 @@ func NewShareWithValue(
 
 func (share *Share) Clone() *Share {
 	res := NewShare()
+	res.accessOTA = share.accessOTA
 	res.amount = share.amount
 	res.lmLockedAmount = share.lmLockedAmount
 	res.tradingFees = map[common.Hash]uint64{}
@@ -96,11 +107,13 @@ func (share *Share) Clone() *Share {
 func (share *Share) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Amount                uint64                   `json:"Amount"`
+		AccessOTA             []byte                   `json:"AccessOTA,omitempty"`
 		TradingFees           map[common.Hash]uint64   `json:"TradingFees"`
 		LastLPFeesPerShare    map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 		LmLockedAmount        uint64                   `json:"LmLockedAmount,omitempty"`
 		LastLmRewardsPerShare map[common.Hash]*big.Int `json:"LastLmRewardsPerShare,omitempty"`
 	}{
+		AccessOTA:             share.accessOTA,
 		Amount:                share.amount,
 		TradingFees:           share.tradingFees,
 		LastLPFeesPerShare:    share.lastLPFeesPerShare,
@@ -116,6 +129,7 @@ func (share *Share) MarshalJSON() ([]byte, error) {
 func (share *Share) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Amount                uint64                   `json:"Amount"`
+		AccessOTA             []byte                   `json:"AccessOTA,omitempty"`
 		TradingFees           map[common.Hash]uint64   `json:"TradingFees"`
 		LastLPFeesPerShare    map[common.Hash]*big.Int `json:"LastLPFeesPerShare"`
 		LmLockedAmount        uint64                   `json:"LmLockedAmount,omitempty"`
@@ -125,6 +139,7 @@ func (share *Share) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	share.accessOTA = temp.AccessOTA
 	share.amount = temp.Amount
 	share.lmLockedAmount = temp.LmLockedAmount
 	share.tradingFees = temp.TradingFees
@@ -153,7 +168,7 @@ func (share *Share) getDiff(
 			newShareChange.LastLmRewardsPerShare[tokenID.String()] = true
 		}
 	} else {
-		if share.amount != compareShare.amount || share.lmLockedAmount != compareShare.lmLockedAmount {
+		if share.amount != compareShare.amount || !bytes.Equal(share.accessOTA, compareShare.accessOTA) || share.lmLockedAmount != compareShare.lmLockedAmount {
 			newShareChange.IsChanged = true
 		}
 		newShareChange.TradingFees = v2utils.DifMapHashUint64(share.tradingFees).GetDiff(v2utils.DifMapHashUint64(compareShare.tradingFees))
@@ -164,8 +179,32 @@ func (share *Share) getDiff(
 	return newShareChange
 }
 
+func (share *Share) setAccessOTA(accessOTA []byte) {
+	share.accessOTA = accessOTA
+}
+
+func (share *Share) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
+	if !bytes.Equal(share.accessOTA, burntOTA.ToBytesS()) {
+		return false, errors.New("Not valid access OTA")
+	}
+	return true, nil
+}
+
+func (share *Share) isEmpty() bool {
+	if share.amount != 0 {
+		return false
+	}
+	for _, v := range share.tradingFees {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 type Staker struct {
 	liquidity           uint64
+	accessOTA           []byte
 	rewards             map[common.Hash]uint64
 	lastRewardsPerShare map[common.Hash]*big.Int
 }
@@ -190,13 +229,19 @@ func (staker *Staker) Rewards() map[common.Hash]uint64 {
 	return res
 }
 
+func (staker *Staker) AccessOTA() []byte {
+	return staker.accessOTA
+}
+
 func (staker *Staker) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Liquidity           uint64                   `json:"Liquidity"`
+		AccessOTA           []byte                   `json:"AccessOTA,omitempty"`
 		Rewards             map[common.Hash]uint64   `json:"Rewards"`
 		LastRewardsPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{
 		Liquidity:           staker.liquidity,
+		AccessOTA:           staker.accessOTA,
 		Rewards:             staker.rewards,
 		LastRewardsPerShare: staker.lastRewardsPerShare,
 	})
@@ -209,6 +254,7 @@ func (staker *Staker) MarshalJSON() ([]byte, error) {
 func (staker *Staker) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Liquidity          uint64                   `json:"Liquidity"`
+		AccessOTA          []byte                   `json:"AccessOTA,omitempty"`
 		Rewards            map[common.Hash]uint64   `json:"Rewards"`
 		LastLPFeesPerShare map[common.Hash]*big.Int `json:"LastRewardsPerShare"`
 	}{}
@@ -216,6 +262,7 @@ func (staker *Staker) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	staker.accessOTA = temp.AccessOTA
 	staker.liquidity = temp.Liquidity
 	staker.rewards = temp.Rewards
 	staker.lastRewardsPerShare = temp.LastLPFeesPerShare
@@ -229,8 +276,12 @@ func NewStaker() *Staker {
 	}
 }
 
-func NewStakerWithValue(liquidity uint64, rewards map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int) *Staker {
+func NewStakerWithValue(
+	liquidity uint64, accessOTA []byte,
+	rewards map[common.Hash]uint64, lastLPFeesPerShare map[common.Hash]*big.Int,
+) *Staker {
 	return &Staker{
+		accessOTA:           accessOTA,
 		liquidity:           liquidity,
 		rewards:             rewards,
 		lastRewardsPerShare: lastLPFeesPerShare,
@@ -240,6 +291,7 @@ func NewStakerWithValue(liquidity uint64, rewards map[common.Hash]uint64, lastLP
 func (staker *Staker) Clone() *Staker {
 	res := NewStaker()
 	res.liquidity = staker.liquidity
+	res.accessOTA = staker.accessOTA
 	for k, v := range staker.rewards {
 		res.rewards[k] = v
 	}
@@ -253,6 +305,9 @@ func (staker *Staker) getDiff(
 	compareStaker *Staker, stakerChange *v2utils.StakerChange,
 ) *v2utils.StakerChange {
 	newStakerChange := stakerChange
+	if newStakerChange == nil {
+		newStakerChange = v2utils.NewStakerChange()
+	}
 	if compareStaker == nil {
 		newStakerChange.IsChanged = true
 		for tokenID := range staker.rewards {
@@ -262,13 +317,59 @@ func (staker *Staker) getDiff(
 			newStakerChange.LastRewardsPerShare[tokenID.String()] = true
 		}
 	} else {
-		if staker.liquidity != compareStaker.liquidity {
+		if staker.liquidity != compareStaker.liquidity || !bytes.Equal(staker.accessOTA, compareStaker.accessOTA) {
 			newStakerChange.IsChanged = true
 		}
 		newStakerChange.LastRewardsPerShare = v2utils.DifMapHashBigInt(staker.lastRewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(compareStaker.lastRewardsPerShare))
 		newStakerChange.Rewards = v2utils.DifMapHashUint64(staker.rewards).GetDiff(v2utils.DifMapHashUint64(compareStaker.rewards))
 	}
 	return newStakerChange
+}
+
+func (staker *Staker) setAccessOTA(accessOTA []byte) {
+	staker.accessOTA = accessOTA
+}
+
+func (staker *Staker) isValidAccessOTA(burntOTA metadataPdexv3.AccessOTA) (bool, error) {
+	if !bytes.Equal(staker.accessOTA, burntOTA.ToBytesS()) {
+		return false, errors.New("Not valid access OTA")
+	}
+	return true, nil
+}
+
+func (staker *Staker) isEmpty() bool {
+	if staker.liquidity != 0 {
+		return false
+	}
+	for _, v := range staker.rewards {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (staker *Staker) deleteFromDB(
+	env StateEnvironment, stakingPoolID string, nftID common.Hash,
+	stakerChange *v2utils.StakerChange,
+) error {
+	err := statedb.DeletePdexv3Staker(env.StateDB(), stakingPoolID, nftID)
+	if err != nil {
+		return err
+	}
+	for tokenID := range stakerChange.LastRewardsPerShare {
+		err = statedb.DeletePdexv3StakerLastRewardPerShare(env.StateDB(), stakingPoolID, nftID.String(), tokenID)
+		if err != nil {
+			return err
+		}
+	}
+	for tokenID := range stakerChange.Rewards {
+		err = statedb.DeletePdexv3StakerReward(env.StateDB(), stakingPoolID, nftID.String(), tokenID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func addStakingPoolState(
@@ -290,7 +391,7 @@ func (share *Share) updateToDB(
 		err = statedb.StorePdexv3Share(
 			env.StateDB(), poolPairID, *nftID,
 			statedb.NewPdexv3ShareStateWithValue(
-				*nftID, share.amount, share.lmLockedAmount,
+				*nftID, share.amount, share.accessOTA, share.lmLockedAmount,
 			),
 		)
 		if err != nil {
@@ -381,6 +482,26 @@ func (share *Share) deleteFromDB(
 	if err != nil {
 		return err
 	}
+	for tokenID, isChanged := range shareChange.TradingFees {
+		if isChanged {
+			err := statedb.DeletePdexv3ShareTradingFee(
+				env.StateDB(), poolPairID, nftID, tokenID,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for tokenID, isChanged := range shareChange.LastLPFeesPerShare {
+		if isChanged {
+			err = statedb.DeletePdexv3ShareLastLpFeePerShare(
+				env.StateDB(), poolPairID, nftID, tokenID,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -446,14 +567,20 @@ func (o *OrderRewardDetail) Receiver() privacy.OTAReceiver {
 }
 
 type OrderReward struct {
-	uncollectedRewards Reward
+	uncollectedRewards map[common.Hash]*OrderRewardDetail
+	withdrawnStatus    byte
+	txReqID            *common.Hash
 }
 
 func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		UncollectedRewards Reward `json:"UncollectedRewards"`
+		UncollectedRewards map[common.Hash]*OrderRewardDetail `json:"UncollectedRewards"`
+		WithdrawnStatus    byte                               `json:"WithdrawnStatus"`
+		TxReqID            *common.Hash                       `json:"TxReqID,omitempty"`
 	}{
 		UncollectedRewards: orderReward.uncollectedRewards,
+		WithdrawnStatus:    orderReward.withdrawnStatus,
+		TxReqID:            orderReward.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -463,18 +590,40 @@ func (orderReward *OrderReward) MarshalJSON() ([]byte, error) {
 
 func (orderReward *OrderReward) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		UncollectedRewards Reward `json:"UncollectedRewards"`
+		UncollectedRewards map[common.Hash]*OrderRewardDetail `json:"UncollectedRewards"`
+		WithdrawnStatus    byte                               `json:"WithdrawnStatus"`
+		TxReqID            *common.Hash                       `json:"TxReqID,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	orderReward.withdrawnStatus = temp.WithdrawnStatus
 	orderReward.uncollectedRewards = temp.UncollectedRewards
+	orderReward.txReqID = temp.TxReqID
 	return nil
 }
 
-func (orderReward *OrderReward) UncollectedRewards() Reward {
-	res := Reward{}
+func (orderReward *OrderReward) isEmpty() bool {
+	if orderReward.withdrawnStatus == WaitToWithdrawOrderReward {
+		return false
+	}
+	if len(orderReward.uncollectedRewards) != 0 {
+		return false
+	}
+	return true
+}
+
+func (orderReward *OrderReward) TxReqID() *common.Hash {
+	return orderReward.txReqID
+}
+
+func (orderReward *OrderReward) WithdrawnStatus() byte {
+	return orderReward.withdrawnStatus
+}
+
+func (orderReward *OrderReward) UncollectedRewards() map[common.Hash]*OrderRewardDetail {
+	res := map[common.Hash]*OrderRewardDetail{}
 	for k, v := range orderReward.uncollectedRewards {
 		res[k] = v
 	}
@@ -484,22 +633,39 @@ func (orderReward *OrderReward) UncollectedRewards() Reward {
 func (orderReward *OrderReward) AddReward(tokenID common.Hash, amount uint64) {
 	oldAmount := uint64(0)
 	if _, ok := orderReward.uncollectedRewards[tokenID]; ok {
-		oldAmount = orderReward.uncollectedRewards[tokenID]
+		oldAmount = orderReward.uncollectedRewards[tokenID].amount
 	}
-	orderReward.uncollectedRewards[tokenID] = oldAmount + amount
+	if orderReward.uncollectedRewards[tokenID] == nil {
+		orderReward.uncollectedRewards[tokenID] = NewOrderRewardDetail()
+	}
+	temp := orderReward.uncollectedRewards[tokenID]
+	temp.amount = oldAmount + amount
+	orderReward.uncollectedRewards[tokenID] = temp
 }
 
 func NewOrderReward() *OrderReward {
 	return &OrderReward{
-		uncollectedRewards: make(map[common.Hash]uint64),
+		uncollectedRewards: make(map[common.Hash]*OrderRewardDetail),
+	}
+}
+
+func NewOrderRewardWithValue(
+	withdrawnStatus byte, uncollectedRewards map[common.Hash]*OrderRewardDetail, txReqID *common.Hash,
+) *OrderReward {
+	return &OrderReward{
+		withdrawnStatus:    withdrawnStatus,
+		uncollectedRewards: uncollectedRewards,
+		txReqID:            txReqID,
 	}
 }
 
 func (orderReward *OrderReward) Clone() *OrderReward {
 	res := NewOrderReward()
 	for k, v := range orderReward.uncollectedRewards {
-		res.uncollectedRewards[k] = v
+		res.uncollectedRewards[k] = v.Clone()
 	}
+	res.withdrawnStatus = orderReward.withdrawnStatus
+	res.txReqID = orderReward.txReqID
 	return res
 }
 
@@ -537,7 +703,7 @@ func (orderReward *OrderReward) getDiff(
 }
 
 type MakingVolume struct {
-	volume map[string]*big.Int // nftID -> amount
+	volume map[string]*big.Int // accessID -> amount
 }
 
 func (makingVolume *MakingVolume) MarshalJSON() ([]byte, error) {

@@ -157,3 +157,7 @@ func (ob *Orderbook) NftIDs() map[string]string {
 	}
 	return result
 }
+
+func (ob *Orderbook) Orders() []*Order {
+	return ob.orders
+}

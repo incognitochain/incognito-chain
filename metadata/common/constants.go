@@ -179,6 +179,7 @@ const (
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
 	Pdexv3DistributeMiningOrderRewardMeta   = 308
+	Pdexv3MintAccessTokenMeta               = 309
 
 	// pBSC
 	BurningPBSCForDepositToSCRequestMeta = 326

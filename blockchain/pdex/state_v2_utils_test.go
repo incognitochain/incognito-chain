@@ -61,7 +61,7 @@ func TestMakingVolume_getDiff(t *testing.T) {
 
 func TestOrderReward_getDiff(t *testing.T) {
 	type fields struct {
-		uncollectedRewards Reward
+		uncollectedRewards map[common.Hash]*OrderRewardDetail
 	}
 	type args struct {
 		compareOrderReward *OrderReward
@@ -76,15 +76,21 @@ func TestOrderReward_getDiff(t *testing.T) {
 		{
 			name: "Valid input",
 			fields: fields{
-				uncollectedRewards: Reward{
-					common.PRVCoinID: 100,
+				uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+					common.PRVCoinID: {
+						amount: 100,
+					},
 				},
 			},
 			args: args{
 				compareOrderReward: &OrderReward{
-					uncollectedRewards: Reward{
-						common.PRVCoinID:  100,
-						common.PDEXCoinID: 100,
+					uncollectedRewards: map[common.Hash]*OrderRewardDetail{
+						common.PDEXCoinID: {
+							amount: 100,
+						},
+						common.PRVCoinID: {
+							amount: 100,
+						},
 					},
 				},
 				orderRewardChange: &v2utils.OrderRewardChange{},

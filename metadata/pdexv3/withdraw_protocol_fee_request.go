@@ -52,11 +52,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidPoolPairID(withdrawal.PoolPairID)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return beaconViewRetriever.IsValidPdexv3PoolPairID(withdrawal.PoolPairID)
 }
 
 func (withdrawal WithdrawalProtocolFeeRequest) ValidateSanityData(

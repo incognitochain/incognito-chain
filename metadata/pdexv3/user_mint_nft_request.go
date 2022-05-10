@@ -19,7 +19,11 @@ type UserMintNftRequest struct {
 }
 
 func NewUserMintNftRequest() *UserMintNftRequest {
-	return &UserMintNftRequest{}
+	return &UserMintNftRequest{
+		MetadataBase: metadataCommon.MetadataBase{
+			Type: metadataCommon.Pdexv3UserMintNftRequestMeta,
+		},
+	}
 }
 
 func NewUserMintNftRequestWithValue(otaReceiver string, amount uint64) *UserMintNftRequest {
@@ -41,10 +45,7 @@ func (request *UserMintNftRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	if err := beaconViewRetriever.IsValidMintNftRequireAmount(request.amount); err != nil {
-		return false, err
-	}
-	return true, nil
+	return beaconViewRetriever.IsValidPdexv3MintNftRequireAmount(request.amount)
 }
 
 func (request *UserMintNftRequest) ValidateSanityData(

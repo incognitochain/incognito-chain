@@ -109,12 +109,15 @@ type BeaconViewRetriever interface {
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
-	IsValidNftID(string) error
-	IsValidPoolPairID(string) error
-	IsValidMintNftRequireAmount(uint64) error
-	IsValidPdexv3StakingPool(string) error
-	IsValidPdexv3UnstakingAmount(string, string, uint64) error
-	IsValidPdexv3ShareAmount(string, string, uint64) error
+	IsValidPdexv3NftID(string) (bool, error)
+	IsValidPdexv3PoolPairID(string) (bool, error)
+	IsValidPdexv3MintNftRequireAmount(uint64) (bool, error)
+	IsValidPdexv3StakingPool(string) (bool, error)
+	IsValidPdexv3UnstakingAmount(string, string, uint64) (bool, error)
+	IsValidPdexv3ShareAmount(string, string, uint64) (bool, error)
+	IsValidPdexv3Staker(string, string) (bool, error)
+	IsValidPdexv3LP(string, string) (bool, error)
+	IsValidAccessOTAWithPdexState(Pdexv3ExtendedAccessID) (bool, error)
 }
 
 type ShardViewRetriever interface {
@@ -481,4 +484,26 @@ func (r *RejectContent) FromString(source string) error {
 		return err
 	}
 	return nil
+}
+
+type Pdexv3ExtendedAccessID struct {
+	PoolID       string
+	AccessID     common.Hash
+	OrderID      string
+	AccessOTA    []byte
+	MetadataType int
+}
+
+func NewPdexv3ExtendAccessIDWithValue(
+	poolID string, accessID common.Hash,
+	accessOTA []byte, metadataType int,
+	orderID string,
+) *Pdexv3ExtendedAccessID {
+	return &Pdexv3ExtendedAccessID{
+		PoolID:       poolID,
+		AccessID:     accessID,
+		AccessOTA:    accessOTA,
+		MetadataType: metadataType,
+		OrderID:      orderID,
+	}
 }

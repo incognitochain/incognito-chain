@@ -1,0 +1,70 @@
+[{
+    "name": "Produce accepted withdraw order request",
+    "data": {
+        "metadata": {
+            "PoolPairID": "pair0",
+            "OrderID": "0000000000000000000000000000000000000000000000000000000000000aa2",
+            "Amount": 0,
+            "AccessID": "27d2109df51b87e486a9d8a82c6336e098dcae8d11af26db0b65ebdbfa68e961",
+            "BurntOTA": "vWS+qjoXU756q2dzUhju8TKbwaLjOg/BmalELXFn62I=",
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R",
+                "0000000000000000000000000000000000000000000000000000000000000007": "15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub"
+            },
+            "Type": 289
+        }
+    },
+    "expected": {
+    	"instructions": [
+            ["289", "1", "0", "442aab9264ea6db7fbedb9ed8cbc23e4270722d3865a6585af230343968bf140", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa2\",\"TokenID\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"Receiver\":\"15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R\",\"Amount\":2000,\"AccessOTA\":\"XBN6OuSTzqDnmzsINPnQbP2UWmSrQmnDzyC6RzXEDu0=\"}}"]
+        ]
+    }
+}, {
+    "name": "Produce rejected withdraw order request (invalid amount)",
+    "data": {
+        "metadata": {
+            "PoolPairID": "pair0",
+            "OrderID": "0000000000000000000000000000000000000000000000000000000000000aa2",
+            "Amount": 10,
+            "AccessID": "27d2109df51b87e486a9d8a82c6336e098dcae8d11af26db0b65ebdbfa68e961",
+            "BurntOTA": "vWS+qjoXU756q2dzUhju8TKbwaLjOg/BmalELXFn62I=",
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R",
+                "0000000000000000000000000000000000000000000000000000000000000007": "15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub"
+            },
+            "Type": 289
+        }
+    },
+    "expected": {
+    	"instructions": [
+            ["309", "289", "{\"OtaReceiver\":\"15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub\",\"ShardID\":0,\"TxReqID\":\"e5c2ea71b1059357fb4a56e3c391e8004e452c1167cf1f21baf58a4fcc8cda93\"}"],
+            ["289", "0", "0", "e5c2ea71b1059357fb4a56e3c391e8004e452c1167cf1f21baf58a4fcc8cda93", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa2\",\"AccessOTA\":\"XBN6OuSTzqDnmzsINPnQbP2UWmSrQmnDzyC6RzXEDu0=\"}}"]
+        ]
+    },
+    "detail": "valid access -> mint & change access OTA; invalid amount -> refund"
+}, {
+    "name": "Produce rejected withdraw order request (wrong AccessOTA burned)",
+    "data": {
+        "metadata": {
+            "PoolPairID": "pair0",
+            "OrderID": "0000000000000000000000000000000000000000000000000000000000000aa2",
+            "Amount": 0,
+            "AccessID": "27d2109df51b87e486a9d8a82c6336e098dcae8d11af26db0b65ebdbfa68e961",
+            "BurntOTA": "TMzwCG03cuVK9iKA9ChiNiZBjvN6u+ydxcUB/u7KOsg=",
+            "Receiver": {
+                "0000000000000000000000000000000000000000000000000000000000000100": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                "0000000000000000000000000000000000000000000000000000000000000200": "15t7A7pyhZTCzQkb4hiMdsvfQdjW6X1u9JjbDy7bmLYo94n2xwhPh21KSEopCuYvnrrRrd1auAiM4q56TN7tPFKSFU64HeJ3i5rVzn3ahyfeMEyP6XfS2U6wqXcYTHzmbspXEHLX4Ux8c57R",
+                "0000000000000000000000000000000000000000000000000000000000000007": "15tqKm3xLYysvnuAPNoPpvrpxUYKn2uQfkhbX9D6MTzgcvp7Sb7AeRMwLXb31jbM9drU41MRbms37ftbQhJVyfT3hGuM63oJGQWV4e5hsnNL7V2i8vks8roN8Y7CiE43udX3UKJWiNCF23ub"
+            },
+            "Type": 289
+        }
+    },
+    "expected": {
+        "instructions": [
+            ["289", "0", "0", "c27ebf80c3027d8b0e84897dff30bdaf33780a5ee66cc54c8ec102daf99b5af3", "{\"Content\":{\"PoolPairID\":\"pair0\",\"OrderID\":\"0000000000000000000000000000000000000000000000000000000000000aa2\"}}"]
+        ]
+    },
+    "detail": "burn random OTA -> rejected access (no access token refund)"
+}]

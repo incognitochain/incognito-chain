@@ -32,12 +32,12 @@ func TestUnstakingResponse_ValidateSanityData(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "status != common.Pdexv3AcceptUnstakingStatus",
+			name: "status != common.Pdexv3AcceptStringStatus",
 			fields: fields{
 				MetadataBase: metadataCommon.MetadataBase{
 					Type: metadataCommon.Pdexv3UnstakingResponseMeta,
 				},
-				status:  common.Pdexv3RejectUnstakingStatus,
+				status:  common.Pdexv3RejectStringStatus,
 				txReqID: txReqID.String(),
 			},
 			args:    args{},
@@ -51,7 +51,7 @@ func TestUnstakingResponse_ValidateSanityData(t *testing.T) {
 				MetadataBase: metadataCommon.MetadataBase{
 					Type: metadataCommon.Pdexv3UnstakingResponseMeta,
 				},
-				status:  common.Pdexv3AcceptUnstakingStatus,
+				status:  common.Pdexv3AcceptStringStatus,
 				txReqID: "abc12312bdas",
 			},
 			args:    args{},
@@ -65,7 +65,7 @@ func TestUnstakingResponse_ValidateSanityData(t *testing.T) {
 				MetadataBase: metadataCommon.MetadataBase{
 					Type: metadataCommon.Pdexv3UnstakingResponseMeta,
 				},
-				status:  common.Pdexv3AcceptUnstakingStatus,
+				status:  common.Pdexv3AcceptStringStatus,
 				txReqID: common.Hash{}.String(),
 			},
 			args:    args{},
@@ -79,7 +79,7 @@ func TestUnstakingResponse_ValidateSanityData(t *testing.T) {
 				MetadataBase: metadataCommon.MetadataBase{
 					Type: metadataCommon.Pdexv3UnstakingResponseMeta,
 				},
-				status:  common.Pdexv3AcceptUnstakingStatus,
+				status:  common.Pdexv3AcceptStringStatus,
 				txReqID: txReqID.String(),
 			},
 			args:    args{},

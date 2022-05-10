@@ -64,7 +64,7 @@ func (response *AddLiquidityResponse) ValidateSanityData(
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
 	if response.status == "" {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status cannot be empty"))
 	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
 	if err != nil {
@@ -191,6 +191,9 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardIDFromInst = value.ShardID()
 			txReqIDFromInst = value.TxReqID()
 			receiverAddrStrFromInst = value.OtaReceiver()
+			if len(value.OtaReceivers()) != 0 {
+				receiverAddrStrFromInst = value.OtaReceivers()[value.TokenID()]
+			}
 			receivingTokenIDStr = value.TokenID().String()
 			receivingAmtFromInst = value.Amount()
 		case common.PDEContributionMatchedNReturnedChainStatus:
@@ -206,6 +209,9 @@ func (response *AddLiquidityResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardIDFromInst = value.ShardID()
 			txReqIDFromInst = value.TxReqID()
 			receiverAddrStrFromInst = value.OtaReceiver()
+			if len(value.OtaReceivers()) != 0 {
+				receiverAddrStrFromInst = value.OtaReceivers()[value.TokenID()]
+			}
 			receivingTokenIDStr = value.TokenID().String()
 			receivingAmtFromInst = matchAndReturnAddLiquidity.ReturnAmount
 		default:

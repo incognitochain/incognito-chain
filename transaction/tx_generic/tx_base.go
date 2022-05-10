@@ -53,7 +53,7 @@ type TxPrivacyInitParams struct {
 	TokenID     *common.Hash // default is nil -> use for prv coin
 	MetaData    metadata.Metadata
 	Info        []byte // 512 bytes
-	Kvargs      map[string]interface{}
+	*GenericParams
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -71,16 +71,16 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 		info = []byte{}
 	}
 	params := &TxPrivacyInitParams{
-		StateDB:     stateDB,
-		TokenID:     tokenID,
-		HasPrivacy:  hasPrivacy,
-		InputCoins:  inputCoins,
-		Fee:         fee,
-		MetaData:    metaData,
-		PaymentInfo: paymentInfo,
-		SenderSK:    senderSK,
-		Info:        info,
-		Kvargs:      nil,
+		StateDB:       stateDB,
+		TokenID:       tokenID,
+		HasPrivacy:    hasPrivacy,
+		InputCoins:    inputCoins,
+		Fee:           fee,
+		MetaData:      metaData,
+		PaymentInfo:   paymentInfo,
+		SenderSK:      senderSK,
+		Info:          info,
+		GenericParams: NewGenericParams(),
 	}
 	return params
 }

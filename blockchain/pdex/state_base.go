@@ -1,6 +1,10 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+import (
+	"github.com/incognitochain/incognito-chain/blockchain/pdex/v2utils"
+	"github.com/incognitochain/incognito-chain/common"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+)
 
 type stateBase struct {
 }
@@ -81,30 +85,46 @@ func (s *stateBase) StakingPools() map[string]*StakingPoolState {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidNftID(nftID string) error {
+func (s *stateBase) IsValidNftID(nftID string) (bool, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidPoolPairID(poolPairID string) error {
+func (s *stateBase) IsValidPoolPairID(poolPairID string) (bool, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidMintNftRequireAmount(amount uint64) error {
+func (s *stateBase) IsValidMintNftRequireAmount(amount uint64) (bool, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidStakingPool(tokenID string) error {
+func (s *stateBase) IsValidStakingPool(tokenID string) (bool, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) error {
+func (s *stateBase) IsValidUnstakingAmount(tokenID, nftID string, unstakingAmount uint64) (bool, error) {
 	panic("Implement this fucntion")
 }
 
-func (s *stateBase) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) error {
+func (s *stateBase) IsValidShareAmount(poolPairID, nftID string, shareAmount uint64) (bool, error) {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidStaker(tokenID, nftID string) (bool, error) {
+	panic("Implement this fucntion")
+}
+
+func (s *stateBase) IsValidLP(poolPairID, nftID string) (bool, error) {
 	panic("Implement this fucntion")
 }
 
 func (s *stateBase) Validator() StateValidator {
+	panic("Implement this function")
+}
+
+func (s *stateBase) NFTAssetTags() (map[string]*common.Hash, error) {
+	panic("Implement this function")
+}
+
+func (s *stateBase) IsValidAccessOTA(metadataCommon.Pdexv3ExtendedAccessID) (bool, error) {
 	panic("Implement this function")
 }

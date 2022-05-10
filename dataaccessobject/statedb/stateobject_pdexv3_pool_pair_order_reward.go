@@ -17,12 +17,12 @@ type Pdexv3PoolPairOrderRewardState struct {
 	receiver        string
 }
 
-func (state *Pdexv3PoolPairOrderRewardState) Value() uint64 {
-	return state.value
+func (state *Pdexv3PoolPairOrderRewardState) TxReqID() *common.Hash {
+	return state.txReqID
 }
 
-func (state *Pdexv3PoolPairOrderRewardState) TokenID() common.Hash {
-	return state.tokenID
+func (state *Pdexv3PoolPairOrderRewardState) WithdrawnStatus() byte {
+	return state.withdrawnStatus
 }
 
 func (state *Pdexv3PoolPairOrderRewardState) NftID() string {
@@ -76,7 +76,6 @@ func (state *Pdexv3PoolPairOrderRewardState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	state.tokenID = temp.TokenID
 	state.nftID = temp.NftID
 	state.withdrawnStatus = temp.WithdrawnStatus
 	state.txReqID = temp.TxReqID

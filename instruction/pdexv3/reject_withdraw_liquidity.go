@@ -10,18 +10,26 @@ import (
 )
 
 type RejectWithdrawLiquidity struct {
-	txReqID common.Hash
-	shardID byte
+	txReqID    common.Hash
+	shardID    byte
+	poolPairID string
+	accessID   *common.Hash
+	accessOTA  []byte
 }
 
 func NewRejectWithdrawLiquidity() *RejectWithdrawLiquidity {
 	return &RejectWithdrawLiquidity{}
 }
 
-func NewRejectWithdrawLiquidityWithValue(txReqID common.Hash, shardID byte) *RejectWithdrawLiquidity {
+func NewRejectWithdrawLiquidityWithValue(
+	txReqID common.Hash, shardID byte, poolPairID string, accessID *common.Hash, accessOTA []byte,
+) *RejectWithdrawLiquidity {
 	return &RejectWithdrawLiquidity{
-		shardID: shardID,
-		txReqID: txReqID,
+		shardID:    shardID,
+		txReqID:    txReqID,
+		poolPairID: poolPairID,
+		accessID:   accessID,
+		accessOTA:  accessOTA,
 	}
 }
 
@@ -53,11 +61,17 @@ func (r *RejectWithdrawLiquidity) StringSlice() ([]string, error) {
 
 func (r *RejectWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TxReqID common.Hash `json:"TxReqID"`
-		ShardID byte        `json:"ShardID"`
+		TxReqID    common.Hash  `json:"TxReqID"`
+		ShardID    byte         `json:"ShardID"`
+		PoolPairID string       `json:"PoolPairID,omitempty"`
+		AccessID   *common.Hash `json:"AccessID,omitempty"`
+		AccessOTA  []byte       `json:"AccessOTA,omitempty"`
 	}{
-		TxReqID: r.txReqID,
-		ShardID: r.shardID,
+		TxReqID:    r.txReqID,
+		ShardID:    r.shardID,
+		PoolPairID: r.poolPairID,
+		AccessID:   r.accessID,
+		AccessOTA:  r.accessOTA,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -67,8 +81,11 @@ func (r *RejectWithdrawLiquidity) MarshalJSON() ([]byte, error) {
 
 func (r *RejectWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TxReqID common.Hash `json:"TxReqID"`
-		ShardID byte        `json:"ShardID"`
+		TxReqID    common.Hash  `json:"TxReqID"`
+		ShardID    byte         `json:"ShardID"`
+		PoolPairID string       `json:"PoolPairID,omitempty"`
+		AccessID   *common.Hash `json:"AccessID,omitempty"`
+		AccessOTA  []byte       `json:"AccessOTA,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -76,6 +93,9 @@ func (r *RejectWithdrawLiquidity) UnmarshalJSON(data []byte) error {
 	}
 	r.txReqID = temp.TxReqID
 	r.shardID = temp.ShardID
+	r.accessID = temp.AccessID
+	r.poolPairID = temp.PoolPairID
+	r.accessOTA = temp.AccessOTA
 	return nil
 }
 
@@ -85,4 +105,16 @@ func (r *RejectWithdrawLiquidity) TxReqID() common.Hash {
 
 func (r *RejectWithdrawLiquidity) ShardID() byte {
 	return r.shardID
+}
+
+func (r *RejectWithdrawLiquidity) PoolPairID() string {
+	return r.poolPairID
+}
+
+func (r *RejectWithdrawLiquidity) AccessID() *common.Hash {
+	return r.accessID
+}
+
+func (r *RejectWithdrawLiquidity) AccessOTA() []byte {
+	return r.accessOTA
 }

@@ -63,7 +63,7 @@ func (response *WithdrawLiquidityResponse) ValidateSanityData(
 	tx metadataCommon.Transaction,
 ) (bool, bool, error) {
 	if response.status != common.PDEWithdrawalAcceptedChainStatus {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status can not be empty"))
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, errors.New("status cannot be empty"))
 	}
 	txReqID, err := common.Hash{}.NewHashFromStr(response.txReqID)
 	if err != nil {

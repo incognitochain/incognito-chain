@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -180,4 +181,42 @@ func getStrStakingPoolState(p *StakingPoolState) string {
 		result += fmt.Sprintf(" %v: %v\n", tokenID, value)
 	}
 	return result
+}
+
+func Test_getSortedOrderRewardAccessIDs(t *testing.T) {
+	type args struct {
+		orderRewards map[string]*OrderReward
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Valid input",
+			args: args{
+				orderRewards: map[string]*OrderReward{
+					"97b7f87ae141fba242e6d8d92bb8fafec971224db00b2a0e7e79100e57460701": nil,
+					"b14b843227a71743845c4aca0e36eb7d914a6b09f7b250f49827f7ae35fac27d": nil,
+					"babbc5ef38567801d3642f02a89648c70259eabb4799e5d9d144c0f0bf8caa2e": nil,
+					"c656cee2a77208c0e15196d9ce3993faf4af0cddd005da5c9a7b669d21e6b3c7": nil,
+					"e1b72b16a82b0fb745c8d15cfcf8f3734d208d439963fb9099bbab008380f418": nil,
+				},
+			},
+			want: []string{
+				"97b7f87ae141fba242e6d8d92bb8fafec971224db00b2a0e7e79100e57460701",
+				"b14b843227a71743845c4aca0e36eb7d914a6b09f7b250f49827f7ae35fac27d",
+				"babbc5ef38567801d3642f02a89648c70259eabb4799e5d9d144c0f0bf8caa2e",
+				"c656cee2a77208c0e15196d9ce3993faf4af0cddd005da5c9a7b669d21e6b3c7",
+				"e1b72b16a82b0fb745c8d15cfcf8f3734d208d439963fb9099bbab008380f418",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getSortedOrderRewardAccessIDs(tt.args.orderRewards); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getSortedOrderRewardAccessIDs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

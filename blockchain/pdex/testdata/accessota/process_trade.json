@@ -1,0 +1,142 @@
+[{
+    "name": "Process accepted trade request - pool",
+    "data": {
+        "instructions": [
+            ["285", "1", "0", "044bbfdcf9cbfb0d094f73c73933052f6f66b510d3b1c507e8015d31aea2b8a5", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":300,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"PairChanges\":[[200,-400]],\"OrderChanges\":[{}],\"RewardEarned\":[{}]}}"]
+        ]
+    },
+    "expected": {
+        "poolPairs": {
+            "pair0": {
+                "state": {
+                    "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+                    "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                    "Token0RealAmount": 600,
+                    "Token1RealAmount": 600,
+                    "Token0VirtualAmount": 1200,
+                    "Token1VirtualAmount": 1800,
+                    "Amplifier": 21000,
+                    "ShareAmount": 0
+                },
+                "orderbook": {
+                    "orders": [{
+                        "Id": "0000000000000000000000000000000000000000000000000000000000000aa1",
+                        "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "Token0Rate": 100,
+                        "Token1Rate": 100,
+                        "Token0Balance": 0,
+                        "Token1Balance": 2000,
+                        "TradeDirection": 0,
+                        "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                    }, {
+                        "Id": "0000000000000000000000000000000000000000000000000000000000000aa2",
+                        "NftID": "27d2109df51b87e486a9d8a82c6336e098dcae8d11af26db0b65ebdbfa68e961",
+                        "AccessOTA": "vWS+qjoXU756q2dzUhju8TKbwaLjOg/BmalELXFn62I=",
+                        "Token0Rate": 1000,
+                        "Token1Rate": 2000,
+                        "Token0Balance": 0,
+                        "Token1Balance": 2000,
+                        "TradeDirection": 1,
+                        "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                    }]
+                },
+                "orderrewards": {},
+                "makingvolume": {}
+            }
+        }
+    }
+}, {
+    "name": "Process accepted trade request - order",
+    "data": {
+        "instructions": [
+            ["285", "1", "0", "044bbfdcf9cbfb0d094f73c73933052f6f66b510d3b1c507e8015d31aea2b8a5", "{\"Content\":{\"Receiver\":\"15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4\",\"Amount\":300,\"TradePath\":[\"pair0\"],\"TokenToBuy\":\"0000000000000000000000000000000000000000000000000000000000000200\",\"PairChanges\":[[0,0]],\"OrderChanges\":[{\"0000000000000000000000000000000000000000000000000000000000000aa2\":[150,-300]}],\"RewardEarned\":[{}]}}"]
+        ]
+    },
+    "expected": {
+        "poolPairs": {
+            "pair0": {
+                "state": {
+                    "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+                    "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                    "Token0RealAmount": 400,
+                    "Token1RealAmount": 1000,
+                    "Token0VirtualAmount": 1000,
+                    "Token1VirtualAmount": 2200,
+                    "Amplifier": 21000,
+                    "ShareAmount": 0
+                },
+                "orderbook": {
+                    "orders": [{
+                        "Id": "0000000000000000000000000000000000000000000000000000000000000aa1",
+                        "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "Token0Rate": 100,
+                        "Token1Rate": 100,
+                        "Token0Balance": 0,
+                        "Token1Balance": 2000,
+                        "TradeDirection": 0,
+                        "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                    }, {
+                        "Id": "0000000000000000000000000000000000000000000000000000000000000aa2",
+                        "NftID": "27d2109df51b87e486a9d8a82c6336e098dcae8d11af26db0b65ebdbfa68e961",
+                        "AccessOTA": "vWS+qjoXU756q2dzUhju8TKbwaLjOg/BmalELXFn62I=",
+                        "Token0Rate": 1000,
+                        "Token1Rate": 2000,
+                        "Token0Balance": 150,
+                        "Token1Balance": 1700,
+                        "TradeDirection": 1,
+                        "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                    }]
+                },
+                "orderrewards": {},
+                "makingvolume": {}
+            }
+        }
+    }
+}, {
+    "name": "Process refunded trade - sell amount too large",
+    "data": {
+        "instructions": [
+            ["285", "0", "0", "ad4f87b3a1c8f655d07c240b520cd4c2bd6d703d88aa53107950e8d53c15b451", "{\"Content\":{\"Receiver\":\"15ujixNQY1Qc5wyX9UYQW3s6cbcecFPNhrWjWiFCggeN5HukPVdjbKyRE3goUpFgZhawtBtRUK3ZSZb5LtH7bevhGzz3UTh1muzLHG3pvsE6RNB81y8xNGhyHdpHZfjwmSWDdwDe74Tg2CUP\",\"TokenToSell\":\"0000000000000000000000000000000000000000000000000000000000000100\",\"Amount\":5000}}"]
+        ]
+    },
+    "expected": {
+        "poolPairs": {
+            "pair0": {
+                "state": {
+                    "Token0ID": "0000000000000000000000000000000000000000000000000000000000000100",
+                    "Token1ID": "0000000000000000000000000000000000000000000000000000000000000200",
+                    "Token0RealAmount": 400,
+                    "Token1RealAmount": 1000,
+                    "Token0VirtualAmount": 1000,
+                    "Token1VirtualAmount": 2200,
+                    "Amplifier": 21000,
+                    "ShareAmount": 0
+                },
+                "orderbook": {
+                    "orders": [{
+                        "Id": "0000000000000000000000000000000000000000000000000000000000000aa1",
+                        "NftID": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "Token0Rate": 100,
+                        "Token1Rate": 100,
+                        "Token0Balance": 0,
+                        "Token1Balance": 2000,
+                        "TradeDirection": 0,
+                        "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                    }, {
+                        "Id": "0000000000000000000000000000000000000000000000000000000000000aa2",
+                        "NftID": "27d2109df51b87e486a9d8a82c6336e098dcae8d11af26db0b65ebdbfa68e961",
+                        "AccessOTA": "vWS+qjoXU756q2dzUhju8TKbwaLjOg/BmalELXFn62I=",
+                        "Token0Rate": 1000,
+                        "Token1Rate": 2000,
+                        "Token0Balance": 0,
+                        "Token1Balance": 2000,
+                        "TradeDirection": 1,
+                        "Receiver": ["15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4", "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4"]
+                    }]
+                },
+                "orderrewards": {},
+                "makingvolume": {}
+            }
+        }
+    }
+}]

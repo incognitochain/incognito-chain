@@ -109,10 +109,15 @@ func initStateV2FromDB(
 	if err != nil {
 		return nil, err
 	}
-	return newStateV2WithValue(
+	result := newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
 		poolPairs, params, stakingPools, nftIDs,
-	), nil
+	)
+	result.nftAssetTags, err = result.nftAssetTags.FromIDs(nftIDs)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func initPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
@@ -223,7 +228,7 @@ func initShares(poolPairID string, stateDB *statedb.StateDB) (map[string]*Share,
 			return nil, err
 		}
 		res[nftID] = NewShareWithValue(
-			shareState.Amount(), shareState.LmLockedAmount(), tradingFees, lastLPFeesPerShare, lastLmRewardsPerShare,
+			shareState.Amount(), shareState.LmLockedAmount(), shareState.AccessOTA(), tradingFees, lastLPFeesPerShare, lastLmRewardsPerShare,
 		)
 	}
 	return res, nil
@@ -246,7 +251,9 @@ func initStakers(stakingPoolID string, stateDB *statedb.StateDB) (map[string]*St
 		if err != nil {
 			return res, totalLiquidity, err
 		}
-		res[nftID] = NewStakerWithValue(stakerState.Liquidity(), rewards, lastRewardsPerShare)
+		res[nftID] = NewStakerWithValue(
+			stakerState.Liquidity(), stakerState.AccessOTA(), rewards, lastRewardsPerShare,
+		)
 	}
 	return res, totalLiquidity, nil
 }
@@ -477,6 +484,7 @@ func InitPoolPair(stateDB *statedb.StateDB, poolPairID string) (*PoolPairState, 
 			makingVolume[tokenID].volume[nftID] = amount
 		}
 	}
+
 	tempOrderReward, err := statedb.GetPdexv3PoolPairOrderReward(stateDB, poolPairID)
 	if err != nil {
 		return nil, err
