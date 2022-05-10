@@ -105,7 +105,8 @@ func (s *multiView) removeOutdatedView() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	for h, v := range s.viewByHash {
-		if v.GetHeight() < s.finalView.GetHeight() {
+		//buffer 1 views in the mem, so that GetPreviousHash work for bestview (also is final view)
+		if v.GetHeight() < s.finalView.GetHeight()-1 {
 			delete(s.viewByHash, h)
 			delete(s.viewByPrevHash, h)
 			delete(s.viewByPrevHash, *v.GetPreviousHash())
@@ -136,9 +137,9 @@ func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 		return errors.New("Cannot find view by hash " + hashToFinalize.String())
 	}
 
-	//recheck hashToFinalize is on the same branch with expected final view
+	//recheck hashToFinalize is on the same branch with bestview view
 	notLink := true
-	prevView := s.expectedFinalView
+	prevView := s.bestView
 	for {
 		if hashToFinalize.String() == prevView.GetHash().String() {
 			notLink = false
@@ -153,6 +154,7 @@ func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 	//if not link on the same branch with final view, reorg the multiview
 	//this must be not happen with our flow
 	if notLink {
+
 		panic("This must not happen!")
 		newOrgMultiView := s.getAllViewsWithBFS(viewToFinalize)
 		s.Reset()
@@ -224,7 +226,6 @@ func (s *multiView) updateViewState(newView View) {
 		s.bestView = newView
 	}
 
-	//TODO: bestview making expected finalview wrong
 	//get bestview with min produce time or better committee from block
 	if newView.GetHeight() == s.bestView.GetHeight() {
 		switch newView.CompareCommitteeFromBlock(s.bestView) {
