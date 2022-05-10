@@ -766,10 +766,6 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 		return err
 	}
 
-	if err := a.CleanReceiveBlockByHash(v.block.GetPrevHash().String()); err != nil {
-		a.logger.Errorf("clean receive block by hash error %+v", err)
-	}
-
 	return nil
 }
 
@@ -780,33 +776,34 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 	}
 	isInsertWithPreviousData := false
 	v.block.(BlockValidation).AddValidationField(validationData)
-	// validate and previous block
-	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
-		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
+	// validate and add previous block validation data
+	previousBlock, _ := a.chain.GetBlockByHash(v.block.GetPrevHash())
+	if previousBlock != nil {
+		if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
+			previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
-		previousProposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(previousProposeBlockInfo)
+			previousProposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(previousProposeBlockInfo)
 
-		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
-			previousProposeBlockInfo.SigningCommittees,
-			previousProposeBlockInfo.block.ProposeHash(),
-			previousProposeBlockInfo.block.GetValidationField(),
-			previousProposeBlockInfo.Votes)
-		if err != nil {
-			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
-		} else {
-			previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
-			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
-				return err
-			}
-			isInsertWithPreviousData = true
-			previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
-			a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
-				v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
-
-			if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
-				a.logger.Errorf("clean receive block by hash error %+v", err)
+			rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
+				previousProposeBlockInfo.SigningCommittees,
+				previousProposeBlockInfo.block.ProposeHash(),
+				previousProposeBlockInfo.block.GetValidationField(),
+				previousProposeBlockInfo.Votes)
+			if err != nil {
+				a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+			} else {
+				previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
+				if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
+					return err
+				}
+				isInsertWithPreviousData = true
+				previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
+				a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
+					v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
 			}
 		}
+	} else {
+		a.logger.Info("Cannot find block by hash", v.block.GetPrevHash().String())
 	}
 
 	if !isInsertWithPreviousData {
