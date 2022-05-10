@@ -188,9 +188,13 @@ func NewBeaconBlock() *BeaconBlock {
 func (beaconBlock BeaconBlock) ToProtoBeaconBlock() (*proto.BeaconBlockBytes, error) {
 	res := &proto.BeaconBlockBytes{}
 	var err error
-	res.Body, err = beaconBlock.Body.ToProtoBeaconBody()
-	if err != nil {
-		return nil, err
+	if (len(beaconBlock.Body.Instructions) == 0) && (len(beaconBlock.Body.ShardState) == 0) {
+		res.Body = nil
+	} else {
+		res.Body, err = beaconBlock.Body.ToProtoBeaconBody()
+		if err != nil {
+			return nil, err
+		}
 	}
 	res.Header, err = beaconBlock.Header.ToProtoBeaconHeader()
 	if err != nil {
@@ -204,11 +208,23 @@ func (beaconBlock *BeaconBlock) FromProtoBeaconBlock(protoData *proto.BeaconBloc
 	if protoData.Header.Height > 1 {
 		beaconBlock.AddValidationField("")
 	}
-	err := beaconBlock.Body.FromProtoBeaconBody(protoData.Body)
-	if err != nil {
-		return err
+	if protoData.Body != nil {
+		err := beaconBlock.Body.FromProtoBeaconBody(protoData.Body)
+		if err != nil {
+			return err
+		}
+	} else {
+		beaconBlock.Body = BeaconBody{
+			Instructions: [][]string{},
+			ShardState:   map[byte][]ShardState{},
+		}
 	}
 	return beaconBlock.Header.FromProtoBeaconHeader(protoData.Header)
+}
+
+func (beaconBlock *BeaconBlock) RemoveBody() {
+	beaconBlock.Body.Instructions = [][]string{}
+	beaconBlock.Body.ShardState = map[byte][]ShardState{}
 }
 
 func (beaconBlock *BeaconBlock) ToBytes() ([]byte, error) {
@@ -224,10 +240,32 @@ func (beaconBlock *BeaconBlock) ToBytes() ([]byte, error) {
 
 }
 
+func (beaconBlock *BeaconBlock) GetBodyBytes() ([]byte, error) {
+	protoBody, err := beaconBlock.Body.ToProtoBeaconBody()
+	if (protoBody == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
+	}
+	return ggproto.Marshal(protoBody)
+}
+
+func (beaconBlock *BeaconBlock) SetBodyFromBytes(rawBytes []byte) error {
+	if len(rawBytes) != 0 {
+		protoBody := &proto.BeaconBodyBytes{}
+		err := ggproto.Unmarshal(rawBytes, protoBody)
+		if err != nil {
+			return err
+		}
+		return beaconBlock.Body.FromProtoBeaconBody(protoBody)
+	}
+	beaconBlock.Body = NewBeaconBody(map[byte][]ShardState{}, [][]string{})
+	return nil
+}
+
 func (beaconBlock *BeaconBlock) FromBytes(rawBytes []byte) error {
 	protoBlk := &proto.BeaconBlockBytes{}
 	err := ggproto.Unmarshal(rawBytes, protoBlk)
 	if err != nil {
+		panic(err)
 		return err
 	}
 	return beaconBlock.FromProtoBeaconBlock(protoBlk)

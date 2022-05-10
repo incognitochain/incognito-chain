@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -42,6 +43,9 @@ type SynckerManager struct {
 	beaconPool            *BlkPool
 	shardPool             map[int]*BlkPool
 	crossShardPool        map[int]*BlkPool
+
+	beaconCheckPointAtShard map[byte]uint64
+	chkpntLocker            *sync.RWMutex
 }
 
 func NewSynckerManager() *SynckerManager {
@@ -50,7 +54,13 @@ func NewSynckerManager() *SynckerManager {
 		shardPool:             make(map[int]*BlkPool),
 		CrossShardSyncProcess: make(map[int]*CrossShardSyncProcess),
 		crossShardPool:        make(map[int]*BlkPool),
+
+		beaconCheckPointAtShard: map[byte]uint64{},
 	}
+	for sID := byte(0); sID <= byte(config.Param().ActiveShards); sID++ {
+		s.beaconCheckPointAtShard[sID] = 1
+	}
+	s.chkpntLocker = &sync.RWMutex{}
 	return s
 }
 
@@ -123,6 +133,16 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	if !synckerManager.isEnabled || synckerManager.config == nil {
 		return
 	}
+
+	go func(s *SynckerManager) {
+		for {
+			if s.config.Network.IsReady() {
+				s.Blockchain.BeaconChain.FinishInit()
+				return
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}(synckerManager)
 
 	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
 
@@ -657,4 +677,36 @@ func (synckerManager *SynckerManager) GetAllViewByHash(poolType byte, bestHash s
 		return []types.BlockPoolInterface{}
 	}
 	return []types.BlockPoolInterface{}
+}
+
+func (s *SynckerManager) ReSyncBeaconBlockByHeight(
+	fromHeight, toHeight uint64,
+	timeout time.Duration,
+) (
+	res []types.BeaconBlock,
+	err error,
+) {
+	return s.BeaconSyncProcess.GetBeaconBlocksFromMem(fromHeight, toHeight)
+}
+
+func (s *SynckerManager) UpdateBeaconAtShard(
+	bcHeight uint64,
+	sID byte,
+) {
+	locker := s.chkpntLocker
+	locker.RLock()
+	if nextSync, ok := s.beaconCheckPointAtShard[sID]; ok {
+		if nextSync < bcHeight {
+			locker.RUnlock()
+			Logger.Infof("Update beacon at shard %v, nextSync %v start resync from %v", sID, nextSync, bcHeight+1)
+			go s.BeaconSyncProcess.RequestSyncRange(bcHeight + 1)
+			locker.Lock()
+			nextSync = bcHeight + 175
+			s.beaconCheckPointAtShard[sID] = nextSync
+			locker.Unlock()
+			return
+		}
+	}
+	locker.RUnlock()
+
 }

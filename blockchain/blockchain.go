@@ -735,15 +735,15 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
-	for _, beaconState := range allViews {
-		if beaconState.missingSignatureCounter == nil {
-			block := beaconState.BestBlock
-			err = beaconState.initMissingSignatureCounter(blockchain, &block)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// for _, beaconState := range allViews {
+	// 	if beaconState.missingSignatureCounter == nil {
+	// 		block := beaconState.BestBlock
+	// 		err = beaconState.initMissingSignatureCounter(blockchain, &block)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 	err = blockchain.restoreCheckpoint()
 	if err != nil {
 		return err

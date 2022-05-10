@@ -753,8 +753,8 @@ func (serverObj Server) Start() {
 		serverObj.blockChain.SetIsBlockGenStarted(true)
 	}
 
-	//go serverObj.blockChain.Synker.Start()
 	go serverObj.syncker.Start()
+	go serverObj.blockChain.BeaconChain.RestoreMissingSignature(serverObj.blockChain)
 	go serverObj.blockgen.Start(serverObj.cQuit)
 
 	if serverObj.memPool != nil {

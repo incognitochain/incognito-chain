@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -30,6 +31,7 @@ type BeaconChain struct {
 	ChainName           string
 	Ready               bool //when has peerstate
 	committeesInfoCache *lru.Cache
+	numImptOj           int32 //total object need to be complete before using beacon chain
 
 	blkManager blockstorage.BlockService
 
@@ -43,7 +45,12 @@ func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, bl
 	if err != nil {
 		panic(err)
 	}
-	blkM, err := blockstorage.NewBlockService(blockchain.GetBeaconChainDatabase(), ffFinalBlk, common.BeaconChainID)
+	p = path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("beacon/removabledata"))
+	ffRemovable, err := flatfile.NewFlatFile(p, 5*config.Param().EpochParam.NumberOfBlockInEpoch)
+	if err != nil {
+		panic(err)
+	}
+	blkM, err := blockstorage.NewBlockService(blockchain.GetBeaconChainDatabase(), ffFinalBlk, ffRemovable, common.BeaconChainID)
 	return &BeaconChain{
 		multiView:           multiView,
 		BlockGen:            blockGen,
@@ -154,6 +161,13 @@ func (chain *BeaconChain) IsReady() bool {
 
 func (chain *BeaconChain) SetReady(ready bool) {
 	chain.Ready = ready
+}
+
+func (chain *BeaconChain) FinishInit() {
+	atomic.AddInt32(&chain.numImptOj, 1)
+	if chain.numImptOj == 2 {
+		chain.Ready = true
+	}
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
@@ -490,4 +504,24 @@ func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalit
 
 func getCommitteeCacheKeyByEpoch(epoch uint64, cID byte) string {
 	return fmt.Sprintf("cmt-b-e-%v-%v", common.Uint64ToBytes(epoch), cID)
+}
+
+func (chain *BeaconChain) RestoreMissingSignature(blockchain *BlockChain) {
+	for {
+		if chain.GetBestViewHeight() > 1 {
+			for _, beaconView := range chain.GetAllView() {
+				beaconState := beaconView.(*BeaconBestState)
+				if beaconState.missingSignatureCounter == nil {
+					block := beaconState.BestBlock
+					err := beaconState.initMissingSignatureCounter(blockchain, &block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+				}
+			}
+		}
+		chain.FinishInit()
+		return
+	}
 }

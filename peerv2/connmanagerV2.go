@@ -268,3 +268,7 @@ func (cm *ConnManager) keepConnectionAlive() {
 func (cm *ConnManager) GetConnectionStatus() interface{} {
 	return cm.keeper.exportStatus()
 }
+
+func (cm *ConnManager) IsReady() bool {
+	return cm.Requester.IsReady()
+}

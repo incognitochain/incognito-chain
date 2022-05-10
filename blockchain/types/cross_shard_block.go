@@ -117,6 +117,18 @@ func (crossShardBlock CrossShardBlock) CommitteeFromBlock() common.Hash {
 	return common.Hash{}
 }
 
+func (crossShardBlock *CrossShardBlock) GetBodyBytes() ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (crossShardBlock *CrossShardBlock) SetBodyFromBytes(rawBytes []byte) error {
+	return nil
+}
+
+func (crossShardBlock *CrossShardBlock) RemoveBody() {
+
+}
+
 func (crossShardBlock CrossShardBlock) GetProposer() string {
 	return crossShardBlock.Header.Proposer
 }

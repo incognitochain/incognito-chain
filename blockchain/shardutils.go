@@ -3,9 +3,11 @@ package blockchain
 import (
 	"errors"
 	"sort"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -14,16 +16,38 @@ import (
 
 func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
 	beaconBlocks := []*types.BeaconBlock{}
-	for i := from; i <= to; i++ {
-		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
+	if (config.Config().SyncMode == common.STATEDB_LITE_MODE) && (from != 1) && (to != 1) {
+		var (
+			err    error
+			bcBlks []types.BeaconBlock
+		)
+		for i := 0; i < 5; i++ {
+			bcBlks, err = blockchain.GetConfig().Syncker.ReSyncBeaconBlockByHeight(from, to, 1*time.Minute)
+			if err != nil {
+				Logger.log.Error(err)
+				time.Sleep(50 * time.Millisecond)
+				continue
+			}
+			for _, v := range bcBlks {
+				beaconBlocks = append(beaconBlocks, &v)
+			}
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
-		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(*beaconHash)
-		if err != nil {
-			return beaconBlocks, err
+	} else {
+		for i := from; i <= to; i++ {
+			beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
+			if err != nil {
+				return nil, err
+			}
+			beaconBlock, _, err := blockchain.GetBeaconBlockByHash(*beaconHash)
+			if err != nil {
+				return beaconBlocks, err
+			}
+			beaconBlocks = append(beaconBlocks, beaconBlock)
 		}
-		beaconBlocks = append(beaconBlocks, beaconBlock)
 	}
 	return beaconBlocks, nil
 }

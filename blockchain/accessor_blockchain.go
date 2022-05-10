@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -12,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -108,8 +110,9 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash)
+	beaconBlockBytes, beaconBodyBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash, proto.BlkType_BlkBc)
 	if err != nil {
+		panic(err)
 		return nil, 0, err
 	}
 	beaconBlock := types.NewBeaconBlock()
@@ -117,6 +120,13 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 		err = beaconBlock.FromBytes(beaconBlockBytes)
 		if err != nil {
 			return nil, 0, err
+		}
+		if len(beaconBodyBytes) > 0 {
+			err = beaconBlock.SetBodyFromBytes(beaconBodyBytes)
+			if err != nil {
+				panic(err)
+				return nil, 0, err
+			}
 		}
 		if beaconBlock.GetHeight() > 1 {
 			valData, err := blockchain.BeaconChain.blkManager.GetBlockValidation(beaconBlockHash)
@@ -207,7 +217,7 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
-	shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash)
+	shardBlockBytes, shardBodyBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, proto.BlkType_BlkShard)
 	if err != nil {
 		return nil, 0, NewBlockChainError(GetShardBlockByHashError, errors.Errorf("Can not get block %v, error %v ", hash.String(), err))
 	}
@@ -215,6 +225,11 @@ func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, s
 	if config.Config().EnableFFStorage {
 		err = shardBlock.FromBytes(shardBlockBytes)
 		if err != nil {
+			return nil, 0, err
+		}
+		err = shardBlock.SetBodyFromBytes(shardBodyBytes)
+		if err != nil {
+			panic(err)
 			return nil, 0, err
 		}
 		if shardBlock.GetHeight() > 1 {
@@ -446,15 +461,24 @@ func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint6
 }
 
 func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error) {
-	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
-	if err != nil {
-		return nil, err
+
+	if (config.Config().SyncMode == common.STATEDB_LITE_MODE) && (height != 1) {
+		bcBlks, err := s.GetConfig().Syncker.ReSyncBeaconBlockByHeight(height, height, 1*time.Minute)
+		if err != nil {
+			return nil, err
+		}
+		return &(bcBlks[0]), nil
+	} else {
+		blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
+		if err != nil {
+			return nil, err
+		}
+		beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
+		if err != nil {
+			return nil, err
+		}
+		return beaconBlock, nil
 	}
-	beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
-	if err != nil {
-		return nil, err
-	}
-	return beaconBlock, nil
 }
 
 func getOneShardCommitteeFromShardDB(db incdb.Database, shardID byte, blockHash common.Hash) ([]incognitokey.CommitteePublicKey, error) {

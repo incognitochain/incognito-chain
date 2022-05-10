@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"context"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-core/peer"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -57,6 +58,7 @@ type Server interface {
 type Highway interface {
 	BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
 	GetConnectionStatus() interface{}
+	IsReady() bool
 }
 
 type Syncker interface {
@@ -65,6 +67,17 @@ type Syncker interface {
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 	ReceiveBlock(block interface{}, previousValidationData string, peerID string)
+	ReSyncBeaconBlockByHeight(
+		fromHeight, toHeight uint64,
+		timeout time.Duration,
+	) (
+		res []types.BeaconBlock,
+		err error,
+	)
+	UpdateBeaconAtShard(
+		bcHeight uint64,
+		sID byte,
+	)
 }
 
 type TxsCrawler interface {

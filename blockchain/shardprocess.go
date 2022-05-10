@@ -292,6 +292,11 @@ WAITFORBEACON:
 	}
 
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
+	lastBeaconHeight := newBestState.BeaconHeight
+	if len(beaconBlocks) > 0 {
+		lastBeaconHeight = beaconBlocks[len(beaconBlocks)-1].GetHeight()
+	}
+	go blockchain.GetConfig().Syncker.UpdateBeaconAtShard(lastBeaconHeight, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+

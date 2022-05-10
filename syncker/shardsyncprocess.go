@@ -69,7 +69,7 @@ func NewShardSyncProcess(
 		Network:          network,
 		Chain:            chain,
 		beaconChain:      beaconChain,
-		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
+		shardPool:        NewBlkPool("ShardPool-"+fmt.Sprint(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
