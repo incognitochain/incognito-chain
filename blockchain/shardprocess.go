@@ -227,6 +227,7 @@ WAITFORBEACON:
 		}
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false, signingCommittees); err != nil {
+			Logger.log.Errorf("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v return error %v", shardID, blockHeight, blockHash, err.Error())
 			return err
 		}
 	} else {
@@ -237,6 +238,7 @@ WAITFORBEACON:
 		// Verify block with previous best state
 		Logger.log.Infof("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, signingCommittees, committees); err != nil {
+			Logger.log.Errorf("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v return error %v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash, err.Error())
 			return err
 		}
 	} else {
@@ -246,7 +248,7 @@ WAITFORBEACON:
 
 	//only validate all tx if we have env variable FULL_VALIDATION = 1
 	if config.Config().IsFullValidation {
-		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
+		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v", shardID, shardBlock.Header.Height, len(shardBlock.Body.Transactions), shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView, false); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
@@ -265,6 +267,7 @@ WAITFORBEACON:
 	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err = newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
+			Logger.log.Errorf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v, error %v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash, err.Error())
 			return err
 		}
 	} else {
