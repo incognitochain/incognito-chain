@@ -14,6 +14,16 @@ func NewShardMultiView() *ShardMultiView {
 	sv.multiView = NewMultiView()
 	return sv
 }
+
+func (s *ShardMultiView) AddView(v View) (int, error) {
+	added := s.multiView.addView(v)
+	res := 0
+	if added {
+		res = 1
+	}
+	return res, nil
+}
+
 func (s *ShardMultiView) AddViewWithFinalizedHash(v View, newFinalizedHash *common.Hash) (res int, err error) {
 	added := s.multiView.addView(v)
 	shardBlock := v.GetBlock()

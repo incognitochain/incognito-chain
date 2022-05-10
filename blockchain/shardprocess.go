@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"sort"
 	"strconv"
 	"time"
@@ -1326,10 +1325,15 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.(*multiview.ShardMultiView).AddViewWithFinalizedHash(newShardState, newFinalizedHash)
-
-	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
+	txDB := simulatedMultiView.GetBestView().(*ShardBestState).GetCopiedTransactionStateDB()
+	//TODO: @hy check this txDB only use  to verify incoming tx
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
+
+	//add view
+	isSuccess := blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState, newFinalizedHash)
+	if !isSuccess {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
 
 	if !config.Config().ForceBackup {
 		return nil

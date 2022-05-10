@@ -250,10 +250,10 @@ func (s *multiView) updateViewState(newView View) {
 		}
 		s.expectedFinalView = prev1View
 	} else if newView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		//we traverse backward to update expected final view
+		//we traverse backward to update expected final view (in case bestview change branch)
 		currentViewPoint := s.bestView
 		for {
-			prev1Hash := s.bestView.GetPreviousHash()
+			prev1Hash := currentViewPoint.GetPreviousHash()
 			prev1View := s.viewByHash[*prev1Hash]
 
 			if prev1View == nil {
@@ -265,10 +265,10 @@ func (s *multiView) updateViewState(newView View) {
 			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
 
 			if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
-				s.expectedFinalView = s.bestView
+				s.expectedFinalView = currentViewPoint
 				break
-			} else if s.bestView.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
-				s.expectedFinalView = s.bestView
+			} else if currentViewPoint.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
+				s.expectedFinalView = currentViewPoint
 				break
 			}
 			currentViewPoint = prev1View
