@@ -1,9 +1,14 @@
 package blockchain
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 //RestoreBeaconViewStateFromHash ...
@@ -62,4 +67,63 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
 	}
 	return err
+}
+
+func (blockchain *BlockChain) GetPdexv3Cached(blockHash common.Hash) interface{} {
+	beaconViewCached, ok := blockchain.beaconViewCache.Get(blockHash.String())
+	if !ok || beaconViewCached == nil {
+		return nil
+	}
+	return beaconViewCached.(*BeaconBestState).pdeStates[pdex.AmplifierVersion]
+}
+
+func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidPoolPairID(poolPairID)
+}
+
+func (beaconBestState *BeaconBestState) IsValidNftID(db incdb.Database, pdexv3StateCached interface{}, nftID string) error {
+	state, ok := pdexv3StateCached.(pdex.State)
+	if ok && state != nil {
+		return state.Validator().IsValidNftID(nftID)
+	}
+	if !ok || state == nil {
+		if beaconBestState.pdeStates[pdex.AmplifierVersion] != nil {
+			err := beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidNftID(nftID)
+			if err == nil {
+				return nil
+			}
+		}
+		beaconBestState.pdeStates[pdex.AmplifierVersion] = pdex.NewStatev2()
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+
+	}
+	return fmt.Errorf("Cannot recognize pdex cache format")
+}
+
+func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(pdexv3StateCached interface{}, amount uint64) error {
+	state, ok := pdexv3StateCached.(pdex.State)
+	if ok && state != nil {
+		return state.Validator().IsValidMintNftRequireAmount(amount)
+	}
+	return fmt.Errorf("Cannot recognize pdex cache format")
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStakingPool(tokenID)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
+	tokenID, nftID string, unstakingAmount uint64,
+) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
+}
+
+func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
+	poolPairID, nftID string, shareAmount uint64,
+) error {
+	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
 }

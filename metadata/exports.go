@@ -53,7 +53,6 @@ var IsPDEType = metadataCommon.IsPDEType
 var GetLimitOfMeta = metadataCommon.GetLimitOfMeta
 var IsPDETx = metadataCommon.IsPDETx
 var IsPdexv3Tx = metadataCommon.IsPdexv3Tx
-var ShouldIncludeBeaconViewByPdexv3Tx = metadataCommon.ShouldIncludeBeaconViewByPdexv3Tx
 var ConvertPrivacyTokenToNativeToken = metadataCommon.ConvertPrivacyTokenToNativeToken
 var ConvertNativeTokenToPrivacyToken = metadataCommon.ConvertNativeTokenToPrivacyToken
 var HasBridgeInstructions = metadataCommon.HasBridgeInstructions

@@ -55,12 +55,13 @@ func (request *AddLiquidityRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	pdexv3StateCached := chainRetriever.GetPdexv3Cached(beaconViewRetriever.BlockHash())
+	err := beaconViewRetriever.IsValidNftID(pdexv3StateCached, request.nftID)
 	if err != nil {
 		return false, err
 	}
 	if request.poolPairID != utils.EmptyString {
-		err := beaconViewRetriever.IsValidPoolPairID(request.poolPairID)
+		err := beaconViewRetriever.IsValidPoolPairID(pdexv3StateCached, request.poolPairID)
 		if err != nil {
 			return false, err
 		}

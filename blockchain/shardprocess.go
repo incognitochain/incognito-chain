@@ -997,16 +997,7 @@ func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight uint64, beaconHash common.Hash, curView *ShardBestState) error {
 	if blockchain.config.usingNewPool {
-		isIncludePdexv3 := false
-		for _, tx := range txs {
-			if tx.GetMetadata() != nil {
-				if metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()) {
-					isIncludePdexv3 = true
-					break
-				}
-			}
-		}
-		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3)
+		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...))
 		if err != nil {
 			Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 			return err
