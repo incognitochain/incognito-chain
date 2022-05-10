@@ -387,13 +387,18 @@ func (shardBlock ShardBlock) ProposeHash() *common.Hash {
 func (shardHeader *ShardHeader) ProposeHash() common.Hash {
 	res := shardHeader.String()
 	if shardHeader.Version < INSTANT_FINALITY_VERSION {
-		return common.Keccak256([]byte(res))
+		return shardHeader.Hash()
 	}
+
 	res += shardHeader.Proposer
 	res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	res += shardHeader.CommitteeFromBlock.String()
 	res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
-	return common.Keccak256([]byte(res))
+
+	blkInstHash := shardHeader.InstructionMerkleRoot
+	blkMetaHash := common.Keccak256([]byte(res))
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+	return common.Keccak256(combined)
 }
 
 func (shardHeader *ShardHeader) MetaHash() common.Hash {
