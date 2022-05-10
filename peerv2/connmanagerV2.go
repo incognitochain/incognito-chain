@@ -270,5 +270,8 @@ func (cm *ConnManager) GetConnectionStatus() interface{} {
 }
 
 func (cm *ConnManager) IsReady() bool {
+	if (cm == nil) || (cm.Requester == nil) {
+		return false
+	}
 	return cm.Requester.IsReady()
 }
