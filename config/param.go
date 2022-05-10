@@ -66,6 +66,7 @@ type param struct {
 	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
 	PLGParam                         plgParam                     `mapstructure:"plg_param"`
 	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
+	LUNParam                         lunParam                     `mapstructure:"lun_param"`
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
@@ -350,6 +351,16 @@ type ftmParam struct {
 func (ftmParam *ftmParam) GetFromEnv() {
 	if utils.GetEnv(FTMHostKey, utils.EmptyString) != utils.EmptyString {
 		ftmParam.Host = []string{utils.GetEnv(FTMHostKey, utils.EmptyString)}
+	}
+}
+
+type lunParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (lunParam *lunParam) GetFromEnv() {
+	if utils.GetEnv(LUNHostKey, utils.EmptyString) != utils.EmptyString {
+		lunParam.Host = []string{utils.GetEnv(LUNHostKey, utils.EmptyString)}
 	}
 }
 

@@ -87,7 +87,6 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 				return false
 			}
 			return evmShieldRequest.ValidateMetadataByItself()
-		// thachtb todo: update terra here
 		case common.DefaultNetworkID:
 			return false
 		default:

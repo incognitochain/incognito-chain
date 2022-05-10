@@ -423,3 +423,13 @@ func GetNetworkTypeByNetworkID(networkID uint) (uint, error) {
 		return 0, errors.New("Not found networkID")
 	}
 }
+
+func GetWasmInfoByMetadataType() ([]string, string, int, bool) {
+	wasParam := config.Param().LUNParam
+	wasParam.GetFromEnv()
+	hosts := wasParam.Host
+
+	minConfirmationBlocks := metadataCommon.WasmConfirmationBlocks
+	networkPrefix := common.LUNPrefix
+	return hosts, networkPrefix, minConfirmationBlocks, false
+}

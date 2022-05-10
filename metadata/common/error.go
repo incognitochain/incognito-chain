@@ -107,6 +107,12 @@ const (
 	BridgeAggConvertRequestValidateSanityDataError
 	BridgeAggShieldValidateSanityDataError
 	BridgeAggUnshieldValidateSanityDataError
+
+	// bridge terra
+	IssuingWasmRequestDecodeInstructionError
+	IssuingWasmRequestValidateTxWithBlockChainError
+	IssuingWasmRequestBuildReqActionsError
+	IssuingWasmRequestValidateSanityDataError
 )
 
 var ErrCodeMessage = map[int]struct {

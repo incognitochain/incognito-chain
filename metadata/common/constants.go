@@ -293,6 +293,7 @@ const (
 	EVMConfirmationBlocks    = 15
 	PLGConfirmationBlocks    = 35
 	FantomConfirmationBlocks = 5
+	WasmConfirmationBlocks   = 1
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

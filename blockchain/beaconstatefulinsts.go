@@ -318,10 +318,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				if uniqTx != nil {
 					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTx)
 				}
-			// thachtb todo: update logic for shielding terra
 			case metadata.IssuingTerraRequestMeta:
 				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingTerraBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -331,7 +330,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					config.Param().LunContractAddressStr,
 					common.LUNPrefix,
 					statedb.IsLUNTxHashIssued,
-					false,
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqLUNTxsUsed = append(accumulatedValues.UniqLUNTxsUsed, uniqTx)
