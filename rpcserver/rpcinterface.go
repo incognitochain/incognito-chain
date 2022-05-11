@@ -192,6 +192,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPLGRequest:        (*HttpServer).handleCreateAndSendBurningPLGRequest,
 	createAndSendTxWithIssuingFTMReq:      (*HttpServer).handleCreateAndSendTxWithIssuingFTMReq,
 	createAndSendBurningFTMRequest:        (*HttpServer).handleCreateAndSendBurningFTMRequest,
+	createAndSendTxWithIssuingLUNReq:      (*HttpServer).handleCreateAndSendTxWithIssuingTerraReq,
+	createAndSendBurningLUNRequest:        (*HttpServer).handleCreateAndSendBurningTerraRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -204,6 +206,7 @@ var HttpHandler = map[string]httpHandler{
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
 	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
+	getLUNBurnProof:          (*HttpServer).handleGetLUNBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -348,7 +351,7 @@ var HttpHandler = map[string]httpHandler{
 	getBTCBlockByHash:                    (*HttpServer).handleGetBTCBlockByHash,
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
-	// incognnito mode for sc
+	// incognito mode for sc
 	getBurnProofForDepositToSC:                    (*HttpServer).handleGetBurnProofForDepositToSC,
 	getBurnPBSCProofForDepositToSC:                (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
 	createAndSendBurningForDepositToSCRequest:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
@@ -358,6 +361,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
 	createAndSendBurningFTMForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
 	getBurnFTMProofForDepositToSC:                 (*HttpServer).handleGetBurnFTMProofForDepositToSC,
+	createAndSendBurningLUNForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningLUNForDepositToSCRequest,
+	getBurnLUNProofForDepositToSC:                 (*HttpServer).handleGetBurnLUNProofForDepositToSC,
 
 	//feature stat
 	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,

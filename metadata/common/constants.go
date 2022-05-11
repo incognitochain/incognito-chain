@@ -216,10 +216,14 @@ const (
 	BridgeAggAddTokenMeta                           = 348
 
 	// incognito mode for terra
-	IssuingTerraRequestMeta  = 334
-	IssuingTerraResponseMeta = 335
-	BurningTerraRequestMeta  = 336
-	BurningTerraConfirmMeta  = 156
+	IssuingTerraRequestMeta  = 335
+	IssuingTerraResponseMeta = 336
+	BurningTerraRequestMeta  = 337
+	BurningTerraConfirmMeta  = 157
+
+	// pTerra ( LUN )
+	BurningTerraForDepositToSCRequestMeta = 338
+	BurningTerraConfirmForDepositToSCMeta = 158
 )
 
 var minerCreatedMetaTypes = []int{

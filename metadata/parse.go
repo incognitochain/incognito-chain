@@ -86,6 +86,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.BurningRequest{}
 	case BurningFantomForDepositToSCRequestMeta:
 		md = &metadataBridge.BurningRequest{}
+	case IssuingTerraRequestMeta:
+		md = &metadataBridge.IssuingWasmRequest{}
+	case IssuingTerraResponseMeta:
+		md = &metadataBridge.IssuingEVMResponse{}
+	case BurningTerraRequestMeta:
+		md = &metadataBridge.BurningRequest{}
+	case BurningTerraForDepositToSCRequestMeta:
+		md = &metadataBridge.BurningRequest{}
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:

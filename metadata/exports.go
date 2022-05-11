@@ -216,6 +216,9 @@ const (
 	IssuingTerraResponseMeta = metadataCommon.IssuingTerraResponseMeta
 	BurningTerraRequestMeta  = metadataCommon.BurningTerraRequestMeta
 	BurningTerraConfirmMeta  = metadataCommon.BurningTerraConfirmMeta
+
+	BurningTerraForDepositToSCRequestMeta = metadataCommon.BurningTerraForDepositToSCRequestMeta
+	BurningTerraConfirmForDepositToSCMeta = metadataCommon.BurningTerraConfirmForDepositToSCMeta
 )
 
 // export error codes

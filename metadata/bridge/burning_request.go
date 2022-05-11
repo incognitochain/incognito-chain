@@ -92,7 +92,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			bReq.Type == metadataCommon.BurningPBSCRequestMeta || bReq.Type == metadataCommon.BurningPRVERC20RequestMeta ||
 			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
-			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta) {
+			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
+			bReq.Type == metadataCommon.BurningTerraRequestMeta || bReq.Type == metadataCommon.BurningTerraForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
@@ -111,7 +112,8 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta ||
 		bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta
+		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningTerraRequestMeta || bReq.Type == metadataCommon.BurningTerraForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

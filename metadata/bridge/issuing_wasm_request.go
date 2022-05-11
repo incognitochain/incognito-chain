@@ -31,6 +31,45 @@ type IssuingWasmReqAction struct {
 	Amount           uint64             `json:"amount"`
 }
 
+func NewIssuingWasmRequest(
+	shieldTx string,
+	incTokenID common.Hash,
+	networkID uint,
+	metaType int,
+) (*IssuingWasmRequest, error) {
+	metadataBase := metadataCommon.MetadataBase{
+		Type: metaType,
+	}
+	issuingWasmReq := &IssuingWasmRequest{
+		ShieldTx:   shieldTx,
+		IncTokenID: incTokenID,
+		NetworkID:  networkID,
+	}
+	issuingWasmReq.MetadataBase = metadataBase
+	return issuingWasmReq, nil
+}
+
+func NewIssuingWasmRequestFromMap(
+	data map[string]interface{},
+	networkID uint,
+	metatype int,
+) (*IssuingWasmRequest, error) {
+	shieldTx := data["ShieldTx"].(string)
+
+	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
+	if err != nil {
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TokenID incorrect"))
+	}
+
+	req, _ := NewIssuingWasmRequest(
+		shieldTx,
+		*incTokenID,
+		networkID,
+		metatype,
+	)
+	return req, nil
+}
+
 func ParseWasmIssuingInstContent(instContentStr string) (*IssuingWasmReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
