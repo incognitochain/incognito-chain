@@ -1,7 +1,6 @@
 package bridgeagg
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -12,21 +11,15 @@ import (
 
 type Vault struct {
 	statedb.BridgeAggVaultState
-	networkID uint
-}
-
-func (v *Vault) NetworkID() uint {
-	return v.networkID
 }
 
 func NewVault() *Vault {
 	return &Vault{}
 }
 
-func NewVaultWithValue(state statedb.BridgeAggVaultState, networkID uint) *Vault {
+func NewVaultWithValue(state statedb.BridgeAggVaultState) *Vault {
 	return &Vault{
 		BridgeAggVaultState: state,
-		networkID:           networkID,
 	}
 }
 
@@ -34,7 +27,6 @@ func (v *Vault) Clone() *Vault {
 	res := &Vault{
 		BridgeAggVaultState: *v.BridgeAggVaultState.Clone(),
 	}
-	res.networkID = v.networkID
 	return res
 }
 
@@ -47,46 +39,13 @@ func (v *Vault) GetDiff(compareVault *Vault) (*Vault, *VaultChange, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if v.networkID != compareVault.networkID {
+	if difVaultState != nil {
 		vaultChange.IsChanged = true
 	}
-	if difVaultState != nil {
-		vaultChange.IsReserveChanged = true
-	}
-	if vaultChange.IsChanged || vaultChange.IsReserveChanged {
+	if vaultChange.IsChanged {
 		return v.Clone(), vaultChange, nil
 	}
 	return nil, nil, nil
-}
-
-func (v *Vault) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		State     *statedb.BridgeAggVaultState `json:"State"`
-		NetworkID uint                         `json:"NetworkID"`
-	}{
-		State:     &v.BridgeAggVaultState,
-		NetworkID: v.networkID,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (v *Vault) UnmarshalJSON(data []byte) error {
-	temp := struct {
-		State     *statedb.BridgeAggVaultState `json:"State"`
-		NetworkID uint                         `json:"NetworkID"`
-	}{}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-	if temp.State != nil {
-		v.BridgeAggVaultState = *temp.State
-	}
-	v.networkID = temp.NetworkID
-	return nil
 }
 
 func (v *Vault) decreaseCurrentRewardReserve(amount uint64) error {

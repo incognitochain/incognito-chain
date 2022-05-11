@@ -163,8 +163,6 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgePLGTxObjectWithValue(db, hash, value)
 	case BridgeAggUnifiedTokenObjectType:
 		return newBridgeAggUnifiedTokenObjectWithValue(db, hash, value)
-	case BridgeAggConvertedTokenObjectType:
-		return newBridgeAggConvertedObjectWithValue(db, hash, value)
 	case BridgeAggStatusObjectType:
 		return newBridgeAggStatusObjectWithValue(db, hash, value)
 	case BridgeAggVaultObjectType:
@@ -312,8 +310,6 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairLmLockedShareObject(db, hash)
 	case BridgePLGTxObjectType:
 		return newBridgePLGTxObject(db, hash)
-	case BridgeAggConvertedTokenObjectType:
-		return newBridgeAggConvertedObject(db, hash)
 	case BridgeAggUnifiedTokenObjectType:
 		return newBridgeAggUnifiedTokenObject(db, hash)
 	case BridgeAggStatusObjectType:

@@ -91,13 +91,13 @@ func (request *ModifyRewardReserve) ValidateSanityData(
 		}
 		usedTokenIDs[unifiedTokenID] = true
 		for _, vault := range vaults {
-			if vault.TokenID().IsZeroValue() {
+			if vault.TokenID.IsZeroValue() {
 				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("vault tokenID can not be empty"))
 			}
-			if usedTokenIDs[vault.TokenID()] {
-				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", vault.TokenID().String()))
+			if usedTokenIDs[vault.TokenID] {
+				return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyRewardReserveValidateSanityDataError, fmt.Errorf("Found duplicate tokenID %s", vault.TokenID.String()))
 			}
-			usedTokenIDs[vault.TokenID()] = true
+			usedTokenIDs[vault.TokenID] = true
 		}
 	}
 

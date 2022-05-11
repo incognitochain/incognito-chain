@@ -53,8 +53,7 @@ type ConvertStatus struct {
 }
 
 type VaultChange struct {
-	IsChanged        bool
-	IsReserveChanged bool
+	IsChanged bool
 }
 
 func NewVaultChange() *VaultChange {

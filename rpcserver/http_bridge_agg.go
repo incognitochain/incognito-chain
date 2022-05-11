@@ -78,9 +78,8 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 	for k, v := range mdReader.NewList {
 		for _, value := range v {
 			newList[k] = append(newList[k], metadataBridge.Vault{
-				RewardReserve:                value.RewardReserve,
-				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(value.TokenID, 0),
-				IsPaused:                     value.IsPaused,
+				RewardReserve: value.RewardReserve,
+				IsPaused:      value.IsPaused,
 			})
 		}
 	}

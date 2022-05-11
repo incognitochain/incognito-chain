@@ -42,15 +42,15 @@ func (sp *stateProcessor) modifyRewardReserve(
 				return unifiedTokenInfos, fmt.Errorf("Cannot find unifiedTokenID %s", unifiedTokenID.String())
 			}
 			for _, vault := range vaults {
-				if _, found := unifiedTokenInfos[unifiedTokenID][vault.TokenID()]; !found {
-					return unifiedTokenInfos, fmt.Errorf("Cannot find vault tokenID %s", vault.TokenID().String())
+				if _, found := unifiedTokenInfos[unifiedTokenID][vault.TokenID]; !found {
+					return unifiedTokenInfos, fmt.Errorf("Cannot find vault tokenID %s", vault.TokenID.String())
 				}
-				v := unifiedTokenInfos[unifiedTokenID][vault.TokenID()]
+				v := unifiedTokenInfos[unifiedTokenID][vault.TokenID]
 				err = v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
 				if err != nil {
 					return unifiedTokenInfos, err
 				}
-				unifiedTokenInfos[unifiedTokenID][vault.TokenID()] = v
+				unifiedTokenInfos[unifiedTokenID][vault.TokenID] = v
 			}
 		}
 		txReqID = acceptedInst.TxReqID
@@ -305,8 +305,8 @@ func (sp *stateProcessor) addToken(
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
-			v := NewVaultWithValue(*state, vault.NetworkID)
+			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false, vault.NetworkID, tokenID)
+			v := NewVaultWithValue(*state)
 			unifiedTokenInfos[unifiedTokenID][tokenID] = v
 		}
 	}
