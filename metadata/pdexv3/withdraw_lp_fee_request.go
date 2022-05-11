@@ -57,11 +57,15 @@ func (withdrawal WithdrawalLPFeeRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(withdrawal.NftID.String())
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconViewRetriever.GetHeight()) {
+		return false, fmt.Errorf("Feature pdexv3 has not been activated yet")
+	}
+	pdexv3StateCached := chainRetriever.GetPdexv3Cached(beaconViewRetriever.BlockHash())
+	err := beaconViewRetriever.IsValidNftID(chainRetriever.GetBeaconChainDatabase(), pdexv3StateCached, withdrawal.NftID.String())
 	if err != nil {
 		return false, err
 	}
-	err = beaconViewRetriever.IsValidPoolPairID(withdrawal.PoolPairID)
+	err = beaconViewRetriever.IsValidPoolPairID(chainRetriever.GetBeaconChainDatabase(), pdexv3StateCached, withdrawal.PoolPairID)
 	if err != nil {
 		return false, err
 	}

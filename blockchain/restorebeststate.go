@@ -77,53 +77,165 @@ func (blockchain *BlockChain) GetPdexv3Cached(blockHash common.Hash) interface{}
 	return beaconViewCached.(*BeaconBestState).pdeStates[pdex.AmplifierVersion]
 }
 
-func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidPoolPairID(poolPairID)
-}
-
 func (beaconBestState *BeaconBestState) IsValidNftID(db incdb.Database, pdexv3StateCached interface{}, nftID string) error {
 	state, ok := pdexv3StateCached.(pdex.State)
 	if ok && state != nil {
 		return state.Validator().IsValidNftID(nftID)
 	}
 	if !ok || state == nil {
-		if beaconBestState.pdeStates[pdex.AmplifierVersion] != nil {
-			err := beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidNftID(nftID)
-			if err == nil {
-				return nil
-			}
-		}
-		beaconBestState.pdeStates[pdex.AmplifierVersion] = pdex.NewStatev2()
 		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
-
+		nftID, err := statedb.GetPdexv3NftID(sDB, nftID)
+		if err != nil || nftID == nil {
+			if nftID == nil && err != nil {
+				err = fmt.Errorf("Not found nftID %s", nftID)
+			}
+			return err
+		}
+		return nil
 	}
 	return fmt.Errorf("Cannot recognize pdex cache format")
 }
 
-func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(pdexv3StateCached interface{}, amount uint64) error {
+func (beaconBestState *BeaconBestState) IsValidPoolPairID(db incdb.Database, pdexv3StateCached interface{}, poolPairID string) error {
+	state, ok := pdexv3StateCached.(pdex.State)
+	if ok && state != nil {
+		return state.Validator().IsValidPoolPairID(poolPairID)
+	}
+	if !ok || state == nil {
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+		poolpair, err := statedb.GetPdexv3PoolPair(sDB, poolPairID)
+		if err != nil || poolpair == nil {
+			if poolpair == nil && err != nil {
+				err = fmt.Errorf("Not found poolPairID %s", poolPairID)
+			}
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("Cannot recognize pdex cache format")
+
+}
+
+func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(db incdb.Database, pdexv3StateCached interface{}, amount uint64) error {
 	state, ok := pdexv3StateCached.(pdex.State)
 	if ok && state != nil {
 		return state.Validator().IsValidMintNftRequireAmount(amount)
 	}
+	if !ok || state == nil {
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+		params, err := statedb.GetPdexv3Params(sDB)
+		if err != nil {
+			return err
+		}
+		if params.MintNftRequireAmount() != amount {
+			return fmt.Errorf("Expect mint nft amount to be %v but get %v", params.MintNftRequireAmount, amount)
+		}
+		return nil
+	}
 	return fmt.Errorf("Cannot recognize pdex cache format")
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStakingPool(tokenID)
+func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(db incdb.Database, pdexv3StateCached interface{}, tokenID string) error {
+	state, ok := pdexv3StateCached.(pdex.State)
+	if ok && state != nil {
+		return state.Validator().IsValidStakingPool(tokenID)
+	}
+	if !ok || state == nil {
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+		params, err := statedb.GetPdexv3Params(sDB)
+		if err != nil || params == nil {
+			if params == nil && err != nil {
+				err = fmt.Errorf("Not found paramss")
+			}
+			return err
+		}
+		if _, found := params.StakingPoolsShare()[tokenID]; !found {
+			return fmt.Errorf("Not found stakingPoolID %s", tokenID)
+		}
+		return nil
+	}
+	return fmt.Errorf("Cannot recognize pdex cache format")
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
-	tokenID, nftID string, unstakingAmount uint64,
-) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
+func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(db incdb.Database, pdexv3StateCached interface{}, tokenID, nftID string, unstakingAmount uint64) error {
+	state, ok := pdexv3StateCached.(pdex.State)
+	if ok && state != nil {
+		return state.Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
+	}
+	if !ok || state == nil {
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+		params, err := statedb.GetPdexv3Params(sDB)
+		if err != nil || params == nil {
+			if params == nil && err != nil {
+				err = fmt.Errorf("Not found paramss")
+			}
+			return err
+		}
+		if _, found := params.StakingPoolsShare()[tokenID]; !found {
+			return fmt.Errorf("Not found stakingPoolID %s", tokenID)
+		}
+		staker, err := statedb.GetPdexv3Staker(sDB, tokenID, nftID)
+		if err != nil {
+			return err
+		}
+		if staker.Liquidity() < unstakingAmount {
+			return fmt.Errorf("unstakingAmount > current staker liquidity")
+		}
+		if staker.Liquidity() == 0 || unstakingAmount == 0 {
+			return fmt.Errorf("unstakingAmount or staker.Liquidity is 0")
+		}
+		return nil
+	}
+	return fmt.Errorf("Cannot recognize pdex cache format")
+
 }
 
-func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
-	poolPairID, nftID string, shareAmount uint64,
-) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
+func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(db incdb.Database, pdexv3StateCached interface{}, poolPairID, nftID string, shareAmount uint64) error {
+	state, ok := pdexv3StateCached.(pdex.State)
+	if ok && state != nil {
+		return state.Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
+	}
+	if !ok || state == nil {
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+		_, err = statedb.GetPdexv3PoolPair(sDB, poolPairID)
+		if err != nil {
+			return err
+		}
+		share, err := statedb.GetPdexv3Share(sDB, poolPairID, nftID)
+		if err != nil {
+			return err
+		}
+		if share.Amount() < shareAmount {
+			return fmt.Errorf("shareAmount > current share amount")
+		}
+		if shareAmount == 0 || share.Amount() == 0 {
+			return fmt.Errorf("share amount or share.Amount() is 0")
+		}
+		return nil
+	}
+	return fmt.Errorf("Cannot recognize pdex cache format")
 }
