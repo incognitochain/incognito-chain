@@ -268,6 +268,9 @@ WAITFORBEACON:
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err = newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 			Logger.log.Errorf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v, error %v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash, err.Error())
+			for _, blk := range beaconBlocks {
+				Logger.log.Infof("Instructions from beacon block %v - %v is %+v", blk.Header.Height, blk.Hash().String(), blk.Body.Instructions)
+			}
 			return err
 		}
 	} else {
