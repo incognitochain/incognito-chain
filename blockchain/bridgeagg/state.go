@@ -1,8 +1,10 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -156,16 +158,6 @@ func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error
 		}
 		for tokenID, vault := range vaults {
 			if stateChange.vaultChange[unifiedTokenID][tokenID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
-				err := statedb.StoreBridgeAggConvertedToken(
-					sDB, unifiedTokenID, tokenID,
-					statedb.NewBridgeAggConvertedTokenStateWithValue(tokenID, vault.networkID),
-				)
-				if err != nil {
-					return err
-				}
-			}
-			if (stateChange.vaultChange[unifiedTokenID][tokenID].IsReserveChanged ||
-				stateChange.unifiedTokenID[unifiedTokenID]) && !vault.BridgeAggVaultState.IsEmpty() {
 				err := statedb.StoreBridgeAggVault(sDB, unifiedTokenID, tokenID, &vault.BridgeAggVaultState)
 				if err != nil {
 					return err
@@ -199,8 +191,7 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 						stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
 					}
 					stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{
-						IsChanged:        true,
-						IsReserveChanged: true,
+						IsChanged: true,
 					}
 				} else {
 					temp, vaultChange, err := s.unifiedTokenInfos[unifiedTokenID][tokenID].GetDiff(compareVault)
@@ -236,6 +227,41 @@ func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
 func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues, triggeredFeature map[string]uint64) ([][]string, *metadata.AccumulatedValues, error) {
 	res := [][]string{}
 	var err error
-	res, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac, triggeredFeature)
+
+	checkpoints := []uint64{}
+	for k := range triggeredFeature {
+		if len(k) > len(unifiedTokenTriggerPrefix) {
+			if bytes.Equal([]byte(k[:len(unifiedTokenTriggerPrefix)]), []byte(unifiedTokenTriggerPrefix)) {
+				checkpoint, err := strconv.ParseUint(k[len(unifiedTokenTriggerPrefix):], 10, 64)
+				if err != nil {
+					return [][]string{}, ac, err
+				}
+				checkpoints = append(checkpoints, checkpoint)
+			}
+		}
+	}
+	if len(checkpoints) == 0 {
+		return [][]string{}, ac, nil
+	}
+	sort.Slice(checkpoints, func(i, j int) bool {
+		return checkpoints[i] < checkpoints[j]
+	})
+
+	// after beacon generate autoenablefeature instruction, TriggerFeature will mark the height of the trigger time.
+	// we only need to process once at the mark time (block after trigger)
+	//ex: trigger at 8, block 9 will process punified config
+	checkpointIndex := -1
+	for index, checkpoint := range checkpoints {
+		if beaconHeight == triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoint, 10)]+1 {
+			checkpointIndex = index
+			break
+		}
+	}
+	if checkpointIndex == -1 {
+		return [][]string{}, ac, nil
+	}
+	Logger.log.Info("[bridgeagg] checkpoints:", checkpoints)
+	Logger.log.Info("[bridgeagg] checkpoints[checkpointIndex]:", checkpoints[checkpointIndex])
+	res, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac, checkpoints[checkpointIndex])
 	return res, ac, err
 }

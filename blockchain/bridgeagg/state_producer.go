@@ -1,12 +1,10 @@
 package bridgeagg
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
-	"sort"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -361,8 +359,7 @@ func (sp *stateProducer) unshield(
 
 func (sp *stateProducer) addToken(
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, beaconHeight uint64,
-	sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues,
-	triggeredFeature map[string]uint64,
+	sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues, checkpoint uint64,
 ) ([][]string, map[common.Hash]map[common.Hash]*Vault, *metadata.AccumulatedValues, error) {
 	var clonedUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault
 	addToken := metadataBridge.AddToken{}
@@ -370,41 +367,8 @@ func (sp *stateProducer) addToken(
 	var clonedAC *metadata.AccumulatedValues
 	var newListTokens map[common.Hash]map[common.Hash]config.Vault
 
-	checkpoints := []uint64{}
-	for k := range triggeredFeature {
-		if len(k) > len(unifiedTokenTriggerPrefix) {
-			if bytes.Equal([]byte(k[:len(unifiedTokenTriggerPrefix)]), []byte(unifiedTokenTriggerPrefix)) {
-				checkpoint, err := strconv.ParseUint(k[len(unifiedTokenTriggerPrefix):], 10, 64)
-				if err != nil {
-					return [][]string{}, unifiedTokenInfos, ac, err
-				}
-				checkpoints = append(checkpoints, checkpoint)
-			}
-		}
-	}
-	if len(checkpoints) == 0 {
-		return [][]string{}, unifiedTokenInfos, ac, nil
-	}
-	sort.Slice(checkpoints, func(i, j int) bool {
-		return checkpoints[i] > checkpoints[j]
-	})
-
-	// after beacon generate autoenablefeature instruction, TriggerFeature will mark the height of the trigger time.
-	// we only need to process once at the mark time (block after trigger)
-	//ex: trigger at 8, block 9 will process punified config
-	checkpointIndex := -1
-	for index, checkpoint := range checkpoints {
-		if beaconHeight == triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoint, 10)]+1 {
-			checkpointIndex = index
-			break
-		}
-	}
-	if checkpointIndex == -1 {
-		return [][]string{}, unifiedTokenInfos, ac, nil
-	}
-
 	//at beacon height after trigger punified , we get param from configUnifiedTokens (retrieving by date key, ex 20220422)
-	if unifiedTokens, found := configUnifiedTokens[checkpoints[checkpointIndex]]; found {
+	if unifiedTokens, found := configUnifiedTokens[checkpoint]; found {
 		clonedUnifiedTokenInfos = CloneUnifiedTokenInfos(unifiedTokenInfos)
 		unifiedTokenIDs := make(map[string]bool)
 		incTokenIDs := make(map[string]bool)
@@ -470,8 +434,8 @@ func (sp *stateProducer) addToken(
 					return [][]string{}, unifiedTokenInfos, ac, nil
 				}
 				externalTokenIDIndex[string(externalTokenID)] = true
-				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
-				v := NewVaultWithValue(*state, vault.NetworkID)
+				state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false, vault.NetworkID, tokenID)
+				v := NewVaultWithValue(*state)
 				clonedUnifiedTokenInfos[unifiedTokenID][tokenID] = v
 				incTokenIDs[tokenID.String()] = true
 				clonedAC.DBridgeTokenPair[tokenID.String()] = externalTokenID
@@ -482,6 +446,9 @@ func (sp *stateProducer) addToken(
 		if len(incTokenIDs) != 0 {
 			addToken.NewListTokens = newListTokens
 		}
+	} else {
+		Logger.log.Warnf("BridgeAggAddToken Notfound checkpoint %d", checkpoint)
+		return [][]string{}, unifiedTokenInfos, ac, nil
 	}
 
 	if len(addToken.NewListTokens) != 0 {

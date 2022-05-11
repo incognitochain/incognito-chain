@@ -50,7 +50,7 @@ func IsBridgeAggMetaType(metaType int) bool {
 }
 
 type Vault struct {
-	statedb.BridgeAggConvertedTokenState
+	TokenID       common.Hash
 	RewardReserve uint64 `json:"RewardReserve"`
 	Decimal       uint   `json:"Decimal"`
 	IsPaused      bool   `json:"IsPaused"`
@@ -58,12 +58,12 @@ type Vault struct {
 
 func (v *Vault) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		State         *statedb.BridgeAggConvertedTokenState `json:"State"`
-		RewardReserve uint64                                `json:"RewardReserve"`
-		Decimal       uint                                  `json:"Decimal"`
-		IsPaused      bool                                  `json:"IsPaused"`
+		TokenID       common.Hash `json:"TokenID"`
+		RewardReserve uint64      `json:"RewardReserve"`
+		Decimal       uint        `json:"Decimal"`
+		IsPaused      bool        `json:"IsPaused"`
 	}{
-		State:         &v.BridgeAggConvertedTokenState,
+		TokenID:       v.TokenID,
 		RewardReserve: v.RewardReserve,
 		Decimal:       v.Decimal,
 		IsPaused:      v.IsPaused,
@@ -76,19 +76,17 @@ func (v *Vault) MarshalJSON() ([]byte, error) {
 
 func (v *Vault) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		State         *statedb.BridgeAggConvertedTokenState `json:"State"`
-		RewardReserve uint64                                `json:"RewardReserve"`
-		Decimal       uint                                  `json:"Decimal"`
-		IsPaused      bool                                  `json:"IsPaused"`
+		TokenID       common.Hash `json:"TokenID"`
+		RewardReserve uint64      `json:"RewardReserve"`
+		Decimal       uint        `json:"Decimal"`
+		IsPaused      bool        `json:"IsPaused"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	v.RewardReserve = temp.RewardReserve
-	if temp.State != nil {
-		v.BridgeAggConvertedTokenState = *temp.State
-	}
+	v.TokenID = temp.TokenID
 	v.Decimal = temp.Decimal
 	v.IsPaused = temp.IsPaused
 	return nil

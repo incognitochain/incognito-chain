@@ -241,8 +241,8 @@ func (sp *stateProcessor) addToken(
 			if err != nil {
 				return unifiedTokenInfos, err
 			}
-			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false)
-			v := NewVaultWithValue(*state, vault.NetworkID)
+			state := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false, vault.NetworkID, tokenID)
+			v := NewVaultWithValue(*state)
 			unifiedTokenInfos[unifiedTokenID][tokenID] = v
 		}
 	}

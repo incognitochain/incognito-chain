@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,11 +33,6 @@ func StoreBridgeAggUnifiedToken(stateDB *StateDB, unifiedTokenID common.Hash, st
 	return stateDB.SetStateObject(BridgeAggUnifiedTokenObjectType, key, state)
 }
 
-func StoreBridgeAggConvertedToken(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggConvertedTokenState) error {
-	key := GenerateBridgeAggConvertedTokenObjectKey(unifiedTokenID, tokenID)
-	return stateDB.SetStateObject(BridgeAggConvertedTokenObjectType, key, state)
-}
-
 func StoreBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggVaultState) error {
 	key := GenerateBridgeAggVaultObjectKey(unifiedTokenID, tokenID)
 	return stateDB.SetStateObject(BridgeAggVaultObjectType, key, state)
@@ -46,22 +40,10 @@ func StoreBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, 
 
 func GetBridgeAggUnifiedTokens(stateDB *StateDB) ([]*BridgeAggUnifiedTokenState, error) {
 	prefixHash := generateBridgeAggUnifiedTokenObjectPrefix()
-	return stateDB.iterateWithBridgeAggUnifiedTokens(prefixHash)
+	return stateDB.iterateBridgeAggUnifiedTokens(prefixHash)
 }
 
-func GetBridgeAggConvertedTokens(stateDB *StateDB, unifiedTokenID common.Hash) ([]*BridgeAggConvertedTokenState, error) {
-	prefixHash := generateBridgeAggConvertedTokenObjectPrefix(unifiedTokenID)
-	return stateDB.iterateWithBridgeAggConvertedTokens(prefixHash)
-}
-
-func GetBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash) (*BridgeAggVaultState, error) {
-	key := GenerateBridgeAggVaultObjectKey(unifiedTokenID, tokenID)
-	state, ok, err := stateDB.getBridgeAggVault(key)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, errors.New("Can't find bridge agg vault")
-	}
-	return state, nil
+func GetBridgeAggVaults(stateDB *StateDB, unifiedTokenID common.Hash) (map[common.Hash]*BridgeAggVaultState, error) {
+	prefixHash := generateBridgeAggVaultObjectPrefix(unifiedTokenID)
+	return stateDB.iterateBridgeAggVaults(prefixHash)
 }

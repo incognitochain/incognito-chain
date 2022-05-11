@@ -15,21 +15,27 @@ type BridgeAggVaultState struct {
 	currentRewardReserve     uint64
 	decimal                  uint
 	isPaused                 bool
+	networkID                uint
+	tokenID                  common.Hash
 }
 
 func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Reserve                  uint64 `json:"Reserve"`
-		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
-		CurrentRewardReserve     uint64 `json:"CurrentRewardReserve"`
-		Decimal                  uint   `json:"Decimal"`
-		IsPaused                 bool   `json:"IsPaused"`
+		Reserve                  uint64      `json:"Reserve"`
+		LastUpdatedRewardReserve uint64      `json:"LastUpdatedRewardReserve"`
+		CurrentRewardReserve     uint64      `json:"CurrentRewardReserve"`
+		Decimal                  uint        `json:"Decimal"`
+		IsPaused                 bool        `json:"IsPaused"`
+		NetworkID                uint        `json:"NetworkID"`
+		TokenID                  common.Hash `json:"TokenID"`
 	}{
 		Reserve:                  state.reserve,
 		LastUpdatedRewardReserve: state.lastUpdatedRewardReserve,
 		CurrentRewardReserve:     state.currentRewardReserve,
 		Decimal:                  state.decimal,
 		IsPaused:                 state.isPaused,
+		NetworkID:                state.networkID,
+		TokenID:                  state.tokenID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -39,11 +45,13 @@ func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 
 func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Reserve                  uint64 `json:"Reserve"`
-		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
-		CurrentRewardReserve     uint64 `json:"CurrentRewardReserve"`
-		Decimal                  uint   `json:"Decimal"`
-		IsPaused                 bool   `json:"IsPaused"`
+		Reserve                  uint64      `json:"Reserve"`
+		LastUpdatedRewardReserve uint64      `json:"LastUpdatedRewardReserve"`
+		CurrentRewardReserve     uint64      `json:"CurrentRewardReserve"`
+		Decimal                  uint        `json:"Decimal"`
+		IsPaused                 bool        `json:"IsPaused"`
+		NetworkID                uint        `json:"NetworkID"`
+		TokenID                  common.Hash `json:"TokenID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -54,6 +62,8 @@ func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 	state.currentRewardReserve = temp.CurrentRewardReserve
 	state.decimal = temp.Decimal
 	state.isPaused = temp.IsPaused
+	state.networkID = temp.NetworkID
+	state.tokenID = temp.TokenID
 	return nil
 }
 
@@ -62,7 +72,7 @@ func NewBridgeAggVaultState() *BridgeAggVaultState {
 }
 
 func NewBridgeAggVaultStateWithValue(
-	reserve, lastUpdatedRewardReserve, currentRewardReserve uint64, decimal uint, isPaused bool,
+	reserve, lastUpdatedRewardReserve, currentRewardReserve uint64, decimal uint, isPaused bool, networkID uint, tokenID common.Hash,
 ) *BridgeAggVaultState {
 	return &BridgeAggVaultState{
 		reserve:                  reserve,
@@ -70,6 +80,8 @@ func NewBridgeAggVaultStateWithValue(
 		currentRewardReserve:     currentRewardReserve,
 		decimal:                  decimal,
 		isPaused:                 isPaused,
+		networkID:                networkID,
+		tokenID:                  tokenID,
 	}
 }
 
@@ -91,6 +103,14 @@ func (b *BridgeAggVaultState) CurrentRewardReserve() uint64 {
 
 func (b *BridgeAggVaultState) IsPaused() bool {
 	return b.isPaused
+}
+
+func (b *BridgeAggVaultState) NetworkID() uint {
+	return b.networkID
+}
+
+func (b *BridgeAggVaultState) TokenID() common.Hash {
+	return b.tokenID
 }
 
 func (b *BridgeAggVaultState) SetReserve(reserve uint64) {
@@ -120,6 +140,8 @@ func (b *BridgeAggVaultState) Clone() *BridgeAggVaultState {
 		currentRewardReserve:     b.currentRewardReserve,
 		decimal:                  b.decimal,
 		isPaused:                 b.isPaused,
+		networkID:                b.networkID,
+		tokenID:                  b.tokenID,
 	}
 }
 
@@ -130,7 +152,8 @@ func (b *BridgeAggVaultState) GetDiff(compareState *BridgeAggVaultState) (*Bridg
 	if b.reserve != compareState.reserve ||
 		b.currentRewardReserve != compareState.currentRewardReserve ||
 		b.lastUpdatedRewardReserve != compareState.lastUpdatedRewardReserve ||
-		b.decimal != compareState.decimal || b.isPaused != compareState.isPaused {
+		b.decimal != compareState.decimal || b.isPaused != compareState.isPaused ||
+		b.networkID != compareState.networkID || b.tokenID != compareState.tokenID {
 		return b.Clone(), nil
 	}
 	return nil, nil
