@@ -561,7 +561,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				}
 
 			default:
-				Logger.log.Info("[bridgeagg] metaType:", metaType)
 				if metadataCommon.IsPDEType(metaType) {
 					pdeTxBuilderV1 := pdex.TxBuilderV1{}
 					newTx, err = pdeTxBuilderV1.Build(
@@ -572,7 +571,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						curView.GetCopiedTransactionStateDB(),
 					)
 				} else if metadataCommon.IsPdexv3Type(metaType) {
-					Logger.log.Info("[bridgeagg] metaType:", metaType)
 					pdeTxBuilderV2 := pdex.TxBuilderV2{}
 					newTx, err = pdeTxBuilderV2.Build(
 						metaType,

@@ -15,7 +15,6 @@ import (
 
 type MintAccessToken struct {
 	metadataCommon.MetadataBase
-	status  string
 	txReqID string
 }
 
@@ -27,12 +26,11 @@ func NewMintAccessToken() *MintAccessToken {
 	}
 }
 
-func NewMintAccessTokenWithValue(status, txReqID string) *MintAccessToken {
+func NewMintAccessTokenWithValue(txReqID string) *MintAccessToken {
 	return &MintAccessToken{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.Pdexv3MintAccessTokenMeta,
 		},
-		status:  status,
 		txReqID: txReqID,
 	}
 }
@@ -87,11 +85,9 @@ func (response *MintAccessToken) CalculateSize() uint64 {
 
 func (response *MintAccessToken) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Status  string `json:"Status"`
 		TxReqID string `json:"TxReqID"`
 		metadataCommon.MetadataBase
 	}{
-		Status:       response.status,
 		TxReqID:      response.txReqID,
 		MetadataBase: response.MetadataBase,
 	})
@@ -103,7 +99,6 @@ func (response *MintAccessToken) MarshalJSON() ([]byte, error) {
 
 func (response *MintAccessToken) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Status  string `json:"Status"`
 		TxReqID string `json:"TxReqID"`
 		metadataCommon.MetadataBase
 	}{}
@@ -112,17 +107,12 @@ func (response *MintAccessToken) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	response.txReqID = temp.TxReqID
-	response.status = temp.Status
 	response.MetadataBase = temp.MetadataBase
 	return nil
 }
 
 func (response *MintAccessToken) TxReqID() string {
 	return response.txReqID
-}
-
-func (response *MintAccessToken) Status() string {
-	return response.status
 }
 
 type acceptMintAccessToken struct {

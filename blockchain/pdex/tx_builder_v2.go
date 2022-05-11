@@ -499,7 +499,6 @@ func buildMintAccessTokenTx(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
-	Logger.log.Info("[bridgeagg] 0")
 	var tx metadata.Transaction
 	if len(inst) != 3 {
 		return tx, fmt.Errorf("Expect inst length to be %v but get %v", 3, len(inst))
@@ -510,7 +509,7 @@ func buildMintAccessTokenTx(
 
 	var instShardID byte
 	var tokenID common.Hash
-	var otaReceiverStr, status, txReqID string
+	var otaReceiverStr, txReqID string
 	var amount uint64
 	mintAccessTokenInst := instruction.NewMintAccessToken()
 	err := mintAccessTokenInst.FromStringSlice(inst)
@@ -526,17 +525,15 @@ func buildMintAccessTokenTx(
 		return tx, nil
 	}
 
-	status = inst[1]
 	otaReceiver := privacy.OTAReceiver{}
 	err = otaReceiver.FromString(otaReceiverStr)
 	if err != nil {
 		return tx, err
 	}
-	metaData := metadataPdexv3.NewMintAccessTokenWithValue(status, txReqID)
+	metaData := metadataPdexv3.NewMintAccessTokenWithValue(txReqID)
 	tx, err = buildMintTokenTx(tokenID, amount, otaReceiver, producerPrivateKey, transactionStateDB, metaData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}
-	Logger.log.Info("[bridgeagg] 1")
 	return tx, err
 }
