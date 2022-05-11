@@ -499,6 +499,7 @@ func buildMintAccessTokenTx(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
+	Logger.log.Info("[bridgeagg] 0")
 	var tx metadata.Transaction
 	if len(inst) != 3 {
 		return tx, fmt.Errorf("Expect inst length to be %v but get %v", 3, len(inst))
@@ -536,5 +537,6 @@ func buildMintAccessTokenTx(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 	}
+	Logger.log.Info("[bridgeagg] 1")
 	return tx, err
 }
