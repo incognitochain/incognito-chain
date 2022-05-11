@@ -242,9 +242,11 @@ func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
 
 func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues, triggeredFeature map[string]uint64) ([][]string, *metadata.AccumulatedValues, error) {
 	res := [][]string{}
+	temp := []string{}
 	var err error
 
 	checkpoints := []uint64{}
+	validCheckpoints := []uint64{}
 	for k := range triggeredFeature {
 		if len(k) > len(unifiedTokenTriggerPrefix) {
 			if bytes.Equal([]byte(k[:len(unifiedTokenTriggerPrefix)]), []byte(unifiedTokenTriggerPrefix)) {
@@ -266,18 +268,22 @@ func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*stat
 	// after beacon generate autoenablefeature instruction, TriggerFeature will mark the height of the trigger time.
 	// we only need to process once at the mark time (block after trigger)
 	//ex: trigger at 8, block 9 will process punified config
-	checkpointIndex := -1
-	for index, checkpoint := range checkpoints {
+	for _, checkpoint := range checkpoints {
 		if beaconHeight == triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoint, 10)]+1 {
-			checkpointIndex = index
-			break
+			validCheckpoints = append(validCheckpoints, checkpoint)
 		}
 	}
-	if checkpointIndex == -1 {
+	if len(validCheckpoints) == 0 {
 		return [][]string{}, ac, nil
 	}
-	Logger.log.Info("[bridgeagg] checkpoints:", checkpoints)
-	Logger.log.Info("[bridgeagg] checkpoints[checkpointIndex]:", checkpoints[checkpointIndex])
-	res, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac, checkpoints[checkpointIndex])
+	for _, checkpoint := range validCheckpoints {
+		temp, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac, checkpoint)
+		if err != nil {
+			return res, nil, err
+		}
+		if len(temp) != 0 {
+			res = append(res, temp)
+		}
+	}
 	return res, ac, err
 }
