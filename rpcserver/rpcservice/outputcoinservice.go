@@ -3,9 +3,10 @@ package rpcservice
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -26,11 +27,11 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognit
 		return nil, 0, err
 	}
 	plainCoins, coins, fh, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(keySet, shardID, prvCoinID, shardHeight)
-	if err != nil{
+	if err != nil {
 		return nil, 0, err
 	}
 
-	if len(coins) != 0{
+	if len(coins) != 0 {
 		return nil, 0, errors.New("need private key to proceed")
 	}
 
@@ -77,29 +78,29 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		result.FromHeight = fromHeight
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
-			if outCoin.GetValue() == 0{
+			if outCoin.GetValue() == 0 {
 				continue
 			}
 			tmp := jsonresult.NewOutCoin(outCoin)
 			db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 
-			if outCoin.GetVersion() == 2{
+			if outCoin.GetVersion() == 2 {
 				tmpCoin, ok := outCoin.(*privacy.CoinV2)
-				if !ok{
+				if !ok {
 					continue
 				}
 
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 				idx, err := statedb.GetOTACoinIndex(db, common.PRVCoinID, publicKeyBytes)
-				if err != nil{
+				if err != nil {
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
 
 				tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-				if tmpCoin.GetSharedRandom() != nil{
+				if tmpCoin.GetSharedRandom() != nil {
 					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 				}
-				if tmpCoin.GetTxRandom() != nil{
+				if tmpCoin.GetTxRandom() != nil {
 					tmp.TxRandom = base58.Base58Check{}.Encode(tmpCoin.GetTxRandom().Bytes(), common.ZeroByte)
 				}
 			}
@@ -159,23 +160,24 @@ func (coinService CoinService) ListCachedUnspentOutputCoinsByKey(listKeyParams [
 			tmp := jsonresult.NewOutCoin(outCoin)
 			db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 
-			if outCoin.GetVersion() == 2{
+			if outCoin.GetVersion() == 2 {
 				tmpCoin, ok := outCoin.(*privacy.CoinV2)
-				if !ok{
+				if !ok {
 					continue
 				}
 
 				//Retrieve coin's index
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 				idx, err := statedb.GetOTACoinIndex(db, *tokenID, publicKeyBytes)
-				if err != nil{
+				if err != nil {
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
 
 				tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-				if tmpCoin.GetSharedRandom() != nil{
+				if tmpCoin.GetSharedRandom() != nil {
 					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 				}
+				tmp.PublicKeyBase64 = tmpCoin.GetPublicKey().ToBytesS()
 			}
 
 			item = append(item, tmp)
@@ -248,7 +250,7 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
 			keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
 		}
-		if otaKey != nil && otaKey.KeySet.OTAKey.GetOTASecretKey()!= nil {
+		if otaKey != nil && otaKey.KeySet.OTAKey.GetOTASecretKey() != nil {
 			keySet.OTAKey = otaKey.KeySet.OTAKey
 		}
 
@@ -265,26 +267,26 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		item := make([]jsonresult.OutCoin, 0)
 
 		//If the ReadonlyKey is provided, return decrypted coins
-		if len(outputCoins) == 0{
+		if len(outputCoins) == 0 {
 			for _, outCoin := range plainOutputCoins {
 				tmp := jsonresult.NewOutCoin(outCoin)
 				db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
-				if outCoin.GetVersion() == 2{
+				if outCoin.GetVersion() == 2 {
 					tmpCoin, ok := outCoin.(*privacy.CoinV2)
-					if !ok{
+					if !ok {
 						continue
 					}
 
 					//Retrieve coin's index
 					publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 					idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
-					if err != nil{
+					if err != nil {
 						return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 					}
 
 					tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-					if tmpCoin.GetSharedRandom() != nil{
+					if tmpCoin.GetSharedRandom() != nil {
 						tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 					}
 				}
@@ -296,26 +298,26 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 			} else {
 				result.Outputs[paymentAddressStr] = item
 			}
-		}else{//ReadonlyKey is not provided, return raw coins
+		} else { //ReadonlyKey is not provided, return raw coins
 			for _, outCoin := range outputCoins {
 				tmp := jsonresult.NewOutCoin(outCoin)
 				db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
-				if outCoin.GetVersion() == 2{
+				if outCoin.GetVersion() == 2 {
 					tmpCoin, ok := outCoin.(*privacy.CoinV2)
-					if !ok{
+					if !ok {
 						continue
 					}
 
 					//Retrieve coin's index
 					publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 					idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
-					if err != nil{
+					if err != nil {
 						return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 					}
 
 					tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-					if tmpCoin.GetSharedRandom() != nil{
+					if tmpCoin.GetSharedRandom() != nil {
 						tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 					}
 				}
@@ -388,14 +390,14 @@ func (coinService CoinService) ListCachedOutputCoinsByKey(listKeyParams []interf
 		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
 			keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
 		}
-		if otaKey != nil && otaKey.KeySet.OTAKey.GetOTASecretKey()!= nil {
+		if otaKey != nil && otaKey.KeySet.OTAKey.GetOTASecretKey() != nil {
 			keySet.OTAKey = otaKey.KeySet.OTAKey
 		}
 
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		plainOutputCoins, outputCoins, err := coinService.BlockChain.GetAllOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, true)
-		
+
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
@@ -409,21 +411,21 @@ func (coinService CoinService) ListCachedOutputCoinsByKey(listKeyParams []interf
 			tmp := jsonresult.NewOutCoin(outCoin)
 			db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
-			if outCoin.GetVersion() == 2{
+			if outCoin.GetVersion() == 2 {
 				tmpCoin, ok := outCoin.(*privacy.CoinV2)
-				if !ok{
+				if !ok {
 					continue
 				}
 
 				//Retrieve coin's index
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 				idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
-				if err != nil{
+				if err != nil {
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
 
 				tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-				if tmpCoin.GetSharedRandom() != nil{
+				if tmpCoin.GetSharedRandom() != nil {
 					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 				}
 			}
@@ -440,21 +442,21 @@ func (coinService CoinService) ListCachedOutputCoinsByKey(listKeyParams []interf
 			tmp := jsonresult.NewOutCoin(outCoin)
 			db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
-			if outCoin.GetVersion() == 2{
+			if outCoin.GetVersion() == 2 {
 				tmpCoin, ok := outCoin.(*privacy.CoinV2)
-				if !ok{
+				if !ok {
 					continue
 				}
 
 				//Retrieve coin's index
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 				idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
-				if err != nil{
+				if err != nil {
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
 
 				tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-				if tmpCoin.GetSharedRandom() != nil{
+				if tmpCoin.GetSharedRandom() != nil {
 					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 				}
 			}
@@ -518,31 +520,32 @@ func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []inte
 		result.FromHeight = fh
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
-			if outCoin.GetValue() == 0{
+			if outCoin.GetValue() == 0 {
 				continue
 			}
 			tmp := jsonresult.NewOutCoin(outCoin)
 			db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 
-			if outCoin.GetVersion() == 2{
+			if outCoin.GetVersion() == 2 {
 				tmpCoin, ok := outCoin.(*privacy.CoinV2)
-				if !ok{
+				if !ok {
 					continue
 				}
 
 				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
 				idx, err := statedb.GetOTACoinIndex(db, *tokenID, publicKeyBytes)
-				if err != nil{
+				if err != nil {
 					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 				}
 
 				tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
-				if tmpCoin.GetSharedRandom() != nil{
+				if tmpCoin.GetSharedRandom() != nil {
 					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
 				}
-				if tmpCoin.GetTxRandom() != nil{
+				if tmpCoin.GetTxRandom() != nil {
 					tmp.TxRandom = base58.Base58Check{}.Encode(tmpCoin.GetTxRandom().Bytes(), common.ZeroByte)
 				}
+				tmp.PublicKeyBase64 = tmpCoin.GetPublicKey().ToBytesS()
 			}
 
 			item = append(item, tmp)

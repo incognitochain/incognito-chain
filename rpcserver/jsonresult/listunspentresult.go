@@ -1,16 +1,19 @@
 package jsonresult
+
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"log"
 	"math/big"
 	"strconv"
+
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
+
 type ICoinInfo interface {
 	GetVersion() uint8
 	GetCommitment() *privacy.Point
@@ -37,6 +40,7 @@ type OutCoin struct {
 	Version              string `json:"Version"`
 	Index                string `json:"Index"`
 	PublicKey            string `json:"PublicKey"`
+	PublicKeyBase64      []byte `json:"PublicKeyBase64,omitempty"`
 	Commitment           string `json:"Commitment"`
 	SNDerivator          string `json:"SNDerivator"`
 	KeyImage             string `json:"KeyImage"`
@@ -50,6 +54,7 @@ type OutCoin struct {
 	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 	AssetTag             string `json:"AssetTag"`
 }
+
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 	outcoin := OutCoin{}
 	temp, err := json.Marshal(data)
@@ -86,15 +91,15 @@ func NewOutCoin(outCoin ICoinInfo) OutCoin {
 		randomness = base58.Base58Check{}.Encode(outCoin.GetRandomness().ToBytesS(), common.ZeroByte)
 	}
 	result := OutCoin{
-		Version:        strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
-		PublicKey:      publicKey,
-		Value:          strconv.FormatUint(outCoin.GetValue(), 10),
-		Info:           EncodeBase58Check(outCoin.GetInfo()),
-		Commitment:     commitment,
-		SNDerivator:    snd,
-		KeyImage:       keyImage,
-		SerialNumber:   keyImage,
-		Randomness:     randomness,
+		Version:      strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
+		PublicKey:    publicKey,
+		Value:        strconv.FormatUint(outCoin.GetValue(), 10),
+		Info:         EncodeBase58Check(outCoin.GetInfo()),
+		Commitment:   commitment,
+		SNDerivator:  snd,
+		KeyImage:     keyImage,
+		SerialNumber: keyImage,
+		Randomness:   randomness,
 	}
 	if outCoin.GetCoinDetailEncrypted() != nil {
 		result.CoinDetailsEncrypted = base58.Base58Check{}.Encode(outCoin.GetCoinDetailEncrypted(), common.ZeroByte)
