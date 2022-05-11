@@ -28,8 +28,9 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 				time.Sleep(50 * time.Millisecond)
 				continue
 			}
-			for _, v := range bcBlks {
-				beaconBlocks = append(beaconBlocks, &v)
+			for _, bcBlk := range bcBlks {
+				tmp := bcBlk
+				beaconBlocks = append(beaconBlocks, &tmp)
 			}
 			break
 		}
