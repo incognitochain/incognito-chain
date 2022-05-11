@@ -28,8 +28,6 @@ import (
 
 func IsBridgeAggMetaType(metaType int) bool {
 	switch metaType {
-	case metadataCommon.BridgeAggModifyRewardReserveMeta:
-		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:

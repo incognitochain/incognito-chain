@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,69 +13,6 @@ import (
 
 type stateProcessor struct {
 	UnshieldTxsCache map[common.Hash]common.Hash
-}
-
-func (sp *stateProcessor) modifyRewardReserve(
-	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
-	sDB *statedb.StateDB,
-) (map[common.Hash]map[common.Hash]*Vault, error) {
-	var status byte
-	var txReqID common.Hash
-	var errorCode uint
-	switch inst.Status {
-	case common.AcceptedStatusStr:
-		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		Logger.log.Info("Processing inst content:", string(contentBytes))
-		acceptedInst := metadataBridge.AcceptedModifyRewardReserve{}
-		err = json.Unmarshal(contentBytes, &acceptedInst)
-		if err != nil {
-			return unifiedTokenInfos, err
-		}
-		for unifiedTokenID, vaults := range acceptedInst.Vaults {
-			_, found := unifiedTokenInfos[unifiedTokenID]
-			if !found {
-				return unifiedTokenInfos, fmt.Errorf("Cannot find unifiedTokenID %s", unifiedTokenID.String())
-			}
-			for _, vault := range vaults {
-				if _, found := unifiedTokenInfos[unifiedTokenID][vault.TokenID()]; !found {
-					return unifiedTokenInfos, fmt.Errorf("Cannot find vault tokenID %s", vault.TokenID().String())
-				}
-				v := unifiedTokenInfos[unifiedTokenID][vault.TokenID()]
-				err = v.updateRewardReserve(vault.RewardReserve, vault.IsPaused)
-				if err != nil {
-					return unifiedTokenInfos, err
-				}
-				unifiedTokenInfos[unifiedTokenID][vault.TokenID()] = v
-			}
-		}
-		txReqID = acceptedInst.TxReqID
-		status = common.AcceptedStatusByte
-	case common.RejectedStatusStr:
-		rejectContent := metadataCommon.NewRejectContent()
-		if err := rejectContent.FromString(inst.Content); err != nil {
-			return unifiedTokenInfos, err
-		}
-		errorCode = rejectContent.ErrorCode
-		txReqID = rejectContent.TxReqID
-		status = common.RejectedStatusByte
-	default:
-		return unifiedTokenInfos, errors.New("Can not recognize status")
-	}
-	modifyRewardReserveStatus := ModifyRewardReserveStatus{
-		Status:    status,
-		ErrorCode: errorCode,
-	}
-	contentBytes, _ := json.Marshal(modifyRewardReserveStatus)
-	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
-		sDB,
-		statedb.BridgeAggRewardReserveModifyingStatusPrefix(),
-		txReqID.Bytes(),
-		contentBytes,
-	)
 }
 
 func (sp *stateProcessor) convert(

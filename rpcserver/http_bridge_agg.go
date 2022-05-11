@@ -17,100 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyRewardReserve(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var res interface{}
-	data, err := httpServer.createBridgeAggModifyRewardReserveTransaction(params)
-	if err != nil {
-		return nil, err
-	}
-
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	res, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-	return res, nil
-}
-
-func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
-	params interface{},
-) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
-	}
-	privateKey, ok := arrayParams[0].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
-	}
-	privacyDetect, ok := arrayParams[3].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("privacy detection param need to be int"))
-	}
-	if int(privacyDetect) <= 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
-	}
-	if len(keyWallet.KeySet.PrivateKey) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
-	}
-
-	// metadata object format to read from RPC parameters
-	mdReader := &struct {
-		NewList map[common.Hash][]struct {
-			TokenID       common.Hash `json:"TokenID"`
-			RewardReserve uint64      `json:"RewardReserve"`
-			IsPaused      bool        `json:"IsPaused"`
-		} `json:"Vaults"`
-	}{}
-	// parse params & metadata
-	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
-	}
-	newList := make(map[common.Hash][]metadataBridge.Vault)
-	for k, v := range mdReader.NewList {
-		for _, value := range v {
-			newList[k] = append(newList[k], metadataBridge.Vault{
-				RewardReserve:                value.RewardReserve,
-				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(value.TokenID, 0),
-				IsPaused:                     value.IsPaused,
-			})
-		}
-	}
-
-	md := metadataBridge.NewModifyRewardReserveWithValue(newList)
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, md)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err2)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleGetBridgeAggState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
@@ -129,37 +35,6 @@ func (httpServer *HttpServer) handleGetBridgeAggState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.GetBridgeAggStateError, err)
 	}
 	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetBridgeAggModifyRewardReserveStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	// read txID
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Incorrect parameter length"))
-	}
-	s, ok := arrayParams[0].(string)
-	txID, err := common.Hash{}.NewHashFromStr(s)
-	if !ok || err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
-			errors.New("Invalid TxID from parameters"))
-	}
-	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
-
-	data, err := statedb.GetBridgeAggStatus(
-		sDB,
-		statedb.BridgeAggRewardReserveModifyingStatusPrefix(),
-		txID.Bytes(),
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	var res json.RawMessage
-	err = json.Unmarshal(data, &res)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	return res, nil
 }
 
 func (httpServer *HttpServer) handleGetBridgeAggConvertStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

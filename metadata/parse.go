@@ -264,8 +264,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:
 		md = &metadataBridge.ConvertTokenToUnifiedTokenResponse{}
-	case metadataCommon.BridgeAggModifyRewardReserveMeta:
-		md = &metadataBridge.ModifyRewardReserve{}
 	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		md = &metadataBridge.ShieldRequest{}
 	case metadataCommon.IssuingUnifiedTokenResponseMeta:

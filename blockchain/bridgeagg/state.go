@@ -88,17 +88,6 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, *metadata.A
 		}
 	}
 
-	for shardID, actions := range env.ModifyRewardReserveActions() {
-		for _, action := range actions {
-			inst := []string{}
-			inst, s.unifiedTokenInfos, err = s.producer.modifyRewardReserve(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
-			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToBuildModifyRewardReserveError, err)
-			}
-			res = append(res, inst)
-		}
-	}
-
 	Logger.log.Info("bridgeagg instructions:", res)
 
 	return res, ac, nil
@@ -133,11 +122,6 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 		}
 
 		switch inst.MetaType {
-		case metadataCommon.BridgeAggModifyRewardReserveMeta:
-			s.unifiedTokenInfos, err = s.processor.modifyRewardReserve(*inst, s.unifiedTokenInfos, sDB)
-			if err != nil {
-				return err
-			}
 		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 			s.unifiedTokenInfos, err = s.processor.convert(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {

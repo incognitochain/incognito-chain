@@ -86,7 +86,6 @@ func collectStatefulActions(
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
-			metadataCommon.BridgeAggModifyRewardReserveMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta:
@@ -330,8 +329,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
-			case metadataCommon.BridgeAggModifyRewardReserveMeta:
-				modifyRewardReserveActions[shardID] = append(modifyRewardReserveActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:

@@ -75,7 +75,6 @@ type StateEnvironment interface {
 	UnshieldActions() [][]string
 	ShieldActions() [][]string
 	ConvertActions() [][]string
-	ModifyRewardReserveActions() [][]string
 	StateDBs() map[int]*statedb.StateDB
 }
 
