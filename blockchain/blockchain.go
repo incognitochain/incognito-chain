@@ -340,14 +340,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
-	if err = blockchain.initCheckpoint(initBeaconBestState); err != nil {
-		return err
-	}
-
-	if err = blockchain.backupCheckpoint(); err != nil {
-		return err
-	}
-
 	committees := initBeaconBestState.GetShardCommitteeFlattenList()
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	initBeaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
@@ -360,6 +352,14 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
+	initBeaconBestState.ConsensusStateDBRootHash = consensusRootHash
+	if err = blockchain.initCheckpoint(initBeaconBestState); err != nil {
+		return err
+	}
+
+	if err = blockchain.backupCheckpoint(); err != nil {
+		return err
+	}
 	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
@@ -374,7 +374,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 		SlashStateDBRootHash:     common.EmptyRoot,
 	}
 
-	initBeaconBestState.ConsensusStateDBRootHash = consensusRootHash
 	if err := rawdbv2.StoreBeaconRootsHash(blockchain.GetBeaconChainDatabase(), initBlockHash, bRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
