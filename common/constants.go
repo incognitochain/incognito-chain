@@ -123,6 +123,7 @@ const (
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
 	ExternalBridgeTokenLength = 20
+	EVMAddressLength          = 40
 	UnifiedTokenPrefix        = "UT"
 )
 

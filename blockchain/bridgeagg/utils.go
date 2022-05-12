@@ -513,6 +513,19 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 			return fmt.Errorf("WARNING: tokenID %s has existed", tokenID.String())
 		}
 	}
+	networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(networkID)
+	if networkType == common.EVMNetworkType {
+		externalTokenIDStr := vault.ExternalTokenID
+		if len(externalTokenIDStr) != len("0x")+common.EVMAddressLength {
+			return fmt.Errorf("ExternalTokenID %s is invalid length", externalTokenIDStr)
+		}
+		if !bytes.Equal([]byte(externalTokenIDStr[:len("0x")]), []byte("0x")) {
+			return fmt.Errorf("ExternalTokenID %s is invalid format", externalTokenIDStr)
+		}
+		if !rCommon.IsHexAddress(externalTokenIDStr[len("0x"):]) {
+			return fmt.Errorf("ExternalTokenID %s is invalid format", externalTokenIDStr)
+		}
+	}
 	return nil
 }
 

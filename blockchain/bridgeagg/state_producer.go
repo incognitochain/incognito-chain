@@ -503,7 +503,6 @@ func (sp *stateProducer) addToken(
 					Logger.log.Warnf("BridgeAggAddToken Cannot get externalTokenID error %v", err)
 					return []string{}, unifiedTokenInfos, ac, nil
 				}
-				//TODO: @tin validate externalTokenID
 				if externalTokenIDIndex[string(externalTokenID)] {
 					Logger.log.Warnf("BridgeAggAddToken Duplicate externalTokenID")
 					return []string{}, unifiedTokenInfos, ac, nil
