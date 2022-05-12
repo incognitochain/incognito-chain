@@ -671,6 +671,13 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByS(sID byte, epoch, height
 }
 
 func (bc *BlockChain) backupCheckpoint() error {
+
+	for cID, chkpnt := range bc.committeeChangeCheckpoint.data {
+		Logger.log.Debugf("[debugcheckpoint] committee check point of cID %v", cID)
+		for epoch, data := range chkpnt.Data {
+			Logger.log.Debugf("[debugcheckpoint]\t cmt:%v epoch %v, height %v", cID, epoch, data.Height)
+		}
+	}
 	data, err := json.Marshal(bc.committeeChangeCheckpoint.data)
 	if err != nil {
 		panic(err)
@@ -714,6 +721,42 @@ func (bc *BlockChain) restoreCheckpoint() error {
 	return nil
 }
 
+func (bc *BlockChain) initCheckpoint(initBeaconBestState *BeaconBestState) error {
+	epochs := []uint64{}
+	epochForCache := initBeaconBestState.BestBlock.Header.Epoch
+	epochs = append(epochs, epochForCache)
+	data := CommitteeCheckPoint{
+		Height:   initBeaconBestState.GetBeaconHeight(),
+		RootHash: initBeaconBestState.ConsensusStateDBRootHash,
+		FromBC:   true,
+	}
+	bc.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)] = CommitteeChangeCheckpoint{
+		Data: map[uint64]CommitteeCheckPoint{
+			epochForCache: data,
+		},
+		Epochs: epochs,
+	}
+	key := getCommitteeCacheKeyByEpoch(epochForCache, common.BeaconChainSyncID)
+	bc.committeeByEpochCache.Add(key, initBeaconBestState.GetBeaconCommittee())
+	for sID := 0; sID < initBeaconBestState.ActiveShards; sID++ {
+		epochsForShard := append([]uint64{}, epochForCache)
+		dataForShard := CommitteeCheckPoint{
+			Height:   initBeaconBestState.GetBestShardHeight()[byte(sID)],
+			RootHash: initBeaconBestState.ConsensusStateDBRootHash,
+			FromBC:   true,
+		}
+		bc.committeeChangeCheckpoint.data[byte(sID)] = CommitteeChangeCheckpoint{
+			Data: map[uint64]CommitteeCheckPoint{
+				epochForCache: dataForShard,
+			},
+			Epochs: epochsForShard,
+		}
+		key := getCommitteeCacheKeyByEpoch(epochForCache, byte(sID))
+		bc.committeeByEpochCache.Add(key, initBeaconBestState.GetShardCommittee()[byte(sID)])
+	}
+	return nil
+}
+
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64) (
 	epochForCache uint64,
 	chkPnt CommitteeCheckPoint,
@@ -724,7 +767,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	epochs := sCommitteeChange.Epochs
 	if len(epochs) == 0 {
-		return 0, CommitteeCheckPoint{}, errors.Errorf("Committee change for epoch %v cID %v not found", epoch, sID)
+		return 0, CommitteeCheckPoint{}, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found, list checkpoint is empty", epoch, sID)
 	}
 	idx, existed := SearchUint64(epochs, epoch)
 	if existed {
@@ -736,7 +779,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64
 	if idx > 0 {
 		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]], nil
 	}
-	return 0, CommitteeCheckPoint{}, errors.Errorf("Committee change for epoch %v cID %v not found", epoch, sID)
+	return 0, CommitteeCheckPoint{}, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found", epoch, sID)
 }
 
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epoch, height uint64) (
@@ -754,7 +797,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 		chkPoint := sCommitteeChange.Data[epochCheckpoint]
 		if height < chkPoint.Height {
 			if (idx == 0) || (chkPoint.Height == 10e9) {
-				return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache for block %v, cID %v, epoch %v; %v", height, sID, epochCheckpoint, len(sCommitteeChange.Data))
+				return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Can not get committee from cache for block %v, cID %v, epoch %v; %v", height, sID, epochCheckpoint, len(sCommitteeChange.Data))
 			}
 			epochCheckpoint = epochs[idx-1]
 		}
@@ -780,7 +823,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 			}
 		}
 		if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
-			return 0, common.EmptyRoot, errors.Errorf("Can not get committee from cache by epoch %v for block %v, cID %v, len chkpnt %v", epochCheckpoint, height, sID, len(sCommitteeChange.Data))
+			return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Can not get committee from cache by epoch %v for block %v, cID %v, len chkpnt %v", epochCheckpoint, height, sID, len(sCommitteeChange.Data))
 		}
 	}
 	return epochCheckpoint, sCommitteeChange.Data[epochCheckpoint].RootHash, nil

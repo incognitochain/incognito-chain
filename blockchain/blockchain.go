@@ -340,20 +340,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 
-	epochs := []uint64{}
-	epochs = append(epochs, initBeaconBestState.BestBlock.Header.Epoch)
-	data := CommitteeCheckPoint{
-		Height:   initBeaconBestState.GetBeaconHeight(),
-		RootHash: initBeaconBestState.ConsensusStateDBRootHash,
+	if err = blockchain.initCheckpoint(initBeaconBestState); err != nil {
+		return err
 	}
-	blockchain.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)] = CommitteeChangeCheckpoint{
-		Data: map[uint64]CommitteeCheckPoint{
-			initBeaconBestState.BestBlock.Header.Epoch: data,
-		},
-		Epochs: epochs,
-	}
-	err = blockchain.backupCheckpoint()
-	if err != nil {
+
+	if err = blockchain.backupCheckpoint(); err != nil {
 		return err
 	}
 
@@ -362,15 +353,13 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBeaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
 	consensusRootHash, _, err := initBeaconBestState.consensusStateDB.Commit(true)
-	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil)
 	if err != nil {
 		return err
 	}
+	if err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false, nil); err != nil {
+		return err
+	}
 	initBeaconBestState.consensusStateDB.ClearObjects()
-	// if err := rawdbv2.StoreBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), initBlockHash, &initBeaconBestState.BestBlock); err != nil {
-	// 	Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
-	// 	return err
-	// }
 	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, &initBeaconBestState.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
@@ -735,15 +724,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
-	// for _, beaconState := range allViews {
-	// 	if beaconState.missingSignatureCounter == nil {
-	// 		block := beaconState.BestBlock
-	// 		err = beaconState.initMissingSignatureCounter(blockchain, &block)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// }
+
 	err = blockchain.restoreCheckpoint()
 	if err != nil {
 		return err
@@ -1263,12 +1244,6 @@ func (bc *BlockChain) GetShardCommitteeKeysByEpoch(epoch uint64, cID byte) (
 	)
 	if err != nil {
 		Logger.log.Error(err)
-		bcHeight := bc.GetLastBeaconHeightInEpoch(epoch)
-		bcRootHash, e := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), bcHeight)
-		if e != nil {
-			return nil, 0, err
-		}
-		consensusRootHash = bcRootHash
 	} else {
 		epoch = epochForCache
 	}

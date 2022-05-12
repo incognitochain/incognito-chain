@@ -305,6 +305,11 @@ func (s *BeaconSyncProcess) syncBeacon() {
 			continue
 		}
 
+		if !s.network.IsReady() {
+			time.Sleep(time.Second)
+			continue
+		}
+
 		for peerID, pState := range s.getBeaconPeerStates() {
 			requestCnt += s.streamFromPeer(peerID, pState)
 		}

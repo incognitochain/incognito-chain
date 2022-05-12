@@ -914,7 +914,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 
 	//statedb===========================START
 	mode := config.Config().SyncMode
-	shardBestState.consensusStateDB, err = statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, *statedb.NewEmptyRebuildInfo(""), nil)
+	shardBestState.consensusStateDB, err = statedb.NewWithMode(SHARDDB_CONSENSUS, common.STATEDB_ARCHIVE_MODE, db, *statedb.NewEmptyRebuildInfo(common.STATEDB_ARCHIVE_MODE), nil)
 	if err != nil {
 		return err
 	}

@@ -224,6 +224,11 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			continue
 		}
 
+		if !s.Network.IsReady() {
+			time.Sleep(time.Second)
+			continue
+		}
+
 		for peerID, pState := range s.getShardPeerStates() {
 			requestCnt += s.streamFromPeer(peerID, pState)
 		}

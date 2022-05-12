@@ -35,6 +35,12 @@ type ResyncManager struct {
 
 func (reSync *ResyncManager) Start() {
 	for {
+		if reSync.Net.IsReady() {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	for {
 		select {
 		case h := <-reSync.RequestSync:
 			Logger.Debugf("Got new request from %v, to %v", h, h+350)
@@ -110,6 +116,13 @@ func (reSync *ResyncManager) addData(from, to uint64, blks map[uint64]types.Beac
 }
 
 func (reSync *ResyncManager) resyncPair(from, to uint64) error {
+	if !reSync.Net.IsReady() {
+		time.Sleep(50 * time.Millisecond)
+		go func(f, t uint64) {
+			reSync.RequestPair <- SyncPair{from: f, to: t}
+		}(from, to)
+		return errors.Errorf("Requester is not ready")
+	}
 	uid := genUUID()
 	newPairs := reSync.HeightFilter.SearchMissingPair(from, to)
 	reSync.HeightFilter.DisplayInOrder()
