@@ -49,7 +49,7 @@ type IMissingSignatureCounter interface {
 	MissingSignature() map[string]MissingSignature
 	Penalties() []Penalty
 	AddMissingSignature(validationData string, committees []incognitokey.CommitteePublicKey) error
-	AddPreviousMissignSignature(prevValidationData string, committees []incognitokey.CommitteePublicKey) error
+	AddPreviousMissignSignature(prevValidationData string) error
 	GetAllSlashingPenaltyWithActualTotalBlock() map[string]Penalty
 	GetAllSlashingPenaltyWithExpectedTotalBlock(map[string]uint) map[string]Penalty
 	Reset(committees []string)
@@ -58,10 +58,11 @@ type IMissingSignatureCounter interface {
 }
 
 type MissingSignatureCounter struct {
-	missingSignature map[string]MissingSignature
-	penalties        []Penalty
-	indexData        [][]int
-	lock             *sync.RWMutex
+	missingSignature                 map[string]MissingSignature
+	penalties                        []Penalty
+	indexData                        [][]int
+	lastShardStateValidatorCommittee []string
+	lock                             *sync.RWMutex
 }
 
 func (s *MissingSignatureCounter) Penalties() []Penalty {
@@ -113,7 +114,6 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 			continue
 		}
 		missingSignature.ActualTotal++
-
 		if _, ok := signedCommittees[toBeSignedCommittee]; !ok {
 			missingSignature.Missing++
 		}
@@ -121,15 +121,16 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 	}
 
 	s.indexData = append(s.indexData, validationData.ValidatiorsIdx)
+	s.lastShardStateValidatorCommittee = tempToBeSignedCommittees
 	return nil
 }
 
-func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
+func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
-	if len(s.indexData) == 0 {
-		log.Println("cache data is empty")
+	tempToBeSignedCommittees := s.lastShardStateValidatorCommittee
+	if len(s.indexData) == 0 || len(tempToBeSignedCommittees) == 0 {
+		log.Println("cache data or committee is empty")
 		return nil
 	}
 
@@ -139,7 +140,6 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, toBeS
 	if err != nil {
 		return err
 	}
-	tempToBeSignedCommittees, _ := incognitokey.CommitteeKeyListToString(toBeSignedCommittees)
 	uncountCommittees := make(map[string]struct{})
 
 	if len(prevValidationData.ValidatiorsIdx) <= len(prevValidatorIndexCache) {
@@ -242,12 +242,12 @@ func (s *MissingSignatureCounter) Reset(committees []string) {
 	}
 
 	s.missingSignature = missingSignature
+	s.lastShardStateValidatorCommittee = []string{}
 }
 
 func (s *MissingSignatureCounter) CommitteeChange(newCommittees []string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
 	missingSignature := make(map[string]MissingSignature)
 	for _, v := range newCommittees {
 		res, ok := s.missingSignature[v]
@@ -266,13 +266,15 @@ func (s *MissingSignatureCounter) Copy() IMissingSignatureCounter {
 	defer s.lock.RUnlock()
 
 	newS := &MissingSignatureCounter{
-		missingSignature: make(map[string]MissingSignature),
-		penalties:        make([]Penalty, len(s.penalties)),
-		indexData:        make([][]int, len(s.indexData)),
-		lock:             new(sync.RWMutex),
+		missingSignature:                 make(map[string]MissingSignature),
+		lastShardStateValidatorCommittee: make([]string, len(s.lastShardStateValidatorCommittee)),
+		penalties:                        make([]Penalty, len(s.penalties)),
+		indexData:                        make([][]int, len(s.indexData)),
+		lock:                             new(sync.RWMutex),
 	}
 	copy(newS.penalties, s.penalties)
 	copy(newS.indexData, s.indexData)
+	copy(newS.lastShardStateValidatorCommittee, s.lastShardStateValidatorCommittee)
 
 	for k, v := range s.missingSignature {
 		newS.missingSignature[k] = v

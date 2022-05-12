@@ -907,7 +907,7 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 
 	for tempBeaconHeight >= firstBeaconHeightOfEpoch {
 		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
-			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
+			allShardStates[shardID] = append(shardStates, allShardStates[shardID]...)
 		}
 		if tempBeaconHeight == 1 {
 			break

@@ -760,7 +760,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	}
 
 	if shardState.PreviousValidationData != "" {
-		if curView.missingSignatureCounter.AddPreviousMissignSignature(shardState.PreviousValidationData, committees); err != nil {
+		if curView.missingSignatureCounter.AddPreviousMissignSignature(shardState.PreviousValidationData); err != nil {
 			return err
 		}
 	}
