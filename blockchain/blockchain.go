@@ -665,7 +665,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				return errors.New("No config in triggered feature")
 			} else {
 				if height < uint64(value.MinTriggerBlockHeight) {
-					return errors.New("Feature is trigger before checkpoint")
+					Logger.log.Infof("Feature %v is trigger before checkpoint (expect after %v, but get %v)", feature, value.MinTriggerBlockHeight, height)
 				}
 			}
 		}

@@ -1228,6 +1228,10 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []string {
 	unTriggerFeatures := []string{}
 	for f, _ := range config.Param().AutoEnableFeature {
+		if config.Param().AutoEnableFeature[f].MinTriggerBlockHeight == 0 {
+			//skip default value
+			continue
+		}
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
 			if afterCheckPoint {
 				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {
