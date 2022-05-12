@@ -164,8 +164,10 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, toBeS
 			continue
 		}
 		if _, ok := uncountCommittees[toBeSignedCommittee]; ok {
-			log.Println("sig counter: add sig counter for ", toBeSignedCommittee)
-			missingSignature.Missing--
+			if missingSignature.Missing > 0 {
+				log.Println("sig counter: add sig counter for ", toBeSignedCommittee)
+				missingSignature.Missing--
+			}
 		}
 
 		s.missingSignature[toBeSignedCommittee] = missingSignature
