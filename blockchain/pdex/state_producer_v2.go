@@ -67,9 +67,9 @@ func (sp *stateProducerV2) addLiquidity(
 			waitingContributions[metaData.PairHash()] = incomingContribution
 			inst, err := instruction.NewWaitingAddLiquidityWithValue(incomingContributionState).StringSlice()
 			if err != nil {
+				Logger.log.Warnf("tx %v can not build instruction add waitingContribution", tx.Hash().String())
 				return res, poolPairs, waitingContributions, err
 			}
-			Logger.log.Warnf("tx %v can not build instruction add waitingContribution", tx.Hash().String())
 			res = append(res, inst)
 			continue
 		}
