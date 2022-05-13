@@ -783,21 +783,21 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64
 }
 
 func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epoch, height uint64) (
-	epochCheckpoint uint64,
-	dbRootHash common.Hash,
+	epochForCache uint64,
+	chkPnt CommitteeCheckPoint,
 	err error,
 ) {
 	bc.committeeChangeCheckpoint.locker.RLock()
 	defer bc.committeeChangeCheckpoint.locker.RUnlock()
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	epochs := sCommitteeChange.Epochs
-	epochCheckpoint = epoch
+	epochCheckpoint := epoch
 	idx, existed := SearchUint64(epochs, epochCheckpoint)
 	if existed {
 		chkPoint := sCommitteeChange.Data[epochCheckpoint]
 		if height < chkPoint.Height {
 			if (idx == 0) || (chkPoint.Height == 10e9) {
-				return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Can not get committee from cache for block %v, cID %v, epoch %v; %v", height, sID, epochCheckpoint, len(sCommitteeChange.Data))
+				return 0, CommitteeCheckPoint{}, errors.Errorf("[CmtChkPnt] Can not get committee from cache for block %v, cID %v, epoch %v; %v", height, sID, epochCheckpoint, len(sCommitteeChange.Data))
 			}
 			epochCheckpoint = epochs[idx-1]
 		}
@@ -823,8 +823,8 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpochAndHeight(sID byte, epo
 			}
 		}
 		if (height < leftChkPnt.Height) && (height < rightChkPnt.Height) {
-			return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Can not get committee from cache by epoch %v for block %v, cID %v, len chkpnt %v", epochCheckpoint, height, sID, len(sCommitteeChange.Data))
+			return 0, CommitteeCheckPoint{}, errors.Errorf("[CmtChkPnt] Can not get committee from cache by epoch %v for block %v, cID %v, len chkpnt %v", epochCheckpoint, height, sID, len(sCommitteeChange.Data))
 		}
 	}
-	return epochCheckpoint, sCommitteeChange.Data[epochCheckpoint].RootHash, nil
+	return epochCheckpoint, sCommitteeChange.Data[epochCheckpoint], nil
 }

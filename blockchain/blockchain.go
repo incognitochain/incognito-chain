@@ -1379,24 +1379,24 @@ func (blockchain *BlockChain) getValidatorsFromCacheByEpoch(
 ) (
 	res []incognitokey.CommitteePublicKey,
 	epochForCache uint64,
-	bcRootHash common.Hash,
+	chkPnt CommitteeCheckPoint,
 	err error,
 ) {
-	epochFromCache, bcRootHash, err := blockchain.GetCheckpointChangeCommitteeByEpochAndHeight(cID, epoch, height)
+	epochFromCache, chkPnt, err := blockchain.GetCheckpointChangeCommitteeByEpochAndHeight(cID, epoch, height)
 	if err != nil {
-		return nil, epochFromCache, bcRootHash, err
+		return nil, epochFromCache, chkPnt, err
 	}
 	epochForCache = epochFromCache
 	key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
 	if committeesI, has := blockchain.committeeByEpochCache.Peek(key); has {
 		if committees, ok := committeesI.([]incognitokey.CommitteePublicKey); ok {
-			return committees, epochForCache, bcRootHash, nil
+			return committees, epochForCache, chkPnt, nil
 		} else {
 			Logger.log.Errorf("Can not convert data from cache to committee public key list, epoch %v, cID %v", epoch, cID)
 		}
 	}
 
-	return nil, epochForCache, bcRootHash, errors.Errorf("Can not found data from cache (epoch %v) to committee public key list, epoch %v, cID %v, len cache %v", epochForCache, epoch, cID, blockchain.committeeByEpochCache.Len())
+	return nil, epochForCache, chkPnt, errors.Errorf("Can not found data from cache (epoch %v) to committee public key list, epoch %v, cID %v, len cache %v", epochForCache, epoch, cID, blockchain.committeeByEpochCache.Len())
 
 }
 
@@ -1477,37 +1477,50 @@ func (blockchain *BlockChain) getShardValidators(
 ) {
 	if beaconHash.IsZeroValue() {
 		epochForCache := uint64(0)
-		var bcRootHash common.Hash
-		// res, epochForCache, bcRootHash, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
-		// if err != nil {
-		// 	Logger.log.Error(err)
-		// } else {
-		// 	return res, err
-		// }
+		var chkPnt CommitteeCheckPoint
+		var stateDB *statedb.StateDB
+		res, epochForCache, chkPnt, err = blockchain.getValidatorsFromCacheByEpoch(epoch, height, cID)
+		if err != nil {
+			Logger.log.Error(err)
+		} else {
+			// return res, err
+		}
 
-		res, err = blockchain.getShardValidatorsFromPrevHash(prevHash, cID)
+		res1, err := blockchain.getShardValidatorsFromPrevHash(prevHash, cID)
 		if err != nil {
 			return nil, err
 		}
 		if epochForCache > 0 {
-			bcDB := blockchain.GetBeaconChainDatabase()
-			beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(bcDB))
-			if err != nil {
-				panic(err)
+			if chkPnt.FromBC {
+				bcDB := blockchain.GetBeaconChainDatabase()
+				if stateDB, err = statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(bcDB)); err != nil {
+					panic(err)
+				}
+			} else {
+				sDB := blockchain.GetShardChainDatabase(cID)
+				if stateDB, err = statedb.NewWithPrefixTrie(chkPnt.RootHash, statedb.NewDatabaseAccessWarper(sDB)); err != nil {
+					panic(err)
+				}
 			}
-			res2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, cID)
+			res2 := statedb.GetOneShardCommittee(stateDB, cID)
 			list1, _ := incognitokey.CommitteeKeyListToString(res)
-			list2, _ := incognitokey.CommitteeKeyListToString(res2)
+			list2, _ := incognitokey.CommitteeKeyListToString(res1)
+			list3, _ := incognitokey.CommitteeKeyListToString(res2)
 			if (len(res2) > 0) && (!equal2list(res, res2)) {
 				Logger.log.Info(list1)
+				Logger.log.Info(list3)
+				panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, chkPnt.RootHash.String()))
+			}
+			if (len(res2) > 0) && (!equal2list(res1, res2)) {
 				Logger.log.Info(list2)
-				panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, bcRootHash.String()))
+				Logger.log.Info(list3)
+				panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, chkPnt.RootHash.String()))
 			}
 			key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
 			if len(res) == 0 {
 				panic(fmt.Sprintf("Getshard at epoch %v cache nil shard %v committee", epochForCache, cID))
 			}
-			blockchain.committeeByEpochCache.Add(key, res)
+			blockchain.committeeByEpochCache.Add(key, res2)
 		}
 		return res, nil
 	}
