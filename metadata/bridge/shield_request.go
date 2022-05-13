@@ -30,9 +30,7 @@ type AcceptedShieldRequestData struct {
 }
 
 type ShieldRequestData struct {
-	BlockHash  string      `json:"BlockHash"`
-	TxIndex    uint        `json:"TxIndex"`
-	Proof      []string    `json:"Proof"`
+	Proof      []byte      `json:"Proof"`
 	NetworkID  uint        `json:"NetworkID"`
 	IncTokenID common.Hash `json:"IncTokenID"`
 }
@@ -95,7 +93,12 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 	for _, data := range request.Data {
 		switch data.NetworkID {
 		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
-			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.UnifiedTokenID)
+			proofData := EVMProof{}
+			err := json.Unmarshal(data.Proof, &proofData)
+			if err != nil {
+				return false
+			}
+			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, data.NetworkID, request.UnifiedTokenID)
 			if err != nil {
 				return false
 			}
@@ -124,7 +127,12 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			evmShieldRequest, err := NewIssuingEVMRequestWithShieldRequest(data, request.UnifiedTokenID)
+			proofData := EVMProof{}
+			err := json.Unmarshal(data.Proof, &proofData)
+			if err != nil {
+				return [][]string{}, err
+			}
+			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, data.NetworkID, request.UnifiedTokenID)
 			if err != nil {
 				return [][]string{}, err
 			}
