@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -602,6 +603,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
+		log.Println("count sig debug 1", beaconBestState.BeaconHeight)
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getNewShardCommitteeFlattenList())
 		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 		for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -760,12 +762,12 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	}
 
 	if shardState.PreviousValidationData != "" {
-		if curView.missingSignatureCounter.AddPreviousMissignSignature(shardState.PreviousValidationData); err != nil {
+		if curView.missingSignatureCounter.AddPreviousMissignSignature(shardState.PreviousValidationData, int(shardID)); err != nil {
 			return err
 		}
 	}
 
-	if err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees); err != nil {
+	if err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, int(shardID), committees); err != nil {
 		return err
 	}
 
@@ -793,7 +795,7 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 
 	Logger.log.Infof("Add Missing Signature | Shard %+v, ShardState: %+v", shardID, shardState)
 
-	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, int(shardID), committees)
 	if err != nil {
 		return err
 	}

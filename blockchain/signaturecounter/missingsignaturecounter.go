@@ -1,6 +1,7 @@
 package signaturecounter
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"log"
@@ -48,8 +49,8 @@ func (p Penalty) IsEmpty() bool {
 type IMissingSignatureCounter interface {
 	MissingSignature() map[string]MissingSignature
 	Penalties() []Penalty
-	AddMissingSignature(validationData string, committees []incognitokey.CommitteePublicKey) error
-	AddPreviousMissignSignature(prevValidationData string) error
+	AddMissingSignature(validationData string, shardID int, committees []incognitokey.CommitteePublicKey) error
+	AddPreviousMissignSignature(prevValidationData string, shardID int) error
 	GetAllSlashingPenaltyWithActualTotalBlock() map[string]Penalty
 	GetAllSlashingPenaltyWithExpectedTotalBlock(map[string]uint) map[string]Penalty
 	Reset(committees []string)
@@ -58,11 +59,12 @@ type IMissingSignatureCounter interface {
 }
 
 type MissingSignatureCounter struct {
-	missingSignature                 map[string]MissingSignature
-	penalties                        []Penalty
-	indexData                        [][]int
-	lastShardStateValidatorCommittee []string
-	lock                             *sync.RWMutex
+	missingSignature map[string]MissingSignature
+	penalties        []Penalty
+	lock             *sync.RWMutex
+
+	lastShardStateValidatorCommittee map[int][]string
+	lastShardStateValidatorIndex     map[int][]int
 }
 
 func (s *MissingSignatureCounter) Penalties() []Penalty {
@@ -91,7 +93,7 @@ func NewDefaultSignatureCounter(committees []string) *MissingSignatureCounter {
 	}
 }
 
-func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
+func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -120,21 +122,20 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 		s.missingSignature[toBeSignedCommittee] = missingSignature
 	}
 
-	s.indexData = append(s.indexData, validationData.ValidatiorsIdx)
-	s.lastShardStateValidatorCommittee = tempToBeSignedCommittees
+	s.lastShardStateValidatorCommittee[shardID] = tempToBeSignedCommittees
+	s.lastShardStateValidatorIndex[shardID] = validationData.ValidatiorsIdx
 	return nil
 }
 
-func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string) error {
+func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shardID int) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	tempToBeSignedCommittees := s.lastShardStateValidatorCommittee
-	if len(s.indexData) == 0 || len(tempToBeSignedCommittees) == 0 {
-		log.Println("cache data or committee is empty")
+	tempToBeSignedCommittees := s.lastShardStateValidatorCommittee[shardID]
+	prevShardStateValidatorIndex := s.lastShardStateValidatorIndex[shardID]
+	if len(prevShardStateValidatorIndex) == 0 || len(tempToBeSignedCommittees) == 0 {
+		log.Println("last data or committee is empty")
 		return nil
 	}
-
-	prevValidatorIndexCache := s.indexData[len(s.indexData)-1]
 
 	prevValidationData, err := consensustypes.DecodeValidationData(data)
 	if err != nil {
@@ -142,7 +143,7 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string) error
 	}
 	uncountCommittees := make(map[string]struct{})
 
-	if len(prevValidationData.ValidatiorsIdx) <= len(prevValidatorIndexCache) {
+	if len(prevValidationData.ValidatiorsIdx) <= len(prevShardStateValidatorIndex) {
 		return nil
 	}
 
@@ -151,7 +152,7 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string) error
 		if idx >= len(tempToBeSignedCommittees) {
 			return fmt.Errorf("Idx = %+v, greater than len(toBeSignedCommittees) = %+v", idx, len(tempToBeSignedCommittees))
 		}
-		if common.IndexOfInt(idx, prevValidatorIndexCache) == -1 {
+		if common.IndexOfInt(idx, prevShardStateValidatorIndex) == -1 {
 			uncountCommittees[tempToBeSignedCommittees[idx]] = struct{}{}
 		}
 	}
@@ -169,10 +170,9 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string) error
 				missingSignature.Missing--
 			}
 		}
-
 		s.missingSignature[toBeSignedCommittee] = missingSignature
 	}
-	s.indexData[len(s.indexData)-1] = prevValidationData.ValidatiorsIdx
+
 	return nil
 }
 
@@ -235,14 +235,17 @@ func getSlashingPenalty(numberOfMissingSig uint, total uint, penalties []Penalty
 func (s *MissingSignatureCounter) Reset(committees []string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
+	b, _ := json.Marshal(s.missingSignature)
+	log.Println("count sig debug 2", common.Keccak256Hash(b))
+	fmt.Println(string(b))
 	missingSignature := make(map[string]MissingSignature)
 	for _, v := range committees {
 		missingSignature[v] = NewMissingSignature()
 	}
 
 	s.missingSignature = missingSignature
-	s.lastShardStateValidatorCommittee = []string{}
+	s.lastShardStateValidatorCommittee = make(map[int][]string)
+	s.lastShardStateValidatorIndex = make(map[int][]int)
 }
 
 func (s *MissingSignatureCounter) CommitteeChange(newCommittees []string) {
@@ -267,14 +270,16 @@ func (s *MissingSignatureCounter) Copy() IMissingSignatureCounter {
 
 	newS := &MissingSignatureCounter{
 		missingSignature:                 make(map[string]MissingSignature),
-		lastShardStateValidatorCommittee: make([]string, len(s.lastShardStateValidatorCommittee)),
 		penalties:                        make([]Penalty, len(s.penalties)),
-		indexData:                        make([][]int, len(s.indexData)),
+		lastShardStateValidatorCommittee: make(map[int][]string),
+		lastShardStateValidatorIndex:     make(map[int][]int),
 		lock:                             new(sync.RWMutex),
 	}
 	copy(newS.penalties, s.penalties)
-	copy(newS.indexData, s.indexData)
-	copy(newS.lastShardStateValidatorCommittee, s.lastShardStateValidatorCommittee)
+	for sid, _ := range s.lastShardStateValidatorCommittee {
+		copy(newS.lastShardStateValidatorCommittee[sid], s.lastShardStateValidatorCommittee[sid])
+		copy(newS.lastShardStateValidatorIndex[sid], s.lastShardStateValidatorIndex[sid])
+	}
 
 	for k, v := range s.missingSignature {
 		newS.missingSignature[k] = v
