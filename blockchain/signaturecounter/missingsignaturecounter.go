@@ -87,9 +87,11 @@ func NewDefaultSignatureCounter(committees []string) *MissingSignatureCounter {
 		missingSignature[v] = NewMissingSignature()
 	}
 	return &MissingSignatureCounter{
-		missingSignature: missingSignature,
-		penalties:        defaultRule,
-		lock:             new(sync.RWMutex),
+		missingSignature:                 missingSignature,
+		penalties:                        defaultRule,
+		lock:                             new(sync.RWMutex),
+		lastShardStateValidatorCommittee: make(map[int][]string),
+		lastShardStateValidatorIndex:     make(map[int][]int),
 	}
 }
 
