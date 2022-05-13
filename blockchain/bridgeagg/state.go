@@ -3,7 +3,6 @@ package bridgeagg
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -15,37 +14,63 @@ import (
 )
 
 type State struct {
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault // unifiedTokenID -> tokenID -> vault
-	producer          stateProducer
-	processor         stateProcessor
+	unifiedTokenInfos   map[common.Hash]map[common.Hash]*Vault                               // unifiedTokenID -> tokenID -> vault
+	waitingUnshieldReqs map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq // unifiedTokenID -> unshieldID -> waitingUnshieldReq
+
+	deletedWaitingUnshieldReqKeyHashes []common.Hash
 }
 
 func (s *State) UnifiedTokenInfos() map[common.Hash]map[common.Hash]*Vault {
 	return s.unifiedTokenInfos
 }
 
+func (s *State) WaitingUnshieldReqs() map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq {
+	return s.waitingUnshieldReqs
+}
+
+func (s *State) DeletedWaitingUnshieldReqKeyHashes() []common.Hash {
+	return s.deletedWaitingUnshieldReqKeyHashes
+}
+
 func NewState() *State {
 	return &State{
-		unifiedTokenInfos: make(map[common.Hash]map[common.Hash]*Vault),
+		unifiedTokenInfos:                  make(map[common.Hash]map[common.Hash]*Vault),
+		waitingUnshieldReqs:                make(map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq),
+		deletedWaitingUnshieldReqKeyHashes: []common.Hash{},
 	}
 }
 
-func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault) *State {
+func NewStateWithValue(
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	waitingUnshieldReqs map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq,
+	deletedWaitingUnshieldReqKeyHashes []common.Hash,
+) *State {
 	return &State{
-		unifiedTokenInfos: unifiedTokenInfos,
+		unifiedTokenInfos:                  unifiedTokenInfos,
+		waitingUnshieldReqs:                waitingUnshieldReqs,
+		deletedWaitingUnshieldReqKeyHashes: deletedWaitingUnshieldReqKeyHashes,
 	}
 }
 
 func (s *State) Clone() *State {
 	res := NewState()
-	res.processor = stateProcessor{}
-	res.producer = stateProducer{}
 	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
 		res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*Vault)
 		for networkID, vault := range vaults {
 			res.unifiedTokenInfos[unifiedTokenID][networkID] = vault.Clone()
 		}
 	}
+
+	for unifiedTokenID, reqs := range s.waitingUnshieldReqs {
+		res.waitingUnshieldReqs[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq)
+		for unshieldID, req := range reqs {
+			res.waitingUnshieldReqs[unifiedTokenID][unshieldID] = req.Clone()
+		}
+	}
+
+	res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
+	res.deletedWaitingUnshieldReqKeyHashes = append(res.deletedWaitingUnshieldReqKeyHashes, s.deletedWaitingUnshieldReqKeyHashes...)
+
 	return res
 }
 
@@ -54,22 +79,22 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, *metadata.A
 	var err error
 	ac := env.AccumulatedValues()
 
-	for shardID, actions := range env.UnshieldActions() {
+	for shardID, actions := range env.ConvertActions() {
 		for _, action := range actions {
-			inst := [][]string{}
-			inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
+			insts := [][]string{}
+			insts, s.unifiedTokenInfos, err = convertProducer(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
 			}
-			res = append(res, inst...)
+			res = append(res, insts...)
 		}
 	}
 
 	for shardID, actions := range env.ShieldActions() {
 		for _, action := range actions {
 			insts := [][]string{}
-			insts, s.unifiedTokenInfos, ac, err = s.producer.shield(
-				action, s.unifiedTokenInfos, ac, byte(shardID), env.StateDBs(),
+			insts, s, ac, err = shieldProducer(
+				action, s, ac, byte(shardID), env.StateDBs(),
 			)
 			if err != nil {
 				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToShieldError, err)
@@ -79,14 +104,14 @@ func (s *State) BuildInstructions(env StateEnvironment) ([][]string, *metadata.A
 		}
 	}
 
-	for shardID, actions := range env.ConvertActions() {
+	for shardID, actions := range env.UnshieldActions() {
 		for _, action := range actions {
-			insts := [][]string{}
-			insts, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
+			inst := [][]string{}
+			inst, s, err = unshieldProducer(action, s, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
 			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
 			}
-			res = append(res, insts...)
+			res = append(res, inst...)
 		}
 	}
 
@@ -108,7 +133,7 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 			continue // Not error, just not bridgeagg instructions
 		}
 		if metaType == metadataCommon.BridgeAggAddTokenMeta {
-			s.unifiedTokenInfos, err = s.processor.addToken(content, s.unifiedTokenInfos, sDB)
+			s.unifiedTokenInfos, err = addTokenProcessor(content, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
 			}
@@ -125,17 +150,17 @@ func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
 
 		switch inst.MetaType {
 		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-			s.unifiedTokenInfos, err = s.processor.convert(*inst, s.unifiedTokenInfos, sDB)
+			s.unifiedTokenInfos, err = convertProcessor(*inst, s.unifiedTokenInfos, sDB)
 			if err != nil {
 				return err
 			}
 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
-			s.unifiedTokenInfos, err = s.processor.shield(*inst, s.unifiedTokenInfos, sDB)
+			s, err = shieldProcessor(*inst, s, sDB)
 			if err != nil {
 				return err
 			}
 		case metadataCommon.BurningUnifiedTokenRequestMeta:
-			s.unifiedTokenInfos, err = s.processor.unshield(*inst, s.unifiedTokenInfos, sDB)
+			s, err = unshieldProcessor(*inst, s, sDB)
 			if err != nil {
 				return err
 			}
@@ -212,17 +237,17 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 	return res, stateChange, nil
 }
 
-func (s *State) ClearCache() {
-	s.processor.clearCache()
-}
+// func (s *State) ClearCache() {
+// 	s.processor.clearCache()
+// }
 
-func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
-	if res, found := s.processor.UnshieldTxsCache[txReqID]; found {
-		return res, nil
-	} else {
-		return common.Hash{}, fmt.Errorf("txID %s not found in cache", txReqID.String())
-	}
-}
+// func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
+// 	if res, found := s.processor.UnshieldTxsCache[txReqID]; found {
+// 		return res, nil
+// 	} else {
+// 		return common.Hash{}, fmt.Errorf("txID %s not found in cache", txReqID.String())
+// 	}
+// }
 
 func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues, triggeredFeature map[string]uint64) ([][]string, *metadata.AccumulatedValues, error) {
 	res := [][]string{}
@@ -262,6 +287,6 @@ func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*stat
 	}
 	Logger.log.Info("[bridgeagg] checkpoints:", checkpoints)
 	Logger.log.Info("[bridgeagg] checkpoints[checkpointIndex]:", checkpoints[checkpointIndex])
-	res, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac, checkpoints[checkpointIndex])
+	res, s.unifiedTokenInfos, ac, err = addTokenProducer(s.unifiedTokenInfos, beaconHeight, sDBs, ac, checkpoints[checkpointIndex])
 	return res, ac, err
 }

@@ -102,6 +102,7 @@ var (
 	bridgeAggUnifiedTokenprefix                 = []byte("bridgeagg-unifiedtoken-")
 	bridgeAggConvertedTokenPrefix               = []byte("bridgeagg-convertedtoken-")
 	bridgeAggVaultPrefix                        = []byte("bridgeagg-vault-")
+	bridgeAggWaitUnshieldReqPrefix              = []byte("bridgeagg-waitUnshield-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -879,6 +880,11 @@ func GetBridgeAggConvertedTokenPrefix() []byte {
 func GetBridgeAggVaultPrefix() []byte {
 	hash := common.HashH(bridgeAggVaultPrefix)
 	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID []byte) []byte {
+	h := common.HashH(append(bridgeAggWaitUnshieldReqPrefix, unifiedTokenID...))
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

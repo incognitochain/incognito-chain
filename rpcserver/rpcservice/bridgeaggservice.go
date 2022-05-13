@@ -2,7 +2,6 @@ package rpcservice
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
@@ -60,76 +59,80 @@ func getBridgeAggState(
 }
 
 func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenID, tokenID common.Hash, burntAmount uint64) (interface{}, error) {
-	beaconBestView := blockService.BlockChain.GetBeaconBestState()
-	state := beaconBestView.BridgeAggState()
-	vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, tokenID)
-	if err != nil {
-		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
-	}
+	// beaconBestView := blockService.BlockChain.GetBeaconBestState()
+	// state := beaconBestView.BridgeAggState()
+	// vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, tokenID)
+	// if err != nil {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
+	// }
 
-	x := vault.Reserve()
-	y := vault.CurrentRewardReserve()
-	expectedAmount, err := bridgeagg.EstimateActualAmountByBurntAmount(x, y, burntAmount, vault.IsPaused())
-	if err != nil {
-		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
-	}
-	_, err = bridgeagg.CalculateReceivedAmount(expectedAmount, tokenID, vault.Decimal(), vault.NetworkID(), beaconBestView.GetBeaconFeatureStateDB())
-	if err != nil {
-		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
-	}
-	maxReceivedAmount, err := bridgeagg.CalculateMaxReceivedAmount(vault.Reserve(), vault.CurrentRewardReserve())
-	return &jsonresult.BridgeAggEstimateFee{
-		MaxReceivedAmount: maxReceivedAmount,
-		ExpectedAmount:    expectedAmount,
-		Fee:               burntAmount - expectedAmount,
-		BurntAmount:       burntAmount,
-	}, err
+	// x := vault.Amount()
+	// y := vault.CurrentRewardReserve()
+	// expectedAmount, err := bridgeagg.EstimateActualAmountByBurntAmount(x, y, burntAmount, vault.IsPaused())
+	// if err != nil {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
+	// }
+	// _, err = bridgeagg.CalculateReceivedAmount(expectedAmount, tokenID, vault.ExtDecimal(), vault.NetworkID(), beaconBestView.GetBeaconFeatureStateDB())
+	// if err != nil {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
+	// }
+	// maxReceivedAmount, err := bridgeagg.CalculateMaxReceivedAmount(vault.Amount(), vault.CurrentRewardReserve())
+	// return &jsonresult.BridgeAggEstimateFee{
+	// 	MaxReceivedAmount: maxReceivedAmount,
+	// 	ExpectedAmount:    expectedAmount,
+	// 	Fee:               burntAmount - expectedAmount,
+	// 	BurntAmount:       burntAmount,
+	// }, err
+
+	return nil, nil
 }
 
 func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTokenID, tokenID common.Hash, amount uint64) (interface{}, error) {
-	beaconBestView := blockService.BlockChain.GetBeaconBestState()
-	state := beaconBestView.BridgeAggState()
-	vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, tokenID)
-	if err != nil {
-		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, err)
-	}
+	// beaconBestView := blockService.BlockChain.GetBeaconBestState()
+	// state := beaconBestView.BridgeAggState()
+	// vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, tokenID)
+	// if err != nil {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, err)
+	// }
 
-	x := vault.Reserve()
-	y := vault.CurrentRewardReserve()
-	fee, err := bridgeagg.CalculateDeltaY(x, y, amount, bridgeagg.SubOperator, vault.IsPaused())
-	if amount > x {
-		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Unshield amount %v > vault amount %v", amount, x))
-	}
-	burntAmount := big.NewInt(0).Add(big.NewInt(0).SetUint64(fee), big.NewInt(0).SetUint64(amount))
-	if !burntAmount.IsUint64() {
-		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Value is not unit64"))
-	}
-	_, err = bridgeagg.CalculateReceivedAmount(burntAmount.Uint64(), tokenID, vault.Decimal(), vault.NetworkID(), beaconBestView.GetBeaconFeatureStateDB())
-	if err != nil {
-		return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, err)
-	}
-	maxReceivedAmount, err := bridgeagg.CalculateMaxReceivedAmount(vault.Reserve(), vault.CurrentRewardReserve())
-	return &jsonresult.BridgeAggEstimateFee{
-		MaxReceivedAmount: maxReceivedAmount,
-		ExpectedAmount:    amount,
-		Fee:               fee,
-		BurntAmount:       burntAmount.Uint64(),
-	}, err
+	// x := vault.Amount()
+	// y := vault.CurrentRewardReserve()
+	// fee, err := bridgeagg.CalculateDeltaY(x, y, amount, bridgeagg.SubOperator, vault.IsPaused())
+	// if amount > x {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Unshield amount %v > vault amount %v", amount, x))
+	// }
+	// burntAmount := big.NewInt(0).Add(big.NewInt(0).SetUint64(fee), big.NewInt(0).SetUint64(amount))
+	// if !burntAmount.IsUint64() {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, fmt.Errorf("Value is not unit64"))
+	// }
+	// _, err = bridgeagg.CalculateReceivedAmount(burntAmount.Uint64(), tokenID, vault.ExtDecimal(), vault.NetworkID(), beaconBestView.GetBeaconFeatureStateDB())
+	// if err != nil {
+	// 	return nil, NewRPCError(BridgeAggEstimateFeeByExpectedAmountError, err)
+	// }
+	// maxReceivedAmount, err := bridgeagg.CalculateMaxReceivedAmount(vault.Amount(), vault.CurrentRewardReserve())
+	// return &jsonresult.BridgeAggEstimateFee{
+	// 	MaxReceivedAmount: maxReceivedAmount,
+	// 	ExpectedAmount:    amount,
+	// 	Fee:               fee,
+	// 	BurntAmount:       burntAmount.Uint64(),
+	// }, err
+	return nil, nil
 }
 
 func (blockService BlockService) BridgeAggEstimateReward(unifiedTokenID, tokenID common.Hash, amount uint64) (interface{}, error) {
-	beaconBestView := blockService.BlockChain.GetBeaconBestState()
-	state := beaconBestView.BridgeAggState()
-	vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, tokenID)
-	if err != nil {
-		return nil, NewRPCError(BridgeAggEstimateRewardError, err)
-	}
+	// beaconBestView := blockService.BlockChain.GetBeaconBestState()
+	// state := beaconBestView.BridgeAggState()
+	// vault, err := bridgeagg.GetVault(state.UnifiedTokenInfos(), unifiedTokenID, tokenID)
+	// if err != nil {
+	// 	return nil, NewRPCError(BridgeAggEstimateRewardError, err)
+	// }
 
-	x := vault.Reserve()
-	y := vault.CurrentRewardReserve()
-	amt, err := bridgeagg.CalculateShieldActualAmount(x, y, amount, vault.IsPaused())
-	return &jsonresult.BridgeAggEstimateReward{
-		ReceivedAmount: amt,
-		Reward:         amt - amount,
-	}, err
+	// x := vault.Amount()
+	// y := vault.CurrentRewardReserve()
+	// amt, err := bridgeagg.CalculateShieldActualAmount(x, y, amount, vault.IsPaused())
+	// return &jsonresult.BridgeAggEstimateReward{
+	// 	ReceivedAmount: amt,
+	// 	Reward:         amt - amount,
+	// }, err
+	return nil, nil
 }

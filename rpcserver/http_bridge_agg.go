@@ -309,7 +309,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.UnifiedTokenID, mdReader.Data, recv)
+	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.UnifiedTokenID, mdReader.Data, recv, mdReader.IsDepositToSC)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}

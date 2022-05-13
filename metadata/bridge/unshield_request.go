@@ -19,31 +19,32 @@ type RejectedUnshieldRequest struct {
 	Receiver       privacy.OTAReceiver `json:"Receiver"`
 }
 
-type AcceptedUnshieldRequest struct {
+type AcceptedInstUnshieldRequest struct {
 	UnifiedTokenID common.Hash                   `json:"UnifiedTokenID"`
+	IsDepositToSC  bool                          `json:"IsDepositToSC"`
 	TxReqID        common.Hash                   `json:"TxReqID"`
-	Data           []AcceptedUnshieldRequestData `json:"data"`
+	Data           []AcceptedUnshieldRequestData `json:"Data"`
+	IsWaiting      bool                          `json:"IsWaiting"`
 }
 
 type AcceptedUnshieldRequestData struct {
-	Amount        uint64      `json:"BurningAmount"`
-	IncTokenID    common.Hash `json:"IncTokenID"`
-	Fee           uint64      `json:"Fee"`
-	IsDepositToSC bool        `json:"IsDepositToSC"`
+	BurningAmount  uint64      `json:"BurningAmount"`
+	ReceivedAmount uint64      `json:"ReceivedAmount"`
+	IncTokenID     common.Hash `json:"IncTokenID"`
 }
 
 type UnshieldRequestData struct {
-	BurningAmount  uint64      `json:"BurningAmount"`
-	RemoteAddress  string      `json:"RemoteAddress"`
-	IsDepositToSC  bool        `json:"IsDepositToSC"`
-	IncTokenID     common.Hash `json:"IncTokenID"`
-	ExpectedAmount uint64      `json:"ExpectedAmount"`
+	IncTokenID        common.Hash `json:"IncTokenID"`
+	BurningAmount     uint64      `json:"BurningAmount"`
+	MinExpectedAmount uint64      `json:"MinExpectedAmount"`
+	RemoteAddress     string      `json:"RemoteAddress"`
 }
 
 type UnshieldRequest struct {
 	UnifiedTokenID common.Hash           `json:"UnifiedTokenID"`
 	Data           []UnshieldRequestData `json:"Data"`
 	Receiver       privacy.OTAReceiver   `json:"Receiver"`
+	IsDepositToSC  bool                  `json:"IsDepositToSC"`
 	metadataCommon.MetadataBase
 }
 
@@ -56,12 +57,13 @@ func NewUnshieldRequest() *UnshieldRequest {
 }
 
 func NewUnshieldRequestWithValue(
-	unifiedTokenID common.Hash, data []UnshieldRequestData, receiver privacy.OTAReceiver,
+	unifiedTokenID common.Hash, data []UnshieldRequestData, receiver privacy.OTAReceiver, isDepositToSC bool,
 ) *UnshieldRequest {
 	return &UnshieldRequest{
 		UnifiedTokenID: unifiedTokenID,
 		Data:           data,
 		Receiver:       receiver,
+		IsDepositToSC:  isDepositToSC,
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.BurningUnifiedTokenRequestMeta,
 		},
@@ -102,8 +104,8 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Duplicate tokenID %s", data.IncTokenID.String()))
 		}
 		usedTokenIDs[data.IncTokenID] = true
-		if data.BurningAmount < data.ExpectedAmount {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.ExpectedAmount))
+		if data.BurningAmount < data.MinExpectedAmount {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burningAmount %v < expectedAmount %v", data.BurningAmount, data.MinExpectedAmount))
 		}
 		totalBurningAmount += data.BurningAmount
 		if totalBurningAmount < data.BurningAmount {

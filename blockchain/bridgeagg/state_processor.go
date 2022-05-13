@@ -11,11 +11,7 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
-type stateProcessor struct {
-	UnshieldTxsCache map[common.Hash]common.Hash
-}
-
-func (sp *stateProcessor) convert(
+func convertProcessor(
 	inst metadataCommon.Instruction,
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,
@@ -37,7 +33,7 @@ func (sp *stateProcessor) convert(
 		}
 		if vaults, found := unifiedTokenInfos[acceptedContent.UnifiedTokenID]; found {
 			if vault, found := vaults[acceptedContent.TokenID]; found {
-				err := vault.increaseReserve(acceptedContent.MintAmount)
+				err := vault.increaseAmount(acceptedContent.MintAmount)
 				if err != nil {
 					return unifiedTokenInfos, NewBridgeAggErrorWithValue(InvalidConvertAmountError, err)
 				}
@@ -74,11 +70,11 @@ func (sp *stateProcessor) convert(
 	)
 }
 
-func (sp *stateProcessor) shield(
+func shieldProcessor(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	curState *State,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[common.Hash]*Vault, error) {
+) (*State, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -88,32 +84,33 @@ func (sp *stateProcessor) shield(
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
-			return unifiedTokenInfos, err
+			return curState, err
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
 		acceptedInst := metadataBridge.AcceptedShieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
-			return unifiedTokenInfos, err
+			return curState, err
 		}
 		for _, data := range acceptedInst.Data {
-			vault := unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] // check available before
+			vault := curState.unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] // check available before
 			statusData := ShieldStatusData{}
 			if acceptedInst.IsReward {
-				err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
-				if err != nil {
-					return unifiedTokenInfos, err
-				}
+				// TODO: 0xkraken
+				// err = vault.decreaseCurrentRewardReserve(data.IssuingAmount)
+				// if err != nil {
+				// 	return unifiedTokenInfos, err
+				// }
 				statusData.Reward = data.IssuingAmount
 			} else {
-				err = vault.increaseReserve(data.IssuingAmount)
+				err = vault.increaseAmount(data.IssuingAmount)
 				if err != nil {
-					return unifiedTokenInfos, err
+					return curState, err
 				}
 				statusData.Amount = data.IssuingAmount
 			}
 			shieldStatusData = append(shieldStatusData, statusData)
-			unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] = vault
+			curState.unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
@@ -121,14 +118,14 @@ func (sp *stateProcessor) shield(
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
-			return unifiedTokenInfos, err
+			return curState, err
 		}
 		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 		suffix = txReqID.Bytes()
 	default:
-		return unifiedTokenInfos, errors.New("Can not recognize status")
+		return curState, errors.New("Can not recognize status")
 	}
 	shieldStatus := ShieldStatus{
 		Status:    status,
@@ -136,7 +133,7 @@ func (sp *stateProcessor) shield(
 		Data:      shieldStatusData,
 	}
 	contentBytes, _ := json.Marshal(shieldStatus)
-	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
+	return curState, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggShieldStatusPrefix(),
 		suffix,
@@ -144,11 +141,11 @@ func (sp *stateProcessor) shield(
 	)
 }
 
-func (sp *stateProcessor) unshield(
+func unshieldProcessor(
 	inst metadataCommon.Instruction,
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	curState *State,
 	sDB *statedb.StateDB,
-) (map[common.Hash]map[common.Hash]*Vault, error) {
+) (*State, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode uint
@@ -157,44 +154,46 @@ func (sp *stateProcessor) unshield(
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
-			return unifiedTokenInfos, err
+			return curState, err
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
-		acceptedContent := metadataBridge.AcceptedUnshieldRequest{}
+		acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
-			return unifiedTokenInfos, err
+			return curState, err
 		}
 		txReqID = acceptedContent.TxReqID
-		for index, data := range acceptedContent.Data {
-			vault := unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] // check available before
-			err = vault.increaseCurrentRewardReserve(data.Fee)
+		for _, data := range acceptedContent.Data {
+			vault := curState.unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] // check available before
+			// TODO: 0xkraken
+			// err = vault.increaseCurrentRewardReserve(data.Fee)
+			// if err != nil {
+			// 	return unifiedTokenInfos, err
+			// }
+			err = vault.decreaseAmount(data.BurningAmount)
 			if err != nil {
-				return unifiedTokenInfos, err
+				return curState, err
 			}
-			err = vault.decreaseReserve(data.Amount)
-			if err != nil {
-				return unifiedTokenInfos, err
-			}
-			unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] = vault
+			curState.unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] = vault
 			status = common.AcceptedStatusByte
-			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
-			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.UnifiedTokenID
+			// newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
+			//TODO: 0xkraken
+			// sp.UnshieldTxsCache[newTxReqID] = acceptedContent.UnifiedTokenID
 			unshieldStatusData = append(unshieldStatusData, UnshieldStatusData{
-				ReceivedAmount: data.Amount,
-				Fee:            data.Fee,
+				ReceivedAmount: data.ReceivedAmount,
+				Fee:            data.BurningAmount - data.ReceivedAmount,
 			})
 		}
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
-			return unifiedTokenInfos, err
+			return curState, err
 		}
 		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 	default:
-		return unifiedTokenInfos, errors.New("Can not recognize status")
+		return curState, errors.New("Can not recognize status")
 	}
 	unshieldStatus := UnshieldStatus{
 		Status:    status,
@@ -202,7 +201,7 @@ func (sp *stateProcessor) unshield(
 		ErrorCode: errorCode,
 	}
 	contentBytes, _ := json.Marshal(unshieldStatus)
-	return unifiedTokenInfos, statedb.TrackBridgeAggStatus(
+	return curState, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggUnshieldStatusPrefix(),
 		txReqID.Bytes(),
@@ -210,11 +209,12 @@ func (sp *stateProcessor) unshield(
 	)
 }
 
-func (sp *stateProcessor) clearCache() {
-	sp.UnshieldTxsCache = make(map[common.Hash]common.Hash)
-}
+// func (sp *stateProcessor) clearCache() {
+// 	//TODO: 0xkraken
+// 	sp.UnshieldTxsCache = make(map[common.Hash]common.Hash)
+// }
 
-func (sp *stateProcessor) addToken(
+func addTokenProcessor(
 	inst []string,
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
 	sDB *statedb.StateDB,

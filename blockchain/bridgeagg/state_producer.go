@@ -18,11 +18,11 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type stateProducer struct {
-}
-
-func (sp *stateProducer) convert(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, sDBs map[int]*statedb.StateDB, shardID byte,
+func convertProducer(
+	contentStr string,
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	sDBs map[int]*statedb.StateDB,
+	shardID byte,
 ) (resInst [][]string, resUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, err error) {
 	var errorType int
 	var contents [][]byte
@@ -96,19 +96,20 @@ func (sp *stateProducer) convert(
 	return
 }
 
-func (sp *stateProducer) shield(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+func shieldProducer(
+	contentStr string,
+	curState *State,
 	ac *metadata.AccumulatedValues, shardID byte,
 	stateDBs map[int]*statedb.StateDB,
 ) (
 	resInst [][]string,
-	resUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+	resState *State,
 	resAC *metadata.AccumulatedValues,
 	err error,
 ) {
 	var errorType int
 	var contents [][]byte
-	resUnifiedTokenInfos = unifiedTokenInfos
+	resState = curState.Clone()
 	resAC = ac
 	action := metadataCommon.NewAction()
 	md := &metadataBridge.ShieldRequest{}
@@ -133,7 +134,7 @@ func (sp *stateProducer) shield(
 		err = nil
 	}()
 
-	vaults, e := CloneVaults(resUnifiedTokenInfos, md.UnifiedTokenID)
+	vaults, e := CloneVaultsByUnifiedTokenID(resState.UnifiedTokenInfos(), md.UnifiedTokenID)
 	if e != nil {
 		err = e
 		errorType = NotFoundTokenIDInNetworkError
@@ -219,30 +220,35 @@ func (sp *stateProducer) shield(
 		errorType = OtherError
 		return
 	}
-	resUnifiedTokenInfos[md.UnifiedTokenID] = vaults
+	resState.unifiedTokenInfos[md.UnifiedTokenID] = vaults
 	resAC = clonedAC
 	return
 }
 
-func (sp *stateProducer) unshield(
-	contentStr string, unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
+func unshieldProducer(
+	contentStr string,
+	curState *State,
 	beaconHeight uint64, shardID byte,
 	stateDB *statedb.StateDB,
-) (resInsts [][]string, resUnifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, err error) {
+) (resInsts [][]string, resState *State, err error) {
+	// decode action from shard
 	action := metadataCommon.NewAction()
 	md := &metadataBridge.UnshieldRequest{}
 	action.Meta = md
 	err = action.FromString(contentStr)
 	if err != nil {
 		err = NewBridgeAggErrorWithValue(OtherError, err)
-		return
+		return [][]string{}, curState, err
 	}
-	resUnifiedTokenInfos = unifiedTokenInfos
+
 	var errorType int
 	var contents [][]byte
 	var burningInsts [][]string
+	resState = curState.Clone()
+
 	defer func() {
 		if err != nil {
+			// create rejected instruction when ocurring error
 			var burningAmount uint64
 			for _, data := range md.Data {
 				burningAmount += data.BurningAmount
@@ -259,6 +265,7 @@ func (sp *stateProducer) unshield(
 				return
 			}
 			contents = append(contents, content)
+			resState = curState.Clone()
 		}
 		insts, e := buildInstruction(
 			metadataCommon.BurningUnifiedTokenRequestMeta,
@@ -274,30 +281,58 @@ func (sp *stateProducer) unshield(
 		}
 	}()
 
-	vaults, err := CloneVaults(resUnifiedTokenInfos, md.UnifiedTokenID)
+	// check UnifiedTokenID
+	vaults, err := CloneVaultsByUnifiedTokenID(resState.unifiedTokenInfos, md.UnifiedTokenID)
 	if err != nil {
 		errorType = NotFoundTokenIDInNetworkError
+		err = errors.New("Invalid unified token ID not found")
 		return
 	}
-	var listAcceptedUnshieldRequestData []metadataBridge.AcceptedUnshieldRequestData
+
+	var acceptedUnshieldRequestDatas []metadataBridge.AcceptedUnshieldRequestData
+	isAddedWaitingList := false
+	//TODO: 0xkraken params
+	percentFee := float64(0.1)
 
 	for index, data := range md.Data {
+		// check IncTokenID
 		vault, found := vaults[data.IncTokenID]
 		if !found {
 			errorType = NotFoundTokenIDInNetworkError
-			err = fmt.Errorf("Not found tokenID %s", data.IncTokenID.String())
-			return
-		}
-		networkType, e := metadataBridge.GetNetworkTypeByNetworkID(vault.NetworkID())
-		if e != nil {
-			errorType = NotFoundNetworkIDError
-			err = errors.New("Not found networkID")
+			err = fmt.Errorf("Not found tokenID %s in unified tokenID %s", data.IncTokenID.String(), md.UnifiedTokenID)
 			burningInsts = [][]string{}
 			return
 		}
+		// get networkType by NetworkID
+		networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(vault.NetworkID())
 		switch networkType {
 		case common.EVMNetworkType:
-			tempVault, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vault, action.TxReqID)
+			// calculate unshield fee
+			receivedAmount, fee, e := vault.calUnshieldFee(data.BurningAmount, data.MinExpectedAmount, percentFee)
+			if e != nil {
+				errorType = NotFoundTokenIDInNetworkError
+				err = e
+				burningInsts = [][]string{}
+				return
+			}
+
+			// add to waiting list
+			if fee > 0 {
+				isAddedWaitingList = true
+			}
+			if isAddedWaitingList {
+				acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
+					BurningAmount:  data.BurningAmount,
+					ReceivedAmount: receivedAmount,
+					IncTokenID:     data.IncTokenID,
+				}
+				acceptedUnshieldRequestDatas = append(acceptedUnshieldRequestDatas, acceptedUnshieldRequestData)
+				continue
+			}
+
+			// create burning confirm instruction if don't add to waiting list
+
+			tempVault, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vault, action.TxReqID, md.IsDepositToSC)
 			if e != nil {
 				errorType = et
 				err = e
@@ -324,13 +359,13 @@ func (sp *stateProducer) unshield(
 				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 			}
 			burningInsts = append(burningInsts, burningInst)
+			//TODO: 0xkraken review
 			acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
-				Fee:           fee,
-				Amount:        amount,
-				IncTokenID:    data.IncTokenID,
-				IsDepositToSC: data.IsDepositToSC,
+				BurningAmount:  data.BurningAmount,
+				ReceivedAmount: receivedAmount,
+				IncTokenID:     data.IncTokenID,
 			}
-			listAcceptedUnshieldRequestData = append(listAcceptedUnshieldRequestData, acceptedUnshieldRequestData)
+			acceptedUnshieldRequestDatas = append(acceptedUnshieldRequestDatas, acceptedUnshieldRequestData)
 		default:
 			errorType = NotFoundNetworkIDError
 			err = errors.New("Not found networkID")
@@ -338,12 +373,12 @@ func (sp *stateProducer) unshield(
 			return
 		}
 	}
-	resUnifiedTokenInfos[md.UnifiedTokenID] = vaults
+	resState.unifiedTokenInfos[md.UnifiedTokenID] = vaults
 
-	acceptedContent := metadataBridge.AcceptedUnshieldRequest{
+	acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{
 		UnifiedTokenID: md.UnifiedTokenID,
 		TxReqID:        action.TxReqID,
-		Data:           listAcceptedUnshieldRequestData,
+		Data:           acceptedUnshieldRequestDatas,
 	}
 	content, e := json.Marshal(acceptedContent)
 	if e != nil {
@@ -357,7 +392,7 @@ func (sp *stateProducer) unshield(
 	return
 }
 
-func (sp *stateProducer) addToken(
+func addTokenProducer(
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, beaconHeight uint64,
 	sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues, checkpoint uint64,
 ) ([][]string, map[common.Hash]map[common.Hash]*Vault, *metadata.AccumulatedValues, error) {

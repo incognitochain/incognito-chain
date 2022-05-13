@@ -26,7 +26,8 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 			unifiedTokenInfos[unifiedTokenState.TokenID()][tokenID] = v
 		}
 	}
-	return NewStateWithValue(unifiedTokenInfos), nil
+	//TODO: 0xkraken
+	return NewStateWithValue(unifiedTokenInfos, nil, nil), nil
 }
 
 func GetExternalTokenIDByIncTokenID(incTokenID common.Hash, sDB *statedb.StateDB) ([]byte, error) {

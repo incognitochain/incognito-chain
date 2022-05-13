@@ -278,15 +278,17 @@ func (blockchain *BlockChain) processBurningReq(
 	amount := uint64(0)
 
 	incTokenID := &common.Hash{}
-	txReqID, err := common.Hash{}.NewHashFromStr(instruction[5])
-	if err != nil {
-		return updatingInfoByTokenID, err
-	}
 	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
-	_, err = curView.bridgeAggState.UnifiedTokenIDCached(*txReqID)
-	if err == nil {
-		return updatingInfoByTokenID, nil
-	}
+
+	// TODO: 0xkraken
+	// txReqID, err := common.Hash{}.NewHashFromStr(instruction[5])
+	// if err != nil {
+	// 	return updatingInfoByTokenID, err
+	// }
+	// _, err = curView.bridgeAggState.UnifiedTokenIDCached(*txReqID)
+	// if err == nil {
+	// 	return updatingInfoByTokenID, nil
+	// }
 	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else {
@@ -540,7 +542,7 @@ func (blockchain *BlockChain) processBurningUnifiedReq(
 	if err != nil {
 		return nil, err
 	}
-	acceptedContent := metadataBridge.AcceptedUnshieldRequest{}
+	acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{}
 	err = json.Unmarshal(contentBytes, &acceptedContent)
 	if err != nil {
 		return nil, err
@@ -555,8 +557,7 @@ func (blockchain *BlockChain) processBurningUnifiedReq(
 	}
 	var amount uint64
 	for _, v := range acceptedContent.Data {
-		amount += v.Amount
-		amount += v.Fee
+		amount += v.BurningAmount
 	}
 
 	updatingInfo, found := updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
