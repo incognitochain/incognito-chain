@@ -1483,6 +1483,9 @@ func (blockchain *BlockChain) getShardValidators(
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
+			if len(res) == 0 {
+				panic(fmt.Sprintf("Getshard at epoch %v cache nil shard %v committee", epochForCache, cID))
+			}
 			// return res, err
 		}
 
@@ -1506,20 +1509,25 @@ func (blockchain *BlockChain) getShardValidators(
 			list1, _ := incognitokey.CommitteeKeyListToString(res)
 			list2, _ := incognitokey.CommitteeKeyListToString(res1)
 			list3, _ := incognitokey.CommitteeKeyListToString(res2)
-			if (len(res2) > 0) && (!equal2list(res, res2)) {
+			if (len(res2) > 0) && (len(res) > 0) && (!equal2list(res, res2)) {
 				Logger.log.Info(list1)
 				Logger.log.Info(list3)
-				panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, chkPnt.RootHash.String()))
+				if chkPnt.FromBC {
+					panic(errors.Errorf("Data at cID %v from cache %v at Height %v at epoch %v is different from beacon db at rootHash %v", cID, chkPnt.Height, height, epochForCache, chkPnt.RootHash.String()))
+				} else {
+					panic(errors.Errorf("Data at cID %v from cache %v at Height %v at epoch %v is different from shard db at rootHash %v", cID, chkPnt.Height, height, epochForCache, chkPnt.RootHash.String()))
+				}
 			}
-			if (len(res2) > 0) && (!equal2list(res1, res2)) {
+			if (len(res2) > 0) && (len(res1) > 0) && (!equal2list(res1, res2)) {
 				Logger.log.Info(list2)
 				Logger.log.Info(list3)
-				panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, chkPnt.RootHash.String()))
+				if chkPnt.FromBC {
+					panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from beacon db at rootHash %v", cID, prevHash.String(), height, epochForCache, chkPnt.RootHash.String()))
+				} else {
+					panic(errors.Errorf("Data from statedb at shard %v-prevHash %v-Height %v at epoch %v is different from shard db at rootHash %v", cID, prevHash.String(), height, epochForCache, chkPnt.RootHash.String()))
+				}
 			}
 			key := getCommitteeCacheKeyByEpoch(epochForCache, cID)
-			if len(res) == 0 {
-				panic(fmt.Sprintf("Getshard at epoch %v cache nil shard %v committee", epochForCache, cID))
-			}
 			blockchain.committeeByEpochCache.Add(key, res2)
 		}
 		return res, nil
