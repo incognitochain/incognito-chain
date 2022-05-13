@@ -1283,6 +1283,23 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	if (len(committeeChange.ShardCommitteeAdded[shardID]) > 0) || (len(committeeChange.ShardCommitteeReplaced[shardID][common.REPLACE_IN]) > 0) {
+		epochForCache := newShardState.Epoch
+		epochs := []uint64{}
+		for _, bBlk := range beaconBlocks {
+			epochs = append(epochs, bBlk.GetCurrentEpoch())
+			if bBlk.Header.Epoch > epochForCache {
+				epochForCache = bBlk.Header.Epoch
+			} else {
+				if blockchain.GetLastBeaconHeightInEpoch(epochForCache) == bBlk.GetHeight() {
+					epochForCache = bBlk.Header.Epoch + 1
+				}
+			}
+		}
+		Logger.log.Debugf("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epoch %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
+		blockchain.updateCommitteeChangeCheckpointByS(shardID, epochForCache, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
+	}
+
 	if !config.Config().ForceBackup {
 		return nil
 	}
@@ -1299,22 +1316,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		if err != nil {
 			blockchain.GetShardChainDatabase(newShardState.ShardID).RemoveBackup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
 		}
-	}
-	if (len(committeeChange.ShardCommitteeAdded[shardID]) > 0) || (len(committeeChange.ShardCommitteeReplaced[shardID][common.REPLACE_IN]) > 0) {
-		epochForCache := newShardState.Epoch
-		epochs := []uint64{}
-		for _, bBlk := range beaconBlocks {
-			epochs = append(epochs, bBlk.GetCurrentEpoch())
-			if bBlk.Header.Epoch > epochForCache {
-				epochForCache = bBlk.Header.Epoch
-			} else {
-				if blockchain.GetLastBeaconHeightInEpoch(epochForCache) == bBlk.GetHeight() {
-					epochForCache = bBlk.Header.Epoch + 1
-				}
-			}
-		}
-		Logger.log.Debugf("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v, shard state epoch %v, beacon epoch %+v", shardID, epochForCache, newShardState.Epoch, epochs)
-		blockchain.updateCommitteeChangeCheckpointByS(shardID, epochForCache, shardBlock.GetHeight()+1, newShardState.ConsensusStateDBRootHash)
 	}
 
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
