@@ -1281,10 +1281,14 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	var newFinalizedHash *common.Hash = nil
 	//traverse back to final view
 	for oldFinalView == nil || storeBlock.GetHeight() > oldFinalView.GetHeight() {
+
+		fmt.Println("debug insert 1a", shardID, storeBlock.GetHeight(), oldFinalView.GetHeight())
+
 		if shardBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
 			//if instant finality, then we check if current examine view is confirmed by beacon, if yes then we store finalized shard block and store the latest finalized block (to finalized multiview)
 			confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, storeBlock.GetHeight())
 			if err == nil && confirmHash.String() == storeBlock.Hash().String() {
+				fmt.Println("debug insert 1b", shardID, storeBlock.GetHeight(), oldFinalView.GetHeight())
 				err = rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 				if err != nil {
 					return NewBlockChainError(StoreBeaconBlockError, err)
@@ -1294,6 +1298,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				}
 			}
 		} else {
+			fmt.Println("debug insert 2 ", shardID, storeBlock.GetHeight(), storeBlock.Hash().String())
 			newFinalizedHash = simulatedMultiView.GetExpectedFinalView().GetHash()
 			err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 			if err != nil {
