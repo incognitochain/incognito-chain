@@ -26,6 +26,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+type EVMProof struct {
+	BlockHash rCommon.Hash `json:"BlockHash"`
+	TxIndex   uint         `json:"TxIndex"`
+	Proof     []string     `json:"Proof"`
+}
+
 func IsBridgeAggMetaType(metaType int) bool {
 	switch metaType {
 	case metadataCommon.BridgeAggModifyRewardReserveMeta:

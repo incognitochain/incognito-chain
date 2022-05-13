@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"strconv"
 
-	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
@@ -240,8 +239,8 @@ func (sp *stateProducer) shield(
 		}
 		switch networkType {
 		case common.EVMNetworkType:
-			blockHash := rCommon.Hash{}
-			err = blockHash.UnmarshalText([]byte(data.BlockHash))
+			proofData := metadataBridge.EVMProof{}
+			err = json.Unmarshal(data.Proof, &proofData)
 			if err != nil {
 				errorType = OtherError
 				return
@@ -249,7 +248,7 @@ func (sp *stateProducer) shield(
 			tempVault, actualAmount, reward, receivingShardID, token, uniqTX, addressStr, tempAC, et, e := shieldEVM(
 				md.UnifiedTokenID, data.IncTokenID, data.NetworkID, clonedAC, shardID,
 				action.TxReqID, vault, stateDBs,
-				action.ExtraData[index], blockHash, data.TxIndex, paymentAddress,
+				action.ExtraData[index], proofData.BlockHash, proofData.TxIndex, paymentAddress,
 			)
 			if e != nil {
 				errorType = et
