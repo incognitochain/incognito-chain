@@ -98,7 +98,7 @@ func NewDefaultSignatureCounter(committees []string) *MissingSignatureCounter {
 func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
+	log.Println("count sig debug prepare update")
 	validationData, err := consensustypes.DecodeValidationData(data)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, 
 		}
 		s.missingSignature[toBeSignedCommittee] = missingSignature
 	}
-
+	log.Println("count sig debug update", len(tempToBeSignedCommittees), len(validationData.ValidatiorsIdx))
 	s.lastShardStateValidatorCommittee[shardID] = tempToBeSignedCommittees
 	s.lastShardStateValidatorIndex[shardID] = validationData.ValidatiorsIdx
 	return nil
@@ -135,7 +135,7 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shard
 	tempToBeSignedCommittees := s.lastShardStateValidatorCommittee[shardID]
 	prevShardStateValidatorIndex := s.lastShardStateValidatorIndex[shardID]
 	if len(prevShardStateValidatorIndex) == 0 || len(tempToBeSignedCommittees) == 0 {
-		log.Println("last data or committee is empty")
+		log.Println("last data or committee is empty", shardID, len(s.lastShardStateValidatorCommittee[shardID]), len(s.lastShardStateValidatorIndex[shardID]))
 		return nil
 	}
 
@@ -279,6 +279,8 @@ func (s *MissingSignatureCounter) Copy() IMissingSignatureCounter {
 	}
 	copy(newS.penalties, s.penalties)
 	for sid, _ := range s.lastShardStateValidatorCommittee {
+		newS.lastShardStateValidatorCommittee[sid] = make([]string, len(s.lastShardStateValidatorCommittee[sid]))
+		newS.lastShardStateValidatorIndex[sid] = make([]int, len(s.lastShardStateValidatorIndex[sid]))
 		copy(newS.lastShardStateValidatorCommittee[sid], s.lastShardStateValidatorCommittee[sid])
 		copy(newS.lastShardStateValidatorIndex[sid], s.lastShardStateValidatorIndex[sid])
 	}
