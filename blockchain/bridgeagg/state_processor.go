@@ -11,6 +11,8 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
+type stateProcessor struct{}
+
 func convertProcessor(
 	inst metadataCommon.Instruction,
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,

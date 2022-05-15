@@ -210,7 +210,14 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridge.ShieldRequest
+		Data []struct {
+			BlockHash  string      `json:"BlockHash"`
+			TxIndex    *uint       `json:"TxIndex"`
+			Proof      []string    `json:"Proof"`
+			NetworkID  uint        `json:"NetworkID"`
+			IncTokenID common.Hash `json:"IncTokenID"`
+		} `json:"Data"`
+		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
 	}{}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
@@ -226,8 +233,31 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+	data := []metadataBridge.ShieldRequestData{}
+	for _, v := range mdReader.Data {
+		temp := metadataBridge.ShieldRequestData{
+			NetworkID:  v.NetworkID,
+			IncTokenID: v.IncTokenID,
+		}
+		type EVMProof struct {
+			BlockHash string   `json:"BlockHash"`
+			TxIndex   uint     `json:"TxIndex"`
+			Proof     []string `json:"Proof"`
+		}
+		proof := EVMProof{
+			BlockHash: v.BlockHash,
+			TxIndex:   *v.TxIndex,
+			Proof:     v.Proof,
+		}
+		proofData, err := json.Marshal(proof)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		temp.Proof = proofData
+		data = append(data, temp)
+	}
 
-	md := metadataBridge.NewShieldRequestWithValue(mdReader.Data, mdReader.UnifiedTokenID)
+	md := metadataBridge.NewShieldRequestWithValue(data, mdReader.UnifiedTokenID)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -296,7 +326,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		metadataBridge.UnshieldRequest
-		Receivers map[string]uint64 `json:"Receivers,omitempty"`
+		TokenReceivers map[string]uint64 `json:"TokenReceivers,omitempty"`
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -363,8 +393,8 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		}
 	}
 
-	if len(mdReader.Receivers) != 0 {
-		for k, v := range mdReader.Receivers {
+	if len(mdReader.TokenReceivers) != 0 {
+		for k, v := range mdReader.TokenReceivers {
 			key, err := wallet.Base58CheckDeserialize(k)
 			if err != nil {
 				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

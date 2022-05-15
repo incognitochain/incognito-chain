@@ -17,6 +17,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+type stateProducer struct{}
+
 func convertProducer(
 	contentStr string,
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault,
