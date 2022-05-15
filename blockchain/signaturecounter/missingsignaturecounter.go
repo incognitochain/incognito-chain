@@ -111,6 +111,7 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, 
 		}
 		signedCommittees[tempToBeSignedCommittees[idx]] = struct{}{}
 	}
+	fmt.Println(validationData.ValidatiorsIdx)
 	for _, toBeSignedCommittee := range tempToBeSignedCommittees {
 		missingSignature, ok := s.missingSignature[toBeSignedCommittee]
 		if !ok {
@@ -122,6 +123,7 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, 
 			missingSignature.Missing++
 		}
 		s.missingSignature[toBeSignedCommittee] = missingSignature
+		log.Println(missingSignature.ActualTotal, toBeSignedCommittee, missingSignature.Missing)
 	}
 	log.Println("count sig debug update", len(tempToBeSignedCommittees), len(validationData.ValidatiorsIdx))
 	s.lastShardStateValidatorCommittee[shardID] = tempToBeSignedCommittees
@@ -168,7 +170,7 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shard
 		}
 		if _, ok := uncountCommittees[toBeSignedCommittee]; ok {
 			if missingSignature.Missing > 0 {
-				log.Println("sig counter: add sig counter for ", toBeSignedCommittee)
+				log.Println("sig counter: add sig counter for ", toBeSignedCommittee, prevValidationData.ValidatiorsIdx, prevValidatorIndexCache)
 				missingSignature.Missing--
 			}
 		}
