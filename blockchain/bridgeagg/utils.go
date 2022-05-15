@@ -836,3 +836,96 @@ func CalculateMaxReceivedAmount(x, y uint64) (uint64, error) {
 	}
 	return x - 1, nil
 }
+
+func decreaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, error) {
+	temp := v.Amount() - amount
+	if temp > v.Amount() {
+		return nil, errors.New("decrease out of range uint64")
+	}
+	v.SetAmount(temp)
+	return v, nil
+}
+
+func increaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, error) {
+	temp := v.Amount() + amount
+	if temp < v.Amount() {
+		return nil, errors.New("increase out of range uint64")
+	}
+	v.SetAmount(temp)
+	return v, nil
+}
+
+func convert(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, uint64, error) {
+	decimal := CalculateIncDecimal(v.ExtDecimal(), config.Param().BridgeAggParam.BaseDecimal)
+	tmpAmount, err := CalculateAmountByDecimal(*big.NewInt(0).SetUint64(amount), decimal, AddOperator)
+	if err != nil {
+		return nil, 0, err
+	}
+	if tmpAmount.Cmp(big.NewInt(0)) == 0 {
+		return nil, 0, fmt.Errorf("amount %d is not enough for converting", amount)
+	}
+	v, err = increaseVaultAmount(v, tmpAmount.Uint64())
+	if err != nil {
+		return nil, 0, err
+	}
+	return v, tmpAmount.Uint64(), nil
+}
+
+func shield(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, uint64, error) {
+	v, err := increaseVaultAmount(v, amount)
+	if err != nil {
+		return v, 0, err
+	}
+	return v, amount, nil
+}
+
+func unshield(v *statedb.BridgeAggVaultState, amount, expectedAmount uint64) (*statedb.BridgeAggVaultState, uint64, error) {
+	// actualAmount, err := EstimateActualAmountByBurntAmount(v.Reserve(), v.CurrentRewardReserve(), amount, v.IsPaused())
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// if actualAmount < expectedAmount {
+	// 	return 0, fmt.Errorf("actual amount %v < expected amount %v", actualAmount, expectedAmount)
+	// }
+	// err = v.increaseCurrentRewardReserve(amount - actualAmount)
+	// if err != nil {
+	// 	return 0, err
+	// }
+	v, err := decreaseVaultAmount(v, amount)
+	if err != nil {
+		return nil, 0, err
+	}
+	return v, expectedAmount, nil
+}
+
+// calculate actual received amount and actual fee
+func calUnshieldFee(v *statedb.BridgeAggVaultState, burnAmount, minExpectedAmount uint64, percentFee float64) (*statedb.BridgeAggVaultState, uint64, uint64, error) {
+	// vault has enough amount
+	if v.Amount() >= burnAmount {
+		return nil, burnAmount, 0, nil
+	}
+
+	// vault not enough amount
+	// fee = shortageAmount * percentFee / 100
+	shortageAmount := burnAmount - v.Amount()
+
+	feeTmp, _ := new(big.Float).Mul(
+		new(big.Float).SetFloat64(percentFee),
+		new(big.Float).SetFloat64(float64(shortageAmount)),
+	).Uint64()
+	fee := feeTmp / 100
+	if fee == 0 {
+		fee = 1 // at least 1
+	}
+	if fee > burnAmount {
+		return nil, 0, 0, fmt.Errorf("Needed fee %v larger than burn amount %v", fee, burnAmount)
+	}
+
+	// calculate actual received amount
+	actualReceivedAmt := burnAmount - fee
+	if actualReceivedAmt < minExpectedAmount {
+		return nil, 0, 0, fmt.Errorf("Actual received amount %v less than min expected amount %v", actualReceivedAmt, minExpectedAmount)
+	}
+
+	return v, actualReceivedAmt, fee, nil
+}
