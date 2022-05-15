@@ -1,15 +1,15 @@
 package jsonresult
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type BridgeAggState struct {
-	BeaconTimeStamp   int64                                            `json:"BeaconTimeStamp"`
-	UnifiedTokenInfos map[common.Hash]map[common.Hash]*bridgeagg.Vault `json:"UnifiedTokenInfos"`
-	BaseDecimal       uint                                             `json:"BaseDecimal"`
-	MaxLenOfPath      int                                              `json:"MaxLenOfPath"`
+	BeaconTimeStamp   int64                                                        `json:"BeaconTimeStamp"`
+	UnifiedTokenInfos map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenInfos"`
+	BaseDecimal       uint                                                         `json:"BaseDecimal"`
+	MaxLenOfPath      int                                                          `json:"MaxLenOfPath"`
 }
 
 type BridgeAggEstimateFee struct {

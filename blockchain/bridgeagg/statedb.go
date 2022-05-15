@@ -9,21 +9,28 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
+func InitManager(sDB *statedb.StateDB) (*Manager, error) {
+	state, err := InitStateFromDB(sDB)
+	if err != nil {
+		return nil, err
+	}
+	return NewManagerWithValue(state), nil
+}
+
 func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 	unifiedTokenStates, err := statedb.GetBridgeAggUnifiedTokens(sDB)
 	if err != nil {
 		return nil, err
 	}
-	unifiedTokenInfos := make(map[common.Hash]map[common.Hash]*Vault)
+	unifiedTokenInfos := make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState)
 	for _, unifiedTokenState := range unifiedTokenStates {
-		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[common.Hash]*Vault)
+		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[common.Hash]*statedb.BridgeAggVaultState)
 		vaults, err := statedb.GetBridgeAggVaults(sDB, unifiedTokenState.TokenID())
 		if err != nil {
 			return nil, err
 		}
 		for tokenID, vault := range vaults {
-			v := NewVaultWithValue(*vault)
-			unifiedTokenInfos[unifiedTokenState.TokenID()][tokenID] = v
+			unifiedTokenInfos[unifiedTokenState.TokenID()][tokenID] = vault
 		}
 	}
 	//TODO: 0xkraken

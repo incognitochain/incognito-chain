@@ -183,18 +183,6 @@ func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) 
 	return a, nil
 }
 
-func GetVault(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, unifiedTokenID, incTokenID common.Hash) (*Vault, error) {
-	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
-		if vault, found := vaults[incTokenID]; found {
-			return vault, nil
-		} else {
-			return nil, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("Not found networkID"))
-		}
-	} else {
-		return nil, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, errors.New("Not found unifiedTokenID"))
-	}
-}
-
 func InsertTxHashIssuedByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
 	switch networkID {
 	case common.PLGNetworkID:
@@ -239,26 +227,12 @@ func buildInstruction(
 	return res, nil
 }
 
-func CloneVaultsByUnifiedTokenID(
-	unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault, unifiedTokenID common.Hash,
-) (map[common.Hash]*Vault, error) {
-	if vaults, found := unifiedTokenInfos[unifiedTokenID]; found {
-		res := make(map[common.Hash]*Vault)
-		for networkID, vault := range vaults {
-			res[networkID] = vault.Clone()
-		}
-		return res, nil
-	} else {
-		return nil, fmt.Errorf("Can't find unifiedTokenID %s", unifiedTokenID.String())
-	}
-}
-
 func shieldEVM(
 	unifiedTokenID, incTokenID common.Hash, networkID uint, ac *metadata.AccumulatedValues,
 	shardID byte, txReqID common.Hash,
-	vault *Vault, stateDBs map[int]*statedb.StateDB, extraData []byte,
+	vault *statedb.BridgeAggVaultState, stateDBs map[int]*statedb.StateDB, extraData []byte,
 	blockHash rCommon.Hash, txIndex uint, currentPaymentAddress string,
-) (*Vault, uint64, uint64, byte, []byte, []byte, string, *metadata.AccumulatedValues, int, error) {
+) (*statedb.BridgeAggVaultState, uint64, uint64, byte, []byte, []byte, string, *metadata.AccumulatedValues, int, error) {
 	var txReceipt *types.Receipt
 	err := json.Unmarshal(extraData, &txReceipt)
 	if err != nil {
@@ -321,7 +295,7 @@ func shieldEVM(
 	}
 	//tmpAmount is uint64 after this function
 
-	actualAmount, err := vault.shield(tmpAmount.Uint64())
+	v, actualAmount, err := shield(vault, tmpAmount.Uint64())
 	if err != nil {
 		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, txReqID)
 		return nil, 0, 0, 0, nil, nil, "", ac, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
@@ -339,12 +313,12 @@ func shieldEVM(
 		ac.UniqFTMTxsUsed = append(ac.UniqFTMTxsUsed, uniqTx)
 	}
 	ac.DBridgeTokenPair[unifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
-	return vault, actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
+	return v, actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
 }
 
 func unshieldEVM(
-	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB, vault *Vault, txReqID common.Hash, isDepositToSC bool,
-) (*Vault, []byte, *big.Int, uint64, uint64, int, int, error) {
+	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB, vault *statedb.BridgeAggVaultState, txReqID common.Hash, isDepositToSC bool,
+) (*statedb.BridgeAggVaultState, []byte, *big.Int, uint64, uint64, int, int, error) {
 	var prefix string
 	var burningMetaType int
 
@@ -389,7 +363,7 @@ func unshieldEVM(
 		return nil, nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 	}
 
-	actualAmount, err := vault.unshield(data.BurningAmount, data.MinExpectedAmount)
+	v, actualAmount, err := unshield(vault, data.BurningAmount, data.MinExpectedAmount)
 	if err != nil {
 		Logger.log.Warnf("Calculate unshield amount error: %v tx %s", err, txReqID.String())
 		return nil, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
@@ -408,8 +382,7 @@ func unshieldEVM(
 	if unshieldAmount.Cmp(big.NewInt(0)) == 0 {
 		return nil, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot received unshield amount equal to 0"))
 	}
-
-	return vault, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
+	return v, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }
 
 func buildAcceptedShieldContents(
@@ -725,6 +698,19 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 			return fmt.Errorf("WARNING: tokenID %s has existed", tokenID.String())
 		}
 	}
+	networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(networkID)
+	if networkType == common.EVMNetworkType {
+		externalTokenIDStr := vault.ExternalTokenID
+		if len(externalTokenIDStr) != len("0x")+common.EVMAddressLength {
+			return fmt.Errorf("ExternalTokenID %s is invalid length", externalTokenIDStr)
+		}
+		if !bytes.Equal([]byte(externalTokenIDStr[:len("0x")]), []byte("0x")) {
+			return fmt.Errorf("ExternalTokenID %s is invalid format", externalTokenIDStr)
+		}
+		if !rCommon.IsHexAddress(externalTokenIDStr[len("0x"):]) {
+			return fmt.Errorf("ExternalTokenID %s is invalid format", externalTokenIDStr)
+		}
+	}
 	return nil
 }
 
@@ -753,17 +739,6 @@ func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]by
 		res = append([]byte(prefix), tokenAddr.Bytes()...)
 	}
 	return res, nil
-}
-
-func CloneUnifiedTokenInfos(unifiedTokenInfos map[common.Hash]map[common.Hash]*Vault) map[common.Hash]map[common.Hash]*Vault {
-	res := make(map[common.Hash]map[common.Hash]*Vault)
-	for unifiedTokenID, vaults := range unifiedTokenInfos {
-		res[unifiedTokenID] = make(map[common.Hash]*Vault)
-		for tokenID, vault := range vaults {
-			res[unifiedTokenID][tokenID] = vault.Clone()
-		}
-	}
-	return res
 }
 
 func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
@@ -899,10 +874,10 @@ func unshield(v *statedb.BridgeAggVaultState, amount, expectedAmount uint64) (*s
 }
 
 // calculate actual received amount and actual fee
-func calUnshieldFee(v *statedb.BridgeAggVaultState, burnAmount, minExpectedAmount uint64, percentFee float64) (*statedb.BridgeAggVaultState, uint64, uint64, error) {
+func calUnshieldFee(v *statedb.BridgeAggVaultState, burnAmount, minExpectedAmount uint64, percentFee float64) (uint64, uint64, error) {
 	// vault has enough amount
 	if v.Amount() >= burnAmount {
-		return nil, burnAmount, 0, nil
+		return burnAmount, 0, nil
 	}
 
 	// vault not enough amount
@@ -918,14 +893,14 @@ func calUnshieldFee(v *statedb.BridgeAggVaultState, burnAmount, minExpectedAmoun
 		fee = 1 // at least 1
 	}
 	if fee > burnAmount {
-		return nil, 0, 0, fmt.Errorf("Needed fee %v larger than burn amount %v", fee, burnAmount)
+		return 0, 0, fmt.Errorf("Needed fee %v larger than burn amount %v", fee, burnAmount)
 	}
 
 	// calculate actual received amount
 	actualReceivedAmt := burnAmount - fee
 	if actualReceivedAmt < minExpectedAmount {
-		return nil, 0, 0, fmt.Errorf("Actual received amount %v less than min expected amount %v", actualReceivedAmt, minExpectedAmount)
+		return 0, 0, fmt.Errorf("Actual received amount %v less than min expected amount %v", actualReceivedAmt, minExpectedAmount)
 	}
 
-	return v, actualReceivedAmt, fee, nil
+	return actualReceivedAmt, fee, nil
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -910,7 +911,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	// always process bridgeAggState before update other process for bridge instructions
 	// TODO: 0xkraken
 	// newBestState.bridgeAggState.ClearCache()
-	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	err = newBestState.bridgeAggManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
@@ -1027,13 +1028,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 	}
 
-	if newBestState.bridgeAggState != nil {
-		diffState, stateChange, err := newBestState.bridgeAggState.GetDiff(curView.bridgeAggState)
+	if newBestState.bridgeAggManager != nil {
+		diffState, stateChange, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
 		if err != nil {
 			return err
 		}
 		if diffState != nil {
-			err = diffState.UpdateToDB(newBestState.featureStateDB, stateChange)
+			m := bridgeagg.NewManagerWithValue(diffState)
+			err = m.UpdateToDB(newBestState.featureStateDB, stateChange)
 			if err != nil {
 				return err
 			}

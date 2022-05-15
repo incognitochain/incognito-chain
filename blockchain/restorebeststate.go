@@ -59,7 +59,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		}
 	}
 	if includeBridgeAgg {
-		beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
+		beaconBestState.bridgeAggManager, err = bridgeagg.InitManager(beaconBestState.featureStateDB)
 	}
 	return err
 }
