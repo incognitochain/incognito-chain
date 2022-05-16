@@ -34,6 +34,8 @@ type BlockInterface interface {
 	GetFinalityHeight() uint64
 	GetShardID() int
 	ToBytes() ([]byte, error)
+	GetHeaderBytes() ([]byte, error)
+	SetHeaderFromBytes(rawBytes []byte) error
 	GetBodyBytes() ([]byte, error)
 	SetBodyFromBytes(rawBytes []byte) error
 	RemoveBody()

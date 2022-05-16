@@ -477,6 +477,23 @@ func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) 
 	return sBlock.Header.FromProtoShardHeader(protoData.Header)
 }
 
+func (sBlock *ShardBlock) GetHeaderBytes() ([]byte, error) {
+	protoHeader, err := sBlock.Header.ToProtoShardHeader()
+	if (protoHeader == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert shard header %v - %v to protobuf, err %v", sBlock.Header.Height, sBlock.Hash().String(), err)
+	}
+	return ggproto.Marshal(protoHeader)
+}
+
+func (sBlock *ShardBlock) SetHeaderFromBytes(rawBytes []byte) error {
+	protoHeader := &proto.ShardHeaderBytes{}
+	err := ggproto.Unmarshal(rawBytes, protoHeader)
+	if err != nil {
+		return err
+	}
+	return sBlock.Header.FromProtoShardHeader(protoHeader)
+}
+
 func (sBlock *ShardBlock) GetBodyBytes() ([]byte, error) {
 	protoBody := sBlock.Body.ToProtoShardBody()
 	if protoBody == nil {

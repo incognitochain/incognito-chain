@@ -240,6 +240,26 @@ func (beaconBlock *BeaconBlock) ToBytes() ([]byte, error) {
 
 }
 
+func (beaconBlock *BeaconBlock) GetHeaderBytes() ([]byte, error) {
+	protoHeader, err := beaconBlock.Header.ToProtoBeaconHeader()
+	if (protoHeader == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert beacon block %v - %v to protobuf", beaconBlock.Header.Height, beaconBlock.Hash().String())
+	}
+	return ggproto.Marshal(protoHeader)
+}
+
+func (beaconBlock *BeaconBlock) SetHeaderFromBytes(rawBytes []byte) error {
+	if len(rawBytes) != 0 {
+		protoHeader := &proto.BeaconHeaderBytes{}
+		err := ggproto.Unmarshal(rawBytes, protoHeader)
+		if err != nil {
+			return err
+		}
+		return beaconBlock.Header.FromProtoBeaconHeader(protoHeader)
+	}
+	return errors.Errorf("Raw header bytes cannot be nil")
+}
+
 func (beaconBlock *BeaconBlock) GetBodyBytes() ([]byte, error) {
 	protoBody, err := beaconBlock.Body.ToProtoBeaconBody()
 	if (protoBody == nil) || (err != nil) {
@@ -265,7 +285,6 @@ func (beaconBlock *BeaconBlock) FromBytes(rawBytes []byte) error {
 	protoBlk := &proto.BeaconBlockBytes{}
 	err := ggproto.Unmarshal(rawBytes, protoBlk)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	return beaconBlock.FromProtoBeaconBlock(protoBlk)

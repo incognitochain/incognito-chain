@@ -110,21 +110,27 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, beaconBodyBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash, proto.BlkType_BlkBc)
+	blkCached, beaconHeaderBytes, beaconBodyBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash, proto.BlkType_BlkBc)
 	if err != nil {
-		panic(err)
 		return nil, 0, err
 	}
 	beaconBlock := types.NewBeaconBlock()
+	if blkCached != nil {
+		var ok bool
+		if beaconBlock, ok = blkCached.(*types.BeaconBlock); ok {
+			return beaconBlock, 0, nil
+		} else {
+			return beaconBlock, 0, errors.Errorf("Cached wrong data for beacon block %v", beaconBlockHash.String())
+		}
+	}
 	if config.Config().EnableFFStorage {
-		err = beaconBlock.FromBytes(beaconBlockBytes)
+		err = beaconBlock.SetHeaderFromBytes(beaconHeaderBytes)
 		if err != nil {
 			return nil, 0, err
 		}
 		if len(beaconBodyBytes) > 0 {
 			err = beaconBlock.SetBodyFromBytes(beaconBodyBytes)
 			if err != nil {
-				panic(err)
 				return nil, 0, err
 			}
 		}
@@ -136,12 +142,12 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 			beaconBlock.AddValidationField(valData)
 		}
 	} else {
-		err = json.Unmarshal(beaconBlockBytes, beaconBlock)
+		err = json.Unmarshal(beaconHeaderBytes, beaconBlock)
 		if err != nil {
 			return nil, 0, err
 		}
 	}
-	return beaconBlock, uint64(len(beaconBlockBytes)), nil
+	return beaconBlock, uint64(len(beaconHeaderBytes)), nil
 }
 
 //SHARD
@@ -217,19 +223,26 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
-	shardBlockBytes, shardBodyBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, proto.BlkType_BlkShard)
+	blkCached, shardBlockBytes, shardBodyBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, proto.BlkType_BlkShard)
 	if err != nil {
 		return nil, 0, NewBlockChainError(GetShardBlockByHashError, errors.Errorf("Can not get block %v, error %v ", hash.String(), err))
 	}
 	shardBlock := types.NewShardBlock()
+	if blkCached != nil {
+		var ok bool
+		if shardBlock, ok = blkCached.(*types.ShardBlock); ok {
+			return shardBlock, 0, nil
+		} else {
+			return shardBlock, 0, errors.Errorf("Cached wrong data for shard block %v cid %v", hash.String(), shardID)
+		}
+	}
 	if config.Config().EnableFFStorage {
-		err = shardBlock.FromBytes(shardBlockBytes)
+		err = shardBlock.SetHeaderFromBytes(shardBlockBytes)
 		if err != nil {
 			return nil, 0, err
 		}
 		err = shardBlock.SetBodyFromBytes(shardBodyBytes)
 		if err != nil {
-			panic(err)
 			return nil, 0, err
 		}
 		if shardBlock.GetHeight() > 1 {
@@ -601,22 +614,13 @@ func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64
 }
 
 func (bc *BlockChain) backupCheckpoint() error {
-
-	for cID, chkpnt := range bc.committeeChangeCheckpoint.data {
-		Logger.log.Debugf("[debugcheckpoint] committee check point of cID %v", cID)
-		for _, epoch := range chkpnt.Epochs {
-			Logger.log.Debugf("[debugcheckpoint]\t cmt:%v epoch %v, rootHash %v", cID, epoch, chkpnt.Data[epoch].String())
-		}
-	}
 	data, err := json.Marshal(bc.committeeChangeCheckpoint.data)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	db := bc.GetBeaconChainDatabase()
 	err = rawdbv2.StoreCommitteeChangeCheckpoint(db, data)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	return nil
@@ -626,20 +630,12 @@ func (bc *BlockChain) restoreCheckpoint() error {
 	db := bc.GetBeaconChainDatabase()
 	data, err := rawdbv2.GetCommitteeChangeCheckpoint(db)
 	if err != nil {
-		panic(err)
 		return err
 	}
 	committeeCheckpoint := map[byte]CommitteeChangeCheckpoint{}
 	err = json.Unmarshal(data, &committeeCheckpoint)
 	if err != nil {
-		panic(err)
 		return err
-	}
-	for cID, chkpnt := range committeeCheckpoint {
-		Logger.log.Infof("[debugcheckpoint] committee check point of cID %v", cID)
-		for _, epoch := range chkpnt.Epochs {
-			Logger.log.Infof("[debugcheckpoint]\t cmt:%v epoch %v, height %v", cID, epoch, chkpnt.Data[epoch].String())
-		}
 	}
 	bc.committeeChangeCheckpoint = struct {
 		data   map[byte]CommitteeChangeCheckpoint

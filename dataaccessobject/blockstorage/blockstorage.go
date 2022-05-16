@@ -20,6 +20,7 @@ type BlockService interface {
 		hash *common.Hash,
 		blkType proto.BlkType,
 	) (
+		types.BlockInterface,
 		[]byte,
 		[]byte,
 		error,
@@ -51,10 +52,10 @@ type BlockInfor struct {
 
 type BlockManager struct {
 	chainID int
-	rDB     incdb.Database
-	sRDB    incdb.Database //mini raw db
-	fDB     flatfile.FlatFile
-	rmDB    flatfile.FlatFile
+	rDB     incdb.Database    //rawDB, store block with mode ff=false
+	sRDB    incdb.Database    //mini raw db, store information of ff system (blk index, validation data,...)
+	fDB     flatfile.FlatFile // store block header
+	rmDB    flatfile.FlatFile // removable ff system (store block body)
 	cacher  common.Cacher
 }
 
@@ -108,64 +109,74 @@ func (blkM *BlockManager) CheckBlockByHash(
 	}
 }
 
+func (blkM *BlockManager) getBlkIndex(blkHash *common.Hash) (uint64, error) {
+	keyIdx := rawdbv2.GetHashToBlockIndexKey(*blkHash)
+	blkIdBytes, err := blkM.sRDB.Get(keyIdx)
+	if (err != nil) || (len(blkIdBytes) == 0) {
+		return 0, errors.Errorf("Can not get index for block hash %v, got %v, error %v", blkHash.String(), blkIdBytes, err)
+	}
+	return common.BytesToUint64(blkIdBytes)
+}
+
+func (blkM *BlockManager) storeBlkIndex(index uint64, blkHash *common.Hash) error {
+	key := rawdbv2.GetHashToBlockIndexKey(*blkHash)
+	return blkM.sRDB.Put(key, common.Uint64ToBytes(index))
+}
+
 func (blkM *BlockManager) GetBlockByHash(
 	hash *common.Hash,
 	blkType proto.BlkType,
 ) (
+	types.BlockInterface,
 	[]byte,
 	[]byte,
 	error,
 ) {
 	if config.Config().EnableFFStorage {
-		keyIdx := rawdbv2.GetHashToBlockIndexKey(*hash)
-		// if v, has := blkM.cacher.Get(hash.String()); has {
-		// 	if res, ok := v.([]byte); ok && (len(res) > 0) {
-		// 		return res, nil
-		// 	}
-		// }
-		blkIdBytes, err := blkM.sRDB.Get(keyIdx)
-		if (err != nil) || (len(blkIdBytes) == 0) {
-			return nil, nil, errors.Errorf("Can not get index for block hash %v, got %v, error %v", hash.String(), blkIdBytes, err)
+		if blk, cached := blkM.cacher.Get(hash.String()); (blk != nil) && (cached) {
+			if blkI, ok := blk.(types.BlockInterface); ok {
+				return blkI, nil, nil, nil
+			}
 		}
-		blkID, err := common.BytesToUint64(blkIdBytes)
+		blkID, err := blkM.getBlkIndex(hash)
 		if err != nil {
-			return nil, nil, err
+			err = errors.Wrap(err, "Can not get block index")
+			return nil, nil, nil, err
 		}
-		compBytes, err := blkM.fDB.Read(blkID)
+		headerBytes, err := blkM.fDB.Read(blkID)
 		if err != nil {
-			panic(err)
-			return nil, nil, err
+			err = errors.Wrap(err, "Can not get header data")
+			return nil, nil, nil, err
 		}
-		compBodyBytes := []byte{}
+		bodyBytes := []byte{}
 		if (config.Config().SyncMode != common.STATEDB_LITE_MODE) || (blkType != proto.BlkType_BlkBc) {
-			compBodyBytes, err = blkM.rmDB.Read(blkID)
-			if err != nil {
-				panic(err)
-				return nil, nil, err
+			if bodyBytes, err = blkM.rmDB.Read(blkID); err != nil {
+				err = errors.Wrap(err, "Can not get body data")
+				return nil, nil, nil, err
 			}
 		}
-		blkWithoutBody, err := common.GZipToBytes(compBytes)
-		if err != nil {
-			panic(err)
-			return nil, nil, err
-		}
-		if len(compBodyBytes) > 0 {
-			blkBody, err := common.GZipToBytes(compBodyBytes)
-			if err != nil {
-				panic(err)
-				return nil, nil, err
-			}
-			return blkWithoutBody, blkBody, nil
+		if blkHeaderBytes, err := common.GZipToBytes(headerBytes); err != nil {
+			err = errors.Wrap(err, "Can not unzip header data")
+			return nil, nil, nil, err
 		} else {
-			return blkWithoutBody, compBodyBytes, nil
+			headerBytes = blkHeaderBytes
+			if len(bodyBytes) > 0 {
+				if blkBodyBytes, err := common.GZipToBytes(bodyBytes); err != nil {
+					err = errors.Wrapf(err, "Can not unzip body %+v", bodyBytes)
+					return nil, nil, nil, err
+				} else {
+					bodyBytes = blkBodyBytes
+				}
+			}
+			return nil, headerBytes, bodyBytes, nil
 		}
 	}
 	if blkM.chainID == common.BeaconChainID {
 		blk, err := rawdbv2.GetBeaconBlockByHash(blkM.rDB, *hash)
-		return blk, nil, err
+		return nil, blk, nil, err
 	}
 	blk, err := rawdbv2.GetShardBlockByHash(blkM.rDB, *hash)
-	return blk, nil, err
+	return nil, blk, nil, err
 }
 
 func (blkM *BlockManager) StoreBlock(
@@ -176,67 +187,54 @@ func (blkM *BlockManager) StoreBlock(
 	blkHash := blkData.Hash()
 	if config.Config().EnableFFStorage {
 		var (
-			compBytes    []byte
-			blkIndex     uint64
-			blkBodyBytes = []byte{}
-			sizeBlk      = uint64(0)
-			vData        = string("")
-			blkBodyIdx   = uint64(0)
+			blkHeaderBytes = []byte{}
+			blkIndex       uint64
+			blkBodyBytes   = []byte{}
+			blkBodyIdx     = uint64(0)
+			sizeBlk        = uint64(0)
+			vData          = string("")
 		)
 		if blkData.GetHeight() > 1 {
 			vData = blkData.GetValidationField()
-			err = blkM.StoreBlockValidation(*blkHash, vData)
-			if err != nil {
+			if err = blkM.StoreBlockValidation(*blkHash, vData); err != nil {
 				return err
 			}
 			sizeBlk += uint64(len([]byte(vData)))
-			blkData.AddValidationField("")
 		}
-
-		if blkBodyBytes, err = blkData.GetBodyBytes(); err != nil {
+		if blkHeaderBytes, err = blkData.GetHeaderBytes(); err != nil {
 			return err
 		}
-		if blkData.GetHeight() != 1 {
-			blkData.RemoveBody()
-		}
-		blkBytes, err := blkData.ToBytes()
-		if err != nil {
-			return err
-		}
-		if compBytes, err = common.GZipFromBytesWithLvl(blkBytes, config.Param().FlatFileParam.CompLevel); err != nil {
-			return err
-		}
-		blkIndex, err = blkM.fDB.Append(compBytes)
-		if err != nil {
-			panic(err)
+		sizeBlk += uint64(len(blkHeaderBytes))
+		if blkHeaderBytes, err = common.GZipFromBytesWithLvl(blkHeaderBytes, config.Param().FlatFileParam.CompLevel); err != nil {
 			return err
 		}
 		if (config.Config().SyncMode != common.STATEDB_LITE_MODE) || (blkType != proto.BlkType_BlkBc) {
-			if len(blkBodyBytes) > 0 {
-				if compBytes, err = common.GZipFromBytesWithLvl(blkBodyBytes, config.Param().FlatFileParam.CompLevel); err != nil {
+			if blkBodyBytes, err = blkData.GetBodyBytes(); err != nil {
+				return err
+			} else {
+				fmt.Printf("block %v %+v", blkData.Hash().String(), blkBodyBytes)
+				if len(blkBodyBytes) > 0 {
+					if blkBodyBytes, err = common.GZipFromBytesWithLvl(blkBodyBytes, config.Param().FlatFileParam.CompLevel); err != nil {
+						return err
+					}
+					sizeBlk += uint64(len(blkBodyBytes))
+				} else {
+					blkBodyBytes = []byte{0}
+				}
+				blkBodyIdx, err = blkM.rmDB.Append(blkBodyBytes)
+				if err != nil {
 					return err
 				}
-			} else {
-				compBytes = blkBodyBytes
 			}
-			blkBodyIdx, err = blkM.rmDB.Append(compBytes)
-			if err != nil {
-				return err
-			}
-			if blkBodyIdx != blkIndex {
-				panic(fmt.Errorf("Flatfile system corruption, %v - %v", blkBodyIdx, blkIndex))
-			}
-			sizeBlk += uint64(len(blkBodyBytes))
 		}
-
-		sizeBlk += uint64(len(blkBytes))
-		key := rawdbv2.GetHashToBlockIndexKey(*blkHash)
-		if err = blkM.sRDB.Put(key, common.Uint64ToBytes(blkIndex)); err != nil {
+		if blkIndex, err = blkM.fDB.Append(blkHeaderBytes); err != nil {
 			return err
 		}
-		blkData.AddValidationField(vData)
-		if len(blkBodyBytes) != 0 {
-			blkData.SetBodyFromBytes(blkBodyBytes)
+		if (blkBodyIdx != blkIndex) && (blkBodyIdx != 0) {
+			panic(fmt.Errorf("Flatfile system corruption, %v - %v", blkBodyIdx, blkIndex))
+		}
+		if err = blkM.storeBlkIndex(blkIndex, blkHash); err != nil {
+			return err
 		}
 		blkM.cacher.Set(blkHash.String(), blkData, int64(sizeBlk))
 	} else {
