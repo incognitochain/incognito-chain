@@ -222,83 +222,122 @@ func (s *multiView) updateViewState(newView View) {
 	}
 
 	//update bestView
-	if newView.GetHeight() > s.bestView.GetHeight() {
-		s.bestView = newView
-	}
+	if newView.GetBlock().GetVersion() < types.INSTANT_FINALITY_VERSION {
+		if newView.GetHeight() > s.bestView.GetHeight() {
+			s.bestView = newView
+		}
 
-	//get bestview with min produce time or better committee from block
-	if newView.GetHeight() == s.bestView.GetHeight() {
-		switch newView.CompareCommitteeFromBlock(s.bestView) {
-		case 0:
+		//get bestview with min produce time or better committee from block
+		if newView.GetHeight() == s.bestView.GetHeight() {
 			if newView.GetBlock().GetProduceTime() < s.bestView.GetBlock().GetProduceTime() {
 				s.bestView = newView
 			}
-		case 1:
-			s.bestView = newView
-		case -1:
 		}
-	}
 
-	if newView.GetBlock().GetVersion() == types.BFT_VERSION {
-		//update expectedFinalView: consensus 1
-		prev1Hash := s.bestView.GetPreviousHash()
-		if prev1Hash == nil {
-			return
-		}
-		prev1View := s.viewByHash[*prev1Hash]
-		if prev1View == nil {
-			return
-		}
-		s.expectedFinalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		//we traverse backward to update expected final view (in case bestview change branch)
-		currentViewPoint := s.bestView
-		for {
-			prev1Hash := currentViewPoint.GetPreviousHash()
-			prev1View := s.viewByHash[*prev1Hash]
-
-			if prev1View == nil {
-				s.expectedFinalView = currentViewPoint
+		if newView.GetBlock().GetVersion() == types.BFT_VERSION {
+			//update expectedFinalView: consensus 1
+			prev1Hash := s.bestView.GetPreviousHash()
+			if prev1Hash == nil {
 				return
 			}
-
-			bestViewTimeSlot := common.CalculateTimeSlot(currentViewPoint.GetBlock().GetProposeTime())
-			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-
-			if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
-				s.expectedFinalView = currentViewPoint
-				break
-			} else if currentViewPoint.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
-				s.expectedFinalView = currentViewPoint
-				break
+			prev1View := s.viewByHash[*prev1Hash]
+			if prev1View == nil {
+				return
 			}
-			currentViewPoint = prev1View
-		}
-
-	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
-		////update expectedFinalView: consensus 2
-		prev1Hash := s.bestView.GetPreviousHash()
-		prev1View := s.viewByHash[*prev1Hash]
-		if prev1View == nil || s.expectedFinalView.GetHeight() == prev1View.GetHeight() {
-			return
-		}
-		bestViewTimeSlot := common.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			s.expectedFinalView = prev1View
-		}
-		if newView.GetBlock().GetVersion() >= types.LEMMA2_VERSION {
-			// update final view lemma 2
-			if newView.GetBlock().GetHeight()-1 == newView.GetBlock().GetFinalityHeight() {
+		} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
+			////update expectedFinalView: consensus 2
+			prev1Hash := s.bestView.GetPreviousHash()
+			prev1View := s.viewByHash[*prev1Hash]
+			if prev1View == nil || s.expectedFinalView.GetHeight() == prev1View.GetHeight() {
+				return
+			}
+			bestViewTimeSlot := common.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
+			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+			if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 				s.expectedFinalView = prev1View
 			}
+			if newView.GetBlock().GetVersion() >= types.LEMMA2_VERSION {
+				// update final view lemma 2
+				if newView.GetBlock().GetHeight()-1 == newView.GetBlock().GetFinalityHeight() {
+					s.expectedFinalView = prev1View
+				}
+			}
+		} else {
+			fmt.Println("Block version is not correct")
 		}
-	} else {
-		fmt.Println("Block version is not correct")
 	}
 
-	//fmt.Println("Debug bestview", s.bestView.GetHeight())
+	if newView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		compareCommittee := newView.CompareCommitteeFromBlock(s.bestView)
+		if compareCommittee == 0 || newView.GetPreviousHash().String() == s.bestView.GetHash().String() { //same commitee, or link with bestview -> longest chain, or chain same height with smallest produce time
+			if newView.GetHeight() > s.bestView.GetHeight() {
+				s.bestView = newView
+			}
+			if newView.GetHeight() == s.bestView.GetHeight() {
+				if newView.GetBlock().GetProduceTime() < s.bestView.GetBlock().GetProduceTime() {
+					s.bestView = newView
+				}
+			}
+		} else { //not link with bestview, diff committee -> selected branch having expected finalized view, or new committee (if both have new expected finalized view)
+			newViewCreateNewFinal := false  // newview branch having new expected final view
+			bestViewCreateNewFinal := false // bestview branch having new expected final view
+
+			//check if new view branch create expected final view
+			expectedFinalViewOfNewView := s.findExpectFinalView(newView)
+			if s.finalView != expectedFinalViewOfNewView {
+				newViewCreateNewFinal = true
+			}
+
+			//check if current branch has new expected final view
+			if s.finalView != s.expectedFinalView {
+				bestViewCreateNewFinal = true
+			}
+
+			if !newViewCreateNewFinal && !bestViewCreateNewFinal {
+				//2 different committee, not having expected finalized, bestview is new committee
+				if compareCommittee == 1 {
+					s.bestView = newView
+				}
+			} else if newViewCreateNewFinal && bestViewCreateNewFinal {
+				//2 different committee, both having new expected finalized, bestview is new committee
+				if compareCommittee == 1 {
+					s.bestView = newView
+				}
+			} else if newViewCreateNewFinal || bestViewCreateNewFinal {
+				//2 different committee, one of 2 view having new expected finalized, bestview is the branch having new epxected finalized
+				if newViewCreateNewFinal {
+					s.bestView = newView
+				}
+			}
+		}
+		s.expectedFinalView = s.findExpectFinalView(s.bestView)
+	}
 	return
+}
+
+func (s *multiView) findExpectFinalView(checkView View) View {
+	//we traverse backward to update expected final view (in case bestview change branch)
+	currentViewPoint := checkView
+	for {
+		prev1Hash := currentViewPoint.GetPreviousHash()
+		prev1View := s.viewByHash[*prev1Hash]
+
+		if prev1View == nil {
+			return currentViewPoint
+		}
+
+		bestViewTimeSlot := common.CalculateTimeSlot(currentViewPoint.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+
+		if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
+			break
+		} else if currentViewPoint.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
+			break
+		}
+		currentViewPoint = prev1View
+	}
+	return currentViewPoint
 }
 
 func (s *multiView) getAllViewsWithBFS(rootView View) []View {
