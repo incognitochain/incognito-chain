@@ -222,6 +222,7 @@ func (blkM *BlockManager) StoreBlock(
 		}
 		blkIndex, err = blkM.fDB.Append(compBytes)
 		if err != nil {
+			panic(err)
 			return err
 		}
 		if (blkBodyIdx != blkIndex) && (blkBodyIdx != 0) {
