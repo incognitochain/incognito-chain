@@ -170,7 +170,6 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shard
 		}
 		if _, ok := uncountCommittees[toBeSignedCommittee]; ok {
 			if missingSignature.Missing > 0 {
-				log.Println("sig counter: add sig counter for ", toBeSignedCommittee, prevValidationData.ValidatiorsIdx, prevValidatorIndexCache)
 				missingSignature.Missing--
 			}
 		}

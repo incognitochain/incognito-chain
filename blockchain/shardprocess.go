@@ -1278,46 +1278,31 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	simulatedMultiView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
 	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
 
-	var newFinalizedHash *common.Hash = nil
 	//traverse back to final view
-	for oldFinalView == nil || storeBlock.GetHeight() > oldFinalView.GetHeight() {
-
-		fmt.Println("debug insert 1a", shardID, storeBlock.GetHeight(), oldFinalView.GetHeight())
-
-		if shardBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-			//if instant finality, then we check if current examine view is confirmed by beacon, if yes then we store finalized shard block and store the latest finalized block (to finalized multiview)
-			confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, storeBlock.GetHeight())
-			if err == nil && confirmHash.String() == storeBlock.Hash().String() {
-				fmt.Println("debug insert 1b", shardID, storeBlock.GetHeight(), oldFinalView.GetHeight())
-				err = rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
-				if err != nil {
-					return NewBlockChainError(StoreBeaconBlockError, err)
-				}
-				if newFinalizedHash == nil && confirmHash != nil {
-					newFinalizedHash = confirmHash
-				}
+	for {
+		if shardBlock.GetVersion() < types.INSTANT_FINALITY_VERSION {
+			if oldFinalView != nil && storeBlock.GetHeight() <= oldFinalView.GetHeight() {
+				break
 			}
-		} else {
-			fmt.Println("debug insert 2 ", shardID, storeBlock.GetHeight(), storeBlock.Hash().String())
-			newFinalizedHash = simulatedMultiView.GetExpectedFinalView().GetHash()
 			err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 			if err != nil {
 				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
-		}
 
-		if storeBlock.GetHeight() == 1 {
-			break
-		}
-		prevHash := storeBlock.GetPrevHash()
-		preView := blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
-		if preView == nil {
-			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
-			if err != nil {
-				panic("Database is corrupt")
+			if storeBlock.GetHeight() == 1 {
+				break
 			}
-		} else {
-			storeBlock = preView.GetBlock()
+
+			prevHash := storeBlock.GetPrevHash()
+			preView := blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
+			if preView == nil {
+				storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+				if err != nil {
+					panic("Database is corrupt")
+				}
+			} else {
+				storeBlock = preView.GetBlock()
+			}
 		}
 	}
 
@@ -1335,7 +1320,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
 	//add view
-	isSuccess := blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState, newFinalizedHash)
+	isSuccess := blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
 	if !isSuccess {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
@@ -1360,6 +1345,39 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
+	return nil
+}
+
+func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.Database, shardID byte, finalizedBlockHash common.Hash) error {
+	finalizedBlockView := blockchain.ShardChain[shardID].multiView.GetViewByHash(finalizedBlockHash)
+	if finalizedBlockView == nil {
+		return nil
+	}
+	finalizedBlock := finalizedBlockView.GetBlock()
+	for {
+		_, err := rawdbv2.GetFinalizedShardBlockHashByIndex(blockchain.GetShardChainDatabase(shardID), shardID, finalizedBlock.GetHeight())
+		if err == nil { //already insert
+			break
+		}
+		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, finalizedBlock.GetHeight())
+		if err == nil && confirmHash.String() == finalizedBlock.Hash().String() {
+			err = rawdbv2.StoreFinalizedShardBlockHashByIndex(db, shardID, finalizedBlock.GetHeight(), finalizedBlockHash)
+			if err != nil {
+				return NewBlockChainError(StoreBeaconBlockError, err)
+			}
+
+		}
+		prevHash := finalizedBlock.GetPrevHash()
+		preView := blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
+		if preView == nil {
+			finalizedBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
+			if err != nil {
+				panic("Database is corrupt")
+			}
+		} else {
+			finalizedBlock = preView.GetBlock()
+		}
+	}
 	return nil
 }
 

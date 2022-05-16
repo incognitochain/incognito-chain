@@ -89,9 +89,9 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 	return chain.multiView.GetBestView().(*ShardBestState)
 }
 
-func (chain *ShardChain) AddView(view multiview.View, newFinalizedHash *common.Hash) bool {
+func (chain *ShardChain) AddView(view multiview.View) bool {
 	curBestView := chain.multiView.GetBestView()
-	added, err := chain.multiView.(*multiview.ShardMultiView).AddViewWithFinalizedHash(view, newFinalizedHash)
+	added, err := chain.multiView.(*multiview.ShardMultiView).AddView(view)
 	if (curBestView != nil) && (added == 1) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()

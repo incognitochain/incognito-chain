@@ -1176,6 +1176,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	blockchain.BeaconChain.multiView.AddView(newBestState)
 	//update multiview final view
 	for sid, bestShardHash := range newFinalView.(*BeaconBestState).BestShardHash {
+		blockchain.storeFinalizeShardBlockByBeaconView(blockchain.GetShardChainDatabase(sid), sid, bestShardHash)
 		blockchain.ShardChain[sid].multiView.FinalizeView(bestShardHash)
 	}
 
