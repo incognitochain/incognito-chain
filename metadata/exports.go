@@ -50,6 +50,7 @@ var IsPortalRelayingMetaType = metadataCommon.IsPortalRelayingMetaType
 var IsPortalMetaTypeV3 = metadataCommon.IsPortalMetaTypeV3
 var GetMetaAction = metadataCommon.GetMetaAction
 var IsPDEType = metadataCommon.IsPDEType
+var IsPdexv3Type = metadataCommon.IsPdexv3Type
 var GetLimitOfMeta = metadataCommon.GetLimitOfMeta
 var IsPDETx = metadataCommon.IsPDETx
 var IsPdexv3Tx = metadataCommon.IsPdexv3Tx

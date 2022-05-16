@@ -995,3 +995,20 @@ func addMakingVolume(
 	}
 	return base
 }
+
+func GetPdexInstructions(instructions [][]string) map[uint][][]string {
+	res := make(map[uint][][]string)
+	for _, v := range instructions {
+		if len(v) == 0 {
+			continue
+		}
+		metaType, _ := strconv.Atoi(v[0])
+		if metadata.IsPDEType(metaType) {
+			res[BasicVersion] = append(res[BasicVersion], v)
+		}
+		if metadata.IsPdexv3Type(metaType) {
+			res[AmplifierVersion] = append(res[AmplifierVersion], v)
+		}
+	}
+	return res
+}

@@ -222,7 +222,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	sort.Ints(keys)
 	//Shard block is a map ShardId -> array of shard block
 
-	allPdexv3Txs := make(map[byte][]metadata.Transaction)
+	allPdexTxs := make(map[uint]map[byte][]metadata.Transaction)
 
 	for _, v := range keys {
 		shardID := byte(v)
@@ -230,7 +230,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		for _, shardBlock := range shardBlocks {
 			shardState, newShardInstruction, newDuplicateKeyStakeInstruction,
 				bridgeInstruction, acceptedRewardInstruction, statefulActions,
-				pdexv3Txs, err := blockchain.GetShardStateFromBlock(
+				pdexTxs, err := blockchain.GetShardStateFromBlock(
 				curView, curView.BeaconHeight+1, shardBlock, shardID, validUnstakePublicKeys, validStakePublicKeys)
 			if err != nil {
 				return [][]string{}, shardStates, err
@@ -250,7 +250,12 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			} else {
 				statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
 			}
-			allPdexv3Txs[shardID] = append(allPdexv3Txs[shardID], pdexv3Txs...)
+			for version, txs := range pdexTxs {
+				if allPdexTxs[version] == nil {
+					allPdexTxs[version] = make(map[byte][]metadata.Transaction)
+				}
+				allPdexTxs[version][shardID] = append(allPdexTxs[version][shardID], txs...)
+			}
 		}
 	}
 
@@ -263,7 +268,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		rewardForCustodianByEpoch,
 		portalParams,
 		shardStates,
-		allPdexv3Txs,
+		allPdexTxs,
 		pdexReward,
 	)
 
@@ -314,7 +319,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	validUnstakePublicKeys map[string]bool,
 	validStakePublicKeys []string,
 ) (map[byte]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
-	[][]string, []string, [][]string, []metadata.Transaction, error) {
+	[][]string, []string, [][]string, map[uint][]metadata.Transaction, error) {
 	//Variable Declaration
 	shardStates := make(map[byte]types.ShardState)
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
@@ -331,8 +336,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.ProposeTime,
 		shardBlock.Header.Version,
 	)
-	instructions, pdexv3Txs, err := CreateShardInstructionsFromTransactionAndInstruction(
-		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
+	instructions, pdexTxs, err := CreateShardInstructionsFromTransactionAndInstruction(
+		shardBlock.Body.Transactions, blockchain,
+		shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight, true,
+	)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
@@ -375,7 +382,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	statefulActions := collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
-	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstruction, statefulActions, pdexv3Txs, nil
+	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstruction, statefulActions, pdexTxs, nil
 }
 
 func (curView *BeaconBestState) getAcceptBlockRewardInstruction(

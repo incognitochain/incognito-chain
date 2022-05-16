@@ -299,7 +299,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
+	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight, false)
 	if err != nil {
 		return nil, err
 	}
@@ -955,7 +955,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
 	bc *BlockChain, shardID byte,
 	shardHeight, beaconHeight uint64,
-) (instructions [][]string, pdexv3Txs []metadata.Transaction, err error) {
+	shouldCollectPdexTxs bool,
+) (instructions [][]string, pdexTxs map[uint][]metadata.Transaction, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -963,18 +964,28 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeShardAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	unstaking := []string{}
+	if shouldCollectPdexTxs {
+		pdexTxs = make(map[uint][]metadata.Transaction)
+	}
 
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
 			if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight && metadata.IsPdexv3Tx(metadataValue) {
-				pdexv3Txs = append(pdexv3Txs, tx)
+				if shouldCollectPdexTxs {
+					pdexTxs[pdex.AmplifierVersion] = append(pdexTxs[pdex.AmplifierVersion], tx)
+				}
 			} else {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 				if err != nil {
 					Logger.log.Errorf("Build Request Action Error %+v", err)
 					return nil, nil, fmt.Errorf("Build Request Action Error %+v", err)
+				}
+				if shouldCollectPdexTxs {
+					if metadata.IsPDETx(metadataValue) {
+						pdexTxs[pdex.BasicVersion] = append(pdexTxs[pdex.BasicVersion], tx)
+					}
 				}
 				instructions = append(instructions, actionPairs...)
 			}
@@ -1055,5 +1066,5 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
-	return instructions, pdexv3Txs, nil
+	return instructions, pdexTxs, nil
 }

@@ -932,7 +932,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
 		Build()
 
+	pdexInstructions := pdex.GetPdexInstructions(beaconBlock.Body.Instructions)
 	for version, pdeState := range newBestState.pdeStates {
+		if len(pdexInstructions[version]) == 0 {
+			continue
+		}
 		pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
 		err = pdeState.Process(pdeStateEnv)
@@ -942,6 +946,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 
 		pdexStateChange := pdex.NewStateChange()
+
 		diffState, pdexStateChange, err := pdeState.GetDiff(curView.pdeStates[version], pdexStateChange)
 		if err != nil {
 			Logger.log.Error(err)
@@ -961,7 +966,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 		// transfrom beacon height for pdex process
 		pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
-
 		if err != nil {
 			return NewBlockChainError(ProcessPDEInstructionError, err)
 		}
