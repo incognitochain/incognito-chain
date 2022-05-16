@@ -1127,7 +1127,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	finalizedBlocks := []*types.BeaconBlock{}
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-
 		//store beacon confirm shard block
 		for shardID, shardStates := range storeBlock.(*types.BeaconBlock).Body.ShardState {
 			for _, shardState := range shardStates {

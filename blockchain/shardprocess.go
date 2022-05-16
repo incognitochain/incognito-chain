@@ -1279,8 +1279,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
 
 	//traverse back to final view
-	for {
-		if shardBlock.GetVersion() < types.INSTANT_FINALITY_VERSION {
+	if shardBlock.GetVersion() < types.INSTANT_FINALITY_VERSION {
+		for {
 			if oldFinalView != nil && storeBlock.GetHeight() <= oldFinalView.GetHeight() {
 				break
 			}
@@ -1304,7 +1304,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				storeBlock = preView.GetBlock()
 			}
 		}
-	}
+	} //for instant finality version, we store finalized shard block when insert beacon block
 
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, simulatedMultiView)
 	if err != nil {
