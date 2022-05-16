@@ -196,20 +196,6 @@ func (blkM *BlockManager) StoreBlock(
 		if blkBodyBytes, err = blkData.GetBodyBytes(); err != nil {
 			return err
 		}
-		if (config.Config().SyncMode != common.STATEDB_LITE_MODE) || (blkType != proto.BlkType_BlkBc) {
-			if len(blkBodyBytes) > 0 {
-				if compBytes, err = common.GZipFromBytesWithLvl(blkBodyBytes, config.Param().FlatFileParam.CompLevel); err != nil {
-					return err
-				}
-			} else {
-				compBytes = blkBodyBytes
-			}
-			blkBodyIdx, err = blkM.rmDB.Append(compBytes)
-			if err != nil {
-				return err
-			}
-			sizeBlk += uint64(len(blkBodyBytes))
-		}
 		if blkData.GetHeight() != 1 {
 			blkData.RemoveBody()
 		}
@@ -225,9 +211,24 @@ func (blkM *BlockManager) StoreBlock(
 			panic(err)
 			return err
 		}
-		if (blkBodyIdx != blkIndex) && (blkBodyIdx != 0) {
-			panic(fmt.Errorf("Flatfile system corruption, %v - %v", blkBodyIdx, blkIndex))
+		if (config.Config().SyncMode != common.STATEDB_LITE_MODE) || (blkType != proto.BlkType_BlkBc) {
+			if len(blkBodyBytes) > 0 {
+				if compBytes, err = common.GZipFromBytesWithLvl(blkBodyBytes, config.Param().FlatFileParam.CompLevel); err != nil {
+					return err
+				}
+			} else {
+				compBytes = blkBodyBytes
+			}
+			blkBodyIdx, err = blkM.rmDB.Append(compBytes)
+			if err != nil {
+				return err
+			}
+			if blkBodyIdx != blkIndex {
+				panic(fmt.Errorf("Flatfile system corruption, %v - %v", blkBodyIdx, blkIndex))
+			}
+			sizeBlk += uint64(len(blkBodyBytes))
 		}
+
 		sizeBlk += uint64(len(blkBytes))
 		key := rawdbv2.GetHashToBlockIndexKey(*blkHash)
 		if err = blkM.sRDB.Put(key, common.Uint64ToBytes(blkIndex)); err != nil {
