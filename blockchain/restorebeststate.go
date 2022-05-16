@@ -51,6 +51,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 	}
 
 	if includePdexv3 {
+		Logger.log.Infof("[pdex] Start restore pdexv3 state")
 		beaconBestState.pdeStates = make(map[uint]pdex.State)
 		beaconViewCached, ok := blockchain.beaconViewCache.Get(beaconBestState.BestBlockHash.String())
 		if !ok || beaconViewCached == nil {
@@ -62,6 +63,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		} else {
 			beaconBestState.pdeStates = beaconViewCached.(*BeaconBestState).pdeStates
 		}
+		Logger.log.Infof("[pdex] Finish restore pdexv3 state")
 	}
 	if includeBridgeAgg {
 		beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
