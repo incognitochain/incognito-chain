@@ -666,6 +666,9 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
 Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
+	if err := blockchain.restoreCheckpoint(); err != nil {
+		return err
+	}
 	allViews := []*BeaconBestState{}
 	bcDB := blockchain.GetBeaconChainDatabase()
 	b, err := rawdbv2.GetBeaconViews(bcDB)
@@ -724,10 +727,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 	}
 
-	err = blockchain.restoreCheckpoint()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
