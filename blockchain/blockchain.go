@@ -1469,10 +1469,9 @@ func (blockchain *BlockChain) getFixedShardValidator(
 	res, epochForCache, chkPnt, err = blockchain.getValidatorsFromCacheByEpoch(1, cID)
 	if err != nil {
 		Logger.log.Error(err)
-	} else {
-		if len(res) == 0 {
-			Logger.log.Error(fmt.Errorf("Get Fixed shard node at epoch %v cache nil shard %v committee", epochForCache, cID))
-		}
+	}
+	if len(res) == 0 {
+		Logger.log.Error(fmt.Errorf("Get Fixed shard node at epoch %v cache nil shard %v committee", epochForCache, cID))
 		if finalView := blockchain.BeaconChain.GetFinalView(); finalView != nil {
 			finalBestState := finalView.(*BeaconBestState)
 			shardValidator := finalBestState.GetAShardCommittee(cID)
