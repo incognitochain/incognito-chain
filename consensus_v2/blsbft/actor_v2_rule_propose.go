@@ -25,14 +25,15 @@ func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock type
 }
 
 type SendProposeBlockEnvironment struct {
-	finalityProof    *FinalityProof
-	isValidRePropose bool
-	userProposeKey   signatureschemes2.MiningKey
-	peerID           string
+	finalityProof          *FinalityProof
+	isValidRePropose       bool
+	userProposeKey         signatureschemes2.MiningKey
+	peerID                 string
+	bestBlockConsensusData map[int]types.BlockConsensusData
 }
 
-func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string) *SendProposeBlockEnvironment {
-	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID}
+func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string, consensusData map[int]types.BlockConsensusData) *SendProposeBlockEnvironment {
+	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID, bestBlockConsensusData: consensusData}
 }
 
 type IProposeMessageRule interface {
@@ -413,7 +414,7 @@ func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 
 	bftPropose.Block = blockData
 	bftPropose.PeerID = env.peerID
-
+	bftPropose.BestBlockConsensusData = env.bestBlockConsensusData
 	return bftPropose, nil
 }
 

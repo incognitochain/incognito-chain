@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
@@ -20,16 +21,7 @@ type BFTPropose struct {
 	Block                  json.RawMessage
 	ReProposeHashSignature string
 	FinalityProof          FinalityProof
-	BestBlockConsensusData map[int]BestBlockConsensusData
-}
-
-type BestBlockConsensusData struct {
-	BlockHash      common.Hash
-	BlockHeight    uint64
-	FinalityHeight uint64
-	Proposer       string
-	ProposerTime   int64
-	ValidationData string
+	BestBlockConsensusData map[int]types.BlockConsensusData
 }
 
 type BFTVote struct {

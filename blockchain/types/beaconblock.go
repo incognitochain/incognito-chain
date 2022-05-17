@@ -8,6 +8,15 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+type BlockConsensusData struct {
+	BlockHash      common.Hash
+	BlockHeight    uint64
+	FinalityHeight uint64
+	Proposer       string
+	ProposerTime   int64
+	ValidationData string
+}
+
 type BeaconBlock struct {
 	ValidationData string `json:"ValidationData"`
 	Body           BeaconBody

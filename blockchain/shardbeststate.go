@@ -357,6 +357,10 @@ func (shardBestState *ShardBestState) GetBlock() types.BlockInterface {
 	return shardBestState.BestBlock
 }
 
+func (shardBestState *ShardBestState) ReplaceBlock(replaceBlock types.BlockInterface) {
+	shardBestState.BestBlock = replaceBlock.(*types.ShardBlock)
+}
+
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
 	return shardBestState.shardCommitteeState.GetShardCommittee()
 }

@@ -34,6 +34,7 @@ type Chain interface {
 	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
+	GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
 	GetMaxBlkCreateTime() time.Duration
@@ -74,6 +75,7 @@ type Chain interface {
 	CommitteeEngineVersion() int
 	GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int)
 	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
+	ReplaceBlockConsensusData(data types.BlockConsensusData) error
 	// GetSigningCommitteesFromBestView must be retrieve from a shard view, because it's based on the committee state version
 	GetSigningCommittees(
 		proposerIndex int,

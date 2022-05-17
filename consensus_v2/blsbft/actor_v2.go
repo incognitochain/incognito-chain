@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"log"
 	"reflect"
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -633,6 +633,7 @@ func (a *actorV2) run() error {
 							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
+							a.chain.GetBlockConsensusData(createdBlk),
 						)
 						bftProposeMessage, err := a.ruleDirector.builder.ProposeMessageRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
@@ -1260,6 +1261,13 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	//update consensus data
+	if proposeMsg.BestBlockConsensusData != nil {
+		for _, consensusData := range proposeMsg.BestBlockConsensusData {
+			a.chain.ReplaceBlockConsensusData(consensusData)
+		}
 	}
 
 	return nil
