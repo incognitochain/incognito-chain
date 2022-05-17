@@ -160,7 +160,7 @@ func (blkM *BlockManager) GetBlockByHash(
 			return nil, nil, nil, err
 		} else {
 			if len(bodyBytes) > 0 {
-				if bodyBytes, err := common.GZipToBytes(bodyBytes); err != nil {
+				if bodyBytes, err = common.GZipToBytes(bodyBytes); err != nil {
 					err = errors.Wrapf(err, "Can not unzip body %+v", bodyBytes)
 					return nil, nil, nil, err
 				}

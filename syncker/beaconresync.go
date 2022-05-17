@@ -47,7 +47,11 @@ func (reSync *ResyncManager) Start() {
 			reSync.resyncPair(h, h+350)
 		case h := <-reSync.RequestPair:
 			Logger.Debugf("Got new request from %v, to %v", h.from, h.to)
-			reSync.resyncPair(h.from, h.to)
+			f, t := h.from, h.to
+			if h.to-h.from < 300 {
+				t = f + 350
+			}
+			reSync.resyncPair(f, t)
 		case preSync := <-reSync.PreSync:
 			reSync.HeightFilter.InsertPair(preSync.from, preSync.to)
 			blks := map[uint64]types.BeaconBlock{}

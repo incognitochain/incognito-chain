@@ -758,7 +758,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 
 	blockchain.ShardChain[shardID].multiView.Reset()
 	for _, v := range allViews {
-		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
+		block, _, err := blockchain.GetShardBlockByHashWithShardID(v.BestBlockHash, shardID)
 		if err != nil || block == nil {
 			Logger.log.Errorf("RestoreShardBestState shardID %+v, GetShardBlockByHash error %+v", shardID, err)
 			return errors.New("RestoreShardBestState error")

@@ -681,7 +681,6 @@ func (synckerManager *SynckerManager) GetAllViewByHash(poolType byte, bestHash s
 
 func (s *SynckerManager) ReSyncBeaconBlockByHeight(
 	fromHeight, toHeight uint64,
-	timeout time.Duration,
 ) (
 	res []types.BeaconBlock,
 	err error,
