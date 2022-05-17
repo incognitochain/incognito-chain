@@ -1274,12 +1274,13 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
 	}
 
-	oldFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	simulatedMultiView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
-	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
+	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, simulatedMultiView)
 
+	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
 	//traverse back to final view
 	if shardBlock.GetVersion() < types.INSTANT_FINALITY_VERSION {
+		oldFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 		for {
 			if oldFinalView != nil && storeBlock.GetHeight() <= oldFinalView.GetHeight() {
 				break
@@ -1304,9 +1305,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				storeBlock = preView.GetBlock()
 			}
 		}
-	} //for instant finality version, we store finalized shard block when insert beacon block
+	} else { //instant finality
+		blockchain.storeFinalizeShardBlockByBeaconView(batchData, shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
+	}
 
-	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, simulatedMultiView)
 	if err != nil {
 		panic("Backup shard view error")
 	}
@@ -1315,15 +1317,15 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	txDB := simulatedMultiView.GetBestView().(*ShardBestState).GetCopiedTransactionStateDB()
-	//TODO: @hy check this txDB only use  to verify incoming tx
-	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
-
 	//add view
 	isSuccess := blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
 	if !isSuccess {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	txDB := simulatedMultiView.GetBestView().(*ShardBestState).GetCopiedTransactionStateDB()
+	//TODO: @hy check this txDB only use  to verify incoming tx
+	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
 	if !config.Config().ForceBackup {
 		return nil
@@ -1348,24 +1350,27 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	return nil
 }
 
-func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.Database, shardID byte, finalizedBlockHash common.Hash) error {
+func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyValueWriter, shardID byte, finalizedBlockHash common.Hash) error {
 	finalizedBlockView := blockchain.ShardChain[shardID].multiView.GetViewByHash(finalizedBlockHash)
 	if finalizedBlockView == nil {
-		return nil
+		finalizedBlockView = blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
 	}
+
 	finalizedBlock := finalizedBlockView.GetBlock()
 	for {
 		_, err := rawdbv2.GetFinalizedShardBlockHashByIndex(blockchain.GetShardChainDatabase(shardID), shardID, finalizedBlock.GetHeight())
 		if err == nil { //already insert
 			break
 		}
+
 		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, finalizedBlock.GetHeight())
+		fmt.Println("============== check beacon confirm", shardID, finalizedBlock.GetHeight(), confirmHash.String(), finalizedBlock.Hash().String())
 		if err == nil && confirmHash.String() == finalizedBlock.Hash().String() {
+			blockchain.ShardChain[shardID].multiView.FinalizeView(*confirmHash)
 			err = rawdbv2.StoreFinalizedShardBlockHashByIndex(db, shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash())
 			if err != nil {
 				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
-
 		}
 		prevHash := finalizedBlock.GetPrevHash()
 		preView := blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)

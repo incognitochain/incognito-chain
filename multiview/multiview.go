@@ -136,7 +136,9 @@ func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 	if !ok {
 		return errors.New("Cannot find view by hash " + hashToFinalize.String())
 	}
-
+	if s.finalView.GetHeight() >= viewToFinalize.GetHeight() {
+		return nil
+	}
 	//recheck hashToFinalize is on the same branch with bestview view
 	notLink := true
 	prevView := s.bestView

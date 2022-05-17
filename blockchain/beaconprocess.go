@@ -732,7 +732,6 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	shardState types.ShardState,
 ) error {
 	beaconHashForCommittee := shardState.CommitteeFromBlock
-	log.Println("----------------- ", shardID, shardState.Height, shardState.Hash.String())
 	if beaconHashForCommittee.IsZeroValue() {
 		return nil
 	}
@@ -1176,7 +1175,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	//update multiview final view
 	for sid, bestShardHash := range newFinalView.(*BeaconBestState).BestShardHash {
 		blockchain.storeFinalizeShardBlockByBeaconView(blockchain.GetShardChainDatabase(sid), sid, bestShardHash)
-		blockchain.ShardChain[sid].multiView.FinalizeView(bestShardHash)
 	}
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)

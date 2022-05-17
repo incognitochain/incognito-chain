@@ -354,10 +354,10 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d shard %d block(from %d to %d) elaspse %f \n", successBlk, s.shardID, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk == 0 {
 							return
 						}
+						fmt.Printf("Syncker Insert shard %d : %d block(from %d to %d) elaspse %f \n", s.shardID, successBlk, blockBuffer[0].GetHeight(), blockBuffer[successBlk-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk < len(blockBuffer) {
 							blockBuffer = blockBuffer[successBlk:]
 						} else {

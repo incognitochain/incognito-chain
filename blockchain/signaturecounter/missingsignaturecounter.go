@@ -1,10 +1,8 @@
 package signaturecounter
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"log"
 	"reflect"
 	"sync"
 
@@ -98,7 +96,6 @@ func NewDefaultSignatureCounter(committees []string) *MissingSignatureCounter {
 func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	log.Println("count sig debug prepare update")
 	validationData, err := consensustypes.DecodeValidationData(data)
 	if err != nil {
 		return err
@@ -111,7 +108,6 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, 
 		}
 		signedCommittees[tempToBeSignedCommittees[idx]] = struct{}{}
 	}
-	fmt.Println(validationData.ValidatiorsIdx)
 	for _, toBeSignedCommittee := range tempToBeSignedCommittees {
 		missingSignature, ok := s.missingSignature[toBeSignedCommittee]
 		if !ok {
@@ -123,9 +119,7 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, 
 			missingSignature.Missing++
 		}
 		s.missingSignature[toBeSignedCommittee] = missingSignature
-		log.Println(missingSignature.ActualTotal, toBeSignedCommittee, missingSignature.Missing)
 	}
-	log.Println("count sig debug update", len(tempToBeSignedCommittees), len(validationData.ValidatiorsIdx))
 	s.lastShardStateValidatorCommittee[shardID] = tempToBeSignedCommittees
 	s.lastShardStateValidatorIndex[shardID] = validationData.ValidatiorsIdx
 	return nil
@@ -137,7 +131,6 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shard
 	tempToBeSignedCommittees := s.lastShardStateValidatorCommittee[shardID]
 	prevShardStateValidatorIndex := s.lastShardStateValidatorIndex[shardID]
 	if len(prevShardStateValidatorIndex) == 0 || len(tempToBeSignedCommittees) == 0 {
-		log.Println("last data or committee is empty", shardID, len(s.lastShardStateValidatorCommittee[shardID]), len(s.lastShardStateValidatorIndex[shardID]))
 		return nil
 	}
 
@@ -238,9 +231,6 @@ func getSlashingPenalty(numberOfMissingSig uint, total uint, penalties []Penalty
 func (s *MissingSignatureCounter) Reset(committees []string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	b, _ := json.Marshal(s.missingSignature)
-	log.Println("count sig debug 2", common.Keccak256Hash(b))
-	fmt.Println(string(b))
 	missingSignature := make(map[string]MissingSignature)
 	for _, v := range committees {
 		missingSignature[v] = NewMissingSignature()
