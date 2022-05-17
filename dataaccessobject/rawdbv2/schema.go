@@ -32,6 +32,7 @@ var (
 	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
 
 	committeeCheckpoint = []byte("cmtchkpnt")
+	dbconfig            = []byte("dbconfig")
 )
 
 // ============================= Shard =======================================
@@ -241,5 +242,11 @@ func preimageKey(hash common.Hash) []byte {
 func GetCommitteeCheckpointKey() []byte {
 	temp := make([]byte, 0, len(committeeCheckpoint))
 	temp = append(temp, committeeCheckpoint...)
+	return temp
+}
+
+func GetDatabaseConfigFromDBKey() []byte {
+	temp := make([]byte, 0, len(dbconfig))
+	temp = append(temp, dbconfig...)
 	return temp
 }

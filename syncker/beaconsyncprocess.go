@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -68,7 +70,9 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
-	go s.Resync.Start()
+	if config.Config().SyncMode == common.STATEDB_LITE_MODE {
+		go s.Resync.Start()
+	}
 
 	go func() {
 		for {
@@ -216,10 +220,10 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 					waitHeight := shardBlock.Height
 
 					info := blockchain.NextCrossShardInfo{
-						waitHeight,
-						shardBlock.Hash.String(),
-						beaconBlock.GetHeight(),
-						beaconBlock.Hash().String(),
+						NextCrossShardHeight: waitHeight,
+						NextCrossShardHash:   shardBlock.Hash.String(),
+						ConfirmBeaconHeight:  beaconBlock.GetHeight(),
+						ConfirmBeaconHash:    beaconBlock.Hash().String(),
 					}
 					//Logger.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
 					b, _ := json.Marshal(info)
@@ -376,8 +380,8 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 		fromHeight = s.chain.GetBestViewHeight()
 	}
 
-	if uid := ctx.Value("uuid"); uid == nil {
-		ctx = context.WithValue(ctx, "uuid", genUUID())
+	if uid := ctx.Value(common.CtxUUID); uid == nil {
+		ctx = context.WithValue(ctx, common.CtxUUID, common.GenUUID())
 	}
 	//stream
 	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, peerID, fromHeight, toHeight)
@@ -414,7 +418,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 						return
 					} else {
 						insertBlkCnt += successBlk
-						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f %v \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds(), ctx.Value("uuid"))
+						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f %v \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds(), ctx.Value(common.CtxUUID))
 						if successBlk == 0 {
 							return
 						}

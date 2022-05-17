@@ -564,12 +564,6 @@ func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*sta
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }
 
-type CommitteeCheckPoint struct {
-	Height   uint64      `json:"h"`
-	RootHash common.Hash `json:"rh"`
-	FromBC   bool
-}
-
 type CommitteeChangeCheckpoint struct {
 	Data   map[uint64]common.Hash
 	Epochs []uint64
@@ -695,4 +689,33 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64
 		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]], nil
 	}
 	return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found", epoch, sID)
+}
+
+type DatabaseConfiguration struct {
+	Mode          string `json:"mode"`
+	FFStorage     bool   `json:"ff"`
+	CompressLevel int    `json:"clvl"`
+}
+
+func (bc *BlockChain) NewDBConfig() error {
+	// dbConfig := &DatabaseConfiguration{}
+	// db := bc.GetBeaconChainDatabase()
+	return nil
+}
+
+func (bc *BlockChain) GetDBConfigFromDB() error {
+	db := bc.GetBeaconChainDatabase()
+	data, err := rawdbv2.GetDatabaseConfig(db)
+	if err != nil {
+		return err
+	}
+	dbConfig := &DatabaseConfiguration{}
+	err = json.Unmarshal(data, dbConfig)
+	if err != nil {
+		return err
+	}
+	if config.Config().SyncMode != dbConfig.Mode {
+
+	}
+	return nil
 }

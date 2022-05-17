@@ -51,9 +51,18 @@ func StoreCommitteeChangeCheckpoint(db incdb.KeyValueWriter, data []byte) error 
 
 func GetCommitteeChangeCheckpoint(db incdb.KeyValueReader) ([]byte, error) {
 	key := GetCommitteeCheckpointKey()
-	shardBestStateBytes, err := db.Get(key)
+	chkPntBytes, err := db.Get(key)
 	if err != nil {
-		return nil, NewRawdbError(StoreShardBestStateError, err)
+		return nil, err
 	}
-	return shardBestStateBytes, nil
+	return chkPntBytes, nil
+}
+
+func GetDatabaseConfig(db incdb.KeyValueReader) ([]byte, error) {
+	key := GetDatabaseConfigFromDBKey()
+	dbConfigBytes, err := db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return dbConfigBytes, nil
 }

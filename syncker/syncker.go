@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -63,7 +62,7 @@ func NewSynckerManager() *SynckerManager {
 			time   time.Time
 		}{},
 	}
-	for sID := byte(0); sID <= byte(config.Param().ActiveShards); sID++ {
+	for sID := byte(0); sID <= byte(configpkg.Param().ActiveShards); sID++ {
 		s.beaconCheckPointAtShard[sID] = struct {
 			height uint64
 			time   time.Time
@@ -224,9 +223,9 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 
 //Process incomming broadcast block
 func (synckerManager *SynckerManager) ReceiveBlock(block interface{}, previousValidationData string, peerID string) {
-	switch block.(type) {
+	switch block := block.(type) {
 	case *types.BeaconBlock:
-		beaconBlock := block.(*types.BeaconBlock)
+		beaconBlock := block
 		Logger.Infof("syncker: receive beacon block %d \n", beaconBlock.GetHeight())
 		//create fake s2b pool peerstate
 		if synckerManager.BeaconSyncProcess != nil {
@@ -243,8 +242,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(block interface{}, previousVa
 		}
 
 	case *types.ShardBlock:
-
-		shardBlock := block.(*types.ShardBlock)
+		shardBlock := block
 		Logger.Infof("syncker: receive shard block %d \n", shardBlock.GetHeight())
 		if synckerManager.shardPool[shardBlock.GetShardID()] != nil {
 			synckerManager.shardPool[shardBlock.GetShardID()].AddBlock(shardBlock)
@@ -265,7 +263,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(block interface{}, previousVa
 		}
 
 	case *types.CrossShardBlock:
-		crossShardBlock := block.(*types.CrossShardBlock)
+		crossShardBlock := block
 		if synckerManager.CrossShardSyncProcess[int(crossShardBlock.ToShardID)] != nil {
 			Logger.Infof("crossdebug: receive block from %d to %d (%synckerManager)\n", crossShardBlock.Header.ShardID, crossShardBlock.ToShardID, crossShardBlock.Hash().String())
 			synckerManager.crossShardPool[int(crossShardBlock.ToShardID)].AddBlock(crossShardBlock)
@@ -353,6 +351,10 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 								return nil
 							}
 							beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+							if err != nil {
+								Logger.Errorf("Can not build beacon statedb at root hash % for shard %v - %v", beaconConsensusRootHash.String(), blkXShard.GetHeight(), blkXShard.Hash())
+								return nil
+							}
 							committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
 							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee)
 							if err != nil {
@@ -388,9 +390,9 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(curVi
 	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(curView, list)
 
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
-	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
 

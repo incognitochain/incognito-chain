@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
@@ -122,7 +122,7 @@ func (reSync *ResyncManager) resyncPair(from, to uint64) error {
 		}(from, to)
 		return errors.Errorf("Requester is not ready")
 	}
-	uid := genUUID()
+	uid := common.GenUUID()
 	newPairs := reSync.HeightFilter.SearchMissingPair(from, to)
 	reSync.HeightFilter.DisplayInOrder()
 	for id := 0; id < len(newPairs[0]); id++ {
@@ -193,11 +193,6 @@ func (reSync *ResyncManager) getData(from, to uint64) (
 	return blks, nil
 }
 
-func genUUID() string {
-	randUUID, _ := uuid.NewRandom()
-	return randUUID.String()
-}
-
 func (reSync *ResyncManager) syncData(from, to uint64, uid string) (
 	gotTo uint64,
 	blks map[uint64]types.BeaconBlock,
@@ -205,7 +200,7 @@ func (reSync *ResyncManager) syncData(from, to uint64, uid string) (
 ) {
 	timeout := 1 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	ctx = context.WithValue(ctx, "uuid", uid)
+	ctx = context.WithValue(ctx, common.CtxUUID, uid)
 	defer cancel()
 	blks = map[uint64]types.BeaconBlock{}
 	ch, err := reSync.Net.RequestBeaconBlocksViaStream(ctx, "", from, to)

@@ -101,6 +101,10 @@ const (
 	ShardChainKey  = "shard"
 )
 
+type CTXKEY string
+
+var CtxUUID = CTXKEY("uuid")
+
 const (
 	BeaconChainID                = -1
 	BeaconChainSyncID            = 255

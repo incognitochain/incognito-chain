@@ -425,7 +425,7 @@ type HighwayDiscoverer interface {
 }
 
 func (conn *ConnManager) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan types.BlockInterface, err error) {
-	Logger.Infof("[SyncBeacon] from %v to %v, uuid %v", from, to, ctx.Value("uuid"))
+	Logger.Infof("[SyncBeacon] from %v to %v, uuid %v", from, to, ctx.Value(common.CtxUUID))
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkBc,
 		Specific:     false,
@@ -497,14 +497,14 @@ func (conn *ConnManager) RequestShardBlocksByHashViaStream(ctx context.Context, 
 }
 
 func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan types.BlockInterface, err error) {
-	if uid := ctx.Value("uuid"); uid == nil {
-		ctx = context.WithValue(ctx, "uuid", genUUID())
+	if uid := ctx.Value(common.CtxUUID); uid == nil {
+		ctx = context.WithValue(ctx, common.CtxUUID, common.GenUUID())
 	}
-	Logger.Infof("[stream] Request Block type %v from peer %v from cID %v, [%v %v], uuid %v ", req.Type, peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1], ctx.Value("uuid"))
+	Logger.Infof("[stream] Request Block type %v from peer %v from cID %v, [%v %v], uuid %v ", req.Type, peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1], ctx.Value(common.CtxUUID))
 	blockCh = make(chan types.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
 	stream, err := conn.Requester.StreamBlockByHeight(ctx, req)
 	if err != nil {
-		Logger.Errorf("[stream] %v. uuid %v", err, ctx.Value("uuid"))
+		Logger.Errorf("[stream] %v. uuid %v", err, ctx.Value(common.CtxUUID))
 		return nil, err
 	}
 
@@ -520,14 +520,14 @@ func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID stri
 			blkData, err := stream.Recv()
 			if err != nil {
 				if err != io.EOF {
-					Logger.Errorf("[stream] %v, uuid %v", err, ctx.Value("uuid"))
+					Logger.Errorf("[stream] %v, uuid %v", err, ctx.Value(common.CtxUUID))
 				}
 				closeChannel()
 				return
 			}
 
 			if len(blkData.Data) < 2 {
-				Logger.Errorf("[stream] received empty blk, uuid %v", ctx.Value("uuid"))
+				Logger.Errorf("[stream] received empty blk, uuid %v", ctx.Value(common.CtxUUID))
 				closeChannel()
 				return
 			}
@@ -541,7 +541,7 @@ func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID stri
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
 			if err != nil {
-				Logger.Errorf("[stream] %v, uuid %v", err, ctx.Value("uuid"))
+				Logger.Errorf("[stream] %v, uuid %v", err, ctx.Value(common.CtxUUID))
 				closeChannel()
 				return
 			}

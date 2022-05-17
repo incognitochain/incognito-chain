@@ -575,6 +575,9 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 	}
 	shardBestState := &ShardBestState{}
 	err = json.Unmarshal(bestStateBytes, shardBestState)
+	if err != nil {
+		return err
+	}
 	bestShardHeight := shardBestState.ShardHeight
 	var i uint64
 	for i = 1; i < bestShardHeight; i++ {
@@ -615,6 +618,9 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	}
 	beaconBestState := &BeaconBestState{}
 	err = json.Unmarshal(bestStateBytes, beaconBestState)
+	if err != nil {
+		return err
+	}
 	bestBeaconHeight := beaconBestState.BeaconHeight
 	var i uint64
 	for i = 1; i < bestBeaconHeight; i++ {
@@ -678,10 +684,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	err = json.Unmarshal(b, &allViews)
 	if err != nil {
 		return err
-	}
-	sID := []int{}
-	for i := 0; i < config.Param().ActiveShards; i++ {
-		sID = append(sID, i)
 	}
 
 	blockchain.BeaconChain.multiView.Reset()
@@ -836,8 +838,8 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 				continue
 			}
 			shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(blockHash, shardID)
-			if shardBlock.GetShardID() != int(shardID) {
-				panic("Database is broken")
+			if (shardBlock.GetShardID() != int(shardID)) || (err != nil) {
+				panic("Database is broken, err: " + err.Error())
 			}
 			txData := shardBlock.Body.Transactions[txindex]
 			committeePk := txData.GetMetadata().(*metadata.StakingMetadata).CommitteePublicKey
@@ -964,7 +966,6 @@ func (s *BlockChain) RemoveRelayShard(sid int) {
 		}
 	}
 	s.config.relayShardLck.Unlock()
-	return
 }
 
 // GetEpochLength return the current length of epoch
@@ -1418,25 +1419,6 @@ func (blockchain *BlockChain) getBeaconValidators(
 	return res, err
 }
 
-func (blockchain *BlockChain) getShardValidatorsFromPrevHash(
-	prevHash common.Hash,
-	cID byte,
-) (
-	res []incognitokey.CommitteePublicKey,
-	err error,
-) {
-	if v := blockchain.ShardChain[cID].GetViewByHash(prevHash); v != nil {
-		res = v.GetCommittee()
-		return res, nil
-	}
-	consensusDB, err := getShardConsensusStateDB(blockchain.GetShardChainDatabase(cID), cID, prevHash)
-	if err != nil {
-		return nil, err
-	}
-	res = statedb.GetOneShardCommittee(consensusDB, cID)
-	return res, nil
-}
-
 func (blockchain *BlockChain) getBeaconValidatorsFromPrevHash(
 	prevHash common.Hash,
 	cID byte,
@@ -1580,33 +1562,4 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
-}
-
-func equal2list(listA, listB []incognitokey.CommitteePublicKey) bool {
-	tmp := map[string]struct{}{}
-	for _, k := range listA {
-		str, err := k.ToBase58()
-		if err != nil {
-			// panic(err)
-			return false
-		}
-		tmp[str] = struct{}{}
-	}
-	// committeeKeys2 := statedb.GetOneShardCommittee(beaconConsensusStateDB, sID)
-	if len(listA) != len(listB) {
-		return false
-		// panic("aaaaaaaaaa")
-	}
-	for _, k := range listB {
-		str, err := k.ToBase58()
-		if err != nil {
-			// panic(err)
-			return false
-		}
-		if _, ok := tmp[str]; !ok {
-			// panic("bbbbbbbbbbbb")
-			return false
-		}
-	}
-	return true
 }

@@ -108,25 +108,6 @@ func (cm *ConnManager) PickHighway() error {
 	return nil
 }
 
-func (cm *ConnManager) tryToConnect(hwAddrInfo *peer.AddrInfo) error {
-	var err error
-	Logger.Infof("Start tryToConnect")
-	for i := 0; i < MaxConnectionRetry; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
-		defer cancel()
-		Logger.Infof("TryToConnect to hw %v", hwAddrInfo.ID.Pretty())
-		if err = cm.LocalHost.Host.Connect(ctx, *hwAddrInfo); err != nil {
-			Logger.Errorf("Could not connect to highway: %v %v", err, hwAddrInfo)
-		} else {
-			Logger.Infof("Connected to HW %v", hwAddrInfo.ID)
-
-			return nil
-		}
-		time.Sleep(2 * time.Second)
-	}
-	return err
-}
-
 func (cm *ConnManager) tryToConnectHW(hwAddr *rpcclient.HighwayAddr, id int) error {
 	var err error
 	hwAddrInfo, err := getAddressInfo(hwAddr.Libp2pAddr)
@@ -230,7 +211,7 @@ func (cm *ConnManager) manageHighwayConnection() {
 			}
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
-			break
+			return
 		}
 	}
 }
@@ -260,7 +241,7 @@ func (cm *ConnManager) keepConnectionAlive() {
 			cm.reqPickHW <- nil
 		case <-cm.stop:
 			Logger.Info("Stop managing role subscription")
-			break
+			return
 		}
 	}
 }
