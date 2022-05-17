@@ -155,17 +155,14 @@ func (blkM *BlockManager) GetBlockByHash(
 				return nil, nil, nil, err
 			}
 		}
-		if blkHeaderBytes, err := common.GZipToBytes(headerBytes); err != nil {
+		if headerBytes, err = common.GZipToBytes(headerBytes); err != nil {
 			err = errors.Wrap(err, "Can not unzip header data")
 			return nil, nil, nil, err
 		} else {
-			headerBytes = blkHeaderBytes
 			if len(bodyBytes) > 0 {
-				if blkBodyBytes, err := common.GZipToBytes(bodyBytes); err != nil {
+				if bodyBytes, err := common.GZipToBytes(bodyBytes); err != nil {
 					err = errors.Wrapf(err, "Can not unzip body %+v", bodyBytes)
 					return nil, nil, nil, err
-				} else {
-					bodyBytes = blkBodyBytes
 				}
 			}
 			return nil, headerBytes, bodyBytes, nil
@@ -218,8 +215,6 @@ func (blkM *BlockManager) StoreBlock(
 						return err
 					}
 					sizeBlk += uint64(len(blkBodyBytes))
-				} else {
-					blkBodyBytes = []byte{0}
 				}
 				blkBodyIdx, err = blkM.rmDB.Append(blkBodyBytes)
 				if err != nil {

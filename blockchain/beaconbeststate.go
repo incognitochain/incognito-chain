@@ -911,7 +911,7 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
 	if config.Config().SyncMode == common.STATEDB_LITE_MODE {
-		bcBlks, err := bc.GetConfig().Syncker.ReSyncBeaconBlockByHeight(firstBeaconHeightOfEpoch, tempBeaconHeight, 1*time.Minute)
+		bcBlks, err := bc.GetConfig().Syncker.ReSyncBeaconBlockByHeight(firstBeaconHeightOfEpoch, tempBeaconHeight)
 		if err != nil {
 			return err
 		}

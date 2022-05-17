@@ -232,7 +232,7 @@ func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) Unma
 	}
 	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
-		fmt.Errorf("UnmarshalJSON Cannot parse crossOutputCoins", err)
+		fmt.Errorf("UnmarshalJSON Cannot parse crossOutputCoins %v", err)
 		return err
 	}
 	contentCrossShardTokenPrivacyData.OutputCoin = outputCoinList
@@ -257,12 +257,12 @@ func (crossOutputCoin *CrossOutputCoin) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(crossOutputCoin),
 	}
 	if err := json.Unmarshal(data, temp); err != nil {
-		fmt.Errorf("UnmarshalJSON CrossOutputCoin", err)
+		fmt.Errorf("UnmarshalJSON CrossOutputCoin %v ", err)
 		return err
 	}
 	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
-		fmt.Errorf("UnmarshalJSON Cannot parse CrossOutputCoin", err)
+		fmt.Errorf("UnmarshalJSON Cannot parse CrossOutputCoin %v", err)
 		return err
 	}
 	crossOutputCoin.OutputCoin = outputCoinList

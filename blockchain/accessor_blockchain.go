@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -476,7 +475,7 @@ func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint6
 func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error) {
 
 	if (config.Config().SyncMode == common.STATEDB_LITE_MODE) && (height != 1) {
-		bcBlks, err := s.GetConfig().Syncker.ReSyncBeaconBlockByHeight(height, height, 1*time.Minute)
+		bcBlks, err := s.GetConfig().Syncker.ReSyncBeaconBlockByHeight(height, height)
 		if err != nil {
 			return nil, err
 		}

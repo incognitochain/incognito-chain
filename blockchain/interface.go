@@ -69,7 +69,6 @@ type Syncker interface {
 	ReceiveBlock(block interface{}, previousValidationData string, peerID string)
 	ReSyncBeaconBlockByHeight(
 		fromHeight, toHeight uint64,
-		timeout time.Duration,
 	) (
 		res []types.BeaconBlock,
 		err error,

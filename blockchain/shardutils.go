@@ -22,10 +22,10 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 			bcBlks []types.BeaconBlock
 		)
 		for i := 0; i < 5; i++ {
-			bcBlks, err = blockchain.GetConfig().Syncker.ReSyncBeaconBlockByHeight(from, to, 1*time.Minute)
+			bcBlks, err = blockchain.GetConfig().Syncker.ReSyncBeaconBlockByHeight(from, to)
 			if err != nil {
 				Logger.log.Error(err)
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(200 * time.Millisecond)
 				continue
 			}
 			for _, bcBlk := range bcBlks {

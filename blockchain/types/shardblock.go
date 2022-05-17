@@ -504,9 +504,11 @@ func (sBlock *ShardBlock) GetBodyBytes() ([]byte, error) {
 
 func (sBlock *ShardBlock) SetBodyFromBytes(rawBytes []byte) error {
 	protoBody := &proto.ShardBodyBytes{}
-	err := ggproto.Unmarshal(rawBytes, protoBody)
-	if err != nil {
-		return err
+	if len(rawBytes) > 0 {
+		err := ggproto.Unmarshal(rawBytes, protoBody)
+		if err != nil {
+			return err
+		}
 	}
 	return sBlock.Body.FromProtoShardBody(protoBody)
 }
