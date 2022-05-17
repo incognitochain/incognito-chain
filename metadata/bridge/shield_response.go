@@ -94,7 +94,7 @@ func (response ShieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		if err != nil {
 			return false, err
 		}
-		acceptedContent := AcceptedShieldRequest{}
+		acceptedContent := AcceptedInstShieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
 			return false, err

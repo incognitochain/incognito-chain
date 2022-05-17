@@ -9,10 +9,9 @@ import (
 )
 
 type BridgeAggWaitingUnshieldReq struct {
-	unshieldID     string
-	unifiedTokenID common.Hash
-	data           []WaitingUnshieldReqData
-	beaconHeight   uint64
+	unshieldID   common.Hash
+	data         []WaitingUnshieldReqData
+	beaconHeight uint64
 }
 
 type WaitingUnshieldReqData struct {
@@ -20,7 +19,6 @@ type WaitingUnshieldReqData struct {
 	BurningAmount uint64      `json:"BurningAmount"`
 	RemoteAddress string      `json:"RemoteAddress"`
 	Fee           uint64      `json:"Fee"`
-	MintedFee     uint64      `json:"MintedFee"`
 }
 
 func (w WaitingUnshieldReqData) Clone() WaitingUnshieldReqData {
@@ -29,7 +27,6 @@ func (w WaitingUnshieldReqData) Clone() WaitingUnshieldReqData {
 		BurningAmount: w.BurningAmount,
 		RemoteAddress: w.RemoteAddress,
 		Fee:           w.Fee,
-		MintedFee:     w.MintedFee,
 	}
 }
 
@@ -37,10 +34,9 @@ func (us *BridgeAggWaitingUnshieldReq) Clone() *BridgeAggWaitingUnshieldReq {
 	clonedData := []WaitingUnshieldReqData{}
 	clonedData = append(clonedData, us.data...)
 	cloned := &BridgeAggWaitingUnshieldReq{
-		unshieldID:     us.unshieldID,
-		unifiedTokenID: us.unifiedTokenID,
-		data:           clonedData,
-		beaconHeight:   us.beaconHeight,
+		unshieldID:   us.unshieldID,
+		data:         clonedData,
+		beaconHeight: us.beaconHeight,
 	}
 	return cloned
 }
@@ -53,20 +49,12 @@ func (us *BridgeAggWaitingUnshieldReq) SetData(data []WaitingUnshieldReqData) {
 	us.data = data
 }
 
-func (us *BridgeAggWaitingUnshieldReq) GetUnshieldID() string {
+func (us *BridgeAggWaitingUnshieldReq) GetUnshieldID() common.Hash {
 	return us.unshieldID
 }
 
-func (us *BridgeAggWaitingUnshieldReq) SetUnshieldID(unshieldID string) {
+func (us *BridgeAggWaitingUnshieldReq) SetUnshieldID(unshieldID common.Hash) {
 	us.unshieldID = unshieldID
-}
-
-func (us *BridgeAggWaitingUnshieldReq) GetUnifiedTokenID() common.Hash {
-	return us.unifiedTokenID
-}
-
-func (us *BridgeAggWaitingUnshieldReq) SetUnifiedTokenID(unifiedTokenID common.Hash) {
-	us.unifiedTokenID = unifiedTokenID
 }
 
 func (us *BridgeAggWaitingUnshieldReq) GetBeaconHeight() uint64 {
@@ -79,15 +67,13 @@ func (us *BridgeAggWaitingUnshieldReq) SetBeaconHeight(beaconHeight uint64) {
 
 func (us BridgeAggWaitingUnshieldReq) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		UnshieldID     string                   `json:"UnshieldID"`
-		UnifiedTokenID common.Hash              `json:"UnifiedTokenID"`
-		Data           []WaitingUnshieldReqData `json:"Data"`
-		BeaconHeight   uint64                   `json:"BeaconHeight"`
+		UnshieldID   common.Hash              `json:"UnshieldID"`
+		Data         []WaitingUnshieldReqData `json:"Data"`
+		BeaconHeight uint64                   `json:"BeaconHeight"`
 	}{
-		UnshieldID:     us.unshieldID,
-		UnifiedTokenID: us.unifiedTokenID,
-		Data:           us.data,
-		BeaconHeight:   us.beaconHeight,
+		UnshieldID:   us.unshieldID,
+		Data:         us.data,
+		BeaconHeight: us.beaconHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -97,16 +83,14 @@ func (us BridgeAggWaitingUnshieldReq) MarshalJSON() ([]byte, error) {
 
 func (us *BridgeAggWaitingUnshieldReq) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		UnshieldID     string                   `json:"UnshieldID"`
-		UnifiedTokenID common.Hash              `json:"UnifiedTokenID"`
-		Data           []WaitingUnshieldReqData `json:"Data"`
-		BeaconHeight   uint64                   `json:"BeaconHeight"`
+		UnshieldID   common.Hash              `json:"UnshieldID"`
+		Data         []WaitingUnshieldReqData `json:"Data"`
+		BeaconHeight uint64                   `json:"BeaconHeight"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	us.unifiedTokenID = temp.UnifiedTokenID
 	us.unshieldID = temp.UnshieldID
 	us.data = temp.Data
 	us.beaconHeight = temp.BeaconHeight
@@ -114,15 +98,14 @@ func (us *BridgeAggWaitingUnshieldReq) UnmarshalJSON(data []byte) error {
 }
 
 func NewBridgeAggWaitingUnshieldReqStateWithValue(
-	unifiedTokenID common.Hash,
 	data []WaitingUnshieldReqData,
-	unshieldID string,
-	beaconHeight uint64) *BridgeAggWaitingUnshieldReq {
+	unshieldID common.Hash,
+	beaconHeight uint64,
+) *BridgeAggWaitingUnshieldReq {
 	return &BridgeAggWaitingUnshieldReq{
-		unshieldID:     unshieldID,
-		unifiedTokenID: unifiedTokenID,
-		data:           data,
-		beaconHeight:   beaconHeight,
+		unshieldID:   unshieldID,
+		data:         data,
+		beaconHeight: beaconHeight,
 	}
 }
 
@@ -185,9 +168,9 @@ func newBridgeAggWaitingUnshieldReqObjectWithValue(db *StateDB, key common.Hash,
 	}, nil
 }
 
-func GenerateBridgeAggWaitingUnshieldReqObjectKey(unifiedTokenID common.Hash, unshieldID string) common.Hash {
+func GenerateBridgeAggWaitingUnshieldReqObjectKey(unifiedTokenID common.Hash, unshieldID common.Hash) common.Hash {
 	prefixHash := GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID.Bytes())
-	valueHash := common.HashH([]byte(unshieldID))
+	valueHash := common.HashH(unshieldID.Bytes())
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

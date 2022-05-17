@@ -87,7 +87,7 @@ func (u *UnshieldTestSuite) BeforeTest(suiteName, testName string) {
 		unshieldActions: [][]string{actions},
 	}
 	state := NewState()
-	state.unifiedTokenInfos = testCase.UnifiedTokens
+	state.unifiedTokenVaults = testCase.UnifiedTokens
 	producerState := state.Clone()
 	processorState := state.Clone()
 	processorState.ClearCache()
@@ -119,7 +119,7 @@ func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenDepositToSC() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -141,7 +141,7 @@ func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -163,7 +163,7 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -185,7 +185,7 @@ func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -207,7 +207,7 @@ func (u *UnshieldTestSuite) TestRejectedInvalidIncTokenID() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -222,7 +222,7 @@ func (u *UnshieldTestSuite) TestRejectedInvalidTokenID() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -237,7 +237,7 @@ func (u *UnshieldTestSuite) TestRejectedNotEnoughExpectedAmount() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -252,7 +252,7 @@ func (u *UnshieldTestSuite) TestRejectedNotEnoughVaultValue() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -267,7 +267,7 @@ func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -290,7 +290,7 @@ func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
@@ -313,7 +313,7 @@ func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())

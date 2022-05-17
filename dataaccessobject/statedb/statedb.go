@@ -2557,6 +2557,33 @@ func (stateDB *StateDB) iterateBridgeAggVaults(prefix []byte) (map[common.Hash]*
 	return res, nil
 }
 
+// iterateBridgeAggWaitingUnshieldReqs returns list of waiting unshield reqs by prefix (unifiedTokenID)
+// and the list is sorted by beacon height ascending
+func (stateDB *StateDB) iterateBridgeAggWaitingUnshieldReqs(prefix []byte) ([]*BridgeAggWaitingUnshieldReq, error) {
+	res := []*BridgeAggWaitingUnshieldReq{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		req := NewBridgeAggWaitingUnshieldReqState()
+		err := json.Unmarshal(newValue, &req)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, req)
+	}
+
+	sort.SliceStable(res, func(i, j int) bool {
+		if res[i].beaconHeight == res[j].beaconHeight {
+			return res[i].unshieldID.String() < res[j].unshieldID.String()
+		}
+		return res[i].beaconHeight < res[j].beaconHeight
+	})
+	return res, nil
+}
+
 // ================================= Fantom bridge OBJECT =======================================
 func (stateDB *StateDB) getBridgeFTMTxState(key common.Hash) (*BridgeFTMTxState, bool, error) {
 	ftmTxState, err := stateDB.getStateObject(BridgeFTMTxObjectType, key)

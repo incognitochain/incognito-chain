@@ -414,7 +414,7 @@ func (blockchain *BlockChain) processIssuingUnifiedToken(curView *BeaconBestStat
 			Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
 			return updatingInfoByTokenID, err
 		}
-		var acceptedShieldRequest metadataBridge.AcceptedShieldRequest
+		var acceptedShieldRequest metadataBridge.AcceptedInstShieldRequest
 		err = json.Unmarshal(contentBytes, &acceptedShieldRequest)
 		if err != nil {
 			Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)

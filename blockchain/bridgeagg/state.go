@@ -9,17 +9,17 @@ import (
 )
 
 type State struct {
-	unifiedTokenInfos   map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState         // unifiedTokenID -> tokenID -> vault
-	waitingUnshieldReqs map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq // unifiedTokenID -> unshieldID -> waitingUnshieldReq
+	unifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState // unifiedTokenID -> tokenID -> vault
+	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       // unifiedTokenID -> unshieldID -> waitingUnshieldReq
 
 	deletedWaitingUnshieldReqKeyHashes []common.Hash
 }
 
-func (s *State) UnifiedTokenInfos() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
-	return s.unifiedTokenInfos
+func (s *State) UnifiedTokenVaults() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
+	return s.unifiedTokenVaults
 }
 
-func (s *State) WaitingUnshieldReqs() map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq {
+func (s *State) WaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
 	return s.waitingUnshieldReqs
 }
 
@@ -29,19 +29,19 @@ func (s *State) DeletedWaitingUnshieldReqKeyHashes() []common.Hash {
 
 func NewState() *State {
 	return &State{
-		unifiedTokenInfos:                  make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState),
-		waitingUnshieldReqs:                make(map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq),
+		unifiedTokenVaults:                 make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState),
+		waitingUnshieldReqs:                make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
 		deletedWaitingUnshieldReqKeyHashes: []common.Hash{},
 	}
 }
 
 func NewStateWithValue(
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState,
-	waitingUnshieldReqs map[common.Hash]map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq,
+	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq,
 	deletedWaitingUnshieldReqKeyHashes []common.Hash,
 ) *State {
 	return &State{
-		unifiedTokenInfos:                  unifiedTokenInfos,
+		unifiedTokenVaults:                 unifiedTokenInfos,
 		waitingUnshieldReqs:                waitingUnshieldReqs,
 		deletedWaitingUnshieldReqKeyHashes: deletedWaitingUnshieldReqKeyHashes,
 	}
@@ -49,19 +49,8 @@ func NewStateWithValue(
 
 func (s *State) Clone() *State {
 	res := NewState()
-	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
-		for networkID, vault := range vaults {
-			res.unifiedTokenInfos[unifiedTokenID][networkID] = vault.Clone()
-		}
-	}
-
-	for unifiedTokenID, reqs := range s.waitingUnshieldReqs {
-		res.waitingUnshieldReqs[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggWaitingUnshieldReq)
-		for unshieldID, req := range reqs {
-			res.waitingUnshieldReqs[unifiedTokenID][unshieldID] = req.Clone()
-		}
-	}
+	res.unifiedTokenVaults = s.CloneUnifiedTokenVaults()
+	res.waitingUnshieldReqs = s.CloneWaitingUnshieldReqs()
 
 	res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
 	res.deletedWaitingUnshieldReqKeyHashes = append(res.deletedWaitingUnshieldReqKeyHashes, s.deletedWaitingUnshieldReqKeyHashes...)
@@ -69,6 +58,7 @@ func (s *State) Clone() *State {
 	return res
 }
 
+//TODO: 0xkraken
 func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 	res := NewState()
 	if compareState == nil {
@@ -76,9 +66,9 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 	}
 	stateChange := NewStateChange()
 
-	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		if compareVaults, found := compareState.unifiedTokenInfos[unifiedTokenID]; !found {
-			res.unifiedTokenInfos[unifiedTokenID] = vaults
+	for unifiedTokenID, vaults := range s.unifiedTokenVaults {
+		if compareVaults, found := compareState.unifiedTokenVaults[unifiedTokenID]; !found {
+			res.unifiedTokenVaults[unifiedTokenID] = vaults
 			stateChange.unifiedTokenID[unifiedTokenID] = true
 			stateChange.vaultChange[unifiedTokenID] = make(map[common.Hash]VaultChange)
 			for tokenID := range vaults {
@@ -86,19 +76,19 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 			}
 		} else {
 			for tokenID, vault := range vaults {
-				if res.unifiedTokenInfos[unifiedTokenID] == nil {
-					res.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
+				if res.unifiedTokenVaults[unifiedTokenID] == nil {
+					res.unifiedTokenVaults[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
 				}
 				if compareVault, found := compareVaults[tokenID]; !found {
-					res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault
+					res.unifiedTokenVaults[unifiedTokenID][tokenID] = vault
 					stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{IsChanged: true}
 				} else {
-					diff, err := s.unifiedTokenInfos[unifiedTokenID][tokenID].GetDiff(compareVault)
+					diff, err := s.unifiedTokenVaults[unifiedTokenID][tokenID].GetDiff(compareVault)
 					if err != nil {
 						return nil, nil, err
 					}
 					if diff != nil {
-						res.unifiedTokenInfos[unifiedTokenID][tokenID] = diff
+						res.unifiedTokenVaults[unifiedTokenID][tokenID] = diff
 						stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{IsChanged: true}
 					}
 				}
@@ -108,9 +98,9 @@ func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
 	return res, stateChange, nil
 }
 
-func (s *State) CloneUnifiedTokenInfos() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
+func (s *State) CloneUnifiedTokenVaults() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
 	res := make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState)
-	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
+	for unifiedTokenID, vaults := range s.unifiedTokenVaults {
 		res[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
 		for tokenID, vault := range vaults {
 			res[unifiedTokenID][tokenID] = vault.Clone()
@@ -119,8 +109,19 @@ func (s *State) CloneUnifiedTokenInfos() map[common.Hash]map[common.Hash]*stated
 	return res
 }
 
+func (s *State) CloneWaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
+	res := make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq)
+	for unifiedTokenID, reqs := range s.waitingUnshieldReqs {
+		res[unifiedTokenID] = []*statedb.BridgeAggWaitingUnshieldReq{}
+		for _, req := range reqs {
+			res[unifiedTokenID] = append(res[unifiedTokenID], req.Clone())
+		}
+	}
+	return res
+}
+
 func (s *State) CloneVaultsByUnifiedTokenID(unifiedTokenID common.Hash) (map[common.Hash]*statedb.BridgeAggVaultState, error) {
-	if vaults, found := s.unifiedTokenInfos[unifiedTokenID]; found {
+	if vaults, found := s.unifiedTokenVaults[unifiedTokenID]; found {
 		res := make(map[common.Hash]*statedb.BridgeAggVaultState)
 		for networkID, vault := range vaults {
 			res[networkID] = vault.Clone()

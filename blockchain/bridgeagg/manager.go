@@ -137,7 +137,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 }
 
 func (m *Manager) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error {
-	for unifiedTokenID, vaults := range m.state.unifiedTokenInfos {
+	for unifiedTokenID, vaults := range m.state.unifiedTokenVaults {
 		if stateChange.unifiedTokenID[unifiedTokenID] {
 			err := statedb.StoreBridgeAggUnifiedToken(
 				sDB,

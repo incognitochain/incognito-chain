@@ -79,7 +79,7 @@ func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
 		convertActions: [][]string{actions},
 	}
 	state := NewState()
-	state.unifiedTokenInfos = testCase.UnifiedTokens
+	state.unifiedTokenVaults = testCase.UnifiedTokens
 	producerState := state.Clone()
 	processorState := state.Clone()
 	actualInstructions, _, err := producerState.BuildInstructions(env)
@@ -111,12 +111,12 @@ func (c *ConvertTestSuite) TestAccepted() {
 	testCase := c.testCases[c.currentTestCaseName]
 	actualResult := c.actualResults[c.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	for k, v := range actualResult.ProducerState.unifiedTokenInfos {
-		assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
+	for k, v := range actualResult.ProducerState.unifiedTokenVaults {
+		assert.Equal(expectedState.unifiedTokenVaults[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
 	}
 	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
 	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())

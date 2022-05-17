@@ -100,7 +100,7 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 		accumulatedValues: testCase.AccumulatedValues,
 	}
 	state := NewState()
-	state.unifiedTokenInfos = testCase.UnifiedTokens
+	state.unifiedTokenVaults = testCase.UnifiedTokens
 	producerState := state.Clone()
 	processorState := state.Clone()
 	actualInstructions, ac, err := producerState.BuildInstructions(env)
@@ -156,7 +156,7 @@ func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NativeToken() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -173,7 +173,7 @@ func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NotNativeToken() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -190,7 +190,7 @@ func (s *ShieldTestSuite) TestAcceptedYEqualTo0NativeToken() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -207,7 +207,7 @@ func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseE
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -224,7 +224,7 @@ func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseE
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -241,7 +241,7 @@ func (s *ShieldTestSuite) TestRejectedInvalidExternalTokenID() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -258,7 +258,7 @@ func (s *ShieldTestSuite) TestRejectedInvalidTokenID() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -275,7 +275,7 @@ func (s *ShieldTestSuite) TestRejectedTwoProofs() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -292,7 +292,7 @@ func (s *ShieldTestSuite) TestRejectedTwoProofsInOneRequest() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
@@ -309,7 +309,7 @@ func (s *ShieldTestSuite) TestRejectedInvalidIncTokenID() {
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
 	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
+	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
 	expectedStatuses := testCase.ExpectedStatuses
 	actualStatuses := testCase.ActualStatues
 	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues

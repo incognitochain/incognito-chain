@@ -10,6 +10,7 @@ const (
 	OtherError = iota
 	NotFoundTokenIDInNetworkError
 	NotFoundNetworkIDError
+	ShieldProofIsSubmittedError
 	InvalidRewardReserveError
 	CalculateShieldAmountError
 	CalculateUnshieldAmountError
@@ -27,9 +28,11 @@ var ErrCodeMessage = map[int]struct {
 	Code    uint
 	Message string
 }{
-	OtherError:                          {1, "Other error"},
-	NotFoundTokenIDInNetworkError:       {1000, "Not found token id in network"},
-	NotFoundNetworkIDError:              {1001, "Not found networkID"},
+	OtherError:                    {1, "Other error"},
+	NotFoundTokenIDInNetworkError: {1000, "Not found token id in network"},
+	NotFoundNetworkIDError:        {1001, "Not found networkID"},
+	ShieldProofIsSubmittedError:   {1002, "Shield proof was submitted"},
+
 	InvalidRewardReserveError:           {1003, "Invalid reward reserve"},
 	CalculateShieldAmountError:          {1004, "Calculate shield amount error"},
 	CalculateUnshieldAmountError:        {1005, "Calculate unshield amount error"},

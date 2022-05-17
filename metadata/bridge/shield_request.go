@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,7 +13,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-type AcceptedShieldRequest struct {
+type ShieldRequest struct {
+	Data           []ShieldRequestData `json:"Data"`
+	UnifiedTokenID common.Hash         `json:"UnifiedTokenID"`
+	metadataCommon.MetadataBase
+}
+
+type ShieldRequestData struct {
+	Proof      []byte      `json:"Proof"`
+	NetworkID  uint        `json:"NetworkID"`
+	IncTokenID common.Hash `json:"IncTokenID"`
+}
+
+type AcceptedInstShieldRequest struct {
 	Receiver       privacy.PaymentAddress      `json:"Receiver"`
 	UnifiedTokenID common.Hash                 `json:"UnifiedTokenID"`
 	TxReqID        common.Hash                 `json:"TxReqID"`
@@ -23,23 +36,17 @@ type AcceptedShieldRequest struct {
 
 type AcceptedShieldRequestData struct {
 	IssuingAmount   uint64      `json:"IssuingAmount"`
-	UniqTx          []byte      `json:"UniqTx,omitempty"`
-	ExternalTokenID []byte      `json:"ExternalTokenID,omitempty"`
+	UniqTx          []byte      `json:"UniqTx,omitempty"`          // empty for reward inst
+	ExternalTokenID []byte      `json:"ExternalTokenID,omitempty"` // empty for reward inst
 	NetworkID       uint        `json:"NetworkID"`
 	IncTokenID      common.Hash `json:"IncTokenID"`
 }
 
-type ShieldRequestData struct {
-	Proof      []byte      `json:"Proof"`
-	NetworkID  uint        `json:"NetworkID"`
-	IncTokenID common.Hash `json:"IncTokenID"`
-}
-
-type ShieldRequest struct {
-	Data           []ShieldRequestData `json:"Data"`
-	UnifiedTokenID common.Hash         `json:"UnifiedTokenID"`
-	metadataCommon.MetadataBase
-}
+// type AcceptedShieldRewardData struct {
+// 	RewardAmount uint64      `json:"RewardAmount"`
+// 	NetworkID    uint        `json:"NetworkID"`
+// 	IncTokenID   common.Hash `json:"IncTokenID"`
+// }
 
 func NewShieldRequest() *ShieldRequest {
 	return &ShieldRequest{
@@ -143,7 +150,7 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 			if evmReceipt == nil {
 				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
 			}
-			content, err := json.Marshal(evmReceipt)
+			content, err := MarshalActionDataForShieldEVMReq(evmReceipt)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -158,4 +165,14 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 
 func (request *ShieldRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
+}
+
+func UnmarshalActionDataForShieldEVMReq(data []byte) (*types.Receipt, error) {
+	txReceipt := types.Receipt{}
+	err := json.Unmarshal(data, &txReceipt)
+	return &txReceipt, err
+}
+
+func MarshalActionDataForShieldEVMReq(txReceipt *types.Receipt) ([]byte, error) {
+	return json.Marshal(txReceipt)
 }

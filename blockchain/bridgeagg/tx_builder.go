@@ -168,7 +168,7 @@ func buildShieldUnifiedTokenResponse(
 		if err != nil {
 			return nil, err
 		}
-		acceptedContent := metadataBridge.AcceptedShieldRequest{}
+		acceptedContent := metadataBridge.AcceptedInstShieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
 			return nil, err

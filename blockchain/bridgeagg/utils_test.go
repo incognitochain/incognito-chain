@@ -413,7 +413,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator)
+			got, err := ConvertAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateAmountByDecimal() error = %v, wantErr %v", err, tt.wantErr)
 				return

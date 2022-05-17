@@ -33,17 +33,27 @@ func StoreBridgeAggUnifiedToken(stateDB *StateDB, unifiedTokenID common.Hash, st
 	return stateDB.SetStateObject(BridgeAggUnifiedTokenObjectType, key, state)
 }
 
-func StoreBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggVaultState) error {
-	key := GenerateBridgeAggVaultObjectKey(unifiedTokenID, tokenID)
-	return stateDB.SetStateObject(BridgeAggVaultObjectType, key, state)
-}
-
 func GetBridgeAggUnifiedTokens(stateDB *StateDB) ([]*BridgeAggUnifiedTokenState, error) {
 	prefixHash := generateBridgeAggUnifiedTokenObjectPrefix()
 	return stateDB.iterateBridgeAggUnifiedTokens(prefixHash)
 }
 
+func StoreBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggVaultState) error {
+	key := GenerateBridgeAggVaultObjectKey(unifiedTokenID, tokenID)
+	return stateDB.SetStateObject(BridgeAggVaultObjectType, key, state)
+}
+
 func GetBridgeAggVaults(stateDB *StateDB, unifiedTokenID common.Hash) (map[common.Hash]*BridgeAggVaultState, error) {
 	prefixHash := generateBridgeAggVaultObjectPrefix(unifiedTokenID)
 	return stateDB.iterateBridgeAggVaults(prefixHash)
+}
+
+func StoreBridgeAggWaitingUnshieldReq(stateDB *StateDB, unifiedTokenID, unshieldID common.Hash, waitingUnshieldReq *BridgeAggWaitingUnshieldReq) error {
+	key := GenerateBridgeAggWaitingUnshieldReqObjectKey(unifiedTokenID, unshieldID)
+	return stateDB.SetStateObject(BridgeAggWaitingUnshieldReqObjectType, key, waitingUnshieldReq)
+}
+
+func GetBridgeAggWaitingUnshieldReqs(stateDB *StateDB, unifiedTokenID common.Hash) ([]*BridgeAggWaitingUnshieldReq, error) {
+	prefixHash := GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID.Bytes())
+	return stateDB.iterateBridgeAggWaitingUnshieldReqs(prefixHash)
 }

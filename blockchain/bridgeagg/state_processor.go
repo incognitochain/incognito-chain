@@ -33,13 +33,13 @@ func (sp *stateProcessor) convert(
 		if err != nil {
 			return nil, err
 		}
-		if vaults, found := state.unifiedTokenInfos[acceptedContent.UnifiedTokenID]; found {
+		if vaults, found := state.unifiedTokenVaults[acceptedContent.UnifiedTokenID]; found {
 			if vault, found := vaults[acceptedContent.TokenID]; found {
 				vault, err = increaseVaultAmount(vault, acceptedContent.MintAmount)
 				if err != nil {
 					return nil, NewBridgeAggErrorWithValue(InvalidConvertAmountError, err)
 				}
-				state.unifiedTokenInfos[acceptedContent.UnifiedTokenID][acceptedContent.TokenID] = vault
+				state.unifiedTokenVaults[acceptedContent.UnifiedTokenID][acceptedContent.TokenID] = vault
 			} else {
 				return nil, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
 			}
@@ -89,13 +89,13 @@ func (sp *stateProcessor) shield(
 			return nil, err
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
-		acceptedInst := metadataBridge.AcceptedShieldRequest{}
+		acceptedInst := metadataBridge.AcceptedInstShieldRequest{}
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			return nil, err
 		}
 		for _, data := range acceptedInst.Data {
-			vault := state.unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] // check available before
+			vault := state.unifiedTokenVaults[acceptedInst.UnifiedTokenID][data.IncTokenID] // check available before
 			statusData := ShieldStatusData{}
 			if acceptedInst.IsReward {
 				// TODO: 0xkraken
@@ -112,7 +112,7 @@ func (sp *stateProcessor) shield(
 				statusData.Amount = data.IssuingAmount
 			}
 			shieldStatusData = append(shieldStatusData, statusData)
-			state.unifiedTokenInfos[acceptedInst.UnifiedTokenID][data.IncTokenID] = vault
+			state.unifiedTokenVaults[acceptedInst.UnifiedTokenID][data.IncTokenID] = vault
 		}
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
@@ -166,7 +166,7 @@ func (sp *stateProcessor) unshield(
 		}
 		txReqID = acceptedContent.TxReqID
 		for index, data := range acceptedContent.Data {
-			vault := state.unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] // check available before
+			vault := state.unifiedTokenVaults[acceptedContent.UnifiedTokenID][data.IncTokenID] // check available before
 			// TODO: 0xkraken
 			// err = vault.increaseCurrentRewardReserve(data.Fee)
 			// if err != nil {
@@ -176,7 +176,7 @@ func (sp *stateProcessor) unshield(
 			if err != nil {
 				return state, err
 			}
-			state.unifiedTokenInfos[acceptedContent.UnifiedTokenID][data.IncTokenID] = vault
+			state.unifiedTokenVaults[acceptedContent.UnifiedTokenID][data.IncTokenID] = vault
 			status = common.AcceptedStatusByte
 			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
 			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.UnifiedTokenID
@@ -217,8 +217,8 @@ func (sp *stateProcessor) addToken(inst []string, state *State, sDB *statedb.Sta
 		return nil, err
 	}
 	for unifiedTokenID, vaults := range content.NewListTokens {
-		if _, found := state.unifiedTokenInfos[unifiedTokenID]; !found {
-			state.unifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
+		if _, found := state.unifiedTokenVaults[unifiedTokenID]; !found {
+			state.unifiedTokenVaults[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
 		}
 		err = statedb.UpdateBridgeTokenInfo(sDB, unifiedTokenID, GetExternalTokenIDForUnifiedToken(), false, 0, "+")
 		if err != nil {
@@ -233,8 +233,8 @@ func (sp *stateProcessor) addToken(inst []string, state *State, sDB *statedb.Sta
 			if err != nil {
 				return nil, err
 			}
-			v := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, vault.ExternalDecimal, false, vault.NetworkID, tokenID)
-			state.unifiedTokenInfos[unifiedTokenID][tokenID] = v
+			v := statedb.NewBridgeAggVaultStateWithValue(0, 0, 0, 0, vault.ExternalDecimal, vault.NetworkID, tokenID)
+			state.unifiedTokenVaults[unifiedTokenID][tokenID] = v
 		}
 	}
 	return state, nil
