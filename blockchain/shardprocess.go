@@ -11,12 +11,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -1383,47 +1381,6 @@ func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyVa
 			finalizedBlock = preView.GetBlock()
 		}
 	}
-	return nil
-}
-
-// ReplacePreviousValidationData replace newValidationData to previous if
-// new aggregated signatures is combined from a larger subset of committees
-func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error {
-
-	if hasBlock, err := blockchain.HasShardBlockByHash(blockHash); err != nil {
-		return NewBlockChainError(ReplacePreviousValidationDataError, err)
-	} else {
-		if !hasBlock {
-			// This block is not inserted yet, no need to replace
-			return nil
-		}
-	}
-
-	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
-	if err != nil {
-		return NewBlockChainError(ReplacePreviousValidationDataError, err)
-	}
-
-	decodedOldValidationData, err := consensustypes.DecodeValidationData(shardBlock.ValidationData)
-	if err != nil {
-		return NewBlockChainError(ReplacePreviousValidationDataError, err)
-	}
-
-	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
-	if err != nil {
-		return NewBlockChainError(ReplacePreviousValidationDataError, err)
-	}
-
-	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
-		shardBlock.ValidationData = newValidationData
-		if err := rawdbv2.StoreShardBlock(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), blockHash, shardBlock); err != nil {
-			return NewBlockChainError(ReplacePreviousValidationDataError, err)
-		}
-
-		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
-			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
-	}
-
 	return nil
 }
 

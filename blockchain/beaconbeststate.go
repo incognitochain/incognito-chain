@@ -404,6 +404,10 @@ func (beaconBestState *BeaconBestState) GetBlock() types.BlockInterface {
 	return &beaconBestState.BestBlock
 }
 
+func (beaconBestState *BeaconBestState) ReplaceBlock(replaceBlock types.BlockInterface) {
+	beaconBestState.BestBlock = *replaceBlock.(*types.BeaconBlock)
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeState.GetBeaconSubstitute()
 }

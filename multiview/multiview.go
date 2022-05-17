@@ -21,6 +21,7 @@ type View interface {
 	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
 	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
+	ReplaceBlock(blk types.BlockInterface)
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
@@ -156,7 +157,6 @@ func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 	//if not link on the same branch with final view, reorg the multiview
 	//this must be not happen with our flow
 	if notLink {
-
 		panic("This must not happen!")
 		newOrgMultiView := s.getAllViewsWithBFS(viewToFinalize)
 		s.Reset()
@@ -345,9 +345,6 @@ func (s *multiView) findExpectFinalView(checkView View) View {
 func (s *multiView) getAllViewsWithBFS(rootView View) []View {
 	queue := []View{rootView}
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
 	res := []View{}
 	for {
 		if len(queue) == 0 {
@@ -367,10 +364,36 @@ func (s *multiView) getAllViewsWithBFS(rootView View) []View {
 }
 
 func (s *multiView) GetAllViewsWithBFS() []View {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return s.getAllViewsWithBFS(s.finalView)
 }
 
 //this is just for interface compatible, we dont expect running this function
 func (s *multiView) AddView(v View) (int, error) {
 	panic("must not use this")
+}
+
+func (s *multiView) ReplaceBlock(h common.Hash, b types.BlockInterface) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if _, ok := s.viewByHash[h]; !ok {
+		return errors.New("Cannot replace block")
+	}
+	s.viewByHash[h].ReplaceBlock(b)
+
+	tmp := NewMultiView()
+	allView := s.getAllViewsWithBFS(s.finalView)
+	for _, v := range allView {
+		tmp.addView(v)
+	}
+	if s.expectedFinalView != tmp.expectedFinalView {
+		fmt.Println("Change expected final view to", tmp.expectedFinalView.GetHeight(), tmp.expectedFinalView.GetHash().String())
+		s.expectedFinalView = tmp.expectedFinalView
+	}
+	if s.expectedFinalView != tmp.expectedFinalView {
+		fmt.Println("Change best view to", tmp.bestView.GetHeight(), tmp.bestView.GetHash().String())
+		s.bestView = tmp.bestView
+	}
+	return nil
 }

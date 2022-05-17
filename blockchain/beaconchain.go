@@ -271,6 +271,60 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 
 }
 
+//this get consensus data for all latest shard state
+func (chain *BeaconChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
+	consensusData := map[int]types.BlockConsensusData{}
+	for sid, sChain := range chain.Blockchain.ShardChain {
+		rawBlk, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(sid)), *sChain.multiView.GetExpectedFinalView().GetHash())
+		if err != nil {
+			panic(err)
+		}
+		shardBlk := new(types.ShardBlock)
+		err = json.Unmarshal(rawBlk, shardBlk)
+		if err != nil {
+			panic(err)
+		}
+		consensusData[int(sid)] = types.BlockConsensusData{
+			BlockHash:      *shardBlk.Hash(),
+			BlockHeight:    shardBlk.GetHeight(),
+			FinalityHeight: shardBlk.GetFinalityHeight(),
+			Proposer:       shardBlk.GetProposer(),
+			ProposerTime:   shardBlk.GetProposeTime(),
+			ValidationData: shardBlk.ValidationData,
+		}
+	}
+	return consensusData
+}
+
+//for replace signature index and finality height
+func (chain *BeaconChain) ReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+	replaceBlockHash := consensusData.BlockHash
+	//retrieve block from database and replace consensus field
+	rawBlk, _ := rawdbv2.GetBeaconBlockByHash(chain.GetDatabase(), replaceBlockHash)
+	beaconBlk := new(types.BeaconBlock)
+	_ = json.Unmarshal(rawBlk, beaconBlk)
+	beaconBlk.Header.Proposer = consensusData.Proposer
+	beaconBlk.Header.ProposeTime = consensusData.ProposerTime
+	beaconBlk.Header.FinalityHeight = consensusData.FinalityHeight
+	beaconBlk.ValidationData = consensusData.ValidationData
+
+	// validate block before rewrite to
+	committees, err := chain.GetCommitteeV2(beaconBlk)
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(beaconBlk, committees); err != nil {
+		return err
+	}
+	//rewrite to database
+	if err = rawdbv2.StoreBeaconBlockByHash(chain.GetChainDatabase(), replaceBlockHash, beaconBlk); err != nil {
+		return err
+	}
+	//update multiview
+	chain.multiView.GetViewByHash(replaceBlockHash).ReplaceBlock(beaconBlk)
+	return nil
+}
+
 func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
 	panic("this function is not supported on beacon chain")
 }
