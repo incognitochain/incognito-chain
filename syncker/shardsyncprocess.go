@@ -94,6 +94,7 @@ func NewShardSyncProcess(
 			case f := <-s.actionCh:
 				f()
 			case shardPeerState := <-s.shardPeerStateCh:
+				Logger.Debugf("Got new shard peerstate, last height %v", shardPeerState.Shards[byte(s.shardID)].Height)
 				for sid, peerShardState := range shardPeerState.Shards {
 					if int(sid) == s.shardID {
 						s.shardPeerState[shardPeerState.SenderID] = ShardPeerState{
@@ -169,7 +170,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			}
 			//if already insert and error, last time insert is < 10s then we skip
 			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
-			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+			if ok && time.Since(insertTime.(time.Time)).Seconds() < (float64(common.TIMESLOT)/4) {
 				continue
 			}
 

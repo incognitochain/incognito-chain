@@ -70,7 +70,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 			case f := <-s.actionCh:
 				f()
 			case beaconPeerState := <-s.beaconPeerStateCh:
-				Logger.Debugf("Got new peerstate, last height %v", beaconPeerState.Beacon.Height)
+				Logger.Debugf("Got new beacon peerstate, last height %v", beaconPeerState.Beacon.Height)
 				s.beaconPeerStates[beaconPeerState.SenderID] = BeaconPeerState{
 					Timestamp:      beaconPeerState.Timestamp,
 					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),

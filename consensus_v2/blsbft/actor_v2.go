@@ -1211,6 +1211,17 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		return errors.New("Already receive block")
 	}
 
+	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
+	if err != nil {
+		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
+		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
+		return err
+	}
+
+	if block.GetHeight() <= a.chain.GetBestViewHeight() {
+		return errors.New("Receive block create from old view. Rejected!")
+	}
+
 	proposerCommitteePublicKey := incognitokey.CommitteePublicKey{}
 	proposerCommitteePublicKey.FromBase58(block.GetProposer())
 	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
@@ -1219,10 +1230,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		return err
 	}
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
-	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
-	if err != nil {
-		return err
-	}
+
 	if len(userKeySet) == 0 {
 		a.logger.Infof("HandleProposeMsg, Block Hash %+v,  Block Height %+v, round %+v, NOT in round for voting",
 			block.FullHashString(), block.GetHeight(), block.GetRound())
@@ -1254,15 +1262,6 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		return err
 	}
 
-	if block.GetHeight() <= a.chain.GetBestViewHeight() {
-		return errors.New("Receive block create from old view. Rejected!")
-	}
-
-	proposeView := a.chain.GetViewByHash(block.GetPrevHash())
-	if proposeView == nil {
-		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
-		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
-	}
 	return nil
 }
 
