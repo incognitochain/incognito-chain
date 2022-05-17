@@ -809,8 +809,8 @@ func (blockchain *BlockChain) tryUpdateCommitteeCheckPoint(
 		}
 	}
 	if (len(allCommitteeChange.BeaconCommitteeAdded) > 0) || (len(allCommitteeChange.BeaconCommitteeReplaced[common.REPLACE_IN]) > 0) {
-		Logger.log.Debugf("[debugcachecommittee] Update committee for beacon, epoch for cache %v", epochForCache)
-		blockchain.updateCommitteeChangeCheckpointByBC(common.BeaconChainSyncID, epochForCache, newBestState.ConsensusStateDBRootHash)
+		Logger.log.Debugf("[debugcachecommittee] Update committee for beacon, epoch for cache %v", epochForCache+1)
+		blockchain.updateCommitteeChangeCheckpointByBC(common.BeaconChainSyncID, epochForCache+1, newBestState.ConsensusStateDBRootHash)
 		key := getCommitteeCacheKeyByEpoch(epochForCache, common.BeaconChainSyncID)
 		committee := newBestState.GetCommittee()
 		if len(committee) == 0 {

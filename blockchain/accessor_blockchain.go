@@ -682,7 +682,7 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64
 	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
 	epochs := sCommitteeChange.Epochs
 	if len(epochs) == 0 {
-		return 0, common.Hash{}, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found, list checkpoint is empty", epoch, sID)
+		return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found, list checkpoint is empty", epoch, sID)
 	}
 	idx, existed := SearchUint64(epochs, epoch)
 	if existed {
@@ -694,5 +694,5 @@ func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64
 	if idx > 0 {
 		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]], nil
 	}
-	return 0, common.Hash{}, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found", epoch, sID)
+	return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found", epoch, sID)
 }

@@ -1457,6 +1457,7 @@ func (blockchain *BlockChain) getBeaconValidatorsFromPrevHash(
 }
 
 func (blockchain *BlockChain) getFixedShardValidator(
+	epoch uint64,
 	cID byte,
 ) (
 	res []incognitokey.CommitteePublicKey,
@@ -1466,9 +1467,16 @@ func (blockchain *BlockChain) getFixedShardValidator(
 		chkPnt        common.Hash
 		epochForCache uint64
 	)
-	res, epochForCache, chkPnt, err = blockchain.getValidatorsFromCacheByEpoch(1, cID)
+	epochForCache = 1
+	if common.IndexOfUint64(epoch, config.Param().ConsensusParam.EpochBreakPointSwapNewKey) > -1 {
+		epochForCache = epoch + 1
+	}
+	res, epochForCache, chkPnt, err = blockchain.getValidatorsFromCacheByEpoch(epochForCache, cID)
 	if err != nil {
 		Logger.log.Error(err)
+		if chkPnt == common.EmptyRoot {
+			return nil, err
+		}
 	}
 	if len(res) == 0 {
 		Logger.log.Error(fmt.Errorf("Get Fixed shard node at epoch %v cache nil shard %v committee", epochForCache, cID))
@@ -1495,6 +1503,7 @@ func (blockchain *BlockChain) getFixedShardValidator(
 }
 
 func (blockchain *BlockChain) getShardValidatorsForGetIdx(
+	epoch uint64,
 	beaconHash common.Hash,
 	cID byte,
 ) (
@@ -1502,7 +1511,7 @@ func (blockchain *BlockChain) getShardValidatorsForGetIdx(
 	err error,
 ) {
 	if beaconHash.IsZeroValue() {
-		return blockchain.getFixedShardValidator(cID)
+		return blockchain.getFixedShardValidator(epoch, cID)
 	}
 	return blockchain.GetShardCommitteeFromBeaconHash(beaconHash, cID)
 }
@@ -1520,7 +1529,7 @@ func (blockchain *BlockChain) GetValidatorIndex(
 	if cID == common.BeaconChainSyncID {
 		cList, err = blockchain.getBeaconValidators(epoch, height, prevHash)
 	} else {
-		cList, err = blockchain.getShardValidatorsForGetIdx(beaconHash, cID)
+		cList, err = blockchain.getShardValidatorsForGetIdx(epoch, beaconHash, cID)
 	}
 
 	if err != nil {
@@ -1551,7 +1560,7 @@ func (blockchain *BlockChain) GetValidatorFromIndex(
 	if cID == common.BeaconChainSyncID {
 		cList, err = blockchain.getBeaconValidators(epoch, height, prevHash)
 	} else {
-		cList, err = blockchain.getShardValidatorsForGetIdx(beaconHash, cID)
+		cList, err = blockchain.getShardValidatorsForGetIdx(epoch, beaconHash, cID)
 	}
 	if err != nil {
 		return "", err

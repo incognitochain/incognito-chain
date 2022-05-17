@@ -538,7 +538,6 @@ func (header BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, erro
 			header.Epoch,
 		)
 		if err != nil {
-			panic(err)
 			return nil, err
 		}
 		proposerIdx = producerIdx
@@ -552,7 +551,6 @@ func (header BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, erro
 				header.Epoch,
 			)
 			if err != nil {
-				panic(err)
 				return nil, err
 			}
 		}
