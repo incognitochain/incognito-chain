@@ -33,7 +33,7 @@ block_time:
   min_shard_block_interval: 10s
   max_shard_block_creation: 6s
 staking_amount_shard: 1750000000000
-active_shards: 2
+active_shards: 8
 basic_reward: 400000000
 epoch_param:
   number_of_block_in_epoch: 100
@@ -54,14 +54,14 @@ swap_committee_param:
   swap_offset: 1
   assign_offset: 2
 consensus_param:
-  consensus_v2_epoch: 1
-  staking_flow_v2_height: 1
-  enable_slashing_height: 1
-  assign_rule_v3_height: 1
-  enable_slashing_height_v2: 1
-  staking_flow_v3_height: 1
-  force_not_use_burned_coins: 1
-  lemma2_height: 1
+  consensus_v2_epoch: 15290
+  staking_flow_v2_height: 2051863
+  enable_slashing_height: 2087789
+  assign_rule_v3_height: 3023315
+  enable_slashing_height_v2: 3068072
+  staking_flow_v3_height: 3335020
+  force_not_use_burned_coins: 4211505
+  lemma2_height: 3790429
   block_producing_v3_height: 3791509
   byzantine_detector_height: 1000000000000
   timeslot: 10
@@ -114,10 +114,6 @@ pdex_param:
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
 auto_enable_feature:
-  - instantfinality:
-      min_trigger: 10
-      force_trigger: 1000000000
-      require_percentage: 1
   - maxcommitteesize48:
       min_trigger: 3965040
       force_trigger: 1000000000
