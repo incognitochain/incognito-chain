@@ -209,7 +209,6 @@ func (blkM *BlockManager) StoreBlock(
 			if blkBodyBytes, err = blkData.GetBodyBytes(); err != nil {
 				return err
 			} else {
-				fmt.Printf("block %v %+v", blkData.Hash().String(), blkBodyBytes)
 				if len(blkBodyBytes) > 0 {
 					if blkBodyBytes, err = common.GZipFromBytesWithLvl(blkBodyBytes, config.Param().FlatFileParam.CompLevel); err != nil {
 						return err

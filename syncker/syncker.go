@@ -44,8 +44,11 @@ type SynckerManager struct {
 	shardPool             map[int]*BlkPool
 	crossShardPool        map[int]*BlkPool
 
-	beaconCheckPointAtShard map[byte]uint64
-	chkpntLocker            *sync.RWMutex
+	beaconCheckPointAtShard map[byte]struct {
+		height uint64
+		time   time.Time
+	}
+	chkpntLocker *sync.RWMutex
 }
 
 func NewSynckerManager() *SynckerManager {
@@ -55,10 +58,19 @@ func NewSynckerManager() *SynckerManager {
 		CrossShardSyncProcess: make(map[int]*CrossShardSyncProcess),
 		crossShardPool:        make(map[int]*BlkPool),
 
-		beaconCheckPointAtShard: map[byte]uint64{},
+		beaconCheckPointAtShard: map[byte]struct {
+			height uint64
+			time   time.Time
+		}{},
 	}
 	for sID := byte(0); sID <= byte(config.Param().ActiveShards); sID++ {
-		s.beaconCheckPointAtShard[sID] = 1
+		s.beaconCheckPointAtShard[sID] = struct {
+			height uint64
+			time   time.Time
+		}{
+			1,
+			time.Now(),
+		}
 	}
 	s.chkpntLocker = &sync.RWMutex{}
 	return s
@@ -695,17 +707,25 @@ func (s *SynckerManager) UpdateBeaconAtShard(
 	locker := s.chkpntLocker
 	locker.RLock()
 	if nextSync, ok := s.beaconCheckPointAtShard[sID]; ok {
-		if nextSync < bcHeight {
-			locker.RUnlock()
+		locker.RUnlock()
+		if nextSync.height < bcHeight {
 			Logger.Infof("Update beacon at shard %v, nextSync %v start resync from %v", sID, nextSync, bcHeight+1)
 			go s.BeaconSyncProcess.RequestSyncRange(bcHeight + 1)
 			locker.Lock()
-			nextSync = bcHeight + 175
+			nextSync.height = bcHeight + 175
+			nextSync.time = time.Now()
 			s.beaconCheckPointAtShard[sID] = nextSync
 			locker.Unlock()
-			return
+		} else {
+			if time.Since(nextSync.time) > 15*time.Second {
+				Logger.Infof("Update beacon at shard %v, nextSync %v start resync from %v", sID, nextSync, bcHeight+1)
+				go s.BeaconSyncProcess.RequestSyncRange(bcHeight + 1)
+				locker.Lock()
+				nextSync.height = bcHeight + 175
+				nextSync.time = time.Now()
+				s.beaconCheckPointAtShard[sID] = nextSync
+				locker.Unlock()
+			}
 		}
 	}
-	locker.RUnlock()
-
 }
