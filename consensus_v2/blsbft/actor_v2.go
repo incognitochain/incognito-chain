@@ -1265,8 +1265,12 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	//update consensus data
 	if proposeMsg.BestBlockConsensusData != nil {
-		for _, consensusData := range proposeMsg.BestBlockConsensusData {
-			a.chain.ReplaceBlockConsensusData(consensusData)
+		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
+			if sid == -1 && a.chainID >= 0 {
+				a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.ReplaceBlockConsensusData(consensusData)
+			} else if sid >= 0 && a.chainID == -1 {
+				a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].ReplaceBlockConsensusData(consensusData)
+			}
 		}
 	}
 

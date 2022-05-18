@@ -1360,10 +1360,9 @@ func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyVa
 		if err == nil { //already insert
 			break
 		}
-
 		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, finalizedBlock.GetHeight())
-		fmt.Println("============== check beacon confirm", shardID, finalizedBlock.GetHeight(), confirmHash.String(), finalizedBlock.Hash().String())
 		if err == nil && confirmHash.String() == finalizedBlock.Hash().String() {
+			fmt.Println("============== StoreFinalizedShardBlockHashByIndex", shardID, finalizedBlock.GetHeight(), finalizedBlock.Hash().String())
 			blockchain.ShardChain[shardID].multiView.FinalizeView(*confirmHash)
 			err = rawdbv2.StoreFinalizedShardBlockHashByIndex(db, shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash())
 			if err != nil {
