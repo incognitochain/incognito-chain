@@ -56,7 +56,12 @@ func NewShardChain(
 	if err != nil {
 		panic(err)
 	}
-	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk, shardID)
+	p = path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("shard%v/removabledata", shardID))
+	ffRemovable, err := flatfile.NewFlatFile(p, 5*config.Param().EpochParam.NumberOfBlockInEpoch)
+	if err != nil {
+		panic(err)
+	}
+	blkM, err := blockstorage.NewBlockService(blockchain.GetShardChainDatabase(byte(shardID)), ffFinalBlk, ffRemovable, shardID)
 	return &ShardChain{
 		shardID:   shardID,
 		multiView: multiView,

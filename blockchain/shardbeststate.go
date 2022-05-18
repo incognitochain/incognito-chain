@@ -47,11 +47,6 @@ type ShardRootHashv2 struct {
 	SlashStateDBRootHash       statedb.RebuildInfo
 }
 
-type CommitteeCheckPoint struct {
-	Height   uint64      `json:"h"`
-	RootHash common.Hash `json:"rh"`
-}
-
 type ShardBestState struct {
 	BestBlockHash                    common.Hash       `json:"BestBlockHash"` // hash of block.
 	BestBlock                        *types.ShardBlock `json:"BestBlock"`     // block data
@@ -77,11 +72,6 @@ type ShardBestState struct {
 	BlockInterval          time.Duration
 	BlockMaxCreateTime     time.Duration
 	MetricBlockHeight      uint64
-
-	CommitteeChangeCheckpoint struct {
-		Data   map[uint64]CommitteeCheckPoint
-		Epochs []uint64
-	} `json:"CmtChkP"`
 
 	//================================ StateDB Method
 	// block height => root hash
@@ -842,47 +832,4 @@ func (shardBestState *ShardBestState) CommitTrieToDisk(db incdb.Database, forceW
 
 func (curView *ShardBestState) GetProposerLength() int {
 	return curView.NumberOfFixedShardBlockValidator
-}
-
-func (shardBestState *ShardBestState) updateCommitteeChangeCheckpoint(epoch, height uint64, rootHash common.Hash) {
-	newMap := map[uint64]CommitteeCheckPoint{}
-	for k, v := range shardBestState.CommitteeChangeCheckpoint.Data {
-		newMap[k] = v
-	}
-	newMap[epoch] = CommitteeCheckPoint{
-		Height:   height,
-		RootHash: rootHash,
-	}
-
-	newEpochs := make([]uint64, len(shardBestState.CommitteeChangeCheckpoint.Epochs)+1)
-	copy(newEpochs, shardBestState.CommitteeChangeCheckpoint.Epochs)
-	newEpochs[len(shardBestState.CommitteeChangeCheckpoint.Epochs)] = epoch
-	shardBestState.CommitteeChangeCheckpoint = struct {
-		Data   map[uint64]CommitteeCheckPoint
-		Epochs []uint64
-	}{
-		Data:   newMap,
-		Epochs: newEpochs,
-	}
-}
-
-func (shardBestState *ShardBestState) GetCheckpointChangeCommitteeByEpoch(epoch uint64) (
-	epochCheckpoint uint64,
-	dbRootHash common.Hash,
-) {
-	epochs := shardBestState.CommitteeChangeCheckpoint.Epochs
-	if len(epochs) == 0 {
-		return 0, common.Hash{0}
-	}
-	idx, existed := SearchUint64(epochs, epoch)
-	if existed {
-		return epoch, shardBestState.CommitteeChangeCheckpoint.Data[epoch].RootHash
-	}
-	if idx > len(epochs) {
-		return epochs[len(epochs)-1], shardBestState.CommitteeChangeCheckpoint.Data[epochs[len(epochs)-1]].RootHash
-	}
-	if idx > 0 {
-		return epochs[idx-1], shardBestState.CommitteeChangeCheckpoint.Data[epochs[idx-1]].RootHash
-	}
-	return 0, common.Hash{0}
 }

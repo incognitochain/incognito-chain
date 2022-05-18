@@ -477,6 +477,48 @@ func (sBlock *ShardBlock) FromProtoShardBlock(protoData *proto.ShardBlockBytes) 
 	return sBlock.Header.FromProtoShardHeader(protoData.Header)
 }
 
+func (sBlock *ShardBlock) GetHeaderBytes() ([]byte, error) {
+	protoHeader, err := sBlock.Header.ToProtoShardHeader()
+	if (protoHeader == nil) || (err != nil) {
+		return nil, errors.Errorf("Can not convert shard header %v - %v to protobuf, err %v", sBlock.Header.Height, sBlock.Hash().String(), err)
+	}
+	return ggproto.Marshal(protoHeader)
+}
+
+func (sBlock *ShardBlock) SetHeaderFromBytes(rawBytes []byte) error {
+	protoHeader := &proto.ShardHeaderBytes{}
+	err := ggproto.Unmarshal(rawBytes, protoHeader)
+	if err != nil {
+		return err
+	}
+	return sBlock.Header.FromProtoShardHeader(protoHeader)
+}
+
+func (sBlock *ShardBlock) GetBodyBytes() ([]byte, error) {
+	protoBody := sBlock.Body.ToProtoShardBody()
+	if protoBody == nil {
+		return nil, errors.Errorf("Can not convert shard block %v - %v to protobuf", sBlock.Header.Height, sBlock.Hash().String())
+	}
+	return ggproto.Marshal(protoBody)
+}
+
+func (sBlock *ShardBlock) SetBodyFromBytes(rawBytes []byte) error {
+	protoBody := &proto.ShardBodyBytes{}
+	if len(rawBytes) > 0 {
+		err := ggproto.Unmarshal(rawBytes, protoBody)
+		if err != nil {
+			return err
+		}
+	}
+	return sBlock.Body.FromProtoShardBody(protoBody)
+}
+
+func (sBlock *ShardBlock) RemoveBody() {
+	sBlock.Body.Transactions = []metadata.Transaction{}
+	sBlock.Body.Instructions = [][]string{}
+	sBlock.Body.CrossTransactions = map[byte][]CrossTransaction{}
+}
+
 func (shardBlock *ShardBlock) FromBytes(data []byte) error {
 	protoBlk := &proto.ShardBlockBytes{}
 	err := ggproto.Unmarshal(data, protoBlk)

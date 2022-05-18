@@ -69,7 +69,7 @@ func NewShardSyncProcess(
 		Network:          network,
 		Chain:            chain,
 		beaconChain:      beaconChain,
-		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
+		shardPool:        NewBlkPool("ShardPool-"+fmt.Sprint(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
@@ -221,6 +221,11 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		if s.status != RUNNING_SYNC {
 			s.isCatchUp = false
 			time.Sleep(time.Second * 5)
+			continue
+		}
+
+		if !s.Network.IsReady() {
+			time.Sleep(time.Second)
 			continue
 		}
 

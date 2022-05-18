@@ -555,7 +555,8 @@ func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateMap() m
 }
 
 func (beaconBestState *BeaconBestState) GetHash() *common.Hash {
-	return beaconBestState.BestBlock.Hash()
+	h := beaconBestState.BestBlock.Header.Hash()
+	return &h
 }
 
 func (beaconBestState *BeaconBestState) GetPreviousHash() *common.Hash {
@@ -567,7 +568,7 @@ func (beaconBestState *BeaconBestState) GetPreviousBlockCommittee(db incdb.Datab
 }
 
 func (beaconBestState *BeaconBestState) GetHeight() uint64 {
-	return beaconBestState.BestBlock.GetHeight()
+	return beaconBestState.BestBlock.Header.Height
 }
 
 func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
@@ -589,7 +590,7 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 
 	if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 
-		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
+		expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.Header.Version)
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 		Logger.log.Debug("Get Missing Signature with Slashing V2")
 	} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
@@ -740,7 +741,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
-			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
+			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.Header.Version)
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
@@ -783,7 +784,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
-			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
+			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.Header.Version)
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
 			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
@@ -904,23 +905,37 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	beaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
 	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
-	tempBeaconBlock := beaconBlock
+	if firstBeaconHeightOfEpoch == 1 {
+		firstBeaconHeightOfEpoch++
+	}
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
-
-	for tempBeaconHeight >= firstBeaconHeightOfEpoch {
-		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
-			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
-		}
-		if tempBeaconHeight == 1 {
-			break
-		}
-		previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
+	if config.Config().SyncMode == common.STATEDB_LITE_MODE {
+		bcBlks, err := bc.GetConfig().Syncker.ReSyncBeaconBlockByHeight(firstBeaconHeightOfEpoch, tempBeaconHeight)
 		if err != nil {
 			return err
 		}
-		tempBeaconBlock = previousBeaconBlock
-		tempBeaconHeight--
+		for _, blk := range bcBlks {
+			for shardID, shardStates := range blk.Body.ShardState {
+				allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
+			}
+		}
+	} else {
+		tempBeaconBlock := beaconBlock
+		for tempBeaconHeight >= firstBeaconHeightOfEpoch {
+			for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
+				allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
+			}
+			if tempBeaconHeight == 1 {
+				break
+			}
+			previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
+			if err != nil {
+				return err
+			}
+			tempBeaconBlock = previousBeaconBlock
+			tempBeaconHeight--
+		}
 	}
 
 	return beaconBestState.countMissingSignature(bc, allShardStates)

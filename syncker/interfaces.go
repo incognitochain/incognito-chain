@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"context"
+
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -22,6 +23,7 @@ type Network interface {
 	RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	PublishMessageToShard(msg wire.Message, shardID byte) error
+	IsReady() bool
 }
 
 type BeaconChainInterface interface {

@@ -20,6 +20,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
@@ -656,4 +657,9 @@ func GetCPUSample() (idle, total uint64) {
 		}
 	}
 	return
+}
+
+func GenUUID() string {
+	randUUID, _ := uuid.NewRandom()
+	return randUUID.String()
 }

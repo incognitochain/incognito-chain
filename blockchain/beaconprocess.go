@@ -791,6 +791,36 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 	return nil
 }
 
+func (blockchain *BlockChain) tryUpdateCommitteeCheckPoint(
+	newBestState *BeaconBestState,
+	allCommitteeChange *committeestate.CommitteeChange,
+) {
+	epochForCache := newBestState.Epoch
+	for sID := 0; sID < blockchain.GetActiveShardNumber(); sID++ {
+		if (len(allCommitteeChange.ShardCommitteeAdded[byte(sID)]) > 0) || (len(allCommitteeChange.ShardCommitteeReplaced[byte(sID)][common.REPLACE_IN]) > 0) {
+			Logger.log.Debugf("[debugcachecommittee] Update committee for shard %+v, epoch for cache %v", sID, epochForCache)
+			blockchain.updateCommitteeChangeCheckpointByBC(byte(sID), epochForCache, newBestState.ConsensusStateDBRootHash)
+			key := getCommitteeCacheKeyByEpoch(epochForCache, byte(sID))
+			committee := newBestState.GetAShardCommittee(byte(sID))
+			if len(committee) == 0 {
+				panic(fmt.Sprintf("Beacon %v  at epoch %v cache nil shard %v committee", newBestState.GetBeaconHeight(), epochForCache, sID))
+			}
+			blockchain.committeeByEpochCache.Add(key, committee)
+		}
+	}
+	if (len(allCommitteeChange.BeaconCommitteeAdded) > 0) || (len(allCommitteeChange.BeaconCommitteeReplaced[common.REPLACE_IN]) > 0) {
+		Logger.log.Debugf("[debugcachecommittee] Update committee for beacon, epoch for cache %v", epochForCache+1)
+		blockchain.updateCommitteeChangeCheckpointByBC(common.BeaconChainSyncID, epochForCache+1, newBestState.ConsensusStateDBRootHash)
+		key := getCommitteeCacheKeyByEpoch(epochForCache, common.BeaconChainSyncID)
+		committee := newBestState.GetCommittee()
+		if len(committee) == 0 {
+			panic(fmt.Sprintf("Beacon %v  at epoch %v cache nil committee", newBestState.GetBeaconHeight(), epochForCache))
+		} else {
+			blockchain.committeeByEpochCache.Add(key, newBestState.GetCommittee())
+		}
+	}
+}
+
 func (blockchain *BlockChain) processStoreBeaconBlock(
 	curView *BeaconBestState,
 	newBestState *BeaconBestState,
@@ -1019,7 +1049,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := newBestState.CommitTrieToDisk(batch); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-
+	blockchain.tryUpdateCommitteeCheckPoint(newBestState, committeeChange)
 	if err := blockchain.BeaconChain.blkManager.StoreBlock(proto.BlkType_BlkBc, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}

@@ -2,15 +2,12 @@ package peerv2
 
 import (
 	"context"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	"github.com/pkg/errors"
-
-	"github.com/google/uuid"
 )
 
 func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
@@ -29,17 +26,6 @@ func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
 		return splitStr[0], p
 	}
 	return splitStr[0], 0
-}
-
-func generateRand() []byte {
-	res := make([]byte, 40)
-	Logger.Info(time.Now().UnixNano())
-	rand.Seed(int64(time.Now().Nanosecond()))
-	for i := 0; i < 40; i++ {
-		rand := byte(rand.Intn(256))
-		res[i] = rand
-	}
-	return res
 }
 
 // GetCommitteeIDOfTopic handle error later TODO handle error pls
@@ -147,11 +133,6 @@ func batchingRangeBlkForSync(
 	}
 	res = append(res, to)
 	return res
-}
-
-func genUUID() string {
-	randUUID, _ := uuid.NewRandom()
-	return randUUID.String()
 }
 
 func getAvgRTT(
