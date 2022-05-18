@@ -23,23 +23,23 @@ func GetChainCommittee(beaconNode remotetests.NodeClient) ChainCommittee {
 
 func Lemma2ScenarioTest(nodeManager remotetests.NodeManager) {
 	chainCommittee := GetChainCommittee(nodeManager.BeaconNode[0])
+	finish := false
 
 	//beacon re-propose
-	fmt.Println("Set consensus rule to no vote ...")
+	fmt.Println("Set beacon consensus rule to no vote ...")
 	for _, beaconCpk := range chainCommittee.beacon {
 		client := nodeManager.CommitteePublicKeys[beaconCpk].RPCClient
 		client.SetConsensusRule(devframework.ConsensusRule{VoteRule: blsbft.VOTE_RULE_NO_VOTE})
 	}
-	finish := false
 	go func() {
 		beaconNode := nodeManager.BeaconNode[0]
 		shardNode0 := nodeManager.ShardFixNode[0][0]
 		shardNode1 := nodeManager.ShardFixNode[1][0]
 		for !finish {
 			go func() {
-				fmt.Println("checking instant finality ...")
 				v, _ := beaconNode.RPCClient.GetAllViewDetail(-1)
 				if len(v) > 1 {
+
 					panic("More than 1 view")
 				}
 				v, _ = shardNode0.RPCClient.GetAllViewDetail(-1)
@@ -53,15 +53,46 @@ func Lemma2ScenarioTest(nodeManager remotetests.NodeManager) {
 			}()
 			time.Sleep(time.Second * 2)
 		}
-		fmt.Println("Done test! ")
 	}()
 	time.Sleep(time.Second * 60)
-	fmt.Println("Set consensus rule to normal ...")
+	fmt.Println("Set beacon consensus rule to normal ...")
 	for _, beaconCpk := range chainCommittee.beacon {
 		client := nodeManager.CommitteePublicKeys[beaconCpk].RPCClient
 		client.SetConsensusRule(devframework.ConsensusRule{VoteRule: blsbft.VOTE_RULE_VOTE})
 	}
 	time.Sleep(time.Second * 30)
+
+	//shard re-propose
+	fmt.Println("Set shard consensus rule to no vote ...")
+	for _, shardCpk := range chainCommittee.shard[0] {
+		client := nodeManager.CommitteePublicKeys[shardCpk].RPCClient
+		client.SetConsensusRule(devframework.ConsensusRule{VoteRule: blsbft.VOTE_RULE_NO_VOTE})
+	}
+	go func() {
+		beaconNode := nodeManager.BeaconNode[0]
+		shardNode0 := nodeManager.ShardFixNode[0][0]
+		for !finish {
+			go func() {
+				v, _ := beaconNode.RPCClient.IsInstantFinality(0)
+				if !v {
+					panic("Not instant finality")
+				}
+				v, _ = shardNode0.RPCClient.IsInstantFinality(0)
+				if !v {
+					panic("Not instant finality")
+				}
+			}()
+			time.Sleep(time.Second * 2)
+		}
+	}()
+	time.Sleep(time.Second * 60)
+	fmt.Println("Set shard consensus rule to normal ...")
+	for _, shardCpk := range chainCommittee.shard[0] {
+		client := nodeManager.CommitteePublicKeys[shardCpk].RPCClient
+		client.SetConsensusRule(devframework.ConsensusRule{VoteRule: blsbft.VOTE_RULE_VOTE})
+	}
+	time.Sleep(time.Second * 30)
 	finish = true
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 50)
+
 }

@@ -29,6 +29,7 @@ type View interface {
 }
 
 type MultiView interface {
+	IsInstantFinality() bool
 	GetViewByHash(hash common.Hash) View
 	SimulateAddView(view View) (cloneMultiview MultiView)
 	GetBestView() View
@@ -340,6 +341,13 @@ func (s *multiView) findExpectFinalView(checkView View) View {
 		currentViewPoint = prev1View
 	}
 	return currentViewPoint
+}
+
+func (s *multiView) IsInstantFinality() bool {
+	if s.expectedFinalView == s.bestView {
+		return true
+	}
+	return false
 }
 
 func (s *multiView) getAllViewsWithBFS(rootView View) []View {

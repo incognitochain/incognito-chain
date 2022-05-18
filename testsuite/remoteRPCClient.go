@@ -16,6 +16,36 @@ type RemoteRPCClient struct {
 	Endpoint string
 }
 
+func (r *RemoteRPCClient) IsInstantFinality(chainID int) (res bool, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "isinstantfinality",
+		"params":  []interface{}{chainID},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result bool
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
 func (r *RemoteRPCClient) GetAllViewDetail(chainID int) (res []jsonresult.GetViewResult, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
