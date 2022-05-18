@@ -159,10 +159,28 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 
 //propose hash of beacon contain consensus info
 func (beaconBlock BeaconBlock) ProposeHash() *common.Hash {
-	return beaconBlock.Hash()
+	hash := beaconBlock.Header.ProposeHash()
+	return &hash
 }
+
+func (beaconHeader *BeaconHeader) ProposeHash() common.Hash {
+
+	if beaconHeader.Version < INSTANT_FINALITY_VERSION {
+		return beaconHeader.Hash()
+	}
+	res := beaconHeader.toString()
+	res += beaconHeader.Proposer
+	res += fmt.Sprintf("%v", beaconHeader.ProposeTime)
+	res += fmt.Sprintf("%v", beaconHeader.FinalityHeight)
+	blkInstHash := beaconHeader.InstructionMerkleRoot
+	blkMetaHash := common.Keccak256([]byte(res))
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+
+	return common.Keccak256(combined)
+}
+
 func (beaconBlock BeaconBlock) FullHashString() string {
-	return beaconBlock.Hash().String()
+	return beaconBlock.ProposeHash().String() + "~" + beaconBlock.Hash().String()
 }
 
 func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
@@ -296,14 +314,18 @@ func (header *BeaconHeader) toString() string {
 	res += header.ShardStateHash.String()
 	res += header.InstructionHash.String()
 
-	//to compatible with mainnet database, version 3 dont have proposer info
-	if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
-		res += header.Proposer
-		res += fmt.Sprintf("%v", header.ProposeTime)
-	}
+	if header.Version >= INSTANT_FINALITY_VERSION {
+		//instant finality will move consensus info out of block hash
+	} else {
+		//to compatible with mainnet database, version 3 dont have proposer info
+		if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
+			res += header.Proposer
+			res += fmt.Sprintf("%v", header.ProposeTime)
+		}
 
-	if header.Version >= LEMMA2_VERSION {
-		res += fmt.Sprintf("%v", header.FinalityHeight)
+		if header.Version >= LEMMA2_VERSION {
+			res += fmt.Sprintf("%v", header.FinalityHeight)
+		}
 	}
 
 	return res

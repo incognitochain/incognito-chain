@@ -1132,7 +1132,7 @@ func (a *actorV2) sendVote(
 		a.logger.Errorf("add vote history error %+v", err)
 	}
 
-	a.logger.Info(a.chainKey, "sending vote...")
+	a.logger.Info(a.chainKey, "sending vote...", block.FullHashString())
 
 	go a.node.PushMessageToChain(msg, a.chain)
 
@@ -1423,9 +1423,9 @@ func (a *actorV2) handleCleanMem() {
 func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	bestViewHeight := bestView.GetHeight()
-	bestViewHash := *bestView.GetHash()
+	bestViewProposeHash := *bestView.GetBlock().ProposeHash()
 	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.ruleDirector.builder.ValidatorRule().FilterValidProposeBlockInfo(
-		bestViewHash,
+		bestViewProposeHash,
 		bestViewHeight,
 		a.chain.GetFinalView().GetHeight(),
 		a.currentTimeSlot,

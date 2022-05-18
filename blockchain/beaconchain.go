@@ -321,7 +321,13 @@ func (chain *BeaconChain) ReplaceBlockConsensusData(consensusData types.BlockCon
 		return err
 	}
 	//update multiview
-	chain.multiView.GetViewByHash(replaceBlockHash).ReplaceBlock(beaconBlk)
+
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(beaconBlk)
+	} else {
+		fmt.Println("Cannot find beacon view", replaceBlockHash.String())
+	}
 	return nil
 }
 

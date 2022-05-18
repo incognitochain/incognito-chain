@@ -29,7 +29,7 @@ func NewConsensusValidatorLemma2(logger common.Logger, chain Chain) *ConsensusVa
 // 2. just validate recently
 // 3. not in current time slot
 // 4. not connect to best view
-func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewHash common.Hash, bestViewHeight uint64, finalViewHeight uint64, currentTimeSlot int64, proposeBlockInfos map[string]*ProposeBlockInfo) ([]*ProposeBlockInfo, []*ProposeBlockInfo, []string) {
+func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHash common.Hash, bestViewHeight uint64, finalViewHeight uint64, currentTimeSlot int64, proposeBlockInfos map[string]*ProposeBlockInfo) ([]*ProposeBlockInfo, []*ProposeBlockInfo, []string) {
 	//Check for valid block to vote
 	validProposeBlock := []*ProposeBlockInfo{}
 	tryReVoteInsertedBlock := []*ProposeBlockInfo{}
@@ -49,7 +49,7 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewHash commo
 		//=> vote for this block (within TS,but block is inserted into bestview)
 		//this special case by pass validate with consensus rules
 		if proposeBlockInfo.block.GetHeight() == bestViewHeight &&
-			proposeBlockInfo.block.Hash().IsEqual(&bestViewHash) &&
+			proposeBlockInfo.block.ProposeHash().IsEqual(&bestViewProposeHash) &&
 			!proposeBlockInfo.IsVoted {
 			tryReVoteInsertedBlock = append(tryReVoteInsertedBlock, proposeBlockInfo)
 			continue
