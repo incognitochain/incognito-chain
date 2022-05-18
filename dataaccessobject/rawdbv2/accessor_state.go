@@ -66,3 +66,8 @@ func GetDatabaseConfig(db incdb.KeyValueReader) ([]byte, error) {
 	}
 	return dbConfigBytes, nil
 }
+
+func StoreDatabaseConfig(db incdb.KeyValueWriter, data []byte) error {
+	key := GetDatabaseConfigFromDBKey()
+	return db.Put(key, data)
+}

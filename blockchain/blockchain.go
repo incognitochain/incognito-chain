@@ -184,6 +184,11 @@ func (blockchain *BlockChain) InitChainState() error {
 	}
 	//check if bestview is not stored, then init
 	bcDB := blockchain.GetBeaconChainDatabase()
+	if err = blockchain.GetDBConfigFromDB(); err != nil {
+		if err = blockchain.NewDBConfig(); err != nil {
+			return err
+		}
+	}
 	if _, err := rawdbv2.GetBeaconViews(bcDB); err != nil {
 		err := blockchain.initBeaconState()
 		if err != nil {
@@ -1462,11 +1467,14 @@ func (blockchain *BlockChain) getFixedShardValidator(
 	}
 	if len(res) == 0 {
 		Logger.log.Error(fmt.Errorf("Get Fixed shard node at epoch %v cache nil shard %v committee", epochForCache, cID))
-		if finalView := blockchain.BeaconChain.GetFinalView(); finalView != nil {
-			finalBestState := finalView.(*BeaconBestState)
-			shardValidator := finalBestState.GetAShardCommittee(cID)
-			if len(shardValidator) >= finalBestState.NumberOfFixedShardBlockValidator {
-				return shardValidator[:finalBestState.NumberOfFixedShardBlockValidator], nil
+		if int(cID) < len(blockchain.ShardChain) {
+			chain := blockchain.ShardChain[cID]
+			if finalView := chain.GetBestView(); finalView != nil {
+				finalBestState := finalView.(*ShardBestState)
+				shardValidator := finalBestState.GetCommittee()
+				if len(shardValidator) >= finalBestState.NumberOfFixedShardBlockValidator {
+					return shardValidator[:finalBestState.NumberOfFixedShardBlockValidator], nil
+				}
 			}
 		}
 		bcDB := blockchain.GetBeaconChainDatabase()

@@ -698,9 +698,17 @@ type DatabaseConfiguration struct {
 }
 
 func (bc *BlockChain) NewDBConfig() error {
-	// dbConfig := &DatabaseConfiguration{}
-	// db := bc.GetBeaconChainDatabase()
-	return nil
+	dbConfig := &DatabaseConfiguration{
+		Mode:          config.Config().SyncMode,
+		FFStorage:     config.Config().EnableFFStorage,
+		CompressLevel: config.Param().FlatFileParam.CompLevel,
+	}
+	db := bc.GetBeaconChainDatabase()
+	configBytes, err := json.Marshal(dbConfig)
+	if err != nil {
+		return err
+	}
+	return rawdbv2.StoreDatabaseConfig(db, configBytes)
 }
 
 func (bc *BlockChain) GetDBConfigFromDB() error {
@@ -715,7 +723,14 @@ func (bc *BlockChain) GetDBConfigFromDB() error {
 		return err
 	}
 	if config.Config().SyncMode != dbConfig.Mode {
-
+		config.Config().SyncMode = dbConfig.Mode
 	}
+	if config.Config().EnableFFStorage != dbConfig.FFStorage {
+		config.Config().EnableFFStorage = dbConfig.FFStorage
+	}
+	if config.Param().FlatFileParam.CompLevel != dbConfig.CompressLevel {
+		config.Param().FlatFileParam.CompLevel = dbConfig.CompressLevel
+	}
+
 	return nil
 }
