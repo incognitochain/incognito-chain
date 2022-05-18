@@ -97,7 +97,7 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 
 func (v VoteRule) CreateVote(env *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
 
-	vote, err := createVote(env.userKey, block, env.signingCommittees, env.portalParamV4)
+	vote, err := CreateVote(env.userKey, block, env.signingCommittees, env.portalParamV4)
 	if err != nil {
 		v.logger.Error(err)
 		return nil, err
@@ -106,7 +106,7 @@ func (v VoteRule) CreateVote(env *VoteMessageEnvironment, block types.BlockInter
 	return vote, nil
 }
 
-func createVote(
+func CreateVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,

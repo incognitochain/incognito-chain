@@ -127,6 +127,32 @@ func (httpServer *HttpServer) handleGetBurnPLGProofForDepositToSC(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
+// handleGetFTMBurnProof returns a proof of a tx burning pFTM ( Fantom )
+func (httpServer *HttpServer) handleGetFTMBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningFantomConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetBurnFTMProofForDepositToSC returns a proof of a tx burning pFTM to deposit to SC
+func (httpServer *HttpServer) handleGetBurnFTMProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningFantomConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {

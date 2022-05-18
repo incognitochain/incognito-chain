@@ -47,7 +47,7 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 	return s.validators
 }
 
-func (s *Engine) GetSyncingValidators() []*consensus.Validator {
+func (s *Engine) GetValidators() []*consensus.Validator {
 	res := []*consensus.Validator{}
 	for _, validator := range s.validators {
 		res = append(res, validator)
@@ -234,7 +234,7 @@ func (engine *Engine) Start() error {
 }
 
 func (engine *Engine) loadKeysFromPrivateKey() {
-	privateSeed, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
+	privateSeed, err := GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 	if err != nil {
 		panic(err)
 	}

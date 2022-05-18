@@ -56,6 +56,14 @@ func (chain *BeaconChain) GetMultiView() *multiview.MultiView {
 	return chain.multiView
 }
 
+func (chain *BeaconChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *BeaconChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
+}
+
 func (chain *BeaconChain) GetBestView() multiview.View {
 	return chain.multiView.GetBestView()
 }
@@ -357,6 +365,10 @@ func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incogni
 		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetAShardPendingValidator(shardID)...)
 	}
 	return result
+}
+
+func (chain *BeaconChain) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+	return chain.GetBestView().(*BeaconBestState).GetSyncingValidators()
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {

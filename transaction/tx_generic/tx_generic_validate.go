@@ -94,6 +94,7 @@ func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 	meta := tx.GetMetadata()
 	if meta != nil {
 		isContinued, err := meta.ValidateTxWithBlockChain(tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+		utils.Logger.Log.Info("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			utils.Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
 			return utils.NewTransactionErr(utils.RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))

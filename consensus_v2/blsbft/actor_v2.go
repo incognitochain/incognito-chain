@@ -772,6 +772,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	}
 
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
+	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
 
 	if !proposeBlockInfo.IsCommitted {
 		a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
@@ -800,7 +801,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
+	v.block.(BlockValidation).AddValidationField(validationData)
 
 	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
@@ -820,8 +821,8 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
 	isInsertWithPreviousData := false
+	v.block.(BlockValidation).AddValidationField(validationData)
 	// validate and previous block
 	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -835,7 +836,7 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 		if err != nil {
 			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
 		} else {
-			previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
+			previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
 			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
 				return err
 			}
@@ -878,7 +879,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 		return "", err
 	}
 
-	aggSig, brigSigs, validatorIdx, portalSigs, err := a.combineVotes(votes, committeeBLSString)
+	aggSig, brigSigs, validatorIdx, portalSigs, err := CombineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
 	}
@@ -919,6 +920,12 @@ func (a *actorV2) voteValidBlock(
 				return NewConsensusError(UnExpectedError, err)
 			} else {
 				proposeBlockInfo.IsVoted = true
+				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+					return err
+				}
+				if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1057,7 +1064,7 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 	validationData.PortalSig = portalSigs
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
-	block.(blockValidation).AddValidationField(validationDataString)
+	block.(BlockValidation).AddValidationField(validationDataString)
 
 	return block, nil
 }
@@ -1214,9 +1221,9 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	block := blockInfo.(types.BlockInterface)
 
 	blockHash := block.Hash().String()
-	producerCommitteePublicKey := incognitokey.CommitteePublicKey{}
-	producerCommitteePublicKey.FromBase58(block.GetProducer())
-	producerMiningKeyBase58 := producerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
+	proposerCommitteePublicKey := incognitokey.CommitteePublicKey{}
+	proposerCommitteePublicKey.FromBase58(block.GetProposer())
+	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
 	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
 	if err != nil {
 		a.logger.Error(err)
@@ -1246,15 +1253,17 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		}
 	}
 
-	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash); !ok {
+	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash); !ok ||
+		!reflect.DeepEqual(proposeBlockInfo.block, block) {
 		err := a.handleNewProposeMsg(
+			proposeBlockInfo,
 			proposeMsg,
 			block,
 			previousBlock,
 			committees,
 			signingCommittees,
 			userKeySet,
-			producerMiningKeyBase58,
+			proposerMiningKeyBase58,
 		)
 		if err != nil {
 			a.logger.Error(err)
@@ -1282,13 +1291,14 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 }
 
 func (a *actorV2) handleNewProposeMsg(
+	oldProposeBlockInfo *ProposeBlockInfo,
 	proposeMsg BFTPropose,
 	block types.BlockInterface,
 	previousBlock types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittees []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
-	producerPublicBLSMiningKey string,
+	proposerPublicBLSMiningKey string,
 ) error {
 
 	blockHash := block.Hash().String()
@@ -1299,21 +1309,33 @@ func (a *actorV2) handleNewProposeMsg(
 		signingCommittees,
 		userKeySet,
 		a.chain.GetBestView().GetProposerLength(),
-		producerPublicBLSMiningKey,
+		proposerPublicBLSMiningKey,
 	)
-	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
+
+	newProposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
 		a.logger.Errorf("Fail to HandleBFTProposeMessage, block %+v, %+v, "+
 			"error %+v", block.GetHeight(), block.Hash().String(), err)
 		return err
 	}
 
-	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
+	if oldProposeBlockInfo != nil {
+		if len(oldProposeBlockInfo.Votes) != 0 {
+			for k, v := range oldProposeBlockInfo.Votes {
+				newProposeBlockInfo.Votes[k] = v
+			}
+		}
+		newProposeBlockInfo.ErrVotes = oldProposeBlockInfo.ErrVotes
+		newProposeBlockInfo.ValidVotes = oldProposeBlockInfo.ValidVotes
+	}
+
+	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	if err := a.AddReceiveBlockByHeight(block.GetHeight(), proposeBlockInfo); err != nil {
+	if err := a.AddReceiveBlockByHeight(block.GetHeight(), newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by height error %+v", err)
 	}
+
 	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
@@ -1367,6 +1389,12 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 								a.logger.Error(err)
 							} else {
 								proposeBlockInfo.ProposerSendVote = true
+								if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.Hash().String(), proposeBlockInfo); err != nil {
+									return err
+								}
+								if err := a.AddReceiveBlockByHeight(proposeBlockInfo.block.GetHeight(), proposeBlockInfo); err != nil {
+									return err
+								}
 							}
 						}
 					} else {
@@ -1411,8 +1439,7 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	for h, proposeBlk := range a.receiveBlockByHash {
-		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute {
-			//delete(a.votedTimeslot, proposeBlk.block.GetProposeTime())
+		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && (proposeBlk.block == nil || proposeBlk.block.GetHeight() <= a.chain.GetFinalView().GetHeight()) {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}
@@ -1524,7 +1551,7 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	return nil
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
+func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {

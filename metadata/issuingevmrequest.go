@@ -159,7 +159,7 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingETHRequestMeta && iReq.Type != IssuingBSCRequestMeta &&
 		iReq.Type != IssuingPRVERC20RequestMeta && iReq.Type != IssuingPRVBEP20RequestMeta &&
-		iReq.Type != IssuingPLGRequestMeta {
+		iReq.Type != IssuingPLGRequestMeta && iReq.Type != IssuingFantomRequestMeta {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()
@@ -233,6 +233,10 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		evmParam := config.Param().PLGParam
 		evmParam.GetFromEnv()
 		host = evmParam.Host
+	} else if iReq.Type == IssuingFantomRequestMeta {
+		evmParam := config.Param().FTMParam
+		evmParam.GetFromEnv()
+		host = evmParam.Host
 	} else {
 		return nil, errors.New("[verifyProofAndParseReceipt] invalid metatype")
 	}
@@ -254,6 +258,8 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	minEVMConfirmationBlocks := EVMConfirmationBlocks
 	if iReq.Type == IssuingPLGRequestMeta {
 		minEVMConfirmationBlocks = PLGConfirmationBlocks
+	} else if iReq.Type == IssuingFantomRequestMeta {
+		minEVMConfirmationBlocks = FantomConfirmationBlocks
 	}
 	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(int64(minEVMConfirmationBlocks)))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs %v confirmation blocks for the process, "+
@@ -283,7 +289,8 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta || iReq.Type == IssuingPLGRequestMeta {
+	if iReq.Type == IssuingETHRequestMeta || iReq.Type == IssuingPRVERC20RequestMeta ||
+		iReq.Type == IssuingPLGRequestMeta || iReq.Type == IssuingFantomRequestMeta {
 		if len(val) == 0 {
 			return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New("the encoded receipt is empty"))
 		}
@@ -401,6 +408,10 @@ func GetMostRecentEVMBlockHeight(protocol string, host string, port string) (*bi
 	}
 	if getEVMBlockNumRes.RPCError != nil {
 		return nil, errors.New(fmt.Sprintf("an error occured during calling eth_blockNumber: %s", getEVMBlockNumRes.RPCError.Message))
+	}
+
+	if len(getEVMBlockNumRes.Result) < 2 {
+		return nil, errors.New(fmt.Sprintf("invalid block height number eth_blockNumber: %s", getEVMBlockNumRes.Result))
 	}
 
 	blockNumber := new(big.Int)

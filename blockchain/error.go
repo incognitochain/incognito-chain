@@ -113,6 +113,7 @@ const (
 	WrongEpochError
 	GenerateInstructionHashError
 	GetShardBlocksForBeaconProcessError
+	GetDequeueInstructionError
 	ShardStateHeightError
 	ShardStateCrossShardBitMapError
 	ShardBlockSignatureError
@@ -194,6 +195,8 @@ const (
 	ShardBlockAlreadyExist
 	PDEStateDBError
 	UpdateBFTV3StatsError
+	FinishSyncInstructionError
+	OutdatedCodeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -367,11 +370,12 @@ var ErrCodeMessage = map[int]struct {
 	ReplacePreviousValidationDataError:                {-1162, "Replace Previous Validation Data Error"},
 	CommitteeFromBlockNotFoundError:                   {-1163, "Committee From Beacon Block Not Found Error"},
 	ShardSyncValidatorHashError:                       {-1164, "Shard Sync Validator Hash Error"},
+	FinishSyncInstructionError:                        {-1165, "Checking finish sync instruction error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	GetListDecryptedOutputCoinsByKeysetError:          {-2100, "Get List Output Coins By Keyset Error"},
 	GetListDecryptedOutputCoinsV1ByKeysetError:        {-2101, "Get List Output Coins Ver 1 By Ketset Error"},
-	GetAndCheckBurnError:								{-2102, "Get and Check Burn Receiver Error"},
+	GetAndCheckBurnError:                              {-2102, "Get and Check Burn Receiver Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},
 	UpgradeBeaconCommitteeStateError:                  {-4000, "Upgrade Beacon Committee State Error"},
 	UpgradeShardCommitteeStateError:                   {-4001, "Upgrade Shard Committee State Error"},

@@ -87,7 +87,7 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta) &&
 				instMetaType != strconv.Itoa(IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(IssuingPRVBEP20RequestMeta) &&
-				instMetaType != strconv.Itoa(IssuingPLGRequestMeta)) {
+				instMetaType != strconv.Itoa(IssuingPLGRequestMeta) && instMetaType != strconv.Itoa(IssuingFantomRequestMeta)) {
 			continue
 		}
 

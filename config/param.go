@@ -27,37 +27,46 @@ func AbortParam() {
 	p = &param{}
 }
 
+type AutoEnableFeature struct {
+	MinTriggerBlockHeight int `mapstructure:"min_trigger"`
+	ForceBlockHeight      int `mapstructure:"force_trigger"`
+	RequiredPercentage    int `mapstructure:"require_percentage"`
+}
+
 //param for all variables in incognito node process
 type param struct {
-	Name                             string             `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
-	Net                              uint32             `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
-	GenesisParam                     *genesisParam      `mapstructure:"genesis_param" description:"genesis params"`
-	CommitteeSize                    committeeSize      `mapstructure:"committee_size"`
-	BlockTime                        blockTime          `mapstructure:"block_time"`
-	StakingAmountShard               uint64             `mapstructure:"staking_amount_shard"`
-	ActiveShards                     int                `mapstructure:"active_shards"`
-	BasicReward                      uint64             `mapstructure:"basic_reward"`
-	EpochParam                       epochParam         `mapstructure:"epoch_param"`
-	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
-	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
-	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
-	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
-	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
-	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
-	ConsensusParam                   consensusParam     `mapstructure:"consensus_param"`
-	BeaconHeightBreakPointBurnAddr   uint64             `mapstructure:"beacon_height_break_point_burn_addr"`
-	ReplaceStakingTxHeight           uint64             `mapstructure:"replace_staking_tx_height"`
-	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
-	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
-	BCHeightBreakPointPrivacyV2      uint64             `mapstructure:"bc_height_break_point_privacy_v2"`
-	CoinVersion2LowestHeight         uint64             `mapstructure:"coin_v2_lowest_height"`
-	EnableFeatureFlags               map[string]uint64  `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
-	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
-	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
-	BSCParam                         bscParam           `mapstructure:"bsc_param"`
-	PLGParam                         plgParam           `mapstructure:"plg_param"`
-	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
-	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
+	Name                             string                       `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
+	Net                              uint32                       `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
+	GenesisParam                     *genesisParam                `mapstructure:"genesis_param" description:"genesis params"`
+	CommitteeSize                    committeeSize                `mapstructure:"committee_size"`
+	BlockTime                        blockTime                    `mapstructure:"block_time"`
+	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
+	ActiveShards                     int                          `mapstructure:"active_shards"`
+	BasicReward                      uint64                       `mapstructure:"basic_reward"`
+	EpochParam                       epochParam                   `mapstructure:"epoch_param"`
+	EthContractAddressStr            string                       `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
+	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
+	PlgContractAddressStr            string                       `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
+	FtmContractAddressStr            string                       `mapstructure:"ftm_contract_address" description:"smart contract of FTM for bridge"`
+	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
+	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
+	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`
+	ConsensusParam                   consensusParam               `mapstructure:"consensus_param"`
+	BeaconHeightBreakPointBurnAddr   uint64                       `mapstructure:"beacon_height_break_point_burn_addr"`
+	ReplaceStakingTxHeight           uint64                       `mapstructure:"replace_staking_tx_height"`
+	ETHRemoveBridgeSigEpoch          uint64                       `mapstructure:"eth_remove_bridge_sig_epoch"`
+	BCHeightBreakPointNewZKP         uint64                       `mapstructure:"bc_height_break_point_new_zkp"`
+	BCHeightBreakPointPrivacyV2      uint64                       `mapstructure:"bc_height_break_point_privacy_v2"`
+	CoinVersion2LowestHeight         uint64                       `mapstructure:"coin_v2_lowest_height"`
+	EnableFeatureFlags               map[string]uint64            `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
+	BCHeightBreakPointPortalV3       uint64                       `mapstructure:"portal_v3_height"`
+	TxPoolVersion                    int                          `mapstructure:"tx_pool_version"`
+	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
+	PLGParam                         plgParam                     `mapstructure:"plg_param"`
+	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
+	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
+	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
+	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
@@ -65,7 +74,7 @@ type param struct {
 }
 
 type genesisParam struct {
-	InitialIncognito                            []initialIncognito
+	InitialIncognito                            []InitialIncognito
 	FeePerTxKb                                  uint64 `mapstructure:"fee_per_tx_kb" description:"fee per tx calculate by kb"`
 	ConsensusAlgorithm                          string `mapstructure:"consensus_algorithm"`
 	BlockTimestamp                              string `mapstructure:"block_timestamp"`
@@ -329,5 +338,15 @@ type plgParam struct {
 func (plgParam *plgParam) GetFromEnv() {
 	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
 		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
+	}
+}
+
+type ftmParam struct {
+	Host string `mapstructure:"host"`
+}
+
+func (ftmParam *ftmParam) GetFromEnv() {
+	if utils.GetEnv(FTMHostKey, utils.EmptyString) != utils.EmptyString {
+		ftmParam.Host = utils.GetEnv(FTMHostKey, utils.EmptyString)
 	}
 }

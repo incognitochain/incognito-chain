@@ -77,7 +77,7 @@ const (
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
-	//staking
+	// staking
 	ShardStakingMeta    = metadataCommon.ShardStakingMeta
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
@@ -156,7 +156,7 @@ const (
 	PortalCustodianWithdrawConfirmMetaV3         = metadataCommon.PortalCustodianWithdrawConfirmMetaV3
 	PortalRedeemFromLiquidationPoolConfirmMetaV3 = metadataCommon.PortalRedeemFromLiquidationPoolConfirmMetaV3
 	PortalLiquidateRunAwayCustodianConfirmMetaV3 = metadataCommon.PortalLiquidateRunAwayCustodianConfirmMetaV3
-	//Note: don't use this metadata type for others
+	// Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = metadataCommon.PortalResetPortalDBMeta
 	// relaying
 	RelayingBNBHeaderMeta                 = metadataCommon.RelayingBNBHeaderMeta
@@ -180,6 +180,7 @@ const (
 	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
 	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
 	PLGConfirmationBlocks                = metadataCommon.PLGConfirmationBlocks
+	FantomConfirmationBlocks             = metadataCommon.FantomConfirmationBlocks
 	NoAction                             = metadataCommon.NoAction
 	MetaRequestBeaconMintTxs             = metadataCommon.MetaRequestBeaconMintTxs
 	MetaRequestShardMintTxs              = metadataCommon.MetaRequestShardMintTxs
@@ -202,6 +203,14 @@ const (
 
 	BurningPLGForDepositToSCRequestMeta = metadataCommon.BurningPLGForDepositToSCRequestMeta
 	BurningPLGConfirmForDepositToSCMeta = metadataCommon.BurningPLGConfirmForDepositToSCMeta
+
+	IssuingFantomRequestMeta  = metadataCommon.IssuingFantomRequestMeta
+	IssuingFantomResponseMeta = metadataCommon.IssuingFantomResponseMeta
+	BurningFantomRequestMeta  = metadataCommon.BurningFantomRequestMeta
+	BurningFantomConfirmMeta  = metadataCommon.BurningFantomConfirmMeta
+
+	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
+	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 )
 
 // export error codes

@@ -202,7 +202,17 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+			//case instruction.DEQUEUE:
+			//	dequeueInstruction, err := instruction.ValidateAndImportDequeueInstructionFromString(inst)
+			//	if err != nil {
+			//		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			//	}
+			//	committeeChange, err = b.processDequeueInstruction(dequeueInstruction, committeeChange)
+			//	if err != nil {
+			//		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			//	}
 		}
+
 	}
 
 	hashes, err := b.Hash(committeeChange)
@@ -350,6 +360,43 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 
 	return nil
 }
+
+//move validators from pending to sync pool
+//func (b *BeaconCommitteeStateV3) processDequeueInstruction(
+//	dequeueInst *instruction.DequeueInstruction, committeeChange *CommitteeChange,
+//) (*CommitteeChange, error) {
+//	if dequeueInst.Reason == instruction.OUTDATED_DEQUEUE_REASON {
+//		//swap pending to sync pool
+//		for shardID, pendingValIndex := range dequeueInst.DequeueList {
+//			//get de
+//			shardDequeueList := []string{}
+//			for _, index := range pendingValIndex {
+//				if index >= len(b.shardSubstitute[byte(shardID)]) {
+//					fmt.Println("dequeue", dequeueInst.DequeueList)
+//					fmt.Println("pendingValidator", len(b.shardSubstitute[byte(shardID)]))
+//					panic(1)
+//					return nil, errors.New("Substitute index error")
+//				}
+//				shardDequeueList = append(shardDequeueList, b.shardSubstitute[byte(shardID)][index])
+//			}
+//
+//			//remove from shard substitute/pending list
+//			newShardSubtitute := []string{}
+//			for _, v := range b.shardSubstitute[byte(shardID)] {
+//				if common.IndexOfStr(v, shardDequeueList) == -1 {
+//					newShardSubtitute = append(newShardSubtitute, v)
+//				}
+//			}
+//			b.shardSubstitute[byte(shardID)] = newShardSubtitute
+//			//insert to sync pool
+//			b.syncPool[byte(shardID)] = append(b.syncPool[byte(shardID)], shardDequeueList...)
+//			committeeChange.AddShardSubstituteRemoved(byte(shardID), shardDequeueList)
+//			committeeChange.AddSyncingPoolAdded(byte(shardID), shardDequeueList)
+//		}
+//	}
+//
+//	return committeeChange, nil
+//}
 
 //processFinishSyncInstruction move validators from pending to sync pool
 // validators MUST in sync pool

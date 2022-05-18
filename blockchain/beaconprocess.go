@@ -157,12 +157,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
-	// Backup beststate
-	err := rawdbv2.CleanUpPreviousBeaconBestState(blockchain.GetBeaconChainDatabase())
-	if err != nil {
-		return NewBlockChainError(CleanBackUpError, err)
-	}
-
 	// Update best state with new beaconBlock
 	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
@@ -321,6 +315,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		Logger.log.Error(err)
 		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
+	//dequeueInst, err := filterDequeueInstruction(beaconBlock.Body.Instructions, instruction.OUTDATED_DEQUEUE_REASON)
+	if err != nil {
+		return NewBlockChainError(GetDequeueInstructionError, err)
+	}
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
@@ -328,8 +326,15 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
-	_, finishSyncInstruction := curView.filterFinishSyncInstruction(beaconBlock.Body.Instructions)
+	finishSyncInstruction, err := curView.filterAndVerifyFinishSyncInstruction(beaconBlock.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(FinishSyncInstructionError, err)
+	}
+
 	instructions = addFinishInstruction(instructions, finishSyncInstruction)
+
+	enableFeatureInstructions := filterEnableFeatureInstruction(beaconBlock.Body.Instructions)
+	instructions = append(instructions, enableFeatureInstructions...)
 
 	if len(incurredInstructions) != 0 {
 		instructions = append(instructions, incurredInstructions...)
@@ -547,6 +552,25 @@ func (curView *BeaconBestState) updateBeaconBestState(
 			isFoundRandomInstruction = true
 			Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		}
+
+		if inst[0] == instruction.ENABLE_FEATURE {
+			enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, nil, err
+			}
+			if beaconBestState.TriggeredFeature == nil {
+				beaconBestState.TriggeredFeature = make(map[string]uint64)
+			}
+			for _, feature := range enableFeatures.Features {
+				if common.IndexOfStr(feature, curView.getUntriggerFeature(false)) != -1 {
+					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
+				} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
+					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
+					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
+				}
+
+			}
+		}
 	}
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {
@@ -573,8 +597,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		beaconBestState.NumberOfShardBlock[shardID] = beaconBestState.NumberOfShardBlock[shardID] + uint(len(shardStates))
 	}
 
-	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize,
-		config.Param().CommitteeSize.IncreaseMaxShardCommitteeSize, beaconBlock.Header.Height)
+	newMaxCommitteeSize := GetMaxCommitteeSize(beaconBestState.MaxShardCommitteeSize, beaconBestState.TriggeredFeature, beaconBlock.Header.Height)
 	if newMaxCommitteeSize != beaconBestState.MaxShardCommitteeSize {
 		Logger.log.Infof("Beacon Height %+v, Hash %+v, found new max committee size %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash(), newMaxCommitteeSize)
 		beaconBestState.MaxShardCommitteeSize = newMaxCommitteeSize
@@ -949,7 +972,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta),
 		strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurningPLGConfirmMeta),
-		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta)}
+		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningFantomConfirmMeta),
+		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta)}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
@@ -1208,21 +1233,30 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	if beaconBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		return nil
 	}
+
 	stakerKeys := committeeChange.StakerKeys()
-	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
-	committees := append(stakerKeys, stopAutoStakerKeys...)
-	if len(committees) != 0 {
+	if len(stakerKeys) != 0 {
 		err := statedb.StoreStakerInfo(
 			beaconBestState.consensusStateDB,
-			committees,
+			stakerKeys,
 			beaconBestState.beaconCommitteeState.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeState.GetAutoStaking(),
 			beaconBestState.beaconCommitteeState.GetStakingTx(),
+			beaconBestState.BeaconHeight,
 		)
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
+
+	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
+	if len(stopAutoStakerKeys) != 0 {
+		err := statedb.SaveStopAutoStakerInfo(beaconBestState.consensusStateDB, stopAutoStakerKeys, beaconBestState.beaconCommitteeState.GetAutoStaking())
+		if err != nil {
+			return NewBlockChainError(StoreBeaconBlockError, err)
+		}
+	}
+
 	err := statedb.StoreSyncingValidators(beaconBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
 	if err != nil {
 		return err

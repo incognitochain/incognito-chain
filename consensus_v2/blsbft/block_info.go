@@ -176,6 +176,7 @@ func newProposeBlockForProposeMsg(
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
 		block:                   block,
+		ReceiveTime:             time.Now(),
 		Votes:                   make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(committees),
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittes),
@@ -195,6 +196,7 @@ func newProposeBlockForProposeMsgLemma2(
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
 		block:                   block,
+		ReceiveTime:             time.Now(),
 		Votes:                   make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(committees),
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
@@ -214,6 +216,7 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	validVotes, errVotes int,
 ) {
 	proposeBlockInfo.block = block
+	proposeBlockInfo.ReceiveTime = time.Now()
 	proposeBlockInfo.Committees = incognitokey.DeepCopy(committees)
 	proposeBlockInfo.SigningCommittees = incognitokey.DeepCopy(signingCommittes)
 	proposeBlockInfo.UserKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)

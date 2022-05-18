@@ -816,6 +816,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			key9:  *hash6,
 			key10: *hash,
 		},
+		1,
 	)
 
 	rootHash, _ := sDB.Commit(true)
@@ -1546,6 +1547,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			key:  *hash,
 			key6: *hash6,
 		},
+		1,
 	)
 	statedb.StoreStakerInfo(
 		sDB2,
@@ -1562,6 +1564,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			key:  *hash,
 			key6: *hash6,
 		},
+		1,
 	)
 	statedb.StoreStakerInfo(
 		sDB3,
@@ -1578,6 +1581,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			key:  *hash,
 			key6: *hash6,
 		},
+		1,
 	)
 
 	rootHash, _ := sDB.Commit(true)
@@ -2053,6 +2057,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		map[string]common.Hash{
 			key: *hash,
 		},
+		1,
 	)
 
 	validSDB2, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
@@ -2084,6 +2089,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			key5: *hash,
 			key6: *hash,
 		},
+		1,
 	)
 
 	committeePublicKeyWrongFormat := incognitokey.CommitteePublicKey{}
@@ -2515,6 +2521,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 			key11: *hash,
 			key12: *hash,
 		},
+		1,
 	)
 
 	finalMu := &sync.RWMutex{}
@@ -3553,6 +3560,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			key10: *hash,
 			key7:  *hash,
 		},
+		1,
 	)
 
 	finalMu := &sync.RWMutex{}

@@ -76,6 +76,10 @@ func (block CrossShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
 
+func (block *CrossShardBlock) AddValidationField(validationData string) {
+	panic("Not implement")
+}
+
 func (block CrossShardBlock) GetShardID() int {
 	return int(block.Header.ShardID)
 }
