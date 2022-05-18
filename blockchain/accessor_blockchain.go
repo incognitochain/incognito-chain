@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -11,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/proto"
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -107,15 +109,29 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash)
+	blkCached, beaconHeaderBytes, beaconBodyBytes, err := blockchain.BeaconChain.blkManager.GetBlockByHash(&beaconBlockHash, proto.BlkType_BlkBc)
 	if err != nil {
 		return nil, 0, err
 	}
 	beaconBlock := types.NewBeaconBlock()
+	if blkCached != nil {
+		var ok bool
+		if beaconBlock, ok = blkCached.(*types.BeaconBlock); ok {
+			return beaconBlock, 0, nil
+		} else {
+			return beaconBlock, 0, errors.Errorf("Cached wrong data for beacon block %v", beaconBlockHash.String())
+		}
+	}
 	if config.Config().EnableFFStorage {
-		err = beaconBlock.FromBytes(beaconBlockBytes)
+		err = beaconBlock.SetHeaderFromBytes(beaconHeaderBytes)
 		if err != nil {
 			return nil, 0, err
+		}
+		if len(beaconBodyBytes) > 0 {
+			err = beaconBlock.SetBodyFromBytes(beaconBodyBytes)
+			if err != nil {
+				return nil, 0, err
+			}
 		}
 		if beaconBlock.GetHeight() > 1 {
 			valData, err := blockchain.BeaconChain.blkManager.GetBlockValidation(beaconBlockHash)
@@ -125,12 +141,12 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 			beaconBlock.AddValidationField(valData)
 		}
 	} else {
-		err = json.Unmarshal(beaconBlockBytes, beaconBlock)
+		err = json.Unmarshal(beaconHeaderBytes, beaconBlock)
 		if err != nil {
 			return nil, 0, err
 		}
 	}
-	return beaconBlock, uint64(len(beaconBlockBytes)), nil
+	return beaconBlock, uint64(len(beaconHeaderBytes)), nil
 }
 
 //SHARD
@@ -206,13 +222,25 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
-	shardBlockBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash)
+	blkCached, shardBlockBytes, shardBodyBytes, err := blockchain.ShardChain[shardID].blkManager.GetBlockByHash(&hash, proto.BlkType_BlkShard)
 	if err != nil {
 		return nil, 0, NewBlockChainError(GetShardBlockByHashError, errors.Errorf("Can not get block %v, error %v ", hash.String(), err))
 	}
 	shardBlock := types.NewShardBlock()
+	if blkCached != nil {
+		var ok bool
+		if shardBlock, ok = blkCached.(*types.ShardBlock); ok {
+			return shardBlock, 0, nil
+		} else {
+			return shardBlock, 0, errors.Errorf("Cached wrong data for shard block %v cid %v", hash.String(), shardID)
+		}
+	}
 	if config.Config().EnableFFStorage {
-		err = shardBlock.FromBytes(shardBlockBytes)
+		err = shardBlock.SetHeaderFromBytes(shardBlockBytes)
+		if err != nil {
+			return nil, 0, err
+		}
+		err = shardBlock.SetBodyFromBytes(shardBodyBytes)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -445,15 +473,24 @@ func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint6
 }
 
 func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error) {
-	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
-	if err != nil {
-		return nil, err
+
+	if (config.Config().SyncMode == common.STATEDB_LITE_MODE) && (height != 1) {
+		bcBlks, err := s.GetConfig().Syncker.ReSyncBeaconBlockByHeight(height, height)
+		if err != nil {
+			return nil, err
+		}
+		return &(bcBlks[0]), nil
+	} else {
+		blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
+		if err != nil {
+			return nil, err
+		}
+		beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
+		if err != nil {
+			return nil, err
+		}
+		return beaconBlock, nil
 	}
-	beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
-	if err != nil {
-		return nil, err
-	}
-	return beaconBlock, nil
 }
 
 func getOneShardCommitteeFromShardDB(db incdb.Database, shardID byte, blockHash common.Hash) ([]incognitokey.CommitteePublicKey, error) {
@@ -525,4 +562,175 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 //GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+}
+
+type CommitteeChangeCheckpoint struct {
+	Data   map[uint64]common.Hash
+	Epochs []uint64
+}
+
+func (bc *BlockChain) initCommitChangeCheckpoint() error {
+	bc.committeeChangeCheckpoint = struct {
+		data   map[byte]CommitteeChangeCheckpoint
+		locker *sync.RWMutex
+	}{
+		data:   map[byte]CommitteeChangeCheckpoint{},
+		locker: &sync.RWMutex{},
+	}
+	for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
+		bc.committeeChangeCheckpoint.data[sID] = CommitteeChangeCheckpoint{
+			Data:   map[uint64]common.Hash{},
+			Epochs: []uint64{},
+		}
+	}
+	bc.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)] = CommitteeChangeCheckpoint{
+		Data:   map[uint64]common.Hash{},
+		Epochs: []uint64{},
+	}
+	return nil
+}
+
+func (bc *BlockChain) updateCommitteeChangeCheckpointByBC(sID byte, epoch uint64, rootHash common.Hash) {
+	bc.committeeChangeCheckpoint.locker.Lock()
+	defer bc.committeeChangeCheckpoint.locker.Unlock()
+	Logger.log.Debugf("[debugcachecommittee] beacon updateCommitteeChangeCheckpoint for shard %v, epoch %v", sID, epoch)
+	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
+	if _, ok := sCommitteeChange.Data[epoch]; !ok {
+		sCommitteeChange.Epochs = append(sCommitteeChange.Epochs, epoch)
+	}
+	sCommitteeChange.Data[epoch] = rootHash
+	bc.committeeChangeCheckpoint.data[sID] = sCommitteeChange
+	err := bc.backupCheckpoint()
+	if err != nil {
+		Logger.log.Error(err)
+	}
+}
+
+func (bc *BlockChain) backupCheckpoint() error {
+	data, err := json.Marshal(bc.committeeChangeCheckpoint.data)
+	if err != nil {
+		return err
+	}
+	db := bc.GetBeaconChainDatabase()
+	err = rawdbv2.StoreCommitteeChangeCheckpoint(db, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bc *BlockChain) restoreCheckpoint() error {
+	db := bc.GetBeaconChainDatabase()
+	data, err := rawdbv2.GetCommitteeChangeCheckpoint(db)
+	if err != nil {
+		return err
+	}
+	committeeCheckpoint := map[byte]CommitteeChangeCheckpoint{}
+	err = json.Unmarshal(data, &committeeCheckpoint)
+	if err != nil {
+		return err
+	}
+	bc.committeeChangeCheckpoint = struct {
+		data   map[byte]CommitteeChangeCheckpoint
+		locker *sync.RWMutex
+	}{
+		data:   committeeCheckpoint,
+		locker: &sync.RWMutex{},
+	}
+	return nil
+}
+
+func (bc *BlockChain) initCheckpoint(initBeaconBestState *BeaconBestState) error {
+	epochs := []uint64{}
+	epochForCache := initBeaconBestState.BestBlock.Header.Epoch
+	epochs = append(epochs, epochForCache)
+	bc.committeeChangeCheckpoint.data[byte(common.BeaconChainSyncID)] = CommitteeChangeCheckpoint{
+		Data: map[uint64]common.Hash{
+			epochForCache: initBeaconBestState.ConsensusStateDBRootHash,
+		},
+		Epochs: epochs,
+	}
+	key := getCommitteeCacheKeyByEpoch(epochForCache, common.BeaconChainSyncID)
+	bc.committeeByEpochCache.Add(key, initBeaconBestState.GetBeaconCommittee())
+	for sID := 0; sID < initBeaconBestState.ActiveShards; sID++ {
+		epochsForShard := append([]uint64{}, epochForCache)
+		bc.committeeChangeCheckpoint.data[byte(sID)] = CommitteeChangeCheckpoint{
+			Data: map[uint64]common.Hash{
+				epochForCache: initBeaconBestState.ConsensusStateDBRootHash,
+			},
+			Epochs: epochsForShard,
+		}
+		key := getCommitteeCacheKeyByEpoch(epochForCache, byte(sID))
+		bc.committeeByEpochCache.Add(key, initBeaconBestState.GetShardCommittee()[byte(sID)])
+	}
+	return nil
+}
+
+func (bc *BlockChain) GetCheckpointChangeCommitteeByEpoch(sID byte, epoch uint64) (
+	epochForCache uint64,
+	chkPnt common.Hash,
+	err error,
+) {
+	bc.committeeChangeCheckpoint.locker.RLock()
+	defer bc.committeeChangeCheckpoint.locker.RUnlock()
+	sCommitteeChange := bc.committeeChangeCheckpoint.data[sID]
+	epochs := sCommitteeChange.Epochs
+	if len(epochs) == 0 {
+		return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found, list checkpoint is empty", epoch, sID)
+	}
+	idx, existed := SearchUint64(epochs, epoch)
+	if existed {
+		return epochs[idx], sCommitteeChange.Data[epoch], nil
+	}
+	if idx > len(epochs) {
+		return epochs[len(epochs)-1], sCommitteeChange.Data[epochs[len(epochs)-1]], nil
+	}
+	if idx > 0 {
+		return epochs[idx-1], sCommitteeChange.Data[epochs[idx-1]], nil
+	}
+	return 0, common.EmptyRoot, errors.Errorf("[CmtChkPnt] Committee change for epoch %v cID %v not found", epoch, sID)
+}
+
+type DatabaseConfiguration struct {
+	Mode          string `json:"mode"`
+	FFStorage     bool   `json:"ff"`
+	CompressLevel int    `json:"clvl"`
+}
+
+func (bc *BlockChain) NewDBConfig() error {
+	dbConfig := &DatabaseConfiguration{
+		Mode:          config.Config().SyncMode,
+		FFStorage:     config.Config().EnableFFStorage,
+		CompressLevel: config.Param().FlatFileParam.CompLevel,
+	}
+	db := bc.GetBeaconChainDatabase()
+	configBytes, err := json.Marshal(dbConfig)
+	if err != nil {
+		return err
+	}
+	return rawdbv2.StoreDatabaseConfig(db, configBytes)
+}
+
+func (bc *BlockChain) GetDBConfigFromDB() error {
+	db := bc.GetBeaconChainDatabase()
+	data, err := rawdbv2.GetDatabaseConfig(db)
+	if err != nil {
+		return err
+	}
+	dbConfig := &DatabaseConfiguration{}
+	err = json.Unmarshal(data, dbConfig)
+	if err != nil {
+		return err
+	}
+	if config.Config().SyncMode != dbConfig.Mode {
+		config.Config().SyncMode = dbConfig.Mode
+	}
+	if config.Config().EnableFFStorage != dbConfig.FFStorage {
+		config.Config().EnableFFStorage = dbConfig.FFStorage
+	}
+	if config.Param().FlatFileParam.CompLevel != dbConfig.CompressLevel {
+		config.Param().FlatFileParam.CompLevel = dbConfig.CompressLevel
+	}
+
+	return nil
 }

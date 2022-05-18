@@ -176,7 +176,7 @@ func (c *BlockRequester) Register(
 		return nil, nil, errors.New("requester still not ready")
 	}
 
-	uuid := genUUID()
+	uuid := common.GenUUID()
 	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.Register(
 		ctx,
@@ -220,7 +220,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 	})
 	client := proto.NewHighwayServiceClient(c.conn)
 	for _, rangeBlk := range rangeBlks {
-		uuid := genUUID()
+		uuid := common.GenUUID()
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockShardByHash(
@@ -247,14 +247,14 @@ func (c *BlockRequester) StreamBlockByHeight(
 	req *proto.BlockByHeightRequest,
 ) (proto.HighwayService_StreamBlockByHeightClient, error) {
 
-	uuid := genUUID()
+	uuid := ctx.Value(common.CtxUUID)
 	Logger.Infof("[stream] Requesting stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v, uuid = %s", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To, uuid)
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
-	req.UUID = uuid
+	req.UUID = uuid.(string)
 	client := proto.NewHighwayServiceClient(c.conn)
 	stream, err := client.StreamBlockByHeight(ctx, req, grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize))
 	if err != nil {
@@ -269,7 +269,7 @@ func (c *BlockRequester) StreamBlockByHash(
 	req *proto.BlockByHashRequest,
 ) (proto.HighwayService_StreamBlockByHashClient, error) {
 
-	uuid := genUUID()
+	uuid := common.GenUUID()
 	Logger.Infof("[stream] Requesting stream block type %v, hashes [%v..%v] len %v, from %v to %v, uuid = %s", req.Type, req.Hashes[0], req.Hashes[len(req.Hashes)-1], len(req.Hashes), req.From, req.To, uuid)
 	c.RLock()
 	defer c.RUnlock()
@@ -310,7 +310,7 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 	})
 	client := proto.NewHighwayServiceClient(c.conn)
 	for _, rangeBlk := range rangeBlks {
-		uuid := genUUID()
+		uuid := common.GenUUID()
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockBeaconByHash(

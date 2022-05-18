@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -39,6 +41,7 @@ type BeaconSyncProcess struct {
 	lastInsert          string
 	cQuit               chan struct{}
 	wg                  *sync.WaitGroup
+	Resync              *ResyncManager
 }
 
 func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface, cQuit chan struct{}) *BeaconSyncProcess {
@@ -61,12 +64,24 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 		actionCh:            make(chan func()),
 		lastCrossShardState: make(map[byte]map[byte]uint64),
 		cQuit:               cQuit,
+		// wg:                  wg,
+		Resync: NewReSyncManager(network, bc),
 	}
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
+	if config.Config().SyncMode == common.STATEDB_LITE_MODE {
+		go s.Resync.Start()
+	}
 
 	go func() {
+		for {
+			if !s.chain.IsReady() {
+				time.Sleep(500 * time.Millisecond)
+			} else {
+				break
+			}
+		}
 		ticker := time.NewTicker(time.Millisecond * 500)
 		lastHeight := s.chain.GetBestViewHeight()
 		for {
@@ -80,7 +95,6 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
 					BestViewHeight: beaconPeerState.Beacon.Height,
 				}
-				s.chain.SetReady(true)
 			case <-ticker.C:
 				for sender, ps := range s.beaconPeerStates {
 					if ps.Timestamp < time.Now().Unix()-20 {
@@ -113,6 +127,21 @@ func (s *BeaconSyncProcess) start() {
 
 func (s *BeaconSyncProcess) stop() {
 	s.status = STOP_SYNC
+}
+
+func (s *BeaconSyncProcess) GetBeaconBlocksFromMem(
+	fromHeight, toHeight uint64,
+) (
+	res []types.BeaconBlock,
+	err error,
+) {
+	return s.Resync.getData(fromHeight, toHeight)
+}
+
+func (s *BeaconSyncProcess) RequestSyncRange(
+	fromHeight uint64,
+) {
+	s.Resync.RequestSync <- fromHeight
 }
 
 //helper function to access map in atomic way
@@ -191,10 +220,10 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 					waitHeight := shardBlock.Height
 
 					info := blockchain.NextCrossShardInfo{
-						waitHeight,
-						shardBlock.Hash.String(),
-						beaconBlock.GetHeight(),
-						beaconBlock.Hash().String(),
+						NextCrossShardHeight: waitHeight,
+						NextCrossShardHash:   shardBlock.Hash.String(),
+						ConfirmBeaconHeight:  beaconBlock.GetHeight(),
+						ConfirmBeaconHash:    beaconBlock.Hash().String(),
 					}
 					//Logger.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
 					b, _ := json.Marshal(info)
@@ -280,6 +309,11 @@ func (s *BeaconSyncProcess) syncBeacon() {
 			continue
 		}
 
+		if !s.network.IsReady() {
+			time.Sleep(time.Second)
+			continue
+		}
+
 		for peerID, pState := range s.getBeaconPeerStates() {
 			requestCnt += s.streamFromPeer(peerID, pState)
 		}
@@ -346,6 +380,9 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 		fromHeight = s.chain.GetBestViewHeight()
 	}
 
+	if uid := ctx.Value(common.CtxUUID); uid == nil {
+		ctx = context.WithValue(ctx, common.CtxUUID, common.GenUUID())
+	}
 	//stream
 	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, peerID, fromHeight, toHeight)
 	if err != nil || ch == nil {
@@ -381,10 +418,20 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 						return
 					} else {
 						insertBlkCnt += successBlk
-						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						Logger.Infof("Syncker Insert %d beacon block (from %d to %d) elaspse %f %v \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds(), ctx.Value(common.CtxUUID))
 						if successBlk == 0 {
 							return
 						}
+						blks := blockBuffer[:successBlk]
+						preSyncInfo := struct {
+							from, to uint64
+							blks     []types.BlockInterface
+						}{
+							from: blockBuffer[0].GetHeight(),
+							to:   blockBuffer[len(blockBuffer)-1].GetHeight(),
+							blks: blks,
+						}
+						go func() { s.Resync.PreSync <- preSyncInfo }()
 						if successBlk < len(blockBuffer) {
 							blockBuffer = blockBuffer[successBlk:]
 						} else {

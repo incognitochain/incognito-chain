@@ -117,6 +117,26 @@ func (crossShardBlock CrossShardBlock) CommitteeFromBlock() common.Hash {
 	return common.Hash{}
 }
 
+func (crossShardBlock *CrossShardBlock) GetHeaderBytes() ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (crossShardBlock *CrossShardBlock) SetHeaderFromBytes(rawBytes []byte) error {
+	return nil
+}
+
+func (crossShardBlock *CrossShardBlock) GetBodyBytes() ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (crossShardBlock *CrossShardBlock) SetBodyFromBytes(rawBytes []byte) error {
+	return nil
+}
+
+func (crossShardBlock *CrossShardBlock) RemoveBody() {
+
+}
+
 func (crossShardBlock CrossShardBlock) GetProposer() string {
 	return crossShardBlock.Header.Proposer
 }
@@ -207,12 +227,12 @@ func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) Unma
 		Alias: (*Alias)(contentCrossShardTokenPrivacyData),
 	}
 	if err := json.Unmarshal(data, temp); err != nil {
-		fmt.Errorf("UnmarshalJSON ContentCrossShardTokenPrivacyData", err)
+		fmt.Errorf("UnmarshalJSON ContentCrossShardTokenPrivacyData  %v", err)
 		return err
 	}
 	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
-		fmt.Errorf("UnmarshalJSON Cannot parse crossOutputCoins", err)
+		fmt.Errorf("UnmarshalJSON Cannot parse crossOutputCoins %v", err)
 		return err
 	}
 	contentCrossShardTokenPrivacyData.OutputCoin = outputCoinList
@@ -237,12 +257,12 @@ func (crossOutputCoin *CrossOutputCoin) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(crossOutputCoin),
 	}
 	if err := json.Unmarshal(data, temp); err != nil {
-		fmt.Errorf("UnmarshalJSON CrossOutputCoin", err)
+		fmt.Errorf("UnmarshalJSON CrossOutputCoin %v ", err)
 		return err
 	}
 	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
-		fmt.Errorf("UnmarshalJSON Cannot parse CrossOutputCoin", err)
+		fmt.Errorf("UnmarshalJSON Cannot parse CrossOutputCoin %v", err)
 		return err
 	}
 	crossOutputCoin.OutputCoin = outputCoinList
@@ -274,12 +294,12 @@ func (crossTransaction *CrossTransaction) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(crossTransaction),
 	}
 	if err := json.Unmarshal(data, temp); err != nil {
-		fmt.Errorf("UnmarshalJSON CrossTransaction", string(data), err)
+		fmt.Errorf("UnmarshalJSON CrossTransaction %v %v", string(data), err)
 		return err
 	}
 	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
 	if err != nil {
-		fmt.Errorf("UnmarshalJSON Cannot parse CrossTransaction", err)
+		fmt.Errorf("UnmarshalJSON Cannot parse CrossTransaction %v", err)
 		return err
 	}
 	crossTransaction.OutputCoin = outputCoinList
