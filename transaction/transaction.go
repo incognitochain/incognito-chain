@@ -32,11 +32,12 @@ type TxSigPubKeyVer2 = tx_ver2.SigPubKey
 // It must take its own defined parameter struct.
 // Deprecated: this is not used in v2 code
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
-	paymentInfo := &privacy.PaymentInfo{
+	p := privacy.NewCoinParams().FromPaymentInfo(&privacy.PaymentInfo{
 		PaymentAddress: *params.payToAddress,
 		Amount:         params.amount,
-	}
-	otaCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo)
+	})
+	p.CoinPrivacyType = privacy.CoinPrivacyTypeMint
+	otaCoin, err := privacy.NewCoinFromPaymentInfo(p)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
@@ -95,7 +96,9 @@ func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error) {
 	if pr.ReceiverAddress == nil {
 		outputCoin = privacy.NewCoinFromAmountAndTxRandomBytes(pr.Amount, pr.PublicKey, pr.TxRandom, pr.Info)
 	} else {
-		outputCoin, err = privacy.NewCoinFromPaymentInfo(&privacy.PaymentInfo{Amount: pr.Amount, PaymentAddress: *pr.ReceiverAddress})
+		p := privacy.NewCoinParams().FromPaymentInfo(&privacy.PaymentInfo{Amount: pr.Amount, PaymentAddress: *pr.ReceiverAddress})
+		p.CoinPrivacyType = privacy.CoinPrivacyTypeMint
+		outputCoin, err = privacy.NewCoinFromPaymentInfo(p)
 		if err != nil {
 			return nil, err
 		}

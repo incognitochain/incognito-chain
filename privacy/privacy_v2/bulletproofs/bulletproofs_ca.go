@@ -2,29 +2,14 @@ package bulletproofs
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
-// CACommitmentScheme defines the Pedersen Commitment Scheme used for Confidential Asset feature.
-// var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
-
-// CopyPedersenCommitmentScheme is called upon package initialization to make a clone of generators.
-func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.PedersenCommitment {
-	var result operation.PedersenCommitment
-	var generators []*operation.Point
-	for _, gen := range sch.G {
-		generators = append(generators, new(operation.Point).Set(gen))
-	}
-	result.G = generators
-	return result
-}
-
 // GetFirstAssetTag is a helper that returns the asset tag field of the first coin from the input.
-// That will be used as base when proving.
+// That will be used as g_value when proving.
 func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point, error) {
 	if len(coins) == 0 {
 		return nil, fmt.Errorf("cannot get asset tag from empty input")
@@ -36,10 +21,8 @@ func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point, error) {
 	return result, nil
 }
 
-// ProveUsingBase runs like the Bulletproof Prove function, except it sets a Pederson base point before proving.
-func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*AggregatedRangeProof, error) {
-	CACommitmentScheme := CopyPedersenCommitmentScheme(operation.PedCom)
-	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
+// ProveUsingBase runs like the Bulletproof Prove function, except it sets a Pedersen base point before proving.
+func (wit AggregatedRangeWitness) ProveUsingBase(gval *operation.Point) (*AggregatedRangeProof, error) {
 	proof := new(AggregatedRangeProof)
 	numValue := len(wit.values)
 	if numValue > privacy_util.MaxOutputCoin {
@@ -62,6 +45,10 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 		rands[i] = new(operation.Scalar).FromUint64(0)
 	}
 
+	proof.cmsValue = make([]*operation.Point, numValue)
+	for i := 0; i < numValue; i++ {
+		proof.cmsValue[i] = new(operation.Point).AddPedersen(new(operation.Scalar).FromUint64(values[i]), gval, rands[i], operation.PedCom.G[operation.PedersenRandomnessIndex])
+	}
 	// Convert values to binary array
 	aL := make([]*operation.Scalar, N)
 	aR := make([]*operation.Scalar, N)
@@ -81,18 +68,22 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	var alpha, rho *operation.Scalar
-	if A, err := encodeVectors(aL, aR, aggParam.g, aggParam.h); err != nil {
+	alpha = operation.RandomScalar()
+	rho = operation.RandomScalar()
+	mbuilder := operation.NewMultBuilder(false)
+	_, err := encodeVectors(aL, aR, aggParam.g, aggParam.h, mbuilder)
+	if err != nil {
 		return nil, err
-	} else if S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h); err != nil {
-		return nil, err
-	} else {
-		alpha = operation.RandomScalar()
-		rho = operation.RandomScalar()
-		A.Add(A, new(operation.Point).ScalarMult(CACommitmentScheme.G[operation.PedersenRandomnessIndex], alpha))
-		S.Add(S, new(operation.Point).ScalarMult(CACommitmentScheme.G[operation.PedersenRandomnessIndex], rho))
-		proof.a = A
-		proof.s = S
 	}
+	mbuilder.AppendSingle(alpha, operation.HBase)
+	proof.a = mbuilder.Eval()
+
+	_, err = encodeVectors(sL, sR, aggParam.g, aggParam.h, mbuilder)
+	if err != nil {
+		return nil, err
+	}
+	mbuilder.AppendSingle(rho, operation.HBase)
+	proof.s = mbuilder.Eval()
 	// challenge y, z
 	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
@@ -145,8 +136,8 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	// commitment to t1, t2
 	tau1 := operation.RandomScalar()
 	tau2 := operation.RandomScalar()
-	proof.t1 = CACommitmentScheme.CommitAtIndex(t1, tau1, operation.PedersenValueIndex)
-	proof.t2 = CACommitmentScheme.CommitAtIndex(t2, tau2, operation.PedersenValueIndex)
+	proof.t1 = new(operation.Point).AddPedersen(t1, gval, tau1, operation.PedCom.G[operation.PedersenRandomnessIndex])
+	proof.t2 = new(operation.Point).AddPedersen(t2, gval, tau2, operation.PedCom.G[operation.PedersenRandomnessIndex])
 
 	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
 	xSquare := new(operation.Scalar).Mul(x, x)
@@ -193,12 +184,14 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
-	innerProductWit.p, err = encodeVectors(lVector, rVector, aggParam.g, HPrime)
+	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
+
+	_, err = encodeVectors(lVector, rVector, aggParam.g, HPrime, mbuilder)
 	if err != nil {
 		return nil, err
 	}
-	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
-	innerProductWit.p = innerProductWit.p.Add(innerProductWit.p, new(operation.Point).ScalarMult(uPrime, proof.tHat))
+	mbuilder.AppendSingle(proof.tHat, uPrime)
+	innerProductWit.p = mbuilder.Eval()
 
 	proof.innerProductProof, err = innerProductWit.Prove(aggParam.g, HPrime, uPrime, x.ToBytesS())
 	if err != nil {
@@ -208,158 +201,18 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	return proof, nil
 }
 
-// VerifyUsingBase runs like the Bulletproof Verify function, except it sets a Pederson base point before verifying.
-func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (bool, error) {
-	CACommitmentScheme := CopyPedersenCommitmentScheme(operation.PedCom)
-	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
-	numValue := len(proof.cmsValue)
-	if numValue > privacy_util.MaxOutputCoin {
-		return false, fmt.Errorf("output count exceeds MaxOutputCoin")
+func (proof AggregatedRangeProof) VerifyUsingBase(gval *operation.Point) (bool, error) {
+	if gval == nil {
+		return false, fmt.Errorf("verify-using-base cannot take nil base")
 	}
-	numValuePad := roundUpPowTwo(numValue)
-	maxExp := privacy_util.MaxExp
-	N := numValuePad * maxExp
-	aggParam := setAggregateParams(N)
-
-	cmsValue := proof.cmsValue
-	for i := numValue; i < numValuePad; i++ {
-		cmsValue = append(cmsValue, new(operation.Point).Identity())
-	}
-
-	// recalculate challenge y, z
-	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
-	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
-	zSquare := new(operation.Scalar).Mul(z, z)
-
-	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
-	xSquare := new(operation.Scalar).Mul(x, x)
-
-	// HPrime = H^(y^(1-i)
-	HPrime := computeHPrime(y, N, aggParam.h)
-
-	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
-	yVector := powerVector(y, N)
-	deltaYZ, err := computeDeltaYZ(z, zSquare, yVector, N)
+	multBuilder, err := proof.buildVerify(gval)
 	if err != nil {
 		return false, err
 	}
-
-	LHS := CACommitmentScheme.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
-	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
-	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, CACommitmentScheme.G[operation.PedersenValueIndex], x, proof.t1))
-
-	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
-
-	if !operation.IsPointEqual(LHS, RHS) {
-		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 1 failed")
+	if !multBuilder.Eval().IsIdentity() {
+		Logger.Log.Errorf("Verify aggregated range proof failed")
+		return false, fmt.Errorf("bulletproofs: range proof invalid")
 	}
-	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
-	innerProductArgValid := proof.innerProductProof.Verify(aggParam.g, HPrime, uPrime, x.ToBytesS())
-	if !innerProductArgValid {
-		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 2 failed")
-	}
-
-	return true, nil
-}
-
-func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Point) (bool, error) {
-	CACommitmentScheme := CopyPedersenCommitmentScheme(operation.PedCom)
-	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
-	numValue := len(proof.cmsValue)
-	if numValue > privacy_util.MaxOutputCoin {
-		return false, fmt.Errorf("output count exceeds MaxOutputCoin")
-	}
-	numValuePad := roundUpPowTwo(numValue)
-	maxExp := privacy_util.MaxExp
-	N := maxExp * numValuePad
-	aggParam := setAggregateParams(N)
-
-	cmsValue := proof.cmsValue
-	for i := numValue; i < numValuePad; i++ {
-		cmsValue = append(cmsValue, new(operation.Point).Identity())
-	}
-
-	// recalculate challenge y, z
-	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
-	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
-	zSquare := new(operation.Scalar).Mul(z, z)
-
-	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
-	xSquare := new(operation.Scalar).Mul(x, x)
-
-	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
-	yVector := powerVector(y, N)
-	deltaYZ, err := computeDeltaYZ(z, zSquare, yVector, N)
-	if err != nil {
-		return false, err
-	}
-
-	// Verify the first argument
-	LHS := CACommitmentScheme.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
-	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
-	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, CACommitmentScheme.G[operation.PedersenValueIndex], x, proof.t1))
-	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
-	if !operation.IsPointEqual(LHS, RHS) {
-		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 1 failed")
-	}
-
-	// Verify the second argument
-	hashCache := x.ToBytesS()
-	L := proof.innerProductProof.l
-	R := proof.innerProductProof.r
-	s := make([]*operation.Scalar, N)
-	sInverse := make([]*operation.Scalar, N)
-	logN := int(math.Log2(float64(N)))
-	vSquareList := make([]*operation.Scalar, logN)
-	vInverseSquareList := make([]*operation.Scalar, logN)
-
-	for i := 0; i < N; i++ {
-		s[i] = new(operation.Scalar).Set(proof.innerProductProof.a)
-		sInverse[i] = new(operation.Scalar).Set(proof.innerProductProof.b)
-	}
-
-	for i := range L {
-		v := generateChallenge(hashCache, []*operation.Point{L[i], R[i]})
-		hashCache = v.ToBytesS()
-		vInverse := new(operation.Scalar).Invert(v)
-		vSquareList[i] = new(operation.Scalar).Mul(v, v)
-		vInverseSquareList[i] = new(operation.Scalar).Mul(vInverse, vInverse)
-
-		for j := 0; j < N; j++ {
-			if j&int(math.Pow(2, float64(logN-i-1))) != 0 {
-				s[j] = new(operation.Scalar).Mul(s[j], v)
-				sInverse[j] = new(operation.Scalar).Mul(sInverse[j], vInverse)
-			} else {
-				s[j] = new(operation.Scalar).Mul(s[j], vInverse)
-				sInverse[j] = new(operation.Scalar).Mul(sInverse[j], v)
-			}
-		}
-	}
-	// HPrime = H^(y^(1-i)
-	HPrime := computeHPrime(y, N, aggParam.h)
-	uPrime := new(operation.Point).ScalarMult(aggParam.u, operation.HashToScalar(x.ToBytesS()))
-	c := new(operation.Scalar).Mul(proof.innerProductProof.a, proof.innerProductProof.b)
-	tmp1 := new(operation.Point).MultiScalarMult(s, aggParam.g)
-	tmp2 := new(operation.Point).MultiScalarMult(sInverse, HPrime)
-	rightHS := new(operation.Point).Add(tmp1, tmp2)
-	rightHS.Add(rightHS, new(operation.Point).ScalarMult(uPrime, c))
-
-	tmp3 := new(operation.Point).MultiScalarMult(vSquareList, L)
-	tmp4 := new(operation.Point).MultiScalarMult(vInverseSquareList, R)
-	leftHS := new(operation.Point).Add(tmp3, tmp4)
-	leftHS.Add(leftHS, proof.innerProductProof.p)
-
-	res := operation.IsPointEqual(rightHS, leftHS)
-	if !res {
-		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
-		return false, fmt.Errorf("verify aggregated range proof statement 2 failed")
-	}
-
 	return true, nil
 }
 

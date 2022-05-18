@@ -153,7 +153,7 @@ func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognito
 				amount := uint64(common.RandIntInterval(0, 100000000))
 				paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Dummy token"))
 
-				tmpCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+				tmpCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo))
 				if err != nil {
 					return nil, err
 				}
@@ -234,7 +234,7 @@ func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *
 		for i := 0; i < numFeeInputs-1; i++ {
 			amount := uint64(common.RandIntInterval(0, int(totalAmount)-1))
 			paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Hello there"))
-			coin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+			coin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo))
 			if err != nil {
 				return nil, err
 			}
@@ -242,7 +242,7 @@ func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *
 			totalAmount -= amount
 		}
 		paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, totalAmount, []byte("Hello there"))
-		coin, err := coin.NewCoinFromPaymentInfo(paymentInfo)
+		coin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo))
 		if err != nil {
 			return nil, err
 		}

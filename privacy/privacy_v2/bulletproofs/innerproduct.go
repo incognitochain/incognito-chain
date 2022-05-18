@@ -31,7 +31,7 @@ func (proof *InnerProductProof) Init() *InnerProductProof {
 	proof.r = []*operation.Point{}
 	proof.a = new(operation.Scalar)
 	proof.b = new(operation.Scalar)
-	proof.p = new(operation.Point).Identity()
+	proof.p = operation.NewIdentityPoint()
 
 	return proof
 }
@@ -166,18 +166,21 @@ func (wit InnerProductWitness) Prove(GParam []*operation.Point, HParam []*operat
 			return nil, err
 		}
 
-		L, err := encodeVectors(a[:nPrime], b[nPrime:], G[nPrime:], H[:nPrime])
+		mbuilder := operation.NewMultBuilder(false)
+		_, err = encodeVectors(a[:nPrime], b[nPrime:], G[nPrime:], H[:nPrime], mbuilder)
 		if err != nil {
 			return nil, err
 		}
-		L.Add(L, new(operation.Point).ScalarMult(uParam, cL))
+		mbuilder.AppendSingle(cL, uParam)
+		L := mbuilder.Eval()
 		proof.l = append(proof.l, L)
 
-		R, err := encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
+		_, err = encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:], mbuilder)
 		if err != nil {
 			return nil, err
 		}
-		R.Add(R, new(operation.Point).ScalarMult(uParam, cR))
+		mbuilder.AppendSingle(cR, uParam)
+		R := mbuilder.Eval()
 		proof.r = append(proof.r, R)
 
 		x := generateChallenge(hashCache, []*operation.Point{L, R})
@@ -225,6 +228,7 @@ func (wit InnerProductWitness) Prove(GParam []*operation.Point, HParam []*operat
 
 	return proof, nil
 }
+
 func (proof InnerProductProof) Verify(GParam []*operation.Point, HParam []*operation.Point, uParam *operation.Point, hashCache []byte) bool {
 	//var aggParam = newBulletproofParams(1)
 	p := new(operation.Point)

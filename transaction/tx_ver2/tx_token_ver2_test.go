@@ -42,7 +42,7 @@ func TestPrivacyV2TxToken(t *testing.T) {
 		Convey("create & store PRV UTXOs", func() {
 			pastCoins = make([]privacy.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 			for i := range pastCoins {
-				tempCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
+				tempCoin, err := privacy.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)]))
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)
 				tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
@@ -61,7 +61,7 @@ func TestPrivacyV2TxToken(t *testing.T) {
 
 			pastTokenCoins = make([]privacy.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 			for i := range pastTokenCoins {
-				tempCoin, _, err := privacy.NewCoinCA(paymentInfo[i%len(dummyPrivateKeys)], tokenID)
+				tempCoin, _, err := privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)]), tokenID)
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)
 				tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
@@ -229,7 +229,7 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	So(ok, ShouldBeTrue)
 	payInf := &privacy.PaymentInfo{PaymentAddress: keySets[0].PaymentAddress, Amount: uint64(69), Message: []byte("doing a transfer")}
 	// totally fresh OTA of the same amount, meant for the same PaymentAddress
-	newCoin, _, err := createUniqueOTACoinCA(payInf, &fakingTokenID, db)
+	newCoin, _, err := privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(payInf), &fakingTokenID)
 	So(err, ShouldBeNil)
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
 	txn.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = newCoin.GetCommitment()
@@ -355,7 +355,7 @@ func testTxTokenV2Salary(tokenID *common.Hash, privateKeys []*privacy.PrivateKey
 			var err error
 			var salaryCoin *privacy.CoinV2
 			for {
-				salaryCoin, _, err = privacy.NewCoinCA(paymentInfo[0], tokenID)
+				salaryCoin, _, err = privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[0]), tokenID)
 				So(err, ShouldBeNil)
 				otaPublicKeyBytes := salaryCoin.GetPublicKey().ToBytesS()
 				// want an OTA in shard 0

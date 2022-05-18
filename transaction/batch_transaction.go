@@ -29,7 +29,7 @@ func NewBatchTransaction(txs []metadata.Transaction) *batchTransaction {
 	return &batchTransaction{txs: txs}
 }
 
-// Add a single transcation to this batch
+// Add more transactions to this batch
 func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
 	b.txs = append(b.txs, txs...)
 }
@@ -46,12 +46,13 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	}
 	var bulletProofListVer1 []*privacy.AggregatedRangeProofV1
 	var bulletProofListVer2 []*privacy.AggregatedRangeProofV2
+	var bpBases []*privacy.Point
 
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		boolParams["hasPrivacy"] = tx.IsPrivacy()
 
-		ok, batchableProofs, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
+		ok, batchedProofs, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 		if !ok {
 			return false, err, i
 		}
@@ -62,16 +63,21 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			}
 		}
 
-		for _, batchableProof := range batchableProofs {
-			bulletproof := batchableProof.GetAggregatedRangeProof()
+		for _, batchedProof := range batchedProofs {
+			bulletproof := batchedProof.GetAggregatedRangeProof()
 			if bulletproof == nil {
 				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("privacy TX Proof missing at index %d", i)), -1
+			}
+			outputCoins := batchedProof.GetOutputCoins()
+			if len(outputCoins) == 0 {
+				return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("privacy TX Proof without output coin at index %d", i)), -1
 			}
 			switch proof_specific := bulletproof.(type) {
 			case *privacy.AggregatedRangeProofV1:
 				bulletProofListVer1 = append(bulletProofListVer1, proof_specific)
 			case *privacy.AggregatedRangeProofV2:
 				bulletProofListVer2 = append(bulletProofListVer2, proof_specific)
+				bpBases = append(bpBases, outputCoins[0].GetAssetTag())
 			}
 		}
 	}
@@ -87,7 +93,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 		if !ok {
 			Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", index)
-			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)), index
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("batch-verify payment v1 failed - #%d", index)), index
 		}
 	} else {
 		ok, err, index := aggregatedrange.VerifyBatchOld(bulletProofListVer1)
@@ -96,17 +102,14 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 		if !ok {
 			Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)
-			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)), index
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("batch-verify payment v1-old failed - #%d", index)), index
 		}
 	}
 
-	ok, err, i := bulletproofs.VerifyBatch(bulletProofListVer2)
-	if err != nil {
-		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
-	}
+	ok, err = bulletproofs.VerifyBatch(bulletProofListVer2, bpBases)
 	if !ok {
-		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %d", i)
-		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 2 PAYMENT PROOF %d", i)), -1
+		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 2 %v", err)
+		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("batch-verify payment v2 failed - %v", err)), -1
 	}
 	Logger.Log.Info("[BUGLOG] Number of tx in batch", len(bulletProofListVer1), len(bulletProofListVer2))
 	return true, nil, -1

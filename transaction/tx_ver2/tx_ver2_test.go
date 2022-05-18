@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -75,6 +76,7 @@ func init() {
 	dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	bridgeDB = dummyDB.Copy()
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	resetTxTestConfig()
 }
 
 func storeCoins(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, tokenID common.Hash) error {
@@ -197,7 +199,7 @@ func TestTxV2Salary(t *testing.T) {
 				var tempCoin *coin.CoinV2
 				var err error
 				for {
-					tempCoin, err = coin.NewCoinFromPaymentInfo(paymentInfo[i])
+					tempCoin, err = coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i]))
 					otaPublicKeyBytes := tempCoin.GetPublicKey().ToBytesS()
 					// want an OTA in shard 0
 					if otaPublicKeyBytes[31] == 0 {
@@ -258,7 +260,7 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 			// pastCoins are coins we manually store in the dummyDB to simulate the db having OTAs from chaindata
 			pastCoins = make([]coin.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 			for i := range pastCoins {
-				tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
+				tempCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)]))
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)
 
@@ -505,7 +507,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, keySets []*incognitokey.KeySet, db *statedb
 	So(ok, ShouldBeTrue)
 	payInf := paymentInfoOut[0]
 	// totally fresh OTA of the same amount, meant for the same PaymentAddress
-	newCoin, err := coin.NewCoinFromPaymentInfo(payInf)
+	newCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(payInf))
 	So(err, ShouldBeNil)
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
 	txv2.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = newCoin.GetCommitment()
@@ -899,4 +901,9 @@ func (tx *TxToken) startVerifyTx(db *statedb.StateDB) (*TxToken, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func resetTxTestConfig() {
+	config.AbortParam()
+	config.Param().BCHeightBreakPointCoinOrigin = 1000000000000
 }

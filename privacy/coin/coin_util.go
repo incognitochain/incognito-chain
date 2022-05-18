@@ -105,7 +105,7 @@ func CreatePaymentInfosFromPlainCoinsAndAddress(c []PlainCoin, paymentAddress ke
 
 func NewCoinFromAmountAndReceiver(amount uint64, receiver key.PaymentAddress) (*CoinV2, error) {
 	paymentInfo := key.InitPaymentInfo(receiver, amount, []byte{})
-	return NewCoinFromPaymentInfo(paymentInfo)
+	return NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(paymentInfo))
 }
 
 func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point, txRandom *TxRandom, info []byte) *CoinV2 {
@@ -120,8 +120,8 @@ func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point
 	return c
 }
 
-func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
-	receiverPublicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
+func NewCoinFromPaymentInfo(p *CoinParams) (*CoinV2, error) {
+	receiverPublicKey, err := new(operation.Point).FromBytesS(p.PaymentAddress.Pk)
 	if err != nil {
 		errStr := fmt.Sprintf("Cannot parse outputCoinV2 from PaymentInfo when parseByte PublicKey, error %v ", err)
 		return nil, fmt.Errorf(errStr)
@@ -131,16 +131,16 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 
 	c := new(CoinV2).Init()
 	// Amount, Randomness, SharedRandom are transparency until we call concealData
-	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
+	c.SetAmount(new(operation.Scalar).FromUint64(p.Amount))
 	c.SetRandomness(operation.RandomScalar())
 	c.SetSharedRandom(operation.RandomScalar())        // shared randomness for creating one-time-address
 	c.SetSharedConcealRandom(operation.RandomScalar()) // shared randomness for concealing amount and blinding asset tag
-	c.SetInfo(info.Message)
+	c.SetInfo(p.Message)
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 
 	// If this is going to burning address then dont need to create ota
-	if common.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
-		publicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
+	if common.IsPublicKeyBurningAddress(p.PaymentAddress.Pk) {
+		publicKey, err := new(operation.Point).FromBytesS(p.PaymentAddress.Pk)
 		if err != nil {
 			panic("Something is wrong with info.paymentAddress.pk, burning address should be a valid point")
 		}
@@ -150,11 +150,11 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 
 	// Increase index until have the right shardID
 	index := uint32(0)
-	publicOTA := info.PaymentAddress.GetOTAPublicKey()
+	publicOTA := p.PaymentAddress.GetOTAPublicKey()
 	if publicOTA == nil {
 		return nil, fmt.Errorf("public OTA from payment address is nil")
 	}
-	publicSpend := info.PaymentAddress.GetPublicSpend()
+	publicSpend := p.PaymentAddress.GetPublicSpend()
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
 	for {
 		index++
@@ -165,11 +165,8 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 		publicKey := new(operation.Point).Add(HrKG, publicSpend)
 		c.SetPublicKey(publicKey)
 
-		currentShardID, err := c.GetShardID()
-		if err != nil {
-			return nil, err
-		}
-		if currentShardID == targetShardID {
+		senderShardID, recvShardID, coinPrivacyType, _ := DeriveShardInfoFromCoin(publicKey.ToBytesS())
+		if recvShardID == int(targetShardID) && senderShardID == p.SenderShardID && coinPrivacyType == p.CoinPrivacyType {
 			otaRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedRandom())
 			concealRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedConcealRandom())
 			c.SetTxRandomDetail(concealRandomPoint, otaRandomPoint, index)
@@ -181,7 +178,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 
 func NewOTAFromReceiver(receiver key.PaymentAddress) (*operation.Point, *TxRandom, error) {
 	paymentInfo := key.InitPaymentInfo(receiver, 0, []byte{})
-	coin, err := NewCoinFromPaymentInfo(paymentInfo)
+	coin, err := NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(paymentInfo))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -211,4 +208,54 @@ func ParseOTAInfoFromString(pubKeyStr, txRandomStr string) (*operation.Point, *T
 		return nil, nil, fmt.Errorf("parseOTAInfoFromString Cannot set txRandom from bytes")
 	}
 	return pubKey, txRandom, nil
+}
+
+const (
+	PrivacyTypeTransfer = iota
+	PrivacyTypeMint
+)
+
+// DeriveShardInfoFromCoin returns the sender origin & receiver shard of a coin based on the
+// PublicKey on that coin (encoded inside its last byte).
+// Does not support MaxShardNumber > 8
+func DeriveShardInfoFromCoin(coinPubKey []byte) (int, int, int, error) {
+	numShards := common.MaxShardNumber
+	n := int(coinPubKey[len(coinPubKey)-1]) % 128 // use 7 bits
+	receiverShardID := n % numShards
+	n /= numShards
+	senderShardID := n % numShards
+	coinPrivacyType := n / numShards
+
+	if coinPrivacyType > PrivacyTypeMint {
+		return -1, -1, -1, fmt.Errorf("coin %x has unsupported PrivacyType %d", coinPubKey, coinPrivacyType)
+	}
+	return senderShardID, receiverShardID, coinPrivacyType, nil
+}
+
+// CoinParams contains the necessary data to create a new coin
+type CoinParams struct {
+	key.PaymentInfo
+	SenderShardID   int
+	CoinPrivacyType int
+}
+
+// From initializes the CoinParam using input data (PaymentInfo must not be nil)
+func (p *CoinParams) From(inf *key.PaymentInfo, sid, cptype int) *CoinParams {
+	return &CoinParams{
+		PaymentInfo:     *inf,
+		SenderShardID:   sid % common.MaxShardNumber,
+		CoinPrivacyType: cptype % (PrivacyTypeMint + 1),
+	}
+}
+
+// FromPaymentInfo initializes the CoinParam using a PaymentInfo (must not be nil);
+// others are set to default
+func (p *CoinParams) FromPaymentInfo(inf *key.PaymentInfo) *CoinParams {
+	receiverPublicKeyBytes := inf.PaymentAddress.Pk
+	shardID := common.GetShardIDFromLastByte(receiverPublicKeyBytes[len(receiverPublicKeyBytes)-1])
+	return &CoinParams{
+		PaymentInfo:     *inf,
+		SenderShardID:   int(shardID),
+		CoinPrivacyType: PrivacyTypeTransfer,
+	}
 }

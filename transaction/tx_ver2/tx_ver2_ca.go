@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
@@ -244,8 +245,11 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	var sharedSecrets []*privacy.Point
 	var numOfCoinsBurned uint = 0
 	var isBurning bool = false
+	var senderKeySet incognitokey.KeySet
+	_ = senderKeySet.InitFromPrivateKey(params.SenderSK)
+	b := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	for _, inf := range params.PaymentInfo {
-		c, ss, err := createUniqueOTACoinCA(inf, params.TokenID, params.StateDB)
+		c, ss, err := createUniqueOTACoinCA(inf, int(common.GetShardIDFromLastByte(b)), params.TokenID, params.StateDB)
 		if err != nil {
 			utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 			return false, err
@@ -382,12 +386,12 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	return mlsag.VerifyConfidentialAsset(mlsagSignature, ring, tx.Hash()[:])
 }
 
-func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, *privacy.Point, error) {
+func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, senderShardID int, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, *privacy.Point, error) {
 	if tokenID == nil {
 		tokenID = &common.PRVCoinID
 	}
 	for i := privacy.MaxPrivacyAttempts; i > 0; i-- {
-		c, sharedSecret, err := privacy.NewCoinCA(paymentInfo, tokenID)
+		c, sharedSecret, err := privacy.NewCoinCA(privacy.NewCoinParams().From(paymentInfo, senderShardID, privacy.CoinPrivacyTypeTransfer), tokenID)
 		if tokenID != nil && sharedSecret != nil && c != nil && c.GetAssetTag() != nil {
 			utils.Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
 		}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -555,11 +556,17 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 			return fmt.Errorf("double spend")
 		}
 	}
+
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	bHeight := tx.GetValidationEnv().BeaconHeight()
+	afterCoinOriginHeight := bHeight >= config.Param().BCHeightBreakPointCoinOrigin
+
 	for _, outCoin := range tx.GetProof().GetOutputCoins() {
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
 		if common.IsPublicKeyBurningAddress(otaPublicKey) {
 			continue
 		}
+		cptype := privacy.CoinPrivacyTypeTransfer
 
 		exists, status, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
 		if err != nil {
@@ -573,6 +580,7 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 			case statedb.OTA_STATUS_OCCUPIED:
 				if tx.IsSalaryTx() {
+					cptype = privacy.CoinPrivacyTypeMint
 					utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", otaPublicKey, status)
 				} else {
 					utils.Logger.Log.Error("TX %s rejected due to already existing OTA", tx.Hash().String())
@@ -580,6 +588,19 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 				}
 			default:
 				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("invalid onetimeaddress status in database"))
+			}
+		}
+
+		if afterCoinOriginHeight {
+			coinSenderShardID, _, coinPrivacyType, err := privacy.DeriveShardInfoFromCoin(outCoin.GetPublicKey().ToBytesS())
+			if err != nil {
+				return err
+			}
+			if coinSenderShardID != int(senderShardID) {
+				return fmt.Errorf("invalid sender shard %d on coin, expect %d", coinSenderShardID, senderShardID)
+			}
+			if coinPrivacyType != cptype {
+				return fmt.Errorf("invalid coin privacy type %d, expect %d", coinPrivacyType, cptype)
 			}
 		}
 	}
@@ -594,7 +615,20 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 		if exists {
 			return fmt.Errorf("TX %s : OTA %x in metadata already in database with status %d", tx.Hash().String(), otaPublicKey, status)
 		}
+		if afterCoinOriginHeight {
+			coinSenderShardID, _, coinPrivacyType, err := privacy.DeriveShardInfoFromCoin(otaDeclaration.PublicKey[:])
+			if err != nil {
+				return err
+			}
+			if coinSenderShardID != int(senderShardID) {
+				return fmt.Errorf("invalid sender shard %d on declared coin, expect %d", coinSenderShardID, senderShardID)
+			}
+			if coinPrivacyType != privacy.CoinPrivacyTypeMint {
+				return fmt.Errorf("invalid declared coin privacy type %d, expect %d", coinPrivacyType, privacy.CoinPrivacyTypeMint)
+			}
+		}
 	}
+
 	return nil
 }
 

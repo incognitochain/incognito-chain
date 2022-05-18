@@ -70,6 +70,7 @@ type param struct {
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	BCHeightBreakPointCoinOrigin     uint64             `mapstructure:"bc_height_break_point_coin_origin"`
 }
 
 type genesisParam struct {
