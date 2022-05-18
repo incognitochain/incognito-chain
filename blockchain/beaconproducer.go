@@ -255,6 +255,16 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		}
 	}
 
+	// remove duplicate PreValidation data in ShardState
+	for _, ss := range shardStates {
+		for i := len(ss) - 1; i > 0; i-- {
+			if i == 0 {
+				break
+			}
+			ss[i].PreviousValidationData = ""
+		}
+	}
+
 	// build stateful instructions
 	statefulInsts, err := blockchain.buildStatefulInstructions(
 		curView,
