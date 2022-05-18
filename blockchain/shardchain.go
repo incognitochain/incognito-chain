@@ -450,7 +450,13 @@ func (chain *ShardChain) ReplaceBlockConsensusData(consensusData types.BlockCons
 		return err
 	}
 	//update multiview
-	chain.multiView.GetViewByHash(replaceBlockHash).ReplaceBlock(shardBlk)
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(shardBlk)
+	} else {
+		fmt.Println("Cannot find shard view", replaceBlockHash.String())
+	}
+
 	return nil
 }
 
