@@ -211,8 +211,9 @@ func (sp *stateProcessorV2) matchContribution(
 	if _, exists := params.PDEXRewardPoolPairsShare[poolPairID]; exists {
 		lmLockedBlocks = params.MiningRewardPendingBlocks
 	}
+	accessID := matchContributionValue.NftID()
 	_, err = poolPair.addShare(
-		existedWaitingContribution.NftID(),
+		accessID,
 		shareAmount, beaconHeight, lmLockedBlocks,
 		existedWaitingContribution.TxReqID().String(),
 		existedWaitingContribution.AccessOTA(),
@@ -226,7 +227,6 @@ func (sp *stateProcessorV2) matchContribution(
 	deletedWaitingContributions[matchContribution.PairHash()] = existedWaitingContribution
 	delete(waitingContributions, matchContribution.PairHash())
 
-	accessID := matchContributionValue.NftID()
 	contribStatus := v2.ContributionStatus{
 		Status:     common.PDEContributionAcceptedStatus,
 		PoolPairID: matchContributionValue.PoolPairID(),
