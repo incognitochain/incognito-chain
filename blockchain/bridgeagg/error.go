@@ -25,7 +25,7 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	Code    uint
+	Code    int
 	Message string
 }{
 	OtherError:                    {1, "Other error"},
@@ -47,7 +47,7 @@ var ErrCodeMessage = map[int]struct {
 }
 
 type BridgeAggError struct {
-	Code    uint   // The code to send with reject messages
+	Code    int    // The code to send with reject messages
 	Message string // Human readable message of the issue
 	Err     error
 }

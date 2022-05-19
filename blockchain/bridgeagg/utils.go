@@ -29,7 +29,7 @@ type ShieldStatusData struct {
 type ShieldStatus struct {
 	Status    byte               `json:"Status"`
 	Data      []ShieldStatusData `json:"Data,omitempty"`
-	ErrorCode uint               `json:"ErrorCode,omitempty"`
+	ErrorCode int                `json:"ErrorCode,omitempty"`
 }
 
 type UnshieldStatusData struct {
@@ -40,7 +40,7 @@ type UnshieldStatusData struct {
 type UnshieldStatus struct {
 	Status    byte                 `json:"Status"`
 	Data      []UnshieldStatusData `json:"Data,omitempty"`
-	ErrorCode uint                 `json:"ErrorCode,omitempty"`
+	ErrorCode int                  `json:"ErrorCode,omitempty"`
 }
 
 type ModifyRewardReserveStatus struct {
@@ -50,7 +50,7 @@ type ModifyRewardReserveStatus struct {
 
 type ConvertStatus struct {
 	Status    byte `json:"Status"`
-	ErrorCode uint `json:"ErrorCode,omitempty"`
+	ErrorCode int  `json:"ErrorCode,omitempty"`
 }
 
 type VaultChange struct {

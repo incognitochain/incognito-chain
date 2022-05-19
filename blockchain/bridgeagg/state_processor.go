@@ -20,7 +20,7 @@ func (sp *stateProcessor) convert(
 ) (*State, error) {
 	var status byte
 	var txReqID common.Hash
-	var errorCode uint
+	var errorCode int
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
@@ -79,7 +79,7 @@ func (sp *stateProcessor) shield(
 ) (*State, error) {
 	var status byte
 	var txReqID common.Hash
-	var errorCode uint
+	var errorCode int
 	var suffix []byte
 	var shieldStatusData []ShieldStatusData
 	switch inst.Status {
@@ -150,7 +150,7 @@ func (sp *stateProcessor) unshield(
 ) (*State, error) {
 	var status byte
 	var txReqID common.Hash
-	var errorCode uint
+	var errorCode int
 	var unshieldStatusData []UnshieldStatusData
 	switch inst.Status {
 	case common.AcceptedStatusStr:
