@@ -279,6 +279,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 	matchAndReturnContributionValue := matchAndReturnContribution.Value()
 	waitingContribution, found := waitingContributions[matchAndReturnContribution.PairHash()]
 	var contribStatus v2.ContributionStatus
+	accessID := matchAndReturnContributionValue.NftID()
 	if found {
 		if matchAndReturnContributionValue.PoolPairID() != waitingContribution.PoolPairID() {
 			err := fmt.Errorf("Expect poolPairID %v but get %v", waitingContribution.PoolPairID(), matchAndReturnContributionValue.PoolPairID())
@@ -302,7 +303,7 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 			lmLockedBlocks = params.MiningRewardPendingBlocks
 		}
 		_, err = poolPair.addShare(
-			waitingContribution.NftID(),
+			accessID,
 			matchAndReturnAddLiquidity.ShareAmount(),
 			beaconHeight, lmLockedBlocks,
 			waitingContribution.TxReqID().String(),
@@ -315,7 +316,6 @@ func (sp *stateProcessorV2) matchAndReturnContribution(
 		deletedWaitingContributions[matchAndReturnContribution.PairHash()] = waitingContribution
 		delete(waitingContributions, matchAndReturnContribution.PairHash())
 	} else {
-		accessID := matchAndReturnContributionValue.NftID()
 		if matchAndReturnAddLiquidity.ExistedTokenID().String() < matchAndReturnContributionValue.TokenID().String() {
 			contribStatus = v2.ContributionStatus{
 				Status:                  common.PDEContributionMatchedNReturnedStatus,
