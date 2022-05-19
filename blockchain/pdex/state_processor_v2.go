@@ -216,7 +216,7 @@ func (sp *stateProcessorV2) matchContribution(
 		accessID,
 		shareAmount, beaconHeight, lmLockedBlocks,
 		existedWaitingContribution.TxReqID().String(),
-		existedWaitingContribution.AccessOTA(),
+		matchContributionValue.AccessOTA(),
 	)
 
 	if err != nil {
