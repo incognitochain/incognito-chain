@@ -268,8 +268,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.ShieldRequest{}
 	case metadataCommon.IssuingUnifiedTokenResponseMeta:
 		md = &metadataBridge.ShieldResponse{}
-	case metadataCommon.IssuingUnifiedRewardResponseMeta:
-		md = &metadataBridge.ShieldResponse{}
 	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		md = &metadataBridge.UnshieldRequest{}
 	case metadataCommon.BurningUnifiedTokenResponseMeta:

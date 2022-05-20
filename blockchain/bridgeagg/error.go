@@ -11,6 +11,7 @@ const (
 	NotFoundTokenIDInNetworkError
 	NotFoundNetworkIDError
 	ShieldProofIsSubmittedError
+	ProcessShieldError
 	InvalidRewardReserveError
 	CalculateShieldAmountError
 	CalculateUnshieldAmountError
@@ -32,6 +33,8 @@ var ErrCodeMessage = map[int]struct {
 	NotFoundTokenIDInNetworkError: {1000, "Not found token id in network"},
 	NotFoundNetworkIDError:        {1001, "Not found networkID"},
 	ShieldProofIsSubmittedError:   {1002, "Shield proof was submitted"},
+
+	ProcessShieldError: {1003, "Beacon process shield instruction error"},
 
 	InvalidRewardReserveError:           {1003, "Invalid reward reserve"},
 	CalculateShieldAmountError:          {1004, "Calculate shield amount error"},

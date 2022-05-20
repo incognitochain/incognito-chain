@@ -148,59 +148,47 @@ func buildShieldUnifiedTokenResponse(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
-	var tx metadata.Transaction
-	var txReqID, tokenID common.Hash
-	var amount uint64
-	var address privacy.PaymentAddress
 	inst := metadataCommon.NewInstruction()
 	if err := inst.FromStringSlice(content); err != nil {
-		return tx, err
+		return nil, err
 	}
 	if inst.ShardID != shardID {
 		return nil, nil
 	}
-	var listShieldResponseData []metadataBridge.ShieldResponseData
-	var isReward bool
-
-	switch inst.Status {
-	case common.AcceptedStatusStr:
-		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-		if err != nil {
-			return nil, err
-		}
-		acceptedContent := metadataBridge.AcceptedInstShieldRequest{}
-		err = json.Unmarshal(contentBytes, &acceptedContent)
-		if err != nil {
-			return nil, err
-		}
-		address = acceptedContent.Receiver
-		for _, data := range acceptedContent.Data {
-			amount += data.IssuingAmount
-			shieldResponseData := metadataBridge.ShieldResponseData{
-				ExternalTokenID: data.ExternalTokenID,
-				UniqTx:          data.UniqTx,
-				NetworkID:       data.NetworkID,
-			}
-			listShieldResponseData = append(listShieldResponseData, shieldResponseData)
-		}
-		tokenID = acceptedContent.UnifiedTokenID
-		txReqID = acceptedContent.TxReqID
-		isReward = acceptedContent.IsReward
-	default:
+	if inst.Status != common.AcceptedStatusStr {
 		return nil, nil
 	}
 
-	if amount == 0 {
+	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	if err != nil {
+		return nil, err
+	}
+	acceptedContent := metadataBridge.AcceptedInstShieldRequest{}
+	err = json.Unmarshal(contentBytes, &acceptedContent)
+	if err != nil {
+		return nil, err
+	}
+
+	// calculate total shield amount and reward
+	var shieldResponseDatas []metadataBridge.ShieldResponseData
+	var shieldAmount, reward uint64
+	for _, data := range acceptedContent.Data {
+		shieldAmount += data.ShieldAmount
+		reward += data.Reward
+		shieldResponseData := metadataBridge.ShieldResponseData{
+			ExternalTokenID: data.ExternalTokenID,
+			UniqTx:          data.UniqTx,
+			IncTokenID:      data.IncTokenID,
+		}
+		shieldResponseDatas = append(shieldResponseDatas, shieldResponseData)
+	}
+	mintAmount := shieldAmount + reward
+	if mintAmount == 0 {
 		return nil, nil
 	}
 
-	var md *metadataBridge.ShieldResponse
-	if isReward {
-		md = metadataBridge.NewShieldResponseWithValue(metadataCommon.IssuingUnifiedRewardResponseMeta, listShieldResponseData, txReqID, nil)
-	} else {
-		md = metadataBridge.NewShieldResponseWithValue(metadataCommon.IssuingUnifiedTokenResponseMeta, listShieldResponseData, txReqID, nil)
-	}
-	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &address, TokenID: &tokenID}
+	md := metadataBridge.NewShieldResponseWithValue(metadataCommon.IssuingUnifiedTokenResponseMeta, shieldAmount, reward, shieldResponseDatas, acceptedContent.TxReqID, nil)
+	txParam := transaction.TxSalaryOutputParams{Amount: mintAmount, ReceiverAddress: &acceptedContent.Receiver, TokenID: &acceptedContent.UnifiedTokenID}
 	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {
 			md.SetSharedRandom(c.GetSharedRandom().ToBytesS())

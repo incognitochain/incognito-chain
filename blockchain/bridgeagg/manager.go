@@ -14,16 +14,18 @@ import (
 )
 
 type Manager struct {
-	state     *State
-	producer  stateProducer
-	processor stateProcessor
+	state                 *State
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo
+	producer              stateProducer
+	processor             stateProcessor
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		state:     NewState(),
-		producer:  stateProducer{},
-		processor: stateProcessor{},
+		state:                 NewState(),
+		updatingInfoByTokenID: map[common.Hash]metadata.UpdatingInfo{},
+		producer:              stateProducer{},
+		processor:             stateProcessor{},
 	}
 }
 
@@ -88,6 +90,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 }
 
 func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
+	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 	for _, content := range insts {
 		if len(content) == 0 {
 			continue // Empty instruction
@@ -118,19 +121,37 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		switch inst.MetaType {
 		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 			m.state, err = m.processor.convert(*inst, m.state, sDB)
-			if err != nil {
-				return err
-			}
 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
-			m.state, err = m.processor.shield(*inst, m.state, sDB)
-			if err != nil {
-				return err
-			}
+			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.BurningUnifiedTokenRequestMeta:
 			m.state, err = m.processor.unshield(*inst, m.state, sDB)
-			if err != nil {
-				return err
-			}
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, updatingInfo := range updatingInfoByTokenID {
+		var updatingAmt uint64
+		var updatingType string
+		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
+			updatingType = "+"
+		}
+		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
+			updatingType = "-"
+		}
+		err := statedb.UpdateBridgeTokenInfo(
+			sDB,
+			updatingInfo.TokenID,
+			updatingInfo.ExternalTokenID,
+			updatingInfo.IsCentralized,
+			updatingAmt,
+			updatingType,
+		)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

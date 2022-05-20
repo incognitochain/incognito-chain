@@ -129,7 +129,6 @@ func (sp *stateProducer) shield(
 
 	clonedAC := ac.Clone()
 	acceptedShieldData := []metadataBridge.AcceptedShieldRequestData{}
-	acceptedShieldRewardData := []metadataBridge.AcceptedShieldRequestData{}
 	var incAddrStr string
 	for i, shieldData := range meta.Data {
 		// check incTokenID
@@ -243,19 +242,13 @@ func (sp *stateProducer) shield(
 			}
 
 			acceptedShieldData = append(acceptedShieldData, metadataBridge.AcceptedShieldRequestData{
-				IssuingAmount:   incAmount.Uint64(),
+				ShieldAmount:    incAmount.Uint64(),
+				Reward:          reward,
 				UniqTx:          uniqTx,
 				ExternalTokenID: extTokenID,
 				NetworkID:       shieldData.NetworkID,
 				IncTokenID:      shieldData.IncTokenID,
 			})
-			if reward > 0 {
-				acceptedShieldRewardData = append(acceptedShieldRewardData, metadataBridge.AcceptedShieldRequestData{
-					IssuingAmount: reward,
-					NetworkID:     shieldData.NetworkID,
-					IncTokenID:    shieldData.IncTokenID,
-				})
-			}
 
 		default:
 			Logger.log.Errorf("[BridgeAgg] Network ID is not matched: %v", shieldData.NetworkID)
@@ -270,10 +263,7 @@ func (sp *stateProducer) shield(
 	// incAddrStr was validated in func ExtractIssueEVMDataFromReceipt => don't catch error here
 	key, _ := wallet.Base58CheckDeserialize(incAddrStr)
 	receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
-	contents, err := buildAcceptedShieldContents(
-		acceptedShieldData, acceptedShieldRewardData,
-		key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID, receivingShardID,
-	)
+	content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID, receivingShardID)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Can not build contents for shield instruction: %v", err)
 		rejectedInst, err := buildRejectedInst(
@@ -281,9 +271,11 @@ func (sp *stateProducer) shield(
 		return [][]string{rejectedInst}, state, ac, err
 	}
 
-	resInst := buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, contents)
+	resInst := buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, [][]byte{content})
 	// update vaults state
 	state.unifiedTokenVaults[meta.UnifiedTokenID] = clonedVaults
+	// TODO: review 0xkraken
+	clonedAC.DBridgeTokenPair[meta.UnifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
 	return resInst, state, clonedAC, nil
 
 	// var errorType int

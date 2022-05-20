@@ -29,15 +29,15 @@ type AcceptedInstShieldRequest struct {
 	Receiver       privacy.PaymentAddress      `json:"Receiver"`
 	UnifiedTokenID common.Hash                 `json:"UnifiedTokenID"`
 	TxReqID        common.Hash                 `json:"TxReqID"`
-	IsReward       bool                        `json:"IsReward"`
 	ShardID        byte                        `json:"ShardID"`
 	Data           []AcceptedShieldRequestData `json:"Data"`
 }
 
 type AcceptedShieldRequestData struct {
-	IssuingAmount   uint64      `json:"IssuingAmount"`
-	UniqTx          []byte      `json:"UniqTx,omitempty"`          // empty for reward inst
-	ExternalTokenID []byte      `json:"ExternalTokenID,omitempty"` // empty for reward inst
+	ShieldAmount    uint64      `json:"ShieldAmount"`
+	Reward          uint64      `json:"Reward"`
+	UniqTx          []byte      `json:"UniqTx"`
+	ExternalTokenID []byte      `json:"ExternalTokenID"`
 	NetworkID       uint        `json:"NetworkID"`
 	IncTokenID      common.Hash `json:"IncTokenID"`
 }

@@ -184,7 +184,7 @@ func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) 
 	return a, nil
 }
 
-func InsertTxHashIssuedByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
+func GetInsertTxHashIssuedFuncByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
 	switch networkID {
 	case common.PLGNetworkID:
 		return statedb.InsertPLGTxHashIssued
@@ -206,14 +206,12 @@ func buildRejectedInst(metaType int, shardID byte, txReqID common.Hash, errorTyp
 	}
 
 	rejectContentStr, _ := metadataCommon.NewRejectContentWithValue(txReqID, ErrCodeMessage[errorType].Code, content).String()
-
 	rejectedInst := metadataCommon.NewInstructionWithValue(
 		metaType,
 		common.RejectedStatusStr,
 		shardID,
 		rejectContentStr,
 	)
-
 	return rejectedInst.StringSlice(), nil
 }
 
@@ -467,40 +465,18 @@ func unshieldEVM(
 	return v, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
 }
 
-func buildAcceptedShieldContents(
-	shieldData, rewardData []metadataBridge.AcceptedShieldRequestData,
+func buildAcceptedShieldContent(
+	shieldData []metadataBridge.AcceptedShieldRequestData,
 	paymentAddress privacy.PaymentAddress, unifiedTokenID, txReqID common.Hash, shardID byte,
-) ([][]byte, error) {
-	contents := [][]byte{}
+) ([]byte, error) {
 	acceptedContent := metadataBridge.AcceptedInstShieldRequest{
 		Receiver:       paymentAddress,
 		UnifiedTokenID: unifiedTokenID,
 		TxReqID:        txReqID,
 		ShardID:        shardID,
-		IsReward:       false,
 		Data:           shieldData,
 	}
-	content, err := json.Marshal(acceptedContent)
-	if err != nil {
-		return contents, err
-	}
-	contents = append(contents, content)
-	if len(rewardData) > 0 {
-		acceptedRewardContent := metadataBridge.AcceptedInstShieldRequest{
-			Receiver:       paymentAddress,
-			UnifiedTokenID: unifiedTokenID,
-			TxReqID:        txReqID,
-			ShardID:        shardID,
-			IsReward:       true,
-			Data:           rewardData,
-		}
-		content, err = json.Marshal(acceptedRewardContent)
-		if err != nil {
-			return contents, err
-		}
-		contents = append(contents, content)
-	}
-	return contents, nil
+	return json.Marshal(acceptedContent)
 }
 
 func ConvertAmountByDecimal(amount big.Int, decimal uint, isToUnifiedDecimal bool) (*big.Int, error) {
@@ -1003,28 +979,29 @@ func calShieldReward(v *statedb.BridgeAggVaultState, shieldAmt uint64) (uint64, 
 }
 
 func updateVaultForShielding(v *statedb.BridgeAggVaultState, shieldAmt, reward uint64) (*statedb.BridgeAggVaultState, error) {
+	res := v.Clone()
 	// increase vault amount
 	newAmount := new(big.Int).Add(new(big.Int).SetUint64(v.Amount()), new(big.Int).SetUint64(shieldAmt))
 	if !newAmount.IsUint64() {
 		return v, errors.New("Out of range uint64")
 	}
-	v.SetAmount(newAmount.Uint64())
+	res.SetAmount(newAmount.Uint64())
 
 	// decrease waiting unshield amount, waiting fee
 	if reward > 0 {
 		// shieldAmt is maybe greater than WaitingUnshieldAmount in Vault
 		if v.WaitingUnshieldAmount() <= shieldAmt {
-			v.SetWaitingUnshieldAmount(0)
+			res.SetWaitingUnshieldAmount(0)
 		} else {
-			v.SetWaitingUnshieldAmount(v.WaitingUnshieldAmount() - shieldAmt)
+			res.SetWaitingUnshieldAmount(v.WaitingUnshieldAmount() - shieldAmt)
 		}
 
 		// reward can't be greater than WaitingUnshieldFee in Vault
 		if v.WaitingUnshieldFee() < reward {
 			return v, fmt.Errorf("Invalid reward %v: can't be greater than WaitingUnshieldFee in Vault %v", reward, v.WaitingUnshieldFee())
 		}
-		v.SetWaitingUnshieldFee(v.WaitingUnshieldFee() - reward)
+		res.SetWaitingUnshieldFee(v.WaitingUnshieldFee() - reward)
 	}
 
-	return v, nil
+	return res, nil
 }
