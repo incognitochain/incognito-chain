@@ -453,13 +453,13 @@ func (i *Instruction) StringSliceWithRejectContent(rejectContent *RejectContent)
 
 type RejectContent struct {
 	TxReqID   common.Hash `json:"TxReqID"`
-	ErrorCode uint        `json:"ErrorCode,omitempty"`
+	ErrorCode int         `json:"ErrorCode,omitempty"`
 	Data      []byte      `json:"Data,omitempty"`
 }
 
 func NewRejectContent() *RejectContent { return &RejectContent{} }
 
-func NewRejectContentWithValue(txReqID common.Hash, errorCode uint, data []byte) *RejectContent {
+func NewRejectContentWithValue(txReqID common.Hash, errorCode int, data []byte) *RejectContent {
 	return &RejectContent{TxReqID: txReqID, ErrorCode: errorCode, Data: data}
 }
 
