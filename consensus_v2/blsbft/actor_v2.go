@@ -1267,9 +1267,13 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	if proposeMsg.BestBlockConsensusData != nil {
 		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
 			if sid == -1 && a.chainID >= 0 {
-				a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.ReplaceBlockConsensusData(consensusData)
+				if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+					a.logger.Error(err)
+				}
 			} else if sid >= 0 && a.chainID == -1 {
-				a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].ReplaceBlockConsensusData(consensusData)
+				if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+					a.logger.Error(err)
+				}
 			}
 		}
 	}

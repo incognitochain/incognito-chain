@@ -29,6 +29,7 @@ type View interface {
 }
 
 type MultiView interface {
+	ReplaceBlockIfImproveFinality(block types.BlockInterface) (bool, error)
 	IsInstantFinality() bool
 	GetViewByHash(hash common.Hash) View
 	SimulateAddView(view View) (cloneMultiview MultiView)
@@ -382,26 +383,61 @@ func (s *multiView) AddView(v View) (int, error) {
 	panic("must not use this")
 }
 
-func (s *multiView) ReplaceBlock(h common.Hash, b types.BlockInterface) error {
+func (s *multiView) isFinalized(h common.Hash) bool {
+	view, ok := s.viewByHash[h]
+	if !ok {
+		return false
+	}
+
+	view = s.expectedFinalView
+	for {
+		if view.GetHash().String() == h.String() {
+			return true
+		}
+		previousViewHash := view.GetPreviousHash()
+		view = s.viewByHash[*previousViewHash]
+		if view == nil {
+			return false
+		}
+	}
+}
+
+func (s *multiView) ReplaceBlockIfImproveFinality(b types.BlockInterface) (bool, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if _, ok := s.viewByHash[h]; !ok {
-		return errors.New("Cannot replace block")
-	}
-	s.viewByHash[h].ReplaceBlock(b)
 
+	h := *b.Hash()
+	if _, ok := s.viewByHash[h]; !ok {
+		return false, errors.New("Cannot find view")
+	}
+
+	if s.isFinalized(h) {
+		return false, nil
+	}
+
+	//create new multiview and add view again with the new replace block
+	//check if it improve finality
+	var oldView View
+	var oldBlock types.BlockInterface
 	tmp := NewMultiView()
 	allView := s.getAllViewsWithBFS(s.finalView)
 	for _, v := range allView {
+		if v.GetHash().String() == h.String() {
+			oldView = v
+			oldBlock = v.GetBlock()
+			v.ReplaceBlock(b)
+		}
 		tmp.addView(v)
 	}
-	if s.expectedFinalView != tmp.expectedFinalView {
-		fmt.Println("Change expected final view to", tmp.expectedFinalView.GetHeight(), tmp.expectedFinalView.GetHash().String())
+
+	//improve finality
+	if s.isFinalized(h) {
 		s.expectedFinalView = tmp.expectedFinalView
-	}
-	if s.expectedFinalView != tmp.expectedFinalView {
-		fmt.Println("Change best view to", tmp.bestView.GetHeight(), tmp.bestView.GetHash().String())
 		s.bestView = tmp.bestView
+		return true, nil
 	}
-	return nil
+
+	//not improve, restore old block
+	oldView.ReplaceBlock(oldBlock)
+	return false, nil
 }

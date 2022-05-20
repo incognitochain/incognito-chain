@@ -413,23 +413,39 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 		return nil
 	}
 
-	consensusData := types.BlockConsensusData{
-		*shardBlock.Hash(),
-		shardBlock.GetHeight(),
-		shardBlock.GetFinalityHeight(),
-		shardBlock.GetProposer(),
-		shardBlock.GetProposeTime(),
-		newValidationData,
+	// validate block before rewrite to
+	replaceBlockHash := *shardBlock.Hash()
+	shardBlock.ValidationData = newValidationData
+	committees, err := chain.GetCommitteeV2(shardBlock)
+	if err != nil {
+		return err
 	}
-	chain.ReplaceBlockConsensusData(consensusData)
+	if err = chain.ValidateBlockSignatures(shardBlock, committees); err != nil {
+		return err
+	}
+	//rewrite to database
+	if err = rawdbv2.StoreShardBlock(chain.GetChainDatabase(), replaceBlockHash, shardBlock); err != nil {
+		return err
+	}
+	//update multiview
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(shardBlock)
+	} else {
+		fmt.Println("Cannot find shard view", replaceBlockHash.String())
+	}
 	return nil
 }
 
-//for replace signature index and finality height
-func (chain *ShardChain) ReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+//consensusData contain beacon finality consensus data
+func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
 	replaceBlockHash := consensusData.BlockHash
 	//retrieve block from database and replace consensus field
 	rawBlk, _ := rawdbv2.GetShardBlockByHash(chain.GetDatabase(), replaceBlockHash)
+	if len(rawBlk) == 0 {
+		return nil
+	}
+
 	shardBlk := new(types.ShardBlock)
 	_ = json.Unmarshal(rawBlk, shardBlk)
 	shardBlk.Header.Proposer = consensusData.Proposer
@@ -445,16 +461,17 @@ func (chain *ShardChain) ReplaceBlockConsensusData(consensusData types.BlockCons
 	if err = chain.ValidateBlockSignatures(shardBlk, committees); err != nil {
 		return err
 	}
+
+	//replace block if improve finality
+	if ok, err := chain.multiView.ReplaceBlockIfImproveFinality(shardBlk); !ok {
+		return err
+	}
+	b, _ := json.Marshal(consensusData)
+	Logger.log.Info("Replace shard block improving finality", chain.shardID, string(b))
+
 	//rewrite to database
 	if err = rawdbv2.StoreShardBlock(chain.GetChainDatabase(), replaceBlockHash, shardBlk); err != nil {
 		return err
-	}
-	//update multiview
-	view := chain.multiView.GetViewByHash(replaceBlockHash)
-	if view != nil {
-		view.ReplaceBlock(shardBlk)
-	} else {
-		fmt.Println("Cannot find shard view", replaceBlockHash.String())
 	}
 
 	return nil

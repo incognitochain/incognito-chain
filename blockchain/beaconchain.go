@@ -296,11 +296,15 @@ func (chain *BeaconChain) GetBlockConsensusData(blk types.BlockInterface) map[in
 	return consensusData
 }
 
-//for replace signature index and finality height
-func (chain *BeaconChain) ReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+
 	replaceBlockHash := consensusData.BlockHash
 	//retrieve block from database and replace consensus field
 	rawBlk, _ := rawdbv2.GetBeaconBlockByHash(chain.GetDatabase(), replaceBlockHash)
+	if len(rawBlk) == 0 {
+		return nil
+	}
+
 	beaconBlk := new(types.BeaconBlock)
 	_ = json.Unmarshal(rawBlk, beaconBlk)
 	beaconBlk.Header.Proposer = consensusData.Proposer
@@ -316,19 +320,20 @@ func (chain *BeaconChain) ReplaceBlockConsensusData(consensusData types.BlockCon
 	if err = chain.ValidateBlockSignatures(beaconBlk, committees); err != nil {
 		return err
 	}
+
+	//replace block if improve finality
+	if ok, err := chain.multiView.ReplaceBlockIfImproveFinality(beaconBlk); !ok {
+		return err
+	}
+	b, _ := json.Marshal(consensusData)
+	Logger.log.Info("Replace beacon block improving finality", string(b))
+
 	//rewrite to database
 	if err = rawdbv2.StoreBeaconBlockByHash(chain.GetChainDatabase(), replaceBlockHash, beaconBlk); err != nil {
 		return err
 	}
-	//update multiview
-
-	view := chain.multiView.GetViewByHash(replaceBlockHash)
-	if view != nil {
-		view.ReplaceBlock(beaconBlk)
-	} else {
-		fmt.Println("Cannot find beacon view", replaceBlockHash.String())
-	}
 	return nil
+
 }
 
 func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
