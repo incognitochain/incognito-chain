@@ -205,7 +205,7 @@ func (blkM *BlockManager) StoreBlock(
 		if blkHeaderBytes, err = common.GZipFromBytesWithLvl(blkHeaderBytes, config.Param().FlatFileParam.CompLevel); err != nil {
 			return err
 		}
-		if (config.Config().SyncMode != common.STATEDB_LITE_MODE) || (blkType != proto.BlkType_BlkBc) {
+		if (config.Config().SyncMode != common.STATEDB_LITE_MODE) || (blkType != proto.BlkType_BlkBc) || (blkData.GetHeight() == 1) {
 			if blkBodyBytes, err = blkData.GetBodyBytes(); err != nil {
 				return err
 			} else {
