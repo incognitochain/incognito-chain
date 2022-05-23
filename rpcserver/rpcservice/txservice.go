@@ -2522,17 +2522,20 @@ func (txService TxService) DecryptOutputCoinByKey(outCoins []coin.Coin, keyset *
 }
 
 func (TxService TxService) GenerateOTAFromPaymentAddress(paymentAddressStr string) (string, string, error) {
-	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
+	keySet, shardID, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
 	if err != nil {
 		Logger.log.Errorf("GenerateOTAFromPaymentAddress Cannot get keyset from payment address. Error: %+v", err)
 		return "", "", err
 	}
-	publickey, txRandom, err := coin.NewOTAFromReceiver(keySet.PaymentAddress)
+	p := privacy.NewCoinParams().From(&privacy.PaymentInfo{
+		PaymentAddress: keySet.PaymentAddress,
+	}, int(shardID), privacy.CoinPrivacyTypeMint)
+	c, err := privacy.NewCoinFromPaymentInfo(p)
 	if err != nil {
 		Logger.log.Errorf("GenerateOTAFromPaymentAddress Cannot generate OTA Coin from keyset. Error: %+v", err)
 		return "", "", err
 	}
-	return base58.Base58Check{}.Encode(publickey.ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte), nil
+	return base58.Base58Check{}.Encode(c.GetPublicKey().ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(c.GetTxRandom().Bytes(), common.ZeroByte), nil
 }
 
 func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {
