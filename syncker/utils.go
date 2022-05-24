@@ -79,7 +79,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			return 0, err
 		}
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
-			sameCommitteeBlock = sameCommitteeBlock[:i]
+			validBlockForInsert = sameCommitteeBlock[:i]
 		} else {
 			break
 		}
@@ -115,7 +115,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 
 	}
 
-	return len(sameCommitteeBlock), nil
+	return len(validBlockForInsert), nil
 }
 
 //final block

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -259,6 +260,16 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		}
 	}
 
+	// remove duplicate PreValidation data in ShardState
+	for _, ss := range shardStates {
+		for i := len(ss) - 1; i > 0; i-- {
+			if i == 0 {
+				break
+			}
+			ss[i].PreviousValidationData = ""
+		}
+	}
+
 	// build stateful instructions
 	statefulInsts, err := blockchain.buildStatefulInstructions(
 		curView,
@@ -326,9 +337,20 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	bridgeInstructions := [][]string{}
 
 	acceptedRewardInstruction := curView.getAcceptBlockRewardInstruction(shardID, shardBlock, blockchain)
+
+	prevShardBlockValidatorIndex := ""
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
+		}
+		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+	}
+
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
+		prevShardBlockValidatorIndex,
 		shardBlock.Header.CommitteeFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),

@@ -29,6 +29,10 @@ func (s *Server) PushMessageToShard(message wire.Message, shardID byte) error {
 	return nil
 }
 
+func (s *Server) RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error) {
+	return nil
+}
+
 func (s *Server) PushMessageToAll(message wire.Message) error {
 	return nil
 }

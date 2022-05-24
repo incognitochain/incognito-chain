@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"sync"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 
 type ShardChain struct {
 	shardID   int
-	multiView *multiview.MultiView
+	multiView multiview.MultiView
 
 	BlockGen    *BlockGenerator
 	Blockchain  *BlockChain
@@ -39,7 +40,7 @@ type ShardChain struct {
 
 func NewShardChain(
 	shardID int,
-	multiView *multiview.MultiView,
+	multiView multiview.MultiView,
 	blockGen *BlockGenerator,
 	blockchain *BlockChain,
 	chainName string,
@@ -61,15 +62,15 @@ func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
-func (chain *ShardChain) GetMultiView() *multiview.MultiView {
+func (chain *ShardChain) GetMultiView() multiview.MultiView {
 	return chain.multiView
 }
 
-func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
+func (chain *ShardChain) CloneMultiView() multiview.MultiView {
 	return chain.multiView.Clone()
 }
 
-func (chain *ShardChain) SetMultiView(multiView *multiview.MultiView) {
+func (chain *ShardChain) SetMultiView(multiView multiview.MultiView) {
 	chain.multiView = multiView
 }
 
@@ -91,8 +92,8 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 
 func (chain *ShardChain) AddView(view multiview.View) bool {
 	curBestView := chain.multiView.GetBestView()
-	added := chain.multiView.AddView(view)
-	if (curBestView != nil) && (added) {
+	added, err := chain.multiView.(*multiview.ShardMultiView).AddView(view)
+	if (curBestView != nil) && (added == 1) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()
 			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
@@ -109,7 +110,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 			}
 		}(chain, curBestView)
 	}
-	return added
+	return err == nil
 }
 
 func (s *ShardChain) GetEpoch() uint64 {
@@ -352,9 +353,118 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	return chain.InsertWithPrevValidationData(block, newValidationData)
 }
 
+//this get consensus data for beacon
+func (chain *ShardChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
+	consensusData := map[int]types.BlockConsensusData{}
+	rawBlk, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *chain.Blockchain.BeaconChain.multiView.GetExpectedFinalView().GetHash())
+	if err != nil {
+		panic(err)
+	}
+	beaconBlk := new(types.BeaconBlock)
+	err = json.Unmarshal(rawBlk, beaconBlk)
+	if err != nil {
+		panic(err)
+	}
+	consensusData[-1] = types.BlockConsensusData{
+		BlockHash:      *beaconBlk.Hash(),
+		BlockHeight:    beaconBlk.GetHeight(),
+		FinalityHeight: beaconBlk.GetFinalityHeight(),
+		Proposer:       beaconBlk.GetProposer(),
+		ProposerTime:   beaconBlk.GetProposeTime(),
+		ValidationData: beaconBlk.ValidationData,
+	}
+
+	return consensusData
+}
+
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
-	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
-		Logger.log.Error(err)
+	if hasBlock, err := chain.Blockchain.HasShardBlockByHash(previousBlockHash); err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	} else {
+		if !hasBlock {
+			// This block is not inserted yet, no need to replace
+			return nil
+		}
+	}
+
+	shardBlock, _, err := chain.Blockchain.GetShardBlockByHash(previousBlockHash)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedOldValidationData, err := consensustypes.DecodeValidationData(shardBlock.ValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
+			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
+	} else {
+		return nil
+	}
+
+	// validate block before rewrite to
+	replaceBlockHash := *shardBlock.Hash()
+	shardBlock.ValidationData = newValidationData
+	committees, err := chain.GetCommitteeV2(shardBlock)
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(shardBlock, committees); err != nil {
+		return err
+	}
+	//rewrite to database
+	if err = rawdbv2.StoreShardBlock(chain.GetChainDatabase(), replaceBlockHash, shardBlock); err != nil {
+		return err
+	}
+	//update multiview
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(shardBlock)
+	} else {
+		fmt.Println("Cannot find shard view", replaceBlockHash.String())
+	}
+	return nil
+}
+
+//consensusData contain beacon finality consensus data
+func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+	replaceBlockHash := consensusData.BlockHash
+	//retrieve block from database and replace consensus field
+	shardBlk, _, err := chain.Blockchain.GetShardBlockByHash(replaceBlockHash)
+	if shardBlk == nil {
+		return fmt.Errorf("Shard %v Cannot find shard block %v", chain.shardID, replaceBlockHash.String())
+	}
+
+	shardBlk.Header.Proposer = consensusData.Proposer
+	shardBlk.Header.ProposeTime = consensusData.ProposerTime
+	shardBlk.Header.FinalityHeight = consensusData.FinalityHeight
+	shardBlk.ValidationData = consensusData.ValidationData
+
+	// validate block before rewrite to
+	committees, err := chain.GetCommitteeV2(shardBlk)
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(shardBlk, committees); err != nil {
+		return err
+	}
+
+	//replace block if improve finality
+	if ok, err := chain.multiView.ReplaceBlockIfImproveFinality(shardBlk); !ok {
+		return err
+	}
+	b, _ := json.Marshal(consensusData)
+	Logger.log.Info("Replace shard block improving finality", chain.shardID, string(b))
+
+	//rewrite to database
+	if err = rawdbv2.StoreShardBlock(chain.GetChainDatabase(), replaceBlockHash, shardBlk); err != nil {
 		return err
 	}
 
