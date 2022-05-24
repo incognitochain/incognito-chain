@@ -166,6 +166,19 @@ func (b *BridgeAggVaultState) GetDiff(compareState *BridgeAggVaultState) (*Bridg
 	return nil, nil
 }
 
+func (b *BridgeAggVaultState) IsDiff(compareState *BridgeAggVaultState) (bool, error) {
+	if compareState == nil {
+		return false, errors.New("compareState is nil")
+	}
+	if b.amount != compareState.amount || b.lockedAmount != compareState.lockedAmount ||
+		b.waitingUnshieldAmount != compareState.waitingUnshieldAmount || b.waitingUnshieldFee != compareState.waitingUnshieldFee ||
+		b.extDecimal != compareState.extDecimal ||
+		b.networkID != compareState.networkID || b.tokenID != compareState.tokenID {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (b *BridgeAggVaultState) IsEmpty() bool {
 	return b.amount == 0 && b.lockedAmount == 0 &&
 		b.waitingUnshieldAmount == 0 && b.waitingUnshieldFee == 0 &&

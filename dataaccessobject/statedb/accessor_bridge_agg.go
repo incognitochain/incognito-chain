@@ -53,6 +53,7 @@ func StoreBridgeAggWaitingUnshieldReq(stateDB *StateDB, unifiedTokenID, unshield
 	return stateDB.SetStateObject(BridgeAggWaitingUnshieldReqObjectType, key, waitingUnshieldReq)
 }
 
+// return list of waiting unshield requests by unifiedTokenID and the list is sorted ascending by beaconHeight
 func GetBridgeAggWaitingUnshieldReqs(stateDB *StateDB, unifiedTokenID common.Hash) ([]*BridgeAggWaitingUnshieldReq, error) {
 	prefixHash := GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID.Bytes())
 	return stateDB.iterateBridgeAggWaitingUnshieldReqs(prefixHash)
