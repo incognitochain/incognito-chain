@@ -18,10 +18,13 @@ func InitManager(sDB *statedb.StateDB) (*Manager, error) {
 }
 
 func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
+	// load list all unified tokens
 	unifiedTokenStates, err := statedb.GetBridgeAggUnifiedTokens(sDB)
 	if err != nil {
 		return nil, err
 	}
+
+	// load unified token infos
 	unifiedTokenInfos := make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState)
 	for _, unifiedTokenState := range unifiedTokenStates {
 		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[common.Hash]*statedb.BridgeAggVaultState)
@@ -33,8 +36,25 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 			unifiedTokenInfos[unifiedTokenState.TokenID()][tokenID] = vault
 		}
 	}
-	//TODO: 0xkraken
-	return NewStateWithValue(unifiedTokenInfos, nil, nil), nil
+
+	// load waiting unshield reqs
+	waitingUnshieldReqs := make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq)
+	for _, unifiedTokenState := range unifiedTokenStates {
+		unifiedTokenID := unifiedTokenState.TokenID()
+		reqs, err := statedb.GetBridgeAggWaitingUnshieldReqs(sDB, unifiedTokenID)
+		if err != nil {
+			return nil, err
+		}
+		if len(reqs) > 0 {
+			waitingUnshieldReqs[unifiedTokenID] = reqs
+		}
+	}
+
+	return NewStateWithValue(
+		unifiedTokenInfos,
+		waitingUnshieldReqs,
+		map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq{},
+		[]common.Hash{}), nil
 }
 
 func GetExternalTokenIDByIncTokenID(incTokenID common.Hash, sDB *statedb.StateDB) ([]byte, error) {

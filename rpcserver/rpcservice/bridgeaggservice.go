@@ -50,10 +50,11 @@ func getBridgeAggState(
 	}
 
 	res := &jsonresult.BridgeAggState{
-		BeaconTimeStamp:   beaconTimeStamp,
-		UnifiedTokenInfos: bridgeAggState.UnifiedTokenVaults(),
-		BaseDecimal:       config.Param().BridgeAggParam.BaseDecimal,
-		MaxLenOfPath:      config.Param().BridgeAggParam.MaxLenOfPath,
+		BeaconTimeStamp:     beaconTimeStamp,
+		UnifiedTokenInfos:   bridgeAggState.UnifiedTokenVaults(),
+		WaitingUnshieldReqs: bridgeAggState.WaitingUnshieldReqs(),
+		BaseDecimal:         config.Param().BridgeAggParam.BaseDecimal,
+		MaxLenOfPath:        config.Param().BridgeAggParam.MaxLenOfPath,
 	}
 	return res, nil
 }

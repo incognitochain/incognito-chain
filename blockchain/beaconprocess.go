@@ -921,6 +921,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
+
 	// execute, store token init instructions
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 
@@ -1029,14 +1030,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	if newBestState.bridgeAggManager != nil {
-		diffState, stateChange, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
+		diffState, newVaults, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
 		if err != nil {
+			Logger.log.Errorf("Error get diff bridge agg: %v", err)
 			return err
 		}
 		if diffState != nil {
 			m := bridgeagg.NewManagerWithValue(diffState)
-			err = m.UpdateToDB(newBestState.featureStateDB, stateChange)
+			err = m.UpdateToDB(newBestState.featureStateDB, newVaults)
 			if err != nil {
+				Logger.log.Errorf("Error update to db: %v", err)
 				return err
 			}
 		}
@@ -1156,6 +1159,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
+	Logger.log.Infof("Finish store beacon block!!!")
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
 	if !config.Config().ForceBackup {

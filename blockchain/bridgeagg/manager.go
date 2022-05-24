@@ -14,18 +14,16 @@ import (
 )
 
 type Manager struct {
-	state                 *State
-	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo
-	producer              stateProducer
-	processor             stateProcessor
+	state     *State
+	producer  stateProducer
+	processor stateProcessor
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		state:                 NewState(),
-		updatingInfoByTokenID: map[common.Hash]metadata.UpdatingInfo{},
-		producer:              stateProducer{},
-		processor:             stateProcessor{},
+		state:     NewState(),
+		producer:  stateProducer{},
+		processor: stateProcessor{},
 	}
 }
 
@@ -157,32 +155,44 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 	return nil
 }
 
-func (m *Manager) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error {
+// TODO: 0xkraken
+func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
+	// store new unifiedTokens
+	for unifiedTokenID := range newUnifiedTokens {
+		err := statedb.StoreBridgeAggUnifiedToken(
+			sDB,
+			unifiedTokenID,
+			statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	// store updated vaults
 	for unifiedTokenID, vaults := range m.state.unifiedTokenVaults {
-		if stateChange.unifiedTokenID[unifiedTokenID] {
-			err := statedb.StoreBridgeAggUnifiedToken(
-				sDB,
-				unifiedTokenID,
-				statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
-			)
+		for tokenID, vault := range vaults {
+			err := statedb.StoreBridgeAggVault(sDB, unifiedTokenID, tokenID, vault)
 			if err != nil {
 				return err
 			}
 		}
-		for tokenID, vault := range vaults {
-			if stateChange.vaultChange[unifiedTokenID][tokenID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
-				err := statedb.StoreBridgeAggVault(sDB, unifiedTokenID, tokenID, vault)
-				if err != nil {
-					return err
-				}
+	}
 
+	// store new waiting unshield reqs
+	for unifiedTokenID, unshieldReqs := range m.state.newWaitingUnshieldReqs {
+		for _, req := range unshieldReqs {
+			err := statedb.StoreBridgeAggWaitingUnshieldReq(sDB, unifiedTokenID, req.GetUnshieldID(), req)
+			if err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func (m *Manager) GetDiffState(state *State) (*State, *StateChange, error) {
+func (m *Manager) GetDiffState(state *State) (*State, map[common.Hash]bool, error) {
 	return m.state.GetDiff(state)
 }
 
