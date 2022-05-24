@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -27,14 +28,20 @@ type TestSuite struct {
 	sDB                 *statedb.StateDB
 }
 
-type TestCase struct {
-	ExpectedInstructions      [][]string                                    `json:"expected_instructions"`
-	UnifiedTokens             map[common.Hash]map[common.Hash]*Vault        `json:"unified_tokens"`
-	ExpectedUnifiedTokens     map[common.Hash]map[common.Hash]*Vault        `json:"expected_unified_tokens"`
-	TxIDs                     []common.Hash                                 `json:"tx_ids"`
-	BridgeTokensInfo          map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
-	AccumulatedValues         *metadata.AccumulatedValues                   `json:"accumulated_values"`
-	ExpectedAccumulatedValues *metadata.AccumulatedValues                   `json:"expected_accumulated_values"`
+type TestData struct {
+	unifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"unified_token_vaults"`
+	waitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"waiting_unshield_reqs"`
+	deletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"deleted_waiting_unshield_req_key_hashes"`
+	TxIDs                              []common.Hash                                                `json:"tx_ids"`
+	BridgeTokensInfo                   map[common.Hash]*statedb.BridgeTokenInfoState                `json:"bridge_tokens_info"`
+	AccumulatedValues                  *metadata.AccumulatedValues                                  `json:"accumulated_values"`
+}
+
+type ExpectedResult struct {
+	State             State                                    `json:"state"`
+	Instructions      [][]string                               `json:"instructions"`
+	AccumulatedValues *metadata.AccumulatedValues              `json:"accumulated_values"`
+	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo `json:"bridge_tokens_info"`
 }
 
 type ActualResult struct {
