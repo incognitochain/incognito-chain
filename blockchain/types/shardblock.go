@@ -134,6 +134,10 @@ func (shardBlock ShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (shardBlock ShardBlock) FullHashString() string {
+	return shardBlock.ProposeHash().String() + "~" + shardBlock.Header.Hash().String()
+}
+
 func (shardBlock *ShardBlock) GetAggregateRootHash() common.Hash {
 
 	res := []byte{}
@@ -566,8 +570,14 @@ func (shardHeader *ShardHeader) String() string {
 	res += shardHeader.ShardTxRoot.String()
 	res += shardHeader.CrossTransactionRoot.String()
 	res += shardHeader.InstructionsRoot.String()
-	res += shardHeader.CommitteeRoot.String()
-	res += shardHeader.PendingValidatorRoot.String()
+
+	//instant finality will move consensus info out of shard block hash
+	if shardHeader.Version < INSTANT_FINALITY_VERSION {
+		res += shardHeader.CommitteeRoot.String()
+		res += shardHeader.PendingValidatorRoot.String()
+	}
+	//
+
 	res += shardHeader.BeaconHash.String()
 	res += shardHeader.StakingTxRoot.String()
 	res += fmt.Sprintf("%v", shardHeader.BeaconHeight)
@@ -587,20 +597,46 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version >= MULTI_VIEW_VERSION {
-		res += shardHeader.Proposer
-		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
-	}
+	if shardHeader.Version >= INSTANT_FINALITY_VERSION {
+		//instant finality will move consensus info out of block hash
+	} else {
+		if shardHeader.Version >= MULTI_VIEW_VERSION {
+			res += shardHeader.Proposer
+			res += fmt.Sprintf("%v", shardHeader.ProposeTime)
+		}
 
-	if shardHeader.Version >= SHARD_SFV2_VERSION {
-		res += shardHeader.CommitteeFromBlock.String()
-	}
+		if shardHeader.Version >= SHARD_SFV2_VERSION {
+			res += shardHeader.CommitteeFromBlock.String()
+		}
 
-	if shardHeader.Version >= LEMMA2_VERSION {
-		res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
+		if shardHeader.Version >= LEMMA2_VERSION {
+			res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
+		}
 	}
-
 	return res
+}
+
+//hash related to consensus
+func (shardBlock ShardBlock) ProposeHash() *common.Hash {
+	hash := shardBlock.Header.ProposeHash()
+	return &hash
+}
+
+func (shardHeader *ShardHeader) ProposeHash() common.Hash {
+	res := shardHeader.String()
+	if shardHeader.Version < INSTANT_FINALITY_VERSION {
+		return shardHeader.Hash()
+	}
+
+	res += shardHeader.Proposer
+	res += fmt.Sprintf("%v", shardHeader.ProposeTime)
+	res += shardHeader.CommitteeFromBlock.String()
+	res += fmt.Sprintf("%v", shardHeader.FinalityHeight)
+
+	blkInstHash := shardHeader.InstructionMerkleRoot
+	blkMetaHash := common.Keccak256([]byte(res))
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+	return common.Keccak256(combined)
 }
 
 func (shardHeader *ShardHeader) MetaHash() common.Hash {

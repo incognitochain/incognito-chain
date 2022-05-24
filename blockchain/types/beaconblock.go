@@ -12,6 +12,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BlockConsensusData struct {
+	BlockHash      common.Hash
+	BlockHeight    uint64
+	FinalityHeight uint64
+	Proposer       string
+	ProposerTime   int64
+	ValidationData string
+}
+
 type BeaconBlock struct {
 	ValidationData string `json:"ValidationData"`
 	Body           BeaconBody
@@ -90,16 +99,18 @@ func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(
 }
 
 type ShardState struct {
-	ValidationData     string
-	CommitteeFromBlock common.Hash
-	Height             uint64
-	Hash               common.Hash
-	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
-	ProposerTime       int64
-	Version            int
+	ValidationData         string
+	PreviousValidationData string
+	CommitteeFromBlock     common.Hash
+	Height                 uint64
+	Hash                   common.Hash
+	CrossShard             []byte //In this state, shard i send cross shard tx to which shard
+	ProposerTime           int64
+	Version                int
 }
 
 func NewShardState(validationData string,
+	prevValidationData string,
 	committeeFromBlock common.Hash,
 	height uint64,
 	hash common.Hash,
@@ -110,13 +121,14 @@ func NewShardState(validationData string,
 	newCrossShard := make([]byte, len(crossShard))
 	copy(newCrossShard, crossShard)
 	return ShardState{
-		ValidationData:     validationData,
-		CommitteeFromBlock: committeeFromBlock,
-		Height:             height,
-		Hash:               hash,
-		CrossShard:         newCrossShard,
-		ProposerTime:       proposerTime,
-		Version:            version,
+		ValidationData:         validationData,
+		PreviousValidationData: prevValidationData,
+		CommitteeFromBlock:     committeeFromBlock,
+		Height:                 height,
+		Hash:                   hash,
+		CrossShard:             newCrossShard,
+		ProposerTime:           proposerTime,
+		Version:                version,
 	}
 }
 
@@ -249,6 +261,32 @@ func (beaconBlock *BeaconBlock) GetProduceTime() int64 {
 func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	hash := beaconBlock.Header.Hash()
 	return &hash
+}
+
+//propose hash of beacon contain consensus info
+func (beaconBlock BeaconBlock) ProposeHash() *common.Hash {
+	hash := beaconBlock.Header.ProposeHash()
+	return &hash
+}
+
+func (beaconHeader *BeaconHeader) ProposeHash() common.Hash {
+
+	if beaconHeader.Version < INSTANT_FINALITY_VERSION {
+		return beaconHeader.Hash()
+	}
+	res := beaconHeader.toString()
+	res += beaconHeader.Proposer
+	res += fmt.Sprintf("%v", beaconHeader.ProposeTime)
+	res += fmt.Sprintf("%v", beaconHeader.FinalityHeight)
+	blkInstHash := beaconHeader.InstructionMerkleRoot
+	blkMetaHash := common.Keccak256([]byte(res))
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+
+	return common.Keccak256(combined)
+}
+
+func (beaconBlock BeaconBlock) FullHashString() string {
+	return beaconBlock.ProposeHash().String() + "~" + beaconBlock.Hash().String()
 }
 
 func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
@@ -425,14 +463,18 @@ func (header *BeaconHeader) toString() string {
 	res += header.ShardStateHash.String()
 	res += header.InstructionHash.String()
 
-	//to compatible with mainnet database, version 3 dont have proposer info
-	if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
-		res += header.Proposer
-		res += fmt.Sprintf("%v", header.ProposeTime)
-	}
+	if header.Version >= INSTANT_FINALITY_VERSION {
+		//instant finality will move consensus info out of block hash
+	} else {
+		//to compatible with mainnet database, version 3 dont have proposer info
+		if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
+			res += header.Proposer
+			res += fmt.Sprintf("%v", header.ProposeTime)
+		}
 
-	if header.Version >= LEMMA2_VERSION {
-		res += fmt.Sprintf("%v", header.FinalityHeight)
+		if header.Version >= LEMMA2_VERSION {
+			res += fmt.Sprintf("%v", header.FinalityHeight)
+		}
 	}
 
 	return res

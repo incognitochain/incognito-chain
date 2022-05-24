@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -180,9 +181,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	if beaconBlock.Header.Height%50 == 0 {
-		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
-	}
 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
@@ -601,6 +599,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
+		log.Println("count sig debug 1", beaconBestState.BeaconHeight)
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getNewShardCommitteeFlattenList())
 		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 		for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -729,7 +728,6 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	shardState types.ShardState,
 ) error {
 	beaconHashForCommittee := shardState.CommitteeFromBlock
-
 	if beaconHashForCommittee.IsZeroValue() {
 		return nil
 	}
@@ -745,7 +743,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-	if shardState.Version == types.BLOCK_PRODUCINGV3_VERSION {
+	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION {
 		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,
@@ -758,7 +756,17 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		)
 	}
 
-	return curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	if shardState.PreviousValidationData != "" {
+		if curView.missingSignatureCounter.AddPreviousMissignSignature(shardState.PreviousValidationData, int(shardID)); err != nil {
+			return err
+		}
+	}
+
+	if err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, int(shardID), committees); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (curView *BeaconBestState) countMissingSignatureV1(
@@ -782,7 +790,7 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 
 	Logger.log.Infof("Add Missing Signature | Shard %+v, ShardState: %+v", shardID, shardState)
 
-	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, int(shardID), committees)
 	if err != nil {
 		return err
 	}
@@ -928,7 +936,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
 		Build()
 
+	pdexInstructions := pdex.GetPdexInstructions(beaconBlock.Body.Instructions)
 	for version, pdeState := range newBestState.pdeStates {
+		if len(pdexInstructions[version]) == 0 {
+			continue
+		}
 		pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
 		err = pdeState.Process(pdeStateEnv)
@@ -938,6 +950,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 
 		pdexStateChange := pdex.NewStateChange()
+
 		diffState, pdexStateChange, err := pdeState.GetDiff(curView.pdeStates[version], pdexStateChange)
 		if err != nil {
 			Logger.log.Error(err)
@@ -957,7 +970,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 		// transfrom beacon height for pdex process
 		pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
-
 		if err != nil {
 			return NewBlockChainError(ProcessPDEInstructionError, err)
 		}
@@ -1051,14 +1063,24 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
-	blockchain.BeaconChain.multiView.AddView(newBestState)
+	simulateMultiview := blockchain.BeaconChain.multiView.SimulateAddView(newBestState)
+	newFinalView := simulateMultiview.GetExpectedFinalView()
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
-	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 	storeBlock := newFinalView.GetBlock()
 	finalizedBlocks := []*types.BeaconBlock{}
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
+		//store beacon confirm shard block
+		for shardID, shardStates := range storeBlock.(*types.BeaconBlock).Body.ShardState {
+			for _, shardState := range shardStates {
+				err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+				if err != nil {
+					return NewBlockChainError(StoreBeaconBlockError, err)
+				}
+			}
+		}
+
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
@@ -1068,15 +1090,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
-		prevView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
-		if prevView == nil {
-			//multiview is disconnected to the last final view, we must retrieve block instead
+		preFinalView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if preFinalView == nil {
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
 				return err
 			}
 		} else {
-			storeBlock = prevView.GetBlock()
+			storeBlock = preFinalView.GetBlock()
 		}
 	}
 
@@ -1085,13 +1106,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
-	err = blockchain.BackupBeaconViews(batch)
+	err = blockchain.BackupBeaconViews(batch, simulateMultiview)
 	if err != nil {
+
 		return err
 	}
-
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
+	blockchain.BeaconChain.multiView.AddView(newBestState)
+	//update multiview final view
+	for sid, bestShardHash := range newFinalView.(*BeaconBestState).BestShardHash {
+		blockchain.storeFinalizeShardBlockByBeaconView(blockchain.GetShardChainDatabase(sid), sid, bestShardHash)
 	}
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)

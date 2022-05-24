@@ -25,14 +25,15 @@ func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock type
 }
 
 type SendProposeBlockEnvironment struct {
-	finalityProof    *FinalityProof
-	isValidRePropose bool
-	userProposeKey   signatureschemes2.MiningKey
-	peerID           string
+	finalityProof          *FinalityProof
+	isValidRePropose       bool
+	userProposeKey         signatureschemes2.MiningKey
+	peerID                 string
+	bestBlockConsensusData map[int]types.BlockConsensusData
 }
 
-func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string) *SendProposeBlockEnvironment {
-	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID}
+func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string, consensusData map[int]types.BlockConsensusData) *SendProposeBlockEnvironment {
+	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID, bestBlockConsensusData: consensusData}
 }
 
 type IProposeMessageRule interface {
@@ -147,7 +148,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		isValidLemma2,
 	)
 	//get vote for this propose block (case receive vote faster)
-	votes, err := GetVotesByBlockHashFromDB(env.block.Hash().String())
+	votes, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
 	if err != nil {
 		p.logger.Error("Cannot get vote by block hash for rebuild", err)
 		return nil, err
@@ -155,7 +156,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	proposeBlockInfo.Votes = votes
 
 	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, finality height %+v, isValidLemma2 %+v",
-		env.block.GetHeight(), env.block.Hash().String(), env.block.GetFinalityHeight(), isValidLemma2)
+		env.block.GetHeight(), env.block.FullHashString(), env.block.GetFinalityHeight(), isValidLemma2)
 	if isValidLemma2 {
 		if err := p.addFinalityProof(env.block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof); err != nil {
 			return nil, err
@@ -348,7 +349,7 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 
 	nextBlockFinalityProof[currentTimeSlot] = reProposeHashSignature
 	p.logger.Infof("Add Finality Proof | Block %+v, %+v, Current Block Sig for Timeslot: %+v",
-		block.GetHeight(), block.Hash().String(), currentTimeSlot)
+		block.GetHeight(), block.FullHashString(), currentTimeSlot)
 
 	index := 0
 	var err error
@@ -360,7 +361,7 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 				return err
 			}
 			p.logger.Infof("Add Finality Proof | Block %+v, %+v, Previous Proof for Timeslot: %+v",
-				block.GetHeight(), block.Hash().String(), timeSlot)
+				block.GetHeight(), block.FullHashString(), timeSlot)
 		}
 		index++
 	}
@@ -413,7 +414,7 @@ func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 
 	bftPropose.Block = blockData
 	bftPropose.PeerID = env.peerID
-
+	bftPropose.BestBlockConsensusData = env.bestBlockConsensusData
 	return bftPropose, nil
 }
 

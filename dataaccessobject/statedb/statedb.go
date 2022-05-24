@@ -2541,6 +2541,17 @@ func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bo
 	return NewPdexv3Params(), false, nil
 }
 
+func (stateDB *StateDB) getPdexv3StakerByKey(key common.Hash) (*Pdexv3StakerState, bool, error) {
+	state, err := stateDB.getStateObject(Pdexv3StakerObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if state != nil {
+		return state.GetValue().(*Pdexv3StakerState), true, nil
+	}
+	return NewPdexv3StakerState(), false, nil
+}
+
 func (stateDB *StateDB) getPdexv3PoolPairState(key common.Hash) (*Pdexv3PoolPairState, bool, error) {
 	obj, err := stateDB.getStateObject(Pdexv3PoolPairObjectType, key)
 	if err != nil {
@@ -2550,6 +2561,28 @@ func (stateDB *StateDB) getPdexv3PoolPairState(key common.Hash) (*Pdexv3PoolPair
 		return obj.GetValue().(*Pdexv3PoolPairState), true, nil
 	}
 	return NewPdexv3PoolPairState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3ShareState(key common.Hash) (*Pdexv3ShareState, bool, error) {
+	obj, err := stateDB.getStateObject(Pdexv3ShareObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*Pdexv3ShareState), true, nil
+	}
+	return NewPdexv3ShareState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3NftIDState(key common.Hash) (*Pdexv3NftState, bool, error) {
+	obj, err := stateDB.getStateObject(Pdexv3NftObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*Pdexv3NftState), true, nil
+	}
+	return NewPdexv3NftState(), false, nil
 }
 
 func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {

@@ -52,6 +52,7 @@ type ConsensusEngine interface {
 type Server interface {
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
 	PushMessageToBeacon(msg wire.Message, exclusivePeerIDs map[libp2p.ID]bool) error
+	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 }
 
 type Highway interface {

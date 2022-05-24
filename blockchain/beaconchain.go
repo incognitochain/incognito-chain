@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"os"
 	"path"
 	"sync"
@@ -22,7 +23,7 @@ import (
 )
 
 type BeaconChain struct {
-	multiView *multiview.MultiView
+	multiView multiview.MultiView
 
 	BlockGen            *BlockGenerator
 	Blockchain          *BlockChain
@@ -36,7 +37,7 @@ type BeaconChain struct {
 	insertLock sync.Mutex
 }
 
-func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
+func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
 	committeeInfoCache, _ := lru.New(100)
 	p := path.Join(config.Config().DataDir, config.Config().DatabaseDir, fmt.Sprintf("beacon/rawfinalblock"))
 	ffFinalBlk, err := flatfile.NewFlatFile(p, 5*config.Param().EpochParam.NumberOfBlockInEpoch)
@@ -65,15 +66,15 @@ func (chain *BeaconChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
-func (chain *BeaconChain) GetMultiView() *multiview.MultiView {
+func (chain *BeaconChain) GetMultiView() multiview.MultiView {
 	return chain.multiView
 }
 
-func (chain *BeaconChain) CloneMultiView() *multiview.MultiView {
+func (chain *BeaconChain) CloneMultiView() multiview.MultiView {
 	return chain.multiView.Clone()
 }
 
-func (chain *BeaconChain) SetMultiView(multiView *multiview.MultiView) {
+func (chain *BeaconChain) SetMultiView(multiView multiview.MultiView) {
 	chain.multiView = multiView
 }
 
@@ -209,6 +210,10 @@ func (chain *BeaconChain) CreateNewBlock(
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
+	//wait a little bit, for shard
+	waitTime := common.TIMESLOT / 5
+	time.Sleep(time.Duration(waitTime) * time.Second)
+
 	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
@@ -283,6 +288,61 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
 		Logger.log.Error(err)
+		return err
+	}
+	return nil
+
+}
+
+//this get consensus data for all latest shard state
+func (chain *BeaconChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
+	consensusData := map[int]types.BlockConsensusData{}
+	for sid, sChain := range chain.Blockchain.ShardChain {
+		shardBlk := sChain.multiView.GetExpectedFinalView().GetBlock().(*types.ShardBlock)
+		consensusData[int(sid)] = types.BlockConsensusData{
+			BlockHash:      *shardBlk.Hash(),
+			BlockHeight:    shardBlk.GetHeight(),
+			FinalityHeight: shardBlk.GetFinalityHeight(),
+			Proposer:       shardBlk.GetProposer(),
+			ProposerTime:   shardBlk.GetProposeTime(),
+			ValidationData: shardBlk.ValidationData,
+		}
+	}
+	return consensusData
+}
+
+func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+
+	replaceBlockHash := consensusData.BlockHash
+	//retrieve block from database and replace consensus field
+	beaconBlk, _, _ := chain.Blockchain.GetBeaconBlockByHash(replaceBlockHash)
+	if beaconBlk == nil {
+		return fmt.Errorf("Cannot find beacon block%v", replaceBlockHash.String())
+	}
+
+	beaconBlk.Header.Proposer = consensusData.Proposer
+	beaconBlk.Header.ProposeTime = consensusData.ProposerTime
+	beaconBlk.Header.FinalityHeight = consensusData.FinalityHeight
+	beaconBlk.ValidationData = consensusData.ValidationData
+
+	// validate block before replace
+	committees, err := chain.GetCommitteeV2(beaconBlk)
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(beaconBlk, committees); err != nil {
+		return err
+	}
+
+	//replace block if improve finality
+	if ok, err := chain.multiView.ReplaceBlockIfImproveFinality(beaconBlk); !ok {
+		return err
+	}
+	b, _ := json.Marshal(consensusData)
+	Logger.log.Info("Replace beacon block improving finality", string(b))
+
+	//rewrite to database
+	if err = rawdbv2.StoreBeaconBlockByHash(chain.GetChainDatabase(), replaceBlockHash, beaconBlk); err != nil {
 		return err
 	}
 	return nil

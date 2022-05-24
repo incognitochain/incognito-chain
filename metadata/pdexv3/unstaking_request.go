@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type UnstakingRequest struct {
@@ -53,11 +53,16 @@ func (request *UnstakingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	err := beaconViewRetriever.IsValidNftID(request.nftID)
+	if !chainRetriever.IsAfterPdexv3CheckPoint(beaconViewRetriever.GetHeight()) {
+		return false, fmt.Errorf("Feature pdexv3 has not been activated yet")
+	}
+	pdexv3StateCached := chainRetriever.GetPdexv3Cached(beaconViewRetriever.BlockHash())
+	err := beaconViewRetriever.IsValidNftID(chainRetriever.GetBeaconChainDatabase(), pdexv3StateCached, request.nftID)
 	if err != nil {
 		return false, err
 	}
 	err = beaconViewRetriever.IsValidPdexv3UnstakingAmount(
+		chainRetriever.GetBeaconChainDatabase(), pdexv3StateCached,
 		request.stakingPoolID, request.nftID, request.unstakingAmount,
 	)
 	if err != nil {

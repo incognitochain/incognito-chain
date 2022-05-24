@@ -778,15 +778,26 @@ TransactionLoop:
 					// apply orderbook changes for withdraw consistency in the same block
 					pairs[currentOrderReq.PoolPairID] = pair
 
+					// To store the keys in slice in sorted order
+					keys := make([]common.Hash, len(withdrawResults))
+					i := 0
+					for key := range withdrawResults {
+						keys[i] = key
+						i++
+					}
+					sort.SliceStable(keys, func(i, j int) bool {
+						return keys[i].String() < keys[j].String()
+					})
+
 					// "accepted" metadata
-					for tokenID, withdrawAmount := range withdrawResults {
+					for _, key := range keys {
 						acceptedAction := instruction.NewAction(
 							&metadataPdexv3.AcceptedWithdrawOrder{
 								PoolPairID: currentOrderReq.PoolPairID,
 								OrderID:    currentOrderReq.OrderID,
-								Receiver:   currentOrderReq.Receiver[tokenID],
-								TokenID:    tokenID,
-								Amount:     withdrawAmount,
+								Receiver:   currentOrderReq.Receiver[key],
+								TokenID:    key,
+								Amount:     withdrawResults[key],
 							},
 							*tx.Hash(),
 							byte(tx.GetValidationEnv().ShardID()),
@@ -815,7 +826,9 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	for pairID, pair := range pairs {
+	pairIDs := getSortedPoolPairIDs(pairs)
+	for _, pairID := range pairIDs {
+		pair := pairs[pairID] // no need to check found sorted from poolPairs list before
 		for _, ord := range pair.orderbook.orders {
 			temp := &v2utils.MatchingOrder{ord}
 			// check if this order can be matched any further

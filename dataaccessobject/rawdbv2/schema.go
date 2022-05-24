@@ -6,20 +6,37 @@ import (
 
 // Header key will be used for light mode in the future
 var (
-	beaconViewsPrefix                 = []byte("BeaconViews")
-	shardBestStatePrefix              = []byte("ShardViews" + string(splitter))
-	shardHashToBlockPrefix            = []byte("s-b-h" + string(splitter))
-	shardIndexToBlockHashPrefix       = []byte("s-b-i" + string(splitter))
-	beaconHashToBlockPrefix           = []byte("b-b-h" + string(splitter))
-	beaconIndexToBlockHashPrefix      = []byte("b-b-i" + string(splitter))
-	txHashPrefix                      = []byte("tx-h" + string(splitter))
-	crossShardNextHeightPrefix        = []byte("c-s-n-h" + string(splitter))
-	lastBeaconHeightConfirmCrossShard = []byte("p-c-c-s" + string(splitter))
-	feeEstimatorPrefix                = []byte("fee-est" + string(splitter))
-	txByPublicKeyPrefix               = []byte("tx-pb")
-	shardRootHashPrefix               = []byte("S-R-H-")
-	beaconRootHashPrefix              = []byte("B-R-H-")
-	splitter                          = []byte("-[-]-")
+	lastShardBlockKey                  = []byte("LastShardBlock" + string(splitter))
+	lastBeaconBlockKey                 = []byte("LastBeaconBlock")
+	beaconViewsPrefix                  = []byte("BeaconViews")
+	shardBestStatePrefix               = []byte("ShardViews" + string(splitter))
+	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
+	viewPrefix                         = []byte("V" + string(splitter))
+	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
+	beaconConfirmShardBlockPrefix      = []byte("b-c-s" + string(splitter))
+	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
+	beaconHashToBlockPrefix            = []byte("b-b-h" + string(splitter))
+	beaconIndexToBlockHashPrefix       = []byte("b-b-i" + string(splitter))
+	beaconBlockHashToIndexPrefix       = []byte("b-b-H" + string(splitter))
+	txHashPrefix                       = []byte("tx-h" + string(splitter))
+	crossShardNextHeightPrefix         = []byte("c-s-n-h" + string(splitter))
+	lastBeaconHeightConfirmCrossShard  = []byte("p-c-c-s" + string(splitter))
+	feeEstimatorPrefix                 = []byte("fee-est" + string(splitter))
+	txByPublicKeyPrefix                = []byte("tx-pb")
+	rootHashPrefix                     = []byte("R-H-")
+	shardRootHashPrefix                = []byte("S-R-H-")
+	beaconRootHashPrefix               = []byte("B-R-H-")
+	beaconConsensusRootHashPrefix      = []byte("b-co" + string(splitter))
+	beaconRewardRequestRootHashPrefix  = []byte("b-re" + string(splitter))
+	beaconFeatureRootHashPrefix        = []byte("b-fe" + string(splitter))
+	beaconSlashRootHashPrefix          = []byte("b-sl" + string(splitter))
+	shardCommitteeRewardRootHashPrefix = []byte("s-cr" + string(splitter))
+	shardConsensusRootHashPrefix       = []byte("s-co" + string(splitter))
+	shardTransactionRootHashPrefix     = []byte("s-tx" + string(splitter))
+	shardSlashRootHashPrefix           = []byte("s-sl" + string(splitter))
+	shardFeatureRootHashPrefix         = []byte("s-fe" + string(splitter))
+	previousBestStatePrefix            = []byte("previous-best-state" + string(splitter))
+	splitter                           = []byte("-[-]-")
 
 	// output coins by OTA key storage (optional)
 	// this will use its own separate folder
@@ -129,6 +146,73 @@ func GetCrossShardNextHeightKey(fromShard byte, toShard byte, height uint64) []b
 }
 
 // ============================= State Root =======================================
+func GetRootHashPrefix() []byte {
+	temp := make([]byte, 0, len(rootHashPrefix))
+	temp = append(temp, rootHashPrefix...)
+	return temp
+}
+func GetBeaconConsensusRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	rootHashPrefix := GetRootHashPrefix()
+	temp := make([]byte, 0, len(beaconConsensusRootHashPrefix))
+	temp = append(temp, beaconConsensusRootHashPrefix...)
+	key := append(rootHashPrefix, temp...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetBeaconRewardRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	rootHashPrefix := GetRootHashPrefix()
+	temp := make([]byte, 0, len(beaconRewardRequestRootHashPrefix))
+	temp = append(temp, beaconRewardRequestRootHashPrefix...)
+	key := append(rootHashPrefix, temp...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetBeaconFeatureRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	rootHashPrefix := GetRootHashPrefix()
+	temp := make([]byte, 0, len(beaconFeatureRootHashPrefix))
+	temp = append(temp, beaconFeatureRootHashPrefix...)
+	key := append(rootHashPrefix, temp...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetBeaconSlashRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	rootHashPrefix := GetRootHashPrefix()
+	temp := make([]byte, 0, len(beaconSlashRootHashPrefix))
+	temp = append(temp, beaconSlashRootHashPrefix...)
+	key := append(rootHashPrefix, temp...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetShardCommitteeRewardRootHashKey(shardID byte, height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	rootHashPrefix := GetRootHashPrefix()
+	temp := make([]byte, 0, len(shardCommitteeRewardRootHashPrefix))
+	temp = append(temp, shardCommitteeRewardRootHashPrefix...)
+	key := append(rootHashPrefix, temp...)
+	key = append(key, shardID)
+	key = append(key, splitter...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetBeaconConfirmShardBlockPrefix(shardID byte, index uint64) []byte {
+	buf := common.Uint64ToBytes(index)
+	temp := make([]byte, 0, len(beaconConfirmShardBlockPrefix))
+	temp = append(temp, beaconConfirmShardBlockPrefix...)
+	key := append(temp, shardID)
+	key = append(key, splitter...)
+	key = append(key, buf...)
+	return key
+}
+
 func GetShardRootsHashKey(shardID byte, hash common.Hash) []byte {
 	temp := make([]byte, 0, len(shardRootHashPrefix))
 	temp = append(temp, shardRootHashPrefix...)

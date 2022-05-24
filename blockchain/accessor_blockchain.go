@@ -183,6 +183,23 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	return shardBlockMap, err
 }
 
+func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height uint64, shardID byte) (*types.ShardBlock, error) {
+	blkhash, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].multiView.GetFinalView(), view, height)
+	if err != nil {
+		return nil, err
+	}
+	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
+	if err != nil {
+		return nil, err
+	}
+	shardBlock := types.NewShardBlock()
+	err = json.Unmarshal(data, shardBlock)
+	if err != nil {
+		return nil, err
+	}
+	return shardBlock, err
+}
+
 func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*types.ShardBlock, error) {
 	shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
 	if err != nil {
@@ -260,7 +277,7 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
-		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetFinalView().GetHeight()
+		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView().GetHeight()
 		shardBlocks := []*types.ShardBlock{}
 		// limit maximum number of shard blocks for beacon producer
 		if finalizedShardHeight > bestShardHeight && finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {

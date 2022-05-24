@@ -74,7 +74,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 			case f := <-s.actionCh:
 				f()
 			case beaconPeerState := <-s.beaconPeerStateCh:
-				Logger.Debugf("Got new peerstate, last height %v", beaconPeerState.Beacon.Height)
+				Logger.Debugf("Got new beacon peerstate, last height %v", beaconPeerState.Beacon.Height)
 				s.beaconPeerStates[beaconPeerState.SenderID] = BeaconPeerState{
 					Timestamp:      beaconPeerState.Timestamp,
 					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
@@ -240,14 +240,6 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			insertTime, ok := insertBeaconTimeCache.Get(viewHash.String())
 			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
 				continue
-			}
-
-			//fullnode delay 1 block (make sure insert final block)
-			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.beaconPool.GetBlockByPrevHash(*blk.Hash())
-				if len(preBlk) == 0 {
-					continue
-				}
 			}
 
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
