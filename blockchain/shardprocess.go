@@ -1246,7 +1246,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, simulatedMultiView.GetExpectedFinalView().(*ShardBestState)); err != nil {
+	if err := newShardState.CommitTrieToDisk(blockchain.GetShardChainDatabase(shardID), false, simulatedMultiView.GetFinalView().(*ShardBestState)); err != nil {
 		return NewBlockChainError(CommitTrieToDiskError, err)
 	}
 	//add view
