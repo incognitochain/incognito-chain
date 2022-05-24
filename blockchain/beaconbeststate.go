@@ -606,32 +606,8 @@ func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
 	return beaconBestState.pdeStates[version]
 }
 
-func (beaconBestState *BeaconBestState) IsValidPoolPairID(poolPairID string) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidPoolPairID(poolPairID)
-}
-
-func (beaconBestState *BeaconBestState) IsValidNftID(nftID string) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidNftID(nftID)
-}
-
-func (beaconBestState *BeaconBestState) IsValidMintNftRequireAmount(amount uint64) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidMintNftRequireAmount(amount)
-}
-
-func (beaconBestState *BeaconBestState) IsValidPdexv3StakingPool(tokenID string) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidStakingPool(tokenID)
-}
-
-func (beaconBestState *BeaconBestState) IsValidPdexv3UnstakingAmount(
-	tokenID, nftID string, unstakingAmount uint64,
-) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidUnstakingAmount(tokenID, nftID, unstakingAmount)
-}
-
-func (beaconBestState *BeaconBestState) IsValidPdexv3ShareAmount(
-	poolPairID, nftID string, shareAmount uint64,
-) error {
-	return beaconBestState.pdeStates[pdex.AmplifierVersion].Validator().IsValidShareAmount(poolPairID, nftID, shareAmount)
+func (beaconBestState *BeaconBestState) BlockHash() common.Hash {
+	return beaconBestState.BestBlockHash
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

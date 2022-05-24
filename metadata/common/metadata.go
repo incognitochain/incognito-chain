@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -94,6 +95,8 @@ type ChainRetriever interface {
 	CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool
 	GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64
 	GetFinalBeaconHeight() uint64
+	GetPdexv3Cached(common.Hash) interface{}
+	GetBeaconChainDatabase() incdb.Database
 }
 
 type BeaconViewRetriever interface {
@@ -109,12 +112,13 @@ type BeaconViewRetriever interface {
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
-	IsValidNftID(string) error
-	IsValidPoolPairID(string) error
-	IsValidMintNftRequireAmount(uint64) error
-	IsValidPdexv3StakingPool(string) error
-	IsValidPdexv3UnstakingAmount(string, string, uint64) error
-	IsValidPdexv3ShareAmount(string, string, uint64) error
+	IsValidNftID(incdb.Database, interface{}, string) error
+	IsValidPoolPairID(incdb.Database, interface{}, string) error
+	IsValidMintNftRequireAmount(incdb.Database, interface{}, uint64) error
+	IsValidPdexv3StakingPool(incdb.Database, interface{}, string) error
+	IsValidPdexv3UnstakingAmount(incdb.Database, interface{}, string, string, uint64) error
+	IsValidPdexv3ShareAmount(incdb.Database, interface{}, string, string, uint64) error
+	BlockHash() common.Hash
 }
 
 type ShardViewRetriever interface {

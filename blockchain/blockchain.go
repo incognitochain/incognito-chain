@@ -842,7 +842,7 @@ func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database
 }
 
 func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
-	blockHash common.Hash, includeCommittee, includePdexv3 bool,
+	blockHash common.Hash, includeCommittee bool,
 ) (*BeaconBestState, error) {
 	v, ok := blockchain.beaconViewCache.Get(blockHash)
 	if ok {
@@ -875,7 +875,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
 		shardID := byte(i)
 		beaconView.NumberOfShardBlock[shardID] = 0
 	}
-	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3, false)
+	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, false, false)
 	if err != nil {
 		Logger.log.Error(err)
 	}
