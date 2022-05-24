@@ -441,13 +441,11 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
 	replaceBlockHash := consensusData.BlockHash
 	//retrieve block from database and replace consensus field
-	rawBlk, _ := rawdbv2.GetShardBlockByHash(chain.GetDatabase(), replaceBlockHash)
-	if len(rawBlk) == 0 {
-		return nil
+	shardBlk, _, err := chain.Blockchain.GetShardBlockByHash(replaceBlockHash)
+	if shardBlk == nil {
+		return fmt.Errorf("Shard %v Cannot find shard block %v", chain.shardID, replaceBlockHash.String())
 	}
 
-	shardBlk := new(types.ShardBlock)
-	_ = json.Unmarshal(rawBlk, shardBlk)
 	shardBlk.Header.Proposer = consensusData.Proposer
 	shardBlk.Header.ProposeTime = consensusData.ProposerTime
 	shardBlk.Header.FinalityHeight = consensusData.FinalityHeight

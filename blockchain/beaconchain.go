@@ -275,15 +275,7 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 func (chain *BeaconChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
 	for sid, sChain := range chain.Blockchain.ShardChain {
-		rawBlk, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(sid)), *sChain.multiView.GetExpectedFinalView().GetHash())
-		if err != nil {
-			panic(err)
-		}
-		shardBlk := new(types.ShardBlock)
-		err = json.Unmarshal(rawBlk, shardBlk)
-		if err != nil {
-			panic(err)
-		}
+		shardBlk := sChain.multiView.GetExpectedFinalView().GetBlock().(*types.ShardBlock)
 		consensusData[int(sid)] = types.BlockConsensusData{
 			BlockHash:      *shardBlk.Hash(),
 			BlockHeight:    shardBlk.GetHeight(),
@@ -300,19 +292,17 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 
 	replaceBlockHash := consensusData.BlockHash
 	//retrieve block from database and replace consensus field
-	rawBlk, _ := rawdbv2.GetBeaconBlockByHash(chain.GetDatabase(), replaceBlockHash)
-	if len(rawBlk) == 0 {
-		return nil
+	beaconBlk, _, _ := chain.Blockchain.GetBeaconBlockByHash(replaceBlockHash)
+	if beaconBlk == nil {
+		return fmt.Errorf("Cannot find beacon block%v", replaceBlockHash.String())
 	}
 
-	beaconBlk := new(types.BeaconBlock)
-	_ = json.Unmarshal(rawBlk, beaconBlk)
 	beaconBlk.Header.Proposer = consensusData.Proposer
 	beaconBlk.Header.ProposeTime = consensusData.ProposerTime
 	beaconBlk.Header.FinalityHeight = consensusData.FinalityHeight
 	beaconBlk.ValidationData = consensusData.ValidationData
 
-	// validate block before rewrite to
+	// validate block before replace
 	committees, err := chain.GetCommitteeV2(beaconBlk)
 	if err != nil {
 		return err
