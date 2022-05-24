@@ -124,6 +124,7 @@ const (
 	FTMPrefix                 = "FTM"
 	ExternalBridgeTokenLength = 20
 	UnifiedTokenPrefix        = "UT"
+	NEARPrefix                = "NAR"
 )
 
 // Bridge, PDE & Portal statuses for RPCs

@@ -214,6 +214,16 @@ const (
 	BurningUnifiedTokenRequestMeta                  = 346
 	BurningUnifiedTokenResponseMeta                 = 347
 	BridgeAggAddTokenMeta                           = 348
+
+	// incognito mode for Near
+	IssuingNearRequestMeta  = 335
+	IssuingNearResponseMeta = 336
+	BurningNearRequestMeta  = 337
+	BurningNearConfirmMeta  = 157
+
+	// pNear ( Near )
+	BurningNearForDepositToSCRequestMeta = 338
+	BurningNearConfirmForDepositToSCMeta = 158
 )
 
 var minerCreatedMetaTypes = []int{
@@ -287,6 +297,7 @@ const (
 	EVMConfirmationBlocks    = 15
 	PLGConfirmationBlocks    = 35
 	FantomConfirmationBlocks = 5
+	NearConfirmationBlocks   = 5
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

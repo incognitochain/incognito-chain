@@ -2,13 +2,18 @@ package bridge
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/eteu-technologies/near-api-go/pkg/client/block"
+	"github.com/eteu-technologies/near-api-go/pkg/types/hash"
 	"math/big"
 	"strconv"
 	"strings"
 
+	nearclient "github.com/eteu-technologies/near-api-go/pkg/client"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -316,6 +321,66 @@ func VerifyProofAndParseEVMReceipt(
 	return constructedReceipt, nil
 }
 
+func VerifyWasmShieldTxId(
+	txHash string,
+	hosts []string,
+	minWasmConfirmationBlocks int,
+	contractId string,
+) (string, string, uint64, error) {
+	txBytes, err := hex.DecodeString(txHash)
+	if err != nil {
+		return "", "", 0, errors.New("Invalid transaction hash")
+	}
+	ctx := context.Background()
+	tx := hash.NewCryptoHash(txBytes)
+	accountId := "incognito"
+	for _, h := range hosts {
+		rpcClient, err := nearclient.NewClient(h)
+		if err != nil {
+			continue
+		}
+		txStatus, err := rpcClient.TransactionStatus(ctx, tx, accountId)
+		if err != nil {
+			continue
+		}
+		if len(txStatus.Status.Failure) != 0 {
+			return "", "", 0, errors.New("Transaction shield is failed")
+		}
+		minedBlock, err := rpcClient.BlockDetails(ctx, block.BlockHash(txStatus.TransactionOutcome.BlockHash))
+		if err != nil {
+			continue
+		}
+		latestBlock, err := rpcClient.BlockDetails(ctx, block.FinalityFinal())
+		if err != nil {
+			continue
+		}
+		if latestBlock.Header.Height < minedBlock.Header.Height+uint64(minWasmConfirmationBlocks) {
+			return "", "", 0, errors.New("The shield transaction is not finalized")
+		}
+
+		// detect shield event
+		for _, receiptOutCome := range txStatus.ReceiptsOutcome {
+			if receiptOutCome.Outcome.ExecutorID != contractId {
+				continue
+			}
+			if len(receiptOutCome.Outcome.Logs) == 0 {
+				break
+			}
+			events := strings.Split(receiptOutCome.Outcome.Logs[0], " ")
+			if len(events) != 3 {
+				break
+			}
+			amount, err := strconv.ParseUint(events[2], 10, 64)
+			if err != nil {
+				break
+			}
+			return events[0], events[1], amount, nil
+		}
+	}
+
+	return "", "", 0, errors.New("The endpoints are not response or set or invalid transaction")
+}
+
 func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, string, int, bool, error) {
 	var hosts []string
 	var networkPrefix string
@@ -378,6 +443,21 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	}
 
 	return hosts, networkPrefix, minConfirmationBlocks, checkEVMHardFork, nil
+}
+
+func GetWasmInfoByMetadataType(metadataType int) ([]string, string, int, string, error) {
+	if metadataType == metadataCommon.IssuingNearRequestMeta {
+		wasmParam := config.Param().NEARParam
+		contractAddress := config.Param().NearContractAddressStr
+		wasmParam.GetFromEnv()
+		hosts := wasmParam.Host
+
+		minConfirmationBlocks := metadataCommon.NearConfirmationBlocks
+		networkPrefix := common.NEARPrefix
+
+		return hosts, networkPrefix, minConfirmationBlocks, contractAddress, nil
+	}
+	return nil, "", 0, "", errors.New("Invalid meta data typ")
 }
 
 func PickAndParseLogMapFromReceiptByContractAddr(
