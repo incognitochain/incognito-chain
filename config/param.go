@@ -353,7 +353,8 @@ func (ftmParam *ftmParam) GetFromEnv() {
 }
 
 type bridgeAggParam struct {
-	AdminAddress string `mapstructure:"admin_address"`
-	BaseDecimal  uint   `mapstructure:"base_decimal"`
-	MaxLenOfPath int    `mapstructure:"max_len_of_path"`
+	AdminAddress string  `mapstructure:"admin_address"`
+	BaseDecimal  uint    `mapstructure:"base_decimal"`
+	MaxLenOfPath int     `mapstructure:"max_len_of_path"`
+	PercentFee   float64 `mapstructure:"percent_fee"`
 }

@@ -34,7 +34,7 @@ func (m *Manager) Clone() *Manager {
 }
 
 func (m *Manager) State() *State {
-	return m.State()
+	return m.state
 }
 
 func NewManagerWithValue(state *State) *Manager {
@@ -45,12 +45,13 @@ func NewManagerWithValue(state *State) *Manager {
 
 func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
 	res := [][]string{}
+	insts := [][]string{}
 	var err error
 	ac := env.AccumulatedValues()
 
+	// build instruction for convert actions
 	for shardID, actions := range env.ConvertActions() {
 		for _, action := range actions {
-			insts := [][]string{}
 			insts, m.state, err = m.producer.convert(action, m.state, env.StateDBs(), byte(shardID))
 			if err != nil {
 				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
@@ -59,9 +60,9 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 		}
 	}
 
+	// build instruction for shielding actions
 	for shardID, actions := range env.ShieldActions() {
 		for _, action := range actions {
-			insts := [][]string{}
 			insts, m.state, ac, err = m.producer.shield(
 				action, m.state, ac, byte(shardID), env.StateDBs(),
 			)
@@ -73,14 +74,21 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 		}
 	}
 
+	// build instruction for waiting unshielding reqs
+	insts, m.state, err = m.producer.handleWaitingUnshieldReqs(m.state, env.BeaconHeight(), env.StateDBs()[common.BeaconChainID])
+	if err != nil {
+		return [][]string{}, nil, NewBridgeAggErrorWithValue(ProducerWaitingUnshieldError, err)
+	}
+	res = append(res, insts...)
+
+	// build instruction for new unshielding actions
 	for shardID, actions := range env.UnshieldActions() {
 		for _, action := range actions {
-			inst := [][]string{}
-			inst, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
+			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
 			if err != nil {
 				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
 			}
-			res = append(res, inst...)
+			res = append(res, insts...)
 		}
 	}
 	Logger.log.Info("bridgeagg instructions:", res)

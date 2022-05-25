@@ -12,6 +12,8 @@ const (
 	NotFoundNetworkIDError
 	ShieldProofIsSubmittedError
 	ProcessShieldError
+	ProcessUnshieldError
+	CheckVaultUnshieldError
 	InvalidRewardReserveError
 	CalculateShieldAmountError
 	CalculateUnshieldAmountError
@@ -23,6 +25,7 @@ const (
 	FailToConvertTokenError
 	FailToShieldError
 	FailToUnshieldError
+	ProducerWaitingUnshieldError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -34,7 +37,10 @@ var ErrCodeMessage = map[int]struct {
 	NotFoundNetworkIDError:        {1001, "Not found networkID"},
 	ShieldProofIsSubmittedError:   {1002, "Shield proof was submitted"},
 
-	ProcessShieldError: {1003, "Beacon process shield instruction error"},
+	ProcessShieldError:           {1003, "Beacon process shield instruction error"},
+	ProcessUnshieldError:         {1003, "Beacon process unshield instruction error"},
+	CheckVaultUnshieldError:      {1003, "Check vaults for new unshielding request error"},
+	ProducerWaitingUnshieldError: {1003, "Beacon producer waiting unshield reqs error"},
 
 	InvalidRewardReserveError:           {1003, "Invalid reward reserve"},
 	CalculateShieldAmountError:          {1004, "Calculate shield amount error"},
