@@ -44,7 +44,8 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 		strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
 		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningPLGConfirmMeta),
-		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningFantomConfirmMeta):
+		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningFantomConfirmMeta),
+		strconv.Itoa(metadata.BurningNearConfirmMeta), strconv.Itoa(metadata.BurningNearConfirmForDepositToSCMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {

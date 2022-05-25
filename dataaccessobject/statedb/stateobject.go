@@ -69,6 +69,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeEthTxObjectWithValue(db, hash, value)
 	case BridgeBSCTxObjectType:
 		return newBridgeBSCTxObjectWithValue(db, hash, value)
+	case BridgeNEARTxObjectType:
+		return newBridgeNEARTxObjectWithValue(db, hash, value)
 	case BridgePRVEVMObjectType:
 		return newBrigePRVEVMObjectWithValue(db, hash, value)
 	case BridgeTokenInfoObjectType:
@@ -322,6 +324,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeAggVaultObject(db, hash)
 	case BridgeFTMTxObjectType:
 		return newBridgeFTMTxObject(db, hash)
+	case BridgeNEARTxObjectType:
+		return newBridgeNEARTxObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

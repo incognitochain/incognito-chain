@@ -2568,3 +2568,15 @@ func (stateDB *StateDB) getBridgeFTMTxState(key common.Hash) (*BridgeFTMTxState,
 	}
 	return NewBridgeFTMTxState(), false, nil
 }
+
+// ================================= Near bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeNEARTxState(key common.Hash) (*BridgeNEARTxState, bool, error) {
+	nearTxState, err := stateDB.getStateObject(BridgeNEARTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if nearTxState != nil {
+		return nearTxState.GetValue().(*BridgeNEARTxState), true, nil
+	}
+	return NewBridgeNEARTxState(), false, nil
+}

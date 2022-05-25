@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -185,6 +186,75 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		ReceiverAddrStr: addressStr,
 		IncTokenID:      md.IncTokenID,
 		TxReqID:         issuingEVMBridgeReqAction.TxReqID,
+		UniqTx:          uniqTx,
+		ExternalTokenID: token,
+	}
+	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
+		return [][]string{rejectedInst}, nil, nil
+	}
+	ac.DBridgeTokenPair[md.IncTokenID.String()] = token
+	inst.Status = common.AcceptedStatusStr
+	inst.Content = base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes)
+	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
+	return [][]string{inst.StringSlice()}, uniqTx, nil
+}
+
+func (blockchain *BlockChain) buildInstructionsForIssuingWasmBridgeReq(
+	stateDBs map[int]*statedb.StateDB,
+	contentStr string,
+	shardID byte,
+	metaType int,
+	ac *metadata.AccumulatedValues,
+	listTxUsed [][]byte,
+	contractAddress string,
+	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
+) ([][]string, []byte, error) {
+	Logger.log.Info("[Decentralized Wasm bridge token issuance] Starting...")
+	issuingWasmBridgeReqAction, err := metadataBridge.ParseWasmIssuingInstContent(contentStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occurred while parsing issuing action content: ", err)
+		return nil, nil, nil
+	}
+	md := issuingWasmBridgeReqAction.Meta
+	Logger.log.Infof("[Decentralized Wasm bridge token issuance] Processing for tx: %s, tokenid: %s", issuingWasmBridgeReqAction.TxReqID.String(), md.IncTokenID.String())
+
+	inst := metadataCommon.NewInstructionWithValue(
+		metaType,
+		common.RejectedStatusStr,
+		shardID,
+		issuingWasmBridgeReqAction.TxReqID.String(),
+	)
+	rejectedInst := inst.StringSlice()
+
+	if contractAddress != issuingWasmBridgeReqAction.ContractId {
+		Logger.log.Warn("WARNING: contract id not match incognito contract: ", issuingWasmBridgeReqAction.ContractId)
+		return [][]string{rejectedInst}, nil, nil
+	}
+
+	receivingShardID, err := metadataBridge.VerifyWasmData(
+		stateDBs[common.BeaconChainID], listTxUsed, isTxHashIssued,
+		issuingWasmBridgeReqAction.Meta.TxHash,
+		issuingWasmBridgeReqAction.IncognitoAddr)
+	//thachtb todo: update function
+	token, err := hex.DecodeString(issuingWasmBridgeReqAction.TokenId)
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occurred while decode wasm token id: ", err)
+		return nil, nil, nil
+	}
+	uniqTx, err := hex.DecodeString(md.TxHash)
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occurred while decode wasm shielding tx hash: ", err)
+		return nil, nil, nil
+	}
+
+	issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
+		ShardID:         receivingShardID,
+		IssuingAmount:   issuingWasmBridgeReqAction.Amount,
+		ReceiverAddrStr: issuingWasmBridgeReqAction.IncognitoAddr,
+		IncTokenID:      md.IncTokenID,
+		TxReqID:         issuingWasmBridgeReqAction.TxReqID,
 		UniqTx:          uniqTx,
 		ExternalTokenID: token,
 	}

@@ -236,6 +236,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingPRVBEP20ResponseMeta,
 	IssuingPLGResponseMeta,
 	IssuingFantomResponseMeta,
+	IssuingNearResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
@@ -374,6 +375,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningNearConfirmMeta),
+	strconv.Itoa(BurningNearConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{

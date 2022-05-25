@@ -181,6 +181,34 @@ func ExtractIssueEVMData(
 	return amt, receivingShardID, addressStr, token, uniqTx, nil
 }
 
+func VerifyWasmData(
+	stateDB *statedb.StateDB, listTxUsed [][]byte,
+	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
+	externalShieldTx string, incognitoAddress string,
+) (byte, error) {
+	uniqTx, err := hex.DecodeString(externalShieldTx)
+	if err != nil {
+		return 0, fmt.Errorf("WARNING: invalid external shield tx request %v", uniqTx)
+	}
+	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
+	if isUsedInBlock {
+		return 0, fmt.Errorf("WARNING: already issued for the hash in current block: %v", uniqTx)
+	}
+	isIssued, err := isTxHashIssued(stateDB, uniqTx)
+	if err != nil {
+		return 0, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: %v", err)
+	}
+	if isIssued {
+		return 0, fmt.Errorf("WARNING: already issued for the hash in previous blocks: %v", uniqTx)
+	}
+
+	receivingShardID, err := getShardIDFromPaymentAddress(incognitoAddress)
+	if err != nil {
+		return 0, fmt.Errorf("WARNING: an error occurred while getting shard id from payment address: %v", err)
+	}
+	return receivingShardID, nil
+}
+
 func VerifyTokenPair(
 	stateDBs map[int]*statedb.StateDB,
 	ac *metadataCommon.AccumulatedValues,
@@ -326,10 +354,10 @@ func VerifyWasmShieldTxId(
 	hosts []string,
 	minWasmConfirmationBlocks int,
 	contractId string,
-) (string, string, uint64, error) {
+) (string, string, uint64, string, error) {
 	txBytes, err := hex.DecodeString(txHash)
 	if err != nil {
-		return "", "", 0, errors.New("Invalid transaction hash")
+		return "", "", 0, "", errors.New("Invalid transaction hash")
 	}
 	ctx := context.Background()
 	tx := hash.NewCryptoHash(txBytes)
@@ -344,7 +372,7 @@ func VerifyWasmShieldTxId(
 			continue
 		}
 		if len(txStatus.Status.Failure) != 0 {
-			return "", "", 0, errors.New("Transaction shield is failed")
+			return "", "", 0, "", errors.New("Transaction shield is failed")
 		}
 		minedBlock, err := rpcClient.BlockDetails(ctx, block.BlockHash(txStatus.TransactionOutcome.BlockHash))
 		if err != nil {
@@ -355,7 +383,7 @@ func VerifyWasmShieldTxId(
 			continue
 		}
 		if latestBlock.Header.Height < minedBlock.Header.Height+uint64(minWasmConfirmationBlocks) {
-			return "", "", 0, errors.New("The shield transaction is not finalized")
+			return "", "", 0, "", errors.New("The shield transaction is not finalized")
 		}
 
 		// detect shield event
@@ -374,11 +402,11 @@ func VerifyWasmShieldTxId(
 			if err != nil {
 				break
 			}
-			return events[0], events[1], amount, nil
+			return events[0], events[1], amount, receiptOutCome.Outcome.ExecutorID, nil
 		}
 	}
 
-	return "", "", 0, errors.New("The endpoints are not response or set or invalid transaction")
+	return "", "", 0, "", errors.New("The endpoints are not response or set or invalid transaction")
 }
 
 func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, string, int, bool, error) {

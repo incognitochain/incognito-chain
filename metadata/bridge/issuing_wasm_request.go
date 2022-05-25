@@ -30,6 +30,7 @@ type IssuingWasmReqAction struct {
 	TokenId       string             `json:"tokenId"`
 	IncognitoAddr string             `json:"incognitoAddr"`
 	Amount        uint64             `json:"amount"`
+	ContractId    string             `json:"contractId"`
 }
 
 type IssuingWasmAcceptedInst struct {
@@ -57,12 +58,12 @@ type GetWasmBlockNumRes struct {
 	Result string `json:"result"`
 }
 
-func ParseWasmIssuingInstContent(instContentStr string) (*IssuingWasmRequest, error) {
+func ParseWasmIssuingInstContent(instContentStr string) (*IssuingWasmReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestDecodeInstructionError, err)
 	}
-	var issuingWasmReqAction IssuingWasmRequest
+	var issuingWasmReqAction IssuingWasmReqAction
 	err = json.Unmarshal(contentBytes, &issuingWasmReqAction)
 	if err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestUnmarshalJsonError, err)
@@ -107,12 +108,6 @@ func NewIssuingWasmRequestFromMap(
 	metatype int,
 ) (*IssuingWasmRequest, error) {
 	txHash := data["TxHash"].(string)
-	proofsRaw := data["ProofStrs"].([]interface{})
-	proofStrs := []string{}
-	for _, item := range proofsRaw {
-		proofStrs = append(proofStrs, item.(string))
-	}
-
 	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestNewIssuingWasmRequestFromMapError, errors.Errorf("TokenID incorrect"))
@@ -143,7 +138,7 @@ func (iReq IssuingWasmRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != metadataCommon.IssuingNearRequestMeta {
 		return false
 	}
-	_, _, _, err := iReq.verifyProofAndParseReceipt()
+	_, _, _, _, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		metadataCommon.Logger.Log.Error(metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestValidateTxWithBlockChainError, err))
 		return false
@@ -163,7 +158,7 @@ func (iReq IssuingWasmRequest) Hash() *common.Hash {
 }
 
 func (iReq *IssuingWasmRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	incAddr, token, amount, err := iReq.verifyProofAndParseReceipt()
+	incAddr, token, amount, contractId, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestBuildReqActionsError, err)
 	}
@@ -174,6 +169,7 @@ func (iReq *IssuingWasmRequest) BuildReqActions(tx metadataCommon.Transaction, c
 		"tokenId":       token,
 		"incognitoAddr": incAddr,
 		"amount":        amount,
+		"contractId":    contractId,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
@@ -189,12 +185,12 @@ func (iReq *IssuingWasmRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(iReq)
 }
 
-func (iReq *IssuingWasmRequest) verifyProofAndParseReceipt() (string, string, uint64, error) {
+func (iReq *IssuingWasmRequest) verifyProofAndParseReceipt() (string, string, uint64, string, error) {
 	// get hosts, minWasmConfirmationBlocks, networkPrefix depend iReq.Type
 	hosts, _, minWasmConfirmationBlocks, contractId, err := GetWasmInfoByMetadataType(iReq.Type)
 	if err != nil {
 		metadataCommon.Logger.Log.Errorf("Can not get Wasm info - Error: %+v", err)
-		return "", "", 0, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestVerifyProofAndParseReceipt, err)
+		return "", "", 0, "", metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestVerifyProofAndParseReceipt, err)
 	}
 
 	return VerifyWasmShieldTxId(iReq.TxHash, hosts, minWasmConfirmationBlocks, contractId)
