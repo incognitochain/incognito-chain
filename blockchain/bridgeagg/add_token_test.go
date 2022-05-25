@@ -184,126 +184,126 @@ func (a *AddTokenTestSuite) TestRejectedAvailableTokenIDByBridgeTokenIDCheck() {
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-/*func (a *AddTokenTestSuite) TestRejectedAvailableTokenIDByPrivacyTokenIDCheck() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedAvailableTokenIDByPrivacyTokenIDCheck() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedDuplicateUnifiedTokenIDAndTokenID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedDuplicateUnifiedTokenIDAndTokenID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedDecimalBy0() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedDecimalBy0() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedEmptyTokenIDStr() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedEmptyTokenIDStr() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedNullUnifiedTokenID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedNullUnifiedTokenID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedEmptyUnifiedTokenID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedEmptyUnifiedTokenID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedEmptyTokenID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedEmptyTokenID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedNotFoundNetworkID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedNotFoundNetworkID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedUnifiedTokenIDAvailableInPrivacyTokenList() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedUnifiedTokenIDAvailableInPrivacyTokenList() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedEmptyExternalTokenID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedEmptyExternalTokenID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (a *AddTokenTestSuite) TestRejectedDuplicateExternalTokenID() {*/
-/*a.test()*/
-/*assert := a.Assert()*/
-/*testCase := a.testCases[a.currentTestCaseName]*/
-/*actualResult := a.actualResults[a.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (a *AddTokenTestSuite) TestRejectedDuplicateExternalTokenID() {
+	a.test()
+	assert := a.Assert()
+	testCase := a.testCases[a.currentTestCaseName]
+	actualResult := a.actualResults[a.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
 func TestAddTokenTestSuite(t *testing.T) {
 	suite.Run(t, new(AddTokenTestSuite))
