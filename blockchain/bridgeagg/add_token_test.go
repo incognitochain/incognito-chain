@@ -114,15 +114,10 @@ func (a *AddTokenTestSuite) BeforeTest(suiteName, testName string) {
 
 func (a *AddTokenTestSuite) test() {
 	testCase := a.testCases[a.currentTestCaseName]
-	state := NewStateWithValue(
-		testCase.Data.unifiedTokenVaults,
-		testCase.Data.waitingUnshieldReqs,
-		testCase.Data.deletedWaitingUnshieldReqKeyHashes,
-	)
 	assert := a.Assert()
-	producerState := state.Clone()
+	producerState := testCase.Data.State.Clone()
 	producerManager := NewManagerWithValue(producerState)
-	processorState := state.Clone()
+	processorState := testCase.Data.State.Clone()
 	processorManager := NewManagerWithValue(processorState)
 	actualInstructions, accumulatedValues, err := producerManager.BuildAddTokenInstruction(
 		testCase.Data.BeaconHeight,

@@ -11,25 +11,36 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/stretchr/testify/suite"
 )
 
+type ShieldTestData struct {
+	TestData
+	Metadatas []*metadataBridge.ShieldRequest `json:"metadatas"`
+}
+
+type ShieldExpectedResult struct {
+	ExpectedResult
+	Statuses []ShieldStatus `json:"statuses"`
+}
+
+type ShieldActualResult struct {
+	ActualResult
+	Statuses []ShieldStatus
+}
+
 type ShieldTestCase struct {
-	TestCase
-	Metadatas                 []*metadataBridge.ShieldRequest `json:"metadatas"`
-	ExpectedStatuses          []ShieldStatus                  `json:"expected_statuses"`
-	ActualStatues             []ShieldStatus
-	ExpectedAccumulatedValues *metadata.AccumulatedValues `json:"expected_accumulated_values"`
-	ActualAccumulatedValues   *metadata.AccumulatedValues
+	Data           ShieldTestData       `json:"data"`
+	ExpectedResult ShieldExpectedResult `json:"expected_result"`
 }
 
 type ShieldTestSuite struct {
 	testCases map[string]*ShieldTestCase
 	TestSuite
+	actualResults map[string]ShieldActualResult
 }
 
 func (s *ShieldTestSuite) SetupSuite() {
@@ -51,7 +62,7 @@ func (s *ShieldTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	s.actualResults = make(map[string]ActualResult)
+	s.actualResults = make(map[string]ShieldActualResult)
 }
 
 func (s *ShieldTestSuite) SetupTest() {
@@ -70,9 +81,9 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 	s.currentTestCaseName = testName
 	testCase := s.testCases[s.currentTestCaseName]
 	actions := []string{}
-	for i, v := range testCase.Metadatas {
+	for i, v := range testCase.Data.Metadatas {
 		tx := &metadataMocks.Transaction{}
-		tx.On("Hash").Return(&testCase.TxIDs[i])
+		tx.On("Hash").Return(&testCase.Data.TxIDs[i])
 		tmpActions, err := v.BuildReqActions(tx, nil, nil, nil, 0, 100)
 		if err != nil {
 			panic(err)
@@ -83,242 +94,176 @@ func (s *ShieldTestSuite) BeforeTest(suiteName, testName string) {
 		}
 		actions = append(actions, reqActions...)
 	}
-	for tokenID, v := range testCase.BridgeTokensInfo {
+	for tokenID, v := range testCase.Data.BridgeTokensInfo {
 		err := statedb.UpdateBridgeTokenInfo(s.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	assert := s.Assert()
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
 			common.BeaconChainID: s.sDB,
 		},
 		shieldActions:     [][]string{actions},
-		accumulatedValues: testCase.AccumulatedValues,
+		accumulatedValues: testCase.Data.AccumulatedValues,
 	}
-	state := NewState()
-	state.unifiedTokenVaults = testCase.UnifiedTokens
-	producerState := state.Clone()
-	processorState := state.Clone()
-	actualInstructions, ac, err := producerState.BuildInstructions(env)
-	s.testCases[s.currentTestCaseName].ActualAccumulatedValues = ac
+	s.testCases[s.currentTestCaseName].Data.env = env
+}
+
+func (s *ShieldTestSuite) test() {
+	testCase := s.testCases[s.currentTestCaseName]
+	assert := s.Assert()
+	producerState := testCase.Data.State.Clone()
+	producerManager := NewManagerWithValue(producerState)
+	processorState := testCase.Data.State.Clone()
+	processorManager := NewManagerWithValue(processorState)
+	actualInstructions, _, err := producerManager.BuildInstructions(testCase.Data.env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, s.sDB)
+	err = processorManager.Process(actualInstructions, s.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
-	s.actualResults[s.currentTestCaseName] = ActualResult{
-		Instructions:   actualInstructions,
-		ProducerState:  producerState,
-		ProcessorState: processorState,
+
+	s.actualResults[s.currentTestCaseName] = ShieldActualResult{
+		ActualResult: ActualResult{
+			Instructions:   actualInstructions,
+			ProducerState:  producerState,
+			ProcessorState: processorState,
+		},
 	}
-	for _, txID := range testCase.TxIDs {
-		shieldStatus := ShieldStatus{}
-		prefixValues := [][]byte{
-			{},
-			{common.BoolToByte(false)},
-			{common.BoolToByte(true)},
-		}
-		for _, prefixValue := range prefixValues {
-			suffix := append(txID.Bytes(), prefixValue...)
-			data, err := statedb.GetBridgeAggStatus(
-				s.sDB,
-				statedb.BridgeAggShieldStatusPrefix(),
-				suffix,
-			)
-			if err != nil {
-				continue
-			}
-			status := ShieldStatus{}
-			err = json.Unmarshal(data, &status)
-			assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-			shieldStatus.Status = status.Status
-			if status.Status == common.RejectedStatusByte {
-				shieldStatus.Data = nil
-				shieldStatus.ErrorCode = status.ErrorCode
-			} else {
-				if len(shieldStatus.Data) == 0 {
-					shieldStatus.Data = make([]ShieldStatusData, len(status.Data))
-				}
-				for i, v := range status.Data {
-					shieldStatus.Data[i].Amount += v.Amount
-					shieldStatus.Data[i].Reward += v.Reward
-				}
-			}
-		}
-		s.testCases[s.currentTestCaseName].ActualStatues = append(s.testCases[s.currentTestCaseName].ActualStatues, shieldStatus)
+
+	for _, txID := range testCase.Data.TxIDs {
+		data, err := statedb.GetBridgeAggStatus(
+			s.sDB,
+			statedb.BridgeAggShieldStatusPrefix(),
+			txID.Bytes(),
+		)
+		assert.Nil(err, fmt.Sprintf("get bridge agg status %v", err))
+		var status ShieldStatus
+		err = json.Unmarshal(data, &status)
+		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
+		s.testCases[s.currentTestCaseName].ExpectedResult.Statuses = append(s.testCases[s.currentTestCaseName].ExpectedResult.Statuses, status)
 	}
 }
 
 func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NativeToken() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(actualAccumulatedValues, expectedAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestAcceptedNotEqualTo0NotNativeToken() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(actualAccumulatedValues, expectedAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestAcceptedYEqualTo0NativeToken() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseExternalDecimal() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseExternalDecimal() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestRejectedInvalidExternalTokenID() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestRejectedInvalidTokenID() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestRejectedTwoProofs() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestRejectedTwoProofsInOneRequest() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func (s *ShieldTestSuite) TestRejectedInvalidIncTokenID() {
+	s.test()
 	assert := s.Assert()
 	testCase := s.testCases[s.currentTestCaseName]
 	actualResult := s.actualResults[s.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	expectedAccumulatedValues := testCase.ExpectedAccumulatedValues
-	actualAccumulatedValues := testCase.ActualAccumulatedValues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(expectedStatuses, actualStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-	assert.Equal(expectedAccumulatedValues, actualAccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", expectedAccumulatedValues, actualAccumulatedValues).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
 }
 
 func TestShieldTestSuite(t *testing.T) {

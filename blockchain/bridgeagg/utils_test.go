@@ -29,12 +29,11 @@ type TestSuite struct {
 }
 
 type TestData struct {
-	unifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"unified_token_vaults"`
-	waitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"waiting_unshield_reqs"`
-	deletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"deleted_waiting_unshield_req_key_hashes"`
-	TxIDs                              []common.Hash                                                `json:"tx_ids"`
-	BridgeTokensInfo                   map[common.Hash]*statedb.BridgeTokenInfoState                `json:"bridge_tokens_info"`
-	AccumulatedValues                  *metadata.AccumulatedValues                                  `json:"accumulated_values"`
+	State             *State                                        `json:"state"`
+	TxIDs             []common.Hash                                 `json:"tx_ids"`
+	BridgeTokensInfo  map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+	AccumulatedValues *metadata.AccumulatedValues                   `json:"accumulated_values"`
+	env               *stateEnvironment
 }
 
 type ExpectedResult struct {
@@ -354,12 +353,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	config.AbortParam()
 	config.Param().BridgeAggParam.BaseDecimal = 9
 	type args struct {
-		amount      big.Int
-		decimal     uint
-		operator    byte
-		prefix      string
-		networkType uint
-		token       []byte
+		amount             big.Int
+		decimal            uint
+		isToUnifiedDecimal bool
 	}
 	tests := []struct {
 		name    string
@@ -370,9 +366,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Add",
 			args: args{
-				amount:   *big.NewInt(100000),
-				decimal:  6,
-				operator: AddOperator,
+				amount:             *big.NewInt(100000),
+				decimal:            6,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(100000000),
 			wantErr: false,
@@ -380,9 +376,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Sub",
 			args: args{
-				amount:   *big.NewInt(100000000),
-				decimal:  6,
-				operator: SubOperator,
+				amount:             *big.NewInt(100000000),
+				decimal:            6,
+				isToUnifiedDecimal: false,
 			},
 			want:    big.NewInt(100000),
 			wantErr: false,
@@ -390,9 +386,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Convert",
 			args: args{
-				amount:   *big.NewInt(100),
-				decimal:  config.Param().BridgeAggParam.BaseDecimal,
-				operator: AddOperator,
+				amount:             *big.NewInt(100),
+				decimal:            config.Param().BridgeAggParam.BaseDecimal,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(100),
 			wantErr: false,
@@ -400,9 +396,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield",
 			args: args{
-				amount:   *big.NewInt(1234567890000000),
-				decimal:  18,
-				operator: AddOperator,
+				amount:             *big.NewInt(1234567890000000),
+				decimal:            18,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(1234567),
 			wantErr: false,
@@ -410,9 +406,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield - 2",
 			args: args{
-				amount:   *big.NewInt(50000000000000000),
-				decimal:  18,
-				operator: AddOperator,
+				amount:             *big.NewInt(50000000000000000),
+				decimal:            18,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(50000000),
 			wantErr: false,
@@ -420,7 +416,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator)
+			got, err := ConvertAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.isToUnifiedDecimal)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateAmountByDecimal() error = %v, wantErr %v", err, tt.wantErr)
 				return
