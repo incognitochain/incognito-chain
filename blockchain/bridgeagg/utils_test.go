@@ -664,17 +664,17 @@ func TestCalculateDeltaY(t *testing.T) {
 	}
 }
 
-func InterfacesIsEqual(expected interface{}, actual interface{}) (bool, error) {
+func CheckInterfacesIsEqual(expected interface{}, actual interface{}) error {
 	expectedData, err := json.Marshal(expected)
 	if err != nil {
-		return false, err
+		return err
 	}
 	actualData, err := json.Marshal(actual)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !bytes.Equal(expectedData, actualData) {
-		return false, nil
+		return fmt.Errorf("expected %s but get %s", string(expectedData), string(actualData))
 	}
-	return true, nil
+	return nil
 }

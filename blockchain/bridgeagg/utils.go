@@ -731,11 +731,15 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 	if err != nil {
 		return err
 	}
+	fmt.Println("bridgeTokenInfoIndex:", bridgeTokenInfoIndex)
+	fmt.Println("externalTokenIDIndex:", externalTokenIDIndex)
 	externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
 	if err != nil {
 		return err
 	}
 	if bridgeTokenInfoState, found := bridgeTokenInfoIndex[tokenID]; found {
+		fmt.Println("bridgeTokenInfoState.ExternalTokenID:", bridgeTokenInfoState.ExternalTokenID)
+		fmt.Println("externalTokenID:", externalTokenID)
 		if !bytes.Equal(bridgeTokenInfoState.ExternalTokenID, externalTokenID) {
 			return errors.New("ExternalTokenID is not valid with data from db")
 		}
