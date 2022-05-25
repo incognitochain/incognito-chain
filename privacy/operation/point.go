@@ -26,12 +26,15 @@ func NewIdentityPoint() *Point {
 }
 
 // PointValid checks that `p` belongs to the group (p first needs to be a valid Point object)
-func (p Point) PointValid() bool {
+func (p *Point) PointValid() bool {
+	if p == nil {
+		return false
+	}
 	id := edwards25519.NewIdentityPoint()
 	if p.p.Equal(id) == 1 {
 		return true
 	}
-	return p.p.MultByCofactor(&p.p).Equal(id) != 1
+	return edwards25519.NewIdentityPoint().MultByCofactor(&p.p).Equal(id) != 1
 }
 
 // Set sets the value of `p` to that of `q`, then returns `p`
@@ -64,8 +67,15 @@ func (p *Point) UnmarshalText(data []byte) (*Point, error) {
 }
 
 // ToBytesS marshals `p` into a byte slice
-func (p Point) ToBytesS() []byte {
-	return p.p.Bytes()
+func (p *Point) ToBytesS() (result []byte) {
+	defer func() {
+		if r := recover(); r != nil {
+			var b [32]byte
+			result = b[:]
+		}
+	}()
+	result = p.p.Bytes()
+	return result
 }
 
 // FromBytesS unmarshals `p` from a byte slice, then returns `p`
@@ -81,18 +91,14 @@ func (p *Point) FromBytesS(b []byte) (*Point, error) {
 }
 
 // ToBytes marshals `p` into a byte array
-func (p Point) ToBytes() (result [32]byte) {
-	copy(result[:], p.p.Bytes())
+func (p *Point) ToBytes() (result [32]byte) {
+	copy(result[:], p.ToBytesS())
 	return result
 }
 
 // FromBytes unmarshals `p` from a byte array, then returns `p`
 func (p *Point) FromBytes(bArr [32]byte) (*Point, error) {
-	_, err := p.p.SetBytes(bArr[:])
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
+	return p.FromBytesS(bArr[:])
 }
 
 // RandomPoint returns a random point in the group, using `crypto/`'s randomness

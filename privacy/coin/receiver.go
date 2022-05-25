@@ -14,7 +14,7 @@ import (
 // OTAReceiver holds the data necessary to send a coin to your receiver with privacy.
 // It is somewhat equivalent in usage with PaymentAddress
 type OTAReceiver struct {
-	PublicKey operation.Point
+	PublicKey *operation.Point
 	TxRandom  TxRandom
 }
 
@@ -59,7 +59,7 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 		if recvShardID == int(targetShardID) && senderShardID == int(targetShardID) && coinPrivacyType == PrivacyTypeMint {
 			otaRandomPoint := (&operation.Point{}).ScalarMultBase(otaRand)
 			concealRandomPoint := (&operation.Point{}).ScalarMultBase(concealRand)
-			recv.PublicKey = *publicKey
+			recv.PublicKey = publicKey
 			recv.TxRandom = *NewTxRandom()
 			recv.TxRandom.SetTxOTARandomPoint(otaRandomPoint)
 			recv.TxRandom.SetTxConcealRandomPoint(concealRandomPoint)
@@ -114,9 +114,10 @@ func (recv *OTAReceiver) SetBytes(b []byte) error {
 		copy(buf, b[1:33])
 		pk, err := (&operation.Point{}).FromBytesS(buf)
 		if err != nil {
-			return err
+			recv.PublicKey = nil
+		} else {
+			recv.PublicKey = pk
 		}
-		recv.PublicKey = *pk
 		txr := NewTxRandom()
 		// SetBytes() will perform length check
 		err = txr.SetBytes(b[33:])
