@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type stateV2 struct {
@@ -656,12 +657,14 @@ func NewContributionWithMetaData(
 		if metaData.AccessOption.AccessID != nil {
 			accessID = *metaData.AccessOption.AccessID
 		} else {
-			if otaReceiver, found := metaData.OtaReceivers()[common.PdexAccessCoinID]; found {
-				accessID = metadataPdexv3.GenAccessID(otaReceiver)
-				accessOTA, err = metadataPdexv3.GenAccessOTA(otaReceiver)
-				if err != nil {
-					return nil, err
-				}
+			otaReceiver := privacy.OTAReceiver{}
+			if err := otaReceiver.FromString(metaData.OtaReceiver()); err != nil {
+				return nil, err
+			}
+			accessID = metadataPdexv3.GenAccessID(otaReceiver)
+			accessOTA, err = metadataPdexv3.GenAccessOTA(otaReceiver)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}

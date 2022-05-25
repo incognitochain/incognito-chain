@@ -302,8 +302,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 	nullAccessOTAContributionStateDB := statedb.NewPdexv3ContributionStateWithValue(
 		*rawdbv2.NewPdexv3ContributionWithValue(
 			"", validOTAReceiver0,
-			*token1ID, *secondTxHash, common.Hash{}, 400, 20000, 1,
-			nil, map[common.Hash]string{
+			*token1ID, *secondTxHash, *accessID, 400, 20000, 1,
+			otaReceiver0.PublicKey.ToBytesS(), map[common.Hash]string{
 				*token1ID: validOTAReceiver1,
 			},
 		),
@@ -427,8 +427,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 			want2: map[string]rawdbv2.Pdexv3Contribution{
 				"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 					"", validOTAReceiver0,
-					*token1ID, *secondTxHash, common.Hash{}, 400, 20000, 1,
-					nil, map[common.Hash]string{
+					*token1ID, *secondTxHash, *accessID, 400, 20000, 1,
+					otaReceiver0.PublicKey.ToBytesS(), map[common.Hash]string{
 						*token1ID: validOTAReceiver1,
 					},
 				),
@@ -449,8 +449,8 @@ func Test_stateProducerV2_addLiquidity(t *testing.T) {
 				waitingContributions: map[string]rawdbv2.Pdexv3Contribution{
 					"pair_hash": *rawdbv2.NewPdexv3ContributionWithValue(
 						"", validOTAReceiver0,
-						*token1ID, *secondTxHash, common.Hash{}, 400, 20000, 1,
-						nil, map[common.Hash]string{
+						*token1ID, *secondTxHash, *accessID, 400, 20000, 1,
+						otaReceiver0.PublicKey.ToBytesS(), map[common.Hash]string{
 							*token1ID: validOTAReceiver1,
 						},
 					),

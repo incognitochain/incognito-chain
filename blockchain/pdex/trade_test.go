@@ -372,10 +372,10 @@ type Testcase struct {
 
 // format a pool, discarding data irrelevant to this test
 type PoolFormatter struct {
-	State        *rawdbv2.Pdexv3PoolPair       `json:"state"`
-	Orderbook    Orderbook                     `json:"orderbook"`
-	OrderRewards map[string]*OrderRewardFormatter       `json:"orderrewards"`
-	MakingVolume map[common.Hash]*MakingVolume `json:"makingvolume"`
+	State        *rawdbv2.Pdexv3PoolPair          `json:"state"`
+	Orderbook    Orderbook                        `json:"orderbook"`
+	OrderRewards map[string]*OrderRewardFormatter `json:"orderrewards"`
+	MakingVolume map[common.Hash]*MakingVolume    `json:"makingvolume"`
 }
 
 type OrderRewardFormatter struct {
@@ -387,8 +387,8 @@ type OrderRewardFormatter struct {
 func (f *OrderRewardFormatter) To() *OrderReward {
 	r := &OrderReward{
 		uncollectedRewards: make(map[common.Hash]*OrderRewardDetail),
-		withdrawnStatus: f.WithdrawnStatus,
-		txReqID: f.TxReqID,
+		withdrawnStatus:    f.WithdrawnStatus,
+		txReqID:            f.TxReqID,
 	}
 	for k, v := range f.UncollectedRewards {
 		r.uncollectedRewards[k] = v.To()
@@ -399,8 +399,8 @@ func (f *OrderRewardFormatter) To() *OrderReward {
 func (f *OrderRewardFormatter) From(r *OrderReward) *OrderRewardFormatter {
 	*f = OrderRewardFormatter{
 		UncollectedRewards: make(map[common.Hash]*OrderRewardDetailFormatter),
-		WithdrawnStatus: r.withdrawnStatus,
-		TxReqID: r.txReqID,
+		WithdrawnStatus:    r.withdrawnStatus,
+		TxReqID:            r.txReqID,
 	}
 	for k, v := range r.uncollectedRewards {
 		f.UncollectedRewards[k] = (&OrderRewardDetailFormatter{}).From(v)
@@ -415,18 +415,17 @@ type OrderRewardDetailFormatter struct {
 
 func (f *OrderRewardDetailFormatter) To() *OrderRewardDetail {
 	return &OrderRewardDetail{
-		receiver: f.Receiver,
-		amount: f.Amount,
+		receiver: &f.Receiver,
+		amount:   f.Amount,
 	}
 }
 
 func (f *OrderRewardDetailFormatter) From(r *OrderRewardDetail) *OrderRewardDetailFormatter {
 	return &OrderRewardDetailFormatter{
-		Receiver: r.receiver,
-		Amount: r.amount,
+		Receiver: *r.receiver,
+		Amount:   r.amount,
 	}
 }
-
 
 type StateFormatter struct {
 	PoolPairs map[string]PoolFormatter `json:"poolPairs"`
@@ -464,7 +463,7 @@ func (sf *StateFormatter) FromState(s *stateV2) *StateFormatter {
 			MakingVolume: v.makingVolume,
 		}
 		for k1, v1 := range v.orderRewards {
-				temp.OrderRewards[k1] = (&OrderRewardFormatter{}).From(v1)
+			temp.OrderRewards[k1] = (&OrderRewardFormatter{}).From(v1)
 		}
 		sf.PoolPairs[k] = temp
 	}

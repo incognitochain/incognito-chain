@@ -1,6 +1,7 @@
 package pdex
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,15 +20,13 @@ func (sp *stateProducerV2) validateContributions(
 	if contribution0.PoolPairID() != contribution1.PoolPairID() {
 		return errors.New("contribution 0 and contribution 1 need to be same poolPairID")
 	}
-
-	if contribution0.UseNft() && contribution1.UseNft() {
-		if contribution0.NftID().String() != contribution1.NftID().String() {
-			return errors.New("contribution 0 and contribution 1 need to be same nftID")
-		}
-		if contribution0.NftID().IsZeroValue() {
-			return errors.New("contribution nftID cannot be empty")
-		}
-	} else if contribution0.UseAccessOTANewLP() && contribution1.UseAccessOTANewLP() {
+	if contribution0.NftID().String() != contribution1.NftID().String() {
+		return errors.New("contribution 0 and contribution 1 need to be same nftID")
+	}
+	if contribution0.NftID().IsZeroValue() {
+		return errors.New("contribution nftID cannot be empty")
+	}
+	if contribution0.UseAccessOTANewLP() && contribution1.UseAccessOTANewLP() {
 		if contribution0.OtaReceiver() != contribution1.OtaReceiver() {
 			return errors.New("contribution 0 and contribution 1 need to be same otaReceiver")
 		}
@@ -51,12 +50,12 @@ func (sp *stateProducerV2) validateContributions(
 		if accessOTAReceiver != contribution0.OtaReceiver() {
 			return errors.New("otaReceiver and otaReceivers[pdexAccessCoinID] of contribution need to be the same")
 		}
-	} else if contribution0.UseAccessOTAOldLP() && contribution1.UseAccessOTAOldLP() {
-		if contribution0.NftID().String() != contribution1.NftID().String() {
-			return errors.New("contribution 0 and contribution 1 need to be same accessID")
+		if len(contribution0.AccessOTA()) == 0 || len(contribution1.AccessOTA()) == 0 {
+			return errors.New("length of AccessOTA cannot be 0")
 		}
-	} else {
-		return errors.New("contribution 0 and contribution 1 need to use same access option")
+		if !bytes.Equal(contribution0.AccessOTA(), contribution1.AccessOTA()) {
+			return errors.New("contribution0 AccessOTA and contribution1 AccessOTA need to be similar")
+		}
 	}
 
 	return nil
@@ -69,17 +68,12 @@ func getAccessIDAndAccessOTA(contribution0, contribution1 rawdbv2.Pdexv3Contribu
 	if contribution0.UseNft() {
 		hash = contribution0.NftID()
 	} else if contribution0.UseAccessOTANewLP() {
-		if contribution0.AccessOTA() == nil && contribution0.NftID().IsZeroValue() {
-			hash = contribution1.NftID()
-			accessOTA = contribution1.AccessOTA()
-		} else if contribution1.AccessOTA() == nil && contribution1.NftID().IsZeroValue() {
-			hash = contribution0.NftID()
-			accessOTA = contribution0.AccessOTA()
-		} else {
-			return common.Hash{}, nil, errors.New("contribution0 and contribution1 format are not right")
-		}
+		hash = contribution0.NftID()
+		accessOTA = contribution0.AccessOTA()
 	} else if contribution0.UseAccessOTAOldLP() {
 		hash = contribution0.NftID()
+	} else {
+		return common.Hash{}, nil, errors.New("contribution0 and contribution1 format are not right")
 	}
 	return hash, accessOTA, nil
 }
