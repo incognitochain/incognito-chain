@@ -167,10 +167,12 @@ func (s *State) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
 		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
 		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
 	}{
 		UnifiedTokenVaults:                 s.unifiedTokenVaults,
 		WaitingUnshieldReqs:                s.waitingUnshieldReqs,
+		NewWaitingUnshieldReqs:             s.newWaitingUnshieldReqs,
 		DeletedWaitingUnshieldReqKeyHashes: s.deletedWaitingUnshieldReqKeyHashes,
 	})
 	if err != nil {
@@ -183,6 +185,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
 		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
 		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -191,6 +194,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 	}
 	s.unifiedTokenVaults = temp.UnifiedTokenVaults
 	s.waitingUnshieldReqs = temp.WaitingUnshieldReqs
+	s.newWaitingUnshieldReqs = temp.NewWaitingUnshieldReqs
 	s.deletedWaitingUnshieldReqKeyHashes = temp.DeletedWaitingUnshieldReqKeyHashes
 	return nil
 }

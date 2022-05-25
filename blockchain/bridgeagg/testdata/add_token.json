@@ -1,125 +1,135 @@
 {
     "TestAccepted": {
         "name": "Accepted",
-        "expected_instructions": [
-            ["348", "eyJOZXdMaXN0VG9rZW5zIjp7ImMzYWY4M2FkMmU3YjllMDQwYTczYTJiOTMzNGY5YTk2NjRjZDEyNjY0NjJmNzViNmJhODRmMzYxMzljZGYzYzYiOnsiYTc2ZDc1N2Q4ZDM4NzA2MDVkMDEyZDY4Y2QyZjA3NjcyMmVkOGUxOWRmYzVlMjliMTJjMDdhMjRhY2QwMjZjMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJOZXR3b3JrSUQiOjF9LCJlNTAzMmMwODNmMGRhNjdjYTE0MTMzMWI2MDA1ZTRhMzc0MGM1MDIxOGYxNTFhNWU4MjllOWQwMzIyN2UzM2UyIjp7IkV4dGVybmFsRGVjaW1hbCI6MTgsIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIk5ldHdvcmtJRCI6Mn19LCJlYmMxYzFiNTgxOWFhNTY0NzE5MmFlZmQ3MjllZjE4Y2Q4ODk0ZDIyNjU2ZThhZGQ2NzhjMGFlZjkzZTQwNGQ0Ijp7IjZlZWQ2OTFjYjE0ZDExMDY2ZjkzOTYzMGZmNjQ3ZjVmMWM4NDNhOGY5NjRkOWE0ZDI5NWZhOWNkMTExMWM0NzQiOnsiRXh0ZXJuYWxEZWNpbWFsIjoxOCwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiTmV0d29ya0lEIjo0fX19fQ=="]
-        ],
-        "expected_unified_tokens": {
-            "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
-                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": []
+            },
+            "bridge_token_infos": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
                     },
-                    "NetworkID": 1
-                },
-                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            },
-            "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
-                "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 4
-                }
-            }
-        },
-        "bridge_tokens_info": {},
-        "expected_bridge_tokens_info": {
-            "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
-                "tokenId": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1",
-                "amount": 0,
-                "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            },
-            "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
-                "tokenId": "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4",
-                "amount": 0,
-                "externalTokenId": [85, 84]
-            },
-            "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
-                "amount": 0,
-                "externalTokenId": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            },
-            "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
-                "tokenId": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6",
-                "amount": 0,
-                "externalTokenId": [85, 84]
-            },
-            "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
-                "tokenId": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474",
-                "amount": 0,
-                "externalTokenId": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            }
-        },
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {
-                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84],
-                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": [85, 84]
-            },
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "beacon_height": 10,
-        "configed_unified_tokens": {
-            "202205021100": {
-                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
-                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "network_id": 1
-                    },
-                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "network_id": 2
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
                     }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "Reserve": 0,
+                            "LastUpdatedRewardReserve": 0,
+                            "CurrentRewardReserve": 0,
+                            "Decimal": 18,
+                            "IsPaused": false,
+                            "NetworkID": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Reserve": 0,
+                            "LastUpdatedRewardReserve": 0,
+                            "CurrentRewardReserve": 0,
+                            "Decimal": 18,
+                            "IsPaused": false,
+                            "NetworkID": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Reserve": 0,
+                            "LastUpdatedRewardReserve": 0,
+                            "CurrentRewardReserve": 0,
+                            "Decimal": 18,
+                            "IsPaused": false,
+                            "NetworkID": 4
+                        }
+                    }
+                },
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": []
+            },
+            "instructions": [
+                ["348", "eyJOZXdMaXN0VG9rZW5zIjp7ImMzYWY4M2FkMmU3YjllMDQwYTczYTJiOTMzNGY5YTk2NjRjZDEyNjY0NjJmNzViNmJhODRmMzYxMzljZGYzYzYiOnsiYTc2ZDc1N2Q4ZDM4NzA2MDVkMDEyZDY4Y2QyZjA3NjcyMmVkOGUxOWRmYzVlMjliMTJjMDdhMjRhY2QwMjZjMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJOZXR3b3JrSUQiOjF9LCJlNTAzMmMwODNmMGRhNjdjYTE0MTMzMWI2MDA1ZTRhMzc0MGM1MDIxOGYxNTFhNWU4MjllOWQwMzIyN2UzM2UyIjp7IkV4dGVybmFsRGVjaW1hbCI6MTgsIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIk5ldHdvcmtJRCI6Mn19LCJlYmMxYzFiNTgxOWFhNTY0NzE5MmFlZmQ3MjllZjE4Y2Q4ODk0ZDIyNjU2ZThhZGQ2NzhjMGFlZjkzZTQwNGQ0Ijp7IjZlZWQ2OTFjYjE0ZDExMDY2ZjkzOTYzMGZmNjQ3ZjVmMWM4NDNhOGY5NjRkOWE0ZDI5NWZhOWNkMTExMWM0NzQiOnsiRXh0ZXJuYWxEZWNpbWFsIjoxOCwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiTmV0d29ya0lEIjo0fX19fQ=="]
+            ],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84],
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": [85, 84]
+                },
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {
+                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                    "tokenId": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1",
+                    "amount": 0,
+                    "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 },
                 "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
-                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
-                        "external_decimal": 18,
-                        "external_token_id": "0x0000000000000000000000000000000000000000",
-                        "network_id": 4
-                    }
+                    "tokenId": "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4",
+                    "amount": 0,
+                    "externalTokenId": [85, 84]
+                },
+                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                    "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
+                    "amount": 0,
+                    "externalTokenId": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "tokenId": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6",
+                    "amount": 0,
+                    "externalTokenId": [85, 84]
+                },
+                "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                    "tokenId": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474",
+                    "amount": 0,
+                    "externalTokenId": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 }
             }
-        },
-        "triggered_feature": {
-            "unified_token_202205021100": 9
         }
     },
     "TestRejectedInvalidBeaconHeight": {
@@ -148,7 +158,6 @@
 		    "CBridgeTokens":     [],
 		    "InitTokens":        []
         },
-        "beacon_height": 10,
         "configed_unified_tokens": {
             "202205021100": {
                 "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {

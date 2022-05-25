@@ -1,6 +1,8 @@
 package bridgeagg
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -37,7 +39,7 @@ type TestData struct {
 }
 
 type ExpectedResult struct {
-	State             State                                    `json:"state"`
+	State             *State                                   `json:"state"`
 	Instructions      [][]string                               `json:"instructions"`
 	AccumulatedValues *metadata.AccumulatedValues              `json:"accumulated_values"`
 	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo `json:"bridge_tokens_info"`
@@ -660,4 +662,19 @@ func TestCalculateDeltaY(t *testing.T) {
 			}
 		})
 	}
+}
+
+func InterfacesIsEqual(expected interface{}, actual interface{}) (bool, error) {
+	expectedData, err := json.Marshal(expected)
+	if err != nil {
+		return false, err
+	}
+	actualData, err := json.Marshal(actual)
+	if err != nil {
+		return false, err
+	}
+	if !bytes.Equal(expectedData, actualData) {
+		return false, nil
+	}
+	return true, nil
 }
