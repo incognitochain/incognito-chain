@@ -191,7 +191,7 @@ func VerifyTokenPair(
 	return nil
 }
 
-func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefix string, metaType int) ([]byte, error) {
+func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefix string) ([]byte, error) {
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(stateDB, &incTokenID)
 	if err != nil {
@@ -204,7 +204,7 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 
 	prefixLen := len(prefix)
 	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("metadata type %v with invalid external tokenID %v", metaType, tokenID))
+		return nil, errors.New(fmt.Sprintf("invalid prefix in external tokenID %v", tokenID))
 	}
 	return tokenID, nil
 }

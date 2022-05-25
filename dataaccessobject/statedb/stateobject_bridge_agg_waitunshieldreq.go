@@ -3,6 +3,7 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,18 +16,24 @@ type BridgeAggWaitingUnshieldReq struct {
 }
 
 type WaitingUnshieldReqData struct {
-	IncTokenID    common.Hash `json:"IncTokenID"`
-	BurningAmount uint64      `json:"BurningAmount"`
-	RemoteAddress string      `json:"RemoteAddress"`
-	Fee           uint64      `json:"Fee"`
+	IncTokenID             common.Hash `json:"IncTokenID"`
+	BurningAmount          uint64      `json:"BurningAmount"`
+	RemoteAddress          string      `json:"RemoteAddress"`
+	Fee                    uint64      `json:"Fee"`
+	ExternalTokenID        []byte      `json:"ExternalTokenID"`
+	ExternalReceivedAmt    *big.Int    `json:"ExternalReceivedAmt"`
+	BurningConfirmMetaType int         `json:"BurningConfirmMetaType"`
 }
 
 func (w WaitingUnshieldReqData) Clone() WaitingUnshieldReqData {
 	return WaitingUnshieldReqData{
-		IncTokenID:    w.IncTokenID,
-		BurningAmount: w.BurningAmount,
-		RemoteAddress: w.RemoteAddress,
-		Fee:           w.Fee,
+		IncTokenID:             w.IncTokenID,
+		BurningAmount:          w.BurningAmount,
+		RemoteAddress:          w.RemoteAddress,
+		Fee:                    w.Fee,
+		ExternalTokenID:        w.ExternalTokenID,
+		ExternalReceivedAmt:    w.ExternalReceivedAmt,
+		BurningConfirmMetaType: w.BurningConfirmMetaType,
 	}
 }
 

@@ -197,8 +197,12 @@ const (
 const (
 	RejectedStatusStr  = "rejected"
 	AcceptedStatusStr  = "accepted"
+	WaitingStatusStr   = "waiting"
+	FilledStatusStr    = "filled"
 	RejectedStatusByte = byte(0)
 	AcceptedStatusByte = byte(1)
+	WaitingStatusByte  = byte(2)
+	FilledStatusByte   = byte(3)
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"

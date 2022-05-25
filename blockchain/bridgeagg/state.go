@@ -10,7 +10,7 @@ import (
 
 type State struct {
 	unifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState // unifiedTokenID -> tokenID -> vault
-	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       // unifiedTokenID -> unshieldID -> waitingUnshieldReq
+	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       // unifiedTokenID -> []waitingUnshieldReq
 
 	// temporary state
 	newWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
@@ -56,14 +56,18 @@ func NewStateWithValue(
 	}
 }
 
+//TODO: 0xkraken
 func (s *State) Clone() *State {
 	res := NewState()
 	res.unifiedTokenVaults = s.CloneUnifiedTokenVaults()
 	res.waitingUnshieldReqs = s.CloneWaitingUnshieldReqs()
 
-	res.newWaitingUnshieldReqs = s.CloneNewWaitingUnshieldReqs()
+	// reset temporary state
+	// res.newWaitingUnshieldReqs = s.CloneNewWaitingUnshieldReqs()
+	// res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
+	// res.deletedWaitingUnshieldReqKeyHashes = append(res.deletedWaitingUnshieldReqKeyHashes, s.deletedWaitingUnshieldReqKeyHashes...)
+	res.newWaitingUnshieldReqs = map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq{}
 	res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
-	res.deletedWaitingUnshieldReqKeyHashes = append(res.deletedWaitingUnshieldReqKeyHashes, s.deletedWaitingUnshieldReqKeyHashes...)
 
 	return res
 }

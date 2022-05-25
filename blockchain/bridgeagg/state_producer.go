@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -122,7 +119,7 @@ func (sp *stateProducer) shield(
 	clonedVaults, err := state.CloneVaultsByUnifiedTokenID(meta.UnifiedTokenID)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
-		rejectedInst, err := buildRejectedInst(
+		rejectedInst := buildRejectedInst(
 			metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError, []byte{})
 		return [][]string{rejectedInst}, state, ac, err
 	}
@@ -135,7 +132,7 @@ func (sp *stateProducer) shield(
 		vault, ok := clonedVaults[shieldData.IncTokenID]
 		if !ok || vault == nil {
 			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
-			rejectedInst, err := buildRejectedInst(
+			rejectedInst := buildRejectedInst(
 				metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError, []byte{})
 			return [][]string{rejectedInst}, state, ac, err
 		}
@@ -143,7 +140,7 @@ func (sp *stateProducer) shield(
 		// check networkID
 		if vault.NetworkID() != shieldData.NetworkID {
 			Logger.log.Errorf("[BridgeAgg] Network ID is not matched: %v", shieldData.NetworkID)
-			rejectedInst, err := buildRejectedInst(
+			rejectedInst := buildRejectedInst(
 				metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NotFoundNetworkIDError, []byte{})
 			return [][]string{rejectedInst}, state, ac, err
 		}
@@ -156,7 +153,7 @@ func (sp *stateProducer) shield(
 			proofData, txReceipt, err := UnmarshalEVMShieldProof(shieldData.Proof, action.ExtraData[i])
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not unmarshal shielding proof - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 				return [][]string{rejectedInst}, state, ac, err
 			}
@@ -164,7 +161,7 @@ func (sp *stateProducer) shield(
 			evmInfo, err := metadataBridge.GetEVMInfoByNetworkID(shieldData.NetworkID, clonedAC)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not get evm info by network id - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 				return [][]string{rejectedInst}, state, ac, err
 			}
@@ -173,13 +170,13 @@ func (sp *stateProducer) shield(
 			isValid, uniqTx, err := ValidateDoubleShieldProof(proofData, evmInfo.ListTxUsedInBlock, evmInfo.IsTxHashIssued, stateDBs[common.BeaconChainID])
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 				return [][]string{rejectedInst}, state, ac, err
 			}
 			if !isValid {
 				Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ShieldProofIsSubmittedError, []byte{})
 				return [][]string{rejectedInst}, state, ac, err
 			}
@@ -190,7 +187,7 @@ func (sp *stateProducer) shield(
 			)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not extract data from Receipt - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 				return [][]string{rejectedInst}, state, ac, err
 			}
@@ -200,7 +197,7 @@ func (sp *stateProducer) shield(
 			err = metadataBridge.VerifyTokenPair(stateDBs, ac, shieldData.IncTokenID, extTokenID)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Invalid token pair pTokenID and extTokenID - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, FailToVerifyTokenPairError, []byte{})
 				return [][]string{rejectedInst}, state, ac, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
 			}
@@ -212,10 +209,10 @@ func (sp *stateProducer) shield(
 					extDecimal = config.Param().BridgeAggParam.BaseDecimal
 				}
 			}
-			incAmount, err := ConvertAmountByDecimal(*extAmount, extDecimal, true)
+			incAmount, err := ConvertAmountByDecimal(extAmount, extDecimal, true)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not convert external amount to incognito amount - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OutOfRangeUni64Error, []byte{})
 				return [][]string{rejectedInst}, state, ac, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 			}
@@ -224,7 +221,7 @@ func (sp *stateProducer) shield(
 			reward, err := calShieldReward(vault, incAmount.Uint64())
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not calcalate shielding reward - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OutOfRangeUni64Error, []byte{})
 				return [][]string{rejectedInst}, state, ac, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
 			}
@@ -236,7 +233,7 @@ func (sp *stateProducer) shield(
 			clonedVaults[shieldData.IncTokenID], err = updateVaultForShielding(vault, incAmount.Uint64(), reward)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not update vault state for shield request - Error %v", err)
-				rejectedInst, err := buildRejectedInst(
+				rejectedInst := buildRejectedInst(
 					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 				return [][]string{rejectedInst}, state, ac, NewBridgeAggErrorWithValue(OtherError, err)
 			}
@@ -252,7 +249,7 @@ func (sp *stateProducer) shield(
 
 		default:
 			Logger.log.Errorf("[BridgeAgg] Network ID is not matched: %v", shieldData.NetworkID)
-			rejectedInst, err := buildRejectedInst(
+			rejectedInst := buildRejectedInst(
 				metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NotFoundNetworkIDError, []byte{})
 			return [][]string{rejectedInst}, state, ac, err
 
@@ -266,7 +263,7 @@ func (sp *stateProducer) shield(
 	content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID, receivingShardID)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Can not build contents for shield instruction: %v", err)
-		rejectedInst, err := buildRejectedInst(
+		rejectedInst := buildRejectedInst(
 			metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 		return [][]string{rejectedInst}, state, ac, err
 	}
@@ -396,170 +393,264 @@ func (sp *stateProducer) shield(
 	// return
 }
 
+//TODO: 0xkraken
+func (sp *stateProducer) handleWaitingUnshieldReqs(
+	state *State,
+	beaconHeight uint64,
+	stateDB *statedb.StateDB,
+) ([][]string, *State, error) {
+	cloneState := state.Clone()
+	clonedUnifiedTokenVaults := cloneState.unifiedTokenVaults
+	insts := [][]string{}
+
+	for unifiedTokenID, waitingUnshieldReqs := range state.waitingUnshieldReqs {
+		vaults, ok := clonedUnifiedTokenVaults[unifiedTokenID]
+		if !ok {
+			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", unifiedTokenID)
+			continue
+		}
+
+		for i, waitingUnshieldReq := range waitingUnshieldReqs {
+			// check vault enough for process this waiting unshield req
+			isEnoughVault := checkVaultForWaitUnshieldReq(vaults, waitingUnshieldReq.GetData())
+			if !isEnoughVault {
+				continue
+			}
+
+			// update vault state
+			updatedVaults, err := updateStateForMatchedWaitUnshieldReq(vaults, *waitingUnshieldReq)
+			if err != nil {
+				Logger.log.Errorf("[BridgeAgg] Update vault state error: %v", err)
+				continue
+			}
+
+			// delete waiting unshield req
+			cloneState, err = deleteWaitingUnshieldReq(cloneState, waitingUnshieldReq, unifiedTokenID, i)
+			if err != nil {
+				Logger.log.Errorf("[BridgeAgg] Update vault state error: %v", err)
+				continue
+			}
+			vaults = updatedVaults
+
+			// build burning confirm insts
+			burningConfirmInsts := buildBurningConfirmInsts(waitingUnshieldReq)
+			// build unshield inst with filled status
+			filledInst := buildUnshieldInst(waitingUnshieldReq, common.FilledStatusStr, common.BridgeShardID)
+			insts = append(burningConfirmInsts, filledInst)
+		}
+		clonedUnifiedTokenVaults[unifiedTokenID] = vaults
+	}
+
+	return insts, cloneState, nil
+}
+
 func (sp *stateProducer) unshield(
 	contentStr string,
 	state *State,
 	beaconHeight uint64, shardID byte,
 	stateDB *statedb.StateDB,
-) (resInsts [][]string, resState *State, err error) {
+) ([][]string, *State, error) {
 	// decode action from shard
 	action := metadataCommon.NewAction()
-	md := &metadataBridge.UnshieldRequest{}
-	action.Meta = md
-	err = action.FromString(contentStr)
+	meta := &metadataBridge.UnshieldRequest{}
+	action.Meta = meta
+	err := action.FromString(contentStr)
 	if err != nil {
-		err = NewBridgeAggErrorWithValue(OtherError, err)
+		err = NewBridgeAggErrorWithValue(ProcessUnshieldError, err)
 		return [][]string{}, nil, err
 	}
 
-	var errorType int
-	var contents [][]byte
-	var burningInsts [][]string
-	resState = state.Clone()
-
-	defer func() {
-		if err != nil {
-			// create rejected instruction when ocurring error
-			var burningAmount uint64
-			for _, data := range md.Data {
-				burningAmount += data.BurningAmount
-			}
-			rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
-				UnifiedTokenID: md.UnifiedTokenID,
-				Amount:         burningAmount,
-				Receiver:       md.Receiver,
-			}
-			Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
-			content, err := json.Marshal(rejectedUnshieldRequest)
-			if err != nil {
-				errorType = OtherError
-				return
-			}
-			contents = append(contents, content)
-		}
-		insts, e := buildInstruction(
-			metadataCommon.BurningUnifiedTokenRequestMeta,
-			errorType, contents, action.TxReqID, shardID, err,
-		)
-		if e != nil {
-			Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), e)
-		}
-		err = nil
-		resInsts = append(resInsts, insts...)
-		if len(burningInsts) != 0 {
-			resInsts = append(resInsts, burningInsts...)
-		}
-	}()
+	var insts [][]string
+	var burningConfirmInsts [][]string
+	clonedState := state.Clone()
 
 	// check UnifiedTokenID
-	vaults, err := resState.CloneVaultsByUnifiedTokenID(md.UnifiedTokenID)
+	vaults, err := clonedState.CloneVaultsByUnifiedTokenID(meta.UnifiedTokenID)
 	if err != nil {
-		errorType = NotFoundTokenIDInNetworkError
-		err = errors.New("Invalid unified token ID not found")
-		return
+		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
+		rejectedInst := buildRejectedUnshieldReqInst(
+			*meta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError)
+		return [][]string{rejectedInst}, state, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
 	}
 
-	var acceptedUnshieldRequestDatas []metadataBridge.AcceptedUnshieldRequestData
-	isAddedWaitingList := false
-	//TODO: 0xkraken params
-	percentFee := float64(0.1)
-
-	for index, data := range md.Data {
-		// check IncTokenID
-		vault, found := vaults[data.IncTokenID]
-		if !found {
-			errorType = NotFoundTokenIDInNetworkError
-			err = fmt.Errorf("Not found tokenID %s in unified tokenID %s", data.IncTokenID.String(), md.UnifiedTokenID)
-			burningInsts = [][]string{}
-			return
-		}
-		// get networkType by NetworkID
-		networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(vault.NetworkID())
-		switch networkType {
-		case common.EVMNetworkType:
-			// calculate unshield fee
-			receivedAmount, fee, e := calUnshieldFee(vault, data.BurningAmount, data.MinExpectedAmount, percentFee)
-			if e != nil {
-				errorType = NotFoundTokenIDInNetworkError
-				err = e
-				burningInsts = [][]string{}
-				return
-			}
-
-			// add to waiting list
-			if fee > 0 {
-				isAddedWaitingList = true
-			}
-			if isAddedWaitingList {
-				acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
-					BurningAmount:  data.BurningAmount,
-					ReceivedAmount: receivedAmount,
-					IncTokenID:     data.IncTokenID,
-				}
-				acceptedUnshieldRequestDatas = append(acceptedUnshieldRequestDatas, acceptedUnshieldRequestData)
-				continue
-			}
-
-			// create burning confirm instruction if don't add to waiting list
-
-			tempVault, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vault, action.TxReqID, md.IsDepositToSC)
-			if e != nil {
-				errorType = et
-				err = e
-				burningInsts = [][]string{}
-				return
-			}
-			if amount == 0 {
-				errorType = CalculateUnshieldAmountError
-				err = errors.New("Actual receive amount is 0 with unshielding request")
-				burningInsts = [][]string{}
-				return
-			}
-			vault = tempVault
-			h := big.NewInt(0).SetUint64(beaconHeight)
-			newTxReqID := common.HashH(append(action.TxReqID.Bytes(), common.IntToBytes(index)...))
-			burningInst := []string{
-				strconv.Itoa(burningMetaType),
-				strconv.Itoa(int(common.BridgeShardID)),
-				base58.Base58Check{}.Encode(externalTokenID, 0x00),
-				data.RemoteAddress,
-				base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
-				newTxReqID.String(),
-				base58.Base58Check{}.Encode(data.IncTokenID[:], 0x00),
-				base58.Base58Check{}.Encode(h.Bytes(), 0x00),
-			}
-			burningInsts = append(burningInsts, burningInst)
-			//TODO: 0xkraken review
-			acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
-				BurningAmount:  data.BurningAmount,
-				ReceivedAmount: receivedAmount,
-				IncTokenID:     data.IncTokenID,
-			}
-			acceptedUnshieldRequestDatas = append(acceptedUnshieldRequestDatas, acceptedUnshieldRequestData)
-		default:
-			errorType = NotFoundNetworkIDError
-			err = errors.New("Not found networkID")
-			burningInsts = [][]string{}
-			return
-		}
+	// check vaults
+	isEnoughVault, waitingUnshieldDatas, err := checkVaultForNewUnshieldReq(vaults, meta.Data, meta.IsDepositToSC, config.Param().BridgeAggParam.PercentFee, stateDB)
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
+		rejectedInst := buildRejectedUnshieldReqInst(
+			*meta, shardID, action.TxReqID, CheckVaultUnshieldError)
+		return [][]string{rejectedInst}, state, NewBridgeAggErrorWithValue(CheckVaultUnshieldError, err)
 	}
-	resState.unifiedTokenVaults[md.UnifiedTokenID] = vaults
 
-	acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{
-		UnifiedTokenID: md.UnifiedTokenID,
-		TxReqID:        action.TxReqID,
-		Data:           acceptedUnshieldRequestDatas,
-	}
-	content, e := json.Marshal(acceptedContent)
-	if e != nil {
-		err = e
-		errorType = OtherError
-		burningInsts = [][]string{}
-		return
-	}
-	contents = append(contents, content)
+	waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, action.TxReqID, beaconHeight)
 
-	return
+	if isEnoughVault {
+		// build burning confirm insts
+		burningConfirmInsts = buildBurningConfirmInsts(waitingUnshieldReq)
+		// build unshield inst with accepted status
+		acceptedInst := buildUnshieldInst(waitingUnshieldReq, common.AcceptedStatusStr, shardID)
+		insts = append(burningConfirmInsts, acceptedInst)
+
+		// update vault state
+		clonedState.unifiedTokenVaults[meta.UnifiedTokenID] = updateStateForNewMatchedUnshieldReq(vaults, *meta)
+	} else {
+		// build unshield inst with waiting status
+		processingInst := buildUnshieldInst(waitingUnshieldReq, common.WaitingStatusStr, shardID)
+		insts = append(insts, processingInst)
+
+		// update state
+		// add new unshield req into waiting list
+		clonedState = addWaitingUnshieldReq(clonedState, waitingUnshieldReq, meta.UnifiedTokenID)
+
+		// update vault state
+		clonedState.unifiedTokenVaults[meta.UnifiedTokenID] = updateStateForNewWaitingUnshieldReq(vaults, waitingUnshieldReq)
+	}
+
+	return insts, clonedState, nil
+
+	// defer func() {
+	// 	if err != nil {
+	// 		// create rejected instruction when ocurring error
+	// 		var burningAmount uint64
+	// 		for _, data := range meta.Data {
+	// 			burningAmount += data.BurningAmount
+	// 		}
+	// 		rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
+	// 			UnifiedTokenID: meta.UnifiedTokenID,
+	// 			Amount:         burningAmount,
+	// 			Receiver:       meta.Receiver,
+	// 		}
+	// 		Logger.log.Warnf("Unshield with tx %s err %v", action.TxReqID.String(), err)
+	// 		content, err := json.Marshal(rejectedUnshieldRequest)
+	// 		if err != nil {
+	// 			errorType = OtherError
+	// 			return
+	// 		}
+	// 		contents = append(contents, content)
+	// 	}
+	// 	insts, e := buildInstruction(
+	// 		metadataCommon.BurningUnifiedTokenRequestMeta,
+	// 		errorType, contents, action.TxReqID, shardID, err,
+	// 	)
+	// 	if e != nil {
+	// 		Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), e)
+	// 	}
+	// 	err = nil
+	// 	resInsts = append(resInsts, insts...)
+	// 	if len(burningInsts) != 0 {
+	// 		resInsts = append(resInsts, burningInsts...)
+	// 	}
+	// }()
+
+	// // check UnifiedTokenID
+	// vaults, err := clonedState.CloneVaultsByUnifiedTokenID(meta.UnifiedTokenID)
+	// if err != nil {
+	// 	errorType = NotFoundTokenIDInNetworkError
+	// 	err = errors.New("Invalid unified token ID not found")
+	// 	return
+	// }
+
+	// var acceptedUnshieldRequestDatas []metadataBridge.AcceptedUnshieldRequestData
+	// isAddedWaitingList := false
+	// //TODO: 0xkraken params
+	// percentFee := float64(0.1)
+
+	// for index, data := range meta.Data {
+	// 	// check IncTokenID
+	// 	vault, found := vaults[data.IncTokenID]
+	// 	if !found {
+	// 		errorType = NotFoundTokenIDInNetworkError
+	// 		err = fmt.Errorf("Not found tokenID %s in unified tokenID %s", data.IncTokenID.String(), meta.UnifiedTokenID)
+	// 		burningInsts = [][]string{}
+	// 		return
+	// 	}
+	// 	// get networkType by NetworkID
+	// 	networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(vault.NetworkID())
+	// 	switch networkType {
+	// 	case common.EVMNetworkType:
+	// 		// calculate unshield fee
+	// 		receivedAmount, fee, e := calUnshieldFee(vault, data.BurningAmount, data.MinExpectedAmount, percentFee)
+	// 		if e != nil {
+	// 			errorType = NotFoundTokenIDInNetworkError
+	// 			err = e
+	// 			burningInsts = [][]string{}
+	// 			return
+	// 		}
+
+	// 		// add to waiting list
+	// 		if fee > 0 {
+	// 			isAddedWaitingList = true
+	// 		}
+	// 		if isAddedWaitingList {
+	// 			acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
+	// 				BurningAmount:  data.BurningAmount,
+	// 				ReceivedAmount: receivedAmount,
+	// 				IncTokenID:     data.IncTokenID,
+	// 			}
+	// 			acceptedUnshieldRequestDatas = append(acceptedUnshieldRequestDatas, acceptedUnshieldRequestData)
+	// 			continue
+	// 		}
+
+	// 		// create burning confirm instruction if don't add to waiting list
+
+	// 		tempVault, externalTokenID, unshieldAmount, amount, fee, burningMetaType, et, e := unshieldEVM(data, stateDB, vault, action.TxReqID, meta.IsDepositToSC)
+	// 		if e != nil {
+	// 			errorType = et
+	// 			err = e
+	// 			burningInsts = [][]string{}
+	// 			return
+	// 		}
+	// 		if amount == 0 {
+	// 			errorType = CalculateUnshieldAmountError
+	// 			err = errors.New("Actual receive amount is 0 with unshielding request")
+	// 			burningInsts = [][]string{}
+	// 			return
+	// 		}
+	// 		vault = tempVault
+	// 		h := big.NewInt(0).SetUint64(beaconHeight)
+	// 		newTxReqID := common.HashH(append(action.TxReqID.Bytes(), common.IntToBytes(index)...))
+	// 		burningInst := []string{
+	// 			strconv.Itoa(burningMetaType),
+	// 			strconv.Itoa(int(common.BridgeShardID)),
+	// 			base58.Base58Check{}.Encode(externalTokenID, 0x00),
+	// 			data.RemoteAddress,
+	// 			base58.Base58Check{}.Encode(unshieldAmount.Bytes(), 0x00),
+	// 			newTxReqID.String(),
+	// 			base58.Base58Check{}.Encode(data.IncTokenID[:], 0x00),
+	// 			base58.Base58Check{}.Encode(h.Bytes(), 0x00),
+	// 		}
+	// 		burningInsts = append(burningInsts, burningInst)
+	// 		//TODO: 0xkraken review
+	// 		acceptedUnshieldRequestData := metadataBridge.AcceptedUnshieldRequestData{
+	// 			BurningAmount:  data.BurningAmount,
+	// 			ReceivedAmount: receivedAmount,
+	// 			IncTokenID:     data.IncTokenID,
+	// 		}
+	// 		acceptedUnshieldRequestDatas = append(acceptedUnshieldRequestDatas, acceptedUnshieldRequestData)
+	// 	default:
+	// 		errorType = NotFoundNetworkIDError
+	// 		err = errors.New("Not found networkID")
+	// 		burningInsts = [][]string{}
+	// 		return
+	// 	}
+	// }
+	// clonedState.unifiedTokenVaults[meta.UnifiedTokenID] = vaults
+
+	// acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{
+	// 	UnifiedTokenID: meta.UnifiedTokenID,
+	// 	TxReqID:        action.TxReqID,
+	// 	Data:           acceptedUnshieldRequestDatas,
+	// }
+	// rejectedContent, e := json.Marshal(acceptedContent)
+	// if e != nil {
+	// 	err = e
+	// 	errorType = OtherError
+	// 	burningInsts = [][]string{}
+	// 	return
+	// }
+	// contents = append(contents, rejectedContent)
+
+	// return
 }
 
 func (sp *stateProducer) addToken(
