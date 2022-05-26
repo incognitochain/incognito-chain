@@ -13,24 +13,12 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type RejectedUnshieldRequest struct {
-	UnifiedTokenID common.Hash         `json:"UnifiedTokenID"`
-	Amount         uint64              `json:"Amount"`
-	Receiver       privacy.OTAReceiver `json:"Receiver"`
-}
-
-type AcceptedInstUnshieldRequest struct {
-	UnifiedTokenID common.Hash                   `json:"UnifiedTokenID"`
-	IsDepositToSC  bool                          `json:"IsDepositToSC"`
-	TxReqID        common.Hash                   `json:"TxReqID"`
-	Data           []AcceptedUnshieldRequestData `json:"Data"`
-	IsWaiting      bool                          `json:"IsWaiting"`
-}
-
-type AcceptedUnshieldRequestData struct {
-	BurningAmount  uint64      `json:"BurningAmount"`
-	ReceivedAmount uint64      `json:"ReceivedAmount"`
-	IncTokenID     common.Hash `json:"IncTokenID"`
+type UnshieldRequest struct {
+	UnifiedTokenID common.Hash           `json:"UnifiedTokenID"`
+	Data           []UnshieldRequestData `json:"Data"`
+	Receiver       privacy.OTAReceiver   `json:"Receiver"`
+	IsDepositToSC  bool                  `json:"IsDepositToSC"`
+	metadataCommon.MetadataBase
 }
 
 type UnshieldRequestData struct {
@@ -40,12 +28,16 @@ type UnshieldRequestData struct {
 	RemoteAddress     string      `json:"RemoteAddress"`
 }
 
-type UnshieldRequest struct {
-	UnifiedTokenID common.Hash           `json:"UnifiedTokenID"`
-	Data           []UnshieldRequestData `json:"Data"`
-	Receiver       privacy.OTAReceiver   `json:"Receiver"`
-	IsDepositToSC  bool                  `json:"IsDepositToSC"`
-	metadataCommon.MetadataBase
+type RejectedUnshieldRequest struct {
+	UnifiedTokenID common.Hash         `json:"UnifiedTokenID"`
+	Amount         uint64              `json:"Amount"`
+	Receiver       privacy.OTAReceiver `json:"Receiver"`
+}
+
+type AcceptedUnshieldRequestInst struct {
+	UnifiedTokenID     common.Hash                          `json:"UnifiedTokenID"`
+	IsDepositToSC      bool                                 `json:"IsDepositToSC"`
+	WaitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq `json:"WaitingUnshieldReq"`
 }
 
 func NewUnshieldRequest() *UnshieldRequest {

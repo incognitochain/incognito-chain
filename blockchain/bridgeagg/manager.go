@@ -130,7 +130,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.BurningUnifiedTokenRequestMeta:
-			m.state, err = m.processor.unshield(*inst, m.state, sDB)
+			m.state, updatingInfoByTokenID, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return err

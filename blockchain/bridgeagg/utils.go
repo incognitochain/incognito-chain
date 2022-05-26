@@ -275,13 +275,18 @@ func buildAcceptedUnshieldInst(waitingUnshieldReq *statedb.BridgeAggWaitingUnshi
 }
 
 // buildAddWaitingUnshieldInst returns processing unshield instructions
-func buildUnshieldInst(waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, status string, shardID byte) []string {
-	waitingUnshieldReqBytes, _ := json.Marshal(waitingUnshieldReq)
+func buildUnshieldInst(unifiedTokenID common.Hash, isDepositToSC bool, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, status string, shardID byte) []string {
+	acceptedUnshieldInst := metadataBridge.AcceptedUnshieldRequestInst{
+		UnifiedTokenID:     unifiedTokenID,
+		IsDepositToSC:      isDepositToSC,
+		WaitingUnshieldReq: waitingUnshieldReq,
+	}
+	acceptedUnshieldInstBytes, _ := json.Marshal(acceptedUnshieldInst)
 	inst := metadataCommon.NewInstructionWithValue(
 		metadataCommon.BurningUnifiedTokenRequestMeta,
 		status,
 		shardID,
-		base64.StdEncoding.EncodeToString(waitingUnshieldReqBytes),
+		base64.StdEncoding.EncodeToString(acceptedUnshieldInstBytes),
 	)
 	return inst.StringSlice()
 }
@@ -1097,9 +1102,9 @@ func updateStateForNewWaitingUnshieldReq(
 
 func updateStateForNewMatchedUnshieldReq(
 	vaults map[common.Hash]*statedb.BridgeAggVaultState,
-	unshieldReq metadataBridge.UnshieldRequest,
+	waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq,
 ) map[common.Hash]*statedb.BridgeAggVaultState {
-	for _, data := range unshieldReq.Data {
+	for _, data := range waitingUnshieldReq.GetData() {
 		v := vaults[data.IncTokenID]
 		v.SetAmount(v.Amount() - data.BurningAmount)
 		vaults[data.IncTokenID] = v
@@ -1109,7 +1114,7 @@ func updateStateForNewMatchedUnshieldReq(
 
 func updateStateForMatchedWaitUnshieldReq(
 	vaults map[common.Hash]*statedb.BridgeAggVaultState,
-	waitUnshieldReq statedb.BridgeAggWaitingUnshieldReq,
+	waitUnshieldReq *statedb.BridgeAggWaitingUnshieldReq,
 ) (map[common.Hash]*statedb.BridgeAggVaultState, error) {
 	for _, data := range waitUnshieldReq.GetData() {
 		v := vaults[data.IncTokenID]
@@ -1123,4 +1128,69 @@ func updateStateForMatchedWaitUnshieldReq(
 		vaults[data.IncTokenID] = v
 	}
 	return vaults, nil
+}
+
+func updateStateForUnshield(
+	state *State,
+	unifiedTokenID common.Hash,
+	waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq,
+	statusStr string,
+	idxDeletedWaitingUnshieldReq int,
+) (*State, error) {
+	vaults, err := state.CloneVaultsByUnifiedTokenID(unifiedTokenID)
+	if err != nil {
+		return state, err
+	}
+
+	switch statusStr {
+	// add new unshield req to waiting list
+	case common.WaitingStatusStr:
+		{
+			// add to waiting list
+			state = addWaitingUnshieldReq(state, waitingUnshieldReq, unifiedTokenID)
+			// update vault state
+			state.unifiedTokenVaults[unifiedTokenID] = updateStateForNewWaitingUnshieldReq(vaults, waitingUnshieldReq)
+		}
+
+	// a unshield req in waiting list is filled
+	case common.FilledStatusStr:
+		{
+			// delete from waiting list
+			state, err = deleteWaitingUnshieldReq(state, waitingUnshieldReq, unifiedTokenID, idxDeletedWaitingUnshieldReq)
+			if err != nil {
+				return state, err
+			}
+			// update vault state
+			updatedVaults, err := updateStateForMatchedWaitUnshieldReq(vaults, waitingUnshieldReq)
+			if err != nil {
+				return state, err
+			}
+			state.unifiedTokenVaults[unifiedTokenID] = updatedVaults
+		}
+	// new unshield req is accepted with current state
+	case common.AcceptedStatusStr:
+		{
+			state.unifiedTokenVaults[unifiedTokenID] = updateStateForNewMatchedUnshieldReq(vaults, waitingUnshieldReq)
+		}
+	default:
+		{
+			return state, errors.New("Invalid unshield instruction status")
+		}
+	}
+	return state, nil
+}
+
+func getStatusByteFromStatuStr(statusStr string) (byte, error) {
+	switch statusStr {
+	case common.RejectedStatusStr:
+		return common.RejectedStatusByte, nil
+	case common.AcceptedStatusStr:
+		return common.AcceptedStatusByte, nil
+	case common.WaitingStatusStr:
+		return common.WaitingStatusByte, nil
+	case common.FilledStatusStr:
+		return common.FilledStatusByte, nil
+	default:
+		return 0, errors.New("Invalid status string")
+	}
 }

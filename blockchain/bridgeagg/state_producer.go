@@ -399,49 +399,42 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 	beaconHeight uint64,
 	stateDB *statedb.StateDB,
 ) ([][]string, *State, error) {
-	cloneState := state.Clone()
-	clonedUnifiedTokenVaults := cloneState.unifiedTokenVaults
+	clonedState := state.Clone()
 	insts := [][]string{}
+	var err error
 
 	for unifiedTokenID, waitingUnshieldReqs := range state.waitingUnshieldReqs {
-		vaults, ok := clonedUnifiedTokenVaults[unifiedTokenID]
-		if !ok {
-			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", unifiedTokenID)
-			continue
-		}
 
 		for i, waitingUnshieldReq := range waitingUnshieldReqs {
+			vaults, ok := clonedState.unifiedTokenVaults[unifiedTokenID]
+			if !ok {
+				Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", unifiedTokenID)
+				continue
+			}
+
 			// check vault enough for process this waiting unshield req
 			isEnoughVault := checkVaultForWaitUnshieldReq(vaults, waitingUnshieldReq.GetData())
 			if !isEnoughVault {
 				continue
 			}
 
-			// update vault state
-			updatedVaults, err := updateStateForMatchedWaitUnshieldReq(vaults, *waitingUnshieldReq)
+			// update state
+			clonedState, err = updateStateForUnshield(clonedState, unifiedTokenID, waitingUnshieldReq, common.FilledStatusStr, i)
 			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Update vault state error: %v", err)
+				Logger.log.Errorf("[BridgeAgg] Update state error: %v", err)
 				continue
 			}
-
-			// delete waiting unshield req
-			cloneState, err = deleteWaitingUnshieldReq(cloneState, waitingUnshieldReq, unifiedTokenID, i)
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Update vault state error: %v", err)
-				continue
-			}
-			vaults = updatedVaults
 
 			// build burning confirm insts
 			burningConfirmInsts := buildBurningConfirmInsts(waitingUnshieldReq)
 			// build unshield inst with filled status
-			filledInst := buildUnshieldInst(waitingUnshieldReq, common.FilledStatusStr, common.BridgeShardID)
+			// unshield requests in waiting list isDepositToSC is always false
+			filledInst := buildUnshieldInst(unifiedTokenID, false, waitingUnshieldReq, common.FilledStatusStr, common.BridgeShardID)
 			insts = append(burningConfirmInsts, filledInst)
 		}
-		clonedUnifiedTokenVaults[unifiedTokenID] = vaults
 	}
 
-	return insts, cloneState, nil
+	return insts, clonedState, nil
 }
 
 func (sp *stateProducer) unshield(
@@ -483,27 +476,27 @@ func (sp *stateProducer) unshield(
 	}
 
 	waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, action.TxReqID, beaconHeight)
+	statusStr := common.WaitingStatusStr
 
 	if isEnoughVault {
+		statusStr = common.AcceptedStatusStr
+
 		// build burning confirm insts
 		burningConfirmInsts = buildBurningConfirmInsts(waitingUnshieldReq)
-		// build unshield inst with accepted status
-		acceptedInst := buildUnshieldInst(waitingUnshieldReq, common.AcceptedStatusStr, shardID)
-		insts = append(burningConfirmInsts, acceptedInst)
+		insts = append(insts, burningConfirmInsts...)
+	}
 
-		// update vault state
-		clonedState.unifiedTokenVaults[meta.UnifiedTokenID] = updateStateForNewMatchedUnshieldReq(vaults, *meta)
-	} else {
-		// build unshield inst with waiting status
-		waitingInst := buildUnshieldInst(waitingUnshieldReq, common.WaitingStatusStr, shardID)
-		insts = append(insts, waitingInst)
+	// build unshield inst with accepted/waiting status
+	unshieldInst := buildUnshieldInst(meta.UnifiedTokenID, meta.IsDepositToSC, waitingUnshieldReq, statusStr, shardID)
+	insts = append(insts, unshieldInst)
 
-		// update state
-		// add new unshield req into waiting list
-		clonedState = addWaitingUnshieldReq(clonedState, waitingUnshieldReq, meta.UnifiedTokenID)
-
-		// update vault state
-		clonedState.unifiedTokenVaults[meta.UnifiedTokenID] = updateStateForNewWaitingUnshieldReq(vaults, waitingUnshieldReq)
+	// update state
+	clonedState, err = updateStateForUnshield(clonedState, meta.UnifiedTokenID, waitingUnshieldReq, statusStr, -1)
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] Error when updating state for unshield: %v", err)
+		rejectedInst := buildRejectedUnshieldReqInst(
+			*meta, shardID, action.TxReqID, ProcessUnshieldError)
+		return [][]string{rejectedInst}, state, nil
 	}
 
 	return insts, clonedState, nil
