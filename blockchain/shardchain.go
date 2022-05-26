@@ -356,6 +356,16 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 //this get consensus data for beacon
 func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
+	finalViewBlock := chain.GetFinalView().GetBlock().(*types.ShardBlock)
+	consensusData[chain.shardID] = types.BlockConsensusData{
+		BlockHash:      *finalViewBlock.Hash(),
+		BlockHeight:    finalViewBlock.GetHeight(),
+		FinalityHeight: finalViewBlock.GetFinalityHeight(),
+		Proposer:       finalViewBlock.GetProposer(),
+		ProposerTime:   finalViewBlock.GetProposeTime(),
+		ValidationData: finalViewBlock.ValidationData,
+	}
+
 	rawBlk, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *chain.Blockchain.BeaconChain.multiView.GetExpectedFinalView().GetHash())
 	if err != nil {
 		panic(err)
