@@ -376,14 +376,14 @@ func ValidateDoubleShieldProof(
 	uniqTx := append(proof.BlockHash[:], []byte(strconv.Itoa(int(proof.TxIndex)))...)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
-		return false, uniqTx, fmt.Errorf("WARNING: already issued for the hash in current block: ", uniqTx)
+		return false, uniqTx, fmt.Errorf("WARNING: tx %v already issued for the hash in current block: ", uniqTx)
 	}
 	isIssued, err := isTxHashIssued(stateDB, uniqTx)
 	if err != nil {
-		return false, uniqTx, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
+		return false, uniqTx, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: %v ", err)
 	}
 	if isIssued {
-		return false, uniqTx, fmt.Errorf("WARNING: already issued for the hash in previous blocks: ", uniqTx)
+		return false, uniqTx, fmt.Errorf("WARNING: tx %v already issued for the hash in previous blocks: ", uniqTx)
 	}
 
 	return true, uniqTx, nil

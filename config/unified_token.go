@@ -23,6 +23,7 @@ func AbortUnifiedToken() {
 	unifiedToken = make(map[uint64]map[common.Hash]map[common.Hash]Vault)
 }
 
+// SetUnifiedToken
 // DO NOT use this function for development process
 func SetUnifiedToken(UnifiedToken map[uint64]map[common.Hash]map[common.Hash]Vault) {
 	unifiedToken = UnifiedToken

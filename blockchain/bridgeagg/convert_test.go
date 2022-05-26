@@ -16,16 +16,30 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type ConvertTestData struct {
+	TestData
+	Metadatas []*metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadatas"`
+}
+
+type ConvertExpectedResult struct {
+	ExpectedResult
+	Statuses []ConvertStatus `json:"statuses"`
+}
+
+type ConvertActualResult struct {
+	ActualResult
+	Statuses []ConvertStatus
+}
+
 type ConvertTestCase struct {
-	Metadatas        []*metadataBridge.ConvertTokenToUnifiedTokenRequest `json:"metadatas"`
-	ExpectedStatuses []ConvertStatus                                     `json:"expected_statuses"`
-	ActualStatues    []ConvertStatus
-	TestCase
+	Data           ConvertTestData       `json:"data"`
+	ExpectedResult ConvertExpectedResult `json:"expected_result"`
 }
 
 type ConvertTestSuite struct {
 	testCases map[string]*ConvertTestCase
 	TestSuite
+	actualResults map[string]ConvertActualResult
 }
 
 func (c *ConvertTestSuite) SetupSuite() {
@@ -37,7 +51,7 @@ func (c *ConvertTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	c.actualResults = make(map[string]ActualResult)
+	c.actualResults = make(map[string]ConvertActualResult)
 }
 
 func (c *ConvertTestSuite) SetupTest() {
@@ -56,21 +70,19 @@ func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
 	c.currentTestCaseName = testName
 	testCase := c.testCases[c.currentTestCaseName]
 	actions := []string{}
-	for i, v := range testCase.Metadatas {
-		content, err := metadataCommon.NewActionWithValue(v, testCase.TxIDs[i], nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
+	for i, v := range testCase.Data.Metadatas {
+		content, err := metadataCommon.NewActionWithValue(v, testCase.Data.TxIDs[i], nil).StringSlice(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta)
 		if err != nil {
 			panic(err)
 		}
 		actions = append(actions, content[1])
 	}
-	for tokenID, v := range testCase.BridgeTokensInfo {
+	for tokenID, v := range testCase.Data.BridgeTokensInfo {
 		err := statedb.UpdateBridgeTokenInfo(c.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
 		}
 	}
-
-	assert := c.Assert()
 	env := &stateEnvironment{
 		beaconHeight: 10,
 		stateDBs: map[int]*statedb.StateDB{
@@ -78,21 +90,30 @@ func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
 		},
 		convertActions: [][]string{actions},
 	}
-	state := NewState()
-	state.unifiedTokenVaults = testCase.UnifiedTokens
-	producerState := state.Clone()
-	processorState := state.Clone()
-	actualInstructions, _, err := producerState.BuildInstructions(env)
+	c.testCases[c.currentTestCaseName].Data.env = env
+}
+
+func (c *ConvertTestSuite) test() {
+	testCase := c.testCases[c.currentTestCaseName]
+	assert := c.Assert()
+	producerState := testCase.Data.State.Clone()
+	producerManager := NewManagerWithValue(producerState)
+	processorState := testCase.Data.State.Clone()
+	processorManager := NewManagerWithValue(processorState)
+	actualInstructions, _, err := producerManager.BuildInstructions(testCase.Data.env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, c.sDB)
+	err = processorManager.Process(actualInstructions, c.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
 
-	c.actualResults[testName] = ActualResult{
-		Instructions:   actualInstructions,
-		ProducerState:  producerState,
-		ProcessorState: processorState,
+	c.actualResults[c.currentTestCaseName] = ConvertActualResult{
+		ActualResult: ActualResult{
+			Instructions:   actualInstructions,
+			ProducerState:  producerState,
+			ProcessorState: processorState,
+		},
 	}
-	for _, txID := range testCase.TxIDs {
+
+	for _, txID := range testCase.Data.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
 			c.sDB,
 			statedb.BridgeAggConvertStatusPrefix(),
@@ -102,73 +123,53 @@ func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
 		var status ConvertStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		c.testCases[c.currentTestCaseName].ActualStatues = append(c.testCases[c.currentTestCaseName].ActualStatues, status)
+		c.testCases[c.currentTestCaseName].ExpectedResult.Statuses = append(c.testCases[c.currentTestCaseName].ExpectedResult.Statuses, status)
 	}
 }
 
 func (c *ConvertTestSuite) TestAccepted() {
+	c.test()
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseName]
 	actualResult := c.actualResults[c.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenVaults = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	for k, v := range actualResult.ProducerState.unifiedTokenVaults {
-		assert.Equal(expectedState.unifiedTokenVaults[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
 }
 
-/*func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {*/
-/*assert := c.Assert()*/
-/*testCase := c.testCases[c.currentTestCaseName]*/
-/*actualResult := c.actualResults[c.currentTestCaseName]*/
-/*expectedState := NewState()*/
-/*expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens*/
-/*expectedStatuses := testCase.ExpectedStatuses*/
-/*actualStatuses := testCase.ActualStatues*/
-/*assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())*/
-/*for k, v := range actualResult.ProducerState.unifiedTokenInfos {*/
-/*assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())*/
-/*}*/
-/*assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())*/
-/*assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())*/
-/*}*/
+func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
+	c.test()
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+}
 
-/*func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {*/
-/*assert := c.Assert()*/
-/*testCase := c.testCases[c.currentTestCaseName]*/
-/*actualResult := c.actualResults[c.currentTestCaseName]*/
-/*expectedState := NewState()*/
-/*expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens*/
-/*expectedStatuses := testCase.ExpectedStatuses*/
-/*actualStatuses := testCase.ActualStatues*/
-/*assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())*/
-/*for k, v := range actualResult.ProducerState.unifiedTokenInfos {*/
-/*assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())*/
-/*}*/
-/*assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())*/
-/*assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())*/
-/*}*/
+func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
+	c.test()
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+}
 
-/*func (c *ConvertTestSuite) TestRejectedThenAccepted() {*/
-/*assert := c.Assert()*/
-/*testCase := c.testCases[c.currentTestCaseName]*/
-/*actualResult := c.actualResults[c.currentTestCaseName]*/
-/*expectedState := NewState()*/
-/*expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens*/
-/*expectedStatuses := testCase.ExpectedStatuses*/
-/*actualStatuses := testCase.ActualStatues*/
-/*assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())*/
-/*for k, v := range actualResult.ProducerState.unifiedTokenInfos {*/
-/*assert.Equal(expectedState.unifiedTokenInfos[k], v, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())*/
-/*}*/
-/*assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())*/
-/*assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())*/
-/*}*/
+func (c *ConvertTestSuite) TestRejectedThenAccepted() {
+	c.test()
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
+	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
+	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
+	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+}
 
 func TestConvertTestSuite(t *testing.T) {
 	suite.Run(t, new(ConvertTestSuite))

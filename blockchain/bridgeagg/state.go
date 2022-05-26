@@ -1,6 +1,7 @@
 package bridgeagg
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -17,10 +18,12 @@ type State struct {
 	deletedWaitingUnshieldReqKeyHashes []common.Hash
 }
 
+// UnifiedTokenVaults read only function do not write to result of function
 func (s *State) UnifiedTokenVaults() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
 	return s.unifiedTokenVaults
 }
 
+// WaitingUnshieldReqs read only function do not write to result of function
 func (s *State) WaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
 	return s.waitingUnshieldReqs
 }
@@ -162,4 +165,40 @@ func (s *State) CloneVaultsByUnifiedTokenID(unifiedTokenID common.Hash) (map[com
 	} else {
 		return nil, fmt.Errorf("Can't find unifiedTokenID %s", unifiedTokenID.String())
 	}
+}
+
+func (s *State) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
+		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
+		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
+	}{
+		UnifiedTokenVaults:                 s.unifiedTokenVaults,
+		WaitingUnshieldReqs:                s.waitingUnshieldReqs,
+		NewWaitingUnshieldReqs:             s.newWaitingUnshieldReqs,
+		DeletedWaitingUnshieldReqKeyHashes: s.deletedWaitingUnshieldReqKeyHashes,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (s *State) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
+		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
+		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	s.unifiedTokenVaults = temp.UnifiedTokenVaults
+	s.waitingUnshieldReqs = temp.WaitingUnshieldReqs
+	s.newWaitingUnshieldReqs = temp.NewWaitingUnshieldReqs
+	s.deletedWaitingUnshieldReqKeyHashes = temp.DeletedWaitingUnshieldReqKeyHashes
+	return nil
 }
