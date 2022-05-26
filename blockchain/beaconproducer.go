@@ -328,18 +328,17 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	}
 
 	//build bridge instruction
-	if _, ok := curView.TriggeredFeature[INSTANT_FINALITY_FEATURE]; ok {
-		Logger.log.Info("[Bridge Debug] Generate instruction instant finality")
+	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
 		if blockchain.shouldBeaconGenerateBridgeInstruction(newBeaconBlock) {
-			Logger.log.Info("[Bridge Debug] Generate instruction instant finality valid condition")
 			//get data from checkpoint to final view
+			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
 			retrievedShardBlockForBridge, err := blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildBridgeError, err)
 			}
 			bridgeInstructions = blockchain.generateBridgeInstruction(curView, retrievedShardBlockForBridge, newBeaconBlock)
-			Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 		}
+		Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 	} else {
 		Logger.log.Info("[Bridge Debug] Generate instruction normal")
 		bridgeInstructions = blockchain.generateBridgeInstruction(curView, allShardBlocks, newBeaconBlock)

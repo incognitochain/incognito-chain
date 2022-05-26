@@ -575,10 +575,11 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		if blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock) {
 			beaconBestState.LastBlockProcessBridge = blockchain.GetFinalBeaconHeight()
 		}
-		Logger.log.Info("[Bridge Debug] LastBlockProcessBridge instant finality", blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock), beaconBestState.LastBlockProcessBridge)
+		Logger.log.Infof("[Bridge Debug] Update LastBlockProcessBridge instant finality %v, set to %v, current process block %v",
+			blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock), beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
 	} else {
 		beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight()
-		Logger.log.Info("[Bridge Debug] LastBlockProcessBridge normal", beaconBestState.LastBlockProcessBridge)
+		Logger.log.Info("[Bridge Debug] Update LastBlockProcessBridge normal", beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
 	}
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {

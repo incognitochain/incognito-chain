@@ -293,6 +293,8 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 		if beaconBlk.GetHeight() < from {
 			break
 		}
+		Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v", beaconBlk.GetHeight())
+
 		for sid, shardStates := range beaconBlk.Body.ShardState {
 			shardBlocks := []*types.ShardBlock{}
 			for _, sState := range shardStates {
@@ -300,7 +302,6 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 				if shardBlk == nil {
 					return nil, NewBlockChainError(rawdbv2.GetShardBlockByHashError, fmt.Errorf("Cannot find shard block %v", sState.Hash))
 				}
-				Logger.log.Infof("[Bridge Debug] Checking bridge from sid %v block %v", sid, shardBlk.GetHeight())
 				shardBlocks = append(shardBlocks, shardBlk)
 			}
 			allShardBlock[sid] = append(shardBlocks, allShardBlock[sid]...)
