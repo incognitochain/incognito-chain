@@ -566,9 +566,13 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 				}
-
 			}
 		}
+	}
+
+	//update
+	if blockVersion >= types.INSTANT_FINALITY_VERSION {
+
 	}
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {

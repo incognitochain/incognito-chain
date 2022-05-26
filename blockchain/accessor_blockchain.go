@@ -282,6 +282,12 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
 }
 
+//from finalview, backward to certain blockchain
+func (blockchain *BlockChain) GetShardBlockForBridge(from common.Hash, to uint64) map[byte][]*types.ShardBlock {
+
+	return nil
+}
+
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
