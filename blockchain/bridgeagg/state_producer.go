@@ -131,7 +131,7 @@ func (sp *stateProducer) shield(
 		// check incTokenID
 		vault, ok := clonedVaults[shieldData.IncTokenID]
 		if !ok || vault == nil {
-			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
+			Logger.log.Errorf("[BridgeAgg] Vault IncTokenID is not found: %v", shieldData.IncTokenID)
 			rejectedInst := buildRejectedInst(
 				metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError, []byte{})
 			return [][]string{rejectedInst}, state, ac, err
