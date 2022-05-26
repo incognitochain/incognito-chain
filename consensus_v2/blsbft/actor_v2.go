@@ -633,7 +633,7 @@ func (a *actorV2) run() error {
 							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
-							a.chain.GetBlockConsensusData(createdBlk),
+							a.chain.GetBlockConsensusData(),
 						)
 						bftProposeMessage, err := a.ruleDirector.builder.ProposeMessageRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
