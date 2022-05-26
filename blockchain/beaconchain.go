@@ -272,8 +272,17 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 }
 
 //this get consensus data for all latest shard state
-func (chain *BeaconChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
+func (chain *BeaconChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
+	finalViewBlock := chain.GetFinalView().GetBlock().(*types.BeaconBlock)
+	consensusData[-1] = types.BlockConsensusData{
+		BlockHash:      *finalViewBlock.Hash(),
+		BlockHeight:    finalViewBlock.GetHeight(),
+		FinalityHeight: finalViewBlock.GetFinalityHeight(),
+		Proposer:       finalViewBlock.GetProposer(),
+		ProposerTime:   finalViewBlock.GetProposeTime(),
+		ValidationData: finalViewBlock.ValidationData,
+	}
 	for sid, sChain := range chain.Blockchain.ShardChain {
 		shardBlk := sChain.multiView.GetExpectedFinalView().GetBlock().(*types.ShardBlock)
 		consensusData[int(sid)] = types.BlockConsensusData{

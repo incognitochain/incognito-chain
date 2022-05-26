@@ -633,7 +633,7 @@ func (a *actorV2) run() error {
 							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
-							a.chain.GetBlockConsensusData(createdBlk),
+							a.chain.GetBlockConsensusData(),
 						)
 						bftProposeMessage, err := a.ruleDirector.builder.ProposeMessageRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
@@ -1266,14 +1266,28 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	//update consensus data
 	if proposeMsg.BestBlockConsensusData != nil {
 		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
-			if sid == -1 && a.chainID >= 0 {
-				if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-					a.logger.Error(err)
+			if sid == -1 {
+				if a.chain.IsBeaconChain() {
+					if err = a.chain.(*blockchain.BeaconChain).VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				} else {
+					if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
 				}
-			} else if sid >= 0 && a.chainID == -1 {
-				if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-					a.logger.Error(err)
+
+			} else if sid >= 0 {
+				if a.chain.IsBeaconChain() {
+					if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				} else {
+					if err = a.chain.(*blockchain.ShardChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
 				}
+
 			}
 		}
 	}

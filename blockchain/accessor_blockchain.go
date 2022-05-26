@@ -282,6 +282,35 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
 }
 
+//traverse finalview back to certain block height from beacon chain
+func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash) (map[byte][]*types.ShardBlock, error) {
+	beaconBlk, _, _ := blockchain.GetBeaconBlockByHash(to)
+	allShardBlock := map[byte][]*types.ShardBlock{}
+	for {
+		if beaconBlk == nil {
+			return nil, NewBlockChainError(rawdbv2.GetBeaconBlockByHashError, fmt.Errorf("Cannot find beacon block %v", to))
+		}
+		if beaconBlk.GetHeight() < from {
+			break
+		}
+		Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v", beaconBlk.GetHeight())
+
+		for sid, shardStates := range beaconBlk.Body.ShardState {
+			shardBlocks := []*types.ShardBlock{}
+			for _, sState := range shardStates {
+				shardBlk, _, _ := blockchain.GetShardBlockByHash(sState.Hash)
+				if shardBlk == nil {
+					return nil, NewBlockChainError(rawdbv2.GetShardBlockByHashError, fmt.Errorf("Cannot find shard block %v", sState.Hash))
+				}
+				shardBlocks = append(shardBlocks, shardBlk)
+			}
+			allShardBlock[sid] = append(shardBlocks, allShardBlock[sid]...)
+		}
+		beaconBlk, _, _ = blockchain.GetBeaconBlockByHash(beaconBlk.GetPrevHash())
+	}
+	return allShardBlock, nil
+}
+
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {

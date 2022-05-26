@@ -566,9 +566,20 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 				}
-
 			}
 		}
+	}
+
+	//update bridge process
+	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock) {
+			beaconBestState.LastBlockProcessBridge = blockchain.GetFinalBeaconHeight()
+		}
+		Logger.log.Infof("[Bridge Debug] Update LastBlockProcessBridge instant finality %v, set to %v, current process block %v",
+			blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock), beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
+	} else {
+		beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight()
+		Logger.log.Info("[Bridge Debug] Update LastBlockProcessBridge normal", beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
 	}
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {

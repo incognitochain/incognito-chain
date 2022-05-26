@@ -354,8 +354,18 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 }
 
 //this get consensus data for beacon
-func (chain *ShardChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
+func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
+	finalViewBlock := chain.GetFinalView().GetBlock().(*types.ShardBlock)
+	consensusData[chain.shardID] = types.BlockConsensusData{
+		BlockHash:      *finalViewBlock.Hash(),
+		BlockHeight:    finalViewBlock.GetHeight(),
+		FinalityHeight: finalViewBlock.GetFinalityHeight(),
+		Proposer:       finalViewBlock.GetProposer(),
+		ProposerTime:   finalViewBlock.GetProposeTime(),
+		ValidationData: finalViewBlock.ValidationData,
+	}
+
 	rawBlk, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *chain.Blockchain.BeaconChain.multiView.GetExpectedFinalView().GetHash())
 	if err != nil {
 		panic(err)
@@ -377,6 +387,7 @@ func (chain *ShardChain) GetBlockConsensusData(blk types.BlockInterface) map[int
 	return consensusData
 }
 
+//this is only call when insert block successfully, the previous block is replace
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
 	if hasBlock, err := chain.Blockchain.HasShardBlockByHash(previousBlockHash); err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
