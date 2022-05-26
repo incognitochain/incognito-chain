@@ -3,9 +3,9 @@ package blockchain
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/eteu-technologies/near-api-go/pkg/types/hash"
 	"math/big"
 	"strconv"
 
@@ -235,15 +235,16 @@ func (blockchain *BlockChain) buildInstructionsForIssuingWasmBridgeReq(
 
 	receivingShardID, err := metadataBridge.VerifyWasmData(
 		stateDBs[common.BeaconChainID], listTxUsed, isTxHashIssued,
-		issuingWasmBridgeReqAction.Meta.TxHash,
+		md.TxHash,
 		issuingWasmBridgeReqAction.IncognitoAddr)
-	//thachtb todo: update function
-	token, err := hex.DecodeString(issuingWasmBridgeReqAction.TokenId)
+	token := []byte(issuingWasmBridgeReqAction.TokenId)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occurred while decode wasm token id: ", err)
 		return nil, nil, nil
 	}
-	uniqTx, err := hex.DecodeString(md.TxHash)
+	uniqTxCryptoHash, err := hash.NewCryptoHashFromBase58(md.TxHash)
+	uniqTxTemp := [32]byte(uniqTxCryptoHash)
+	uniqTx := uniqTxTemp[:]
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occurred while decode wasm shielding tx hash: ", err)
 		return nil, nil, nil

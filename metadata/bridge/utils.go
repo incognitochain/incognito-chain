@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/eteu-technologies/near-api-go/pkg/client/block"
@@ -186,10 +185,12 @@ func VerifyWasmData(
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
 	externalShieldTx string, incognitoAddress string,
 ) (byte, error) {
-	uniqTx, err := hex.DecodeString(externalShieldTx)
+	uniqTxCryptoHash, err := hash.NewCryptoHashFromBase58(externalShieldTx)
 	if err != nil {
-		return 0, fmt.Errorf("WARNING: invalid external shield tx request %v", uniqTx)
+		return 0, fmt.Errorf("WARNING: invalid external shield tx request %v", externalShieldTx)
 	}
+	uniqTxTemp := [32]byte(uniqTxCryptoHash)
+	uniqTx := uniqTxTemp[:]
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
 		return 0, fmt.Errorf("WARNING: already issued for the hash in current block: %v", uniqTx)
@@ -355,12 +356,11 @@ func VerifyWasmShieldTxId(
 	minWasmConfirmationBlocks int,
 	contractId string,
 ) (string, string, uint64, string, error) {
-	txBytes, err := hex.DecodeString(txHash)
+	tx, err := hash.NewCryptoHashFromBase58(txHash)
 	if err != nil {
 		return "", "", 0, "", errors.New("Invalid transaction hash")
 	}
 	ctx := context.Background()
-	tx := hash.NewCryptoHash(txBytes)
 	accountId := "incognito"
 	for _, h := range hosts {
 		rpcClient, err := nearclient.NewClient(h)
@@ -485,7 +485,7 @@ func GetWasmInfoByMetadataType(metadataType int) ([]string, string, int, string,
 
 		return hosts, networkPrefix, minConfirmationBlocks, contractAddress, nil
 	}
-	return nil, "", 0, "", errors.New("Invalid meta data typ")
+	return nil, "", 0, "", errors.New("Invalid meta data type")
 }
 
 func PickAndParseLogMapFromReceiptByContractAddr(
