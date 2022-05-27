@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -69,8 +68,8 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 
 		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix)
-		case strconv.Itoa(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processConvertReq(curView, inst, updatingInfoByTokenID)
+			// case strconv.Itoa(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta):
+			// 	updatingInfoByTokenID, err = blockchain.processConvertReq(curView, inst, updatingInfoByTokenID)
 			// case strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta):
 			// 	updatingInfoByTokenID, err = blockchain.processBurningUnifiedReq(curView, inst, updatingInfoByTokenID)
 
@@ -388,56 +387,56 @@ func decodeContent(content string, action interface{}) error {
 	return json.Unmarshal(contentBytes, &action)
 }
 
-func (blockchain *BlockChain) processConvertReq(
-	curView *BeaconBestState,
-	instruction []string,
-	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
-) (map[common.Hash]metadata.UpdatingInfo, error) {
-	inst := metadataCommon.NewInstruction()
-	err := inst.FromStringSlice(instruction)
-	if err != nil {
-		return nil, err
-	}
-	if inst.Status != common.AcceptedStatusStr {
-		return updatingInfoByTokenID, nil
-	}
-	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-	if err != nil {
-		return nil, err
-	}
-	acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
-	err = json.Unmarshal(contentBytes, &acceptedContent)
-	if err != nil {
-		return nil, err
-	}
-	updatingInfo, found := updatingInfoByTokenID[acceptedContent.TokenID]
-	if found {
-		updatingInfo.DeductAmt += acceptedContent.Amount
-	} else {
-		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:    0,
-			DeductAmt:     acceptedContent.Amount,
-			TokenID:       acceptedContent.TokenID,
-			IsCentralized: false,
-		}
-	}
-	updatingInfoByTokenID[acceptedContent.TokenID] = updatingInfo
+// func (blockchain *BlockChain) processConvertReq(
+// 	curView *BeaconBestState,
+// 	instruction []string,
+// 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+// ) (map[common.Hash]metadata.UpdatingInfo, error) {
+// 	inst := metadataCommon.NewInstruction()
+// 	err := inst.FromStringSlice(instruction)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if inst.Status != common.AcceptedStatusStr {
+// 		return updatingInfoByTokenID, nil
+// 	}
+// 	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
+// 	err = json.Unmarshal(contentBytes, &acceptedContent)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	updatingInfo, found := updatingInfoByTokenID[acceptedContent.TokenID]
+// 	if found {
+// 		updatingInfo.DeductAmt += acceptedContent.Amount
+// 	} else {
+// 		updatingInfo = metadata.UpdatingInfo{
+// 			CountUpAmt:    0,
+// 			DeductAmt:     acceptedContent.Amount,
+// 			TokenID:       acceptedContent.TokenID,
+// 			IsCentralized: false,
+// 		}
+// 	}
+// 	updatingInfoByTokenID[acceptedContent.TokenID] = updatingInfo
 
-	updatingInfo, found = updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
-	if found {
-		updatingInfo.CountUpAmt += acceptedContent.MintAmount
-	} else {
-		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:      acceptedContent.MintAmount,
-			DeductAmt:       0,
-			TokenID:         acceptedContent.UnifiedTokenID,
-			ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),
-			IsCentralized:   false,
-		}
-	}
-	updatingInfoByTokenID[acceptedContent.UnifiedTokenID] = updatingInfo
-	return updatingInfoByTokenID, nil
-}
+// 	updatingInfo, found = updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
+// 	if found {
+// 		updatingInfo.CountUpAmt += acceptedContent.ConvertPUnifiedAmount
+// 	} else {
+// 		updatingInfo = metadata.UpdatingInfo{
+// 			CountUpAmt:      acceptedContent.ConvertPUnifiedAmount,
+// 			DeductAmt:       0,
+// 			TokenID:         acceptedContent.UnifiedTokenID,
+// 			ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),
+// 			IsCentralized:   false,
+// 		}
+// 	}
+// 	updatingInfoByTokenID[acceptedContent.UnifiedTokenID] = updatingInfo
+// 	return updatingInfoByTokenID, nil
+// }
 
 // func (blockchain *BlockChain) processBurningUnifiedReq(
 // 	curView *BeaconBestState,

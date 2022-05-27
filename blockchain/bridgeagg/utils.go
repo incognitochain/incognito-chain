@@ -50,8 +50,10 @@ type ModifyRewardReserveStatus struct {
 }
 
 type ConvertStatus struct {
-	Status    byte `json:"Status"`
-	ErrorCode int  `json:"ErrorCode,omitempty"`
+	Status                byte   `json:"Status"`
+	ConvertPUnifiedAmount uint64 `json:"ConvertPUnifiedAmount"`
+	Reward                uint64 `json:"Reward"`
+	ErrorCode             int    `json:"ErrorCode,omitempty"`
 }
 
 type VaultChange struct {
@@ -228,6 +230,24 @@ func buildAcceptedInst(metaType int, shardID byte, contents [][]byte) [][]string
 	return insts
 }
 
+func buildRejectedConvertReqInst(meta metadataBridge.ConvertTokenToUnifiedTokenRequest, shardID byte, txReqID common.Hash, errorType int) []string {
+	rejectedUnshieldRequest := metadataBridge.RejectedConvertTokenToUnifiedToken{
+		TokenID:  meta.TokenID,
+		Amount:   meta.Amount,
+		Receiver: meta.Receiver,
+	}
+	rejectedContent, _ := json.Marshal(rejectedUnshieldRequest)
+
+	rejectContentStr, _ := metadataCommon.NewRejectContentWithValue(txReqID, ErrCodeMessage[errorType].Code, rejectedContent).String()
+	rejectedInst := metadataCommon.NewInstructionWithValue(
+		metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
+		common.RejectedStatusStr,
+		shardID,
+		rejectContentStr,
+	)
+	return rejectedInst.StringSlice()
+}
+
 func buildRejectedUnshieldReqInst(meta metadataBridge.UnshieldRequest, shardID byte, txReqID common.Hash, errorType int) []string {
 	var totalBurnAmt uint64
 	for _, data := range meta.Data {
@@ -248,30 +268,6 @@ func buildRejectedUnshieldReqInst(meta metadataBridge.UnshieldRequest, shardID b
 		rejectContentStr,
 	)
 	return rejectedInst.StringSlice()
-}
-
-// buildAddWaitingUnshieldInst returns processing unshield instructions
-func buildAddWaitingUnshieldInst(waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, shardID byte) []string {
-	waitingUnshieldReqBytes, _ := json.Marshal(waitingUnshieldReq)
-	inst := metadataCommon.NewInstructionWithValue(
-		metadataCommon.BurningUnifiedTokenRequestMeta,
-		common.WaitingStatusStr,
-		shardID,
-		base64.StdEncoding.EncodeToString(waitingUnshieldReqBytes),
-	)
-	return inst.StringSlice()
-}
-
-// buildAddWaitingUnshieldInst returns processing unshield instructions
-func buildAcceptedUnshieldInst(waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, shardID byte) []string {
-	waitingUnshieldReqBytes, _ := json.Marshal(waitingUnshieldReq)
-	inst := metadataCommon.NewInstructionWithValue(
-		metadataCommon.BurningUnifiedTokenRequestMeta,
-		common.AcceptedStatusStr,
-		shardID,
-		base64.StdEncoding.EncodeToString(waitingUnshieldReqBytes),
-	)
-	return inst.StringSlice()
 }
 
 // buildAddWaitingUnshieldInst returns processing unshield instructions
@@ -833,20 +829,35 @@ func increaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*stated
 	return v, nil
 }
 
-func convert(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, uint64, error) {
-	decimal := CalculateIncDecimal(v.ExtDecimal(), config.Param().BridgeAggParam.BaseDecimal)
-	tmpAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), decimal, true)
+// func convert(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, uint64, error) {
+// 	decimal := CalculateIncDecimal(v.ExtDecimal(), config.Param().BridgeAggParam.BaseDecimal)
+// 	tmpAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), decimal, true)
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
+// 	if tmpAmount.Cmp(big.NewInt(0)) == 0 {
+// 		return nil, 0, fmt.Errorf("amount %d is not enough for converting", amount)
+// 	}
+// 	v, err = increaseVaultAmount(v, tmpAmount.Uint64())
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
+// 	return v, tmpAmount.Uint64(), nil
+// }
+
+func convertPTokenAmtToPUnifiedTokenAmt(extDec uint, amount uint64) (uint64, error) {
+	pDecimal := CalculateIncDecimal(extDec, config.Param().BridgeAggParam.BaseDecimal)
+	tmpAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), pDecimal, true)
 	if err != nil {
-		return nil, 0, err
+		return 0, err
 	}
 	if tmpAmount.Cmp(big.NewInt(0)) == 0 {
-		return nil, 0, fmt.Errorf("amount %d is not enough for converting", amount)
+		return 0, fmt.Errorf("amount %d is not enough for converting", amount)
 	}
-	v, err = increaseVaultAmount(v, tmpAmount.Uint64())
-	if err != nil {
-		return nil, 0, err
+	if !tmpAmount.IsUint64() {
+		return 0, fmt.Errorf("convert amount %d is invalid", amount)
 	}
-	return v, tmpAmount.Uint64(), nil
+	return tmpAmount.Uint64(), nil
 }
 
 // calculate actual received amount and actual fee

@@ -27,9 +27,13 @@ type RejectedConvertTokenToUnifiedToken struct {
 }
 
 type AcceptedConvertTokenToUnifiedToken struct {
-	ConvertTokenToUnifiedTokenRequest
-	TxReqID    common.Hash `json:"TxReqID"`
-	MintAmount uint64      `json:"MintAmount"`
+	UnifiedTokenID        common.Hash         `json:"UnifiedTokenID"`
+	TokenID               common.Hash         `json:"TokenID"`
+	Receiver              privacy.OTAReceiver `json:"Receiver"`
+	ConvertPUnifiedAmount uint64              `json:"ConvertPUnifiedAmount"`
+	ConvertPTokenAmount   uint64              `json:"ConvertPTokenAmount"`
+	Reward                uint64              `json:"Reward"`
+	TxReqID               common.Hash         `json:"TxReqID"`
 }
 
 func NewConvertTokenToUnifiedTokenRequest() *ConvertTokenToUnifiedTokenRequest {

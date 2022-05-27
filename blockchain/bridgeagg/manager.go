@@ -126,7 +126,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 
 		switch inst.MetaType {
 		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-			m.state, err = m.processor.convert(*inst, m.state, sDB)
+			m.state, updatingInfoByTokenID, err = m.processor.convert(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.BurningUnifiedTokenRequestMeta:
@@ -195,6 +195,12 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.H
 				return err
 			}
 		}
+	}
+
+	// TODO: delete waiting unshield reqs
+	err := statedb.DeleteBridgeAggWaitingUnshieldReqs(sDB, m.state.deletedWaitingUnshieldReqKeyHashes)
+	if err != nil {
+		return err
 	}
 
 	return nil

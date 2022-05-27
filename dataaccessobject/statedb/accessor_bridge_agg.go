@@ -58,3 +58,11 @@ func GetBridgeAggWaitingUnshieldReqs(stateDB *StateDB, unifiedTokenID common.Has
 	prefixHash := GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID.Bytes())
 	return stateDB.iterateBridgeAggWaitingUnshieldReqs(prefixHash)
 }
+
+func DeleteBridgeAggWaitingUnshieldReqs(stateDB *StateDB, waitUnshieldKeys []common.Hash) error {
+	for _, keyHash := range waitUnshieldKeys {
+		stateDB.MarkDeleteStateObject(BridgeAggWaitingUnshieldReqObjectType, keyHash)
+	}
+
+	return nil
+}
