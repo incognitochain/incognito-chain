@@ -60,7 +60,3 @@ use_coin_data:
   - true
 num_indexer_workers: 5
 indexer_access_token: "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
-geth_param:
-  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
-  protocol: "https"
-  port: ""

@@ -51,9 +51,9 @@ consensus_param:
   assign_rule_v3_height: 1410217
   enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1519263
-  force_not_use_burned_coins: 1806062
-  lemma2_height: 1806062
-  block_producing_v3_height: 1000000000000
+  force_not_use_burned_coins: 1816555
+  lemma2_height: 1816555
+  block_producing_v3_height: 1846560
   byzantine_detector_height: 1000000000000
   timeslot: 40
   epoch_break_point_swap_new_key:
@@ -70,12 +70,25 @@ enable_feature_flags:
   - PortalV4: 4079
 portal_v3_height: 10000000
 tx_pool_version: 0
+geth_param:
+  host:
+    - "https://eth-fullnode.incognito.org"
 bsc_param:
-  host: "https://bsc-dataseed.binance.org"
+  host:
+    - "https://bsc-dataseed.binance.org"
+    - "https://bsc-dataseed1.defibit.io"
+    - "https://bsc-dataseed1.ninicoin.io"
+    - "https://bsc-dataseed2.defibit.io"
 plg_param:
-  host: "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+  host:
+    - "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+    - "https://polygon-rpc.com"
+    - "https://rpc-mainnet.maticvigil.com"
+    - "https://rpc-mainnet.matic.quiknode.pro"
 ftm_param:
-  host: "https://rpcapi.fantom.network"
+  host:
+    - "https://rpcapi.fantom.network"
+    - "https://rpc.ftm.tools"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
@@ -95,4 +108,4 @@ auto_enable_feature:
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
-      require_percentage: 98
+      require_percentage: 85

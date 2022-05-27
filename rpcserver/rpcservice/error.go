@@ -154,6 +154,12 @@ const (
 	GetPdexv3WithdrawalLPFeeStatusError
 	GetPdexv3WithdrawalProtocolFeeStatusError
 	GetPdexv3WithdrawalStakingRewardStatusError
+
+	// bridgeagg
+	GetBridgeAggStateError
+	BridgeAggEstimateFeeByBurntAmountError
+	BridgeAggEstimateFeeByExpectedAmountError
+	BridgeAggEstimateRewardError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -299,6 +305,11 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
 	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
 	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
+	// bridgeagg
+	GetBridgeAggStateError:                    {-13000, "Get bridge agg state error"},
+	BridgeAggEstimateFeeByBurntAmountError:    {-13001, "Bridge agg estimate fee by burnt amount error"},
+	BridgeAggEstimateFeeByExpectedAmountError: {-13001, "Bridge agg estimate fee by expected amount error"},
+	BridgeAggEstimateRewardError:              {-13001, "Bridge agg estimate reward error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

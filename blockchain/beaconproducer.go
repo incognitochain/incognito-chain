@@ -1,7 +1,11 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
+	"math"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -13,8 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
-	"math"
-	"sort"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -221,7 +223,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	sort.Ints(keys)
 	//Shard block is a map ShardId -> array of shard block
 
-	allPdexv3Txs := make(map[byte][]metadata.Transaction)
+	allPdexTxs := make(map[uint]map[byte][]metadata.Transaction)
 
 	for _, v := range keys {
 		shardID := byte(v)
@@ -229,7 +231,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		for _, shardBlock := range shardBlocks {
 			shardState, newShardInstruction, newDuplicateKeyStakeInstruction,
 				bridgeInstruction, acceptedRewardInstruction, statefulActions,
-				pdexv3Txs, err := blockchain.GetShardStateFromBlock(
+				pdexTxs, err := blockchain.GetShardStateFromBlock(
 				curView, curView.BeaconHeight+1, shardBlock, shardID, validUnstakePublicKeys, validStakePublicKeys)
 			if err != nil {
 				return [][]string{}, shardStates, err
@@ -249,7 +251,22 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			} else {
 				statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
 			}
-			allPdexv3Txs[shardID] = append(allPdexv3Txs[shardID], pdexv3Txs...)
+			for version, txs := range pdexTxs {
+				if allPdexTxs[version] == nil {
+					allPdexTxs[version] = make(map[byte][]metadata.Transaction)
+				}
+				allPdexTxs[version][shardID] = append(allPdexTxs[version][shardID], txs...)
+			}
+		}
+	}
+
+	// remove duplicate PreValidation data in ShardState
+	for _, ss := range shardStates {
+		for i := len(ss) - 1; i > 0; i-- {
+			if i == 0 {
+				break
+			}
+			ss[i].PreviousValidationData = ""
 		}
 	}
 
@@ -262,7 +279,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		rewardForCustodianByEpoch,
 		portalParams,
 		shardStates,
-		allPdexv3Txs,
+		allPdexTxs,
 		pdexReward,
 	)
 
@@ -313,16 +330,27 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	validUnstakePublicKeys map[string]bool,
 	validStakePublicKeys []string,
 ) (map[byte]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
-	[][]string, []string, [][]string, []metadata.Transaction, error) {
+	[][]string, []string, [][]string, map[uint][]metadata.Transaction, error) {
 	//Variable Declaration
 	shardStates := make(map[byte]types.ShardState)
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
 	bridgeInstructions := [][]string{}
 
 	acceptedRewardInstruction := curView.getAcceptBlockRewardInstruction(shardID, shardBlock, blockchain)
+
+	prevShardBlockValidatorIndex := ""
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
+		}
+		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+	}
+
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
+		prevShardBlockValidatorIndex,
 		shardBlock.Header.CommitteeFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),
@@ -330,8 +358,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.ProposeTime,
 		shardBlock.Header.Version,
 	)
-	instructions, pdexv3Txs, err := CreateShardInstructionsFromTransactionAndInstruction(
-		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
+	instructions, pdexTxs, err := CreateShardInstructionsFromTransactionAndInstruction(
+		shardBlock.Body.Transactions, blockchain,
+		shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight, true,
+	)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
@@ -374,7 +404,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	statefulActions := collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
-	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstruction, statefulActions, pdexv3Txs, nil
+	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstruction, statefulActions, pdexTxs, nil
 }
 
 func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
@@ -603,22 +633,24 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		// check proposer threshold
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report(curView)
-		if featureStatReport.ProposeStat[feature] == nil {
+		if featureStatReport.CommitteeStat[feature] == nil {
 			continue
 		}
 		beaconProposerSize := len(curView.GetCommittee())
-		//if number of beacon proposer update < 90%, not generate inst
-		if featureStatReport.ProposeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*90/100)) {
+		//if number of beacon proposer update < 95%, not generate inst
+		if featureStatReport.CommitteeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*95/100)) {
 			continue
 		}
-		//if number of each shard proposer update < 90%, not generate inst
+
+		//if number of each shard committee update < 95%, not generate inst
 		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
-			shardProposerSize := curView.MinShardCommitteeSize //assume Min Size = proposer size (bpv3 change this)
-			if featureStatReport.ProposeStat[feature][chainID] < uint64(math.Ceil(float64(shardProposerSize)*90/100)) {
+			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
+			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*95/100)) {
 				invalidCondition = true
 				break
 			}
 		}
+
 		if invalidCondition {
 			continue
 		}

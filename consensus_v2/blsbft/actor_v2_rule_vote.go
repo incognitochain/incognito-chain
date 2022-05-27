@@ -48,7 +48,8 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 
 	for id, vote := range proposeBlockInfo.Votes {
 		dsaKey := []byte{}
-		if vote.IsValid == 0 {
+		switch vote.IsValid {
+		case 0:
 			if value, ok := committees[vote.Validator]; ok {
 				dsaKey = proposeBlockInfo.SigningCommittees[value].MiningPubKey[common.BridgeConsensus]
 			} else {
@@ -70,27 +71,23 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 				proposeBlockInfo.Votes[id].IsValid = 1
 				validVote++
 			}
-		} else {
+		case 1:
 			validVote++
+		case -1:
+			errVote++
 		}
 	}
 
 	v.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	proposeBlockInfo.HasNewVote = false
+	proposeBlockInfo.ValidVotes = validVote
+	proposeBlockInfo.ErrVotes = errVote
+
 	for key, value := range proposeBlockInfo.Votes {
 		if value.IsValid == -1 {
 			delete(proposeBlockInfo.Votes, key)
 		}
 	}
-
-	proposeBlockInfo.addBlockInfo(
-		proposeBlockInfo.block,
-		proposeBlockInfo.Committees,
-		proposeBlockInfo.SigningCommittees,
-		proposeBlockInfo.UserKeySet,
-		validVote,
-		errVote,
-	)
 
 	return proposeBlockInfo
 }
@@ -123,13 +120,13 @@ func CreateVote(
 		bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
 	}
 
-	blsSig, err := userKey.BLSSignData(block.Hash().GetBytes(), selfIdx, bytelist)
+	blsSig, err := userKey.BLSSignData(block.ProposeHash().GetBytes(), selfIdx, bytelist)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
 	if metadata.HasBridgeInstructions(block.GetInstructions()) {
-		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes())
+		bridgeSig, err = userKey.BriSignData(block.ProposeHash().GetBytes())
 		if err != nil {
 			return nil, NewConsensusError(UnExpectedError, err)
 		}
@@ -144,7 +141,7 @@ func CreateVote(
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
-	vote.BlockHash = block.Hash().String()
+	vote.BlockHash = block.ProposeHash().String()
 	vote.Validator = userBLSPk
 	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
 	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
@@ -214,15 +211,6 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 			delete(proposeBlockInfo.Votes, key)
 		}
 	}
-
-	proposeBlockInfo.addBlockInfo(
-		proposeBlockInfo.block,
-		proposeBlockInfo.Committees,
-		proposeBlockInfo.SigningCommittees,
-		proposeBlockInfo.UserKeySet,
-		validVote,
-		errVote,
-	)
 
 	return proposeBlockInfo
 }

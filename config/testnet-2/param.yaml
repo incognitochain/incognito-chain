@@ -61,8 +61,8 @@ consensus_param:
   enable_slashing_height_v2: 3068072
   staking_flow_v3_height: 3335020
   force_not_use_burned_coins: 4211505
-  lemma2_height: 4126069
-  block_producing_v3_height: 1000000000000
+  lemma2_height: 3790429
+  block_producing_v3_height: 3791509
   byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
@@ -79,12 +79,23 @@ enable_feature_flags:
   - PortalV4: 30225
 portal_v3_height: 1328816
 tx_pool_version: 0
+geth_param:
+  host:
+    - "https://kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
 bsc_param:
-  host: "https://data-seed-prebsc-2-s2.binance.org:8545"
+  host:
+    - "https://data-seed-prebsc-1-s1.binance.org:8545"
+    - "https://data-seed-prebsc-1-s2.binance.org:8545"
+    - "https://data-seed-prebsc-2-s2.binance.org:8545"
+    - "https://data-seed-prebsc-2-s3.binance.org:8545"
 plg_param:
-  host: "https://polygon-mumbai.g.alchemy.com/v2/CBQ1SQRLf3eQGbTXd_aA3LU7hvmwR33K"
+  host:
+    - "https://polygon-mumbai.g.alchemy.com/v2/CBQ1SQRLf3eQGbTXd_aA3LU7hvmwR33K"
+    - "https://rpc-mumbai.maticvigil.com"
+    - "https://matic-mumbai.chainstacklabs.com"
 ftm_param:
-  host: "https://rpc.testnet.fantom.network"
+  host:
+    - "https://rpc.testnet.fantom.network"
 pdex_param:
   pdex_v3_break_point_height: 3603596
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
@@ -107,3 +118,7 @@ auto_enable_feature:
       min_trigger: 3965040
       force_trigger: 1000000000
       require_percentage: 90
+bridge_agg_param:
+  admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
+  base_decimal: 9 # Use only one time DONOT edit this after deployed
+  max_len_of_path: 3

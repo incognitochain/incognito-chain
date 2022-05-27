@@ -5,15 +5,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -1205,7 +1207,14 @@ func (p *PortalCustodianTopupProcessorV3) BuildNewInsts(
 		}
 
 		// verify proof and parse receipt
-		ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+		// Note: currently only support ETH
+		ethReceipt, err := metadataBridge.VerifyProofAndParseEVMReceipt(
+			meta.BlockHash, meta.TxIndex, meta.ProofStrs,
+			config.Param().GethParam.Host,
+			metadata.EVMConfirmationBlocks,
+			"",
+			true,
+		)
 		if err != nil {
 			Logger.log.Errorf("Topup v3: Verify eth proof error: %+v", err)
 			return [][]string{rejectInst2}, nil
@@ -1215,7 +1224,7 @@ func (p *PortalCustodianTopupProcessorV3) BuildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+		logMap, err := metadataBridge.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil
@@ -1575,7 +1584,14 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 		}
 
 		// verify proof and parse receipt
-		ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+		// Note: currently only support ETH
+		ethReceipt, err := metadataBridge.VerifyProofAndParseEVMReceipt(
+			meta.BlockHash, meta.TxIndex, meta.ProofStrs,
+			config.Param().GethParam.Host,
+			metadata.EVMConfirmationBlocks,
+			"",
+			true,
+		)
 		if err != nil {
 			Logger.log.Errorf("Topup waiting porting v3: Verify eth proof error: %+v", err)
 			return [][]string{rejectInst2}, nil
@@ -1585,7 +1601,7 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+		logMap, err := metadataBridge.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil
@@ -1765,7 +1781,6 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 	}
 	return nil
 }
-
 
 /* =======
 Portal Liquidation Custodian Run Away Processor
@@ -2380,7 +2395,6 @@ func (p *PortalExpiredWaitingPortingProcessor) ProcessInsts(
 	return nil
 }
 
-
 /* =======
 Portal Liquidation Custodian Run Away Processor
 ======= */
@@ -2590,7 +2604,6 @@ func (p *PortalLiquidationByRatesV3Processor) ProcessInsts(
 	}
 	return nil
 }
-
 
 /* =======
 Portal Liquidation By Rates Processor
