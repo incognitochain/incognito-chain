@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -614,7 +613,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
-		log.Println("count sig debug 1", beaconBestState.BeaconHeight)
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getNewShardCommitteeFlattenList())
 		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 		for i := 0; i < beaconBestState.ActiveShards; i++ {
