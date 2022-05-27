@@ -355,7 +355,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	config.AbortParam()
 	config.Param().BridgeAggParam.BaseDecimal = 9
 	type args struct {
-		amount             big.Int
+		amount             *big.Int
 		decimal            uint
 		isToUnifiedDecimal bool
 	}
@@ -368,7 +368,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Add",
 			args: args{
-				amount:             *big.NewInt(100000),
+				amount:             big.NewInt(100000),
 				decimal:            6,
 				isToUnifiedDecimal: true,
 			},
@@ -378,7 +378,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Sub",
 			args: args{
-				amount:             *big.NewInt(100000000),
+				amount:             big.NewInt(100000000),
 				decimal:            6,
 				isToUnifiedDecimal: false,
 			},
@@ -388,7 +388,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Convert",
 			args: args{
-				amount:             *big.NewInt(100),
+				amount:             big.NewInt(100),
 				decimal:            config.Param().BridgeAggParam.BaseDecimal,
 				isToUnifiedDecimal: true,
 			},
@@ -398,7 +398,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield",
 			args: args{
-				amount:             *big.NewInt(1234567890000000),
+				amount:             big.NewInt(1234567890000000),
 				decimal:            18,
 				isToUnifiedDecimal: true,
 			},
@@ -408,7 +408,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield - 2",
 			args: args{
-				amount:             *big.NewInt(50000000000000000),
+				amount:             big.NewInt(50000000000000000),
 				decimal:            18,
 				isToUnifiedDecimal: true,
 			},

@@ -1,586 +1,143 @@
 {
-    "TestAcceptedNotEqualTo0NativeToken": {
-        "name": "Accepted, 1 valid tx, y != 0, native token",
-        "metadatas": [
-            {
-                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "Data": [
-                    {
-                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
-                        "TxIndex": 1,
-                        "Proof": [
-                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
-                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
-                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
-                        ],
-                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                        "NetworkID": 1
+    "TestAcceptedNativeToken": {
+        "name": "Accepted, 1 valid tx native token",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                        "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
                     }
-                ],
-                "Type": 343
-            }
-        ],
-        "tx_ids": [
-            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
-        ],
-        "expected_instructions": [
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjowLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo1MDAwMDAwMCwiVW5pcVR4IjoiY3dDajB5T0dodjVpNVM1L0RDN2hEbFJKZUozV2t0QytFTUNoZnNiMDgwc3giLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiTmV0d29ya0lEIjoxLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9XX0="
-            ],
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOnRydWUsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjk5LCJOZXR3b3JrSUQiOjEsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
-            ]
-        ],
-        "unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 100,
-                        "CurrentRewardReserve": 100,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 1
                 },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 50000000,
-                        "LastUpdatedRewardReserve": 100,
-                        "CurrentRewardReserve": 1,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 1
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "Amount": 0
-            }
-        },
-        "expected_statuses": [
-            {
-                "Status": 1,
-                "Data": [
-                    {
-                        "Amount": 50000000,
-                        "Reward": 99
-                    }
-                ]
-            }
-        ],
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed": [
-                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
-            ],
-            "UniqBSCTxsUsed": [],
-            "UniqPRVEVMTxsUsed": [],
-            "UniqPLGTxsUsed": [],
-            "UniqFTMTxsUsed": [],
-            "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": []
             },
-            "CBridgeTokens": [],
-            "InitTokens": []
-        }
-    },
-    "TestAcceptedNotEqualTo0NotNativeToken": {
-        "name": "Accepted, 1 valid tx, y != 0, not native token",
-        "metadatas": [
-            {
-                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "Data": [
-                    {
-                        "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
-                        "TxIndex": 0,
-                        "Proof": [
-                            "+QMOgiCAuQMI+QMFAYMBDUC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAABAACAAAAAAAgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA+QH6+JuU+v7bBBwN1PotwNh6awl57m+nr1/4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADOQM5RGl0IQBfb7n4/8+RV6jLYXKAAAAAAAAAAAAAAAABSZ2ijf+2G/Y1dcsp4kT3/ZKxeFaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNyzqKAPkBWpRSZ2ijf+2G/Y1dcsp4kT3/ZKxeFeGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65ASAAAAAAAAAAAAAAAAD6/tsEHA3U+i3A2HprCXnub6evXwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlDEyc3g1UGFMaGI1MUhydzI4UUNKZDY4RWZRRjlWVmJBTW9ibXFoQzdwTXpaYlN0eWlkdmJzWjQ1Z0RQdlB1TjNWZm5IeGlYNEp2dFdmdmhjZWZnVlBNOFRHQVdZRmdqbTRma0ExUW1VakFkellyNnp3NWg1QkViRmVvN21QWVRUd3hScXdIRWJlMkZaSlhockxkSmoAAAAAAAAAAAAAAAA="
-                        ],
-                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                        "NetworkID": 4
-                    }
-                ],
-                "Type": 343
-            }
-        ],
-        "tx_ids": [
-            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
-        ],
-        "expected_instructions": [
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjoyLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo2MDksIlVuaXFUeCI6IkFBQWdnUUFBSjFiLzZzc0ZpSFlremRJWlhwemlONTVGMko2N1V3eGZOTW93IiwiRXh0ZXJuYWxUb2tlbklEIjoiUmxSTit2N2JCQndOMVBvdHdOaDZhd2w1N20rbnIxOD0iLCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
-            ],
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOnRydWUsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjk5LCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
-            ]
-        ],
-        "unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 100,
-                        "CurrentRewardReserve": 100,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 4
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
+            "metadatas": [
+                {
+                    "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                    "Data": [
+                        {
+                            "Proof": [
+                                123, 34, 66, 108, 111, 99, 107, 72, 97, 115, 104, 34, 58, 34, 48, 120, 55, 51, 48, 48, 97, 51, 100, 51, 50, 51, 56, 54, 56, 54, 102, 101, 54, 50, 101, 53, 50, 101, 55, 102, 48, 99, 50, 101, 101, 49, 48, 101, 53, 52, 52, 57, 55, 56, 57, 100, 100, 54, 57, 50, 100, 48, 98, 101, 49, 48, 99, 48, 97, 49, 55, 101, 99, 54, 102, 52, 102, 51, 52, 98, 34, 44, 34, 84, 120, 73, 110, 100, 101, 120, 34, 58, 49, 44, 34, 80, 114, 111, 111, 102, 34, 58, 91, 34, 43, 70, 71, 103, 119, 108, 77, 52, 106, 112, 43, 48, 66, 79, 103, 78, 119, 107, 43, 52, 47, 71, 90, 116, 72, 111, 98, 54, 108, 67, 48, 121, 66, 65, 118, 82, 112, 100, 67, 72, 84, 53, 105, 56, 104, 100, 113, 65, 103, 73, 67, 65, 103, 73, 67, 65, 111, 78, 71, 118, 107, 82, 72, 48, 83, 66, 118, 87, 73, 115, 66, 86, 75, 57, 114, 72, 107, 70, 56, 118, 98, 65, 66, 117, 85, 102, 119, 81, 104, 54, 88, 122, 100, 100, 79, 122, 83, 107, 71, 51, 103, 73, 67, 65, 103, 73, 67, 65, 103, 73, 65, 61, 34, 44, 34, 43, 76, 71, 65, 111, 71, 86, 69, 51, 51, 115, 87, 103, 70, 101, 99, 112, 67, 110, 114, 121, 112, 84, 82, 79, 70, 109, 70, 87, 110, 101, 51, 52, 103, 107, 86, 108, 102, 87, 98, 77, 99, 118, 97, 100, 100, 84, 69, 111, 66, 119, 102, 65, 116, 102, 104, 107, 65, 111, 122, 104, 81, 101, 52, 57, 90, 115, 97, 87, 109, 53, 118, 99, 87, 80, 81, 65, 75, 122, 82, 107, 71, 121, 116, 114, 79, 55, 97, 47, 73, 99, 49, 111, 75, 120, 103, 114, 83, 74, 66, 56, 90, 50, 68, 50, 116, 99, 102, 71, 70, 111, 66, 111, 67, 82, 70, 69, 110, 86, 87, 105, 79, 66, 54, 43, 87, 54, 89, 82, 85, 72, 73, 101, 102, 50, 104, 111, 69, 114, 100, 83, 83, 115, 72, 116, 49, 66, 79, 100, 84, 51, 67, 55, 67, 105, 108, 118, 120, 86, 112, 57, 67, 107, 97, 101, 79, 86, 54, 43, 100, 89, 83, 65, 52, 69, 67, 105, 68, 90, 82, 111, 68, 88, 69, 80, 79, 100, 101, 57, 82, 112, 57, 110, 72, 99, 69, 78, 66, 121, 87, 114, 109, 108, 104, 74, 83, 107, 102, 83, 107, 56, 119, 88, 101, 50, 83, 102, 99, 80, 84, 97, 78, 107, 117, 103, 73, 67, 65, 103, 73, 67, 65, 103, 73, 67, 65, 103, 73, 65, 61, 34, 44, 34, 43, 81, 74, 119, 73, 76, 107, 67, 98, 65, 76, 53, 65, 109, 103, 66, 103, 120, 74, 120, 113, 98, 107, 66, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 69, 65, 65, 65, 65, 65, 65, 67, 65, 65, 65, 65, 65, 65, 65, 69, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 81, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 103, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 69, 65, 68, 53, 65, 86, 51, 53, 65, 86, 113, 85, 101, 43, 118, 73, 82, 70, 120, 105, 73, 55, 81, 98, 101, 55, 83, 119, 114, 112, 100, 67, 52, 118, 48, 118, 82, 47, 80, 104, 111, 67, 49, 76, 87, 88, 107, 49, 56, 56, 49, 110, 43, 121, 55, 114, 56, 100, 116, 78, 54, 56, 107, 48, 122, 117, 88, 72, 117, 113, 99, 86, 80, 53, 103, 80, 50, 43, 115, 117, 100, 65, 104, 79, 117, 81, 69, 103, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 89, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 67, 120, 111, 114, 119, 117, 120, 81, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 74, 81, 120, 77, 110, 78, 50, 90, 109, 116, 81, 78, 110, 99, 49, 86, 85, 82, 75, 82, 70, 78, 68, 100, 51, 70, 73, 79, 84, 99, 52, 85, 72, 90, 120, 97, 88, 70, 67, 101, 69, 116, 116, 86, 87, 53, 66, 79, 87, 86, 116, 79, 88, 108, 66, 87, 86, 100, 90, 83, 108, 90, 83, 100, 106, 100, 51, 100, 86, 104, 90, 77, 88, 70, 111, 97, 70, 108, 119, 85, 69, 70, 116, 78, 69, 74, 69, 101, 106, 74, 116, 84, 71, 74, 71, 99, 108, 74, 116, 90, 69, 115, 122, 101, 86, 74, 111, 98, 108, 82, 120, 83, 107, 78, 97, 87, 69, 116, 73, 86, 87, 49, 118, 97, 84, 100, 79, 86, 106, 103, 122, 83, 69, 78, 73, 77, 108, 108, 71, 99, 71, 78, 48, 83, 69, 53, 104, 82, 71, 82, 114, 85, 50, 108, 82, 99, 50, 104, 122, 97, 110, 99, 121, 86, 85, 90, 86, 100, 88, 100, 107, 82, 88, 90, 106, 97, 87, 82, 110, 89, 85, 116, 116, 82, 106, 78, 87, 83, 110, 66, 90, 78, 87, 89, 52, 85, 109, 82, 79, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 34, 93, 125
+                            ],
+                            "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                            "NetworkID": 1
+                        }
+                    ],
+                    "Type": 343
                 }
-            }
-        },
-        "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 609,
-                        "LastUpdatedRewardReserve": 100,
-                        "CurrentRewardReserve": 1,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 4
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                "ExternalTokenID": [70, 84, 77, 250, 254, 219, 4, 28, 13, 212, 250, 45, 192, 216, 122, 107, 9, 121, 238, 111, 167, 175, 95],
-                "Amount": 0
-            }
-        },
-        "expected_statuses": [
-            {
-                "Status": 1,
-                "Data": [
-                    {
-                        "Amount": 609,
-                        "Reward": 99
-                    }
-                ]
-            }
-        ],
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed": [],
-            "UniqBSCTxsUsed": [],
-            "UniqPRVEVMTxsUsed": [],
-            "UniqPLGTxsUsed": [],
-            "UniqFTMTxsUsed": [
-                [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
             ],
-            "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            "tx_ids": [
+                "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+            ],
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
             },
-            "CBridgeTokens": [],
-            "InitTokens": []
-        }
-    },
-    "TestAcceptedYEqualTo0NativeToken": {
-        "name": "Accepted, 1 valid tx, y = 0, native token",
-        "metadatas": [
-            {
-                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "Data": [
-                    {
-                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
-                        "TxIndex": 1,
-                        "Proof": [
-                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
-                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
-                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
-                        ],
-                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                        "NetworkID": 1
-                    }
-                ],
-                "Type": 343
-            }
-        ],
-        "tx_ids": [
-            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
-        ],
-        "expected_instructions": [
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjowLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo1MDAwMDAwMCwiVW5pcVR4IjoiY3dDajB5T0dodjVpNVM1L0RDN2hEbFJKZUozV2t0QytFTUNoZnNiMDgwc3giLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiTmV0d29ya0lEIjoxLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9XX0="
-            ]
-        ],
-        "unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+            "bridge_tokens_info": {
                 "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 1
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
+                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                    "ExternalTokenID": [
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                    ],
+                    "Amount": 0
                 }
             }
         },
-        "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 50000000,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 1
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "Amount": 0
-            }
-        },
-        "expected_statuses": [
-            {
-                "Status": 1,
-                "Data": [
-                    {
-                        "Amount": 50000000
-                    }
+        "expected_result": {
+            "instructions": [
+                [
+                    "343", "0", "accepted", 
+                    "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiU2hhcmRJRCI6MCwiRGF0YSI6W3siU2hpZWxkQW1vdW50Ijo1MDAwMDAwMCwiUmV3YXJkIjowLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjEsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
                 ]
-            }
-        ],
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed": [
-                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
             ],
-            "UniqBSCTxsUsed": [],
-            "UniqPRVEVMTxsUsed": [],
-            "UniqPLGTxsUsed": [],
-            "UniqFTMTxsUsed": [],
-            "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
-            },
-            "CBridgeTokens": [],
-            "InitTokens": []
-        }
-    },
-    "TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseExternalDecimal": {
-        "name": "Accepted, 1 valid tx, y = 0, not native token decimal > base external decimal = 9",
-        "metadatas": [
-            {
-                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "Data": [
-                    {
-                        "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
-                        "TxIndex": 0,
-                        "Proof": [
-                            "+QMOgiCAuQMI+QMFAYMBDUC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAABAACAAAAAAAgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA+QH6+JuU+v7bBBwN1PotwNh6awl57m+nr1/4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADOQM5RGl0IQBfb7n4/8+RV6jLYXKAAAAAAAAAAAAAAAABSZ2ijf+2G/Y1dcsp4kT3/ZKxeFaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNyzqKAPkBWpRSZ2ijf+2G/Y1dcsp4kT3/ZKxeFeGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65ASAAAAAAAAAAAAAAAAD6/tsEHA3U+i3A2HprCXnub6evXwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlDEyc3g1UGFMaGI1MUhydzI4UUNKZDY4RWZRRjlWVmJBTW9ibXFoQzdwTXpaYlN0eWlkdmJzWjQ1Z0RQdlB1TjNWZm5IeGlYNEp2dFdmdmhjZWZnVlBNOFRHQVdZRmdqbTRma0ExUW1VakFkellyNnp3NWg1QkViRmVvN21QWVRUd3hScXdIRWJlMkZaSlhockxkSmoAAAAAAAAAAAAAAAA="
-                        ],
-                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                        "NetworkID": 4
-                    }
-                ],
-                "Type": 343
-            }
-        ],
-        "tx_ids": [
-            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
-        ],
-        "expected_instructions": [
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjoyLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo2MDksIlVuaXFUeCI6IkFBQWdnUUFBSjFiLzZzc0ZpSFlremRJWlhwemlONTVGMko2N1V3eGZOTW93IiwiRXh0ZXJuYWxUb2tlbklEIjoiUmxSTit2N2JCQndOMVBvdHdOaDZhd2w1N20rbnIxOD0iLCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
-            ]
-        ],
-        "unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                        "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                            "Amount": 50000000,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
                     },
-                    "NetworkID": 4
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
+                    } 
                 },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 609,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 4
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                "ExternalTokenID": [70, 84, 77, 250, 254, 219, 4, 28, 13, 212, 250, 45, 192, 216, 122, 107, 9, 121, 238, 111, 167, 175, 95],
-                "Amount": 0
-            }
-        },
-        "expected_statuses": [
-            {
-                "Status": 1,
-                "Data": [
-                    {
-                        "Amount": 609
-                    }
-                ]
-            }
-        ],
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed": [],
-            "UniqBSCTxsUsed": [],
-            "UniqPRVEVMTxsUsed": [],
-            "UniqPLGTxsUsed": [],
-            "UniqFTMTxsUsed": [
-                [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
-            ],
-            "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": []
             },
-            "CBridgeTokens": [],
-            "InitTokens": []
-        }
-    },
-    "TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseExternalDecimal": {
-        "name": "Accepted, 1 valid tx, y = 0, not native token decimal < base external decimal = 9",
-        "metadatas": [
-            {
-                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "Data": [
-                    {
-                        "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
-                        "TxIndex": 0,
-                        "Proof": [
-                            "+QMOgiCAuQMI+QMFAYMBDUC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAABAACAAAAAAAgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA+QH6+JuU+v7bBBwN1PotwNh6awl57m+nr1/4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADOQM5RGl0IQBfb7n4/8+RV6jLYXKAAAAAAAAAAAAAAAABSZ2ijf+2G/Y1dcsp4kT3/ZKxeFaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNyzqKAPkBWpRSZ2ijf+2G/Y1dcsp4kT3/ZKxeFeGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65ASAAAAAAAAAAAAAAAAD6/tsEHA3U+i3A2HprCXnub6evXwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlDEyc3g1UGFMaGI1MUhydzI4UUNKZDY4RWZRRjlWVmJBTW9ibXFoQzdwTXpaYlN0eWlkdmJzWjQ1Z0RQdlB1TjNWZm5IeGlYNEp2dFdmdmhjZWZnVlBNOFRHQVdZRmdqbTRma0ExUW1VakFkellyNnp3NWg1QkViRmVvN21QWVRUd3hScXdIRWJlMkZaSlhockxkSmoAAAAAAAAAAAAAAAA="
-                        ],
-                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                        "NetworkID": 4
-                    }
+            "accumulated_values": {
+                "UniqETHTxsUsed": [
+                    [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
                 ],
-                "Type": 343
-            }
-        ],
-        "tx_ids": [
-            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
-        ],
-        "expected_instructions": [
-            [
-                "343", "0", "accepted", 
-                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjoyLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo2MDkwMDAsIlVuaXFUeCI6IkFBQWdnUUFBSjFiLzZzc0ZpSFlremRJWlhwemlONTVGMko2N1V3eGZOTW93IiwiRXh0ZXJuYWxUb2tlbklEIjoiUmxSTit2N2JCQndOMVBvdHdOaDZhd2w1N20rbnIxOD0iLCJOZXR3b3JrSUQiOjQsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
-            ]
-        ],
-        "unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 4
-                }
-            }
-        },
-        "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 609000,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 4
-                }
-            }
-        },
-        "accumulated_values": {
-            "UniqETHTxsUsed":    [],
-		    "UniqBSCTxsUsed":    [],
-		    "UniqPLGTxsUsed":    [],
-		    "UniqPRVEVMTxsUsed": [],
-		    "UniqFTMTxsUsed":    [],
-		    "DBridgeTokenPair":  {},
-		    "CBridgeTokens":     [],
-		    "InitTokens":        []
-        },
-        "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                "ExternalTokenID": [70, 84, 77, 250, 254, 219, 4, 28, 13, 212, 250, 45, 192, 216, 122, 107, 9, 121, 238, 111, 167, 175, 95],
-                "Amount": 0
-            }
-        },
-        "expected_statuses": [
-            {
-                "Status": 1,
-                "Data": [
-                    {
-                        "Amount": 609000
-                    }
-                ]
-            }
-        ],
-        "expected_accumulated_values": {
-            "UniqETHTxsUsed": [],
-            "UniqBSCTxsUsed": [],
-            "UniqPRVEVMTxsUsed": [],
-            "UniqPLGTxsUsed": [],
-            "UniqFTMTxsUsed": [
-                [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
-            ],
-            "DBridgeTokenPair": {
-                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                "UniqBSCTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                },
+                "CBridgeTokens": [],
+                "InitTokens": []
             },
-            "CBridgeTokens": [],
-            "InitTokens": []
+            "statuses": []
         }
     },
     "TestRejectedInvalidExternalTokenID": {

@@ -53,31 +53,31 @@
                 "UnifiedTokenVaults": {
                     "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
                         "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
-                            "Reserve": 0,
-                            "LastUpdatedRewardReserve": 0,
-                            "CurrentRewardReserve": 0,
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
                             "ExtDecimal": 18,
-                            "IsPaused": false,
                             "NetworkID": 1,
                             "TokenID": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1"
                         },
                         "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                            "Reserve": 0,
-                            "LastUpdatedRewardReserve": 0,
-                            "CurrentRewardReserve": 0,
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
                             "ExtDecimal": 18,
-                            "IsPaused": false,
                             "NetworkID": 2,
                             "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
                         }
                     },
                     "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
                         "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
-                            "Reserve": 0,
-                            "LastUpdatedRewardReserve": 0,
-                            "CurrentRewardReserve": 0,
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
                             "ExtDecimal": 18,
-                            "IsPaused": false,
                             "NetworkID": 4,
                             "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
                         }
