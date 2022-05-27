@@ -133,6 +133,7 @@ func (s *ShieldTestSuite) test() {
 		},
 	}
 
+	actualResult := s.actualResults[s.currentTestCaseName]
 	for _, txID := range testCase.Data.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
 			s.sDB,
@@ -143,8 +144,9 @@ func (s *ShieldTestSuite) test() {
 		var status ShieldStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		s.testCases[s.currentTestCaseName].ExpectedResult.Statuses = append(s.testCases[s.currentTestCaseName].ExpectedResult.Statuses, status)
+		actualResult.Statuses = append(actualResult.Statuses, status)
 	}
+	s.actualResults[s.currentTestCaseName] = actualResult
 }
 
 func (s *ShieldTestSuite) TestAcceptedNativeToken() {
