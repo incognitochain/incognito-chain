@@ -198,62 +198,94 @@ func (sp *stateProcessor) unshield(
 	inst metadataCommon.Instruction,
 	state *State,
 	sDB *statedb.StateDB,
-) (*State, error) {
-	var status byte
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (*State, map[common.Hash]metadata.UpdatingInfo, error) {
 	var txReqID common.Hash
 	var errorCode int
 	var unshieldStatusData []UnshieldStatusData
-	switch inst.Status {
-	case common.AcceptedStatusStr:
-		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-		if err != nil {
-			return state, err
-		}
-		Logger.log.Info("Processing inst content:", string(contentBytes))
-		acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{}
-		err = json.Unmarshal(contentBytes, &acceptedContent)
-		if err != nil {
-			return state, err
-		}
-		txReqID = acceptedContent.TxReqID
-		for index, data := range acceptedContent.Data {
-			vault := state.unifiedTokenVaults[acceptedContent.UnifiedTokenID][data.IncTokenID] // check available before
-			// TODO: 0xkraken
-			// err = vault.increaseCurrentRewardReserve(data.Fee)
-			// if err != nil {
-			// 	return unifiedTokenInfos, err
-			// }
-			vault, err = decreaseVaultAmount(vault, data.BurningAmount)
-			if err != nil {
-				return state, err
-			}
-			state.unifiedTokenVaults[acceptedContent.UnifiedTokenID][data.IncTokenID] = vault
-			status = common.AcceptedStatusByte
-			newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
-			sp.UnshieldTxsCache[newTxReqID] = acceptedContent.UnifiedTokenID
-			unshieldStatusData = append(unshieldStatusData, UnshieldStatusData{
-				ReceivedAmount: data.ReceivedAmount,
-				Fee:            data.BurningAmount - data.ReceivedAmount,
-			})
-		}
-	case common.RejectedStatusStr:
+
+	statusByte, err := getStatusByteFromStatuStr(inst.Status)
+	if err != nil {
+		Logger.log.Errorf("Can not get status byte from status string: %v", err)
+		return state, updatingInfoByTokenID, err
+	}
+
+	if inst.Status == common.RejectedStatusStr {
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
-			return state, err
+			return state, updatingInfoByTokenID, err
 		}
 		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
-		status = common.RejectedStatusByte
-	default:
-		return state, errors.New("Can not recognize status")
+		statusByte = common.RejectedStatusByte
+	} else {
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			return state, updatingInfoByTokenID, err
+		}
+		Logger.log.Info("Processing inst content:", string(contentBytes))
+		acceptedUnshieldReqInst := metadataBridge.AcceptedUnshieldRequestInst{}
+		err = json.Unmarshal(contentBytes, &acceptedUnshieldReqInst)
+		if err != nil {
+			Logger.log.Errorf("Can not unmarshal unshield instruction: %v", err)
+			return state, updatingInfoByTokenID, err
+		}
+		unifiedTokenID := acceptedUnshieldReqInst.UnifiedTokenID
+		waitingUnshieldReq := acceptedUnshieldReqInst.WaitingUnshieldReq
+		statusStr := inst.Status
+
+		// update state
+		state, err := updateStateForUnshield(state, unifiedTokenID, waitingUnshieldReq, statusStr, -1)
+		if err != nil {
+			Logger.log.Errorf("Update bridge agg state error: %v", err)
+			return state, updatingInfoByTokenID, err
+		}
+
+		// track unshield status
+		for _, data := range waitingUnshieldReq.GetData() {
+			unshieldStatusData = append(unshieldStatusData, UnshieldStatusData{
+				ReceivedAmount: data.BurningAmount - data.Fee,
+				Fee:            data.Fee,
+			})
+		}
+
+		// update bridge token info
+		if statusStr == common.WaitingStatusStr || statusStr == common.AcceptedStatusStr {
+			bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(sDB, unifiedTokenID, false)
+			if err != nil {
+				return state, updatingInfoByTokenID, err
+			}
+			if !bridgeTokenExisted {
+				return state, updatingInfoByTokenID, fmt.Errorf("Not found bridge token %s", unifiedTokenID.String())
+			}
+			var totalBurnAmt uint64
+			for _, v := range waitingUnshieldReq.GetData() {
+				totalBurnAmt += v.BurningAmount
+			}
+
+			updatingInfo, found := updatingInfoByTokenID[unifiedTokenID]
+			if found {
+				updatingInfo.DeductAmt += totalBurnAmt
+			} else {
+				updatingInfo = metadata.UpdatingInfo{
+					CountUpAmt:      0,
+					DeductAmt:       totalBurnAmt,
+					TokenID:         unifiedTokenID,
+					ExternalTokenID: GetExternalTokenIDForUnifiedToken(),
+					IsCentralized:   false,
+				}
+			}
+			updatingInfoByTokenID[unifiedTokenID] = updatingInfo
+		}
 	}
+
 	unshieldStatus := UnshieldStatus{
-		Status:    status,
+		Status:    statusByte,
 		Data:      unshieldStatusData,
 		ErrorCode: errorCode,
 	}
 	contentBytes, _ := json.Marshal(unshieldStatus)
-	return state, statedb.TrackBridgeAggStatus(
+	return state, updatingInfoByTokenID, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggUnshieldStatusPrefix(),
 		txReqID.Bytes(),

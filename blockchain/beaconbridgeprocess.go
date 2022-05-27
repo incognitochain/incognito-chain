@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -72,8 +71,8 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix)
 		case strconv.Itoa(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processConvertReq(curView, inst, updatingInfoByTokenID)
-		case strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningUnifiedReq(curView, inst, updatingInfoByTokenID)
+			// case strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta):
+			// 	updatingInfoByTokenID, err = blockchain.processBurningUnifiedReq(curView, inst, updatingInfoByTokenID)
 
 		}
 		if err != nil {
@@ -278,15 +277,6 @@ func (blockchain *BlockChain) processBurningReq(
 	incTokenID := &common.Hash{}
 	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
 
-	// TODO: 0xkraken
-	// txReqID, err := common.Hash{}.NewHashFromStr(instruction[5])
-	// if err != nil {
-	// 	return updatingInfoByTokenID, err
-	// }
-	// _, err = curView.bridgeAggState.UnifiedTokenIDCached(*txReqID)
-	// if err == nil {
-	// 	return updatingInfoByTokenID, nil
-	// }
 	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else {
@@ -449,67 +439,67 @@ func (blockchain *BlockChain) processConvertReq(
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) processBurningUnifiedReq(
-	curView *BeaconBestState,
-	instruction []string,
-	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
-) (map[common.Hash]metadata.UpdatingInfo, error) {
-	if len(instruction) != 4 {
-		return updatingInfoByTokenID, nil
-	}
-	metaType, err := strconv.Atoi(instruction[0])
-	if err != nil {
-		return updatingInfoByTokenID, nil
-	}
-	if metaType != metadataCommon.BurningUnifiedTokenRequestMeta {
-		return updatingInfoByTokenID, nil
-	}
+// func (blockchain *BlockChain) processBurningUnifiedReq(
+// 	curView *BeaconBestState,
+// 	instruction []string,
+// 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+// ) (map[common.Hash]metadata.UpdatingInfo, error) {
+// 	if len(instruction) != 4 {
+// 		return updatingInfoByTokenID, nil
+// 	}
+// 	metaType, err := strconv.Atoi(instruction[0])
+// 	if err != nil {
+// 		return updatingInfoByTokenID, nil
+// 	}
+// 	if metaType != metadataCommon.BurningUnifiedTokenRequestMeta {
+// 		return updatingInfoByTokenID, nil
+// 	}
 
-	inst := metadataCommon.NewInstruction()
-	if err := inst.FromStringSlice(instruction); err != nil {
-		return updatingInfoByTokenID, err
-	}
+// 	inst := metadataCommon.NewInstruction()
+// 	if err := inst.FromStringSlice(instruction); err != nil {
+// 		return updatingInfoByTokenID, err
+// 	}
 
-	if inst.Status != common.AcceptedStatusStr {
-		return updatingInfoByTokenID, nil
-	}
-	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
-	if err != nil {
-		return nil, err
-	}
-	acceptedContent := metadataBridge.AcceptedInstUnshieldRequest{}
-	err = json.Unmarshal(contentBytes, &acceptedContent)
-	if err != nil {
-		return nil, err
-	}
+// 	if inst.Status != common.AcceptedStatusStr {
+// 		return updatingInfoByTokenID, nil
+// 	}
+// 	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	acceptedContent := metadataBridge.AcceptedUnshieldRequestInst{}
+// 	err = json.Unmarshal(contentBytes, &acceptedContent)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, acceptedContent.UnifiedTokenID, false)
-	if err != nil {
-		return nil, err
-	}
-	if !bridgeTokenExisted {
-		return nil, fmt.Errorf("Not found bridge token %s", acceptedContent.UnifiedTokenID.String())
-	}
-	var amount uint64
-	for _, v := range acceptedContent.Data {
-		amount += v.BurningAmount
-	}
+// 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, acceptedContent.UnifiedTokenID, false)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if !bridgeTokenExisted {
+// 		return nil, fmt.Errorf("Not found bridge token %s", acceptedContent.UnifiedTokenID.String())
+// 	}
+// 	var amount uint64
+// 	for _, v := range acceptedContent.Data {
+// 		amount += v.BurningAmount
+// 	}
 
-	updatingInfo, found := updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
-	if found {
-		updatingInfo.DeductAmt += amount
-	} else {
-		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:      0,
-			DeductAmt:       amount,
-			TokenID:         acceptedContent.UnifiedTokenID,
-			ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),
-			IsCentralized:   false,
-		}
-	}
-	updatingInfoByTokenID[acceptedContent.UnifiedTokenID] = updatingInfo
-	tmpBytes, _ := json.Marshal(updatingInfo)
-	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", acceptedContent.UnifiedTokenID.String(), string(tmpBytes))
+// 	updatingInfo, found := updatingInfoByTokenID[acceptedContent.UnifiedTokenID]
+// 	if found {
+// 		updatingInfo.DeductAmt += amount
+// 	} else {
+// 		updatingInfo = metadata.UpdatingInfo{
+// 			CountUpAmt:      0,
+// 			DeductAmt:       amount,
+// 			TokenID:         acceptedContent.UnifiedTokenID,
+// 			ExternalTokenID: bridgeagg.GetExternalTokenIDForUnifiedToken(),
+// 			IsCentralized:   false,
+// 		}
+// 	}
+// 	updatingInfoByTokenID[acceptedContent.UnifiedTokenID] = updatingInfo
+// 	tmpBytes, _ := json.Marshal(updatingInfo)
+// 	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", acceptedContent.UnifiedTokenID.String(), string(tmpBytes))
 
-	return updatingInfoByTokenID, nil
-}
+// 	return updatingInfoByTokenID, nil
+// }
