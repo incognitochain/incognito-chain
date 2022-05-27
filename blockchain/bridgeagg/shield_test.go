@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
@@ -149,6 +150,20 @@ func (s *ShieldTestSuite) test() {
 	s.actualResults[s.currentTestCaseName] = actualResult
 }
 
+func (s *ShieldTestSuite) AfterTest(suiteName, testName string) {
+	assert := s.Assert()
+	_, err := s.sDB.Commit(false)
+	assert.NoError(err, fmt.Sprintf("Error in commit db %v", err))
+	bridgeTokenInfos := make(map[common.Hash]*rawdbv2.BridgeTokenInfo)
+	tokens, err := statedb.GetBridgeTokens(s.sDB)
+	assert.NoError(err, fmt.Sprintf("Error in get bridge tokens from db %v", err))
+	for _, token := range tokens {
+		bridgeTokenInfos[*token.TokenID] = token
+	}
+	expectedBridgeTokensInfo := s.testCases[s.currentTestCaseName].ExpectedResult.BridgeTokensInfo
+	assert.Equal(expectedBridgeTokensInfo, bridgeTokenInfos, fmt.Errorf("Expected bridgeTokenInfos %v but get %v", expectedBridgeTokensInfo, bridgeTokenInfos).Error())
+}
+
 func (s *ShieldTestSuite) TestAcceptedNativeToken() {
 	s.test()
 	assert := s.Assert()
@@ -161,77 +176,113 @@ func (s *ShieldTestSuite) TestAcceptedNativeToken() {
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-/*func (s *ShieldTestSuite) TestAcceptedNotNativeToken() {*/
-/*s.test()*/
-/*assert := s.Assert()*/
-/*testCase := s.testCases[s.currentTestCaseName]*/
-/*actualResult := s.actualResults[s.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (s *ShieldTestSuite) TestAcceptedNotNativeTokenGreaterDecimal() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (s *ShieldTestSuite) TestRejectedInvalidExternalTokenID() {*/
-/*s.test()*/
-/*assert := s.Assert()*/
-/*testCase := s.testCases[s.currentTestCaseName]*/
-/*actualResult := s.actualResults[s.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (s *ShieldTestSuite) TestAcceptedNotNativeTokenSmallerDecimal() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (s *ShieldTestSuite) TestRejectedInvalidTokenID() {*/
-/*s.test()*/
-/*assert := s.Assert()*/
-/*testCase := s.testCases[s.currentTestCaseName]*/
-/*actualResult := s.actualResults[s.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (s *ShieldTestSuite) TestAcceptedShieldAmtSmallerWaitingAmt() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (s *ShieldTestSuite) TestRejectedTwoProofs() {*/
-/*s.test()*/
-/*assert := s.Assert()*/
-/*testCase := s.testCases[s.currentTestCaseName]*/
-/*actualResult := s.actualResults[s.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (s *ShieldTestSuite) TestAcceptedShieldAmtGreaterWaitingAmt() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (s *ShieldTestSuite) TestRejectedTwoProofsInOneRequest() {*/
-/*s.test()*/
-/*assert := s.Assert()*/
-/*testCase := s.testCases[s.currentTestCaseName]*/
-/*actualResult := s.actualResults[s.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (s *ShieldTestSuite) TestRejectedInvalidExternalTokenID() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (s *ShieldTestSuite) TestRejectedInvalidIncTokenID() {*/
-/*s.test()*/
-/*assert := s.Assert()*/
-/*testCase := s.testCases[s.currentTestCaseName]*/
-/*actualResult := s.actualResults[s.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (s *ShieldTestSuite) TestRejectedInvalidTokenID() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
+
+func (s *ShieldTestSuite) TestRejectedTwoProofs() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
+
+func (s *ShieldTestSuite) TestRejectedTwoProofsInOneRequest() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
+
+func (s *ShieldTestSuite) TestRejectedInvalidIncTokenID() {
+	s.test()
+	assert := s.Assert()
+	testCase := s.testCases[s.currentTestCaseName]
+	actualResult := s.actualResults[s.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
 func TestShieldTestSuite(t *testing.T) {
 	suite.Run(t, new(ShieldTestSuite))

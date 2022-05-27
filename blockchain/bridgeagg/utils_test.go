@@ -50,6 +50,7 @@ type ActualResult struct {
 	ProducerState     *State
 	ProcessorState    *State
 	AccumulatedValues *metadata.AccumulatedValues
+	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo
 }
 
 var _ = func() (_ struct{}) {
