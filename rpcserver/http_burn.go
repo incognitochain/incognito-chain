@@ -162,7 +162,7 @@ func (httpServer *HttpServer) handleGetNearBurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningConfirmMeta
+	confirmMeta := metadata.BurningNearConfirmMeta
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 

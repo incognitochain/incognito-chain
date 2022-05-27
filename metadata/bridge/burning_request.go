@@ -64,10 +64,19 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
 	// }
-
-	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
-		return false, false, err
+	isNear := bReq.Type == metadataCommon.BurningNearRequestMeta || bReq.Type == metadataCommon.BurningNearConfirmForDepositToSCMeta
+	// validate near unshield address
+	if isNear {
+		unshieldAddressBytesLength := len([]byte(bReq.RemoteAddress))
+		if unshieldAddressBytesLength < 2 || unshieldAddressBytesLength > 64 {
+			return false, false, fmt.Errorf("invalid near %v external address", bReq.RemoteAddress)
+		}
+	} else {
+		if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
+			return false, false, err
+		}
 	}
+
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("wrong request info's burned amount")
 	}
@@ -93,7 +102,7 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
-			bReq.Type == metadataCommon.BurningNearRequestMeta || bReq.Type == metadataCommon.BurningNearConfirmForDepositToSCMeta) {
+			isNear) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
@@ -113,7 +122,7 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningNearConfirmMeta || bReq.Type == metadataCommon.BurningNearForDepositToSCRequestMeta
+		bReq.Type == metadataCommon.BurningNearRequestMeta || bReq.Type == metadataCommon.BurningNearForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

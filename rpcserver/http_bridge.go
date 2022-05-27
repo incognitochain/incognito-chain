@@ -857,7 +857,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingWasmReq(params interfa
 func (httpServer *HttpServer) handleCreateRawTxWithBurningNearReq(params interface{},
 	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
-		metadata.BurningNearConfirmMeta,
+		metadata.BurningNearRequestMeta,
 		params,
 		closeChan,
 		httpServer,
