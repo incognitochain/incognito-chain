@@ -52,13 +52,12 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
-	var tx metadata.Transaction
 	var txReqID, tokenID common.Hash
 	var otaReceiver privacy.OTAReceiver
-	var amount uint64
+	var amount, reward uint64
 	inst := metadataCommon.NewInstruction()
 	if err := inst.FromStringSlice(content); err != nil {
-		return tx, err
+		return nil, err
 	}
 	if inst.ShardID != shardID {
 		return nil, nil
@@ -74,7 +73,8 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		if err != nil {
 			return nil, err
 		}
-		amount = acceptedContent.MintAmount
+		amount = acceptedContent.ConvertPUnifiedAmount
+		reward = acceptedContent.Reward
 		tokenID = acceptedContent.UnifiedTokenID
 		otaReceiver = acceptedContent.Receiver
 		txReqID = acceptedContent.TxReqID
@@ -92,8 +92,16 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		tokenID = rejectedConvertTokenToUnifiedToken.TokenID
 		otaReceiver = rejectedConvertTokenToUnifiedToken.Receiver
 	}
-	md := metadataBridge.NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(inst.Status, txReqID)
-	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: &otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
+	mintAmt := amount + reward
+	md := metadataBridge.NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(inst.Status, txReqID, amount, reward)
+	txParam := transaction.TxSalaryOutputParams{
+		Amount:          mintAmt,
+		ReceiverAddress: nil,
+		PublicKey:       &otaReceiver.PublicKey,
+		TxRandom:        &otaReceiver.TxRandom,
+		TokenID:         &tokenID,
+		Info:            []byte{},
+	}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return md },

@@ -3,8 +3,6 @@ package bridgeagg
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -20,77 +18,137 @@ type stateProducer struct{}
 
 func (sp *stateProducer) convert(
 	contentStr string, state *State, sDBs map[int]*statedb.StateDB, shardID byte,
-) (resInst [][]string, resState *State, err error) {
-	var errorType int
-	var contents [][]byte
-	resState = state
+) ([][]string, *State, error) {
+	// decode action
 	action := metadataCommon.NewAction()
-	md := &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
-	action.Meta = md
-	err = action.FromString(contentStr)
+	meta := &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
+	action.Meta = meta
+	err := action.FromString(contentStr)
 	if err != nil {
-		err = NewBridgeAggErrorWithValue(OtherError, err)
-		return
+		Logger.log.Errorf("[BridgeAgg] Can not decode action convert to punified token from shard: %v - Error: %v", contentStr, err)
+		return [][]string{}, state, nil
 	}
 
-	defer func() {
-		if err != nil {
-			rejectedConvertRequest := metadataBridge.RejectedConvertTokenToUnifiedToken{
-				TokenID:  md.TokenID,
-				Amount:   md.Amount,
-				Receiver: md.Receiver,
-			}
-			Logger.log.Warnf("Convert token with tx %s err %v", action.TxReqID.String(), err)
-			content, err := json.Marshal(rejectedConvertRequest)
-			if err != nil {
-				errorType = OtherError
-				return
-			}
-			contents = append(contents, content)
-		}
-		resInst, err = buildInstruction(
-			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
-			errorType, contents, action.TxReqID, shardID, err,
-		)
-		if err != nil {
-			Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), err)
-		}
-		err = nil
-	}()
+	// check unifiedTokenID
+	clonedVaults, err := state.CloneVaultsByUnifiedTokenID(meta.UnifiedTokenID)
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
+		rejectedInst := buildRejectedConvertReqInst(
+			*meta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError)
+		return [][]string{rejectedInst}, state, nil
+	}
 
-	if _, found := resState.unifiedTokenVaults[md.UnifiedTokenID]; !found {
-		errorType = NotFoundTokenIDInNetworkError
-		err = errors.New("Cannot find unifiedTokenID")
-		return
+	// check IncTokenID
+	vault, ok := clonedVaults[meta.TokenID]
+	if !ok {
+		Logger.log.Errorf("[BridgeAgg] IncTokenID is not found: %v", meta.TokenID)
+		rejectedInst := buildRejectedConvertReqInst(
+			*meta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError)
+		return [][]string{rejectedInst}, state, nil
 	}
-	if vault, found := resState.unifiedTokenVaults[md.UnifiedTokenID][md.TokenID]; !found {
-		errorType = NotFoundTokenIDInNetworkError
-		err = fmt.Errorf("Cannot find tokenID %s", md.TokenID.String())
-		return
-	} else {
-		v := vault.Clone()
-		v, mintAmount, e := convert(v, md.Amount)
-		if err != nil {
-			Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
-			errorType = InvalidConvertAmountError
-			err = e
-			return
-		}
-		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{
-			ConvertTokenToUnifiedTokenRequest: *md,
-			TxReqID:                           action.TxReqID,
-			MintAmount:                        mintAmount,
-		}
-		var content []byte
-		content, err = json.Marshal(acceptedContent)
-		if err != nil {
-			errorType = OtherError
-			return
-		}
-		resState.unifiedTokenVaults[md.UnifiedTokenID][md.TokenID] = v
-		contents = append(contents, content)
+
+	// convert pToken amount to pUnifiedToken amount
+	pUnifiedTokenConvertAmt, err := convertPTokenAmtToPUnifiedTokenAmt(vault.ExtDecimal(), meta.Amount)
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] Error convert to punified token amount: %v", err)
+		rejectedInst := buildRejectedConvertReqInst(
+			*meta, shardID, action.TxReqID, InvalidConvertAmountError)
+		return [][]string{rejectedInst}, state, nil
 	}
-	return
+
+	// calculate converting reward (in pDecimal)
+	reward, err := calShieldReward(vault, pUnifiedTokenConvertAmt)
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] Error convert to punified token amount: %v", err)
+		rejectedInst := buildRejectedConvertReqInst(
+			*meta, shardID, action.TxReqID, InvalidConvertAmountError)
+		return [][]string{rejectedInst}, state, nil
+	}
+
+	// update state
+	vault, err = updateVaultForShielding(vault, pUnifiedTokenConvertAmt, reward)
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] Error convert to punified token amount: %v", err)
+		rejectedInst := buildRejectedConvertReqInst(
+			*meta, shardID, action.TxReqID, InvalidConvertAmountError)
+		return [][]string{rejectedInst}, state, nil
+	}
+	clonedVaults[meta.TokenID] = vault
+	state.unifiedTokenVaults[meta.UnifiedTokenID] = clonedVaults
+
+	// build accepted convert instruction
+	acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{
+		UnifiedTokenID:        meta.UnifiedTokenID,
+		TokenID:               meta.TokenID,
+		Receiver:              meta.Receiver,
+		TxReqID:               action.TxReqID,
+		ConvertPUnifiedAmount: pUnifiedTokenConvertAmt,
+		ConvertPTokenAmount:   meta.Amount,
+		Reward:                reward,
+	}
+	content, _ := json.Marshal(acceptedContent)
+	insts := buildAcceptedInst(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta, shardID, [][]byte{content})
+
+	return insts, state, nil
+
+	// defer func() {
+	// 	if err != nil {
+	// 		rejectedConvertRequest := metadataBridge.RejectedConvertTokenToUnifiedToken{
+	// 			TokenID:  meta.TokenID,
+	// 			Amount:   meta.Amount,
+	// 			Receiver: meta.Receiver,
+	// 		}
+	// 		Logger.log.Warnf("Convert token with tx %s err %v", action.TxReqID.String(), err)
+	// 		content, err := json.Marshal(rejectedConvertRequest)
+	// 		if err != nil {
+	// 			errorType = OtherError
+	// 			return
+	// 		}
+	// 		contents = append(contents, content)
+	// 	}
+	// 	resInst, err = buildInstruction(
+	// 		metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
+	// 		errorType, contents, action.TxReqID, shardID, err,
+	// 	)
+	// 	if err != nil {
+	// 		Logger.log.Warnf("Cannot buildInstruction with tx %s err %v", action.TxReqID.String(), err)
+	// 	}
+	// 	err = nil
+	// }()
+
+	// if _, found := resState.unifiedTokenVaults[meta.UnifiedTokenID]; !found {
+	// 	errorType = NotFoundTokenIDInNetworkError
+	// 	err = errors.New("Cannot find unifiedTokenID")
+	// 	return
+	// }
+	// if vault, found := resState.unifiedTokenVaults[meta.UnifiedTokenID][meta.TokenID]; !found {
+	// 	errorType = NotFoundTokenIDInNetworkError
+	// 	err = fmt.Errorf("Cannot find tokenID %s", meta.TokenID.String())
+	// 	return
+	// } else {
+	// 	v := vault.Clone()
+	// 	v, mintAmount, e := convert(v, meta.Amount)
+	// 	if err != nil {
+	// 		Logger.log.Warnf("Invalid convert amount error: %v tx %s", err, action.TxReqID.String())
+	// 		errorType = InvalidConvertAmountError
+	// 		err = e
+	// 		return
+	// 	}
+	// 	acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{
+	// 		ConvertTokenToUnifiedTokenRequest: *meta,
+	// 		TxReqID:                           action.TxReqID,
+	// 		ConvertPUnifiedAmount:             mintAmount,
+	// 	}
+	// 	var content []byte
+	// 	content, err = json.Marshal(acceptedContent)
+	// 	if err != nil {
+	// 		errorType = OtherError
+	// 		return
+	// 	}
+	// 	resState.unifiedTokenVaults[meta.UnifiedTokenID][meta.TokenID] = v
+	// 	contents = append(contents, content)
+	// }
+	// return
 }
 
 func (sp *stateProducer) shield(
@@ -404,7 +462,6 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 	var err error
 
 	for unifiedTokenID, waitingUnshieldReqs := range state.waitingUnshieldReqs {
-
 		for i, waitingUnshieldReq := range waitingUnshieldReqs {
 			vaults, ok := clonedState.unifiedTokenVaults[unifiedTokenID]
 			if !ok {
@@ -449,8 +506,8 @@ func (sp *stateProducer) unshield(
 	action.Meta = meta
 	err := action.FromString(contentStr)
 	if err != nil {
-		err = NewBridgeAggErrorWithValue(ProcessUnshieldError, err)
-		return [][]string{}, nil, err
+		Logger.log.Errorf("[BridgeAgg] Can not decode unshield action from shard %v", err)
+		return [][]string{}, state, nil
 	}
 
 	var insts [][]string
@@ -463,7 +520,7 @@ func (sp *stateProducer) unshield(
 		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
 		rejectedInst := buildRejectedUnshieldReqInst(
 			*meta, shardID, action.TxReqID, NotFoundTokenIDInNetworkError)
-		return [][]string{rejectedInst}, state, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
+		return [][]string{rejectedInst}, state, nil
 	}
 
 	// check vaults
@@ -472,7 +529,7 @@ func (sp *stateProducer) unshield(
 		Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
 			*meta, shardID, action.TxReqID, CheckVaultUnshieldError)
-		return [][]string{rejectedInst}, state, NewBridgeAggErrorWithValue(CheckVaultUnshieldError, err)
+		return [][]string{rejectedInst}, state, nil
 	}
 
 	waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, action.TxReqID, beaconHeight)

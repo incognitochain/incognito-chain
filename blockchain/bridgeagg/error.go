@@ -11,6 +11,7 @@ const (
 	NotFoundTokenIDInNetworkError
 	NotFoundNetworkIDError
 	ShieldProofIsSubmittedError
+	ProcessConvertError
 	ProcessShieldError
 	ProcessUnshieldError
 	CheckVaultUnshieldError
@@ -37,6 +38,7 @@ var ErrCodeMessage = map[int]struct {
 	NotFoundNetworkIDError:        {1001, "Not found networkID"},
 	ShieldProofIsSubmittedError:   {1002, "Shield proof was submitted"},
 
+	ProcessConvertError:          {1003, "Beacon process convert instruction error"},
 	ProcessShieldError:           {1003, "Beacon process shield instruction error"},
 	ProcessUnshieldError:         {1003, "Beacon process unshield instruction error"},
 	CheckVaultUnshieldError:      {1003, "Check vaults for new unshielding request error"},

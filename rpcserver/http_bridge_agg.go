@@ -60,7 +60,7 @@ func (httpServer *HttpServer) handleGetBridgeAggConvertStatus(params interface{}
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var res json.RawMessage
+	var res bridgeagg.ConvertStatus
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)

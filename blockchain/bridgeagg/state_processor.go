@@ -18,55 +18,102 @@ type stateProcessor struct {
 }
 
 func (sp *stateProcessor) convert(
-	inst metadataCommon.Instruction, state *State, sDB *statedb.StateDB,
-) (*State, error) {
+	inst metadataCommon.Instruction,
+	state *State,
+	sDB *statedb.StateDB,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (*State, map[common.Hash]metadata.UpdatingInfo, error) {
 	var status byte
 	var txReqID common.Hash
 	var errorCode int
+	convertPUnifiedAmount := uint64(0)
+	reward := uint64(0)
+
 	switch inst.Status {
 	case common.AcceptedStatusStr:
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
-			return nil, err
+			return state, updatingInfoByTokenID, err
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
 		acceptedContent := metadataBridge.AcceptedConvertTokenToUnifiedToken{}
 		err = json.Unmarshal(contentBytes, &acceptedContent)
 		if err != nil {
-			return nil, err
+			return state, updatingInfoByTokenID, err
 		}
-		if vaults, found := state.unifiedTokenVaults[acceptedContent.UnifiedTokenID]; found {
-			if vault, found := vaults[acceptedContent.TokenID]; found {
-				vault, err = increaseVaultAmount(vault, acceptedContent.MintAmount)
-				if err != nil {
-					return nil, NewBridgeAggErrorWithValue(InvalidConvertAmountError, err)
-				}
-				state.unifiedTokenVaults[acceptedContent.UnifiedTokenID][acceptedContent.TokenID] = vault
-			} else {
-				return nil, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
-			}
+
+		unifiedTokenID := acceptedContent.UnifiedTokenID
+		tokenID := acceptedContent.TokenID
+
+		vaults, found := state.unifiedTokenVaults[unifiedTokenID]
+		if !found {
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("vault UnifiedTokenID is not found"))
+		}
+		vault, found := vaults[tokenID]
+		if !found {
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, errors.New("vault TokenID is not found"))
+		}
+
+		// update vault state
+		vault, err = updateVaultForShielding(vault, acceptedContent.ConvertPUnifiedAmount, acceptedContent.Reward)
+		if err != nil {
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessConvertError, err)
+		}
+		state.unifiedTokenVaults[unifiedTokenID][tokenID] = vault
+
+		// update bridge token info
+		// decrease ptoken amount
+		updatingInfo, found := updatingInfoByTokenID[tokenID]
+		if found {
+			updatingInfo.DeductAmt += acceptedContent.ConvertPTokenAmount
 		} else {
-			return nil, NewBridgeAggErrorWithValue(NotFoundTokenIDInNetworkError, err)
+			updatingInfo = metadata.UpdatingInfo{
+				CountUpAmt:    0,
+				DeductAmt:     acceptedContent.ConvertPTokenAmount,
+				TokenID:       tokenID,
+				IsCentralized: false,
+			}
 		}
+		updatingInfoByTokenID[tokenID] = updatingInfo
+
+		// increase punifiedtoken amount
+		updatingInfo, found = updatingInfoByTokenID[unifiedTokenID]
+		if found {
+			updatingInfo.CountUpAmt += acceptedContent.ConvertPUnifiedAmount
+		} else {
+			updatingInfo = metadata.UpdatingInfo{
+				CountUpAmt:      acceptedContent.ConvertPUnifiedAmount,
+				DeductAmt:       0,
+				TokenID:         unifiedTokenID,
+				ExternalTokenID: GetExternalTokenIDForUnifiedToken(),
+				IsCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[unifiedTokenID] = updatingInfo
+
+		convertPUnifiedAmount = acceptedContent.ConvertPUnifiedAmount
+		reward = acceptedContent.Reward
 		txReqID = acceptedContent.TxReqID
 		status = common.AcceptedStatusByte
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
-			return nil, err
+			return state, updatingInfoByTokenID, err
 		}
 		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
 		status = common.RejectedStatusByte
 	default:
-		return nil, errors.New("Can not recognize status")
+		return state, updatingInfoByTokenID, errors.New("Can not recognize status")
 	}
 	convertStatus := ConvertStatus{
-		Status:    status,
-		ErrorCode: errorCode,
+		ConvertPUnifiedAmount: convertPUnifiedAmount,
+		Reward:                reward,
+		Status:                status,
+		ErrorCode:             errorCode,
 	}
 	contentBytes, _ := json.Marshal(convertStatus)
-	return state, statedb.TrackBridgeAggStatus(
+	return state, updatingInfoByTokenID, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggConvertStatusPrefix(),
 		txReqID.Bytes(),
@@ -217,7 +264,6 @@ func (sp *stateProcessor) unshield(
 		}
 		errorCode = rejectContent.ErrorCode
 		txReqID = rejectContent.TxReqID
-		statusByte = common.RejectedStatusByte
 	} else {
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
@@ -230,6 +276,8 @@ func (sp *stateProcessor) unshield(
 			Logger.log.Errorf("Can not unmarshal unshield instruction: %v", err)
 			return state, updatingInfoByTokenID, err
 		}
+
+		txReqID = acceptedUnshieldReqInst.WaitingUnshieldReq.GetUnshieldID()
 		unifiedTokenID := acceptedUnshieldReqInst.UnifiedTokenID
 		waitingUnshieldReq := acceptedUnshieldReqInst.WaitingUnshieldReq
 		statusStr := inst.Status
