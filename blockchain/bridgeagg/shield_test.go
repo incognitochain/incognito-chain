@@ -119,16 +119,17 @@ func (s *ShieldTestSuite) test() {
 	producerManager := NewManagerWithValue(producerState)
 	processorState := testCase.Data.State.Clone()
 	processorManager := NewManagerWithValue(processorState)
-	actualInstructions, _, err := producerManager.BuildInstructions(testCase.Data.env)
+	actualInstructions, accumulatedValues, err := producerManager.BuildInstructions(testCase.Data.env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorManager.Process(actualInstructions, s.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
 
 	s.actualResults[s.currentTestCaseName] = ShieldActualResult{
 		ActualResult: ActualResult{
-			Instructions:   actualInstructions,
-			ProducerState:  producerState,
-			ProcessorState: processorState,
+			Instructions:      actualInstructions,
+			ProducerState:     producerState,
+			ProcessorState:    processorState,
+			AccumulatedValues: accumulatedValues,
 		},
 	}
 
