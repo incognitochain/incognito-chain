@@ -153,7 +153,7 @@ func (httpServer *HttpServer) handleGetBurnFTMProofForDepositToSC(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
-// handleGetNearBurnProof returns a proof of a tx burning pNEAR ( Fantom )
+// handleGetNearBurnProof returns a proof of a tx burning pNEAR
 func (httpServer *HttpServer) handleGetNearBurnProof(
 	params interface{},
 	closeChan <-chan struct{},

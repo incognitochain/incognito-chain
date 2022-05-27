@@ -248,9 +248,11 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 		return nil, errors.New("invalid external token id")
 	}
 
-	prefixLen := len(prefix)
-	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("metadata type %v with invalid external tokenID %v", metaType, tokenID))
+	if metaType != metadataCommon.BurningNearConfirmMeta && metaType != metadataCommon.BurningNearConfirmForDepositToSCMeta {
+		prefixLen := len(prefix)
+		if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
+			return nil, errors.New(fmt.Sprintf("metadata type %v with invalid external tokenID %v", metaType, tokenID))
+		}
 	}
 	return tokenID, nil
 }
@@ -362,6 +364,9 @@ func VerifyWasmShieldTxId(
 	}
 	ctx := context.Background()
 	accountId := "incognito"
+	var token, incognitoAddress, extractedContractId string
+	var amount uint64
+	isValid := false
 	for _, h := range hosts {
 		rpcClient, err := nearclient.NewClient(h)
 		if err != nil {
@@ -388,6 +393,13 @@ func VerifyWasmShieldTxId(
 
 		// detect shield event
 		for _, receiptOutCome := range txStatus.ReceiptsOutcome {
+			if len(receiptOutCome.Outcome.Status.Failure) != 0 {
+				isValid = false
+				break
+			}
+			if isValid {
+				continue
+			}
 			if receiptOutCome.Outcome.ExecutorID != contractId {
 				continue
 			}
@@ -398,14 +410,20 @@ func VerifyWasmShieldTxId(
 			if len(events) != 3 {
 				break
 			}
-			amount, err := strconv.ParseUint(events[2], 10, 64)
+			amount, err = strconv.ParseUint(events[2], 10, 64)
 			if err != nil {
 				break
 			}
-			return events[0], events[1], amount, receiptOutCome.Outcome.ExecutorID, nil
+			token = events[1]
+			incognitoAddress = events[0]
+			extractedContractId = receiptOutCome.Outcome.ExecutorID
+			isValid = true
 		}
+		if isValid {
+			return incognitoAddress, token, amount, extractedContractId, nil
+		}
+		break
 	}
-
 	return "", "", 0, "", errors.New("The endpoints are not response or set or invalid transaction")
 }
 
