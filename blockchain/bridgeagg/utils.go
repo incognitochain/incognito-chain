@@ -886,7 +886,7 @@ func calUnshieldFeeByShortageAmount(shortageAmount uint64, percentFee float64) (
 	return fee, nil
 }
 
-func calShieldReward(v *statedb.BridgeAggVaultState, shieldAmt uint64) (uint64, error) {
+func calRewardForRefillVault(v *statedb.BridgeAggVaultState, shieldAmt uint64) (uint64, error) {
 	// no demand for unshield
 	if v.WaitingUnshieldAmount() == 0 {
 		return 0, nil
@@ -905,7 +905,7 @@ func calShieldReward(v *statedb.BridgeAggVaultState, shieldAmt uint64) (uint64, 
 	return res.Uint64(), nil
 }
 
-func updateVaultForShielding(v *statedb.BridgeAggVaultState, shieldAmt, reward uint64) (*statedb.BridgeAggVaultState, error) {
+func updateVaultForRefill(v *statedb.BridgeAggVaultState, shieldAmt, reward uint64) (*statedb.BridgeAggVaultState, error) {
 	res := v.Clone()
 	// increase vault amount
 	newAmount := new(big.Int).Add(new(big.Int).SetUint64(v.Amount()), new(big.Int).SetUint64(shieldAmt))

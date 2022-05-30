@@ -57,7 +57,7 @@ func (sp *stateProducer) convert(
 	}
 
 	// calculate converting reward (in pDecimal)
-	reward, err := calShieldReward(vault, pUnifiedTokenConvertAmt)
+	reward, err := calRewardForRefillVault(vault, pUnifiedTokenConvertAmt)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error convert to punified token amount: %v", err)
 		rejectedInst := buildRejectedConvertReqInst(
@@ -66,7 +66,7 @@ func (sp *stateProducer) convert(
 	}
 
 	// update state
-	vault, err = updateVaultForShielding(vault, pUnifiedTokenConvertAmt, reward)
+	vault, err = updateVaultForRefill(vault, pUnifiedTokenConvertAmt, reward)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error convert to punified token amount: %v", err)
 		rejectedInst := buildRejectedConvertReqInst(
@@ -158,11 +158,6 @@ func (sp *stateProducer) shield(
 	shardID byte,
 	stateDBs map[int]*statedb.StateDB,
 ) ([][]string, *State, *metadata.AccumulatedValues, error) {
-	// resInst [][]string,
-	// resState *State,
-	// resAC *metadata.AccumulatedValues,
-	// err error,
-
 	// decode action from shard
 	action := metadataCommon.NewAction()
 	meta := &metadataBridge.ShieldRequest{}
@@ -276,7 +271,7 @@ func (sp *stateProducer) shield(
 			}
 
 			// calculate shielding reward (in pDecimal)
-			reward, err := calShieldReward(vault, incAmount.Uint64())
+			reward, err := calRewardForRefillVault(vault, incAmount.Uint64())
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not calcalate shielding reward - Error %v", err)
 				rejectedInst := buildRejectedInst(
@@ -287,8 +282,16 @@ func (sp *stateProducer) shield(
 			// update state: list of shielding txs, vault state (waiting unshield amount, waiting reward)
 			// TODO: update clonedAC?
 			evmInfo.ListTxUsedInBlock = append(evmInfo.ListTxUsedInBlock, uniqTx)
+			clonedAC, err := clonedAC.UpdateUniqTxsUsed(shieldData.NetworkID, evmInfo.ListTxUsedInBlock)
+			if err != nil {
+				Logger.log.Errorf("[BridgeAgg] Can not update accumulate values for shield request - Error %v", err)
+				rejectedInst := buildRejectedInst(
+					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
+				return [][]string{rejectedInst}, state, ac, nil
+			}
+
 			Logger.log.Errorf("Cloned AC after update: %+v\n", clonedAC)
-			clonedVaults[shieldData.IncTokenID], err = updateVaultForShielding(vault, incAmount.Uint64(), reward)
+			clonedVaults[shieldData.IncTokenID], err = updateVaultForRefill(vault, incAmount.Uint64(), reward)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not update vault state for shield request - Error %v", err)
 				rejectedInst := buildRejectedInst(

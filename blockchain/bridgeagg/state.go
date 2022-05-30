@@ -10,11 +10,18 @@ import (
 )
 
 type State struct {
-	unifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState // unifiedTokenID -> tokenID -> vault
-	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       // unifiedTokenID -> []waitingUnshieldReq
+	// unifiedTokenVaults: list of punified tokens and list pTokens are unified in each punified token
+	// unifiedTokenID -> tokenID -> vault
+	unifiedTokenVaults map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState
+
+	// waitingUnshieldReqs: list of unshielding requests in the queue and it is sorted by beacon height ascending
+	// unifiedTokenID -> []waitingUnshieldReq
+	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
 
 	// temporary state
-	newWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
+	// only contains new waiting unshield reqs in processing beacon block
+	newWaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
+	// only contains deteled (filled) waiting unshield reqs in processing beacon block
 	deletedWaitingUnshieldReqKeyHashes []common.Hash
 }
 
@@ -115,7 +122,7 @@ func (s *State) GetDiff(preState *State) (*State, map[common.Hash]bool, error) {
 	}
 
 	// only store new waiting unshield req in block
-	// old waiting unshield red don't update state
+	// old waiting unshield reqs don't update state
 	diffState.newWaitingUnshieldReqs = s.newWaitingUnshieldReqs
 	diffState.deletedWaitingUnshieldReqKeyHashes = s.deletedWaitingUnshieldReqKeyHashes
 

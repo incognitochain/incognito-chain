@@ -10,13 +10,18 @@ import (
 )
 
 type BridgeAggVaultState struct {
-	amount                uint64
-	lockedAmount          uint64
+	// vault's volume amount - available for unshield
+	amount uint64
+	// vault's amount was locked with current waiting unshield reqs
+	lockedAmount uint64
+	// total shortage unshield amount of current waiting unshield reqs
 	waitingUnshieldAmount uint64
-	waitingUnshieldFee    uint64
-	extDecimal            uint
-	networkID             uint
-	tokenID               common.Hash
+	// total unshield fee corresponding to waitingUnshieldAmount
+	waitingUnshieldFee uint64
+
+	extDecimal uint
+	networkID  uint
+	tokenID    common.Hash
 }
 
 func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {

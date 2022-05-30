@@ -55,7 +55,7 @@ func (sp *stateProcessor) convert(
 		}
 
 		// update vault state
-		vault, err = updateVaultForShielding(vault, acceptedContent.ConvertPUnifiedAmount, acceptedContent.Reward)
+		vault, err = updateVaultForRefill(vault, acceptedContent.ConvertPUnifiedAmount, acceptedContent.Reward)
 		if err != nil {
 			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessConvertError, err)
 		}
@@ -163,7 +163,7 @@ func (sp *stateProcessor) shield(
 			}
 
 			// update vault state
-			clonedVaults[data.IncTokenID], err = updateVaultForShielding(vault, data.ShieldAmount, data.Reward)
+			clonedVaults[data.IncTokenID], err = updateVaultForRefill(vault, data.ShieldAmount, data.Reward)
 			if err != nil {
 				Logger.log.Errorf("Can not update vault state for shield request - Error %v", err)
 				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessShieldError, fmt.Errorf("Can not update vault state for shield request - Error %v", err))
