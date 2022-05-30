@@ -16,6 +16,96 @@ type RemoteRPCClient struct {
 	Endpoint string
 }
 
+func (r *RemoteRPCClient) IsInstantFinality(chainID int) (res bool, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "isinstantfinality",
+		"params":  []interface{}{chainID},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result bool
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetAllViewDetail(chainID int) (res []jsonresult.GetViewResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getallviewdetail",
+		"params":  []interface{}{chainID},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result []jsonresult.GetViewResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetMiningInfo() (res *jsonresult.GetMiningInfoResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getmininginfo",
+		"params":  []interface{}{},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result *jsonresult.GetMiningInfoResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
 func (r *RemoteRPCClient) GetPortalShieldingRequestStatus(tx string) (res *metadata.PortalShieldingRequestStatus, err error) {
 	panic("implement me")
 }
@@ -775,12 +865,12 @@ func (r *RemoteRPCClient) GetBeaconBestState() (res jsonresult.GetBeaconBestStat
 		"params":  []interface{}{},
 		"id":      1,
 	})
-	if err != nil {
+	if rpcERR != nil {
 		return res, errors.New(rpcERR.Error())
 	}
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
-		return res, errors.New(rpcERR.Error())
+		return res, errors.New(err.Error())
 	}
 	resp := struct {
 		Result jsonresult.GetBeaconBestState
@@ -1004,6 +1094,46 @@ func (r *RemoteRPCClient) GetCandidateList() (res *jsonresult.CandidateListsResu
 
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+type ConsensusRule struct {
+	VoteRule          string `json:"vote_rule,omitempty"`
+	CreateRule        string `json:"create_rule,omitempty"`
+	HandleVoteRule    string `json:"handle_vote_rule,omitempty"`
+	HandleProposeRule string `json:"handle_propose_rule,omitempty"`
+	InsertRule        string `json:"insert_rule,omitempty"`
+	ValidatorRule     string `json:"validator_rule,omitempty"`
+}
+
+func (r *RemoteRPCClient) SetConsensusRule(rules ConsensusRule) (res map[string]interface{}, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "setconsensusrule",
+		"params":  []interface{}{rules},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result map[string]interface{}
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(err.Error())
 	}
 	return resp.Result, err
 }

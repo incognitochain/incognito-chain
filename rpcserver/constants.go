@@ -395,6 +395,7 @@ const (
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
 	getAllView            = "getallview"
 	getAllViewDetail      = "getallviewdetail"
+	isInstantFinality     = "isinstantfinality"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"

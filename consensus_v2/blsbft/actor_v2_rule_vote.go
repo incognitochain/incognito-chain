@@ -120,13 +120,13 @@ func CreateVote(
 		bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
 	}
 
-	blsSig, err := userKey.BLSSignData(block.Hash().GetBytes(), selfIdx, bytelist)
+	blsSig, err := userKey.BLSSignData(block.ProposeHash().GetBytes(), selfIdx, bytelist)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
 	if metadata.HasBridgeInstructions(block.GetInstructions()) {
-		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes())
+		bridgeSig, err = userKey.BriSignData(block.ProposeHash().GetBytes())
 		if err != nil {
 			return nil, NewConsensusError(UnExpectedError, err)
 		}
@@ -141,7 +141,7 @@ func CreateVote(
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
-	vote.BlockHash = block.Hash().String()
+	vote.BlockHash = block.ProposeHash().String()
 	vote.Validator = userBLSPk
 	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
 	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
