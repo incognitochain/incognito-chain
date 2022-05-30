@@ -10,6 +10,13 @@ func NewBeaconMultiView() *BeaconMultiView {
 	return bv
 }
 
+func (s *BeaconMultiView) SimulateAddView(view View) (cloneMultiview MultiView) {
+	sv := &BeaconMultiView{}
+	sv.multiView = s.Clone().(*multiView)
+	sv.AddView(view)
+	return sv
+}
+
 func (s *BeaconMultiView) AddView(v View) (int, error) {
 	added := s.multiView.addView(v)
 	err := s.FinalizeView(*s.GetExpectedFinalView().GetHash())

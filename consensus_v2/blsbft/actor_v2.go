@@ -633,7 +633,7 @@ func (a *actorV2) run() error {
 							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
-							a.chain.GetBlockConsensusData(createdBlk),
+							a.chain.GetBlockConsensusData(),
 						)
 						bftProposeMessage, err := a.ruleDirector.builder.ProposeMessageRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
@@ -1212,6 +1212,35 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		return errors.New("Already receive block")
 	}
 
+	//update consensus data
+	if proposeMsg.BestBlockConsensusData != nil {
+		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
+			if sid == -1 {
+				if a.chain.IsBeaconChain() {
+					if err = a.chain.(*blockchain.BeaconChain).VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				} else {
+					if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				}
+
+			} else if sid >= 0 {
+				if a.chain.IsBeaconChain() {
+					if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				} else {
+					if err = a.chain.(*blockchain.ShardChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				}
+
+			}
+		}
+	}
+
 	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
 	if err != nil {
 		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
@@ -1263,21 +1292,6 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		return err
 	}
 
-	//update consensus data
-	if proposeMsg.BestBlockConsensusData != nil {
-		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
-			if sid == -1 && a.chainID >= 0 {
-				if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-					a.logger.Error(err)
-				}
-			} else if sid >= 0 && a.chainID == -1 {
-				if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-					a.logger.Error(err)
-				}
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -1312,7 +1326,7 @@ func (a *actorV2) handleNewProposeMsg(
 	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	a.logger.Info("Receive block ", block.ProposeHash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
 }

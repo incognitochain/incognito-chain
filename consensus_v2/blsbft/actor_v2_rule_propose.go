@@ -119,7 +119,10 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	var err error
 	var isReProposeFirstBlockNextHeight = false
 	var isFirstBlockNextHeight = false
+
 	isFirstBlockNextHeight = p.isFirstBlockNextHeight(env.previousBlock, env.block)
+
+	//if block next timeslot
 	if isFirstBlockNextHeight {
 		err := p.verifyLemma2FirstBlockNextHeight(proposeMsg, env.block)
 		if err != nil {
@@ -127,13 +130,18 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 			return nil, err
 		}
 		isValidLemma2 = true
-	} else {
+	} else { //if not, check if it repropose the first
 		isReProposeFirstBlockNextHeight = p.isReProposeFromFirstBlockNextHeight(env.previousBlock, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 		if isReProposeFirstBlockNextHeight {
 			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 			if err != nil {
 				p.logger.Error("Verify lemma2 error", err)
 				return nil, err
+			}
+		} else {
+			if env.block.GetFinalityHeight() != 0 {
+				p.logger.Error("Finality Height is set, but lemma2 is error", err)
+				return nil, fmt.Errorf("Finality Height is set, but lemma2 is error")
 			}
 		}
 	}
@@ -240,10 +248,18 @@ func (p *ProposeRuleLemma2) verifyLemma2FirstBlockNextHeight(
 	}
 
 	finalityHeight := block.GetFinalityHeight()
-	previousBlockHeight := block.GetHeight() - 1
-	if finalityHeight != previousBlockHeight {
-		return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight expect %+v, but got %+v",
-			previousBlockHeight, finalityHeight)
+	version := block.GetVersion()
+	if version >= types.INSTANT_FINALITY_VERSION {
+		if finalityHeight != block.GetHeight() {
+			return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight instant finality expect %+v, but got %+v",
+				block.GetHeight(), finalityHeight)
+		}
+	} else if version >= types.LEMMA2_VERSION {
+		previousBlockHeight := block.GetHeight() - 1
+		if finalityHeight != previousBlockHeight {
+			return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight expect %+v, but got %+v",
+				previousBlockHeight, finalityHeight)
+		}
 	}
 
 	return nil
@@ -270,13 +286,24 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 		return false, err
 	}
 
+	//if valid proof, then check if finality is set correctly
 	finalityHeight := block.GetFinalityHeight()
 	if isValidProof {
-		previousBlockHeight := block.GetHeight() - 1
-		if finalityHeight != previousBlockHeight {
-			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
-				previousBlockHeight, finalityHeight)
+		if block.GetVersion() >= types.LEMMA2_VERSION {
+			if block.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+				if finalityHeight != block.GetHeight() {
+					return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight instant finality expect %+v, but got %+v",
+						block.GetHeight(), finalityHeight)
+				}
+			} else {
+				previousBlockHeight := block.GetHeight() - 1
+				if finalityHeight != previousBlockHeight {
+					return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
+						previousBlockHeight, finalityHeight)
+				}
+			}
 		}
+
 	} else {
 		if finalityHeight != 0 {
 			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",

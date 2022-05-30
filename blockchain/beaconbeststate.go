@@ -91,10 +91,11 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeStates      map[uint]pdex.State
-	portalStateV3  *portalprocessv3.CurrentPortalState
-	portalStateV4  *portalprocessv4.CurrentPortalStateV4
-	bridgeAggState *bridgeagg.State
+	pdeStates              map[uint]pdex.State
+	portalStateV3          *portalprocessv3.CurrentPortalState
+	portalStateV4          *portalprocessv4.CurrentPortalStateV4
+	bridgeAggState         *bridgeagg.State
+	LastBlockProcessBridge uint64
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {

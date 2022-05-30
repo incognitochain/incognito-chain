@@ -124,9 +124,10 @@ func CreateVote(
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
+
 	bridgeSig := []byte{}
 	if metadata.HasBridgeInstructions(block.GetInstructions()) {
-		bridgeSig, err = userKey.BriSignData(block.ProposeHash().GetBytes())
+		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes()) //proof is agg sig on block hash (not propose hash)
 		if err != nil {
 			return nil, NewConsensusError(UnExpectedError, err)
 		}
