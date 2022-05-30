@@ -93,7 +93,7 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 		otaReceiver = rejectedConvertTokenToUnifiedToken.Receiver
 	}
 	md := metadataBridge.NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(inst.Status, txReqID)
-	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: &otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return md },
@@ -135,7 +135,7 @@ func buildUnshieldUnifiedTokenResponse(
 		return nil, nil
 	}
 	md := metadataBridge.NewUnshieldResponseWithValue(inst.Status, txReqID)
-	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: &otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return md },

@@ -306,7 +306,7 @@ func (tx *TxToken) ValidateTxCorrectness(
 	bool,
 	error,
 ) {
-	utils.Logger.Log.Infof("VALIDATING TX %v; Env: Beacon %v, shard %v, confirmedTime %v\n", tx.Hash().String(), tx.GetValidationEnv().BeaconHeight(), tx.GetValidationEnv().ShardHeight(), tx.GetValidationEnv().ConfirmedTime())
+	utils.Logger.Log.Infof("VALIDATING TX %v; Env: Beacon %v, shard %v, confirmedTime %v", tx.Hash().String(), tx.GetValidationEnv().BeaconHeight(), tx.GetValidationEnv().ShardHeight(), tx.GetValidationEnv().ConfirmedTime())
 	ok, err := tx.GetTxNormal().ValidateTxCorrectness(transactionStateDB)
 	if (!ok) || (err != nil) {
 		return ok, err
@@ -346,8 +346,8 @@ func (tx TxToken) validateSanityDataOfProofV2() (bool, error) {
 			sndOutputs[i] = output.GetSNDerivator()
 		}
 		if privacy.CheckDuplicateScalarArray(sndOutputs) {
-			utils.Logger.Log.Errorf("Duplicate output coins' snd\n")
-			return false, utils.NewTransactionErr(utils.DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
+			utils.Logger.Log.Errorf("Duplicate output coins' snd")
+			return false, utils.NewTransactionErr(utils.DuplicatedOutputSndError, errors.New("Duplicate output coins' snd"))
 		}
 
 		isPrivacy := tx.IsPrivacy()

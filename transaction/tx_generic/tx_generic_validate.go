@@ -1,7 +1,6 @@
 package tx_generic //nolint:revive
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -58,13 +57,13 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 func GetTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, privacy.Coin, *common.Hash, error) {
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("GetTxMintData: cannot get recevier data")
+		return false, nil, nil, fmt.Errorf("getTxMintData: cannot get recevier data")
 	}
 	if len(outputCoins) != 1 {
-		return false, nil, nil, fmt.Errorf("GetTxMintData: should only have 1 receiver, got %v", len(outputCoins))
+		return false, nil, nil, fmt.Errorf("getTxMintData: should only have 1 receiver, got %v", len(outputCoins))
 	}
 	if inputCoins := tx.GetProof().GetInputCoins(); len(inputCoins) > 0 {
-		return false, nil, nil, fmt.Errorf("GetTxMintData: not a mint transaction, got %v input(s)", len(inputCoins))
+		return false, nil, nil, fmt.Errorf("getTxMintData: not a mint transaction, got %v input(s)", len(inputCoins))
 	}
 	return true, outputCoins[0], tokenID, nil
 }
@@ -97,7 +96,7 @@ func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 		isContinued, err := meta.ValidateTxWithBlockChain(tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
 		utils.Logger.Log.Info("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
-			utils.Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
+			utils.Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
 			return utils.NewTransactionErr(utils.RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
 		}
 		if !isContinued {
@@ -114,23 +113,10 @@ func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *st
 		if validMetadata {
 			return validMetadata, nil
 		}
-		return validMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid"))
+		return validMetadata, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("metadata is invalid"))
 	}
 	return true, nil
 }
-
-// func validateTransaction(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
-// 	switch tx.GetType() {
-// 	case common.TxRewardType:
-// 		return tx.ValidateTxSalary(transactionStateDB)
-// 	case common.TxReturnStakingType:
-// 		return tx.ValidateTxReturnStaking(transactionStateDB), nil
-// 	case common.TxConversionType:
-// 		return validateConversionVer1ToVer2(tx, transactionStateDB, shardID, tokenID)
-// 	}
-// 	// fmt.Printf("TokenID here is %s\n", tokenID.String())
-// 	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
-// }
 
 func MdValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	meta := tx.GetMetadata()
@@ -171,22 +157,16 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 			}
 			sigPubKey, err := new(operation.Point).FromBytesS(tx.GetSigPubKey())
 			if err != nil {
-				return false, errors.New("SigPubKey is invalid")
+				return false, fmt.Errorf("sigPubKey is invalid")
 			}
 			additionalData["sigPubKey"] = sigPubKey
 		}
 
 		additionalData["shardID"] = shardID
 
-		ok, err := tx.GetProof().ValidateSanity(tx.GetValidationEnv())
-		if !ok || err != nil {
-			s := ""
-			if !ok {
-				s = fmt.Sprintf("ValidateSanity Proof got error: ok = false; %s\n", err.Error())
-			} else {
-				s = fmt.Sprintf("ValidateSanity Proof got error: error %s\n", err.Error())
-			}
-			return false, errors.New(s)
+		valid, err := tx.GetProof().ValidateSanity(tx.GetValidationEnv())
+		if !valid || err != nil {
+			return false, fmt.Errorf("validateSanity Proof got error: %v", err)
 		}
 	}
 

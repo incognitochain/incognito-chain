@@ -397,7 +397,7 @@ func buildMintTokenTx(
 	txParam = transaction.TxSalaryOutputParams{
 		Amount:          tokenAmount,
 		ReceiverAddress: nil,
-		PublicKey:       &otaReceiver.PublicKey,
+		PublicKey:       otaReceiver.PublicKey,
 		TxRandom:        &otaReceiver.TxRandom,
 		TokenID:         &tokenID,
 		Info:            []byte{},
