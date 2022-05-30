@@ -50,8 +50,8 @@ consensus_param:
   assign_rule_v3_height: 1410217
   enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1519263
-  force_not_use_burned_coins: 1743438
-  lemma2_height: 1743438
+  force_not_use_burned_coins: 1806062
+  lemma2_height: 1806062
   block_producing_v3_height: 1000000000000
   byzantine_detector_height: 1000000000000
   timeslot: 40
@@ -88,3 +88,8 @@ pdex_param:
     auto_withdraw_order_limit_amount: 30
     min_prv_reserve_trading_rate: 10000000000000
 is_enable_bpv3_stats: false
+auto_enable_feature:
+  - maxcommitteesize48:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100

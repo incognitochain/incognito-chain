@@ -13,19 +13,24 @@ import (
 )
 
 type Pdexv3Params struct {
-	DefaultFeeRateBPS               uint            `json:"DefaultFeeRateBPS"`
-	FeeRateBPS                      map[string]uint `json:"FeeRateBPS"`
-	PRVDiscountPercent              uint            `json:"PRVDiscountPercent"`
-	TradingProtocolFeePercent       uint            `json:"TradingProtocolFeePercent"`
-	TradingStakingPoolRewardPercent uint            `json:"TradingStakingPoolRewardPercent"`
-	PDEXRewardPoolPairsShare        map[string]uint `json:"PDEXRewardPoolPairsShare"`
-	StakingPoolsShare               map[string]uint `json:"StakingPoolsShare"`
-	StakingRewardTokens             []common.Hash   `json:"StakingRewardTokens"`
-	MintNftRequireAmount            uint64          `json:"MintNftRequireAmount"`
-	MaxOrdersPerNft                 uint            `json:"MaxOrdersPerNft"`
-	AutoWithdrawOrderLimitAmount    uint            `json:"AutoWithdrawOrderLimitAmount"`
-	MinPRVReserveTradingRate        uint64          `json:"MinPRVReserveTradingRate"`
-	OrderMiningRewardRatioBPS       map[string]uint `json:"OrderMiningRewardRatioBPS,omitempty"`
+	DefaultFeeRateBPS                 uint            `json:"DefaultFeeRateBPS"`
+	FeeRateBPS                        map[string]uint `json:"FeeRateBPS"`
+	PRVDiscountPercent                uint            `json:"PRVDiscountPercent"`
+	TradingProtocolFeePercent         uint            `json:"TradingProtocolFeePercent"`
+	TradingStakingPoolRewardPercent   uint            `json:"TradingStakingPoolRewardPercent"`
+	PDEXRewardPoolPairsShare          map[string]uint `json:"PDEXRewardPoolPairsShare"`
+	StakingPoolsShare                 map[string]uint `json:"StakingPoolsShare"`
+	StakingRewardTokens               []common.Hash   `json:"StakingRewardTokens"`
+	MintNftRequireAmount              uint64          `json:"MintNftRequireAmount"`
+	MaxOrdersPerNft                   uint            `json:"MaxOrdersPerNft"`
+	AutoWithdrawOrderLimitAmount      uint            `json:"AutoWithdrawOrderLimitAmount"`
+	MinPRVReserveTradingRate          uint64          `json:"MinPRVReserveTradingRate"`
+	DefaultOrderTradingRewardRatioBPS uint            `json:"DefaultOrderTradingRewardRatioBPS,omitempty"`
+	OrderTradingRewardRatioBPS        map[string]uint `json:"OrderTradingRewardRatioBPS,omitempty"`
+	OrderLiquidityMiningBPS           map[string]uint `json:"OrderLiquidityMiningBPS,omitempty"`
+	DAOContributingPercent            uint            `json:"DAOContributingPercent,omitempty"`
+	MiningRewardPendingBlocks         uint64          `json:"MiningRewardPendingBlocks,omitempty"`
+	OrderMiningRewardRatioBPS         map[string]uint `json:"OrderMiningRewardRatioBPS,omitempty"`
 }
 
 type ParamsModifyingRequest struct {

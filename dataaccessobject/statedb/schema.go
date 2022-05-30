@@ -79,15 +79,18 @@ var (
 	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-status-")
 	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-status-")
 	pdexv3PoolPairLpFeePerSharePrefix       = []byte("pdexv3-poolpair-lpfeepershare-")
+	pdexv3PoolPairLmRewardPerSharePrefix    = []byte("pdexv3-poolpair-lmewardpershare-")
 	pdexv3PoolPairProtocolFeePrefix         = []byte("pdexv3-poolpair-protocolfee-")
 	pdexv3PoolPairStakingPoolFeePrefix      = []byte("pdexv3-poolpair-stakingpoolfee-")
 	pdexv3ShareTradingFeePrefix             = []byte("pdexv3-share-tradingfee-")
 	pdexv3ShareLastLpFeesPerSharePrefix     = []byte("pdexv3-share-lastlpfeespershare-")
+	pdexv3ShareLastLmRewardPerSharePrefix   = []byte("pdexv3-share-lastlmrewardspershare-")
 	pdexv3StakingPoolRewardPerSharePrefix   = []byte("pdexv3-stakingpool-rewardpershare-")
 	pdexv3StakerRewardPrefix                = []byte("pdexv3-staker-reward-")
 	pdexv3StakerLastRewardPerSharePrefix    = []byte("pdexv3-staker-lastrewardpershare-")
 	pdexv3PoolPairMakingVolumePrefix        = []byte("pdexv3-poolpair-makingvolume-")
 	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
+	pdexv3PoolPairLmLockedSharePrefix       = []byte("pdexv3-poolpair-lmlockedshare-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -687,6 +690,16 @@ func GetPdexv3PoolPairLpFeePerSharesPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
+func GetPdexv3PoolPairLmRewardPerSharesPrefix() []byte {
+	hash := common.HashH(pdexv3PoolPairLmRewardPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3PoolPairLmLockedSharePrefix() []byte {
+	hash := common.HashH(pdexv3PoolPairLmLockedSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
 func GetPdexv3PoolPairProtocolFeesPrefix() []byte {
 	hash := common.HashH(pdexv3PoolPairProtocolFeePrefix)
 	return hash[:prefixHashKeyLength]
@@ -704,6 +717,11 @@ func GetPdexv3ShareTradingFeesPrefix() []byte {
 
 func GetPdexv3ShareLastLpFeePerSharesPrefix() []byte {
 	hash := common.HashH(pdexv3ShareLastLpFeesPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3ShareLastLmRewardPerSharesPrefix() []byte {
+	hash := common.HashH(pdexv3ShareLastLmRewardPerSharePrefix)
 	return hash[:prefixHashKeyLength]
 }
 

@@ -980,3 +980,18 @@ func addOrderReward(
 	}
 	return base
 }
+
+func addMakingVolume(
+	base map[common.Hash]*MakingVolume, additional map[common.Hash]map[string]*big.Int,
+) map[common.Hash]*MakingVolume {
+	for tokenID, volume := range additional {
+		for nftID, amt := range volume {
+			if _, ok := base[tokenID]; !ok {
+				base[tokenID] = NewMakingVolume()
+			}
+
+			base[tokenID].AddVolume(nftID, amt)
+		}
+	}
+	return base
+}

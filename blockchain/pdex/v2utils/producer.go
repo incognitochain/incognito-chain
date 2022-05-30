@@ -292,3 +292,27 @@ func BuildWithdrawStakingRewardInsts(
 
 	return insts
 }
+
+func BuildDistributeMiningOrderRewardInsts(
+	pairID string,
+	makingTokenID common.Hash,
+	mintingAmount uint64,
+	mintingTokenID common.Hash,
+) [][]string {
+	reqContent := metadataPdexv3.DistributeMiningOrderRewardContent{
+		PoolPairID:    pairID,
+		MakingTokenID: makingTokenID,
+		Amount:        mintingAmount,
+		TokenID:       mintingTokenID,
+	}
+	reqContentBytes, _ := json.Marshal(reqContent)
+
+	return [][]string{
+		{
+			strconv.Itoa(metadataCommon.Pdexv3DistributeMiningOrderRewardMeta),
+			strconv.Itoa(-1),
+			metadataPdexv3.RequestAcceptedChainStatus,
+			string(reqContentBytes),
+		},
+	}
+}

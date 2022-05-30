@@ -61,7 +61,7 @@ consensus_param:
   staking_flow_v3_height: 2823780
   lemma2_height: 2868685
   force_not_use_burned_coins: 2922689
-  block_producing_v3_height: 1000000000000
+  block_producing_v3_height: 3146717
   byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
@@ -99,3 +99,8 @@ pdex_param:
     auto_withdraw_order_limit_amount: 10
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
+auto_enable_feature:
+  - maxcommitteesize48:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100

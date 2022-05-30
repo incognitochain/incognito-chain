@@ -178,6 +178,7 @@ const (
 	Pdexv3DistributeStakingRewardMeta       = 305
 	Pdexv3WithdrawStakingRewardRequestMeta  = 306
 	Pdexv3WithdrawStakingRewardResponseMeta = 307
+	Pdexv3DistributeMiningOrderRewardMeta   = 308
 
 	// pBSC
 	BurningPBSCForDepositToSCRequestMeta = 326
@@ -258,6 +259,7 @@ const (
 const (
 	StopAutoStakingAmount = 0
 	EVMConfirmationBlocks = 15
+	PLGConfirmationBlocks = 35
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

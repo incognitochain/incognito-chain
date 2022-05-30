@@ -65,6 +65,14 @@ func (chain *ShardChain) GetMultiView() *multiview.MultiView {
 	return chain.multiView
 }
 
+func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *ShardChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
+}
+
 func (chain *ShardChain) GetFinalView() multiview.View {
 	return chain.multiView.GetFinalView()
 }
@@ -451,7 +459,7 @@ func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(ts int64, commit
 	proposer, proposerIndex := GetProposer(
 		ts,
 		committees,
-		GetProposerLength(),
+		chain.GetBestState().GetProposerLength(),
 	)
 	return proposer, proposerIndex
 }

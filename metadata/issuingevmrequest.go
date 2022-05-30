@@ -251,8 +251,14 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
-	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(EVMConfirmationBlocks))) == -1 {
-		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", evmHeader.Number.String(), mostRecentBlkNum.String())
+	minEVMConfirmationBlocks := EVMConfirmationBlocks
+	if iReq.Type == IssuingPLGRequestMeta {
+		minEVMConfirmationBlocks = PLGConfirmationBlocks
+	}
+	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(int64(minEVMConfirmationBlocks)))) == -1 {
+		errMsg := fmt.Sprintf("WARNING: It needs %v confirmation blocks for the process, "+
+			"the requested block (%s) but the latest block (%s)", minEVMConfirmationBlocks,
+			evmHeader.Number.String(), mostRecentBlkNum.String())
 		Logger.log.Warn(errMsg)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New(errMsg))
 	}
@@ -395,6 +401,10 @@ func GetMostRecentEVMBlockHeight(protocol string, host string, port string) (*bi
 	}
 	if getEVMBlockNumRes.RPCError != nil {
 		return nil, errors.New(fmt.Sprintf("an error occured during calling eth_blockNumber: %s", getEVMBlockNumRes.RPCError.Message))
+	}
+
+	if len(getEVMBlockNumRes.Result) < 2 {
+		return nil, errors.New(fmt.Sprintf("invalid block height number eth_blockNumber: %s", getEVMBlockNumRes.Result))
 	}
 
 	blockNumber := new(big.Int)

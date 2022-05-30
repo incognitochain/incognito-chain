@@ -21,6 +21,7 @@ type View interface {
 	GetBlock() types.BlockInterface
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
+	GetProposerLength() int
 }
 
 type MultiView struct {
@@ -53,6 +54,19 @@ func NewMultiView() *MultiView {
 			}
 		}
 	}()
+	return s
+}
+
+func (multiView *MultiView) Clone() *MultiView {
+	s := NewMultiView()
+	for h, v := range multiView.viewByHash {
+		s.viewByHash[h] = v
+	}
+	for h, v := range multiView.viewByPrevHash {
+		s.viewByPrevHash[h] = v
+	}
+	s.finalView = multiView.finalView
+	s.bestView = multiView.bestView
 	return s
 }
 

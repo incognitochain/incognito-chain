@@ -130,6 +130,9 @@ const (
 	unlockMempool              = "unlockmempool"
 	handleGetConsensusInfoV3   = "getconsensusinfov3"
 	getAutoStakingByHeight     = "getautostakingbyheight"
+	sendFinishSync             = "sendfinishsync"
+	setAutoEnableFeatureConfig = "setautoenablefeatureconfig"
+	getAutoEnableFeatureConfig = "getautoenablefeatureconfig"
 	getCommitteeState          = "getcommitteestate"
 	convertPaymentAddress      = "convertpaymentaddress"
 	getTotalBlockInEpoch       = "gettotalblockinepoch"
@@ -141,6 +144,7 @@ const (
 	setConsensusRule           = "setconsensusrule"
 	getConsensusRule           = "getconsensusrule"
 	getByzantineDetectorInfo   = "getbyzantinedetectorinfo"
+	getByzantineBlackList      = "getbyzantineblacklist"
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
@@ -362,6 +366,7 @@ const (
 	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
 	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
 
+	getFeatureStats                              = "getfeaturestats"
 	getBurnPLGProofForDepositToSC                = "getburnplgprooffordeposittosc"
 	createAndSendBurningPLGForDepositToSCRequest = "createandsendburningplgfordeposittoscrequest"
 

@@ -179,6 +179,7 @@ const (
 	BeaconOnly                           = metadataCommon.BeaconOnly
 	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
 	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
+	PLGConfirmationBlocks                = metadataCommon.PLGConfirmationBlocks
 	NoAction                             = metadataCommon.NoAction
 	MetaRequestBeaconMintTxs             = metadataCommon.MetaRequestBeaconMintTxs
 	MetaRequestShardMintTxs              = metadataCommon.MetaRequestShardMintTxs

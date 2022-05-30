@@ -29,6 +29,8 @@ const (
 	Duration                           = 1000000
 	MaxSubsetCommittees                = 2
 	SFV3_MinShardCommitteeSize         = 8
+
+	DEQUEUE_THRESHOLD_PERCENT = 0.5
 )
 
 // burning addresses

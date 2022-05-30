@@ -462,6 +462,8 @@ func IsPdexv3Type(metadataType int) bool {
 		return true
 	case Pdexv3WithdrawStakingRewardResponseMeta:
 		return true
+	case Pdexv3DistributeMiningOrderRewardMeta:
+		return true
 	default:
 		return false
 	}

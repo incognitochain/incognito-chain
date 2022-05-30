@@ -69,15 +69,18 @@ const (
 	ErrInvalidPdexv3StakingPoolStateType               = "invalid pdex v3 staking pool state type"
 	ErrInvalidPdexv3StakerStateType                    = "invalid pdex v3 staker state type"
 	ErrInvalidPdexv3PoolPairLpFeePerShareStateType     = "invalid pdex v3 pool pair lp fee per share state type"
+	ErrInvalidPdexv3PoolPairLmRewardPerShareStateType  = "invalid pdex v3 pool pair lm reward per share state type"
 	ErrInvalidPdexv3PoolPairProtocolFeeStateType       = "invalid pdex v3 pool pair protocol fee state type"
 	ErrInvalidPdexv3PoolPairStakingPoolFeeStateType    = "invalid pdex v3 pool pair staking pool fee state type"
 	ErrInvalidPdexv3ShareTradingFeeStateType           = "invalid pdex v3 share trading fee state type"
 	ErrInvalidPdexv3LastLPFeesPerShareStateType        = "invalid pdex v3 share last lp fees per share state type"
+	ErrInvalidPdexv3LastLmRewardPerShareStateType      = "invalid pdex v3 share last lm reward per share state type"
 	ErrInvalidPdexv3StakingPoolRewardPerShareStateType = "invalid pdex v3 staking pool reward per share state type"
 	ErrInvalidPdexv3StakerRewardStateType              = "invalid pdex v3 staker reward state type"
 	ErrInvalidPdexv3StakerLastRewardPerShareStateType  = "invalid pdex v3 staker last reward per share state type"
 	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
+	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -139,6 +142,7 @@ const (
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
 	StoreSyncingValidatorsError
+	SaveStopAutoStakerInfoError
 
 	DeleteBeaconCommitteeError
 	DeleteOneShardCommitteeError
@@ -342,6 +346,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
 	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
+	SaveStopAutoStakerInfoError:            {-3016, "Store Stop Autostake Info Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},

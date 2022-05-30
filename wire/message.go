@@ -35,7 +35,8 @@ const (
 	CmdMsgCheckResp = "msgcheckresp"
 
 	// validator state messages
-	CmdMsgFinishSync = "finishsync"
+	CmdMsgFinishSync  = "finishsync"
+	CmdMsgFeatureStat = "featurestat"
 )
 
 // Interface for message wire on P2P network
@@ -133,6 +134,9 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdMsgFinishSync:
 		msg = &MessageFinishSync{}
 		break
+	case CmdMsgFeatureStat:
+		msg = &MessageFeature{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -191,6 +195,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdBFT, nil
 	case reflect.TypeOf(&MessageFinishSync{}):
 		return CmdMsgFinishSync, nil
+	case reflect.TypeOf(&MessageFeature{}):
+		return CmdMsgFeatureStat, nil
 	default:
 		return utils.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
 	}

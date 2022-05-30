@@ -99,3 +99,8 @@ pdex_param:
     auto_withdraw_order_limit_amount: 10
     min_prv_reserve_trading_rate: 1000000000000
 is_enable_bpv3_stats: false
+auto_enable_feature:
+  - maxcommitteesize48:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100

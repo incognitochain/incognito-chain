@@ -104,6 +104,9 @@ var HttpHandler = map[string]httpHandler{
 	unlockMempool:              (*HttpServer).handleUnlockMempool,
 	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	sendFinishSync:             (*HttpServer).handleSendFinishSync,
+	setAutoEnableFeatureConfig: (*HttpServer).handleSetAutoEnableFeatureConfig,
+	getAutoEnableFeatureConfig: (*HttpServer).handleGetAutoEnableFeatureConfig,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
@@ -115,6 +118,7 @@ var HttpHandler = map[string]httpHandler{
 	setConsensusRule:           (*HttpServer).handleSetConsensusRule,
 	getConsensusRule:           (*HttpServer).handleGetConsensusRule,
 	getByzantineDetectorInfo:   (*HttpServer).handleGetByzantineDetectorInfo,
+	getByzantineBlackList:      (*HttpServer).handleGetByzantineBlackList,
 	removeByzantineDetector:    (*HttpServer).handleRemoveByzantineDetector,
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
@@ -335,6 +339,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
 	getBurnPLGProofForDepositToSC:                 (*HttpServer).handleGetBurnPLGProofForDepositToSC,
 	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
+
+	//feature stat
+	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,
 
 	//new pool info
 	getSyncStats:          (*HttpServer).hanldeGetSyncStats,

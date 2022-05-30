@@ -31,7 +31,7 @@ func (_m *BeaconViewRetriever) CandidateWaitingForNextRandom() []incognitokey.Co
 }
 
 // GetAllCommitteeValidatorCandidate provides a mock function with given fields:
-func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	ret := _m.Called()
 
 	var r0 map[byte][]incognitokey.CommitteePublicKey
@@ -52,12 +52,12 @@ func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]i
 		}
 	}
 
-	var r2 []incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(2).(func() []incognitokey.CommitteePublicKey); ok {
+	var r2 map[byte][]incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(2).(func() map[byte][]incognitokey.CommitteePublicKey); ok {
 		r2 = rf()
 	} else {
 		if ret.Get(2) != nil {
-			r2 = ret.Get(2).([]incognitokey.CommitteePublicKey)
+			r2 = ret.Get(2).(map[byte][]incognitokey.CommitteePublicKey)
 		}
 	}
 
@@ -106,14 +106,23 @@ func (_m *BeaconViewRetriever) GetAllCommitteeValidatorCandidate() (map[byte][]i
 		}
 	}
 
-	var r8 error
-	if rf, ok := ret.Get(8).(func() error); ok {
+	var r8 []incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(8).(func() []incognitokey.CommitteePublicKey); ok {
 		r8 = rf()
 	} else {
-		r8 = ret.Error(8)
+		if ret.Get(8) != nil {
+			r8 = ret.Get(8).([]incognitokey.CommitteePublicKey)
+		}
 	}
 
-	return r0, r1, r2, r3, r4, r5, r6, r7, r8
+	var r9 error
+	if rf, ok := ret.Get(9).(func() error); ok {
+		r9 = rf()
+	} else {
+		r9 = ret.Error(9)
+	}
+
+	return r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
 }
 
 // GetAllCommitteeValidatorCandidateFlattenListFromDatabase provides a mock function with given fields:
@@ -277,4 +286,88 @@ func (_m *BeaconViewRetriever) GetStakerInfo(_a0 string) (*statedb.StakerInfo, b
 	}
 
 	return r0, r1, r2
+}
+
+// IsValidMintNftRequireAmount provides a mock function with given fields: _a0
+func (_m *BeaconViewRetriever) IsValidMintNftRequireAmount(_a0 uint64) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// IsValidNftID provides a mock function with given fields: _a0
+func (_m *BeaconViewRetriever) IsValidNftID(_a0 string) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// IsValidPdexv3ShareAmount provides a mock function with given fields: _a0, _a1, _a2
+func (_m *BeaconViewRetriever) IsValidPdexv3ShareAmount(_a0 string, _a1 string, _a2 uint64) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, uint64) error); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// IsValidPdexv3StakingPool provides a mock function with given fields: _a0
+func (_m *BeaconViewRetriever) IsValidPdexv3StakingPool(_a0 string) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// IsValidPdexv3UnstakingAmount provides a mock function with given fields: _a0, _a1, _a2
+func (_m *BeaconViewRetriever) IsValidPdexv3UnstakingAmount(_a0 string, _a1 string, _a2 uint64) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, uint64) error); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// IsValidPoolPairID provides a mock function with given fields: _a0
+func (_m *BeaconViewRetriever) IsValidPoolPairID(_a0 string) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }

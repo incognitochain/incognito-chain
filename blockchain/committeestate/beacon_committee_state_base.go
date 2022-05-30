@@ -450,6 +450,7 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.rewardReceiver,
 				b.autoStake,
 				b.stakingTx,
+				1,
 			)
 			if err != nil {
 				panic(err)
