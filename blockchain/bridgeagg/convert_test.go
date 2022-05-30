@@ -206,6 +206,30 @@ func (c *ConvertTestSuite) TestRejectedThenAccepted() {
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
+func (c *ConvertTestSuite) TestAcceptedAmtSmallerWaitingAmt() {
+	c.test()
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
+
+func (c *ConvertTestSuite) TestAcceptedAmtGreaterWaitingAmt() {
+	c.test()
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
+
 func TestConvertTestSuite(t *testing.T) {
 	suite.Run(t, new(ConvertTestSuite))
 }
