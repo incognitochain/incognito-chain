@@ -135,11 +135,6 @@ func (httpServer *HttpServer) hanldeGetAllViewDetail(params interface{}, closeCh
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShardID component invalid"))
 	}
-	// numOfBlks, ok := arrayParams[1].(float64)
-	// if !ok {
-	// 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block height component invalid"))
-	// }
-
 	res := []jsonresult.GetViewResult{}
 	var views []multiview.View
 	if shardID == -1 {
@@ -149,6 +144,7 @@ func (httpServer *HttpServer) hanldeGetAllViewDetail(params interface{}, closeCh
 		if sChain != nil {
 			views = sChain.GetAllView()
 		}
+
 	}
 
 	for _, view := range views {
@@ -160,4 +156,27 @@ func (httpServer *HttpServer) hanldeGetAllViewDetail(params interface{}, closeCh
 		})
 	}
 	return res, nil
+}
+
+func (httpServer *HttpServer) hanldeIsInstantFinality(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid param, param 0 must be shardid"))
+	}
+
+	shardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShardID component invalid"))
+	}
+	var isInstantFinality bool
+	if shardID == -1 {
+		isInstantFinality = httpServer.config.BlockChain.BeaconChain.GetMultiView().IsInstantFinality()
+	} else {
+		sChain := httpServer.config.BlockChain.ShardChain[int(shardID)]
+		if sChain != nil {
+			isInstantFinality = sChain.GetMultiView().IsInstantFinality()
+		}
+
+	}
+	return isInstantFinality, nil
 }

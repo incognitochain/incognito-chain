@@ -2,6 +2,7 @@ package signaturecounter
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 	"sync"
 
@@ -46,7 +47,8 @@ func (p Penalty) IsEmpty() bool {
 type IMissingSignatureCounter interface {
 	MissingSignature() map[string]MissingSignature
 	Penalties() []Penalty
-	AddMissingSignature(validationData string, committees []incognitokey.CommitteePublicKey) error
+	AddMissingSignature(validationData string, shardID int, committees []incognitokey.CommitteePublicKey) error
+	AddPreviousMissignSignature(prevValidationData string, shardID int) error
 	GetAllSlashingPenaltyWithActualTotalBlock() map[string]Penalty
 	GetAllSlashingPenaltyWithExpectedTotalBlock(map[string]uint) map[string]Penalty
 	Reset(committees []string)
@@ -57,8 +59,10 @@ type IMissingSignatureCounter interface {
 type MissingSignatureCounter struct {
 	missingSignature map[string]MissingSignature
 	penalties        []Penalty
+	lock             *sync.RWMutex
 
-	lock *sync.RWMutex
+	lastShardStateValidatorCommittee map[int][]string
+	lastShardStateValidatorIndex     map[int][]int
 }
 
 func (s *MissingSignatureCounter) Penalties() []Penalty {
@@ -81,16 +85,17 @@ func NewDefaultSignatureCounter(committees []string) *MissingSignatureCounter {
 		missingSignature[v] = NewMissingSignature()
 	}
 	return &MissingSignatureCounter{
-		missingSignature: missingSignature,
-		penalties:        defaultRule,
-		lock:             new(sync.RWMutex),
+		missingSignature:                 missingSignature,
+		penalties:                        defaultRule,
+		lock:                             new(sync.RWMutex),
+		lastShardStateValidatorCommittee: make(map[int][]string),
+		lastShardStateValidatorIndex:     make(map[int][]int),
 	}
 }
 
-func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
+func (s *MissingSignatureCounter) AddMissingSignature(data string, shardID int, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
 	validationData, err := consensustypes.DecodeValidationData(data)
 	if err != nil {
 		return err
@@ -115,6 +120,55 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 		}
 		s.missingSignature[toBeSignedCommittee] = missingSignature
 	}
+	s.lastShardStateValidatorCommittee[shardID] = tempToBeSignedCommittees
+	s.lastShardStateValidatorIndex[shardID] = validationData.ValidatiorsIdx
+	return nil
+}
+
+func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shardID int) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	tempToBeSignedCommittees := s.lastShardStateValidatorCommittee[shardID]
+	prevShardStateValidatorIndex := s.lastShardStateValidatorIndex[shardID]
+	if len(prevShardStateValidatorIndex) == 0 || len(tempToBeSignedCommittees) == 0 {
+		return nil
+	}
+
+	prevValidationData, err := consensustypes.DecodeValidationData(data)
+	if err != nil {
+		return err
+	}
+	uncountCommittees := make(map[string]struct{})
+
+	if len(prevValidationData.ValidatiorsIdx) <= len(prevShardStateValidatorIndex) {
+		return nil
+	}
+
+	//find index that is not count in previous validator index
+	for _, idx := range prevValidationData.ValidatiorsIdx {
+		if idx >= len(tempToBeSignedCommittees) {
+			return fmt.Errorf("Idx = %+v, greater than len(toBeSignedCommittees) = %+v", idx, len(tempToBeSignedCommittees))
+		}
+		if common.IndexOfInt(idx, prevShardStateValidatorIndex) == -1 {
+			uncountCommittees[tempToBeSignedCommittees[idx]] = struct{}{}
+		}
+	}
+
+	//revert missing counter
+	for _, toBeSignedCommittee := range tempToBeSignedCommittees {
+		missingSignature, ok := s.missingSignature[toBeSignedCommittee]
+		if !ok {
+			// skip toBeSignedCommittee not in current list
+			continue
+		}
+		if _, ok := uncountCommittees[toBeSignedCommittee]; ok {
+			if missingSignature.Missing > 0 {
+				missingSignature.Missing--
+			}
+		}
+		s.missingSignature[toBeSignedCommittee] = missingSignature
+	}
+
 	return nil
 }
 
@@ -177,19 +231,19 @@ func getSlashingPenalty(numberOfMissingSig uint, total uint, penalties []Penalty
 func (s *MissingSignatureCounter) Reset(committees []string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
 	missingSignature := make(map[string]MissingSignature)
 	for _, v := range committees {
 		missingSignature[v] = NewMissingSignature()
 	}
 
 	s.missingSignature = missingSignature
+	s.lastShardStateValidatorCommittee = make(map[int][]string)
+	s.lastShardStateValidatorIndex = make(map[int][]int)
 }
 
 func (s *MissingSignatureCounter) CommitteeChange(newCommittees []string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
 	missingSignature := make(map[string]MissingSignature)
 	for _, v := range newCommittees {
 		res, ok := s.missingSignature[v]
@@ -208,11 +262,20 @@ func (s *MissingSignatureCounter) Copy() IMissingSignatureCounter {
 	defer s.lock.RUnlock()
 
 	newS := &MissingSignatureCounter{
-		missingSignature: make(map[string]MissingSignature),
-		penalties:        make([]Penalty, len(s.penalties)),
-		lock:             new(sync.RWMutex),
+		missingSignature:                 make(map[string]MissingSignature),
+		penalties:                        make([]Penalty, len(s.penalties)),
+		lastShardStateValidatorCommittee: make(map[int][]string),
+		lastShardStateValidatorIndex:     make(map[int][]int),
+		lock:                             new(sync.RWMutex),
 	}
 	copy(newS.penalties, s.penalties)
+	for sid, _ := range s.lastShardStateValidatorCommittee {
+		newS.lastShardStateValidatorCommittee[sid] = make([]string, len(s.lastShardStateValidatorCommittee[sid]))
+		newS.lastShardStateValidatorIndex[sid] = make([]int, len(s.lastShardStateValidatorIndex[sid]))
+		copy(newS.lastShardStateValidatorCommittee[sid], s.lastShardStateValidatorCommittee[sid])
+		copy(newS.lastShardStateValidatorIndex[sid], s.lastShardStateValidatorIndex[sid])
+	}
+
 	for k, v := range s.missingSignature {
 		newS.missingSignature[k] = v
 	}

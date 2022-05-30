@@ -41,7 +41,8 @@ func (request *UserMintNftRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	if err := beaconViewRetriever.IsValidMintNftRequireAmount(request.amount); err != nil {
+	pdexv3StateCached := chainRetriever.GetPdexv3Cached(beaconViewRetriever.BlockHash())
+	if err := beaconViewRetriever.IsValidMintNftRequireAmount(chainRetriever.GetBeaconChainDatabase(), pdexv3StateCached, request.amount); err != nil {
 		return false, err
 	}
 	return true, nil
