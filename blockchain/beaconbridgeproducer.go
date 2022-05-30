@@ -2,21 +2,18 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/pkg/errors"
 )
 
@@ -91,6 +88,16 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningPLGConfirmForDepositToSCMeta, inst, beaconHeight, common.PLGPrefix)
 			newInst = [][]string{burningConfirm}
 
+		case metadata.BurningFantomRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningFantomConfirmMeta, inst, beaconHeight, common.FTMPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningFantomForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningFantomConfirmForDepositToSCMeta, inst, beaconHeight, common.FTMPrefix)
+			newInst = [][]string{burningConfirm}
+
 		default:
 			continue
 		}
@@ -126,19 +133,9 @@ func buildBurningConfirmInst(
 	shardID := byte(common.BridgeShardID)
 
 	// Convert to external tokenID
-	tokenID, err := findExternalTokenID(stateDB, &md.TokenID)
+	tokenID, err := metadataBridge.FindExternalTokenID(stateDB, md.TokenID, prefix, burningMetaType)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(tokenID) < common.ExternalBridgeTokenLength {
-		return nil, errors.New("invalid external token id")
-	}
-
-	prefixLen := len(prefix)
-	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
-		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
 	}
 
 	// Convert amount to big.Int to get bytes later
@@ -151,7 +148,7 @@ func buildBurningConfirmInst(
 	// Convert height to big.Int to get bytes later
 	h := big.NewInt(0).SetUint64(height)
 
-	return []string{
+	res := []string{
 		strconv.Itoa(burningMetaType),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(tokenID, 0x00),
@@ -160,7 +157,9 @@ func buildBurningConfirmInst(
 		txID.String(),
 		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
 		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
-	}, nil
+	}
+
+	return res, nil
 }
 
 // buildBurningPRVEVMConfirmInst builds on beacon an instruction confirming a tx burning PRV-EVM-token
@@ -202,23 +201,4 @@ func buildBurningPRVEVMConfirmInst(
 		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
 		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 	}, nil
-}
-
-// findExternalTokenID finds the external tokenID for a bridge token from database
-func findExternalTokenID(stateDB *statedb.StateDB, tokenID *common.Hash) ([]byte, error) {
-	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(stateDB)
-	if err != nil {
-		return nil, err
-	}
-	var allBridgeTokens []*rawdbv2.BridgeTokenInfo
-	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	for _, token := range allBridgeTokens {
-		if token.TokenID.IsEqual(tokenID) && len(token.ExternalTokenID) > 0 {
-			return token.ExternalTokenID, nil
-		}
-	}
-	return nil, errors.New("invalid tokenID")
 }

@@ -543,7 +543,7 @@ func initPortalTokensV4ForTestNet2() map[string]portaltokensv4.PortalTokenProces
 				MultipleTokenAmount: 10,
 				ExternalInputSize:   130,
 				ExternalOutputSize:  43,
-				ExternalTxMaxSize:   5120,
+				ExternalTxMaxSize:   51200,
 			},
 			ChainParam:    &chaincfg.TestNet3Params,
 			PortalTokenID: Testnet2PortalV4BTCID,

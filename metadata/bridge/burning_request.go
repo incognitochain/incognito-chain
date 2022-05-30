@@ -1,4 +1,4 @@
-package metadata
+package bridge
 
 import (
 	"bytes"
@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
-	"github.com/incognitochain/incognito-chain/common"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -23,7 +23,7 @@ type BurningRequest struct {
 	TokenID       common.Hash
 	TokenName     string
 	RemoteAddress string
-	MetadataBase
+	metadataCommon.MetadataBase
 }
 
 func NewBurningRequest(
@@ -34,7 +34,7 @@ func NewBurningRequest(
 	remoteAddress string,
 	metaType int,
 ) (*BurningRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := metadataCommon.MetadataBase{
 		Type: metaType,
 	}
 	burningReq := &BurningRequest{
@@ -48,7 +48,7 @@ func NewBurningRequest(
 	return burningReq, nil
 }
 
-func (bReq BurningRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (bReq BurningRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	//bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
 	//if err != nil {
 	//	return false, err
@@ -59,7 +59,7 @@ func (bReq BurningRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 	return true, nil
 }
 
-func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
@@ -84,20 +84,21 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 		return false, false, fmt.Errorf("burn amount is incorrect %v", burnAmount)
 	}
 
-	if shardViewRetriever.GetEpoch() >= config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta) {
+	if shardViewRetriever.GetEpoch() >= config.Param().ETHRemoveBridgeSigEpoch && (bReq.Type == metadataCommon.BurningRequestMeta || bReq.Type == metadataCommon.BurningForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is deprecated", bReq.Type)
 	}
 	if shardViewRetriever.GetEpoch() < config.Param().ETHRemoveBridgeSigEpoch &&
-		(bReq.Type == BurningRequestMetaV2 || bReq.Type == BurningForDepositToSCRequestMetaV2 ||
-			bReq.Type == BurningPBSCRequestMeta || bReq.Type == BurningPRVERC20RequestMeta ||
-			bReq.Type == BurningPRVBEP20RequestMeta || bReq.Type == BurningPBSCForDepositToSCRequestMeta ||
-			bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta) {
+		(bReq.Type == metadataCommon.BurningRequestMetaV2 || bReq.Type == metadataCommon.BurningForDepositToSCRequestMetaV2 ||
+			bReq.Type == metadataCommon.BurningPBSCRequestMeta || bReq.Type == metadataCommon.BurningPRVERC20RequestMeta ||
+			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
+			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
+			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
-	if (bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
+	if (bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() != common.PRVIDStr {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
-	} else if (bReq.Type != BurningPRVERC20RequestMeta && bReq.Type != BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
+	} else if (bReq.Type != metadataCommon.BurningPRVERC20RequestMeta && bReq.Type != metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	}
 
@@ -105,11 +106,12 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 }
 
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta || bReq.Type == BurningRequestMetaV2 ||
-		bReq.Type == BurningForDepositToSCRequestMetaV2 || bReq.Type == BurningPBSCRequestMeta ||
-		bReq.Type == BurningPRVERC20RequestMeta || bReq.Type == BurningPRVBEP20RequestMeta ||
-		bReq.Type == BurningPBSCForDepositToSCRequestMeta ||
-		bReq.Type == BurningPLGRequestMeta || bReq.Type == BurningPLGForDepositToSCRequestMeta
+	return bReq.Type == metadataCommon.BurningRequestMeta || bReq.Type == metadataCommon.BurningForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningRequestMetaV2 ||
+		bReq.Type == metadataCommon.BurningForDepositToSCRequestMetaV2 || bReq.Type == metadataCommon.BurningPBSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta ||
+		bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {
@@ -137,7 +139,7 @@ func (bReq BurningRequest) HashWithoutSig() *common.Hash {
 	return &hash
 }
 
-func (bReq *BurningRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (bReq *BurningRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"meta":          *bReq,
 		"RequestedTxID": tx.Hash(),
@@ -152,5 +154,5 @@ func (bReq *BurningRequest) BuildReqActions(tx Transaction, chainRetriever Chain
 }
 
 func (bReq *BurningRequest) CalculateSize() uint64 {
-	return calculateSize(bReq)
+	return metadataCommon.CalculateSize(bReq)
 }

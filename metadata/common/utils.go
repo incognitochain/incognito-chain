@@ -79,6 +79,7 @@ func buildMetaInfo() {
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
 		IssuingPLGResponseMeta,
+		IssuingFantomResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 
@@ -376,6 +377,7 @@ func buildMetaInfo() {
 		IssuingPRVERC20ResponseMeta,
 		IssuingPRVBEP20ResponseMeta,
 		IssuingPLGResponseMeta,
+		IssuingFantomResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,
@@ -630,4 +632,114 @@ func CheckIncognitoAddress(address, txRandom string) (bool, error, int) {
 		return err == nil, err, version
 	}
 	return true, nil, version
+}
+
+func IsPdexv3Type(metadataType int) bool {
+	switch metadataType {
+	case Pdexv3ModifyParamsMeta:
+		return true
+	case Pdexv3UserMintNftRequestMeta:
+		return true
+	case Pdexv3UserMintNftResponseMeta:
+		return true
+	case Pdexv3MintNftRequestMeta:
+		return true
+	case Pdexv3MintNftResponseMeta:
+		return true
+	case Pdexv3AddLiquidityRequestMeta:
+		return true
+	case Pdexv3AddLiquidityResponseMeta:
+		return true
+	case Pdexv3TradeRequestMeta:
+		return true
+	case Pdexv3TradeResponseMeta:
+		return true
+	case Pdexv3AddOrderRequestMeta:
+		return true
+	case Pdexv3AddOrderResponseMeta:
+		return true
+	case Pdexv3WithdrawOrderRequestMeta:
+		return true
+	case Pdexv3WithdrawOrderResponseMeta:
+		return true
+	case Pdexv3WithdrawLiquidityRequestMeta:
+		return true
+	case Pdexv3WithdrawLiquidityResponseMeta:
+		return true
+	case Pdexv3WithdrawLPFeeRequestMeta:
+		return true
+	case Pdexv3WithdrawLPFeeResponseMeta:
+		return true
+	case Pdexv3WithdrawProtocolFeeRequestMeta:
+		return true
+	case Pdexv3WithdrawProtocolFeeResponseMeta:
+		return true
+	case Pdexv3MintPDEXGenesisMeta:
+		return true
+	case Pdexv3MintBlockRewardMeta:
+		return true
+	case Pdexv3StakingRequestMeta:
+		return true
+	case Pdexv3StakingResponseMeta:
+		return true
+	case Pdexv3UnstakingRequestMeta:
+		return true
+	case Pdexv3UnstakingResponseMeta:
+		return true
+	case Pdexv3DistributeStakingRewardMeta:
+		return true
+	case Pdexv3WithdrawStakingRewardRequestMeta:
+		return true
+	case Pdexv3WithdrawStakingRewardResponseMeta:
+		return true
+	case Pdexv3DistributeMiningOrderRewardMeta:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsPDETx(metadata Metadata) bool {
+	if metadata != nil {
+		return IsPDEType(metadata.GetType())
+	}
+	return false
+}
+
+func IsPDEType(metadataType int) bool {
+	switch metadataType {
+	case PDEContributionMeta:
+		return true
+	case PDETradeRequestMeta:
+		return true
+	case PDETradeResponseMeta:
+		return true
+	case PDEWithdrawalRequestMeta:
+		return true
+	case PDEWithdrawalResponseMeta:
+		return true
+	case PDEContributionResponseMeta:
+		return true
+	case PDEPRVRequiredContributionRequestMeta:
+		return true
+	case PDECrossPoolTradeRequestMeta:
+		return true
+	case PDECrossPoolTradeResponseMeta:
+		return true
+	case PDEFeeWithdrawalRequestMeta:
+		return true
+	case PDEFeeWithdrawalResponseMeta:
+		return true
+	case PDETradingFeesDistributionMeta:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsPdexv3Tx(metadata Metadata) bool {
+	if metadata != nil {
+		return IsPdexv3Type(metadata.GetType())
+	}
+	return false
 }

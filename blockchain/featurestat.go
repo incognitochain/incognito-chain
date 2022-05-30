@@ -26,7 +26,7 @@ type FeatureStat struct {
 
 type FeatureReportInfo struct {
 	ValidatorStat map[string]map[int]uint64 // feature -> shardid -> stat
-	ProposeStat   map[string]map[int]uint64 // feature -> shardid -> stat
+	CommitteeStat map[string]map[int]uint64 // feature -> shardid -> stat
 	ValidatorSize map[int]int               // chainid -> all validator size
 }
 
@@ -95,49 +95,53 @@ func (bc *BlockChain) InitFeatureStat() {
 	go func() {
 		for {
 			time.Sleep(5 * time.Minute)
-			//get untrigger feature
-			beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
 
-			//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint
-			unTriggerFeatures := beaconView.getUntriggerFeature(false)
-			updatedFeature := unTriggerFeatures
-			for feature, _ := range beaconView.TriggeredFeature {
-				updatedFeature = append(updatedFeature, feature)
-			}
-			msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if msg != nil {
-				if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
-					Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
-				}
-			}
-
-			//only after checkpoint, send feature state for  validator not in sync pool
-			unTriggerFeatures = beaconView.getUntriggerFeature(true)
-			msg, err = CreateNewFeatureStatMessage(beaconView, false, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if msg != nil {
-				if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
-					Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
-				}
-			}
-
-			//DefaultFeatureStat.Report()
-			DefaultFeatureStat.lock.Lock()
-			for id, node := range DefaultFeatureStat.nodes {
-				if time.Now().Unix()-int64(node.Timestamp) > 30*60 {
-					delete(DefaultFeatureStat.nodes, id)
-				}
-			}
-			DefaultFeatureStat.lock.Unlock()
+			bc.SendFeatureStat()
 		}
 	}()
+}
+
+func (bc *BlockChain) SendFeatureStat() {
+	beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
+
+	//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint
+	unTriggerFeatures := beaconView.getUntriggerFeature(false)
+	updatedFeature := unTriggerFeatures
+	for feature, _ := range beaconView.TriggeredFeature {
+		updatedFeature = append(updatedFeature, feature)
+	}
+	msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	if msg != nil {
+		if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
+			Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+		}
+	}
+
+	//only after checkpoint, send feature state for  validator not in sync pool
+	unTriggerFeatures = beaconView.getUntriggerFeature(true)
+	msg, err = CreateNewFeatureStatMessage(beaconView, false, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	if msg != nil {
+		if err := bc.config.Server.PushMessageToBeacon(msg, nil); err != nil {
+			Logger.log.Errorf("Send Feature Stat Message Public Message to beacon, error %+v", err)
+		}
+	}
+
+	//DefaultFeatureStat.Report()
+	DefaultFeatureStat.lock.Lock()
+	for id, node := range DefaultFeatureStat.nodes {
+		if time.Now().Unix()-int64(node.Timestamp) > 30*60 {
+			delete(DefaultFeatureStat.nodes, id)
+		}
+	}
+	DefaultFeatureStat.lock.Unlock()
 }
 
 func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
@@ -175,7 +179,7 @@ func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk st
 
 func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	validatorStat := make(map[string]map[int]uint64)
-	proposeStat := make(map[string]map[int]uint64)
+	committeeStat := make(map[string]map[int]uint64)
 	validatorSize := make(map[int]int)
 
 	beaconCommittee, err := incognitokey.CommitteeKeyListToString(stat.blockchain.BeaconChain.GetCommittee())
@@ -213,13 +217,14 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 			if validatorStat[feature] == nil {
 				validatorStat[feature] = make(map[int]uint64)
 			}
-			if proposeStat[feature] == nil {
-				proposeStat[feature] = make(map[int]uint64)
+			if committeeStat[feature] == nil {
+				committeeStat[feature] = make(map[int]uint64)
 			}
+
 			//check in beacon
 			if common.IndexOfStr(key, beaconCommittee) > -1 {
 				validatorStat[feature][-1]++
-				proposeStat[feature][-1]++
+				committeeStat[feature][-1]++
 			}
 
 			//check in shard
@@ -231,10 +236,7 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 				//if in committee, increase validator set
 				if common.IndexOfStr(key, shardCommmittee[i]) > -1 {
 					validatorStat[feature][i]++
-					//if in proposer, increase proposer
-					if common.IndexOfStr(key, shardCommmittee[i]) < config.Param().CommitteeSize.NumberOfFixedShardBlockValidator {
-						proposeStat[feature][i]++
-					}
+					committeeStat[feature][i]++
 				}
 			}
 		}
@@ -243,7 +245,7 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	//Logger.log.Infof("=========== \n%+v", validatorStat)
 	return FeatureReportInfo{
 		validatorStat,
-		proposeStat,
+		committeeStat,
 		validatorSize,
 	}
 
@@ -255,7 +257,6 @@ func (featureStat *FeatureStat) addNode(timestamp int, key string, features []st
 
 	//not update from old message
 	if _, ok := featureStat.nodes[key]; ok && featureStat.nodes[key].Timestamp > timestamp {
-		panic(1)
 		return
 	}
 

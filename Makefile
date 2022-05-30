@@ -30,6 +30,7 @@ test:
 	make build
 	go test ./.../pdexv3
 	go test ./.../pdex
+	go test ./.../bridgeagg
 
 clean:
 	env GO111MODULE=on go clean -cache

@@ -34,14 +34,14 @@ func newBulletproofParams(m int) *bulletproofParams {
 	csByteH := []byte{}
 	csByteG := []byte{}
 	for i := 0; i < capacity; i++ {
-		gen.g[i] = operation.HashToPointFromIndex(int64(numCommitValue+i), operation.CStringBulletProof)
-		gen.h[i] = operation.HashToPointFromIndex(int64(numCommitValue+i+maxOutputNumberParam*maxExp), operation.CStringBulletProof)
+		gen.g[i] = operation.HashToPointFromIndex(int32(numCommitValue+i), operation.CStringBulletProof)
+		gen.h[i] = operation.HashToPointFromIndex(int32(numCommitValue+i+maxOutputNumberParam*maxExp), operation.CStringBulletProof)
 		csByteG = append(csByteG, gen.g[i].ToBytesS()...)
 		csByteH = append(csByteH, gen.h[i].ToBytesS()...)
 	}
 
 	gen.u = new(operation.Point)
-	gen.u = operation.HashToPointFromIndex(int64(numCommitValue+2*maxOutputNumberParam*maxExp), operation.CStringBulletProof)
+	gen.u = operation.HashToPointFromIndex(int32(numCommitValue+2*maxOutputNumberParam*maxExp), operation.CStringBulletProof)
 
 	gen.cs = append(gen.cs, csByteG...)
 	gen.cs = append(gen.cs, csByteH...)

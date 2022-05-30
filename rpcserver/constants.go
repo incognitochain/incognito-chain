@@ -36,14 +36,14 @@ const (
 	getBeaconPoolState            = "getbeaconpoolstate"
 	getShardPoolState             = "getshardpoolstate"
 	getShardPoolLatestValidHeight = "getshardpoollatestvalidheight"
-	//getShardToBeaconPoolState     = "getshardtobeaconpoolstate"
-	//getCrossShardPoolState        = "getcrossshardpoolstate"
+	// getShardToBeaconPoolState     = "getshardtobeaconpoolstate"
+	// getCrossShardPoolState        = "getcrossshardpoolstate"
 	getNextCrossShard           = "getnextcrossshard"
 	getShardToBeaconPoolStateV2 = "getshardtobeaconpoolstatev2"
 	getCrossShardPoolStateV2    = "getcrossshardpoolstatev2"
 	getShardPoolStateV2         = "getshardpoolstatev2"
 	getBeaconPoolStateV2        = "getbeaconpoolstatev2"
-	//getFeeEstimator             = "getfeeestimator"
+	// getFeeEstimator             = "getfeeestimator"
 	setBackup                   = "setbackup"
 	getLatestBackup             = "getlatestbackup"
 	getBestBlock                = "getbestblock"
@@ -124,7 +124,7 @@ const (
 	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
 	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"
 
-	//===========For Testing and Benchmark==============
+	// ===========For Testing and Benchmark==============
 	getAndSendTxsFromFile      = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2    = "getandsendtxsfromfilev2"
 	unlockMempool              = "unlockmempool"
@@ -148,7 +148,7 @@ const (
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
-	//==================================================
+	// ==================================================
 
 	getShardBestState        = "getshardbeststate"
 	getShardBestStateDetail  = "getshardbeststatedetail"
@@ -213,6 +213,8 @@ const (
 	createAndSendBurningPRVBEP20Request   = "createandsendburningprvbep20request"
 	createAndSendBurningPLGRequest        = "createandsendburningplgrequest"
 	createAndSendTxWithIssuingPLGReq      = "createandsendtxwithissuingplgreq"
+	createAndSendTxWithIssuingFTMReq      = "createandsendtxwithissuingftmreq"
+	createAndSendBurningFTMRequest        = "createandsendburningftmrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -224,6 +226,7 @@ const (
 	getPRVERC20BurnProof     = "getprverc20burnproof"
 	getPRVBEP20BurnProof     = "getprvbep20burnproof"
 	getPLGBurnProof          = "getplgburnproof"
+	getFTMBurnProof          = "getftmburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
@@ -298,6 +301,21 @@ const (
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
+	// bridgeagg method
+	bridgeaggModifyRewardReserve         = "bridgeaggModifyRewardReserve"
+	bridgeaggState                       = "bridgeaggGetState"
+	bridgeaggGetStatusModifyRewarReserve = "bridgeaggGetStatusModifyRewarReserve"
+	bridgeaggConvert                     = "bridgeaggConvert"
+	bridgeaggStatusConvert               = "bridgeaggGetStatusConvert"
+	bridgeaggShield                      = "bridgeaggShield"
+	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
+	bridgeaggUnshield                    = "bridgeaggUnshield"
+	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
+	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
+	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
+	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
+	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
+
 	// get burning address
 	getBurningAddress = "getburningaddress"
 
@@ -365,24 +383,26 @@ const (
 	createAndSendBurningForDepositToSCRequest     = "createandsendburningfordeposittoscrequest"
 	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
 	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
+	getBurnPLGProofForDepositToSC                 = "getburnplgprooffordeposittosc"
+	createAndSendBurningPLGForDepositToSCRequest  = "createandsendburningplgfordeposittoscrequest"
+	createAndSendBurningFTMForDepositToSCRequest  = "createandsendburningftmfordeposittoscrequest"
+	getBurnFTMProofForDepositToSC                 = "getburnftmprooffordeposittosc"
 
-	getFeatureStats                              = "getfeaturestats"
-	getBurnPLGProofForDepositToSC                = "getburnplgprooffordeposittosc"
-	createAndSendBurningPLGForDepositToSCRequest = "createandsendburningplgfordeposittoscrequest"
-
+	getFeatureStats       = "getfeaturestats"
 	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"
 	getShardPoolInfo      = "getshardpoolinfo"
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
 	getAllView            = "getallview"
 	getAllViewDetail      = "getallviewdetail"
+	isInstantFinality     = "isinstantfinality"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
 
 	getTotalStaker = "gettotalstaker"
 
-	//validator state
+	// validator state
 	getValKeyState = "getvalkeystate"
 
 	// portal v4

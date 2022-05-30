@@ -438,6 +438,18 @@ func GetPdexv3PoolPair(stateDB *StateDB, poolPairID string) (*Pdexv3PoolPairStat
 	return s, nil
 }
 
+func GetPdexv3Share(stateDB *StateDB, poolPairID, nftID string) (*Pdexv3ShareState, error) {
+	key := GeneratePdexv3ShareObjectKey(poolPairID, nftID)
+	s, has, err := stateDB.getPdexv3ShareState(key)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, fmt.Errorf("could not found pDex v3 pool pair share in statedb")
+	}
+	return s, nil
+}
+
 func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (
 	map[string]Pdexv3ShareState, error,
 ) {
@@ -448,6 +460,18 @@ func GetPdexv3Shares(stateDB *StateDB, poolPairID string) (
 func GetPdexv3NftIDs(stateDB *StateDB) (map[string]uint64, error) {
 	prefixHash := GetPdexv3NftPrefix()
 	return stateDB.iterateWithPdexv3Nfts(prefixHash)
+}
+
+func GetPdexv3NftID(stateDB *StateDB, nftID string) (*Pdexv3NftState, error) {
+	key := GeneratePdexv3NftObjectKey(nftID)
+	s, has, err := stateDB.getPdexv3NftIDState(key)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, fmt.Errorf("could not found pDex v3 nftID in statedb")
+	}
+	return s, nil
 }
 
 func GetPdexv3Orders(stateDB *StateDB, poolPairID string) (
@@ -552,4 +576,16 @@ func GetPdexv3StakerLastRewardsPerShare(stateDB *StateDB, stakingPoolID, nftID s
 ) {
 	prefixHash := generatePdexv3StakerLastRewardPerShareObjectPrefix(stakingPoolID, nftID)
 	return stateDB.iterateWithPdexv3StakerLastRewardsPerShare(prefixHash)
+}
+
+func GetPdexv3Staker(stateDB *StateDB, stakingPoolID, nftID string) (*Pdexv3StakerState, error) {
+	key := GeneratePdexv3StakerObjectKey(stakingPoolID, nftID)
+	s, has, err := stateDB.getPdexv3StakerByKey(key)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, fmt.Errorf("could not found pDex v3 staker in statedb")
+	}
+	return s, nil
 }

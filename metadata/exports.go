@@ -50,10 +50,10 @@ var IsPortalRelayingMetaType = metadataCommon.IsPortalRelayingMetaType
 var IsPortalMetaTypeV3 = metadataCommon.IsPortalMetaTypeV3
 var GetMetaAction = metadataCommon.GetMetaAction
 var IsPDEType = metadataCommon.IsPDEType
+var IsPdexv3Type = metadataCommon.IsPdexv3Type
 var GetLimitOfMeta = metadataCommon.GetLimitOfMeta
 var IsPDETx = metadataCommon.IsPDETx
 var IsPdexv3Tx = metadataCommon.IsPdexv3Tx
-var ShouldIncludeBeaconViewByPdexv3Tx = metadataCommon.ShouldIncludeBeaconViewByPdexv3Tx
 var ConvertPrivacyTokenToNativeToken = metadataCommon.ConvertPrivacyTokenToNativeToken
 var ConvertNativeTokenToPrivacyToken = metadataCommon.ConvertNativeTokenToPrivacyToken
 var HasBridgeInstructions = metadataCommon.HasBridgeInstructions
@@ -77,7 +77,7 @@ const (
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
-	//staking
+	// staking
 	ShardStakingMeta    = metadataCommon.ShardStakingMeta
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
@@ -156,7 +156,7 @@ const (
 	PortalCustodianWithdrawConfirmMetaV3         = metadataCommon.PortalCustodianWithdrawConfirmMetaV3
 	PortalRedeemFromLiquidationPoolConfirmMetaV3 = metadataCommon.PortalRedeemFromLiquidationPoolConfirmMetaV3
 	PortalLiquidateRunAwayCustodianConfirmMetaV3 = metadataCommon.PortalLiquidateRunAwayCustodianConfirmMetaV3
-	//Note: don't use this metadata type for others
+	// Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = metadataCommon.PortalResetPortalDBMeta
 	// relaying
 	RelayingBNBHeaderMeta                 = metadataCommon.RelayingBNBHeaderMeta
@@ -180,6 +180,7 @@ const (
 	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
 	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
 	PLGConfirmationBlocks                = metadataCommon.PLGConfirmationBlocks
+	FantomConfirmationBlocks             = metadataCommon.FantomConfirmationBlocks
 	NoAction                             = metadataCommon.NoAction
 	MetaRequestBeaconMintTxs             = metadataCommon.MetaRequestBeaconMintTxs
 	MetaRequestShardMintTxs              = metadataCommon.MetaRequestShardMintTxs
@@ -202,6 +203,14 @@ const (
 
 	BurningPLGForDepositToSCRequestMeta = metadataCommon.BurningPLGForDepositToSCRequestMeta
 	BurningPLGConfirmForDepositToSCMeta = metadataCommon.BurningPLGConfirmForDepositToSCMeta
+
+	IssuingFantomRequestMeta  = metadataCommon.IssuingFantomRequestMeta
+	IssuingFantomResponseMeta = metadataCommon.IssuingFantomResponseMeta
+	BurningFantomRequestMeta  = metadataCommon.BurningFantomRequestMeta
+	BurningFantomConfirmMeta  = metadataCommon.BurningFantomConfirmMeta
+
+	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
+	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 )
 
 // export error codes

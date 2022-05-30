@@ -27,13 +27,15 @@ type NodeInterface interface {
 }
 
 type Chain interface {
+	VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error
 	BestViewCommitteeFromBlock() common.Hash
-	GetMultiView() *multiview.MultiView
+	GetMultiView() multiview.MultiView
 	GetFinalView() multiview.View
 	GetBestView() multiview.View
 	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
+	GetBlockConsensusData() map[int]types.BlockConsensusData
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
 	GetMaxBlkCreateTime() time.Duration

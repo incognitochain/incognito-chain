@@ -88,6 +88,7 @@ func (httpServer *HttpServer) handleSetAutoEnableFeatureConfig(params interface{
 		return nil, rpcservice.NewRPCError(-1, err)
 	}
 	config.Param().AutoEnableFeature = v
+	httpServer.GetBlockchain().SendFeatureStat()
 	return nil, nil
 }
 
@@ -396,12 +397,25 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	insertRule := param["insert_rule"]
 	validatorRule := param["validator_rule"]
 
-	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
-	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
-	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
-	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
-	blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
-	blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	if voteRule != nil {
+		blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+	}
+	if createRule != nil {
+		blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+	}
+	if handleVoteRule != nil {
+		blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	}
+	if handleProposeRule != nil {
+		blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
+	}
+	if insertRule != nil {
+		blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+	}
+	if validatorRule != nil {
+		blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	}
+
 	return map[string]interface{}{
 		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
 		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
@@ -465,15 +479,10 @@ func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	receiveBlockByHeight, err := blsbft.InitReceiveBlockByHeight(chainID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
 	return map[string]interface{}{
-		"voteHistory":          voteHistory,
-		"proposeHistory":       proposeHistory,
-		"receiveBlockByHash":   receiveBlockByHash,
-		"receiveBlockByHeight": receiveBlockByHeight,
+		"voteHistory":        voteHistory,
+		"proposeHistory":     proposeHistory,
+		"receiveBlockByHash": receiveBlockByHash,
 	}, nil
 }
 

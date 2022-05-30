@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
@@ -33,11 +32,12 @@ type TxSigPubKeyVer2 = tx_ver2.SigPubKey
 // It must take its own defined parameter struct.
 // Deprecated: this is not used in v2 code
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
-	paymentInfo := &privacy.PaymentInfo{
+	p := privacy.NewCoinParams().FromPaymentInfo(&privacy.PaymentInfo{
 		PaymentAddress: *params.payToAddress,
 		Amount:         params.amount,
-	}
-	otaCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo)
+	})
+	p.CoinPrivacyType = privacy.CoinPrivacyTypeMint
+	otaCoin, err := privacy.NewCoinFromPaymentInfo(p)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
@@ -83,7 +83,7 @@ func (pr TxSalaryOutputParams) getVersion() int {
 		return 2
 	}
 	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err != nil {
-		Logger.Log.Errorf("AssertPaymentAddressAndTxVersion error: %v\n", err)
+		Logger.Log.Errorf("AssertPaymentAddressAndTxVersion error: %v", err)
 		return 0
 	}
 	return 1
@@ -96,7 +96,9 @@ func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error) {
 	if pr.ReceiverAddress == nil {
 		outputCoin = privacy.NewCoinFromAmountAndTxRandomBytes(pr.Amount, pr.PublicKey, pr.TxRandom, pr.Info)
 	} else {
-		outputCoin, err = privacy.NewCoinFromPaymentInfo(&privacy.PaymentInfo{Amount: pr.Amount, PaymentAddress: *pr.ReceiverAddress})
+		p := privacy.NewCoinParams().FromPaymentInfo(&privacy.PaymentInfo{Amount: pr.Amount, PaymentAddress: *pr.ReceiverAddress})
+		p.CoinPrivacyType = privacy.CoinPrivacyTypeMint
+		outputCoin, err = privacy.NewCoinFromPaymentInfo(p)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +206,7 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 		}
 	default:
 		Logger.Log.Errorf("Cannot build Tx Salary - invalid parameters %v", pr)
-		return nil, errors.New("Cannot build Tx Salary - invalid parameters")
+		return nil, fmt.Errorf("cannot build Tx Salary - invalid parameters")
 	}
 	jsb, _ := json.MarshalIndent(res, "", "\t")
 	Logger.Log.Infof("Built new salary transaction %s", string(jsb))
@@ -230,39 +232,7 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 	if choices.Version2 != nil {
 		return choices.Version2, nil
 	}
-	return nil, errors.New("Cannot parse TX as PRV transaction")
-	// txJsonVersion := new(txJsonDataVersion)
-	// if err := json.Unmarshal(data, txJsonVersion); err != nil {
-	// 	return nil, err
-	// }
-	// if txJsonVersion.Type == common.TxConversionType || txJsonVersion.Type == common.TxTokenConversionType {
-	// 	if txJsonVersion.Version == int8(utils.TxConversionVersion12Number) {
-	// 			tx := new(TxVersion2)
-	// 			if err := json.Unmarshal(data, tx); err != nil {
-	// 				return nil, err
-	// 			}
-	// 			return tx, nil
-	// 	} else {
-	// 		return nil, errors.New("Cannot new txConversion from jsonBytes, type is incorrect.")
-	// 	}
-	// } else {
-	// 	switch txJsonVersion.Version {
-	// 	case int8(utils.TxVersion1Number), int8(utils.TxVersion0Number):
-	// 		tx := new(TxVersion1)
-	// 		if err := json.Unmarshal(data, tx); err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return tx, nil
-	// 	case int8(utils.TxVersion2Number):
-	// 		tx := new(TxVersion2)
-	// 		if err := json.Unmarshal(data, tx); err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return tx, nil
-	// 	default:
-	// 		return nil, errors.New("Cannot new tx from jsonBytes, version is incorrect")
-	// 	}
-	// }
+	return nil, fmt.Errorf("cannot parse TX as PRV transaction")
 }
 
 // NewTransactionTokenFromJsonBytes parses a transaction from raw JSON, assuming it is a pToken transfer.
@@ -278,40 +248,7 @@ func NewTransactionTokenFromJsonBytes(data []byte) (tx_generic.TransactionToken,
 	if choices.TokenVersion2 != nil {
 		return choices.TokenVersion2, nil
 	}
-	return nil, errors.New("Cannot parse TX as token transaction")
-	// txJsonVersion := new(txJsonDataVersion)
-	// if err := json.Unmarshal(data, txJsonVersion); err != nil {
-	// 	return nil, err
-	// }
-
-	// if txJsonVersion.Type == common.TxTokenConversionType {
-	// 	if txJsonVersion.Version == utils.TxConversionVersion12Number {
-	// 		tx := new(TxTokenVersion2)
-	// 		if err := json.Unmarshal(data, tx); err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return tx, nil
-	// 	} else {
-	// 		return nil, errors.New("Cannot new txTokenConversion from jsonBytes, version is incorrect")
-	// 	}
-	// } else {
-	// 	switch txJsonVersion.Version {
-	// 	case int8(utils.TxVersion1Number), utils.TxVersion0Number:
-	// 		tx := new(TxTokenVersion1)
-	// 		if err := json.Unmarshal(data, tx); err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return tx, nil
-	// 	case int8(utils.TxVersion2Number):
-	// 		tx := new(TxTokenVersion2)
-	// 		if err := json.Unmarshal(data, tx); err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return tx, nil
-	// 	default:
-	// 		return nil, errors.New("Cannot new txToken from bytes because version is incorrect")
-	// 	}
-	// }
+	return nil, fmt.Errorf("cannot parse TX as token transaction")
 }
 
 // TxChoice is a helper struct for parsing transactions of all types from JSON.
@@ -376,14 +313,14 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error) {
 		case utils.TxVersion2Number: // the same as utils.TxConversionVersion12Number
 			if isTokenTx {
 				// rejected
-				return nil, errors.New("Error unmarshalling TX from JSON : misplaced version")
+				return nil, fmt.Errorf("error unmarshalling TX from JSON : misplaced version")
 			}
 			// tx ver 2
 			result.Version2 = &TxVersion2{}
 			err := json.Unmarshal(data, result.Version2)
 			return result, err
 		default:
-			return nil, fmt.Errorf("Error unmarshalling TX from JSON : wrong version of %d", verHolder.Version)
+			return nil, fmt.Errorf("error unmarshalling TX from JSON : wrong version of %d", verHolder.Version)
 		}
 	} else {
 		if isTokenTx {
@@ -392,7 +329,7 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error) {
 			err := json.Unmarshal(data, result.TokenVersion2)
 			return result, err
 		}
-		return nil, errors.New("Error unmarshalling TX from JSON")
+		return nil, fmt.Errorf("error unmarshalling TX from JSON")
 	}
 
 }
@@ -452,7 +389,7 @@ func NewTransactionFromParams(params *tx_generic.TxPrivacyInitParams) (metadata.
 	} else if ver == 2 {
 		return new(TxVersion2), nil
 	}
-	return nil, errors.New("Cannot create new transaction from params, ver is wrong")
+	return nil, fmt.Errorf("cannot create new transaction from params, ver is wrong")
 }
 
 // NewTransactionTokenFromParams is a helper that returns a new transaction whose version matches the parameter object.
@@ -465,12 +402,14 @@ func NewTransactionTokenFromParams(params *tx_generic.TxTokenParams) (tx_generic
 		return nil, err
 	}
 
-	if ver == 1 {
+	switch ver {
+	case 1:
 		return new(TxTokenVersion1), nil
-	} else if ver == 2 {
+	case 2:
 		return new(TxTokenVersion2), nil
+	default:
+		return nil, fmt.Errorf("invalid version for NewTransactionFromParams")
 	}
-	return nil, errors.New("Something is wrong when NewTransactionFromParams")
 }
 
 // GetTxTokenDataFromTransaction is an alternative getter for the TokenData field.

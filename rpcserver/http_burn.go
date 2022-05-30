@@ -127,6 +127,32 @@ func (httpServer *HttpServer) handleGetBurnPLGProofForDepositToSC(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
 
+// handleGetFTMBurnProof returns a proof of a tx burning pFTM ( Fantom )
+func (httpServer *HttpServer) handleGetFTMBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningFantomConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
+// handleGetBurnFTMProofForDepositToSC returns a proof of a tx burning pFTM to deposit to SC
+func (httpServer *HttpServer) handleGetBurnFTMProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningFantomConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {
@@ -178,7 +204,7 @@ func getBurnProofByHeightV2(
 	// Get proof of instruction on beacon
 	inst, instID := findBurnConfirmInst(burningMetaType, beaconBlock.Body.Instructions, txID)
 	if instID == -1 {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find inst %s in beacon block %d", txID.String(), height))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find tx %s in beacon block %d", txID.String(), height))
 	}
 
 	beaconInstProof, err := getBurnProofOnBeacon(inst, []*types.BeaconBlock{beaconBlock}, httpServer.config.ConsensusEngine)

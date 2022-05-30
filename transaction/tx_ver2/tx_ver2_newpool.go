@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -17,7 +15,7 @@ import (
 
 func (tx *Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if tx.Proof == nil {
-		return false, errors.New("Tx Privacy Ver 2 must have proof")
+		return false, fmt.Errorf("tx Privacy Ver 2 must have proof")
 	}
 	ok, err := tx.TxBase.ValidateSanityDataWithMetadata()
 	if (!ok) || (err != nil) {
@@ -66,7 +64,7 @@ func (tx *Tx) ValidateTxCorrectness(transactionStateDB *statedb.StateDB) (bool, 
 	validSig, err := tx.VerifySigTx(transactionStateDB)
 	if !validSig {
 		if err != nil {
-			utils.Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
+			utils.Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v", tx.Hash().String(), err)
 			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 		}
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String())
@@ -90,27 +88,25 @@ func (tx *Tx) VerifySigTx(transactionStateDB *statedb.StateDB) (bool, error) {
 	sID := byte(vEnv.ShardID())
 	if vEnv.HasCA() {
 		return tx.verifySigCA(transactionStateDB, sID, &tokenID, false)
-	} else {
-		return tx.verifySig(transactionStateDB, sID, &tokenID, false)
 	}
+	return tx.verifySig(transactionStateDB, sID, &tokenID, false)
 }
 
 // Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
 func getRingFromSigPubKeyAndLastColumnCommitmentV2(txEnv metadata.ValidationEnviroment, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB) (*mlsag.Ring, error) {
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when parsing bytes of txSigPubKey %v", err))
 	}
 	indexes := txSigPubKey.Indexes
 	OTAData := txEnv.DBData()
 	n := len(indexes)
 	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
+		return nil, fmt.Errorf("cannot get ring from Indexes: Indexes is empty")
 	}
 	m := len(indexes[0])
 	if m*n != len(OTAData) {
-		return nil, errors.Errorf("Cached OTA data not match with indexes")
+		return nil, fmt.Errorf("cached OTA data not match with indexes")
 	}
 
 	ring := make([][]*privacy.Point, n)
@@ -149,13 +145,12 @@ func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 	txSigPubKey := new(SigPubKey)
 	utils.Logger.Log.Infof("tx val env %v %v %v %v", tx.Hash().String(), txEnv.IsPrivacy(), tx.GetType(), txEnv.TxAction())
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+		return utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when parsing bytes of txSigPubKey %v", err))
 	}
 	indexes := txSigPubKey.Indexes
 	n := len(indexes)
 	if n == 0 {
-		return errors.New("Cannot get ring from Indexes: Indexes is empty")
+		return fmt.Errorf("cannot get ring from Indexes: Indexes is empty")
 	}
 
 	m := len(indexes[0])
@@ -197,12 +192,12 @@ func (tx *Tx) CheckData(transactionStateDB *statedb.StateDB) error {
 	txSigPubKey := new(SigPubKey)
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
+		return utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf(errStr))
 	}
 	indexes := txSigPubKey.Indexes
 	n := len(indexes)
 	if n == 0 {
-		return errors.New("Cannot get ring from Indexes: Indexes is empty")
+		return fmt.Errorf("cannot get ring from Indexes: Indexes is empty")
 	}
 	m := len(indexes[0])
 	data := txEnv.DBData()
@@ -218,7 +213,7 @@ func (tx *Tx) CheckData(transactionStateDB *statedb.StateDB) error {
 				return err
 			}
 			if !bytes.Equal(cachedRandomCoin, randomCoinBytes) {
-				return errors.Errorf("Cached OTA coin is invalid, tx %v", tx.Hash().String())
+				return fmt.Errorf("cached OTA coin is invalid, tx %v", tx.Hash().String())
 			}
 		}
 	}

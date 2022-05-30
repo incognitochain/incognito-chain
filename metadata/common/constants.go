@@ -26,7 +26,7 @@ const (
 	WithDrawRewardRequestMeta  = 44
 	WithDrawRewardResponseMeta = 45
 
-	//staking
+	// staking
 	ShardStakingMeta    = 63
 	StopAutoStakingMeta = 127
 	BeaconStakingMeta   = 64
@@ -104,7 +104,7 @@ const (
 	PortalRedeemFromLiquidationPoolConfirmMetaV3 = 171
 	PortalLiquidateRunAwayCustodianConfirmMetaV3 = 172
 
-	//Note: don't use this metadata type for others
+	// Note: don't use this metadata type for others
 	PortalResetPortalDBMeta = 199
 
 	// relaying
@@ -193,6 +193,27 @@ const (
 	// pPLG ( Polygon )
 	BurningPLGForDepositToSCRequestMeta = 330
 	BurningPLGConfirmForDepositToSCMeta = 154
+
+	// incognito mode for Fantom
+	IssuingFantomRequestMeta  = 331
+	IssuingFantomResponseMeta = 332
+	BurningFantomRequestMeta  = 333
+	BurningFantomConfirmMeta  = 155
+
+	// pFantom ( Fantom )
+	BurningFantomForDepositToSCRequestMeta = 334
+	BurningFantomConfirmForDepositToSCMeta = 156
+
+	// bridgeagg
+	BridgeAggModifyRewardReserveMeta                = 340
+	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
+	IssuingUnifiedTokenRequestMeta                  = 343
+	IssuingUnifiedTokenResponseMeta                 = 344
+	IssuingUnifiedRewardResponseMeta                = 345
+	BurningUnifiedTokenRequestMeta                  = 346
+	BurningUnifiedTokenResponseMeta                 = 347
+	BridgeAggAddTokenMeta                           = 348
 )
 
 var minerCreatedMetaTypes = []int{
@@ -204,6 +225,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingPRVERC20ResponseMeta,
 	IssuingPRVBEP20ResponseMeta,
 	IssuingPLGResponseMeta,
+	IssuingFantomResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
@@ -239,6 +261,10 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3StakingResponseMeta,
 	Pdexv3UnstakingResponseMeta,
 	Pdexv3WithdrawStakingRewardResponseMeta,
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
+	IssuingUnifiedTokenResponseMeta,
+	IssuingUnifiedRewardResponseMeta,
+	BurningUnifiedTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -248,18 +274,19 @@ const (
 )
 
 /*var (*/
-//// if the blockchain is running in Docker container
-//// then using GETH_NAME env's value (aka geth container name)
-//// otherwise using localhost
-//EthereumLightNodeHost     = utils.GetEnv("GETH_NAME", "127.0.0.1")
-//EthereumLightNodeProtocol = utils.GetEnv("GETH_PROTOCOL", "http")
-//EthereumLightNodePort     = utils.GetEnv("GETH_PORT", "8545")
+// // if the blockchain is running in Docker container
+// // then using GETH_NAME env's value (aka geth container name)
+// // otherwise using localhost
+// EthereumLightNodeHost     = utils.GetEnv("GETH_NAME", "127.0.0.1")
+// EthereumLightNodeProtocol = utils.GetEnv("GETH_PROTOCOL", "http")
+// EthereumLightNodePort     = utils.GetEnv("GETH_PORT", "8545")
 /*)*/
 
 const (
-	StopAutoStakingAmount = 0
-	EVMConfirmationBlocks = 15
-	PLGConfirmationBlocks = 35
+	StopAutoStakingAmount    = 0
+	EVMConfirmationBlocks    = 15
+	PLGConfirmationBlocks    = 35
+	FantomConfirmationBlocks = 5
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
@@ -334,6 +361,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPBSCConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningPLGConfirmMeta),
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningFantomConfirmMeta),
+	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{

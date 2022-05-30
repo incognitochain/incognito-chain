@@ -108,7 +108,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 				}
 
 				for _, v := range allViews {
-					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true, false)
+					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true, false, false)
 					if err != nil {
 						cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
 					}

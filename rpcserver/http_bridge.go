@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -184,7 +185,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingEVMReq(params interfac
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	meta, err := metadata.NewIssuingEVMRequestFromMap(data, metatype)
+	meta, err := metadataBridge.NewIssuingEVMRequestFromMap(data, 0, metatype)
 	if err != nil {
 		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		Logger.log.Error(rpcErr)
@@ -408,7 +409,11 @@ func processBurningReq(
 		burningMetaType,
 		httpServer.GetBlockchain(),
 		httpServer.GetBlockchain().BeaconChain.CurrentHeight(),
-		txVersion)
+		txVersion,
+		common.DefaultNetworkID,
+		0,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -698,6 +703,81 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningPLGForDepositToSCReq(p
 
 func (httpServer *HttpServer) handleCreateAndSendBurningPLGForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithBurningPLGForDepositToSCReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingFTMReq(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithIssuingEVMReq(params, closeChan, metadata.IssuingFantomRequestMeta)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningFantomReq(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningFantomRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		false,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningFTMRequest(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningFantomReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningFantomForDepositToSCReq(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningFantomForDepositToSCRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		false,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningFTMForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningFantomForDepositToSCReq(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

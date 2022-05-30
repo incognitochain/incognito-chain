@@ -2,18 +2,20 @@ package config
 
 //Env variables key
 const (
-	NetworkKey        = "INCOGNITO_NETWORK_KEY"
-	NetworkVersionKey = "INCOGNITO_NETWORK_VERSION_KEY"
-	ConfigFileKey     = "INCOGNITO_CONFIG_FILE_KEY"
-	ConfigDirKey      = "INCOGNITO_CONFIG_DIR_KEY"
-	ConfigFileTypeKey = "INCOGNITO_CONFIG_FILE_TYPE_KEY"
-	ParamFileKey      = "INCOGNITO_PARAM_FILE_KEY"
-	InitTxFileKey     = "INCOGNITO_INIT_TX_FILE_KEY"
-	GethHostKey       = "GETH_NAME"
-	GethPortKey       = "GETH_PORT"
-	GethProtocolKey   = "GETH_PROTOCOL"
-	BSCHostKey        = "BSC_HOST"
-	PLGHostKey        = "PLG_HOST"
+	NetworkKey          = "INCOGNITO_NETWORK_KEY"
+	NetworkVersionKey   = "INCOGNITO_NETWORK_VERSION_KEY"
+	ConfigFileKey       = "INCOGNITO_CONFIG_FILE_KEY"
+	ConfigDirKey        = "INCOGNITO_CONFIG_DIR_KEY"
+	ConfigFileTypeKey   = "INCOGNITO_CONFIG_FILE_TYPE_KEY"
+	ParamFileKey        = "INCOGNITO_PARAM_FILE_KEY"
+	InitTxFileKey       = "INCOGNITO_INIT_TX_FILE_KEY"
+	UnifiedTokenFileKey = "INCOGNITO_UNIFIED_TOKEN_FILE_KEY"
+	GethHostKey         = "GETH_NAME"
+	GethPortKey         = "GETH_PORT"
+	GethProtocolKey     = "GETH_PROTOCOL"
+	BSCHostKey          = "BSC_HOST"
+	PLGHostKey          = "PLG_HOST"
+	FTMHostKey          = "FTM_HOST"
 )
 
 // default config
@@ -45,17 +47,19 @@ const (
 	DefaultLimitFee     = uint64(1) // 1 nano PRV = 10^-9 PRV
 	//DefaultLimitFee = uint64(100000) // 100000 nano PRV = 100000 * 10^-9 PRV
 	// For wallet
-	DefaultWalletName     = "wallet"
-	DefaultPersistMempool = false
-	DefaultBtcClient      = 0
-	DefaultBtcClientPort  = "8332"
-	DefaultNetwork        = LocalNetwork
-	DefaultConfigDir      = "config"
-	DefaultConfigFile     = "config"
-	DefaultConfigFileType = "yaml"
-	DefaultParamFile      = "param"
-	DefaultInitTxFile     = "init_tx"
-	DefaultInitTxFileType = "json"
+	DefaultWalletName           = "wallet"
+	DefaultPersistMempool       = false
+	DefaultBtcClient            = 0
+	DefaultBtcClientPort        = "8332"
+	DefaultNetwork              = LocalNetwork
+	DefaultConfigDir            = "config"
+	DefaultConfigFile           = "config"
+	DefaultConfigFileType       = "yaml"
+	DefaultParamFile            = "param"
+	DefaultInitTxFile           = "init_tx"
+	DefaultInitTxFileType       = "json"
+	DefaultUnifiedTokenFile     = "unified_token"
+	DefaultUnifiedTokenFileType = "json"
 )
 
 const (

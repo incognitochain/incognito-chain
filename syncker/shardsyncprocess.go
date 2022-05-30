@@ -94,6 +94,7 @@ func NewShardSyncProcess(
 			case f := <-s.actionCh:
 				f()
 			case shardPeerState := <-s.shardPeerStateCh:
+				Logger.Debugf("Got new shard peerstate, last height %v", shardPeerState.Shards[byte(s.shardID)].Height)
 				for sid, peerShardState := range shardPeerState.Shards {
 					if int(sid) == s.shardID {
 						s.shardPeerState[shardPeerState.SenderID] = ShardPeerState{
@@ -156,7 +157,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		if insertCnt > 0 {
 			s.insertShardBlockFromPool()
 		} else {
-			time.AfterFunc(time.Second*2, s.insertShardBlockFromPool)
+			time.AfterFunc(time.Millisecond*500, s.insertShardBlockFromPool)
 		}
 	}()
 
@@ -169,16 +170,8 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			}
 			//if already insert and error, last time insert is < 10s then we skip
 			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
-			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+			if ok && time.Since(insertTime.(time.Time)).Seconds() < (float64(common.TIMESLOT)/4) {
 				continue
-			}
-
-			//fullnode delay 1 block (make sure insert final block)
-			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
-				if len(preBlk) == 0 {
-					continue
-				}
 			}
 
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
@@ -361,10 +354,10 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d shard %d block(from %d to %d) elaspse %f \n", successBlk, s.shardID, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk == 0 {
 							return
 						}
+						fmt.Printf("Syncker Insert shard %d : %d block(from %d to %d) elaspse %f \n", s.shardID, successBlk, blockBuffer[0].GetHeight(), blockBuffer[successBlk-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk < len(blockBuffer) {
 							blockBuffer = blockBuffer[successBlk:]
 						} else {

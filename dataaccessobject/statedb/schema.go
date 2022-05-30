@@ -47,6 +47,7 @@ var (
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeBSCTxPrefix                  = []byte("bri-bsc-tx-")
 	bridgePLGTxPrefix                  = []byte("bri-plg-tx-")
+	bridgeFTMTxPrefix                  = []byte("bri-ftm-tx-")
 	bridgePRVEVMPrefix                 = []byte("bri-prv-evm-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
@@ -91,6 +92,16 @@ var (
 	pdexv3PoolPairMakingVolumePrefix        = []byte("pdexv3-poolpair-makingvolume-")
 	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
 	pdexv3PoolPairLmLockedSharePrefix       = []byte("pdexv3-poolpair-lmlockedshare-")
+
+	// bridge agg
+	bridgeAggStatusPrefix                       = []byte("bridgeagg-status-")
+	bridgeAggRewardReserveModifyingStatusPrefix = []byte("bridgeagg-rewardreservemodifyingstatus-")
+	bridgeAggConvertStatusPrefix                = []byte("bridgeagg-convertstatus-")
+	bridgeAggShieldStatusPrefix                 = []byte("bridgeagg-shieldStatus-")
+	bridgeAggUnshieldStatusPrefix               = []byte("bridgeagg-unshieldStatus-")
+	bridgeAggUnifiedTokenprefix                 = []byte("bridgeagg-unifiedtoken-")
+	bridgeAggConvertedTokenPrefix               = []byte("bridgeagg-convertedtoken-")
+	bridgeAggVaultPrefix                        = []byte("bridgeagg-vault-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -346,6 +357,11 @@ func GetBridgePRVEVMPrefix() []byte {
 
 func GetBridgePLGTxPrefix() []byte {
 	h := common.HashH(bridgePLGTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeFTMTxPrefix() []byte {
+	h := common.HashH(bridgeFTMTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -827,6 +843,42 @@ func PortalUnshielFeeReplacementBatchStatusPrefix() []byte {
 
 func PortalSubmitConfirmedTxStatusPrefix() []byte {
 	return portalUnshielSubmitConfirmedTxStatusPrefix
+}
+
+func GetBridgeAggStatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(bridgeAggStatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func BridgeAggRewardReserveModifyingStatusPrefix() []byte {
+	return bridgeAggRewardReserveModifyingStatusPrefix
+}
+
+func BridgeAggConvertStatusPrefix() []byte {
+	return bridgeAggConvertStatusPrefix
+}
+
+func BridgeAggShieldStatusPrefix() []byte {
+	return bridgeAggShieldStatusPrefix
+}
+
+func BridgeAggUnshieldStatusPrefix() []byte {
+	return bridgeAggUnshieldStatusPrefix
+}
+
+func GetBridgeAggUnifiedTokenPrefix() []byte {
+	hash := common.HashH(bridgeAggUnifiedTokenprefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggConvertedTokenPrefix() []byte {
+	hash := common.HashH(bridgeAggConvertedTokenPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggVaultPrefix() []byte {
+	hash := common.HashH(bridgeAggVaultPrefix)
+	return hash[:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {
