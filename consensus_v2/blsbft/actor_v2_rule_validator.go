@@ -77,12 +77,22 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 
 		// lemma 2
 		if proposeBlockInfo.IsValidLemma2Proof {
-			if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
-				c.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
-				continue
+			if proposeBlockInfo.block.GetVersion() >= types.LEMMA2_VERSION {
+				if proposeBlockInfo.block.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+					if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight() {
+						c.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
+							proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
+							proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
+						continue
+					}
+				} else if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
+					c.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
+						proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
+						proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
+					continue
+				}
 			}
+
 		}
 		if !proposeBlockInfo.IsValidLemma2Proof {
 			if proposeBlockInfo.block.GetFinalityHeight() != 0 {

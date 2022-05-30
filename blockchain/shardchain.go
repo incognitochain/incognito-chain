@@ -252,7 +252,11 @@ func (chain *ShardChain) CreateNewBlock(
 		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
 			newBlock.Header.Producer == newBlock.Header.Proposer &&
 			previousProposeTimeSlot+1 == currentTimeSlot {
-			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			if version >= types.INSTANT_FINALITY_VERSION {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height
+			} else {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			}
 		} else {
 			newBlock.Header.FinalityHeight = 0
 		}
@@ -271,10 +275,14 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-	if newBlock.Header.Version >= types.LEMMA2_VERSION {
-
+	version := newBlock.Header.Version
+	if version >= types.LEMMA2_VERSION {
 		if isValidRePropose {
-			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			if version >= types.INSTANT_FINALITY_VERSION {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height
+			} else {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			}
 		} else {
 			newBlock.Header.FinalityHeight = 0
 		}
@@ -356,6 +364,16 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 //this get consensus data for beacon
 func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
+	expectedFinalViewBlock := chain.multiView.GetExpectedFinalView().GetBlock().(*types.ShardBlock)
+	consensusData[chain.shardID] = types.BlockConsensusData{
+		BlockHash:      *expectedFinalViewBlock.Hash(),
+		BlockHeight:    expectedFinalViewBlock.GetHeight(),
+		FinalityHeight: expectedFinalViewBlock.GetFinalityHeight(),
+		Proposer:       expectedFinalViewBlock.GetProposer(),
+		ProposerTime:   expectedFinalViewBlock.GetProposeTime(),
+		ValidationData: expectedFinalViewBlock.ValidationData,
+	}
+
 	rawBlk, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *chain.Blockchain.BeaconChain.multiView.GetExpectedFinalView().GetHash())
 	if err != nil {
 		panic(err)

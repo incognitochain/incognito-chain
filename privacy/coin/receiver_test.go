@@ -113,7 +113,7 @@ func randomOTAReceiver() OTAReceiver {
 	txr.SetTxConcealRandomPoint(operation.RandomPoint())
 	txr.SetIndex(rand.Uint32())
 	return OTAReceiver{
-		PublicKey: *operation.RandomPoint(),
+		PublicKey: operation.RandomPoint(),
 		TxRandom:  *txr,
 	}
 }

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -219,10 +220,17 @@ func (chain *BeaconChain) CreateNewBlock(
 		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
 			newBlock.Header.Producer == newBlock.Header.Proposer &&
 			previousProposeTimeSlot+1 == currentTimeSlot {
-			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			if version >= types.INSTANT_FINALITY_VERSION {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height
+				log.Println("instant finality FinalityHeight", newBlock.Header.FinalityHeight, newBlock.Header.Height)
+			} else {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+				log.Println("normal FinalityHeight", newBlock.Header.FinalityHeight, newBlock.Header.Height)
+			}
 		} else {
 			newBlock.Header.FinalityHeight = 0
 		}
+
 	}
 
 	return newBlock, nil
@@ -235,10 +243,14 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-
-	if newBlock.Header.Version >= types.LEMMA2_VERSION {
+	version := newBlock.Header.Version
+	if version >= types.LEMMA2_VERSION {
 		if isValidRePropose {
-			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			if version >= types.INSTANT_FINALITY_VERSION {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height
+			} else {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			}
 		} else {
 			newBlock.Header.FinalityHeight = 0
 		}
@@ -274,6 +286,16 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 //this get consensus data for all latest shard state
 func (chain *BeaconChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
+	finalViewBlock := chain.multiView.GetExpectedFinalView().GetBlock().(*types.BeaconBlock)
+	consensusData[-1] = types.BlockConsensusData{
+		BlockHash:      *finalViewBlock.Hash(),
+		BlockHeight:    finalViewBlock.GetHeight(),
+		FinalityHeight: finalViewBlock.GetFinalityHeight(),
+		Proposer:       finalViewBlock.GetProposer(),
+		ProposerTime:   finalViewBlock.GetProposeTime(),
+		ValidationData: finalViewBlock.GetValidationField(),
+	}
+
 	for sid, sChain := range chain.Blockchain.ShardChain {
 		shardBlk := sChain.multiView.GetExpectedFinalView().GetBlock().(*types.ShardBlock)
 		consensusData[int(sid)] = types.BlockConsensusData{
@@ -289,7 +311,9 @@ func (chain *BeaconChain) GetBlockConsensusData() map[int]types.BlockConsensusDa
 }
 
 func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
-
+	if consensusData.ValidationData == "" {
+		return nil
+	}
 	replaceBlockHash := consensusData.BlockHash
 	//retrieve block from database and replace consensus field
 	beaconBlk, _, _ := chain.Blockchain.GetBeaconBlockByHash(replaceBlockHash)

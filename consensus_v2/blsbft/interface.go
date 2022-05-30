@@ -27,6 +27,7 @@ type NodeInterface interface {
 }
 
 type Chain interface {
+	VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error
 	BestViewCommitteeFromBlock() common.Hash
 	GetMultiView() multiview.MultiView
 	GetFinalView() multiview.View
