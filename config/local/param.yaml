@@ -99,8 +99,8 @@ ftm_param:
     - "https://rpc.testnet.fantom.network"
 near_param:
   host:
-    - "https://rpc.testnet.near.org"
     - "https://archival-rpc.testnet.near.org"
+    - "https://rpc.testnet.near.org"
 pdex_param:
   pdex_v3_break_point_height: 11
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"

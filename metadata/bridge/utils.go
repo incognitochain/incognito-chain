@@ -404,15 +404,15 @@ func VerifyWasmShieldTxId(
 				continue
 			}
 			if len(receiptOutCome.Outcome.Logs) == 0 {
-				break
+				continue
 			}
 			events := strings.Split(receiptOutCome.Outcome.Logs[0], " ")
 			if len(events) != 3 {
-				break
+				continue
 			}
 			amount, err = strconv.ParseUint(events[2], 10, 64)
 			if err != nil {
-				break
+				continue
 			}
 			token = events[1]
 			incognitoAddress = events[0]
