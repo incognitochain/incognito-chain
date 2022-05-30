@@ -1,3 +1,5 @@
+//nolint:gocritic,revive // skip some linters since this file has some capitalized, underscored
+// variable names to match names in the crypto protocol
 package mlsag
 
 import (

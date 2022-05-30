@@ -19,14 +19,14 @@ linters:
         - godox
         - revive
         - gofmt
-        # - goimports
-        # - lll
     disable:
         - typecheck
 run:
     tests: false
     skip-dirs:
-        - privacy/operation
+        - privacy/operation/edwards25519
+        - privacy/operation/v1
+        - privacy/privacy_v2/bulletproofs/v1
         - privacy/privacy_v1
         - transaction/benchmark
         - transaction/tx_ver1
@@ -37,6 +37,167 @@ linters-settings:
         disabled-checks:
             - appendAssign
     revive:
+        # disabled rules are candidates to be applied later
+        enable-all-rules: false
+        severity: warning
         rules:
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#atomic
+          - name: atomic
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#banned-characters
+          - name: banned-characters
+            disabled: false
+            arguments: ["Ω", "Σ", "σ", "7"]
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#bare-return
+          - name: bare-return
+            disabled: true
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#blank-imports
+          - name: blank-imports
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#bool-literal-in-expr
+          - name: bool-literal-in-expr
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#call-to-gc
+          - name: call-to-gc
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#confusing-naming
+          - name: confusing-naming
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#constant-logical-expr
+          - name: constant-logical-expr
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-as-argument
+          - name: context-as-argument
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#context-keys-type
+          - name: context-keys-type
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#deep-exit
+          - name: deep-exit
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#defer
+          - name: defer
+            disabled: false
+            arguments:
+              - ["call-chain", "loop"]
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#dot-imports
+          - name: dot-imports
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#duplicated-imports
+          - name: duplicated-imports
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#empty-block
+          - name: empty-block
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-naming
+          - name: error-naming
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
           - name: error-strings
-            severity: warning
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#errorf
+          - name: errorf
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#flag-parameter
+          - name: flag-parameter
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#get-return
+          - name: get-return
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#identical-branches
+          - name: identical-branches
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#if-return
+          - name: if-return
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#indent-error-flow
+          - name: indent-error-flow
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#imports-blacklist
+          - name: imports-blacklist
+            disabled: false
+            arguments:
+              - "crypto/md5"
+              - "crypto/sha1"
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#import-shadowing
+          - name: import-shadowing
+            severity: debug
+            disabled: true
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#modifies-value-receiver
+          - name: modifies-value-receiver
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#nested-structs
+          - name: nested-structs
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#package-comments
+          - name: package-comments
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range
+          - name: range
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range-val-in-closure
+          - name: range-val-in-closure
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#range-val-address
+          - name: range-val-address
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#receiver-naming
+          - name: receiver-naming
+            disabled: true
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#redefines-builtin-id
+          - name: redefines-builtin-id
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#string-of-int
+          - name: string-of-int
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#string-format
+          - name: string-format
+            disabled: false
+            arguments:
+              - - 'core.WriteError[1].Message'
+                - '/^([^A-Z]|$)/'
+                - must not start with a capital letter
+              - - 'fmt.Errorf[0]'
+                - '/(^|[^\.!?])$/'
+                - must not end in punctuation
+              - - panic
+                - '/^[^\n]*$/'
+                - must not contain line breaks
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#struct-tag
+          - name: struct-tag
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#superfluous-else
+          - name: superfluous-else
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-equal
+          - name: time-equal
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#time-naming
+          - name: time-naming
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#var-naming
+          - name: var-naming
+            disabled: true
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unconditional-recursion
+          - name: unconditional-recursion
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unhandled-error
+          - name: unhandled-error
+            disabled: true
+            arguments:
+              - "fmt.Printf"
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unnecessary-stmt
+          - name: unnecessary-stmt
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unreachable-code
+          - name: unreachable-code
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unused-parameter
+          - name: unused-parameter
+            disabled: true
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#useless-break
+          - name: useless-break
+            disabled: false
+          # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#waitgroup-by-value
+          - name: waitgroup-by-value
+            disabled: false

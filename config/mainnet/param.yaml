@@ -109,3 +109,4 @@ auto_enable_feature:
       min_trigger: 1892003
       force_trigger: 1000000000
       require_percentage: 85
+bc_height_break_point_coin_origin: 2087774

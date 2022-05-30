@@ -126,7 +126,6 @@ func (s *multiView) GetViewByHash(hash common.Hash) View {
 	} else {
 		return view
 	}
-
 }
 
 //forward final view to specific view
@@ -177,9 +176,8 @@ func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 }
 
 func (s *multiView) SimulateAddView(view View) (cloneMultiview MultiView) {
-	cloneMultiView := s.Clone()
-	cloneMultiView.(*multiView).updateViewState(view)
-	return cloneMultiView
+	panic("Must not use this")
+	return nil
 }
 
 //Only add view if view is validated (at least enough signature)
@@ -195,7 +193,6 @@ func (s *multiView) addView(view View) bool {
 			s.viewByHash[*view.GetHash()] = view
 			s.viewByPrevHash[*view.GetPreviousHash()] = append(s.viewByPrevHash[*view.GetPreviousHash()], view)
 			s.updateViewState(view)
-
 			return true
 		}
 	}
