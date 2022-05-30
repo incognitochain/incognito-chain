@@ -1,104 +1,172 @@
 {
-    "TestAcceptedYEqualTo0NativeTokenDepositToSC" : {
-        "name": "Accepted, 1 valid tx, y == 0, native token, deposit to SC",
-        "metadatas": [
-            {
-                "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "Data": [
-                    {
-                        "BurningAmount": 300,
-                        "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
-                        "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                        "ExpectedAmount": 0,
-                        "IsDepositToSC": true
-                    }
-                ],
-                "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
-                "Type": 346
-            }
-        ],
-        "tx_ids": [
-            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
-        ],
-        "expected_instructions": [
-            [
-                "346", "0", "accepted", 
-                "eyJVbmlmaWVkVG9rZW5JRCI6ImM4YWVmYTZiMzQ3YmIxNzQxMTYwNjBkYTYxNzFlYjIzNDc2ZjQ0NGJiM2ZmMTQzNmU4OTQwYjI3ZWQxYWY1NzAiLCJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsImRhdGEiOlt7IkJ1cm5pbmdBbW91bnQiOjMwMCwiSW5jVG9rZW5JRCI6IjM3NTgyNWJmODM4NTI3NjEwMTAyYzY5NDMyODI2NDI4MjY5MDE5Mzc2NzlkOGRmNWI1NjM0ZDQzZDU0YTU3NjkiLCJGZWUiOjAsIklzRGVwb3NpdFRvU0MiOnRydWV9XX0="
-            ],
-            [
-                "243", "1", "1111111111111111111116onJqC", "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA", "1tZtv6YNB18u6", "69cc45cd4f96fbda4eb36681ceaec252cd53564636b55b6172e76016d09a3d02", "1oPo4LSkGMvxUMZN6WRG3vrhgR75WuCSyXNMiRy1J3b4a4bT9k", "12EtT8jh"
-            ]
-        ],
-        "unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 5000000,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
+    "TestAcceptedEnoughVault" : {
+        "name": "Accepted, Enough vault amount",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                        "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                            "Amount": 1000,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
                     },
-                    "NetworkID": 1
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
+                    } 
                 },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "expected_unified_tokens": {
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                    "State": {
-                        "Reserve": 4999700,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 18,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 1
-                },
-                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
-                    "State": {
-                        "Reserve": 0,
-                        "LastUpdatedRewardReserve": 0,
-                        "CurrentRewardReserve": 0,
-                        "Decimal": 6,
-                        "IsPaused": false
-                    },
-                    "NetworkID": 2
-                }
-            }
-        },
-        "bridge_tokens_info": {
-            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
-                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                "Amount": 0
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": []
             },
-            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
-                "ExternalTokenID": [85, 84],
-                "Amount": 5000000
+            "metadatas": [
+                {
+                    "UnifiedTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                    "Data": [
+                        {
+                            "BurningAmount": 300,
+                            "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                            "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                            "ExpectedAmount": 0,
+                            "IsDepositToSC": false
+                        }
+                    ],
+                    "Receiver": "15sXoyo8kCZCHjurNC69b8WV2jMCvf5tVrcQ5mT1eH9Nm351XRjE1BH4WHHLGYPZy9dxTSLiKQd6KdfoGq4yb4gP1AU2oaJTeoGymsEzonyi1XSW2J2U7LeAVjS1S2gjbNDk1t3f9QUg2gk4",
+                    "Type": 346
+                }
+            ],
+            "tx_ids": [
+                "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+            ],
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "bridge_tokens_info": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                    "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                    "ExternalTokenID": [85, 84],
+                    "Amount": 0
+                },
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                    "ExternalTokenID": [
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                    ],
+                    "Amount": 0
+                }
             }
         },
-        "expected_statuses": [
-            {
-                "Status": 1,
-                "Data": [
-                    {
-                        "ReceivedAmount": 300
-                    }
+        "expected_result": {
+            "instructions": [
+                [
+                    "241", "1", "1111111111111111111116onJqC", "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA", "1tZtv6YNB18u6", "69cc45cd4f96fbda4eb36681ceaec252cd53564636b55b6172e76016d09a3d02", "1oPo4LSkGMvxUMZN6WRG3vrhgR75WuCSyXNMiRy1J3b4a4bT9k", "12EtT8jh"
+                ],
+                [
+                    "346", "0", "accepted", 
+                    "eyJVbmlmaWVkVG9rZW5JRCI6ImM4YWVmYTZiMzQ3YmIxNzQxMTYwNjBkYTYxNzFlYjIzNDc2ZjQ0NGJiM2ZmMTQzNmU4OTQwYjI3ZWQxYWY1NzAiLCJJc0RlcG9zaXRUb1NDIjpmYWxzZSwiV2FpdGluZ1Vuc2hpZWxkUmVxIjp7IlVuc2hpZWxkSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiRGF0YSI6W3siSW5jVG9rZW5JRCI6IjM3NTgyNWJmODM4NTI3NjEwMTAyYzY5NDMyODI2NDI4MjY5MDE5Mzc2NzlkOGRmNWI1NjM0ZDQzZDU0YTU3NjkiLCJCdXJuaW5nQW1vdW50IjozMDAsIlJlbW90ZUFkZHJlc3MiOiJhNTY2NjE4M0ZEN2M1YkJlNzg2MUEyNjY0Q2QzMERhZjI1QTJkMmJBIiwiRmVlIjowLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiRXh0ZXJuYWxSZWNlaXZlZEFtdCI6MzAwMDAwMDAwMDAwLCJCdXJuaW5nQ29uZmlybU1ldGFUeXBlIjoyNDF9XSwiQmVhY29uSGVpZ2h0IjoxMH19"
                 ]
+            ],
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                        "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                            "Amount": 700,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
+                    } 
+                },
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": []
+            },
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "statuses": [
+                {
+                    "Status": 1,
+                    "Data": [
+                        {
+                            "ReceivedAmount": 300
+                        }
+                    ]
+                }
+            ],
+            "bridge_tokens_info": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                    "tokenId": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                    "externalTokenId": [85, 84],
+                    "amount": 700
+                },
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                    "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                    "externalTokenId": [
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                    ],
+                    "amount": 0
+                }
             }
-        ]
+        }
     },
     "TestAcceptedYEqualTo0NativeTokenWithdrawal": {
         "name": "Accepted, 1 valid tx, y == 0, native token, withdrawal",

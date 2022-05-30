@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
@@ -88,7 +89,8 @@ func (c *ConvertTestSuite) BeforeTest(suiteName, testName string) {
 		stateDBs: map[int]*statedb.StateDB{
 			common.BeaconChainID: c.sDB,
 		},
-		convertActions: [][]string{actions},
+		convertActions:    [][]string{actions},
+		accumulatedValues: testCase.Data.AccumulatedValues,
 	}
 	c.testCases[c.currentTestCaseName].Data.env = env
 }
@@ -100,19 +102,21 @@ func (c *ConvertTestSuite) test() {
 	producerManager := NewManagerWithValue(producerState)
 	processorState := testCase.Data.State.Clone()
 	processorManager := NewManagerWithValue(processorState)
-	actualInstructions, _, err := producerManager.BuildInstructions(testCase.Data.env)
+	actualInstructions, accumulatedValues, err := producerManager.BuildInstructions(testCase.Data.env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorManager.Process(actualInstructions, c.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
 
 	c.actualResults[c.currentTestCaseName] = ConvertActualResult{
 		ActualResult: ActualResult{
-			Instructions:   actualInstructions,
-			ProducerState:  producerState,
-			ProcessorState: processorState,
+			Instructions:      actualInstructions,
+			ProducerState:     producerState,
+			ProcessorState:    processorState,
+			AccumulatedValues: accumulatedValues,
 		},
 	}
 
+	actualResult := c.actualResults[c.currentTestCaseName]
 	for _, txID := range testCase.Data.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
 			c.sDB,
@@ -123,19 +127,47 @@ func (c *ConvertTestSuite) test() {
 		var status ConvertStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		c.testCases[c.currentTestCaseName].ExpectedResult.Statuses = append(c.testCases[c.currentTestCaseName].ExpectedResult.Statuses, status)
+		actualResult.Statuses = append(actualResult.Statuses, status)
 	}
+	c.actualResults[c.currentTestCaseName] = actualResult
 }
 
-func (c *ConvertTestSuite) TestAccepted() {
+func (c *ConvertTestSuite) AfterTest(suiteName, testName string) {
+	assert := c.Assert()
+	_, err := c.sDB.Commit(false)
+	assert.NoError(err, fmt.Sprintf("Error in commit db %v", err))
+	bridgeTokenInfos := make(map[common.Hash]*rawdbv2.BridgeTokenInfo)
+	tokens, err := statedb.GetBridgeTokens(c.sDB)
+	assert.NoError(err, fmt.Sprintf("Error in get bridge tokens from db %v", err))
+	for _, token := range tokens {
+		bridgeTokenInfos[*token.TokenID] = token
+	}
+	expectedBridgeTokensInfo := c.testCases[c.currentTestCaseName].ExpectedResult.BridgeTokensInfo
+	assert.Equal(expectedBridgeTokensInfo, bridgeTokenInfos, fmt.Errorf("Expected bridgeTokenInfos %v but get %v", expectedBridgeTokensInfo, bridgeTokenInfos).Error())
+}
+
+func (c *ConvertTestSuite) TestAcceptedGreaterBaseDecimal() {
 	c.test()
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseName]
 	actualResult := c.actualResults[c.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
+
+func (c *ConvertTestSuite) TestAcceptedSmallerBaseDecimal() {
+	c.test()
+	assert := c.Assert()
+	testCase := c.testCases[c.currentTestCaseName]
+	actualResult := c.actualResults[c.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
@@ -143,10 +175,11 @@ func (c *ConvertTestSuite) TestRejectedByInvalidTokenID() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseName]
 	actualResult := c.actualResults[c.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
@@ -154,10 +187,11 @@ func (c *ConvertTestSuite) TestRejectedByInvalidUnifiedTokenID() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseName]
 	actualResult := c.actualResults[c.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (c *ConvertTestSuite) TestRejectedThenAccepted() {
@@ -165,10 +199,11 @@ func (c *ConvertTestSuite) TestRejectedThenAccepted() {
 	assert := c.Assert()
 	testCase := c.testCases[c.currentTestCaseName]
 	actualResult := c.actualResults[c.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func TestConvertTestSuite(t *testing.T) {

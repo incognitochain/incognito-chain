@@ -23,12 +23,12 @@ type UnshieldTestData struct {
 
 type UnshieldExpectedResult struct {
 	ExpectedResult
-	Statuses []ShieldStatus `json:"statuses"`
+	Statuses []UnshieldStatus `json:"statuses"`
 }
 
 type UnshieldActualResult struct {
 	ActualResult
-	Statuses []ShieldStatus
+	Statuses []UnshieldStatus
 }
 
 type UnshieldTestCase struct {
@@ -110,19 +110,21 @@ func (u *UnshieldTestSuite) test() {
 	producerManager := NewManagerWithValue(producerState)
 	processorState := testCase.Data.State.Clone()
 	processorManager := NewManagerWithValue(processorState)
-	actualInstructions, _, err := producerManager.BuildInstructions(testCase.Data.env)
+	actualInstructions, accumulatedValues, err := producerManager.BuildInstructions(testCase.Data.env)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorManager.Process(actualInstructions, u.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
 
 	u.actualResults[u.currentTestCaseName] = UnshieldActualResult{
 		ActualResult: ActualResult{
-			Instructions:   actualInstructions,
-			ProducerState:  producerState,
-			ProcessorState: processorState,
+			Instructions:      actualInstructions,
+			ProducerState:     producerState,
+			ProcessorState:    processorState,
+			AccumulatedValues: accumulatedValues,
 		},
 	}
 
+	actualResult := u.actualResults[u.currentTestCaseName]
 	for _, txID := range testCase.Data.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
 			u.sDB,
@@ -130,144 +132,145 @@ func (u *UnshieldTestSuite) test() {
 			txID.Bytes(),
 		)
 		assert.Nil(err, fmt.Sprintf("get bridge agg status %v", err))
-		var status ShieldStatus
+		var status UnshieldStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		u.testCases[u.currentTestCaseName].ExpectedResult.Statuses = append(u.testCases[u.currentTestCaseName].ExpectedResult.Statuses, status)
+		actualResult.Statuses = append(actualResult.Statuses, status)
 	}
+	u.actualResults[u.currentTestCaseName] = actualResult
 }
 
-func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenDepositToSC() {
+func (u *UnshieldTestSuite) TestAcceptedEnoughVault() {
 	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejectedInvalidIncTokenID() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejectedInvalidIncTokenID() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejectedInvalidTokenID() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejectedInvalidTokenID() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejectedNotEnoughExpectedAmount() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejectedNotEnoughExpectedAmount() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejectedNotEnoughVaultValue() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejectedNotEnoughVaultValue() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejectedThenAccepted() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
-func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {
-	u.test()
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	assert.Equal(testCase.ExpectedResult.Instructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedResult.Instructions).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", testCase.ExpectedResult.State, actualResult.ProducerState).Error())
-	assert.Equal(testCase.ExpectedResult.State, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", testCase.ExpectedResult.State, actualResult.ProcessorState).Error())
-	assert.Equal(testCase.ExpectedResult.Statuses, actualResult.Statuses, fmt.Errorf("Expected statuses %v but get %v", testCase.ExpectedResult.Statuses, actualResult.Statuses).Error())
-	assert.Equal(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues, fmt.Errorf("Expected accumulatedValues %v but get %v", testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues).Error())
-}
+/*func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {*/
+/*u.test()*/
+/*assert := u.Assert()*/
+/*testCase := u.testCases[u.currentTestCaseName]*/
+/*actualResult := u.actualResults[u.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
 /*func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYNotEqualTo0() {*/
 /*assert := u.Assert()*/
