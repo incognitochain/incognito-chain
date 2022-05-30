@@ -121,7 +121,7 @@ func (s *BeaconChain) GetBestViewHash() string {
 }
 
 func (s *BeaconChain) GetFinalViewHash() string {
-	return s.GetBestView().(*BeaconBestState).BestBlockHash.String()
+	return s.GetFinalView().(*BeaconBestState).BestBlockHash.String()
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {

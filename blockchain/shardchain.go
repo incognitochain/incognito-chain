@@ -150,7 +150,7 @@ func (s *ShardChain) GetBestViewHash() string {
 }
 
 func (s *ShardChain) GetFinalViewHash() string {
-	return s.GetBestState().Hash().String()
+	return s.GetFinalView().(*ShardBestState).BestBlockHash.String()
 }
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.GetBestState().BestBlock.Header.Timestamp
