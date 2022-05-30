@@ -250,6 +250,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingWasmBridgeReq(
 		return nil, nil, nil
 	}
 
+	err = metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
+	if err != nil {
+		Logger.log.Warnf(err.Error())
+		return [][]string{rejectedInst}, nil, nil
+	}
+
 	issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
 		ShardID:         receivingShardID,
 		IssuingAmount:   issuingWasmBridgeReqAction.Amount,
