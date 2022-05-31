@@ -863,7 +863,6 @@ func convertPTokenAmtToPUnifiedTokenAmt(extDec uint, amount uint64) (uint64, err
 // calculate actual received amount and actual fee
 func calUnshieldFeeByShortageAmount(shortageAmount uint64, percentFee float64) (uint64, error) {
 	// receiveAmt + fee = shortageAmt
-	// fee = percent * receiveAmt / 100
 	// fee = (percent * shortageAmt) / (percent + 100)
 	x := new(big.Float).Mul(
 		new(big.Float).SetFloat64(percentFee),

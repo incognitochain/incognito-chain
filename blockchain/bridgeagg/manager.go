@@ -2,7 +2,6 @@ package bridgeagg
 
 import (
 	"bytes"
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -256,16 +255,4 @@ func (m *Manager) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*st
 		}
 	}
 	return res, ac, err
-}
-
-func (m *Manager) ClearCache() {
-	m.processor.clearCache()
-}
-
-func (m *Manager) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
-	if res, found := m.processor.UnshieldTxsCache[txReqID]; found {
-		return res, nil
-	} else {
-		return common.Hash{}, fmt.Errorf("txID %s not found in cache", txReqID.String())
-	}
 }

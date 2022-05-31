@@ -13,9 +13,7 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
-type stateProcessor struct {
-	UnshieldTxsCache map[common.Hash]common.Hash
-}
+type stateProcessor struct{}
 
 func (sp *stateProcessor) convert(
 	inst metadataCommon.Instruction,
@@ -369,8 +367,4 @@ func (sp *stateProcessor) addToken(inst []string, state *State, sDB *statedb.Sta
 		}
 	}
 	return state, nil
-}
-
-func (sp *stateProcessor) clearCache() {
-	sp.UnshieldTxsCache = make(map[common.Hash]common.Hash)
 }
