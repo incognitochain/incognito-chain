@@ -40,6 +40,12 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 			continue
 		}
 
+		previousBlockHash := proposeBlockInfo.block.GetPrevHash()
+		previousView := c.chain.GetMultiView().GetViewByHash(previousBlockHash)
+		if previousView == nil {
+			continue
+		}
+
 		//// check if this time slot has been voted
 		//if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
 		//	continue
@@ -75,31 +81,16 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 			continue
 		}
 
-		// lemma 2
-		if proposeBlockInfo.IsValidLemma2Proof {
-			if proposeBlockInfo.block.GetVersion() >= types.LEMMA2_VERSION {
-				if proposeBlockInfo.block.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-					if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight() {
-						c.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
-							proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
-							proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
-						continue
-					}
-				} else if proposeBlockInfo.block.GetFinalityHeight() != proposeBlockInfo.block.GetHeight()-1 {
-					c.logger.Errorf("Block %+v %+v, is valid for lemma 2, expect finality height %+v, got %+v",
-						proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
-						proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetFinalityHeight())
-					continue
-				}
+		//finality check
+		if proposeBlockInfo.block.GetFinalityHeight() != 0 {
+			if !proposeBlockInfo.IsValidLemma2Proof {
+				c.logger.Errorf("Reject block %+v as invalid lemma2 block, but finality height is set", proposeBlockInfo.block.FullHashString())
+				continue
 			}
-
-		}
-		if !proposeBlockInfo.IsValidLemma2Proof {
-			if proposeBlockInfo.block.GetFinalityHeight() != 0 {
-				c.logger.Errorf("Block %+v %+v, root hash %+v, previous block hash %+v, is invalid for lemma 2, expect finality height %+v, got %+v",
-					proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
-					proposeBlockInfo.block.GetAggregateRootHash(), proposeBlockInfo.block.GetPrevHash().String(),
-					0, proposeBlockInfo.block.GetFinalityHeight())
+			previousViewProposeTS := common.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
+			previousViewProduceTS := common.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
+			if previousViewProduceTS != previousViewProposeTS {
+				c.logger.Errorf("Reject block %+v as previous block propose = produce condition is not true, but finality height is set", proposeBlockInfo.block.FullHashString())
 				continue
 			}
 		}

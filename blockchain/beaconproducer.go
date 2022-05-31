@@ -149,9 +149,12 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	return newBeaconBlock, nil
 }
 
-func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(currentBlock *types.BeaconBlock) bool {
-	previousFinalBlockTS := common.CalculateTimeSlot(blockchain.BeaconChain.multiView.GetExpectedFinalView().GetBlock().GetProduceTime())
-	currentBlockTS := common.CalculateTimeSlot(currentBlock.GetProduceTime())
+func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState, newBlock *types.BeaconBlock) bool {
+	if curView != blockchain.BeaconChain.GetFinalView() {
+		return false
+	}
+	previousFinalBlockTS := common.CalculateTimeSlot(curView.GetBlock().GetProduceTime())
+	currentBlockTS := common.CalculateTimeSlot(newBlock.GetProduceTime())
 	if currentBlockTS == previousFinalBlockTS+1 {
 		return true
 	}
@@ -339,7 +342,9 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	//build bridge instruction
 	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		if blockchain.shouldBeaconGenerateBridgeInstruction(newBeaconBlock) {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView, newBeaconBlock) {
+			processBridgeFromBlock := curView.LastBlockProcessBridge + 1
+			newBeaconBlock.Header.ProcessBridgeFromBlock = &processBridgeFromBlock
 			//get data from checkpoint to final view
 			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
 			retrievedShardBlockForBridge, err := blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
@@ -350,8 +355,8 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildBridgeError, err)
 			}
+			Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 		}
-		Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 	} else {
 		bridgeInstructions, err = blockchain.generateBridgeInstruction(curView, allShardBlocks, newBeaconBlock)
 		Logger.log.Info("[Bridge Debug] Generate instruction normal", len(bridgeInstructions))
