@@ -566,7 +566,6 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 		if common.IsPublicKeyBurningAddress(otaPublicKey) {
 			continue
 		}
-		cptype := privacy.CoinPrivacyTypeTransfer
 
 		exists, status, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
 		if err != nil {
@@ -580,7 +579,6 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 			case statedb.OTA_STATUS_OCCUPIED:
 				if tx.IsSalaryTx() {
-					cptype = privacy.CoinPrivacyTypeMint
 					utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", otaPublicKey, status)
 				} else {
 					utils.Logger.Log.Error("TX %s rejected due to already existing OTA", tx.Hash().String())
@@ -592,6 +590,10 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 		}
 
 		if afterCoinOriginHeight {
+			cptype := privacy.CoinPrivacyTypeTransfer
+			if isMint := len(tx.Proof.GetOutputCoins()) == 1 && len(tx.Proof.GetInputCoins()) == 0; isMint {
+				cptype = privacy.CoinPrivacyTypeMint
+			}
 			coinSenderShardID, _, coinPrivacyType, err := privacy.DeriveShardInfoFromCoin(outCoin.GetPublicKey().ToBytesS())
 			if err != nil {
 				return err
