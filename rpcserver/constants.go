@@ -148,6 +148,8 @@ const (
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
+	resetCache                 = "resetcache"
+	handleTestValidate         = "testvalidate"
 	// ==================================================
 
 	getShardBestState        = "getshardbeststate"
