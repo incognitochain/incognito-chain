@@ -88,6 +88,7 @@ const (
 	ErrInvalidBridgeAggConvertedTokenStateType = "invalid bridge agg converted token state type"
 	ErrInvalidBridgeAggVaultStateType          = "invalid bridge agg vault state type"
 	ErrInvalidBridgeAggWaitingUnshieldReqType  = "invalid bridge agg waiting unshield request state type"
+	ErrInvalidBridgeAggParamStateType          = "invalid bridge agg param state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

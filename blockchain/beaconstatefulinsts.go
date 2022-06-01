@@ -167,7 +167,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	unshieldActions := make([][]string, beaconBestState.ActiveShards)
 	shieldActions := make([][]string, beaconBestState.ActiveShards)
 	convertActions := make([][]string, beaconBestState.ActiveShards)
-	modifyRewardReserveActions := make([][]string, beaconBestState.ActiveShards)
+	modifyParamActions := make([][]string, beaconBestState.ActiveShards)
 	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 	if err != nil {
 		Logger.log.Error(err)
@@ -329,6 +329,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
+			case metadataCommon.BridgeAggModifyParamMeta:
+				modifyParamActions[shardID] = append(modifyParamActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
@@ -390,7 +392,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	bridgeAggEnv := bridgeagg.
 		NewStateEnvBuilder().
 		BuildConvertActions(convertActions).
-		BuildModifyRewardReserveActions(modifyRewardReserveActions).
+		BuildModifyParamActions(modifyParamActions).
 		BuildShieldActions(shieldActions).
 		BuildUnshieldActions(unshieldActions).
 		BuildAccumulatedValues(accumulatedValues).

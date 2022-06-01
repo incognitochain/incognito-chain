@@ -50,9 +50,16 @@ func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
 		}
 	}
 
+	// load param
+	param, err := statedb.GetBridgeAggParam(sDB)
+	if err != nil {
+		return nil, err
+	}
+
 	return NewStateWithValue(
 		unifiedTokenInfos,
 		waitingUnshieldReqs,
+		param,
 		map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq{},
 		[]common.Hash{}), nil
 }

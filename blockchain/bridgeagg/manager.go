@@ -90,6 +90,17 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 			res = append(res, insts...)
 		}
 	}
+
+	// build instruction for modifying param actions
+	for shardID, actions := range env.ModifyParamActions() {
+		for _, action := range actions {
+			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
+			if err != nil {
+				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
+			}
+			res = append(res, insts...)
+		}
+	}
 	Logger.log.Info("bridgeagg instructions:", res)
 	return res, ac, nil
 }
@@ -196,7 +207,15 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.H
 		}
 	}
 
-	// TODO: delete waiting unshield reqs
+	// store new param
+	if m.state.param != nil {
+		err := statedb.StoreBridgeAggParam(sDB, m.state.param)
+		if err != nil {
+			return err
+		}
+	}
+
+	// delete waiting unshield reqs
 	err := statedb.DeleteBridgeAggWaitingUnshieldReqs(sDB, m.state.deletedWaitingUnshieldReqKeyHashes)
 	if err != nil {
 		return err

@@ -66,3 +66,20 @@ func DeleteBridgeAggWaitingUnshieldReqs(stateDB *StateDB, waitUnshieldKeys []com
 
 	return nil
 }
+
+func GetBridgeAggParam(stateDB *StateDB) (*BridgeAggParamState, error) {
+	key := GenerateBridgeAggParamObjectKey()
+	param, has, err := stateDB.getBridgeAggParamByKey(key)
+	if err != nil {
+		return nil, NewStatedbError(GetBridgeAggStatusError, err)
+	}
+	if !has {
+		return param, NewStatedbError(GetBridgeAggStatusError, fmt.Errorf("Param with key %+v not found", key))
+	}
+	return param, nil
+}
+
+func StoreBridgeAggParam(stateDB *StateDB, param *BridgeAggParamState) error {
+	key := GenerateBridgeAggParamObjectKey()
+	return stateDB.SetStateObject(BridgeAggParamObjectType, key, param)
+}

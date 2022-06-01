@@ -2584,6 +2584,17 @@ func (stateDB *StateDB) iterateBridgeAggWaitingUnshieldReqs(prefix []byte) ([]*B
 	return res, nil
 }
 
+func (stateDB *StateDB) getBridgeAggParamByKey(key common.Hash) (*BridgeAggParamState, bool, error) {
+	bridgeAggParamState, err := stateDB.getStateObject(BridgeAggParamObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bridgeAggParamState != nil {
+		return bridgeAggParamState.GetValue().(*BridgeAggParamState), true, nil
+	}
+	return NewBridgeAggParamState(), false, nil
+}
+
 // ================================= Fantom bridge OBJECT =======================================
 func (stateDB *StateDB) getBridgeFTMTxState(key common.Hash) (*BridgeFTMTxState, bool, error) {
 	ftmTxState, err := stateDB.getStateObject(BridgeFTMTxObjectType, key)

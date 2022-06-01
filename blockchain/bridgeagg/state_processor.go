@@ -15,6 +15,51 @@ import (
 
 type stateProcessor struct{}
 
+func (sp *stateProcessor) modifyParam(
+	inst metadataCommon.Instruction,
+	state *State,
+	sDB *statedb.StateDB,
+) (*State, error) {
+	var status byte
+	var txReqID common.Hash
+	var errorCode int
+
+	if inst.Status != common.AcceptedStatusStr {
+		return state, errors.New("Invalid status of modify param instruction")
+	}
+
+	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	if err != nil {
+		return state, err
+	}
+	Logger.log.Info("Processing inst content:", string(contentBytes))
+	acceptedContent := metadataBridge.ModifyBridgeAggParamContentInst{}
+	err = json.Unmarshal(contentBytes, &acceptedContent)
+	if err != nil {
+		return state, err
+	}
+
+	// update vault state
+	state = updateStateForModifyParam(state, acceptedContent.PercentFeeWithDec)
+
+	txReqID = acceptedContent.TxReqID
+	status = common.AcceptedStatusByte
+
+	// store status
+	modifyStatus := ModifyParamStatus{
+		NewPercentFeeWithDec: acceptedContent.PercentFeeWithDec,
+		Status:               status,
+		ErrorCode:            errorCode,
+	}
+	modifyStatusBytes, _ := json.Marshal(modifyStatus)
+	return state, statedb.TrackBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggModifyParamStatusPrefix(),
+		txReqID.Bytes(),
+		modifyStatusBytes,
+	)
+}
+
 func (sp *stateProcessor) convert(
 	inst metadataCommon.Instruction,
 	state *State,

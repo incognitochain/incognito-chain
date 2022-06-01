@@ -18,6 +18,9 @@ type State struct {
 	// unifiedTokenID -> []waitingUnshieldReq
 	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
 
+	// bridge aggregator param
+	param *statedb.BridgeAggParamState
+
 	// temporary state
 	// only contains new waiting unshield reqs in processing beacon block
 	newWaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
@@ -43,10 +46,15 @@ func (s *State) NewWaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWai
 	return s.newWaitingUnshieldReqs
 }
 
+func (s *State) Param() *statedb.BridgeAggParamState {
+	return s.param
+}
+
 func NewState() *State {
 	return &State{
 		unifiedTokenVaults:                 make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState),
 		waitingUnshieldReqs:                make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
+		param:                              statedb.NewBridgeAggParamState(),
 		deletedWaitingUnshieldReqKeyHashes: []common.Hash{},
 		newWaitingUnshieldReqs:             make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
 	}
@@ -55,12 +63,14 @@ func NewState() *State {
 func NewStateWithValue(
 	unifiedTokenInfos map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState,
 	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq,
+	param *statedb.BridgeAggParamState,
 	newWaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq,
 	deletedWaitingUnshieldReqKeyHashes []common.Hash,
 ) *State {
 	return &State{
 		unifiedTokenVaults:                 unifiedTokenInfos,
 		waitingUnshieldReqs:                waitingUnshieldReqs,
+		param:                              param,
 		newWaitingUnshieldReqs:             newWaitingUnshieldReqs,
 		deletedWaitingUnshieldReqKeyHashes: deletedWaitingUnshieldReqKeyHashes,
 	}
@@ -71,6 +81,7 @@ func (s *State) Clone() *State {
 	res := NewState()
 	res.unifiedTokenVaults = s.CloneUnifiedTokenVaults()
 	res.waitingUnshieldReqs = s.CloneWaitingUnshieldReqs()
+	res.param = s.param.Clone()
 
 	// reset temporary state
 	// res.newWaitingUnshieldReqs = s.CloneNewWaitingUnshieldReqs()
@@ -82,7 +93,6 @@ func (s *State) Clone() *State {
 	return res
 }
 
-//TODO: 0xkraken
 func (s *State) GetDiff(preState *State) (*State, map[common.Hash]bool, error) {
 	if preState == nil {
 		return nil, nil, errors.New("preState is nil")
@@ -119,6 +129,13 @@ func (s *State) GetDiff(preState *State) (*State, map[common.Hash]bool, error) {
 			newUnifiedTokens[unifiedTokenID] = true
 			diffState.unifiedTokenVaults[unifiedTokenID] = vaults
 		}
+	}
+
+	// get diff param
+	if s.param != nil && s.param.IsDiff(preState.param) {
+		diffState.param = s.param
+	} else {
+		diffState.param = nil
 	}
 
 	// only store new waiting unshield req in block
@@ -178,11 +195,13 @@ func (s *State) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
 		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		Param                              *statedb.BridgeAggParamState                                 `json:"Param"`
 		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
 		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
 	}{
 		UnifiedTokenVaults:                 s.unifiedTokenVaults,
 		WaitingUnshieldReqs:                s.waitingUnshieldReqs,
+		Param:                              s.param,
 		NewWaitingUnshieldReqs:             s.newWaitingUnshieldReqs,
 		DeletedWaitingUnshieldReqKeyHashes: s.deletedWaitingUnshieldReqKeyHashes,
 	})
@@ -196,6 +215,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
 		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		Param                              *statedb.BridgeAggParamState                                 `json:"Param"`
 		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
 		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
 	}{}
@@ -205,6 +225,7 @@ func (s *State) UnmarshalJSON(data []byte) error {
 	}
 	s.unifiedTokenVaults = temp.UnifiedTokenVaults
 	s.waitingUnshieldReqs = temp.WaitingUnshieldReqs
+	s.param = temp.Param
 	s.newWaitingUnshieldReqs = temp.NewWaitingUnshieldReqs
 	s.deletedWaitingUnshieldReqKeyHashes = temp.DeletedWaitingUnshieldReqKeyHashes
 	return nil

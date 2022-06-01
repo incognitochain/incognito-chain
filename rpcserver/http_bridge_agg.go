@@ -37,6 +37,117 @@ func (httpServer *HttpServer) handleGetBridgeAggState(params interface{}, closeC
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyParamTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var res interface{}
+	data, err := httpServer.createBridgeAggModifyParamTransaction(params)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	res, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) createBridgeAggModifyParamTransaction(
+	params interface{},
+) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param at least %v but get %v", 5, len(arrayParams)))
+	}
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+	privacyDetect, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("privacy detection param need to be int"))
+	}
+	if int(privacyDetect) <= 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
+	}
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
+	}
+
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		NewPercentFeeWithDec uint64 `json:"NewPercentFeeWithDec"`
+	}{}
+	// parse params & metadata
+	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
+	}
+
+	md := metadataBridge.NewModifyBridgeAggParamReqWithValue(mdReader.NewPercentFeeWithDec)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, md)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetBridgeAggModifyParamStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// read txID
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Incorrect parameter length"))
+	}
+	s, ok := arrayParams[0].(string)
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if !ok || err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+
+	data, err := statedb.GetBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggModifyParamStatusPrefix(),
+		txID.Bytes(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	var res bridgeagg.ConvertStatus
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
+}
+
 func (httpServer *HttpServer) handleGetBridgeAggConvertStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
@@ -449,46 +560,21 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 	}
 	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	res := bridgeagg.ShieldStatus{}
-	prefixValues := [][]byte{
-		{},
-		{common.BoolToByte(false)},
-		{common.BoolToByte(true)},
+	data, err := statedb.GetBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggShieldStatusPrefix(),
+		txID.Bytes(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("Error get shield status %v", err))
 	}
-	for _, prefixValue := range prefixValues {
-		suffix := append(txID.Bytes(), prefixValue...)
-		data, err := statedb.GetBridgeAggStatus(
-			sDB,
-			statedb.BridgeAggShieldStatusPrefix(),
-			suffix,
-		)
-		if err != nil {
-			continue
-		}
-		status := bridgeagg.ShieldStatus{}
-		err = json.Unmarshal(data, &status)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-		}
-		res.Status = status.Status
-		if status.Status == common.RejectedStatusByte {
-			res.Data = nil
-			res.ErrorCode = status.ErrorCode
-		} else {
-			if len(res.Data) == 0 {
-				res.Data = make([]bridgeagg.ShieldStatusData, len(status.Data))
-			}
-			for i, v := range status.Data {
-				res.Data[i].Amount += v.Amount
-				res.Data[i].Reward += v.Reward
-			}
-
-		}
+	status := bridgeagg.ShieldStatus{}
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	if len(res.Data) == 0 && res.Status == 0 && res.ErrorCode == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not found status"))
-	}
-	return res, nil
+	return status, nil
 }
 
 func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

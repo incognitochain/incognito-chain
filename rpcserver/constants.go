@@ -302,9 +302,9 @@ const (
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
 	// bridgeagg method
-	bridgeaggModifyRewardReserve         = "bridgeaggModifyRewardReserve"
 	bridgeaggState                       = "bridgeaggGetState"
-	bridgeaggGetStatusModifyRewarReserve = "bridgeaggGetStatusModifyRewarReserve"
+	bridgeaggModifyParam                 = "bridgeaggModifyParam"
+	bridgeaggStatusModifyParam           = "bridgeaggStatusModifyParam"
 	bridgeaggConvert                     = "bridgeaggConvert"
 	bridgeaggStatusConvert               = "bridgeaggGetStatusConvert"
 	bridgeaggShield                      = "bridgeaggShield"

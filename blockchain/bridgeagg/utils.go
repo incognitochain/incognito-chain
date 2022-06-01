@@ -44,9 +44,10 @@ type UnshieldStatus struct {
 	ErrorCode int                  `json:"ErrorCode,omitempty"`
 }
 
-type ModifyRewardReserveStatus struct {
-	Status    byte `json:"Status"`
-	ErrorCode uint `json:"ErrorCode,omitempty"`
+type ModifyParamStatus struct {
+	Status               byte   `json:"Status"`
+	NewPercentFeeWithDec uint64 `json:"NewPercentFeeWithDec"`
+	ErrorCode            int    `json:"ErrorCode,omitempty"`
 }
 
 type ConvertStatus struct {
@@ -861,31 +862,51 @@ func convertPTokenAmtToPUnifiedTokenAmt(extDec uint, amount uint64) (uint64, err
 }
 
 // calculate actual received amount and actual fee
-func calUnshieldFeeByShortageAmount(shortageAmount uint64, percentFee float64) (uint64, error) {
+func calUnshieldFeeByShortageBurnAmount(burnAmount uint64, percentFeeWithDec uint64) (uint64, error) {
+	percentFeeDec := config.Param().BridgeAggParam.PercentFeeDecimal
 	// receiveAmt + fee = shortageAmt
-	// fee = (percent * shortageAmt) / (percent + 100)
-	x := new(big.Float).Mul(
-		new(big.Float).SetFloat64(percentFee),
-		new(big.Float).SetFloat64(float64(shortageAmount)),
+	// fee = (percentFee * shortageAmt) / (percentFee + 1)
+	// = (percent * shortageAmt) / (percent + dec)
+	x := new(big.Int).Mul(
+		new(big.Int).SetUint64(percentFeeWithDec),
+		new(big.Int).SetUint64(burnAmount),
 	)
-	y := new(big.Float).Add(
-		new(big.Float).SetFloat64(percentFee),
-		new(big.Float).SetFloat64(float64(100)),
+	y := new(big.Int).Add(
+		new(big.Int).SetUint64(percentFeeWithDec),
+		new(big.Int).SetUint64(percentFeeDec),
 	)
 
-	fee, _ := new(big.Float).Quo(x, y).Uint64()
+	fee := new(big.Int).Div(x, y).Uint64()
 
 	if fee == 0 {
 		fee = 1 // at least 1
 	}
-	if fee > shortageAmount {
-		return 0, fmt.Errorf("Needed fee %v larger than shortage amount %v", fee, shortageAmount)
+	if fee > burnAmount {
+		return 0, fmt.Errorf("Needed fee %v larger than shortage amount %v", fee, burnAmount)
+	}
+	return fee, nil
+}
+
+// calculate actual received amount and actual fee
+func calUnshieldFeeByShortageReceivedAmount(receivedAmount uint64, percentFeeWithDec uint64) (uint64, error) {
+	percentFeeDec := config.Param().BridgeAggParam.PercentFeeDecimal
+
+	// fee = percentFee * receivedAmount
+	feeBN := new(big.Int).Mul(
+		new(big.Int).SetUint64(receivedAmount),
+		new(big.Int).SetUint64(percentFeeWithDec),
+	)
+	feeBN = feeBN.Div(feeBN, new(big.Int).SetUint64(percentFeeDec))
+	fee := feeBN.Uint64()
+
+	if fee == 0 {
+		fee = 1 // at least 1
 	}
 
 	return fee, nil
 }
 
-func calRewardForRefillVault(v *statedb.BridgeAggVaultState, shieldAmt uint64) (uint64, error) {
+func CalRewardForRefillVault(v *statedb.BridgeAggVaultState, shieldAmt uint64) (uint64, error) {
 	// no demand for unshield
 	if v.WaitingUnshieldAmount() == 0 {
 		return 0, nil
@@ -943,7 +964,7 @@ func checkVaultForWaitUnshieldReq(vaults map[common.Hash]*statedb.BridgeAggVault
 	return true
 }
 
-func calUnshieldFee(v *statedb.BridgeAggVaultState, burningAmt uint64, percentFee float64) (bool, uint64, error) {
+func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint64, percentFeeWithDec uint64) (bool, uint64, error) {
 	isEnoughVault := true
 	shortageAmt := uint64(0)
 	fee := uint64(0)
@@ -963,7 +984,37 @@ func calUnshieldFee(v *statedb.BridgeAggVaultState, burningAmt uint64, percentFe
 		isEnoughVault = false
 
 		// calculate unshield fee by shortage amount
-		fee, err = calUnshieldFeeByShortageAmount(shortageAmt, percentFee)
+		fee, err = calUnshieldFeeByShortageBurnAmount(shortageAmt, percentFeeWithDec)
+		if err != nil {
+			return false, 0, fmt.Errorf("Error when calculating unshield fee %v", err)
+		}
+	}
+
+	return isEnoughVault, fee, nil
+}
+
+//TODO:
+func CalUnshieldFeeByReceivedAmount(v *statedb.BridgeAggVaultState, receivedAmt uint64, percentFeeWithDec uint64) (bool, uint64, error) {
+	isEnoughVault := true
+	shortageAmt := uint64(0)
+	fee := uint64(0)
+	var err error
+
+	// calculate shortage amount in this vault
+	if v.Amount() <= v.LockedAmount() {
+		// all amount in vault was locked
+		shortageAmt = receivedAmt
+	} else {
+		remainAmt := v.Amount() - v.LockedAmount()
+		if remainAmt < receivedAmt {
+			shortageAmt = receivedAmt - remainAmt
+		}
+	}
+	if shortageAmt > 0 {
+		isEnoughVault = false
+
+		// calculate unshield fee by shortage amount
+		fee, err = calUnshieldFeeByShortageReceivedAmount(shortageAmt, percentFeeWithDec)
 		if err != nil {
 			return false, 0, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}
@@ -976,7 +1027,7 @@ func checkVaultForNewUnshieldReq(
 	vaults map[common.Hash]*statedb.BridgeAggVaultState,
 	unshieldDatas []metadataBridge.UnshieldRequestData,
 	isDepositToSC bool,
-	percentFee float64,
+	percentFeeWithDec uint64,
 	stateDB *statedb.StateDB,
 ) (bool, []statedb.WaitingUnshieldReqData, error) {
 	waitingUnshieldDatas := []statedb.WaitingUnshieldReqData{}
@@ -991,7 +1042,7 @@ func checkVaultForNewUnshieldReq(
 		}
 
 		// calculate unshield fee
-		isEnoughVault, fee, err = calUnshieldFee(v, data.BurningAmount, percentFee)
+		isEnoughVault, fee, err = CalUnshieldFeeByBurnAmount(v, data.BurningAmount, percentFeeWithDec)
 		if err != nil {
 			return false, nil, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}
@@ -1203,4 +1254,13 @@ func getStatusByteFromStatuStr(statusStr string) (byte, error) {
 	default:
 		return 0, errors.New("Invalid status string")
 	}
+}
+
+func updateStateForModifyParam(state *State, newPercentFeeWithDec uint64) *State {
+	if state.param == nil {
+		state.param = statedb.NewBridgeAggParamState()
+	}
+
+	state.param.SetPercentFeeWithDec(newPercentFeeWithDec)
+	return state
 }
