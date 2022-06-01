@@ -1,0 +1,140 @@
+{
+    "Test": {
+        "name": "temp",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                        "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                            "Amount": 1000,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
+                    } 
+                },
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "bridge_tokens_info": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                    "IncTokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                    "ExternalTokenID": [85, 84],
+                    "Amount": 1000
+                },
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                    "ExternalTokenID": [
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                    ],
+                    "Amount": 0
+                }
+            }
+        },
+        "expected_result": {
+            "instructions": [],
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                        "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                            "Amount": 700,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
+                    } 
+                },
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "bridge_tokens_info": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                    "tokenId": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                    "externalTokenId": [85, 84],
+                    "amount": 700
+                },
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                    "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                    "externalTokenId": [
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                    ],
+                    "amount": 0
+                }
+            }
+        }
+    }
+}
