@@ -38,7 +38,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -120,7 +123,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
@@ -193,7 +199,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -275,7 +284,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
@@ -348,7 +360,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -430,7 +445,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
@@ -503,7 +521,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -585,7 +606,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
@@ -658,7 +682,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -752,7 +779,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
@@ -829,7 +859,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -911,7 +944,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
@@ -985,7 +1021,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "metadatas": [
                 {
@@ -1067,7 +1106,10 @@
                 },
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "accumulated_values": {
                 "UniqETHTxsUsed": [],
