@@ -359,7 +359,7 @@ func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface
 		return err
 	}
 
-	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *block.ProposeHash(), newValidationData); err != nil {
 		return err
 	}
 
@@ -408,7 +408,7 @@ func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusDat
 }
 
 //this is only call when insert block successfully, the previous block is replace
-func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
 	if hasBlock, err := chain.Blockchain.HasShardBlockByHash(previousBlockHash); err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	} else {
@@ -421,6 +421,10 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	shardBlock, _, err := chain.Blockchain.GetShardBlockByHash(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if !previousProposeHash.IsEqual(shardBlock.ProposeHash()) {
+		return nil
 	}
 
 	decodedOldValidationData, err := consensustypes.DecodeValidationData(shardBlock.ValidationData)
