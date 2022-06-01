@@ -149,13 +149,9 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	return newBeaconBlock, nil
 }
 
-func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState, newBlock *types.BeaconBlock) bool {
-	if curView != blockchain.BeaconChain.GetFinalView() {
-		return false
-	}
-	previousFinalBlockTS := common.CalculateTimeSlot(curView.GetBlock().GetProduceTime())
-	currentBlockTS := common.CalculateTimeSlot(newBlock.GetProduceTime())
-	if currentBlockTS == previousFinalBlockTS+1 {
+//beacon should only generate bridge instruction when curView is finality (generate instructionf from checkpoint to curView)
+func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState) bool {
+	if curView.GetBlock().Hash().IsEqual(blockchain.BeaconChain.GetFinalView().GetBlock().Hash()) {
 		return true
 	}
 	return false
@@ -342,7 +338,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	//build bridge instruction
 	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		if blockchain.shouldBeaconGenerateBridgeInstruction(curView, newBeaconBlock) {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
 			processBridgeFromBlock := curView.LastBlockProcessBridge + 1
 			newBeaconBlock.Header.ProcessBridgeFromBlock = &processBridgeFromBlock
 			//get data from checkpoint to final view

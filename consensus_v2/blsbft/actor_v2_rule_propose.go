@@ -145,21 +145,9 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		}
 	}
 
-	if isValidLemma2 {
-		if env.block.GetVersion() >= types.LEMMA2_VERSION {
-			if env.block.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-				if env.block.GetFinalityHeight() != env.block.GetHeight() {
-					return nil, fmt.Errorf("Finality Height is set incorrectly")
-				}
-			} else if env.block.GetFinalityHeight() != env.block.GetHeight()-1 {
-				return nil, fmt.Errorf("Finality Height is set incorrectly")
-			}
-		}
-	} else {
-		if env.block.GetFinalityHeight() != 0 {
-			p.logger.Error("Finality Height is set, but lemma2 is error", err)
-			return nil, fmt.Errorf("Finality Height is set, but lemma2 is error")
-		}
+	if !isValidLemma2 && env.block.GetFinalityHeight() != 0 {
+		p.logger.Error("Finality Height is set, but lemma2 is error", err)
+		return nil, fmt.Errorf("Finality Height is set, but lemma2 is error")
 	}
 
 	proposeBlockInfo := newProposeBlockForProposeMsgLemma2(
@@ -232,10 +220,12 @@ func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
 	producerTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
 	proposerTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
 
+	//next propose time is also produce time
 	if producerTimeSlot != previousProposerTimeSlot+1 {
 		return false
 	}
 
+	//other check
 	if proposerTimeSlot <= producerTimeSlot {
 		return false
 	}

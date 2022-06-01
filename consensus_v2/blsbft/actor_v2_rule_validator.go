@@ -87,11 +87,25 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 				c.logger.Errorf("Reject block %+v as invalid lemma2 block, but finality height is set", proposeBlockInfo.block.FullHashString())
 				continue
 			}
-			previousViewProposeTS := common.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
-			previousViewProduceTS := common.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
-			if previousViewProduceTS != previousViewProposeTS {
-				c.logger.Errorf("Reject block %+v as previous block propose = produce condition is not true, but finality height is set", proposeBlockInfo.block.FullHashString())
-				continue
+
+			if previousView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
+				previousProposeTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
+				previousProduceTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
+				if previousView.GetBlock().GetFinalityHeight() == 0 && previousProposeTimeSlot != previousProduceTimeSlot {
+					c.logger.Errorf("Reject block %+v as previous block finality height not set (%+v) or produce/propose not the same (%+v)", proposeBlockInfo.block.FullHashString(), previousView.GetBlock().GetFinalityHeight(), previousProposeTimeSlot, previousProduceTimeSlot)
+					continue
+				}
+			}
+		}
+
+		if proposeBlockInfo.block.GetFinalityHeight() == 0 {
+			if previousView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
+				previousProposeTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
+				previousProduceTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
+				if proposeBlockInfo.IsValidLemma2Proof && (previousView.GetBlock().GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot) {
+					c.logger.Errorf("Reject block %+v as this block should set finality height", proposeBlockInfo.block.FullHashString())
+					continue
+				}
 			}
 		}
 

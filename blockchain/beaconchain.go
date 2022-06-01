@@ -209,28 +209,30 @@ func (chain *BeaconChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
+	newBlock.Header.FinalityHeight = 0
 	if version >= types.LEMMA2_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
 		}
 		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.Timestamp)
 
-		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
-			newBlock.Header.Producer == newBlock.Header.Proposer &&
-			previousProposeTimeSlot+1 == currentTimeSlot {
+		// if previous block having sa
+		// and current block is produced/proposed next block time
+		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime && newBlock.Header.Producer == newBlock.Header.Proposer && previousProposeTimeSlot+1 == currentTimeSlot {
 			if version >= types.INSTANT_FINALITY_VERSION {
-				newBlock.Header.FinalityHeight = newBlock.Header.Height
+				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
+					newBlock.Header.FinalityHeight = newBlock.Header.Height
+				}
 				log.Println("instant finality FinalityHeight", newBlock.Header.FinalityHeight, newBlock.Header.Height)
+
 			} else {
 				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
 				log.Println("normal FinalityHeight", newBlock.Header.FinalityHeight, newBlock.Header.Height)
 			}
-		} else {
-			newBlock.Header.FinalityHeight = 0
 		}
-
 	}
 
 	return newBlock, nil
@@ -244,15 +246,25 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 	version := newBlock.Header.Version
+	newBlock.Header.FinalityHeight = 0
 	if version >= types.LEMMA2_VERSION {
+		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, err
+		}
+		// if previous block is finalized
+		// and valid lemma2 condition
+
 		if isValidRePropose {
+			previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+			previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 			if version >= types.INSTANT_FINALITY_VERSION {
-				newBlock.Header.FinalityHeight = newBlock.Header.Height
+				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
+					newBlock.Header.FinalityHeight = newBlock.Header.Height
+				}
 			} else {
 				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
 			}
-		} else {
-			newBlock.Header.FinalityHeight = 0
 		}
 	}
 	return newBlock, nil
@@ -286,14 +298,14 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 //this get consensus data for all latest shard state
 func (chain *BeaconChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
-	finalViewBlock := chain.multiView.GetExpectedFinalView().GetBlock().(*types.BeaconBlock)
+	bestViewBlock := chain.multiView.GetBestView().GetBlock().(*types.BeaconBlock)
 	consensusData[-1] = types.BlockConsensusData{
-		BlockHash:      *finalViewBlock.Hash(),
-		BlockHeight:    finalViewBlock.GetHeight(),
-		FinalityHeight: finalViewBlock.GetFinalityHeight(),
-		Proposer:       finalViewBlock.GetProposer(),
-		ProposerTime:   finalViewBlock.GetProposeTime(),
-		ValidationData: finalViewBlock.GetValidationField(),
+		BlockHash:      *bestViewBlock.Hash(),
+		BlockHeight:    bestViewBlock.GetHeight(),
+		FinalityHeight: bestViewBlock.GetFinalityHeight(),
+		Proposer:       bestViewBlock.GetProposer(),
+		ProposerTime:   bestViewBlock.GetProposeTime(),
+		ValidationData: bestViewBlock.GetValidationField(),
 	}
 
 	for sid, sChain := range chain.Blockchain.ShardChain {
@@ -320,7 +332,9 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 	if beaconBlk == nil {
 		return fmt.Errorf("Cannot find beacon block%v", replaceBlockHash.String())
 	}
-
+	if beaconBlk.GetVersion() < types.INSTANT_FINALITY_VERSION {
+		return nil
+	}
 	beaconBlk.Header.Proposer = consensusData.Proposer
 	beaconBlk.Header.ProposeTime = consensusData.ProposerTime
 	beaconBlk.Header.FinalityHeight = consensusData.FinalityHeight
