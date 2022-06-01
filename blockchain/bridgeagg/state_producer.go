@@ -19,6 +19,7 @@ type stateProducer struct{}
 func (sp *stateProducer) modifyParam(
 	contentStr string, state *State, sDBs map[int]*statedb.StateDB, shardID byte,
 ) ([][]string, *State, error) {
+	Logger.log.Infof("Build instruction for modify param...")
 	// decode action
 	action := metadataCommon.NewAction()
 	meta := &metadataBridge.ModifyBridgeAggParamReq{}
@@ -38,7 +39,7 @@ func (sp *stateProducer) modifyParam(
 		PercentFeeWithDec: meta.PercentFeeWithDec,
 	}
 	content, _ := json.Marshal(acceptedContent)
-	insts := buildAcceptedInst(metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta, shardID, [][]byte{content})
+	insts := buildAcceptedInst(metadataCommon.BridgeAggModifyParamMeta, shardID, [][]byte{content})
 
 	return insts, state, nil
 }

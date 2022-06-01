@@ -85,6 +85,7 @@ func collectStatefulActions(
 			metadataCommon.PortalV4UnshieldingRequestMeta,
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
+			metadataCommon.BridgeAggModifyParamMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 			metadataCommon.IssuingUnifiedTokenRequestMeta,

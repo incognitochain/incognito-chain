@@ -94,7 +94,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	// build instruction for modifying param actions
 	for shardID, actions := range env.ModifyParamActions() {
 		for _, action := range actions {
-			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
+			insts, m.state, err = m.producer.modifyParam(action, m.state, env.StateDBs(), byte(shardID))
 			if err != nil {
 				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
 			}
@@ -141,6 +141,8 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.BurningUnifiedTokenRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID)
+		case metadataCommon.BridgeAggModifyParamMeta:
+			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
 		}
 		if err != nil {
 			return err

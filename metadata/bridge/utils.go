@@ -70,6 +70,8 @@ func GetEVMInfoByNetworkID(networkID uint, ac *metadataCommon.AccumulatedValues)
 
 func IsBridgeAggMetaType(metaType int) bool {
 	switch metaType {
+	case metadataCommon.BridgeAggModifyParamMeta:
+		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:

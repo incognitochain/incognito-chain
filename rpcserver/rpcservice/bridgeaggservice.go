@@ -53,6 +53,7 @@ func getBridgeAggState(
 		BeaconTimeStamp:     beaconTimeStamp,
 		UnifiedTokenInfos:   bridgeAggState.UnifiedTokenVaults(),
 		WaitingUnshieldReqs: bridgeAggState.WaitingUnshieldReqs(),
+		Param:               bridgeAggState.Param(),
 		BaseDecimal:         config.Param().BridgeAggParam.BaseDecimal,
 		MaxLenOfPath:        config.Param().BridgeAggParam.MaxLenOfPath,
 	}

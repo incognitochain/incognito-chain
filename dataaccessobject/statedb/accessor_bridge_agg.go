@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 )
 
 func TrackBridgeAggStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
@@ -67,6 +68,8 @@ func DeleteBridgeAggWaitingUnshieldReqs(stateDB *StateDB, waitUnshieldKeys []com
 	return nil
 }
 
+// Get bridge agg param from statedb
+// if not found in db, return the default param
 func GetBridgeAggParam(stateDB *StateDB) (*BridgeAggParamState, error) {
 	key := GenerateBridgeAggParamObjectKey()
 	param, has, err := stateDB.getBridgeAggParamByKey(key)
@@ -74,7 +77,8 @@ func GetBridgeAggParam(stateDB *StateDB) (*BridgeAggParamState, error) {
 		return nil, NewStatedbError(GetBridgeAggStatusError, err)
 	}
 	if !has {
-		return param, NewStatedbError(GetBridgeAggStatusError, fmt.Errorf("Param with key %+v not found", key))
+		defaultParam := NewBridgeAggParamStateWithValue(config.Param().BridgeAggParam.DefaultPercentFeeWithDecimal)
+		return defaultParam, nil
 	}
 	return param, nil
 }
