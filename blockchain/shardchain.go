@@ -250,9 +250,8 @@ func (chain *ShardChain) CreateNewBlock(
 		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.ProposeTime)
 
-		// if previous block is finalized
+		// if previous block is finalized or same propose/produce timeslot
 		// and current block is produced/proposed next block time
-
 		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
 			newBlock.Header.Producer == newBlock.Header.Proposer &&
 			previousProposeTimeSlot+1 == currentTimeSlot {
@@ -283,6 +282,8 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 	newBlock.Header.FinalityHeight = 0
 
 	if version >= types.LEMMA2_VERSION {
+		// if previous block is finality or same produce/propose
+		// and valid lemma2
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
@@ -359,7 +360,7 @@ func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface
 		return err
 	}
 
-	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *block.ProposeHash(), newValidationData); err != nil {
 		return err
 	}
 
@@ -408,7 +409,7 @@ func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusDat
 }
 
 //this is only call when insert block successfully, the previous block is replace
-func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
 	if hasBlock, err := chain.Blockchain.HasShardBlockByHash(previousBlockHash); err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	} else {
@@ -421,6 +422,10 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	shardBlock, _, err := chain.Blockchain.GetShardBlockByHash(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if !previousProposeHash.IsEqual(shardBlock.ProposeHash()) {
+		return nil
 	}
 
 	decodedOldValidationData, err := consensustypes.DecodeValidationData(shardBlock.ValidationData)

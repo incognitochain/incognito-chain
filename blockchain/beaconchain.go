@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -219,18 +218,15 @@ func (chain *BeaconChain) CreateNewBlock(
 		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.Timestamp)
 
-		// if previous block having sa
-		// and current block is produced/proposed next block time
+		// if previous block is finality or same produce/propose
+		// and  block produced/proposed next block time
 		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime && newBlock.Header.Producer == newBlock.Header.Proposer && previousProposeTimeSlot+1 == currentTimeSlot {
 			if version >= types.INSTANT_FINALITY_VERSION {
 				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}
-				log.Println("instant finality FinalityHeight", newBlock.Header.FinalityHeight, newBlock.Header.Height)
-
 			} else {
 				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
-				log.Println("normal FinalityHeight", newBlock.Header.FinalityHeight, newBlock.Header.Height)
 			}
 		}
 	}
@@ -252,13 +248,14 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 		if err != nil {
 			return nil, err
 		}
-		// if previous block is finalized
-		// and valid lemma2 condition
 
+		// if previous block is finality or same produce/propose
+		// and valid lemma2
 		if isValidRePropose {
 			previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
 			previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 			if version >= types.INSTANT_FINALITY_VERSION {
+
 				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}
@@ -364,7 +361,7 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 
 }
 
-func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error {
 	panic("this function is not supported on beacon chain")
 }
 
