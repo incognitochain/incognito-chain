@@ -66,6 +66,9 @@ type BeaconHeader struct {
 
 	//for version 6
 	FinalityHeight uint64 `json:"FinalityHeight"`
+
+	//for version 8, instant finality
+	ProcessBridgeFromBlock *uint64 `json:"integer,omitempty"`
 }
 
 func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
