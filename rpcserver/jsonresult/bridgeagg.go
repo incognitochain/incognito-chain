@@ -7,7 +7,7 @@ import (
 
 type BridgeAggState struct {
 	BeaconTimeStamp     int64                                                        `json:"BeaconTimeStamp"`
-	UnifiedTokenInfos   map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenInfos"`
+	UnifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenInfos"`
 	WaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
 	Param               *statedb.BridgeAggParamState                                 `json:"Param"`
 	BaseDecimal         uint                                                         `json:"BaseDecimal"`
@@ -18,6 +18,8 @@ type BridgeAggEstimateFee struct {
 	ReceivedAmount uint64 `json:"ReceivedAmount"`
 	BurntAmount    uint64 `json:"BurntAmount"`
 	Fee            uint64 `json:"Fee"`
+	MaxFee         uint64 `json:"MaxFee"`
+	MaxBurntAmount uint64 `json:"MaxBurntAmount"`
 }
 
 type BridgeAggEstimateReward struct {

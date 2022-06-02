@@ -365,7 +365,6 @@ func (sp *stateProducer) shield(
 	return resInst, state, clonedAC, nil
 }
 
-//TODO: 0xkraken
 func (sp *stateProducer) handleWaitingUnshieldReqs(
 	state *State,
 	beaconHeight uint64,
