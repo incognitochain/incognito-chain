@@ -8,53 +8,47 @@ import (
 
 const (
 	OtherError = iota
-	NotFoundTokenIDInNetworkError
-	NotFoundNetworkIDError
-	ShieldProofIsSubmittedError
-	ProcessConvertError
-	ProcessShieldError
-	ProcessUnshieldError
-	CheckVaultUnshieldError
-	InvalidRewardReserveError
-	CalculateShieldAmountError
-	CalculateUnshieldAmountError
+	NotFoundUnifiedTokenIDError
+	InvalidPTokenIDError
+	InvalidNetworkIDError
+	InvalidStatusError
 	InvalidConvertAmountError
-	FailToExtractDataError
-	FailToVerifyTokenPairError
-	OutOfRangeUni64Error
-	FailToBuildModifyRewardReserveError
-	FailToConvertTokenError
-	FailToShieldError
-	FailToUnshieldError
-	ProducerWaitingUnshieldError
+	CalRewardError
+	ProducerUpdateStateError
+	ProcessUpdateStateError
+	UnmarshalShieldProofError
+	ValidateDoubleShieldProofError
+	ShieldProofIsSubmittedError
+	ExtractDataFromReceiptError
+	InvalidTokenPairError
+	CheckVaultUnshieldError
+	StoreShieldExtTxError
+	CheckBridgeTokenExistedError
+	StoreBridgeTokenError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	OtherError:                    {1, "Other error"},
-	NotFoundTokenIDInNetworkError: {1000, "Not found token id in network"},
-	NotFoundNetworkIDError:        {1001, "Not found networkID"},
-	ShieldProofIsSubmittedError:   {1002, "Shield proof was submitted"},
-
-	ProcessConvertError:          {1003, "Beacon process convert instruction error"},
-	ProcessShieldError:           {1003, "Beacon process shield instruction error"},
-	ProcessUnshieldError:         {1003, "Beacon process unshield instruction error"},
-	CheckVaultUnshieldError:      {1003, "Check vaults for new unshielding request error"},
-	ProducerWaitingUnshieldError: {1003, "Beacon producer waiting unshield reqs error"},
-
-	InvalidRewardReserveError:           {1003, "Invalid reward reserve"},
-	CalculateShieldAmountError:          {1004, "Calculate shield amount error"},
-	CalculateUnshieldAmountError:        {1005, "Calculate unshield amount error"},
-	InvalidConvertAmountError:           {1006, "Invalid convert amount"},
-	FailToExtractDataError:              {1007, "Fail to extract data"},
-	FailToVerifyTokenPairError:          {1008, "Fail to verify token pair"},
-	OutOfRangeUni64Error:                {1009, "Out of range uint64"},
-	FailToBuildModifyRewardReserveError: {1010, "Fail to build modify reward reserve instruction"},
-	FailToConvertTokenError:             {1011, "Fail to convert token instruction"},
-	FailToShieldError:                   {1012, "Fail to shield instruction"},
-	FailToUnshieldError:                 {1013, "Fail to unshield instruction"},
+	OtherError:                     {1, "Other error"},
+	NotFoundUnifiedTokenIDError:    {1000, "Not found punified token id in network"},
+	InvalidPTokenIDError:           {1001, "Invalid ptoken id in punifiedToken"},
+	InvalidNetworkIDError:          {1002, "Invalid networkID"},
+	InvalidStatusError:             {1003, "Invalid instruction status error"},
+	InvalidConvertAmountError:      {1004, "Invalid convert amount"},
+	CalRewardError:                 {1005, "Calculate reward error"},
+	ProducerUpdateStateError:       {1006, "Beacon producer update state error"},
+	ProcessUpdateStateError:        {1007, "Beacon process update state error"},
+	UnmarshalShieldProofError:      {1008, "Unmarshal shielding proof error"},
+	ValidateDoubleShieldProofError: {1009, "Validate double shielding proof error"},
+	ShieldProofIsSubmittedError:    {1010, "Shield proof was submitted"},
+	ExtractDataFromReceiptError:    {1011, "Extract data from shielding receipt error"},
+	InvalidTokenPairError:          {1012, "Invalid token pair"},
+	CheckVaultUnshieldError:        {1013, "Check vaults for new unshielding request error"},
+	StoreShieldExtTxError:          {1014, "Store shield external tx error"},
+	CheckBridgeTokenExistedError:   {1015, "Check bridge token existed error"},
+	StoreBridgeTokenError:          {1016, "Store bridge token error"},
 }
 
 type BridgeAggError struct {

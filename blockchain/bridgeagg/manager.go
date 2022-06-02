@@ -53,7 +53,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 		for _, action := range actions {
 			insts, m.state, err = m.producer.convert(action, m.state, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
+				return [][]string{}, nil, err
 			}
 			res = append(res, insts...)
 		}
@@ -66,7 +66,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 				action, m.state, ac, byte(shardID), env.StateDBs(),
 			)
 			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToShieldError, err)
+				return [][]string{}, nil, err
 			}
 
 			res = append(res, insts...)
@@ -76,7 +76,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	// build instruction for waiting unshielding reqs
 	insts, m.state, err = m.producer.handleWaitingUnshieldReqs(m.state, env.BeaconHeight(), env.StateDBs()[common.BeaconChainID])
 	if err != nil {
-		return [][]string{}, nil, NewBridgeAggErrorWithValue(ProducerWaitingUnshieldError, err)
+		return [][]string{}, nil, err
 	}
 	res = append(res, insts...)
 
@@ -85,7 +85,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 		for _, action := range actions {
 			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
 			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
+				return [][]string{}, nil, err
 			}
 			res = append(res, insts...)
 		}
@@ -96,7 +96,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 		for _, action := range actions {
 			insts, m.state, err = m.producer.modifyParam(action, m.state, env.StateDBs(), byte(shardID))
 			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
+				return [][]string{}, nil, err
 			}
 			res = append(res, insts...)
 		}
