@@ -189,7 +189,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 				if err != nil {
 					continue
 				}
-				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), previousValidationData)
+				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), *block.(*types.ShardBlock).ProposeHash(), previousValidationData)
 				if err1 != nil {
 					Logger.Error("Replace Previous Validation Data Fail", block.GetPrevHash(), previousValidationData, err)
 				}

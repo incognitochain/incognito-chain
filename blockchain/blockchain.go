@@ -753,7 +753,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if _, err := blockchain.ShardChain[shardID].multiView.AddView(v); err != nil {
 			panic("Restart shard views fail")
 		}
-		Logger.log.Info("Restore shard ", shardID, v.GetHeight(), v.Hash().String())
+		Logger.log.Info("Restore shard ", shardID, v.GetHeight(), v.GetHash().String())
 	}
 	return nil
 }

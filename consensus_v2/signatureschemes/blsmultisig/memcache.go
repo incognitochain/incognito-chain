@@ -6,8 +6,8 @@ import (
 	cache "github.com/patrickmn/go-cache"
 )
 
-var cacher *cache.Cache
+var Cacher *cache.Cache
 
 func init() {
-	cacher = cache.New(4*time.Hour, 4*time.Hour)
+	Cacher = cache.New(4*time.Hour, 4*time.Hour)
 }
