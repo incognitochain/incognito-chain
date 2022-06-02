@@ -75,7 +75,7 @@ type Chain interface {
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() int
 	GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int)
-	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
+	ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error
 	// GetSigningCommitteesFromBestView must be retrieve from a shard view, because it's based on the committee state version
 	GetSigningCommittees(
 		proposerIndex int,

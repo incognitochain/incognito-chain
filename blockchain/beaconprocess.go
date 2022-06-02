@@ -323,6 +323,17 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
+	//validate ProcessBridgeFromBlock
+	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
+			if beaconBlock.Header.ProcessBridgeFromBlock == nil || (*beaconBlock.Header.ProcessBridgeFromBlock != curView.LastBlockProcessBridge+1) {
+				return NewBlockChainError(BuildBridgeError, fmt.Errorf("Verify ProcessBridgeFromBlock error! Must set, got nil"))
+			}
+		} else if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
+			return NewBlockChainError(BuildBridgeError, fmt.Errorf("Verify ProcessBridgeFromBlock error! Must nil, got set"))
+		}
+	}
+
 	finishSyncInstruction, err := curView.filterAndVerifyFinishSyncInstruction(beaconBlock.Body.Instructions)
 	if err != nil {
 		return NewBlockChainError(FinishSyncInstructionError, err)
@@ -571,11 +582,11 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	//update bridge process
 	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		if blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock) {
-			beaconBestState.LastBlockProcessBridge = blockchain.GetFinalBeaconHeight()
+		if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
+			beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight() - 1
 		}
-		Logger.log.Infof("[Bridge Debug] Update LastBlockProcessBridge instant finality %v, set to %v, current process block %v",
-			blockchain.shouldBeaconGenerateBridgeInstruction(beaconBlock), beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
+		Logger.log.Infof("[Bridge Debug] Update LastBlockProcessBridge instant finality set to %v, current process block %v",
+			beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
 	} else {
 		beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight()
 		Logger.log.Info("[Bridge Debug] Update LastBlockProcessBridge normal", beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())

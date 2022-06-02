@@ -79,6 +79,13 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		proposer,
 	)
 
+	if version >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(copiedCurView) {
+			processBridgeFromBlock := copiedCurView.LastBlockProcessBridge + 1
+			newBeaconBlock.Header.ProcessBridgeFromBlock = &processBridgeFromBlock
+		}
+	}
+
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	portalParams := portal.GetPortalParams()
@@ -149,10 +156,9 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	return newBeaconBlock, nil
 }
 
-func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(currentBlock *types.BeaconBlock) bool {
-	previousFinalBlockTS := common.CalculateTimeSlot(blockchain.BeaconChain.multiView.GetExpectedFinalView().GetBlock().GetProduceTime())
-	currentBlockTS := common.CalculateTimeSlot(currentBlock.GetProduceTime())
-	if currentBlockTS == previousFinalBlockTS+1 {
+//beacon should only generate bridge instruction when curView is finality (generate instructionf from checkpoint to curView)
+func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState) bool {
+	if curView.GetBlock().Hash().IsEqual(blockchain.BeaconChain.GetFinalView().GetBlock().Hash()) {
 		return true
 	}
 	return false
@@ -339,7 +345,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	//build bridge instruction
 	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		if blockchain.shouldBeaconGenerateBridgeInstruction(newBeaconBlock) {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
 			//get data from checkpoint to final view
 			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
 			retrievedShardBlockForBridge, err := blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
@@ -350,8 +356,8 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildBridgeError, err)
 			}
+			Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 		}
-		Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 	} else {
 		bridgeInstructions, err = blockchain.generateBridgeInstruction(curView, allShardBlocks, newBeaconBlock)
 		Logger.log.Info("[Bridge Debug] Generate instruction normal", len(bridgeInstructions))

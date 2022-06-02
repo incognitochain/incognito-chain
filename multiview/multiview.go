@@ -3,6 +3,7 @@ package multiview
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -328,12 +329,7 @@ func (s *multiView) findExpectFinalView(checkView View) View {
 			return currentViewPoint
 		}
 
-		bestViewTimeSlot := common.CalculateTimeSlot(currentViewPoint.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-
-		if prev1TimeSlot+1 == bestViewTimeSlot { //two sequential time slot
-			break
-		} else if currentViewPoint.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
+		if currentViewPoint.GetBlock().GetFinalityHeight() != 0 { //this version, finality height mean this block having repropose proof of missing TS
 			break
 		}
 		currentViewPoint = prev1View
@@ -399,42 +395,50 @@ func (s *multiView) isFinalized(h common.Hash) bool {
 	}
 }
 
+//for instant finality only
+//2 usecases, when proposer propose a block, it give
+// - previous block for finality check
+// - consensusData  (shard confirm beacon, beacon confirm shard) for making consensus on other chain finality
 func (s *multiView) ReplaceBlockIfImproveFinality(b types.BlockInterface) (bool, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	h := *b.Hash()
-	if _, ok := s.viewByHash[h]; !ok {
-		return false, errors.New("Cannot find view")
-	}
-
-	if s.isFinalized(h) {
+	if b.GetVersion() < types.INSTANT_FINALITY_VERSION {
 		return false, nil
 	}
 
-	//create new multiview and add view again with the new replace block
-	//check if it improve finality
-	var oldView View
-	var oldBlock types.BlockInterface
-	tmp := NewMultiView()
-	allView := s.getAllViewsWithBFS(s.finalView)
-	for _, v := range allView {
-		if v.GetHash().String() == h.String() {
-			oldView = v
-			oldBlock = v.GetBlock()
-			v.ReplaceBlock(b)
-		}
-		tmp.addView(v)
+	h := *b.Hash()
+	replaceView, ok := s.viewByHash[h]
+	if !ok {
+		return false, errors.New("Cannot find view")
+	}
+	isImprove := false
+
+	//finalize, but block has finality height and smaller propose time
+	if s.isFinalized(h) && b.GetFinalityHeight() != 0 && b.GetProposeTime() < replaceView.GetBlock().GetProposeTime() {
+		log.Println("Improve with smaller propose time")
+		isImprove = true
 	}
 
-	//improve finality
-	if s.isFinalized(h) {
+	//not finalize, but block improve finalize (case 2)
+	if !s.isFinalized(h) && b.GetFinalityHeight() != 0 {
+		log.Println("Improve with smaller propose time")
+		isImprove = true
+	}
+
+	if isImprove {
+		tmp := NewMultiView()
+		allView := s.getAllViewsWithBFS(s.finalView)
+		for _, v := range allView {
+			if v.GetHash().String() == h.String() {
+				v.ReplaceBlock(b)
+			}
+			tmp.addView(v)
+		}
 		s.expectedFinalView = tmp.expectedFinalView
 		s.bestView = tmp.bestView
 		return true, nil
 	}
 
-	//not improve, restore old block
-	oldView.ReplaceBlock(oldBlock)
 	return false, nil
 }
