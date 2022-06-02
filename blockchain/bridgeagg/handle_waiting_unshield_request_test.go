@@ -126,38 +126,16 @@ func (h *HandleWaitingUnshieldTestSuite) TestNotEnoughVault() {
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-/*func (h *HandleWaitingUnshieldTestSuite) TestWaiting() {*/
-/*h.test()*/
-/*assert := h.Assert()*/
-/*testCase := h.testCases[h.currentTestCaseName]*/
-/*actualResult := h.actualResults[h.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
-
-/*func (h *HandleWaitingUnshieldTestSuite) TestFilled() {*/
-/*h.test()*/
-/*assert := h.Assert()*/
-/*testCase := h.testCases[h.currentTestCaseName]*/
-/*actualResult := h.actualResults[h.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
-
-/*func (h *HandleWaitingUnshieldTestSuite) TestAccepted() {*/
-/*h.test()*/
-/*assert := h.Assert()*/
-/*testCase := h.testCases[h.currentTestCaseName]*/
-/*actualResult := h.actualResults[h.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (h *HandleWaitingUnshieldTestSuite) TestFilled() {
+	h.test()
+	assert := h.Assert()
+	testCase := h.testCases[h.currentTestCaseName]
+	actualResult := h.actualResults[h.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
 func TestHandleWaitingUnshieldTestSuite(t *testing.T) {
 	suite.Run(t, new(HandleWaitingUnshieldTestSuite))

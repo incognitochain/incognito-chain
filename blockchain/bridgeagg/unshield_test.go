@@ -216,29 +216,29 @@ func (u *UnshieldTestSuite) TestAcceptedNotEnoughVault() {
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-/*func (u *UnshieldTestSuite) TestRejectedThenAccepted() {*/
-/*u.test()*/
-/*assert := u.Assert()*/
-/*testCase := u.testCases[u.currentTestCaseName]*/
-/*actualResult := u.actualResults[u.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
+	u.test()
+	assert := u.Assert()
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
-/*func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {*/
-/*u.test()*/
-/*assert := u.Assert()*/
-/*testCase := u.testCases[u.currentTestCaseName]*/
-/*actualResult := u.actualResults[u.currentTestCaseName]*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))*/
-/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
-/*}*/
+func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {
+	u.test()
+	assert := u.Assert()
+	testCase := u.testCases[u.currentTestCaseName]
+	actualResult := u.actualResults[u.currentTestCaseName]
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
+}
 
 func TestUnshieldTestSuite(t *testing.T) {
 	suite.Run(t, new(UnshieldTestSuite))
