@@ -74,7 +74,7 @@ func (request *ModifyBridgeAggParamReq) ValidateSanityData(
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyParamValidateSanityDataError, errors.New("Tx bridge agg modify param must be version 2"))
 	}
 
-	// maximum 100%
+	// mustn't exceed 100%
 	if request.PercentFeeWithDec >= config.Param().BridgeAggParam.PercentFeeDecimal {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggModifyParamValidateSanityDataError, errors.New("Tx bridge agg modify param invalid percent fee with dec"))
 	}
