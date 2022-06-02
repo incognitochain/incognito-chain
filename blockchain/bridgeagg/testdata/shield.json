@@ -315,9 +315,11 @@
                 "UniqBSCTxsUsed": [],
                 "UniqPRVEVMTxsUsed": [],
                 "UniqPLGTxsUsed": [],
-                "UniqFTMTxsUsed": [],
+                "UniqFTMTxsUsed": [
+                    [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+                ],
                 "DBridgeTokenPair": {
-                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84]
                 },
                 "CBridgeTokens": [],
                 "InitTokens": []
@@ -489,9 +491,11 @@
                 "UniqBSCTxsUsed": [],
                 "UniqPRVEVMTxsUsed": [],
                 "UniqPLGTxsUsed": [],
-                "UniqFTMTxsUsed": [],
+                "UniqFTMTxsUsed": [
+                    [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+                ],
                 "DBridgeTokenPair": {
-                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84]
                 },
                 "CBridgeTokens": [],
                 "InitTokens": []
@@ -663,9 +667,11 @@
                 "UniqBSCTxsUsed": [],
                 "UniqPRVEVMTxsUsed": [],
                 "UniqPLGTxsUsed": [],
-                "UniqFTMTxsUsed": [],
+                "UniqFTMTxsUsed": [
+                    [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+                ],
                 "DBridgeTokenPair": {
-                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84]
                 },
                 "CBridgeTokens": [],
                 "InitTokens": []
@@ -837,9 +843,11 @@
                 "UniqBSCTxsUsed": [],
                 "UniqPRVEVMTxsUsed": [],
                 "UniqPLGTxsUsed": [],
-                "UniqFTMTxsUsed": [],
+                "UniqFTMTxsUsed": [
+                    [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+                ],
                 "DBridgeTokenPair": {
-                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84]
                 },
                 "CBridgeTokens": [],
                 "InitTokens": []
@@ -1477,11 +1485,11 @@
             "instructions": [
                 [
                     "343", "0", "accepted",
-                    "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiSXNSZXdhcmQiOmZhbHNlLCJTaGFyZElEIjowLCJEYXRhIjpbeyJJc3N1aW5nQW1vdW50Ijo1MDAwMDAwMCwiVW5pcVR4IjoiY3dDajB5T0dodjVpNVM1L0RDN2hEbFJKZUozV2t0QytFTUNoZnNiMDgwc3giLCJFeHRlcm5hbFRva2VuSUQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE9IiwiTmV0d29ya0lEIjoxLCJJbmNUb2tlbklEIjoiMzc1ODI1YmY4Mzg1Mjc2MTAxMDJjNjk0MzI4MjY0MjgyNjkwMTkzNzY3OWQ4ZGY1YjU2MzRkNDNkNTRhNTc2OSJ9XX0="
+                    "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlVuaWZpZWRUb2tlbklEIjoiYzhhZWZhNmIzNDdiYjE3NDExNjA2MGRhNjE3MWViMjM0NzZmNDQ0YmIzZmYxNDM2ZTg5NDBiMjdlZDFhZjU3MCIsIlR4UmVxSUQiOiJlNDM5YTU3NzllMDFmNGY4ZTY2YmMyYTFlZDg1YWNiZmU5OGQxZmUyNzMxYzQ5OTk0MjkwZmJjOWVmNDM0MWYwIiwiU2hhcmRJRCI6MCwiRGF0YSI6W3siU2hpZWxkQW1vdW50Ijo1MDAwMDAwMCwiUmV3YXJkIjowLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjEsIkluY1Rva2VuSUQiOiIzNzU4MjViZjgzODUyNzYxMDEwMmM2OTQzMjgyNjQyODI2OTAxOTM3Njc5ZDhkZjViNTYzNGQ0M2Q1NGE1NzY5In1dfQ=="
                 ],
                 [
                     "343", "0", "rejected", 
-                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkVycm9yQ29kZSI6MTAwNywiRGF0YSI6IjhVRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkVycm9yQ29kZSI6MX0="
                 ]
             ],
             "state": {
@@ -1526,12 +1534,16 @@
                 }
             },
             "accumulated_values": {
-                "UniqETHTxsUsed": [],
+                "UniqETHTxsUsed": [
+                    [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
+                ],
                 "UniqBSCTxsUsed": [],
                 "UniqPRVEVMTxsUsed": [],
                 "UniqPLGTxsUsed": [],
                 "UniqFTMTxsUsed": [],
-                "DBridgeTokenPair": {},
+                "DBridgeTokenPair": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+                },
                 "CBridgeTokens": [],
                 "InitTokens": []
             },
@@ -1664,7 +1676,7 @@
             "instructions": [
                 [
                     "343", "0", "rejected", 
-                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkVycm9yQ29kZSI6MTAwNywiRGF0YSI6IjhVRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MX0="
                 ]
             ],
             "state": {

@@ -375,7 +375,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	if curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 		includePdexv3Tx = true
 	}
-	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, includePdexv3Tx)
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, includePdexv3Tx, false)
 
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)

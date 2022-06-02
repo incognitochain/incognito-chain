@@ -131,8 +131,8 @@ func (a *AddTokenTestSuite) test() {
 	assert.NoError(err, fmt.Sprintf("Error in process instructions %v", err))
 	a.actualResults[a.currentTestCaseName] = ActualResult{
 		Instructions:      actualInstructions,
-		ProducerState:     producerState,
-		ProcessorState:    processorState,
+		ProducerState:     producerManager.state,
+		ProcessorState:    processorManager.state,
 		AccumulatedValues: accumulatedValues,
 	}
 }

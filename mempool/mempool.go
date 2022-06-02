@@ -301,7 +301,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()), false)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -327,7 +327,7 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 			break
 		}
 	}
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3, false)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
