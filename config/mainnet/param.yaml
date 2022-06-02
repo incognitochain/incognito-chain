@@ -51,9 +51,9 @@ consensus_param:
   assign_rule_v3_height: 1410217
   enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1519263
-  force_not_use_burned_coins: 1806062
-  lemma2_height: 1806062
-  block_producing_v3_height: 1000000000000
+  force_not_use_burned_coins: 1816555
+  lemma2_height: 1816555
+  block_producing_v3_height: 1846560
   byzantine_detector_height: 1000000000000
   timeslot: 40
   epoch_break_point_swap_new_key:
@@ -109,7 +109,4 @@ auto_enable_feature:
       min_trigger: 1892003
       force_trigger: 1000000000
       require_percentage: 85
-bridge_agg_param:
-  admin_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
-  base_decimal: 9 # Use only one time DONOT edit this after deployed
-  max_len_of_path: 3
+bc_height_break_point_coin_origin: 2087774

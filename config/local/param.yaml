@@ -132,3 +132,4 @@ bridge_agg_param:
   max_len_of_path: 3
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 100 # 0.01% * 1e6
+bc_height_break_point_coin_origin: 1

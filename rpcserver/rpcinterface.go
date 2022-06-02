@@ -122,6 +122,8 @@ var HttpHandler = map[string]httpHandler{
 	removeByzantineDetector:    (*HttpServer).handleRemoveByzantineDetector,
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
+	resetCache:                 (*HttpServer).handleResetCache,
+	handleTestValidate:         (*HttpServer).handleTestValidate,
 	//=================================
 
 	// Beststate
@@ -369,7 +371,7 @@ var HttpHandler = map[string]httpHandler{
 	getCrossShardPoolInfo: (*HttpServer).hanldeGetCrossShardPoolInfo,
 	getAllView:            (*HttpServer).hanldeGetAllView,
 	getAllViewDetail:      (*HttpServer).hanldeGetAllViewDetail,
-
+	isInstantFinality:     (*HttpServer).hanldeIsInstantFinality,
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 

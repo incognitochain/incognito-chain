@@ -97,7 +97,7 @@ func buildBridgeAggConvertTokenUnifiedTokenResponse(
 	txParam := transaction.TxSalaryOutputParams{
 		Amount:          mintAmt,
 		ReceiverAddress: nil,
-		PublicKey:       &otaReceiver.PublicKey,
+		PublicKey:       otaReceiver.PublicKey,
 		TxRandom:        &otaReceiver.TxRandom,
 		TokenID:         &tokenID,
 		Info:            []byte{},
@@ -143,7 +143,7 @@ func buildUnshieldUnifiedTokenResponse(
 		return nil, nil
 	}
 	md := metadataBridge.NewUnshieldResponseWithValue(inst.Status, txReqID)
-	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: &otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return md },

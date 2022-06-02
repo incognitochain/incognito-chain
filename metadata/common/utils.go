@@ -737,16 +737,6 @@ func IsPDEType(metadataType int) bool {
 	}
 }
 
-func ShouldIncludeBeaconViewByPdexv3Tx(metadata Metadata) bool {
-	if metadata != nil {
-		if metadata.GetType() == Pdexv3MintPDEXGenesisMeta {
-			return false
-		}
-		return IsPdexv3Type(metadata.GetType())
-	}
-	return false
-}
-
 func IsPdexv3Tx(metadata Metadata) bool {
 	if metadata != nil {
 		return IsPdexv3Type(metadata.GetType())

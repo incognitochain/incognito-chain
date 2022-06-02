@@ -148,6 +148,8 @@ const (
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
+	resetCache                 = "resetcache"
+	handleTestValidate         = "testvalidate"
 	// ==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -395,6 +397,7 @@ const (
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
 	getAllView            = "getallview"
 	getAllViewDetail      = "getallviewdetail"
+	isInstantFinality     = "isinstantfinality"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"

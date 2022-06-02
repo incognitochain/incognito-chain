@@ -2,7 +2,6 @@ package tx_ver2
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -13,6 +12,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
@@ -35,18 +35,18 @@ type Tx struct {
 func (sigPub SigPubKey) Bytes() ([]byte, error) {
 	n := len(sigPub.Indexes)
 	if n == 0 {
-		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is empty")
+		return nil, fmt.Errorf("txSigPublicKeyVer2.ToBytes: Indexes is empty")
 	}
 	if n > utils.MaxSizeByte {
-		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is too large, too many rows")
+		return nil, fmt.Errorf("txSigPublicKeyVer2.ToBytes: Indexes is too large, too many rows")
 	}
 	m := len(sigPub.Indexes[0])
 	if m > utils.MaxSizeByte {
-		return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is too large, too many columns")
+		return nil, fmt.Errorf("txSigPublicKeyVer2.ToBytes: Indexes is too large, too many columns")
 	}
 	for i := 1; i < n; i++ {
 		if len(sigPub.Indexes[i]) != m {
-			return nil, errors.New("TxSigPublicKeyVer2.ToBytes: Indexes is not a rectangle array")
+			return nil, fmt.Errorf("txSigPublicKeyVer2.ToBytes: Indexes is not a rectangle array")
 		}
 	}
 
@@ -58,7 +58,7 @@ func (sigPub SigPubKey) Bytes() ([]byte, error) {
 			currentByte := sigPub.Indexes[i][j].Bytes()
 			lengthByte := len(currentByte)
 			if lengthByte > utils.MaxSizeByte {
-				return nil, errors.New("TxSigPublicKeyVer2.ToBytes: IndexesByte is too large")
+				return nil, fmt.Errorf("txSigPublicKeyVer2.ToBytes: IndexesByte is too large")
 			}
 			b = append(b, byte(lengthByte))
 			b = append(b, currentByte...)
@@ -69,7 +69,7 @@ func (sigPub SigPubKey) Bytes() ([]byte, error) {
 
 func (sigPub *SigPubKey) SetBytes(b []byte) error {
 	if len(b) < 2 {
-		return errors.New("txSigPubKeyFromBytes: cannot parse length of Indexes, length of input byte is too small")
+		return fmt.Errorf("txSigPubKeyFromBytes: cannot parse length of Indexes, length of input byte is too small")
 	}
 	n := int(b[0])
 	m := int(b[1])
@@ -79,12 +79,12 @@ func (sigPub *SigPubKey) SetBytes(b []byte) error {
 		row := make([]*big.Int, m)
 		for j := 0; j < m; j++ {
 			if offset >= len(b) {
-				return errors.New("txSigPubKeyFromBytes: cannot parse byte length of index[i][j], length of input byte is too small")
+				return fmt.Errorf("txSigPubKeyFromBytes: cannot parse byte length of index[i][j], length of input byte is too small")
 			}
 			byteLength := int(b[offset])
 			offset++
 			if offset+byteLength > len(b) {
-				return errors.New("txSigPubKeyFromBytes: cannot parse big int index[i][j], length of input byte is too small")
+				return fmt.Errorf("txSigPubKeyFromBytes: cannot parse big int index[i][j], length of input byte is too small")
 			}
 			currentByte := b[offset : offset+byteLength]
 			offset += byteLength
@@ -132,7 +132,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	commitmentToZeroRecomputed := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], sumRand)
 	match := privacy.IsPointEqual(commitmentToZeroRecomputed, commitmentToZero)
 	if !match {
-		return nil, utils.NewTransactionErr(utils.SignTxError, errors.New("Error : asset tag sum or commitment sum mismatch"))
+		return nil, utils.NewTransactionErr(utils.SignTxError, fmt.Errorf("error : asset tag sum or commitment sum mismatch"))
 	}
 	privKeyMlsag[len(inputCoins)] = sumRand
 	return privKeyMlsag, nil
@@ -142,7 +142,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 func (tx *Tx) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxPrivacyInitParams)
 	if !ok {
-		return errors.New("params of tx Init is not TxPrivacyInitParam")
+		return fmt.Errorf("params of tx Init is not TxPrivacyInitParam")
 	}
 
 	jsb, _ := json.Marshal(params)
@@ -178,7 +178,7 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 
 func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
 	if tx.Sig != nil {
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
+		return utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
 
@@ -232,7 +232,10 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 }
 
 func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
-	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
+	var senderKeySet incognitokey.KeySet
+	_ = senderKeySet.InitFromPrivateKey(params.SenderSK)
+	b := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, int(common.GetShardIDFromLastByte(b)), params.TokenID, params.StateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 		return err
@@ -256,51 +259,6 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 
 	err = tx.signOnMessage(inputCoins, outputCoins, params, tx.Hash()[:])
 	return err
-}
-
-// func (tx *Tx) proveASM(params *tx_generic.TxPrivacyInitParamsForASM) error {
-// 	return tx.prove(&params.txParam)
-// }
-
-// Retrieve ring from database using sigpubkey and last column commitment (last column = sumOutputCoinCommitment + fee)
-func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWithFee *privacy.Point, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
-	txSigPubKey := new(SigPubKey)
-	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
-	}
-	indexes := txSigPubKey.Indexes
-	n := len(indexes)
-	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
-	}
-
-	m := len(indexes[0])
-
-	ring := make([][]*privacy.Point, n)
-	for i := 0; i < n; i++ {
-		sumCommitment := new(privacy.Point).Identity()
-		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
-		row := make([]*privacy.Point, m+1)
-		for j := 0; j < m; j++ {
-			index := indexes[i][j]
-			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
-			if err != nil {
-				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
-				return nil, err
-			}
-			randomCoin := new(privacy.CoinV2)
-			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
-				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
-				return nil, err
-			}
-			row[j] = randomCoin.GetPublicKey()
-			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
-		}
-		row[m] = new(privacy.Point).Set(sumCommitment)
-		ring[i] = row
-	}
-	return mlsag.NewRing(ring), nil
 }
 
 // ========== NORMAL VERIFY FUNCTIONS ==========
@@ -389,7 +347,7 @@ func getMLSAGSigFromTxSigAndKeyImages(txSig []byte, keyImages []*privacy.Point) 
 func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be a signed one"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("input transaction must be a signed one"))
 	}
 	var err error
 
@@ -447,16 +405,16 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
 	if isConfAsset {
-		utils.Logger.Log.Infof("Verifying transaction with assetTag\n")
+		utils.Logger.Log.Infof("Verifying transaction with assetTag")
 		valid, err = tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction)
 	} else {
-		utils.Logger.Log.Infof("Verifying transaction without assetTag\n")
+		utils.Logger.Log.Infof("Verifying transaction without assetTag")
 		valid, err = tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}
 	if !valid {
-		utils.Logger.Log.Infof("Fail with CA = %v and tokenID = %s\n", isConfAsset, tokenID.String())
+		utils.Logger.Log.Infof("Fail with CA = %v and tokenID = %s", isConfAsset, tokenID.String())
 		if err != nil {
-			utils.Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
+			utils.Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v", tx.Hash().String(), err)
 			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 		}
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String())
@@ -526,17 +484,17 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	found, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
-		return errors.New(errStr)
+		return fmt.Errorf(errStr)
 	}
 	if found {
 		switch status {
 		case statedb.OTA_STATUS_STORED:
 			utils.Logger.Log.Error("InitTxSalary got error: found onetimeaddress stored in database")
-			return errors.New("Cannot initTxSalary, onetimeaddress already exists in database")
+			return fmt.Errorf("cannot initTxSalary, onetimeaddress already exists in database")
 		case statedb.OTA_STATUS_OCCUPIED:
 			utils.Logger.Log.Warnf("Continue minting OTA %x since status is %d", otaCoin.GetPublicKey().ToBytesS(), status)
 		default:
-			return errors.New("invalid onetimeaddress status in database")
+			return fmt.Errorf("invalid onetimeaddress status in database")
 		}
 	}
 
@@ -591,7 +549,7 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// Check commitment
 	outputCoins := tx.Proof.GetOutputCoins()
 	if len(outputCoins) != 1 {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("length outputCoins of proof is not 1"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("length outputCoins of proof is not 1"))
 	}
 	outCoin, ok := outputCoins[0].(*privacy.CoinV2)
 	if !ok {
@@ -599,12 +557,13 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 	cmpCommitment := privacy.PedCom.CommitAtIndex(outCoin.GetAmount(), outCoin.GetRandomness(), privacy.PedersenValueIndex)
 	if !privacy.IsPointEqual(cmpCommitment, outCoin.GetCommitment()) {
-		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, errors.New("output coin's commitment isn't calculated correctly"))
+		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, fmt.Errorf("output coin's commitment isn't calculated correctly"))
 	}
 
 	return true, nil
 }
 
+// nolint:revive // skip linter since this function modifies a value receiver
 // Hash returns the hash of this transaction.
 // All non-signature fields are marshalled into JSON before hashing
 func (tx Tx) Hash() *common.Hash {
@@ -639,7 +598,7 @@ func (tx Tx) HashWithoutMetadataSig() *common.Hash {
 
 func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	if tx.Proof == nil {
-		return false, errors.New("Tx Privacy Ver 2 must have proof")
+		return false, fmt.Errorf("tx Privacy Ver 2 must have proof")
 	}
 
 	if check, err := tx_generic.ValidateSanity(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight); !check || err != nil {
@@ -819,7 +778,7 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	for _, listSerialNumbers := range poolSerialNumbersHashH {
 		for _, serialNumberHash := range listSerialNumbers {
 			if _, ok := temp[serialNumberHash]; ok {
-				return errors.New("double spend in mempool")
+				return fmt.Errorf("double spend in mempool")
 			}
 		}
 	}

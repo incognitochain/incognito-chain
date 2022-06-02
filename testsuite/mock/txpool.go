@@ -40,7 +40,7 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 
 	// bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, true, true, false)
+	beaconView, err := tp.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, true, false, false)
 	if err != nil {
 		return nil, err
 	}
