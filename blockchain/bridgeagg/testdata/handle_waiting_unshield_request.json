@@ -1,21 +1,21 @@
 {
-    "Test": {
-        "name": "temp",
+    "TestNotEnoughVault": {
+        "name": "Not enough vault amount",
         "data": {
             "state": {
                 "UnifiedTokenVaults": {
                     "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                         "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                             "Amount": 1000,
-                            "LockedAmount": 0,
+                            "LockedAmount": 1000,
                             "WaitingUnshieldAmount": 0,
-                            "WaitingUnshieldFee": 0,
+                            "WaitingUnshieldFee": 1000,
                             "ExtDecimal": 18,
                             "NetworkID": 1,
                             "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
                         },
                         "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                            "Amount": 0,
+                            "Amount": 2000,
                             "LockedAmount": 0,
                             "WaitingUnshieldAmount": 0,
                             "WaitingUnshieldFee": 0,
@@ -36,8 +36,48 @@
                         }
                     } 
                 },
-                "WaitingUnshieldReqs": {},
-                "NewWaitingUnshieldReqs": {},
+                "WaitingUnshieldReqs": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [
+                        {
+                            "UnshieldID": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+                            "BeaconHeight": 10,
+                            "Data": [
+                                {
+                                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                                    "BurningAmount": 2000,
+                                    "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                                    "Fee": 1000,
+                                    "ExternalTokenID": [
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                                    ],
+                                    "ExternalReceivedAmt": 1000000000000,
+                                    "BurningConfirmMetaType": 241
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "NewWaitingUnshieldReqs": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [
+                        {
+                            "UnshieldID": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+                            "BeaconHeight": 10,
+                            "Data": [
+                                {
+                                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                                    "BurningAmount": 2000,
+                                    "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                                    "Fee": 1000,
+                                    "ExternalTokenID": [
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                                    ],
+                                    "ExternalReceivedAmt": 1000000000000,
+                                    "BurningConfirmMetaType": 241
+                                }
+                            ]
+                        }
+                    ]
+                },
                 "DeletedWaitingUnshieldReqKeyHashes": [],
                 "Param": {
                     "PercentFeeWithDec": 100
@@ -74,16 +114,16 @@
                 "UnifiedTokenVaults": {
                     "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                         "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
-                            "Amount": 700,
-                            "LockedAmount": 0,
+                            "Amount": 1000,
+                            "LockedAmount": 1000,
                             "WaitingUnshieldAmount": 0,
-                            "WaitingUnshieldFee": 0,
+                            "WaitingUnshieldFee": 1000,
                             "ExtDecimal": 18,
                             "NetworkID": 1,
                             "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
                         },
                         "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
-                            "Amount": 0,
+                            "Amount": 2000,
                             "LockedAmount": 0,
                             "WaitingUnshieldAmount": 0,
                             "WaitingUnshieldFee": 0,
@@ -104,8 +144,48 @@
                         }
                     } 
                 },
-                "WaitingUnshieldReqs": {},
-                "NewWaitingUnshieldReqs": {},
+                "WaitingUnshieldReqs": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [
+                        {
+                            "UnshieldID": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+                            "BeaconHeight": 10,
+                            "Data": [
+                                {
+                                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                                    "BurningAmount": 2000,
+                                    "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                                    "Fee": 1000,
+                                    "ExternalTokenID": [
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                                    ],
+                                    "ExternalReceivedAmt": 1000000000000,
+                                    "BurningConfirmMetaType": 241
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "NewWaitingUnshieldReqs": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [
+                        {
+                            "UnshieldID": "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+                            "BeaconHeight": 10,
+                            "Data": [
+                                {
+                                    "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                                    "BurningAmount": 2000,
+                                    "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
+                                    "Fee": 1000,
+                                    "ExternalTokenID": [
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                                    ],
+                                    "ExternalReceivedAmt": 1000000000000,
+                                    "BurningConfirmMetaType": 241
+                                }
+                            ]
+                        }
+                    ]
+                },
                 "DeletedWaitingUnshieldReqKeyHashes": [],
                 "Param": {
                     "PercentFeeWithDec": 100
@@ -125,7 +205,7 @@
                 "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                     "tokenId": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
                     "externalTokenId": [85, 84],
-                    "amount": 700
+                    "amount": 1000
                 },
                 "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                     "tokenId": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",

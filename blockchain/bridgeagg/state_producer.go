@@ -318,7 +318,7 @@ func (sp *stateProducer) shield(
 				return [][]string{rejectedInst}, state, ac, nil
 			}
 
-			Logger.log.Errorf("Cloned AC after update: %+v\n", clonedAC)
+			Logger.log.Infof("Cloned AC after update: %+v\n", clonedAC)
 			clonedVaults[shieldData.IncTokenID], err = updateVaultForRefill(vault, incAmount.Uint64(), reward)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not update vault state for shield request - Error %v", err)

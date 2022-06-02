@@ -6,7 +6,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -91,7 +94,7 @@
                 }
             },
             "instructions": [
-                ["348", "eyJOZXdMaXN0VG9rZW5zIjp7ImMzYWY4M2FkMmU3YjllMDQwYTczYTJiOTMzNGY5YTk2NjRjZDEyNjY0NjJmNzViNmJhODRmMzYxMzljZGYzYzYiOnsiYTc2ZDc1N2Q4ZDM4NzA2MDVkMDEyZDY4Y2QyZjA3NjcyMmVkOGUxOWRmYzVlMjliMTJjMDdhMjRhY2QwMjZjMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJOZXR3b3JrSUQiOjF9LCJlNTAzMmMwODNmMGRhNjdjYTE0MTMzMWI2MDA1ZTRhMzc0MGM1MDIxOGYxNTFhNWU4MjllOWQwMzIyN2UzM2UyIjp7IkV4dGVybmFsRGVjaW1hbCI6MTgsIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIk5ldHdvcmtJRCI6Mn19LCJlYmMxYzFiNTgxOWFhNTY0NzE5MmFlZmQ3MjllZjE4Y2Q4ODk0ZDIyNjU2ZThhZGQ2NzhjMGFlZjkzZTQwNGQ0Ijp7IjZlZWQ2OTFjYjE0ZDExMDY2ZjkzOTYzMGZmNjQ3ZjVmMWM4NDNhOGY5NjRkOWE0ZDI5NWZhOWNkMTExMWM0NzQiOnsiRXh0ZXJuYWxEZWNpbWFsIjoxOCwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiTmV0d29ya0lEIjo0fX19fQ=="]
+                ["347", "eyJOZXdMaXN0VG9rZW5zIjp7ImMzYWY4M2FkMmU3YjllMDQwYTczYTJiOTMzNGY5YTk2NjRjZDEyNjY0NjJmNzViNmJhODRmMzYxMzljZGYzYzYiOnsiYTc2ZDc1N2Q4ZDM4NzA2MDVkMDEyZDY4Y2QyZjA3NjcyMmVkOGUxOWRmYzVlMjliMTJjMDdhMjRhY2QwMjZjMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJOZXR3b3JrSUQiOjF9LCJlNTAzMmMwODNmMGRhNjdjYTE0MTMzMWI2MDA1ZTRhMzc0MGM1MDIxOGYxNTFhNWU4MjllOWQwMzIyN2UzM2UyIjp7IkV4dGVybmFsRGVjaW1hbCI6MTgsIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIk5ldHdvcmtJRCI6Mn19LCJlYmMxYzFiNTgxOWFhNTY0NzE5MmFlZmQ3MjllZjE4Y2Q4ODk0ZDIyNjU2ZThhZGQ2NzhjMGFlZjkzZTQwNGQ0Ijp7IjZlZWQ2OTFjYjE0ZDExMDY2ZjkzOTYzMGZmNjQ3ZjVmMWM4NDNhOGY5NjRkOWE0ZDI5NWZhOWNkMTExMWM0NzQiOnsiRXh0ZXJuYWxEZWNpbWFsIjoxOCwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiTmV0d29ya0lEIjo0fX19fQ=="]
             ],
             "accumulated_values": {
                 "UniqETHTxsUsed":    [],
@@ -145,7 +148,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -192,7 +198,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -215,7 +224,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {
                 "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
@@ -268,7 +280,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -297,7 +312,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -348,7 +366,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -371,7 +392,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -418,7 +442,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -441,7 +468,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -488,7 +518,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -511,7 +544,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -558,7 +594,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -581,7 +620,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -628,7 +670,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -651,7 +696,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -698,7 +746,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -721,7 +772,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -768,7 +822,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -791,7 +848,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -842,7 +902,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -865,7 +928,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -912,7 +978,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -935,7 +1004,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -986,7 +1058,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {
@@ -1009,7 +1084,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "bridge_tokens_info": {},
             "accumulated_values": {
@@ -1061,7 +1139,10 @@
                 "UnifiedTokenVaults": {},
                 "WaitingUnshieldReqs": {},
                 "NewWaitingUnshieldReqs": {},
-                "DeletedWaitingUnshieldReqKeyHashes": []
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
             },
             "instructions": [],
             "accumulated_values": {

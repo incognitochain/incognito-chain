@@ -3,9 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -104,7 +105,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 				if sBestView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 					includePdexv3Tx = true
 				}
-				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, includePdexv3Tx)
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, includePdexv3Tx, false)
 				if err != nil {
 					Logger.log.Errorf("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
 				} else {

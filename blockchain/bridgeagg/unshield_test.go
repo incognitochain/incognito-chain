@@ -120,8 +120,8 @@ func (u *UnshieldTestSuite) test() {
 	u.actualResults[u.currentTestCaseName] = UnshieldActualResult{
 		ActualResult: ActualResult{
 			Instructions:      actualInstructions,
-			ProducerState:     producerState,
-			ProcessorState:    processorState,
+			ProducerState:     producerManager.state,
+			ProcessorState:    processorManager.state,
 			AccumulatedValues: accumulatedValues,
 		},
 	}

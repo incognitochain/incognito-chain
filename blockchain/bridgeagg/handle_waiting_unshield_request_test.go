@@ -42,7 +42,7 @@ func (h *HandleWaitingUnshieldTestSuite) SetupSuite() {
 	config.AbortParam()
 	config.Param().BridgeAggParam.BaseDecimal = 9
 
-	rawTestCases, _ := readTestCases("unshield.json")
+	rawTestCases, _ := readTestCases("handle_waiting_unshield_request.json")
 	err := json.Unmarshal(rawTestCases, &h.testCases)
 	if err != nil {
 		panic(err)
@@ -65,7 +65,6 @@ func (h *HandleWaitingUnshieldTestSuite) SetupTest() {
 func (h *HandleWaitingUnshieldTestSuite) BeforeTest(suiteName, testName string) {
 	h.currentTestCaseName = testName
 	testCase := h.testCases[h.currentTestCaseName]
-	actions := []string{}
 
 	assert := h.Assert()
 	_, err := h.sDB.Commit(false)
@@ -75,7 +74,6 @@ func (h *HandleWaitingUnshieldTestSuite) BeforeTest(suiteName, testName string) 
 		stateDBs: map[int]*statedb.StateDB{
 			common.BeaconChainID: h.sDB,
 		},
-		unshieldActions:   [][]string{actions},
 		accumulatedValues: testCase.Data.AccumulatedValues,
 	}
 	h.testCases[h.currentTestCaseName].Data.env = env
@@ -96,8 +94,8 @@ func (h *HandleWaitingUnshieldTestSuite) test() {
 	h.actualResults[h.currentTestCaseName] = HandleWaitingUnshieldActualResult{
 		ActualResult: ActualResult{
 			Instructions:      actualInstructions,
-			ProducerState:     producerState,
-			ProcessorState:    processorState,
+			ProducerState:     producerManager.state,
+			ProcessorState:    processorManager.state,
 			AccumulatedValues: accumulatedValues,
 		},
 	}
@@ -117,7 +115,7 @@ func (h *HandleWaitingUnshieldTestSuite) AfterTest(suiteName, testName string) {
 	assert.Equal(expectedBridgeTokensInfo, bridgeTokenInfos, fmt.Errorf("Expected bridgeTokenInfos %v but get %v", expectedBridgeTokensInfo, bridgeTokenInfos).Error())
 }
 
-func (h *HandleWaitingUnshieldTestSuite) Test() {
+func (h *HandleWaitingUnshieldTestSuite) TestNotEnoughVault() {
 	h.test()
 	assert := h.Assert()
 	testCase := h.testCases[h.currentTestCaseName]
@@ -127,6 +125,39 @@ func (h *HandleWaitingUnshieldTestSuite) Test() {
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
 	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
+
+/*func (h *HandleWaitingUnshieldTestSuite) TestWaiting() {*/
+/*h.test()*/
+/*assert := h.Assert()*/
+/*testCase := h.testCases[h.currentTestCaseName]*/
+/*actualResult := h.actualResults[h.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
+
+/*func (h *HandleWaitingUnshieldTestSuite) TestFilled() {*/
+/*h.test()*/
+/*assert := h.Assert()*/
+/*testCase := h.testCases[h.currentTestCaseName]*/
+/*actualResult := h.actualResults[h.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
+
+/*func (h *HandleWaitingUnshieldTestSuite) TestAccepted() {*/
+/*h.test()*/
+/*assert := h.Assert()*/
+/*testCase := h.testCases[h.currentTestCaseName]*/
+/*actualResult := h.actualResults[h.currentTestCaseName]*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))*/
+/*assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))*/
+/*}*/
 
 func TestHandleWaitingUnshieldTestSuite(t *testing.T) {
 	suite.Run(t, new(HandleWaitingUnshieldTestSuite))

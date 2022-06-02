@@ -1006,7 +1006,7 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 				}
 			}
 		}
-		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3)
+		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...), isIncludePdexv3, false)
 		if err != nil {
 			Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 			return err

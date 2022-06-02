@@ -110,8 +110,8 @@ func (c *ConvertTestSuite) test() {
 	c.actualResults[c.currentTestCaseName] = ConvertActualResult{
 		ActualResult: ActualResult{
 			Instructions:      actualInstructions,
-			ProducerState:     producerState,
-			ProcessorState:    processorState,
+			ProducerState:     producerManager.state,
+			ProcessorState:    processorManager.state,
 			AccumulatedValues: accumulatedValues,
 		},
 	}

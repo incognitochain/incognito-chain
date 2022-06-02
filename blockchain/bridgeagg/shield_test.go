@@ -128,8 +128,8 @@ func (s *ShieldTestSuite) test() {
 	s.actualResults[s.currentTestCaseName] = ShieldActualResult{
 		ActualResult: ActualResult{
 			Instructions:      actualInstructions,
-			ProducerState:     producerState,
-			ProcessorState:    processorState,
+			ProducerState:     producerManager.state,
+			ProcessorState:    processorManager.state,
 			AccumulatedValues: accumulatedValues,
 		},
 	}
