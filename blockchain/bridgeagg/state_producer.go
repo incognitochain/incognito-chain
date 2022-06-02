@@ -543,7 +543,8 @@ func (sp *stateProducer) addToken(
 					return []string{}, state, ac, nil
 				}
 				if _, found := state.unifiedTokenVaults[unifiedTokenID][tokenID]; found {
-					continue
+					Logger.log.Warnf("BridgeAggAddToken Add an existed vault unifiedTokenID %s tokenID %s", unifiedTokenID.String(), tokenID.String())
+					return []string{}, state, ac, nil
 				}
 				externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, vault.NetworkID)
 				if err != nil {
