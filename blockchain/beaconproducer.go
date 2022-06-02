@@ -79,6 +79,13 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		proposer,
 	)
 
+	if version >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(copiedCurView) {
+			processBridgeFromBlock := copiedCurView.LastBlockProcessBridge + 1
+			newBeaconBlock.Header.ProcessBridgeFromBlock = &processBridgeFromBlock
+		}
+	}
+
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	portalParams := portal.GetPortalParams()
@@ -339,8 +346,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	//build bridge instruction
 	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
 		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
-			processBridgeFromBlock := curView.LastBlockProcessBridge + 1
-			newBeaconBlock.Header.ProcessBridgeFromBlock = &processBridgeFromBlock
 			//get data from checkpoint to final view
 			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
 			retrievedShardBlockForBridge, err := blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())

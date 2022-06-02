@@ -319,6 +319,12 @@ func (header *BeaconHeader) toString() string {
 
 	if header.Version >= INSTANT_FINALITY_VERSION {
 		//instant finality will move consensus info out of block hash
+		if header.ProcessBridgeFromBlock == nil {
+			res += "0"
+		} else {
+			res += fmt.Sprintf("%v", *header.ProcessBridgeFromBlock)
+		}
+
 	} else {
 		//to compatible with mainnet database, version 3 dont have proposer info
 		if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {

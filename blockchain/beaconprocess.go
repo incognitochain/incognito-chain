@@ -323,6 +323,17 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
+	//validate ProcessBridgeFromBlock
+	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
+			if beaconBlock.Header.ProcessBridgeFromBlock == nil || (*beaconBlock.Header.ProcessBridgeFromBlock != curView.LastBlockProcessBridge+1) {
+				return NewBlockChainError(BuildBridgeError, fmt.Errorf("Verify ProcessBridgeFromBlock error! Must set, got nil"))
+			}
+		} else if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
+			return NewBlockChainError(BuildBridgeError, fmt.Errorf("Verify ProcessBridgeFromBlock error! Must nil, got set"))
+		}
+	}
+
 	finishSyncInstruction, err := curView.filterAndVerifyFinishSyncInstruction(beaconBlock.Body.Instructions)
 	if err != nil {
 		return NewBlockChainError(FinishSyncInstructionError, err)
