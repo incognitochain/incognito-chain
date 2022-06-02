@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
@@ -79,10 +80,18 @@ func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenI
 		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
 	}
 
+	receivedAmt := burntAmount - fee
+	maxFee := fee
+	if fee > 0 {
+		maxFee = calMaxUnshieldFee(receivedAmt, state.Param().PercentFeeWithDec(), config.Param().BridgeAggParam.PercentFeeDecimal)
+	}
+
 	return &jsonresult.BridgeAggEstimateFee{
 		Fee:            fee,
-		ReceivedAmount: burntAmount - fee,
+		ReceivedAmount: receivedAmt,
 		BurntAmount:    burntAmount,
+		MaxFee:         maxFee,
+		MaxBurntAmount: burntAmount,
 	}, nil
 }
 
@@ -105,11 +114,27 @@ func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTok
 		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
 	}
 
+	burnAmt := amount + fee
+	maxFee := fee
+	maxBurnAmount := burnAmt
+	if fee > 0 {
+		maxFee = calMaxUnshieldFee(amount, state.Param().PercentFeeWithDec(), config.Param().BridgeAggParam.PercentFeeDecimal)
+		maxBurnAmount = amount + maxFee
+	}
+
 	return &jsonresult.BridgeAggEstimateFee{
 		Fee:            fee,
 		ReceivedAmount: amount,
-		BurntAmount:    amount + fee,
+		BurntAmount:    burnAmt,
+		MaxFee:         maxFee,
+		MaxBurntAmount: maxBurnAmount,
 	}, nil
+}
+
+func calMaxUnshieldFee(receivedAmt uint64, percentFeeWithDec uint64, percentFeeDec uint64) uint64 {
+	tmp := new(big.Int).Mul(new(big.Int).SetUint64(receivedAmt), new(big.Int).SetUint64(percentFeeWithDec))
+	tmp.Div(tmp, new(big.Int).SetUint64(percentFeeDec))
+	return tmp.Uint64()
 }
 
 func (blockService BlockService) BridgeAggEstimateReward(unifiedTokenID, tokenID common.Hash, amount uint64) (interface{}, error) {

@@ -600,7 +600,7 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var res json.RawMessage
+	res := bridgeagg.UnshieldStatus{}
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
