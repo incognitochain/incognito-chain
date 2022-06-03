@@ -7,7 +7,7 @@ import (
 
 type BridgeAggState struct {
 	BeaconTimeStamp     int64                                                        `json:"BeaconTimeStamp"`
-	UnifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenInfos"`
+	UnifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
 	WaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
 	Param               *statedb.BridgeAggParamState                                 `json:"Param"`
 	BaseDecimal         uint                                                         `json:"BaseDecimal"`
