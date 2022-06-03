@@ -1,7 +1,7 @@
 <img src="https://i.postimg.cc/CMzvFrhs/Screen-Shot-2021-01-20-at-12-29-04-PM.png" width="150">
 
 
-## What is Incognito?
+## What is Incognito? 
 
 We now live in a token economy. Everything is being tokenized. Fiats. Gold. Bond. Storage. Computing Power. Digital Art. Collectibles. Buildings. More.
 
@@ -49,11 +49,11 @@ Then, run an Incognito Node
 
 You can simply build and run the code with a few simple command with make package:
 
-1. Clear everything with `make clean` (optional for clearing database) 
+1. Clear everything with `make clean` (optional for clearing database)
 1. Build with command: `make build`
 1. Run with command: `make mainnet`
 
-**Optional** 
+**Optional**
 
 When running Incognito node with docker environment you can update image by a third party. we recommend https://github.com/containrrr/watchtower by running below command
 
@@ -119,9 +119,9 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
     * **Ethereum**. Incognito implements a trustless two-way bridge between Incognito and Ethereum to let anyone send and receive ETH & ERC20 privately. Its code is in the [bridge-eth](https://github.com/incognitochain/bridge-eth) repository.
 
     * **Bitcoin**.  Incognito is working on a trustless two-way bridge between Incognito and Bitcoin to let anyone send and receive BTC privately. Here is its proposal (TBD). Estimated ship date: April 2021.
-    
-  * **pDEX** 
-  
+
+  * **pDEX**
+
     Incognito implements a first privacy-protecting decentralized exchange to let anyone freely trade without disclosing their identity with high throughput and low latency. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/production/blockchain) package.
 
 * **Developer Tools**
@@ -137,7 +137,7 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
   * **Mobile Apps**. It's easy to build your own mobile apps on top of Incognito, once the SDK is available. Here is an example: [Mobile Wallet](https://github.com/incognitochain/incognito-chain-wallet-client-app).
 
   * **Web Apps**. It's easy to build your web apps on top of Incognito, once the SDK is available. Here are some examples: [Web Wallet](https://github.com/incognitochain/incognito-chain-wallet-client-2) or a [Desktop Network Monitor](https://github.com/incognitochain/incognito-monitor).
-  
+
   * **Hardware Devices**. It's easy to build your own hardware on top of Incognito, once the SDK is available. Here is an example: [Node Device](https://github.com/incognitochain/incognito-node).
 
 ## Contribution
@@ -148,7 +148,7 @@ Incognito is and will always be 100% open-source. Anyone can participate, everyo
 
 * Suggest a new feature via [Github Issues](https://github.com/incognitochain/incognito-chain/issues)
 
-* Want to build a feature or fix a bug? Please send a [Pull Request](https://github.com/incognitochain/incognito-chain/pulls) for the maintainers to review your code and merge into the main codebase.  
+* Want to build a feature or fix a bug? Please send a [Pull Request](https://github.com/incognitochain/incognito-chain/pulls) for the maintainers to review your code and merge into the main codebase.
 
 * Write tests. *We'll provide instructions soon how to setup local test environment.*
 

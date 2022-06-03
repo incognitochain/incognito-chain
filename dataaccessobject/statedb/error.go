@@ -82,6 +82,11 @@ const (
 	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
 	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
+	// bridge agg
+	ErrInvalidBridgeAggStatusStateType         = "invalid bridge agg status state type"
+	ErrInvalidBridgeAggUnifiedTokenStateType   = "invalid bridge agg unified token state type"
+	ErrInvalidBridgeAggConvertedTokenStateType = "invalid bridge agg converted token state type"
+	ErrInvalidBridgeAggVaultStateType          = "invalid bridge agg vault state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -294,6 +299,10 @@ const (
 	// Fantom bridge
 	BridgeInsertFTMTxHashIssuedError
 	IsFTMTxHashIssuedError
+
+	// Bridge Agg
+	GetBridgeAggStatusError
+	StoreBridgeAggStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -474,6 +483,10 @@ var ErrCodeMessage = map[int]struct {
 	// fantom bridge
 	BridgeInsertFTMTxHashIssuedError: {-15106, "Bridge Insert Fantom Tx Hash Issued Error"},
 	IsFTMTxHashIssuedError:           {-15107, "Is Fantom Tx Hash Issued Error"},
+
+	// bridge agg
+	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},
+	StoreBridgeAggStatusError: {-15109, "Store bridge agg status Error"},
 }
 
 type StatedbError struct {

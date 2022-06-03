@@ -30,7 +30,7 @@ func TradeRefundTx(
 	}
 	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID(), metadataCommon.MetadataBase{metadataCommon.Pdexv3TradeResponseMeta}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: refundedTrade.Amount, ReceiverAddress: nil, PublicKey: &refundedTrade.Receiver.PublicKey, TxRandom: &refundedTrade.Receiver.TxRandom, TokenID: &refundedTrade.TokenID, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: refundedTrade.Amount, ReceiverAddress: nil, PublicKey: refundedTrade.Receiver.PublicKey, TxRandom: &refundedTrade.Receiver.TxRandom, TokenID: &refundedTrade.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
@@ -52,7 +52,7 @@ func TradeAcceptTx(
 	}
 	md := metadataPdexv3.TradeResponse{acn.GetStatus(), acn.RequestTxID(), metadataCommon.MetadataBase{metadataCommon.Pdexv3TradeResponseMeta}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: acceptedTrade.Amount, ReceiverAddress: nil, PublicKey: &acceptedTrade.Receiver.PublicKey, TxRandom: &acceptedTrade.Receiver.TxRandom, TokenID: &acceptedTrade.TokenToBuy, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: acceptedTrade.Amount, ReceiverAddress: nil, PublicKey: acceptedTrade.Receiver.PublicKey, TxRandom: &acceptedTrade.Receiver.TxRandom, TokenID: &acceptedTrade.TokenToBuy, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
@@ -74,7 +74,7 @@ func OrderRefundTx(
 	}
 	md := metadataPdexv3.AddOrderResponse{acn.GetStatus(), acn.RequestTxID(), metadataCommon.MetadataBase{metadataCommon.Pdexv3AddOrderResponseMeta}}
 
-	txParam := transaction.TxSalaryOutputParams{Amount: refundedOrder.Amount, ReceiverAddress: nil, PublicKey: &refundedOrder.Receiver.PublicKey, TxRandom: &refundedOrder.Receiver.TxRandom, TokenID: &refundedOrder.TokenID, Info: []byte{}}
+	txParam := transaction.TxSalaryOutputParams{Amount: refundedOrder.Amount, ReceiverAddress: nil, PublicKey: refundedOrder.Receiver.PublicKey, TxRandom: &refundedOrder.Receiver.TxRandom, TokenID: &refundedOrder.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
 		func(c privacy.Coin) metadataCommon.Metadata { return &md },
@@ -99,7 +99,7 @@ func WithdrawOrderAcceptTx(
 
 	txParam := transaction.TxSalaryOutputParams{
 		Amount: acceptedWithdrawOrder.Amount, ReceiverAddress: nil,
-		PublicKey: &acceptedWithdrawOrder.Receiver.PublicKey, TxRandom: &acceptedWithdrawOrder.Receiver.TxRandom,
+		PublicKey: acceptedWithdrawOrder.Receiver.PublicKey, TxRandom: &acceptedWithdrawOrder.Receiver.TxRandom,
 		TokenID: &acceptedWithdrawOrder.TokenID, Info: []byte{}}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
@@ -194,7 +194,7 @@ func WithdrawLPFee(
 	txParam := transaction.TxSalaryOutputParams{
 		Amount:          receiver.Amount,
 		ReceiverAddress: nil,
-		PublicKey:       &receiverAddress.PublicKey,
+		PublicKey:       receiverAddress.PublicKey,
 		TxRandom:        &receiverAddress.TxRandom,
 		TokenID:         &instContent.TokenID, Info: []byte{}}
 
@@ -294,7 +294,7 @@ func WithdrawStakingReward(
 	txParam := transaction.TxSalaryOutputParams{
 		Amount:          receiver.Amount,
 		ReceiverAddress: nil,
-		PublicKey:       &receiverAddress.PublicKey,
+		PublicKey:       receiverAddress.PublicKey,
 		TxRandom:        &receiverAddress.TxRandom,
 		TokenID:         &instContent.TokenID, Info: []byte{}}
 
