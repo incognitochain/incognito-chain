@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -351,12 +352,12 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 			IncTokenID: v.IncTokenID,
 		}
 		type EVMProof struct {
-			BlockHash string   `json:"BlockHash"`
-			TxIndex   uint     `json:"TxIndex"`
-			Proof     []string `json:"Proof"`
+			BlockHash rCommon.Hash `json:"BlockHash"`
+			TxIndex   uint         `json:"TxIndex"`
+			Proof     []string     `json:"Proof"`
 		}
 		proof := EVMProof{
-			BlockHash: v.BlockHash,
+			BlockHash: rCommon.HexToHash(v.BlockHash),
 			TxIndex:   *v.TxIndex,
 			Proof:     v.Proof,
 		}
