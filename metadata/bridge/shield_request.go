@@ -103,6 +103,7 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 			proofData := EVMProof{}
 			err := json.Unmarshal(data.Proof, &proofData)
 			if err != nil {
+				metadataCommon.Logger.Log.Errorf("Can not unmarshal evm proof: %v\n", err)
 				return false
 			}
 			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, data.NetworkID, request.UnifiedTokenID)
