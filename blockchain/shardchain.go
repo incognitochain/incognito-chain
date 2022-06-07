@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"sync"
@@ -356,11 +357,17 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 
 func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
 
-	if err := chain.InsertBlock(block, false); err != nil {
-		return err
+	if newValidationData != "" {
+		linkView := chain.GetMultiView().GetViewByHash(block.GetPrevHash())
+		if linkView == nil {
+			return errors.New("InsertWithPrevValidationData fail! Cannot find previous block hash" + block.GetPrevHash().String())
+		}
+		if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), newValidationData); err != nil {
+			return err
+		}
 	}
 
-	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *block.ProposeHash(), newValidationData); err != nil {
+	if err := chain.InsertBlock(block, true); err != nil {
 		return err
 	}
 
@@ -415,6 +422,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	} else {
 		if !hasBlock {
 			// This block is not inserted yet, no need to replace
+			Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db" + previousBlockHash.String())
 			return nil
 		}
 	}
@@ -425,6 +433,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	}
 
 	if !previousProposeHash.IsEqual(shardBlock.ProposeHash()) {
+		Logger.log.Errorf("Replace previous validation data fail! Propose hash not correct, data for" + previousProposeHash.String() + " got " + shardBlock.ProposeHash().String())
 		return nil
 	}
 
@@ -439,8 +448,8 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	}
 
 	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
-		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
-			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v (old %+v)",
+			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx))
 	} else {
 		return nil
 	}

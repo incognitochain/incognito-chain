@@ -8,6 +8,7 @@ type BlockPoolInterface interface {
 	GetHeight() uint64
 	GetShardID() int
 	GetRound() int
+	FullHashString() string //hash-proposehash
 }
 
 type BlockInterface interface {
