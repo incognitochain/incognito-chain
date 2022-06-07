@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
 )
@@ -9,8 +10,15 @@ func (stateDB *StateDB) Retrieve(db incdb.Database, shouldAddToStateBloom bool, 
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	batch := db.NewBatch()
+	//keys := make(map[common.Hash]struct{})
 	for it.Next(false) {
 		key := it.Key
+		h := common.Hash{}
+		err := h.SetBytes(key)
+		if err != nil {
+			return err
+		}
+		//keys[h] = struct{}{}
 		if shouldAddToStateBloom {
 			if err := stateBloom.Put(key, nil); err != nil {
 				return err
@@ -33,7 +41,8 @@ func (stateDB *StateDB) Retrieve(db incdb.Database, shouldAddToStateBloom bool, 
 			}
 		}
 	}
-	if batch.ValueSize() > 0 {
+	//fmt.Println("[state-prune] len(keys):", len(keys))
+	if shouldDelete && batch.ValueSize() > 0 {
 		batch.Write()
 		batch.Reset()
 	}

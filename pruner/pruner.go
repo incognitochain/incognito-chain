@@ -68,18 +68,20 @@ func (p *Pruner) prune(sID int) error {
 		if finalHeight == 0 || finalHeight > v.ShardHeight {
 			finalHeight = v.ShardHeight
 		}
-		Logger.log.Infof("[state-prune] Start retrieve view %s", v.Hash().String())
+		Logger.log.Infof("[state-prune] Start retrieve view %s", v.BestBlockHash.String())
 		err = v.InitStateRootHash(db)
 		if err != nil {
 			panic(err)
 		}
 		//Retrieve all state tree for this state
-		err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, p.stateBlooms[sID])
+		err = v.GetCopiedTransactionStateDB().Retrieve(db, false, false, p.stateBlooms[sID]) // TODO: @tin fix here
 		if err != nil {
 			panic(err)
 		}
-		Logger.log.Infof("[state-prune] Finish retrieve view %s", v.Hash().String())
+		Logger.log.Infof("[state-prune] Finish retrieve view %s", v.BestBlockHash.String())
 	}
+
+	panic(100)
 
 	// get last pruned height before
 	var lastPrunedHeight uint64

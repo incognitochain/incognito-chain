@@ -117,7 +117,7 @@ type config struct {
 	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
 	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
 	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
-	StatePrune          bool   `mapstructure:"state_prune" description:"state pruning flag"`
+	StatePrune          bool   `mapstructure:"state_prune" long:"stateprune" description:"state pruning flag"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
