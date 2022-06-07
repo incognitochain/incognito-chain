@@ -142,8 +142,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)
+
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
+
+	if blockHeight >= 1364000 {
+		time.Sleep(time.Hour)
+		return errors.New("123")
+	}
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
 	if checkView != nil {

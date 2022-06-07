@@ -1,13 +1,13 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 const RUNNING_SYNC = "running_sync"
@@ -18,70 +18,65 @@ func isNil(v interface{}) bool {
 }
 func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
-
-	validatorRootHashChange := func(blk interface{}) bool {
-		switch blk.(type) {
-		case *types.BeaconBlock:
-			header := blk.(*types.BeaconBlock).Header
-			bestHeader := chain.GetBestView().GetBlock().(*types.BeaconBlock).Header
-			if header.ShardCandidateRoot != bestHeader.ShardCandidateRoot || header.ShardCommitteeAndValidatorRoot != bestHeader.ShardCommitteeAndValidatorRoot ||
-				header.BeaconCommitteeAndValidatorRoot != bestHeader.BeaconCommitteeAndValidatorRoot || header.BeaconCandidateRoot != bestHeader.BeaconCandidateRoot {
-				return true
-			}
-		case *types.ShardBlock:
-			header := blk.(*types.ShardBlock).Header
-			bestHeader := chain.GetBestView().GetBlock().(*types.ShardBlock).Header
-			if header.CommitteeRoot != bestHeader.CommitteeRoot || header.PendingValidatorRoot != header.PendingValidatorRoot {
-				return true
-			}
-		}
-		return false
-	}
-
-	//if validator root hash change -> break into chunks
-	for i, v := range blocks {
-		if validatorRootHashChange(v) {
-			if i == 0 {
-				sameCommitteeBlock = blocks[:1]
-			} else {
-				sameCommitteeBlock = blocks[:i]
-			}
-			break
-		}
-
-	}
-
-	//check block height is sequential
-	for i, blk := range sameCommitteeBlock {
-		if i == len(sameCommitteeBlock)-1 {
-			break
-		}
-		if blk.GetHeight() != sameCommitteeBlock[i+1].GetHeight()-1 {
-			sameCommitteeBlock = blocks[:i+1]
-			break
-		}
-	}
-
-	//validate the last block for batching
-	//get block has same committee
-	committees := []incognitokey.CommitteePublicKey{}
-	if len(sameCommitteeBlock) != 0 {
-		var err error
-		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
-		if err != nil {
-			return 0, err
-		}
-	}
 	validBlockForInsert := sameCommitteeBlock[:]
-	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
-		if err != nil {
-			return 0, err
+
+	if !config.Config().IsFullValidation {
+		validatorRootHashChange := func(blk interface{}) bool {
+			switch blk.(type) {
+			case *types.BeaconBlock:
+				header := blk.(*types.BeaconBlock).Header
+				bestHeader := chain.GetBestView().GetBlock().(*types.BeaconBlock).Header
+				if header.ShardCandidateRoot != bestHeader.ShardCandidateRoot || header.ShardCommitteeAndValidatorRoot != bestHeader.ShardCommitteeAndValidatorRoot ||
+					header.BeaconCommitteeAndValidatorRoot != bestHeader.BeaconCommitteeAndValidatorRoot || header.BeaconCandidateRoot != bestHeader.BeaconCandidateRoot {
+					return true
+				}
+			case *types.ShardBlock:
+				header := blk.(*types.ShardBlock).Header
+				bestHeader := chain.GetBestView().GetBlock().(*types.ShardBlock).Header
+				if header.CommitteeRoot != bestHeader.CommitteeRoot || header.PendingValidatorRoot != header.PendingValidatorRoot {
+					return true
+				}
+			}
+			return false
 		}
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
-			validBlockForInsert = sameCommitteeBlock[:i]
-		} else {
-			break
+
+		//if validator root hash change -> break into chunks
+		for i, v := range blocks {
+			if validatorRootHashChange(v) {
+				if i == 0 {
+					sameCommitteeBlock = blocks[:1]
+				} else {
+					sameCommitteeBlock = blocks[:i]
+				}
+				break
+			}
+
+		}
+
+		//check block height is sequential
+		for i, blk := range sameCommitteeBlock {
+			if i == len(sameCommitteeBlock)-1 {
+				break
+			}
+			if blk.GetHeight() != sameCommitteeBlock[i+1].GetHeight()-1 {
+				sameCommitteeBlock = blocks[:i+1]
+				break
+			}
+		}
+
+		//validate the last block for batching
+		//get block has same committee
+		validBlockForInsert = sameCommitteeBlock[:]
+		for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
+			signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
+			if err != nil {
+				return 0, err
+			}
+			if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
+				validBlockForInsert = sameCommitteeBlock[:i]
+			} else {
+				break
+			}
 		}
 	}
 
@@ -107,8 +102,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 				err = chain.InsertBlock(v, batchingValidate == false)
 			}
 			if err != nil {
-				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
-				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
+				Logger.Errorf("Insert block %v hash %v got error %v", v.GetHeight(), *v.Hash(), err)
 				return 0, err
 			}
 		}
