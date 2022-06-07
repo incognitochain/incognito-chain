@@ -37,6 +37,7 @@ type ShardChainInterface interface {
 
 type Chain interface {
 	GetBestView() multiview.View
+	GetViewByHash(common.Hash) multiview.View
 	GetDatabase() incdb.Database
 	GetAllViewHash() []common.Hash
 	GetBestViewHeight() uint64

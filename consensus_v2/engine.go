@@ -3,6 +3,7 @@ package consensus_v2
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"log"
 	"strings"
 	"time"
 
@@ -121,7 +122,7 @@ func (engine *Engine) WatchCommitteeChange() {
 
 		keyBytes := validator.MiningKey.PubKey[common.BlsConsensus]
 		logKey := base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
-		Logger.Log.Infof("validator key %+v, shardID %+v, role %+v", logKey, chainID, role)
+		log.Printf("validator key %+v, shardID %+v, role %+v \n", logKey, chainID, role)
 
 		if chainID == common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
