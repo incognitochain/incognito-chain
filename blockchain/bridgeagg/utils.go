@@ -935,7 +935,7 @@ func updateVaultForRefill(v *statedb.BridgeAggVaultState, shieldAmt, reward uint
 	res.SetAmount(newAmount.Uint64())
 
 	// decrease waiting unshield amount, waiting fee
-	if reward > 0 {
+	if v.WaitingUnshieldAmount() > 0 {
 		// shieldAmt is maybe greater than WaitingUnshieldAmount in Vault
 		if v.WaitingUnshieldAmount() <= shieldAmt {
 			res.SetWaitingUnshieldAmount(0)
@@ -955,13 +955,31 @@ func updateVaultForRefill(v *statedb.BridgeAggVaultState, shieldAmt, reward uint
 	return res, nil
 }
 
-func checkVaultForWaitUnshieldReq(vaults map[common.Hash]*statedb.BridgeAggVaultState, unshieldDatas []statedb.WaitingUnshieldReqData) bool {
+func checkVaultForWaitUnshieldReq(
+	vaults map[common.Hash]*statedb.BridgeAggVaultState,
+	unshieldDatas []statedb.WaitingUnshieldReqData,
+	lockedVaults map[common.Hash]uint64,
+) (bool, map[common.Hash]uint64) {
+	isEnoughVault := true
 	for _, data := range unshieldDatas {
-		if vaults[data.IncTokenID].Amount() < data.BurningAmount {
-			return false
+		if lockedVaults[data.IncTokenID] >= vaults[data.IncTokenID].Amount() {
+			isEnoughVault = false
+			break
+		}
+		receivedAmount := data.BurningAmount - data.Fee
+		if vaults[data.IncTokenID].Amount()-lockedVaults[data.IncTokenID] < receivedAmount {
+			isEnoughVault = false
+			break
 		}
 	}
-	return true
+
+	if !isEnoughVault {
+		for _, data := range unshieldDatas {
+			receivedAmount := data.BurningAmount - data.Fee
+			lockedVaults[data.IncTokenID] += receivedAmount
+		}
+	}
+	return isEnoughVault, lockedVaults
 }
 
 func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint64, percentFeeWithDec uint64) (bool, uint64, error) {

@@ -311,8 +311,11 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 	clonedState := state.Clone()
 	insts := [][]string{}
 	var err error
+	var isEnoughVault bool
+	lockedVaultAmts := map[common.Hash]map[common.Hash]uint64{}
 
 	for unifiedTokenID, waitingUnshieldReqs := range state.waitingUnshieldReqs {
+		lockedVaultAmts[unifiedTokenID] = map[common.Hash]uint64{}
 		for _, waitingUnshieldReq := range waitingUnshieldReqs {
 			vaults, ok := clonedState.unifiedTokenVaults[unifiedTokenID]
 			if !ok {
@@ -321,7 +324,7 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 			}
 
 			// check vault enough for process this waiting unshield req
-			isEnoughVault := checkVaultForWaitUnshieldReq(vaults, waitingUnshieldReq.GetData())
+			isEnoughVault, lockedVaultAmts[unifiedTokenID] = checkVaultForWaitUnshieldReq(vaults, waitingUnshieldReq.GetData(), lockedVaultAmts[unifiedTokenID])
 			if !isEnoughVault {
 				continue
 			}
