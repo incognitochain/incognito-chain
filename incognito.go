@@ -120,7 +120,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	//check if prune flag is available
 	if config.Config().StatePrune {
-		if err := pruner.NewPrunerWithValue(db, filepath.Join(cfg.DataDir, "state_bloom")).Prune(); err != nil {
+		if err := pruner.NewPrunerWithValue(db).Prune(); err != nil {
 			panic(err)
 		}
 	}

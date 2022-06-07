@@ -14,12 +14,11 @@ import (
 )
 
 type Pruner struct {
-	db            map[int]incdb.Database
-	stateBloomDir string
-	stateBlooms   map[int]*trie.StateBloom
+	db          map[int]incdb.Database
+	stateBlooms map[int]*trie.StateBloom
 }
 
-func NewPrunerWithValue(db map[int]incdb.Database, stateBloomDir string) *Pruner {
+func NewPrunerWithValue(db map[int]incdb.Database) *Pruner {
 	stateBlooms := make(map[int]*trie.StateBloom)
 	for i := 0; i < config.Param().ActiveShards; i++ {
 		stateBloom, err := trie.NewStateBloomWithSize(2048)
@@ -30,9 +29,8 @@ func NewPrunerWithValue(db map[int]incdb.Database, stateBloomDir string) *Pruner
 	}
 
 	return &Pruner{
-		db:            db,
-		stateBloomDir: stateBloomDir,
-		stateBlooms:   stateBlooms,
+		db:          db,
+		stateBlooms: stateBlooms,
 	}
 }
 
@@ -48,7 +46,6 @@ func (p *Pruner) Prune() error {
 func (p *Pruner) prune(sID int) error {
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
-	//stateBloomDir := filepath.Join(p.stateBloomDir, "shard_"+strconv.Itoa(sID))
 
 	//restore best views and final view from database
 	allViews := []*blockchain.ShardBestState{}
@@ -77,21 +74,12 @@ func (p *Pruner) prune(sID int) error {
 			panic(err)
 		}
 		//Retrieve all state tree for this state
-		err = v.GetCopiedTransactionStateDB().Retrieve(true, false, p.stateBlooms[sID])
+		err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, p.stateBlooms[sID])
 		if err != nil {
 			panic(err)
 		}
 		Logger.log.Infof("[state-prune] Finish retrieve view %s", v.Hash().String())
 	}
-
-	/*// If the state bloom filter is already committed previously,*/
-	/*// reuse it for pruning instead of generating a new one. It's*/
-	/*// mandatory because a part of state may already be deleted,*/
-	/*// the recovery procedure is necessary.*/
-	/*_, err = findBloomFilter(stateBloomDir)*/
-	/*if err != nil {*/
-	/*return err*/
-	/*}*/
 
 	// get last pruned height before
 	var lastPrunedHeight uint64
@@ -105,6 +93,8 @@ func (p *Pruner) prune(sID int) error {
 	}
 	if lastPrunedHeight == 0 {
 		lastPrunedHeight = 1
+	} else {
+		lastPrunedHeight++
 	}
 	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
 	// delete all nodes which are not in state bloom
@@ -118,22 +108,19 @@ func (p *Pruner) prune(sID int) error {
 			panic(err)
 		}
 		sRH := &blockchain.ShardRootHash{}
-		err = json.Unmarshal(data, sRH)
-		if err != nil {
+		if err = json.Unmarshal(data, sRH); err != nil {
 			panic(err)
 		}
 		sDB, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 		if err != nil {
 			panic(err)
 		}
-		err = sDB.Retrieve(false, true, p.stateBlooms[sID])
-		if err != nil {
+		if err = sDB.Retrieve(db, false, true, p.stateBlooms[sID]); err != nil {
+			panic(err)
+		}
+		if err = rawdbv2.StoreLastPrunedHeight(db, shardID, common.Uint64ToBytes(height)); err != nil {
 			panic(err)
 		}
 	}
-	return nil
-}
-
-func (p *Pruner) recoverPruning(stateBloomPath string) error {
 	return nil
 }
