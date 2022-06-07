@@ -1117,14 +1117,13 @@ func addWaitingUnshieldReq(state *State, waitingUnshieldReq *statedb.BridgeAggWa
 	return state
 }
 
-func deleteWaitingUnshieldReq(state *State, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, unifiedTokenID common.Hash, indexReq int) (*State, error) {
+func deleteWaitingUnshieldReq(state *State, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, unifiedTokenID common.Hash) (*State, error) {
 	tmpReqs := state.waitingUnshieldReqs[unifiedTokenID]
-	if indexReq == -1 {
-		for i, req := range tmpReqs {
-			if bytes.Equal(req.GetUnshieldID().Bytes(), waitingUnshieldReq.GetUnshieldID().Bytes()) {
-				indexReq = i
-				break
-			}
+	indexReq := -1
+	for i, req := range tmpReqs {
+		if bytes.Equal(req.GetUnshieldID().Bytes(), waitingUnshieldReq.GetUnshieldID().Bytes()) {
+			indexReq = i
+			break
 		}
 	}
 	if indexReq == -1 {
@@ -1196,7 +1195,6 @@ func updateStateForUnshield(
 	unifiedTokenID common.Hash,
 	waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq,
 	statusStr string,
-	idxDeletedWaitingUnshieldReq int,
 ) (*State, error) {
 	vaults, err := state.CloneVaultsByUnifiedTokenID(unifiedTokenID)
 	if err != nil {
@@ -1217,7 +1215,7 @@ func updateStateForUnshield(
 	case common.FilledStatusStr:
 		{
 			// delete from waiting list
-			state, err = deleteWaitingUnshieldReq(state, waitingUnshieldReq, unifiedTokenID, idxDeletedWaitingUnshieldReq)
+			state, err = deleteWaitingUnshieldReq(state, waitingUnshieldReq, unifiedTokenID)
 			if err != nil {
 				return state, err
 			}
