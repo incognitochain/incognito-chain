@@ -92,8 +92,8 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 		if data.IncTokenID.IsZeroValue() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("IncTokenID cannot be empty"))
 		}
-		if usedTokenIDs[data.IncTokenID] {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Duplicate tokenID %s", data.IncTokenID.String()))
+		if data.IncTokenID.String() == request.UnifiedTokenID.String() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("IncTokenID duplicate with tokenID %s", data.IncTokenID.String()))
 		}
 		usedTokenIDs[data.IncTokenID] = true
 		if data.BurningAmount < data.MinExpectedAmount {

@@ -73,22 +73,19 @@ func (request *ShieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Transac
 }
 
 func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	usedTokenIDs := make(map[common.Hash]bool)
 	if request.UnifiedTokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, errors.New("UnifiedTokenID can not be empty"))
 	}
 	if len(request.Data) <= 0 || len(request.Data) > config.Param().BridgeAggParam.MaxLenOfPath {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
-	usedTokenIDs[request.UnifiedTokenID] = true
 	for _, data := range request.Data {
 		if data.IncTokenID.IsZeroValue() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, errors.New("IncTokenID can not be empty"))
 		}
-		if usedTokenIDs[data.IncTokenID] {
-			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Duplicate tokenID %s", data.IncTokenID.String()))
+		if data.IncTokenID.String() == request.UnifiedTokenID.String() {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("IncTokenID duplicate with unifiedTokenID %s", data.IncTokenID.String()))
 		}
-		usedTokenIDs[data.IncTokenID] = true
 	}
 	return true, true, nil
 }
