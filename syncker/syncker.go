@@ -580,6 +580,10 @@ func (blk *TmpBlock) GetPrevHash() common.Hash {
 	return blk.PreHash
 }
 
+func (blk *TmpBlock) FullHashString() string {
+	return blk.Hash().String()
+}
+
 func (blk *TmpBlock) GetShardID() int {
 	return blk.ShardID
 }
