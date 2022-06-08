@@ -2,10 +2,8 @@ package pruner
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -47,16 +45,17 @@ func (p *Pruner) prune(sID int) error {
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
 
+	Logger.log.Infof("[state-prune] Start prune for shardID %v", sID)
 	//restore best views and final view from database
 	allViews := []*blockchain.ShardBestState{}
 	views, err := rawdbv2.GetShardBestState(db, shardID)
 	if err != nil {
-		fmt.Println("debug Cannot see shard best state")
+		Logger.log.Info("debug Cannot see shard best state")
 		return err
 	}
 	err = json.Unmarshal(views, &allViews)
 	if err != nil {
-		fmt.Println("debug Cannot unmarshall shard best state", string(views))
+		Logger.log.Info("debug Cannot unmarshall shard best state", string(views))
 		return err
 	}
 	var finalHeight uint64
@@ -71,58 +70,61 @@ func (p *Pruner) prune(sID int) error {
 		Logger.log.Infof("[state-prune] Start retrieve view %s", v.BestBlockHash.String())
 		err = v.InitStateRootHash(db)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		//Retrieve all state tree for this state
-		err = v.GetCopiedTransactionStateDB().Retrieve(db, false, false, p.stateBlooms[sID]) // TODO: @tin fix here
+		err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, p.stateBlooms[sID])
 		if err != nil {
-			panic(err)
+			return err
 		}
 		Logger.log.Infof("[state-prune] Finish retrieve view %s", v.BestBlockHash.String())
 	}
-
-	panic(100)
-
 	// get last pruned height before
-	var lastPrunedHeight uint64
+	var count, lastPrunedHeight uint64
 	temp, err := rawdbv2.GetLastPrunedHeight(db, shardID)
 	if err == nil {
-		height, err := common.BytesToUint64(temp)
+		err := json.Unmarshal(temp, &lastPrunedHeight)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		lastPrunedHeight = height
 	}
 	if lastPrunedHeight == 0 {
 		lastPrunedHeight = 1
 	} else {
 		lastPrunedHeight++
 	}
+	Logger.log.Infof("[state-prune] height %v", lastPrunedHeight)
 	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
 	// delete all nodes which are not in state bloom
 	for height := lastPrunedHeight; height < finalHeight; height++ {
+		count++
 		h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(db, shardID, height)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		data, err := rawdbv2.GetShardRootsHash(db, shardID, *h)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		sRH := &blockchain.ShardRootHash{}
 		if err = json.Unmarshal(data, sRH); err != nil {
-			panic(err)
+			return err
 		}
 		sDB, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 		if err != nil {
-			panic(err)
+			continue
 		}
 		if err = sDB.Retrieve(db, false, true, p.stateBlooms[sID]); err != nil {
-			panic(err)
+			return err
 		}
-		if err = rawdbv2.StoreLastPrunedHeight(db, shardID, common.Uint64ToBytes(height)); err != nil {
-			panic(err)
+		if err = rawdbv2.StoreLastPrunedHeight(db, shardID, height); err != nil {
+			return err
+		}
+		if count == 100 {
+			Logger.log.Infof("[state-prune] Finish prune for height %v", height)
+			count = 0
 		}
 	}
+	Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
 	return nil
 }

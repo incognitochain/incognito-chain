@@ -119,7 +119,6 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	//check if prune flag is available
-	Logger.log.Info("[state-prune] config.Config().StatePrune:", config.Config().StatePrune)
 	if config.Config().StatePrune {
 		if err := pruner.NewPrunerWithValue(db).Prune(); err != nil {
 			panic(err)
