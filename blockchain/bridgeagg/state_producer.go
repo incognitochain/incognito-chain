@@ -311,9 +311,12 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 	clonedState := state.Clone()
 	insts := [][]string{}
 	var err error
+	var isEnoughVault bool
+	lockedVaultAmts := map[common.Hash]map[common.Hash]uint64{}
 
 	for unifiedTokenID, waitingUnshieldReqs := range state.waitingUnshieldReqs {
-		for i, waitingUnshieldReq := range waitingUnshieldReqs {
+		lockedVaultAmts[unifiedTokenID] = map[common.Hash]uint64{}
+		for _, waitingUnshieldReq := range waitingUnshieldReqs {
 			vaults, ok := clonedState.unifiedTokenVaults[unifiedTokenID]
 			if !ok {
 				Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", unifiedTokenID)
@@ -321,13 +324,13 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 			}
 
 			// check vault enough for process this waiting unshield req
-			isEnoughVault := checkVaultForWaitUnshieldReq(vaults, waitingUnshieldReq.GetData())
+			isEnoughVault, lockedVaultAmts[unifiedTokenID] = checkVaultForWaitUnshieldReq(vaults, waitingUnshieldReq.GetData(), lockedVaultAmts[unifiedTokenID])
 			if !isEnoughVault {
 				continue
 			}
 
 			// update state
-			clonedState, err = updateStateForUnshield(clonedState, unifiedTokenID, waitingUnshieldReq, common.FilledStatusStr, i)
+			clonedState, err = updateStateForUnshield(clonedState, unifiedTokenID, waitingUnshieldReq, common.FilledStatusStr)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Update state error: %v", err)
 				continue
@@ -405,7 +408,7 @@ func (sp *stateProducer) unshield(
 	insts = append(insts, unshieldInst)
 
 	// update state
-	clonedState, err = updateStateForUnshield(clonedState, meta.UnifiedTokenID, waitingUnshieldReq, statusStr, -1)
+	clonedState, err = updateStateForUnshield(clonedState, meta.UnifiedTokenID, waitingUnshieldReq, statusStr)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when updating state for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(

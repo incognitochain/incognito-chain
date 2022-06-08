@@ -338,7 +338,7 @@ func (sp *stateProcessor) unshield(
 		statusStr := inst.Status
 
 		// update state
-		state, err := updateStateForUnshield(state, unifiedTokenID, waitingUnshieldReq, statusStr, -1)
+		state, err := updateStateForUnshield(state, unifiedTokenID, waitingUnshieldReq, statusStr)
 		if err != nil {
 			Logger.log.Errorf("Update bridge agg state error: %v", err)
 			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessUpdateStateError, err)

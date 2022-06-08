@@ -142,11 +142,11 @@ func (t BridgeAggParamObject) GetTrie(db DatabaseAccessWarper) Trie {
 }
 
 func (t *BridgeAggParamObject) SetValue(data interface{}) error {
-	newBridgeAggStatus, ok := data.(*BridgeAggParamState)
+	newBridgeAggParam, ok := data.(*BridgeAggParamState)
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeAggParamStateType, reflect.TypeOf(data))
 	}
-	t.state = newBridgeAggStatus
+	t.state = newBridgeAggParam
 	return nil
 }
 
@@ -191,6 +191,5 @@ func (t BridgeAggParamObject) IsDeleted() bool {
 
 // value is either default or nil
 func (t BridgeAggParamObject) IsEmpty() bool {
-	temp := NewBridgeAggParamState()
-	return reflect.DeepEqual(temp, t.state) || t.state == nil
+	return t.state == nil
 }
