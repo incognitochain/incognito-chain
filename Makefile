@@ -32,7 +32,6 @@ prune-mainnet:
 prune-local:
 	INCOGNITO_NETWORK_KEY=$(LOCAL) ./$(BUILD_FILE_NAME) --stateprune
 
-
 test:
 	make build
 	go test ./.../pdexv3

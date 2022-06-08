@@ -61,6 +61,7 @@ func (p *Pruner) prune(sID int) error {
 	var finalHeight uint64
 	//collect tree nodes want to keep, add them to state bloom
 	for _, v := range allViews {
+		Logger.log.Infof("[state-prune] view height %v", v.ShardHeight)
 		if v.ShardHeight == 1 {
 			return nil
 		}
@@ -121,9 +122,10 @@ func (p *Pruner) prune(sID int) error {
 			return err
 		}
 		if count == 100 {
-			Logger.log.Infof("[state-prune] Finish prune for height %v", height)
+			//Logger.log.Infof("[state-prune] Finish prune for height %v", height)
 			count = 0
 		}
+		Logger.log.Infof("[state-prune] Finish prune for height %v", height)
 	}
 	Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
 	return nil

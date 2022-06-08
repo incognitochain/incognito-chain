@@ -1,6 +1,8 @@
 package statedb
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
@@ -9,8 +11,7 @@ import (
 func (stateDB *StateDB) Retrieve(db incdb.Database, shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom) error {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
-	batch := db.NewBatch()
-	//keys := make(map[common.Hash]struct{})
+	keys := make(map[common.Hash]struct{})
 	for it.Next(false) {
 		key := it.Key
 		h := common.Hash{}
@@ -18,7 +19,7 @@ func (stateDB *StateDB) Retrieve(db incdb.Database, shouldAddToStateBloom bool, 
 		if err != nil {
 			return err
 		}
-		//keys[h] = struct{}{}
+		keys[h] = struct{}{}
 		if shouldAddToStateBloom {
 			if err := stateBloom.Put(key, nil); err != nil {
 				return err
@@ -30,7 +31,13 @@ func (stateDB *StateDB) Retrieve(db incdb.Database, shouldAddToStateBloom bool, 
 			} else if ok {
 				continue
 			}
-			if err := batch.Delete(key); err != nil {
+		}
+	}
+	fmt.Println("[state-prune] len(keys):", len(keys))
+	if shouldDelete {
+		batch := db.NewBatch()
+		for key := range keys {
+			if err := batch.Delete(key.Bytes()); err != nil {
 				return err
 			}
 			if batch.ValueSize() >= incdb.IdealBatchSize {
@@ -40,11 +47,11 @@ func (stateDB *StateDB) Retrieve(db incdb.Database, shouldAddToStateBloom bool, 
 				batch.Reset()
 			}
 		}
+		if batch.ValueSize() > 0 {
+			batch.Write()
+			batch.Reset()
+		}
 	}
-	//fmt.Println("[state-prune] len(keys):", len(keys))
-	if shouldDelete && batch.ValueSize() > 0 {
-		batch.Write()
-		batch.Reset()
-	}
+
 	return nil
 }
