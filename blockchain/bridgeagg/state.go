@@ -54,7 +54,7 @@ func NewState() *State {
 	return &State{
 		unifiedTokenVaults:                 make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState),
 		waitingUnshieldReqs:                make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
-		param:                              statedb.NewBridgeAggParamState(),
+		param:                              nil,
 		deletedWaitingUnshieldReqKeyHashes: []common.Hash{},
 		newWaitingUnshieldReqs:             make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
 	}
@@ -81,7 +81,9 @@ func (s *State) Clone() *State {
 	res := NewState()
 	res.unifiedTokenVaults = s.CloneUnifiedTokenVaults()
 	res.waitingUnshieldReqs = s.CloneWaitingUnshieldReqs()
-	res.param = s.param.Clone()
+	if s.param != nil {
+		res.param = s.param.Clone()
+	}
 
 	// reset temporary state
 	// res.newWaitingUnshieldReqs = s.CloneNewWaitingUnshieldReqs()

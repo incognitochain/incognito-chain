@@ -122,8 +122,8 @@ func newBridgeAggParamObjectWithValue(db *StateDB, key common.Hash, data interfa
 
 func GenerateBridgeAggParamObjectKey() common.Hash {
 	prefixHash := GetBridgeAggParamPrefix()
-	// valueHash := common.HashH()
-	return common.BytesToHash(prefixHash)
+	valueHash := common.HashH([]byte{})
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (t BridgeAggParamObject) GetVersion() int {

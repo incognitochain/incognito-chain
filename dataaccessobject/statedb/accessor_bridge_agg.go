@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 )
 
 func TrackBridgeAggStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
@@ -77,8 +76,7 @@ func GetBridgeAggParam(stateDB *StateDB) (*BridgeAggParamState, error) {
 		return nil, NewStatedbError(GetBridgeAggStatusError, err)
 	}
 	if !has {
-		defaultParam := NewBridgeAggParamStateWithValue(config.Param().BridgeAggParam.DefaultPercentFeeWithDecimal)
-		return defaultParam, nil
+		return nil, nil
 	}
 	return param, nil
 }

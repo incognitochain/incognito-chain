@@ -2,10 +2,12 @@ package bridgeagg
 
 import (
 	"bytes"
+	"errors"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
@@ -47,6 +49,11 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	insts := [][]string{}
 	var err error
 	ac := env.AccumulatedValues()
+
+	// init bridge agg param if it's nil
+	if m.state.param == nil {
+		m.InitBridgeAggParamDefault()
+	}
 
 	// build instruction for convert actions
 	for shardID, actions := range env.ConvertActions() {
@@ -106,6 +113,12 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 }
 
 func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
+	// init bridge agg param if it's nil
+	if m.state.param == nil {
+		m.InitBridgeAggParamDefault()
+	}
+
+	// process insts
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 	for _, content := range insts {
 		if len(content) == 0 {
@@ -276,4 +289,12 @@ func (m *Manager) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*st
 		}
 	}
 	return res, ac, err
+}
+
+func (m *Manager) InitBridgeAggParamDefault() error {
+	if m.state.param != nil {
+		return errors.New("Can not set bridge agg param to valued param")
+	}
+	m.state.param = statedb.NewBridgeAggParamStateWithValue(config.Param().BridgeAggParam.DefaultPercentFeeWithDecimal)
+	return nil
 }

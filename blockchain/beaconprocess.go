@@ -935,10 +935,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 
-	// update bridge aggreator state
-	// always process bridgeAggState before update other process for bridge instructions
-	// TODO: 0xkraken
-	// newBestState.bridgeAggState.ClearCache()
+	// execute, store bridge agg instructions
 	err = newBestState.bridgeAggManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
@@ -1063,6 +1060,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if newBestState.bridgeAggManager != nil {
 		diffState, newVaults, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
+		fmt.Println("HHH : diffState", diffState)
 		if err != nil {
 			Logger.log.Errorf("Error get diff bridge agg: %v", err)
 			return err
