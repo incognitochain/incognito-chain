@@ -94,7 +94,7 @@ func (p *Pruner) prune(sID int) error {
 	} else {
 		lastPrunedHeight++
 	}
-	Logger.log.Infof("[state-prune] height %v", lastPrunedHeight)
+	Logger.log.Infof("[state-prune] begin pruning from height %v", lastPrunedHeight)
 	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
 	// delete all nodes which are not in state bloom
 	for height := lastPrunedHeight; height < finalHeight; height++ {
@@ -122,10 +122,9 @@ func (p *Pruner) prune(sID int) error {
 			return err
 		}
 		if count == 100 {
-			//Logger.log.Infof("[state-prune] Finish prune for height %v", height)
+			Logger.log.Infof("[state-prune] Finish prune for height %v", height)
 			count = 0
 		}
-		Logger.log.Infof("[state-prune] Finish prune for height %v", height)
 	}
 	Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
 	return nil
