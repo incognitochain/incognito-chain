@@ -28,7 +28,11 @@ func NewIterator(it NodeIterator) *Iterator {
 }
 
 // Next moves the iterator forward one key-value entry.
-func (it *Iterator) Next() bool {
+func (it *Iterator) Next(skipMiddleNode bool) bool {
+	if !skipMiddleNode {
+		it.Key = it.nodeIt.Hash().Bytes()
+		return it.nodeIt.Next(true)
+	}
 	for it.nodeIt.Next(true) {
 		if it.nodeIt.Leaf() {
 			it.Key = it.nodeIt.LeafKey()

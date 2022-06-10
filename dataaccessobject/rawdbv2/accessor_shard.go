@@ -150,3 +150,20 @@ func GetShardRootsHash(db incdb.KeyValueReader, shardID byte, hash common.Hash) 
 	key := GetShardRootsHashKey(shardID, hash)
 	return db.Get(key)
 }
+
+func StoreLastPrunedHeight(db incdb.KeyValueWriter, shardID byte, v interface{}) error {
+	key := GetLastPrunedHeightKey(shardID)
+	val, err := json.Marshal(v)
+	if err != nil {
+		return NewRawdbError(StoreShardLastPrunedHeightError, err)
+	}
+	if err := db.Put(key, val); err != nil {
+		return NewRawdbError(StoreShardLastPrunedHeightError, err)
+	}
+	return nil
+}
+
+func GetLastPrunedHeight(db incdb.KeyValueReader, shardID byte) ([]byte, error) {
+	key := GetLastPrunedHeightKey(shardID)
+	return db.Get(key)
+}

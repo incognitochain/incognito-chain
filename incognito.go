@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
+	"github.com/incognitochain/incognito-chain/pruner"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -87,6 +88,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	config.LoadParam()
+
 	portal.SetupParam()
 	err := wallet.InitPublicKeyBurningAddressByte()
 	if err != nil {
@@ -116,6 +118,14 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
+	//check if prune flag is available
+	if config.Config().StatePrune {
+		if err := pruner.NewPrunerWithValue(db).Prune(); err != nil {
+			panic(err)
+		}
+		return nil
+	}
+
 	// Create db for mempool and use it
 	consensusDB, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, "consensus"))
 	if err != nil {
