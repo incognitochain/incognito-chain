@@ -68,19 +68,23 @@ func (p *Pruner) prune(sID int) error {
 	} else {
 		lastPrunedHeight++
 	}
+	var totalNodes, totalSize int
 	Logger.log.Infof("[state-prune] begin pruning from height %v", lastPrunedHeight)
 	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
 	// delete all nodes which are not in state bloom
 	for height := lastPrunedHeight; height < finalHeight; height++ {
-		err := p.pruneByHeight(height, db, shardID)
+		count, size, err := p.pruneByHeight(height, db, shardID)
 		if err != nil {
 			return err
 		}
-		if height%50 == 0 {
-			Logger.log.Infof("[state-prune] Finish prune for height %v", height)
+		totalNodes += count
+		totalSize += size
+		if height%500000 == 0 {
+			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with size %v", height, totalNodes, totalSize)
 		}
 	}
-	if err = p.compact(db); err != nil {
+	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", totalNodes, totalSize)
+	if err = p.compact(db, totalNodes); err != nil {
 		return err
 	}
 	Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
@@ -116,7 +120,7 @@ func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database) (uint64,
 			return 0, err
 		}
 		//Retrieve all state tree for this state
-		err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, p.stateBlooms[int(shardID)])
+		_, _, err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, p.stateBlooms[int(shardID)])
 		if err != nil {
 			return 0, err
 		}
@@ -125,44 +129,47 @@ func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database) (uint64,
 	return finalHeight, nil
 }
 
-func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte) error {
+func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte) (int, int, error) {
 	h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(db, shardID, height)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 	data, err := rawdbv2.GetShardRootsHash(db, shardID, *h)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 	sRH := &blockchain.ShardRootHash{}
 	if err = json.Unmarshal(data, sRH); err != nil {
-		return err
+		return 0, 0, err
 	}
+	var count, size int
 	sDB, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
 	if err != nil {
-		return nil
+		return 0, 0, nil
 	}
-	if err = sDB.Retrieve(db, false, true, p.stateBlooms[int(shardID)]); err != nil {
-		return err
+	if count, size, err = sDB.Retrieve(db, false, true, p.stateBlooms[int(shardID)]); err != nil {
+		return 0, 0, err
 	}
 	if err = rawdbv2.StoreLastPrunedHeight(db, shardID, height); err != nil {
-		return err
+		return 0, 0, err
 	}
-	return nil
+	return count, size, nil
 }
 
-func (p *Pruner) compact(db incdb.Database) error {
-	for b := 0x00; b <= 0xf0; b += 0x10 {
-		var (
-			start = []byte{byte(b)}
-			end   = []byte{byte(b + 0x10)}
-		)
-		if b == 0xf0 {
-			end = nil
-		}
-		if err := db.Compact(start, end); err != nil {
-			Logger.log.Error("Database compaction failed", "error", err)
-			return err
+func (p *Pruner) compact(db incdb.Database, count int) error {
+	if count >= rangeCompactionThreshold {
+		for b := 0x00; b <= 0xf0; b += 0x10 {
+			var (
+				start = []byte{byte(b)}
+				end   = []byte{byte(b + 0x10)}
+			)
+			if b == 0xf0 {
+				end = nil
+			}
+			if err := db.Compact(start, end); err != nil {
+				Logger.log.Error("Database compaction failed", "error", err)
+				return err
+			}
 		}
 	}
 	return nil

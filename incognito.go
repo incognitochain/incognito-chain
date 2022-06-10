@@ -123,6 +123,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		if err := pruner.NewPrunerWithValue(db).Prune(); err != nil {
 			panic(err)
 		}
+		return nil
 	}
 
 	// Create db for mempool and use it
