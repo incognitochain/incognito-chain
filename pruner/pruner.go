@@ -79,7 +79,7 @@ func (p *Pruner) prune(sID int) error {
 		}
 		totalNodes += count
 		totalSize += size
-		if height%500000 == 0 {
+		if height%10000 == 0 {
 			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with size %v", height, totalNodes, totalSize)
 		}
 	}
