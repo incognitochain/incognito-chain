@@ -28,10 +28,14 @@ func NewIterator(it NodeIterator) *Iterator {
 }
 
 // Next moves the iterator forward one key-value entry.
-func (it *Iterator) Next(skipMiddleNode bool) bool {
+func (it *Iterator) Next(skipMiddleNode, descend bool) bool {
 	if !skipMiddleNode {
-		it.Key = it.nodeIt.Hash().Bytes()
-		return it.nodeIt.Next(true)
+		hasNext := it.nodeIt.Next(descend)
+		if hasNext {
+			it.Key = it.nodeIt.Hash().Bytes()
+			return true
+		}
+		return false
 	}
 	for it.nodeIt.Next(true) {
 		if it.nodeIt.Leaf() {
@@ -279,7 +283,8 @@ func (it *nodeIterator) peek(descend bool) (*nodeIteratorState, *int, []byte, er
 		state, path, ok := it.nextChild(parent, ancestor)
 		if ok {
 			if err := state.resolve(it.trie, path); err != nil {
-				return parent, &parent.index, path, err
+				parent.index++
+				continue
 			}
 			return state, &parent.index, path, nil
 		}
