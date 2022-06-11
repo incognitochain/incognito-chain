@@ -17,10 +17,14 @@ func (stateDB *StateDB) Retrieve(
 	keyShouldBeDeleted := make(map[common.Hash]struct{})
 	var totalSize int
 	keys := make(map[common.Hash]struct{})
-	for it.Next(false) {
+	cnt := 0
+	descend := true
+	for it.Next(false, descend) {
+		descend = true
 		if len(it.Key) == 0 {
 			continue
 		}
+		cnt++
 		key := it.Key
 		h := common.Hash{}
 		err := h.SetBytes(key)
@@ -28,6 +32,10 @@ func (stateDB *StateDB) Retrieve(
 			return 0, 0, err
 		}
 		if shouldAddToStateBloom {
+			if cnt%1000 == 0 {
+				fmt.Println(cnt)
+			}
+
 			keys[h] = struct{}{}
 			temp, _ := db.Get(key)
 			totalSize += len(temp) + len(key)
@@ -39,6 +47,7 @@ func (stateDB *StateDB) Retrieve(
 			if ok, err := stateBloom.Contain(key); err != nil {
 				return 0, 0, err
 			} else if ok {
+				descend = false
 				continue
 			}
 			keyShouldBeDeleted[h] = struct{}{}
