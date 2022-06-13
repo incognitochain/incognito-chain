@@ -87,16 +87,16 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	}
 	res = append(res, insts...)
 
-	// build instruction for new unshielding actions
-	for shardID, actions := range env.UnshieldActions() {
-		for _, action := range actions {
-			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
-			if err != nil {
-				return [][]string{}, nil, err
-			}
-			res = append(res, insts...)
-		}
-	}
+	// // build instruction for new unshielding actions
+	// for shardID, actions := range env.UnshieldActions() {
+	// 	for _, action := range actions {
+	// 		insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
+	// 		if err != nil {
+	// 			return [][]string{}, nil, err
+	// 		}
+	// 		res = append(res, insts...)
+	// 	}
+	// }
 
 	// build instruction for modifying param actions
 	for shardID, actions := range env.ModifyParamActions() {
@@ -110,6 +110,26 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	}
 	Logger.log.Info("bridgeagg instructions:", res)
 	return res, ac, nil
+}
+
+func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconHeight uint64, unshieldInsts [][]string) ([][]string, error) {
+	res := [][]string{}
+	insts := [][]string{}
+	var err error
+
+	// build instruction for new unshielding actions
+	for shardID, actions := range unshieldInsts {
+		for _, action := range actions {
+			insts, m.state, err = m.producer.unshield(action, m.state, beaconHeight, byte(shardID), stateDB)
+			if err != nil {
+				return [][]string{}, err
+			}
+			res = append(res, insts...)
+		}
+	}
+
+	Logger.log.Info("bridgeagg new unshield instructions:", res)
+	return res, nil
 }
 
 func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
@@ -188,7 +208,6 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 	return nil
 }
 
-// TODO: 0xkraken
 func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
 	// store new unifiedTokens
 	for unifiedTokenID := range newUnifiedTokens {

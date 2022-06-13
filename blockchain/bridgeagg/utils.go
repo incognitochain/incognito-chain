@@ -1283,3 +1283,21 @@ func updateStateForModifyParam(state *State, newPercentFeeWithDec uint64) *State
 	state.param.SetPercentFeeWithDec(newPercentFeeWithDec)
 	return state
 }
+
+func CollectBridgeAggBurnInsts(insts [][]string) []string {
+	unshieldInsts := []string{}
+	for _, inst := range insts {
+		if len(inst) < 2 {
+			continue
+		}
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		if metaType == metadataCommon.BurningUnifiedTokenRequestMeta {
+			unshieldInsts = append(unshieldInsts, inst[1])
+		}
+	}
+	return unshieldInsts
+}

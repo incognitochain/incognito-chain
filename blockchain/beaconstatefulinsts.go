@@ -85,8 +85,8 @@ func collectStatefulActions(
 			metadataCommon.PortalV4UnshieldingRequestMeta,
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
-			metadataCommon.BridgeAggModifyParamMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
+			metadataCommon.BridgeAggModifyParamMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta:
@@ -177,7 +177,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	sort.Ints(keys)
 
 	// bridge agg actions collector
-	unshieldActions := make([][]string, beaconBestState.ActiveShards)
+	// unshieldActions := make([][]string, beaconBestState.ActiveShards)
 	shieldActions := make([][]string, beaconBestState.ActiveShards)
 	convertActions := make([][]string, beaconBestState.ActiveShards)
 	modifyParamActions := make([][]string, beaconBestState.ActiveShards)
@@ -348,8 +348,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
-			case metadataCommon.BurningUnifiedTokenRequestMeta:
-				unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
+			// case metadataCommon.BurningUnifiedTokenRequestMeta:
+			// 	unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
 			default:
 				continue
 			}
@@ -402,12 +402,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, portalInsts...)
 	}
 
+	// Bridge aggregator instructions (don't build unshield instructions here)
 	bridgeAggEnv := bridgeagg.
 		NewStateEnvBuilder().
 		BuildConvertActions(convertActions).
 		BuildModifyParamActions(modifyParamActions).
 		BuildShieldActions(shieldActions).
-		BuildUnshieldActions(unshieldActions).
+		// BuildUnshieldActions(unshieldActions).
 		BuildAccumulatedValues(accumulatedValues).
 		BuildBeaconHeight(beaconHeight).
 		BuildStateDBs(sDBs).

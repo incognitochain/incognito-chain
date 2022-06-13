@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -156,7 +157,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	return newBeaconBlock, nil
 }
 
-//beacon should only generate bridge instruction when curView is finality (generate instructionf from checkpoint to curView)
+//beacon should only generate bridge (unshield) instruction when curView is finality (generate instructions from checkpoint to curView)
 func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState) bool {
 	if curView.GetBlock().Hash().IsEqual(blockchain.BeaconChain.GetFinalView().GetBlock().Hash()) {
 		return true
@@ -164,7 +165,11 @@ func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *Bea
 	return false
 }
 
-func (blockchain *BlockChain) generateBridgeInstruction(curView *BeaconBestState, currentShardStateBlock map[byte][]*types.ShardBlock, newBeaconBlock *types.BeaconBlock) ([][]string, error) {
+func (blockchain *BlockChain) generateBridgeInstruction(
+	curView *BeaconBestState,
+	currentShardStateBlock map[byte][]*types.ShardBlock,
+	newBeaconBlock *types.BeaconBlock,
+) ([][]string, error) {
 	keys := []int{}
 	bridgeInstructions := [][]string{}
 	for shardID, _ := range currentShardStateBlock {
@@ -175,6 +180,7 @@ func (blockchain *BlockChain) generateBridgeInstruction(curView *BeaconBestState
 	for _, v := range keys {
 		shardID := byte(v)
 		for _, shardBlock := range currentShardStateBlock[shardID] {
+			// TODO 0xkraken: improve, only re-build bridge unshield instructions
 			instructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(
 				shardBlock.Body.Transactions, blockchain,
 				shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight, false)
@@ -184,6 +190,7 @@ func (blockchain *BlockChain) generateBridgeInstruction(curView *BeaconBestState
 			}
 			instructions = append(instructions, shardBlock.Body.Instructions...)
 
+			// build bridge unshield instructions
 			bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
 				curView.GetBeaconFeatureStateDB(),
 				shardID,
@@ -194,6 +201,7 @@ func (blockchain *BlockChain) generateBridgeInstruction(curView *BeaconBestState
 				BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())
 				return nil, err
 			}
+
 			// Pick instruction with shard committee's pubkeys to save to beacon block
 			confirmInsts := pickBridgeSwapConfirmInst(instructions)
 			if len(confirmInsts) > 0 {
@@ -207,6 +215,63 @@ func (blockchain *BlockChain) generateBridgeInstruction(curView *BeaconBestState
 	return bridgeInstructions, nil
 }
 
+// generateBridgeAggInstruction creates bridge agg unshield instructions for finalized unshield reqs
+func (blockchain *BlockChain) generateBridgeAggInstruction(
+	curView *BeaconBestState,
+	currentShardStateBlockForBridgeAgg map[uint64]map[byte][]*types.ShardBlock,
+) ([][]string, error) {
+	shardIDs := []byte{}
+	for i := 0; i < common.MaxShardNumber; i++ {
+		shardIDs = append(shardIDs, byte(i))
+	}
+	// sort beacon height ascending
+	beaconHeights := []uint64{}
+	for beaconHeight := range currentShardStateBlockForBridgeAgg {
+		beaconHeights = append(beaconHeights, beaconHeight)
+	}
+	sort.Slice(beaconHeights, func(i, j int) bool {
+		return beaconHeights[i] < beaconHeights[j]
+	})
+
+	bridgeAggInstructions := [][]string{}
+
+	for _, beaconHeight := range beaconHeights {
+		shardBlks := currentShardStateBlockForBridgeAgg[beaconHeight]
+		unshieldActions := make([][]string, common.MaxShardNumber)
+		for _, shardID := range shardIDs {
+			if shardBlks[shardID] == nil || len(shardBlks[shardID]) == 0 {
+				continue
+			}
+			shardInsts := [][]string{}
+			for _, shardBlock := range shardBlks[shardID] {
+				// TODO 0xkraken: improve, only re-build bridge unshield instructions
+				instructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(
+					shardBlock.Body.Transactions, blockchain,
+					shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight, false)
+				if err != nil {
+					BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())
+					return nil, err
+				}
+				//TODO: why need to append with shard instructions?
+				shardInsts = append(shardInsts, instructions...)
+				shardInsts = append(shardInsts, shardBlock.Body.Instructions...)
+			}
+			// collect bridge unshield instructions
+			unshieldActions[shardID] = bridgeagg.CollectBridgeAggBurnInsts(shardInsts)
+		}
+
+		// build bridge aggregator unshield instructions
+		newInsts, err := curView.bridgeAggManager.BuildNewUnshieldInstructions(curView.GetBeaconFeatureStateDB(), beaconHeight, unshieldActions)
+		if err != nil {
+			BLogger.log.Errorf("Build bridge agg unshield instructions failed: %s", err.Error())
+			return nil, err
+		}
+		bridgeAggInstructions = append(bridgeAggInstructions, newInsts...)
+	}
+
+	return bridgeAggInstructions, nil
+}
+
 // GenerateBeaconBlockBody generate beacon instructions and shard states
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
@@ -215,6 +280,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	allShardBlocks map[byte][]*types.ShardBlock,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
+	bridgeAggInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
 	shardStates := make(map[byte][]types.ShardState)
@@ -227,7 +293,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	pdexReward := uint64(0)
 
 	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
-
 		featureStateDB := curView.GetBeaconFeatureStateDB()
 		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
 		if err != nil {
@@ -338,35 +403,42 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		allPdexTxs,
 		pdexReward,
 	)
-
 	if err != nil {
 		return nil, nil, err
 	}
 
-	//build bridge instruction
+	// build bridge unshielding instruction
+	retrievedShardBlockForBridge := allShardBlocks
+	retrievedShardBlockForBridgeAgg := map[uint64]map[byte][]*types.ShardBlock{
+		newBeaconBlock.Header.Height: allShardBlocks,
+	}
+
 	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
 		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
 			//get data from checkpoint to final view
 			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
-			retrievedShardBlockForBridge, err := blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
+			retrievedShardBlockForBridge, retrievedShardBlockForBridgeAgg, err = blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildBridgeError, err)
 			}
-			bridgeInstructions, err = blockchain.generateBridgeInstruction(curView, retrievedShardBlockForBridge, newBeaconBlock)
-			if err != nil {
-				return nil, nil, NewBlockChainError(BuildBridgeError, err)
-			}
-			Logger.log.Info("[Bridge Debug] bridgeInstructions", len(bridgeInstructions), bridgeInstructions)
 		}
-	} else {
-		bridgeInstructions, err = blockchain.generateBridgeInstruction(curView, allShardBlocks, newBeaconBlock)
-		Logger.log.Info("[Bridge Debug] Generate instruction normal", len(bridgeInstructions))
-		if err != nil {
-			return nil, nil, NewBlockChainError(BuildBridgeError, err)
-		}
+	}
+	Logger.log.Infof("[Bridge Debug] retrievedShardBlockForBridge %+v", retrievedShardBlockForBridge)
+	Logger.log.Infof("[Bridge Debug] retrievedShardBlockForBridgeAgg %+v", retrievedShardBlockForBridgeAgg)
+
+	bridgeInstructions, err = blockchain.generateBridgeInstruction(curView, retrievedShardBlockForBridge, newBeaconBlock)
+	Logger.log.Info("[Bridge Debug] Generate bridge unshield instruction", len(bridgeInstructions))
+	if err != nil {
+		return nil, nil, NewBlockChainError(BuildBridgeError, err)
+	}
+	bridgeAggInstructions, err = blockchain.generateBridgeAggInstruction(curView, retrievedShardBlockForBridgeAgg)
+	Logger.log.Info("[Bridge Debug] Generate bridge agg unshield instruction", len(bridgeAggInstructions))
+	if err != nil {
+		return nil, nil, NewBlockChainError(BuildBridgeAggError, err)
 	}
 
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
+	bridgeInstructions = append(bridgeInstructions, bridgeAggInstructions...)
 	shardInstruction.compose()
 
 	//outdatedPendingValidator := map[int][]int{}
