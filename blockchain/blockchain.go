@@ -731,6 +731,7 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 	for _, v := range simulatedMultiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
+	//fmt.Println("debug BackupShardViews", len(allViews), simulatedMultiView.GetFinalView().GetHeight(), simulatedMultiView.GetExpectedFinalView().GetHeight(), simulatedMultiView.GetBestView().GetHeight())
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
@@ -790,7 +791,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if _, err := blockchain.ShardChain[shardID].multiView.AddView(v); err != nil {
 			return errors.New("Restart shard views fail")
 		}
-		Logger.log.Info("Restore shard view", shardID, v.ShardHeight, v.Hash().String())
+		Logger.log.Info("Restore shard ", shardID, v.GetHeight(), v.GetHash().String())
 	}
 
 	if len(blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS()) == 0 {

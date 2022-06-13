@@ -27,6 +27,7 @@ type NodeInterface interface {
 }
 
 type Chain interface {
+	VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error
 	BestViewCommitteeFromBlock() common.Hash
 	GetMultiView() multiview.MultiView
 	GetFinalView() multiview.View
@@ -34,7 +35,7 @@ type Chain interface {
 	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
-	GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData
+	GetBlockConsensusData() map[int]types.BlockConsensusData
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
 	GetMaxBlkCreateTime() time.Duration
@@ -74,7 +75,7 @@ type Chain interface {
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() int
 	GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int)
-	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
+	ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error
 	// GetSigningCommitteesFromBestView must be retrieve from a shard view, because it's based on the committee state version
 	GetSigningCommittees(
 		proposerIndex int,

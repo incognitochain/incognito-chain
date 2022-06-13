@@ -285,7 +285,7 @@ const (
 const (
 	StopAutoStakingAmount    = 0
 	EVMConfirmationBlocks    = 15
-	PLGConfirmationBlocks    = 35
+	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
 )
 

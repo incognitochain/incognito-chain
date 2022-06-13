@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -320,6 +319,17 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
+	//validate ProcessBridgeFromBlock
+	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
+			if beaconBlock.Header.ProcessBridgeFromBlock == nil || (*beaconBlock.Header.ProcessBridgeFromBlock != curView.LastBlockProcessBridge+1) {
+				return NewBlockChainError(BuildBridgeError, fmt.Errorf("Verify ProcessBridgeFromBlock error! Must set, got nil"))
+			}
+		} else if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
+			return NewBlockChainError(BuildBridgeError, fmt.Errorf("Verify ProcessBridgeFromBlock error! Must nil, got set"))
+		}
+	}
+
 	finishSyncInstruction, err := curView.filterAndVerifyFinishSyncInstruction(beaconBlock.Body.Instructions)
 	if err != nil {
 		return NewBlockChainError(FinishSyncInstructionError, err)
@@ -562,9 +572,20 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 				}
-
 			}
 		}
+	}
+
+	//update bridge process
+	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
+			beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight() - 1
+		}
+		Logger.log.Infof("[Bridge Debug] Update LastBlockProcessBridge instant finality set to %v, current process block %v",
+			beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
+	} else {
+		beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight()
+		Logger.log.Info("[Bridge Debug] Update LastBlockProcessBridge normal", beaconBestState.LastBlockProcessBridge, beaconBlock.GetHeight())
 	}
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {
@@ -599,7 +620,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
 		// Reset missing signature counter after finish process the last beacon block in an epoch
-		log.Println("count sig debug 1", beaconBestState.BeaconHeight)
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getNewShardCommitteeFlattenList())
 		beaconBestState.NumberOfShardBlock = make(map[byte]uint)
 		for i := 0; i < beaconBestState.ActiveShards; i++ {

@@ -119,6 +119,10 @@ batch_commit_sync_mode_param:
   trie_node_limit: 1e9
   trie_img_limit: 4e6
 auto_enable_feature:
+  - instantfinality:
+      min_trigger: 4617622
+      force_trigger: 1e9
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 3965040
       force_trigger: 1000000000
@@ -130,3 +134,4 @@ bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
   max_len_of_path: 3
+bc_height_break_point_coin_origin: 4565727

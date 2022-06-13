@@ -14,6 +14,13 @@ func NewShardMultiView() *ShardMultiView {
 	return sv
 }
 
+func (s *ShardMultiView) SimulateAddView(view View) MultiView {
+	sv := &ShardMultiView{}
+	sv.multiView = s.Clone().(*multiView)
+	sv.AddView(view)
+	return sv
+}
+
 func (s *ShardMultiView) AddView(v View) (res int, err error) {
 	added := s.multiView.addView(v)
 	shardBlock := v.GetBlock()

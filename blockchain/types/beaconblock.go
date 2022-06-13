@@ -70,6 +70,9 @@ type BeaconHeader struct {
 
 	//for version 6
 	FinalityHeight uint64 `json:"FinalityHeight"`
+
+	//for version 8, instant finality
+	ProcessBridgeFromBlock *uint64 `json:"integer,omitempty"`
 }
 
 func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
@@ -465,6 +468,12 @@ func (header *BeaconHeader) toString() string {
 
 	if header.Version >= INSTANT_FINALITY_VERSION {
 		//instant finality will move consensus info out of block hash
+		if header.ProcessBridgeFromBlock == nil {
+			res += "0"
+		} else {
+			res += fmt.Sprintf("%v", *header.ProcessBridgeFromBlock)
+		}
+
 	} else {
 		//to compatible with mainnet database, version 3 dont have proposer info
 		if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {

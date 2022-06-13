@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -75,6 +76,7 @@ func init() {
 	dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	bridgeDB = dummyDB.Copy()
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	resetTxTestConfig()
 }
 
 func storeCoins(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, tokenID common.Hash) error {
@@ -197,7 +199,7 @@ func TestTxV2Salary(t *testing.T) {
 				var tempCoin *coin.CoinV2
 				var err error
 				for {
-					tempCoin, err = coin.NewCoinFromPaymentInfo(paymentInfo[i])
+					tempCoin, err = coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i]))
 					otaPublicKeyBytes := tempCoin.GetPublicKey().ToBytesS()
 					// want an OTA in shard 0
 					if otaPublicKeyBytes[31] == 0 {
@@ -258,7 +260,7 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 			// pastCoins are coins we manually store in the dummyDB to simulate the db having OTAs from chaindata
 			pastCoins = make([]coin.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 			for i := range pastCoins {
-				tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)])
+				tempCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)]))
 				So(err, ShouldBeNil)
 				So(tempCoin.IsEncrypted(), ShouldBeFalse)
 
@@ -319,6 +321,9 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 		})
 
 		Convey("should verify & accept transaction", func() {
+			var err error
+			tx, err = tx.startVerifyTx(dummyDB)
+			So(err, ShouldBeNil)
 			// verify the TX
 			isValid, err := tx.ValidateSanityData(nil, nil, nil, 0)
 			So(err, ShouldBeNil)
@@ -379,8 +384,9 @@ func testTxV2DuplicateInput(db *statedb.StateDB, privateKeys []*privacy.PrivateK
 		[]byte{},
 	)
 	malTx := &Tx{}
-	errMalInit := malTx.Init(malFeeParams)
-	So(errMalInit, ShouldBeNil)
+	err := malTx.Init(malFeeParams)
+	So(err, ShouldBeNil)
+	malTx, err = malTx.startVerifyTx(db)
 	// sanity should be fine
 	isValid, err := malTx.ValidateSanityData(nil, nil, nil, 0)
 	So(err, ShouldBeNil)
@@ -403,15 +409,18 @@ func testTxV2InvalidFee(db *statedb.StateDB, privateKeys []*privacy.PrivateKey, 
 	So(sumIn, ShouldBeGreaterThan, sumOut)
 	malFeeParams := tx_generic.NewTxPrivacyInitParams(privateKeys[0],
 		paymentInfoOut, inputCoins,
-		sumIn-sumOut+1111, true,
+		sumIn-sumOut, true,
 		db,
 		nil,
 		nil,
 		[]byte{},
 	)
 	malTx := &Tx{}
-	_ = malTx.Init(malFeeParams)
-
+	err := malTx.Init(malFeeParams)
+	So(err, ShouldBeNil)
+	malTx.Fee = sumIn-sumOut+1111
+	malTx, err = malTx.startVerifyTx(db)
+	So(err, ShouldBeNil)
 	boolParams := make(map[string]bool)
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	boolParams["isNewTransaction"] = true
@@ -421,17 +430,18 @@ func testTxV2InvalidFee(db *statedb.StateDB, privateKeys []*privacy.PrivateKey, 
 }
 
 func testTxV2OneFakeInput(txv2 *Tx, privateKeys []*privacy.PrivateKey, keySets []*incognitokey.KeySet, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, pastCoins []coin.Coin) {
+	jsb, _ := json.MarshalIndent(txv2, "", "\t")
+	logger.Debugf("debug original tx %s %s", txv2.Hash().String(), string(jsb))
 	// likewise, if someone took an already proven tx and swaps one input coin
 	// for another random coin from outside, the tx cannot go through
 	// (here we only meddle with coin-changing - not adding/removing - since length checks are included within mlsag)
 	var err error
-	theProof := txv2.GetProof()
-	inputCoins := theProof.GetInputCoins()
+	inputCoins := txv2.GetProof().GetInputCoins()
 	numOfInputs := len(inputCoins)
 	changed := RandInt() % numOfInputs
 	saved := inputCoins[changed]
 	inputCoins[changed], _ = pastCoins[len(privateKeys)*(numOfInputs+1)].Decrypt(keySets[0])
-	theProof.SetInputCoins(inputCoins)
+	txv2.GetProof().SetInputCoins(inputCoins)
 
 	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	So(err, ShouldBeNil)
@@ -447,23 +457,16 @@ func testTxV2OneFakeInput(txv2 *Tx, privateKeys []*privacy.PrivateKey, keySets [
 	logger.Debugf("TEST RESULT : One faked valid input -> %v", err)
 	So(isValid, ShouldBeFalse)
 	inputCoins[changed] = saved
-	theProof.SetInputCoins(inputCoins)
+	txv2.GetProof().SetInputCoins(inputCoins)
 	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	isValid, err = txv2.ValidateSanityData(nil, nil, nil, 0)
 	So(err, ShouldBeNil)
 	So(isValid, ShouldBeTrue)
+	jsb, _ = json.MarshalIndent(txv2, "", "\t")
+	logger.Debugf("debug tx after recover %s %s", txv2.Hash().String(), string(jsb))
 	isValid, err = txv2.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
 	So(err, ShouldBeNil)
 	So(isValid, ShouldBeTrue)
-
-	// saved = inputCoins[changed]
-	// inputCoins[changed] = nil
-	// malTx.GetProof().SetInputCoins(inputCoins)
-	// isValid,err = malTx.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, byte(0), true, nil, nil)
-	// // verify must fail
-	// assert.NotEqual(t,nil,err)
-	// assert.Equal(t,false,isValid)
-	// inputCoins[changed] = saved
 }
 
 func testTxV2OneFakeOutput(txv2 *Tx, keySets []*incognitokey.KeySet, db *statedb.StateDB, params *tx_generic.TxPrivacyInitParams, paymentInfoOut []*key.PaymentInfo) {
@@ -498,20 +501,16 @@ func testTxV2OneFakeOutput(txv2 *Tx, keySets []*incognitokey.KeySet, db *statedb
 	isValid, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
 	So(isValid, ShouldBeTrue)
 	// now instead of changing amount, we change the OTA public key
-	theProof := txv2.GetProof()
-	outs = theProof.GetOutputCoins()
+	outs = txv2.GetProof().GetOutputCoins()
 	prvOutput, ok = outs[0].(*coin.CoinV2)
 	savedCoinBytes = prvOutput.Bytes()
 	So(ok, ShouldBeTrue)
 	payInf := paymentInfoOut[0]
 	// totally fresh OTA of the same amount, meant for the same PaymentAddress
-	newCoin, err := coin.NewCoinFromPaymentInfo(payInf)
+	newCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(payInf))
 	So(err, ShouldBeNil)
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
-	theProofSpecific, ok := theProof.(*privacy.ProofV2)
-	theBulletProof, ok := theProofSpecific.GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
-	cmsv := theBulletProof.GetCommitments()
-	cmsv[0] = newCoin.GetCommitment()
+	txv2.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = newCoin.GetCommitment()
 	outs[0] = newCoin
 	txv2.GetProof().SetOutputCoins(outs)
 	err = resignUnprovenTx(keySets, txv2, params, nil, false)
@@ -526,7 +525,7 @@ func testTxV2OneFakeOutput(txv2 *Tx, keySets []*incognitokey.KeySet, db *statedb
 	// undo the tampering
 	prvOutput.SetBytes(savedCoinBytes)
 	outs[0] = prvOutput
-	cmsv[0] = prvOutput.GetCommitment()
+	txv2.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = prvOutput.GetCommitment()
 	txv2.GetProof().SetOutputCoins(outs)
 	err = resignUnprovenTx(keySets, txv2, params, nil, false)
 	So(err, ShouldBeNil)
@@ -555,6 +554,8 @@ func testTxV2OneDoubleSpentInput(privateKeys []*privacy.PrivateKey, db *statedb.
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	boolParams["isBatch"] = true
 	boolParams["isNewTransaction"] = true
+	malTx, err = malTx.startVerifyTx(db)
+	So(err, ShouldBeNil)
 	isValid, err := malTx.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
 	// verify by itself passes
 	if err != nil {
@@ -851,8 +852,58 @@ func resignUnprovenTx(decryptingKeys []*incognitokey.KeySet, tx *Tx, params *tx_
 		utils.Logger.Log.Warnf("Re-sign a non-CA transaction")
 		err = tx.signOnMessage(inputCoins, outputCoins, params, message[:])
 	}
+	if err != nil {
+		return err
+	}
 
 	jsb, _ := json.MarshalIndent(tx, "", "\t")
 	logger.Debugf("Resigning TX for testing : Rehash message %s\n => %v", string(jsb), tx.Hash())
-	return err
+
+	temp, err := tx.startVerifyTx(params.StateDB)
+	if err != nil {
+		return err
+	}
+	*tx = *temp
+	return nil
+}
+
+func (tx *Tx) startVerifyTx(db *statedb.StateDB) (*Tx, error) {
+	marshaledTx, _ := json.Marshal(tx)
+	result := &Tx{}
+	err := json.Unmarshal(marshaledTx, result)
+	if err != nil {
+		return nil, err
+	}
+	marshaledTx2, _ := json.Marshal(result)
+	if !bytes.Equal(marshaledTx, marshaledTx2) {
+		return nil, fmt.Errorf("marshal output inconsistent %s", marshaledTx)
+	}
+	err = result.LoadData(db)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (tx *TxToken) startVerifyTx(db *statedb.StateDB) (*TxToken, error) {
+	marshaledTx, _ := json.Marshal(tx)
+	result := &TxToken{}
+	err := json.Unmarshal(marshaledTx, result)
+	if err != nil {
+		return nil, err
+	}
+	marshaledTx2, _ := json.Marshal(result)
+	if !bytes.Equal(marshaledTx, marshaledTx2) {
+		return nil, fmt.Errorf("marshal output inconsistent %s", marshaledTx)
+	}
+	err = result.LoadData(db)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func resetTxTestConfig() {
+	config.AbortParam()
+	config.Param().BCHeightBreakPointCoinOrigin = 1000000000000
 }

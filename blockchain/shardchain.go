@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -163,7 +164,7 @@ func (s *ShardChain) GetBestViewHash() string {
 }
 
 func (s *ShardChain) GetFinalViewHash() string {
-	return s.GetBestState().Hash().String()
+	return s.GetFinalView().(*ShardBestState).BestBlockHash.String()
 }
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.GetBestState().BestBlock.Header.Timestamp
@@ -253,21 +254,28 @@ func (chain *ShardChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
-
+	newBlock.Header.FinalityHeight = 0
 	if version >= types.LEMMA2_VERSION {
 		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
 		if err != nil {
 			return nil, err
 		}
 		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.ProposeTime)
 
+		// if previous block is finalized or same propose/produce timeslot
+		// and current block is produced/proposed next block time
 		if newBlock.Header.Timestamp == newBlock.Header.ProposeTime &&
 			newBlock.Header.Producer == newBlock.Header.Proposer &&
 			previousProposeTimeSlot+1 == currentTimeSlot {
-			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
-		} else {
-			newBlock.Header.FinalityHeight = 0
+			if version >= types.INSTANT_FINALITY_VERSION {
+				if previousBlock.GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot {
+					newBlock.Header.FinalityHeight = newBlock.Header.Height
+				}
+			} else {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			}
 		}
 	}
 
@@ -284,12 +292,26 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-	if newBlock.Header.Version >= types.LEMMA2_VERSION {
+	version := newBlock.Header.Version
+	newBlock.Header.FinalityHeight = 0
 
+	if version >= types.LEMMA2_VERSION {
+		// if previous block is finality or same produce/propose
+		// and valid lemma2
+		previousBlock, err := chain.GetBlockByHash(newBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, err
+		}
 		if isValidRePropose {
-			newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
-		} else {
-			newBlock.Header.FinalityHeight = 0
+			if version >= types.INSTANT_FINALITY_VERSION {
+				previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
+				previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
+				if previousBlock.GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot {
+					newBlock.Header.FinalityHeight = newBlock.Header.Height
+				}
+			} else {
+				newBlock.Header.FinalityHeight = newBlock.Header.Height - 1
+			}
 		}
 	}
 
@@ -348,11 +370,17 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 
 func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
 
-	if err := chain.InsertBlock(block, false); err != nil {
-		return err
+	if newValidationData != "" {
+		linkView := chain.GetMultiView().GetViewByHash(block.GetPrevHash())
+		if linkView == nil {
+			return errors.New("InsertWithPrevValidationData fail! Cannot find previous block hash" + block.GetPrevHash().String())
+		}
+		if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), newValidationData); err != nil {
+			return err
+		}
 	}
 
-	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+	if err := chain.InsertBlock(block, true); err != nil {
 		return err
 	}
 
@@ -367,8 +395,18 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 }
 
 //this get consensus data for beacon
-func (chain *ShardChain) GetBlockConsensusData(blk types.BlockInterface) map[int]types.BlockConsensusData {
+func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
+	bestViewBlock := chain.multiView.GetBestView().GetBlock().(*types.ShardBlock)
+	consensusData[chain.shardID] = types.BlockConsensusData{
+		BlockHash:      *bestViewBlock.Hash(),
+		BlockHeight:    bestViewBlock.GetHeight(),
+		FinalityHeight: bestViewBlock.GetFinalityHeight(),
+		Proposer:       bestViewBlock.GetProposer(),
+		ProposerTime:   bestViewBlock.GetProposeTime(),
+		ValidationData: bestViewBlock.ValidationData,
+	}
+
 	rawBlk, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *chain.Blockchain.BeaconChain.multiView.GetExpectedFinalView().GetHash())
 	if err != nil {
 		panic(err)
@@ -390,12 +428,14 @@ func (chain *ShardChain) GetBlockConsensusData(blk types.BlockInterface) map[int
 	return consensusData
 }
 
-func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+//this is only call when insert block successfully, the previous block is replace
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
 	if hasBlock, err := chain.Blockchain.HasShardBlockByHash(previousBlockHash); err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	} else {
 		if !hasBlock {
 			// This block is not inserted yet, no need to replace
+			Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db" + previousBlockHash.String())
 			return nil
 		}
 	}
@@ -403,6 +443,11 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	shardBlock, _, err := chain.Blockchain.GetShardBlockByHash(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if !previousProposeHash.IsEqual(shardBlock.ProposeHash()) {
+		Logger.log.Errorf("Replace previous validation data fail! Propose hash not correct, data for" + previousProposeHash.String() + " got " + shardBlock.ProposeHash().String())
+		return nil
 	}
 
 	decodedOldValidationData, err := consensustypes.DecodeValidationData(shardBlock.ValidationData)
@@ -416,8 +461,8 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	}
 
 	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
-		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v",
-			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx))
+		Logger.log.Infof("SHARD %+v | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v (old %+v)",
+			shardBlock.Header.ShardID, shardBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx))
 	} else {
 		return nil
 	}
@@ -454,7 +499,9 @@ func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDat
 	if shardBlk == nil {
 		return fmt.Errorf("Shard %v Cannot find shard block %v", chain.shardID, replaceBlockHash.String())
 	}
-
+	if shardBlk.GetVersion() < types.INSTANT_FINALITY_VERSION {
+		return nil
+	}
 	shardBlk.Header.Proposer = consensusData.Proposer
 	shardBlk.Header.ProposeTime = consensusData.ProposerTime
 	shardBlk.Header.FinalityHeight = consensusData.FinalityHeight

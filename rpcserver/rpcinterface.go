@@ -122,8 +122,8 @@ var HttpHandler = map[string]httpHandler{
 	removeByzantineDetector:    (*HttpServer).handleRemoveByzantineDetector,
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
-	//enableFastSyncMode:         (*HttpServer).handleEnableFastSyncMode,
-	//setFullValidation:          (*HttpServer).handleSetFullValidation,
+	resetCache:                 (*HttpServer).handleResetCache,
+	handleTestValidate:         (*HttpServer).handleTestValidate,
 	getRootHash: (*HttpServer).handleGetRootHash,
 	//=================================
 

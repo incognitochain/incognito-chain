@@ -6,25 +6,21 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
 
 func ScalarToBigInt(sc *operation.Scalar) *big.Int {
-	keyR := operation.Reverse(sc.GetKey())
-	keyRByte := keyR.ToBytes()
-	bi := new(big.Int).SetBytes(keyRByte[:])
-	return bi
+	rev := operation.Reverse(sc.ToBytes())
+	bn := big.NewInt(0).SetBytes(rev[:])
+	return bn
 }
 
-func BigIntToScalar(bi *big.Int) *operation.Scalar {
-	biByte := common.AddPaddingBigInt(bi, operation.Ed25519KeySize)
-	var key curve25519.Key
-	key.FromBytes(SliceToArray(biByte))
-	keyR := operation.Reverse(key)
-	sc, err := new(operation.Scalar).SetKey(&keyR)
-	if err != nil {
-		return nil
-	}
+func BigIntToScalar(bn *big.Int) *operation.Scalar {
+	bSlice := common.AddPaddingBigInt(bn, operation.Ed25519KeySize)
+	var b [32]byte
+	copy(b[:], bSlice)
+	rev := operation.Reverse(b)
+	sc := operation.NewScalar()
+	sc.FromBytes(rev)
 	return sc
 }
 
@@ -57,17 +53,6 @@ func ConvertUint64ToBinary(number uint64, n int) []*operation.Scalar {
 		number /= 2
 	}
 	return binary
-}
-
-func ConvertScalarArrayToBigIntArray(scalarArr []*operation.Scalar) []*big.Int {
-	res := make([]*big.Int, len(scalarArr))
-
-	for i := 0; i < len(res); i++ {
-		tmp := operation.Reverse(scalarArr[i].GetKey())
-		res[i] = new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
-	}
-
-	return res
 }
 
 func SliceToArray(slice []byte) [operation.Ed25519KeySize]byte {

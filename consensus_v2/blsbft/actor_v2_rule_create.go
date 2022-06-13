@@ -139,7 +139,7 @@ func NewInsertOnlyRule(chain Chain, logger common.Logger) *InsertOnlyRule {
 }
 
 func (i InsertOnlyRule) InsertBlock(block types.BlockInterface) error {
-	return i.chain.InsertBlock(block, false)
+	return i.chain.InsertBlock(block, true)
 }
 
 type InsertAndBroadcastRule struct {
