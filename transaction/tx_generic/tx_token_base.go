@@ -440,11 +440,5 @@ func (tx *TxTokenBase) ValidateSanityDataWithMetadata() (bool, error) {
 			return false, fmt.Errorf("metadata is not valid")
 		}
 	}
-	proof := tx.Tx.GetProof()
-	if proof != nil {
-		if (len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) != 0) {
-			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v cannot mint PRV", tx.Hash().String()))
-		}
-	}
 	return true, nil
 }

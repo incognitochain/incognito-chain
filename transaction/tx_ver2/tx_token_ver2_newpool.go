@@ -58,16 +58,6 @@ func (txToken *TxToken) ValidateSanityDataWithMetadata() (bool, error) {
 			return false, fmt.Errorf("metadata is not valid")
 		}
 	}
-	txn, ok := txToken.GetTxNormal().(*Tx)
-	if !ok || txn == nil {
-		return false, fmt.Errorf("cannot get tx normal for tx %v", txToken.Hash().String())
-	}
-	proof := txToken.Tx.GetProof()
-	if proof != nil {
-		if (len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) != 0) {
-			return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v for pay fee for tx %v, can not be mint tx", txToken.Tx.Hash().String(), txToken.Hash().String()))
-		}
-	}
 	return true, nil
 }
 
