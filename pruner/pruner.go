@@ -12,23 +12,12 @@ import (
 )
 
 type Pruner struct {
-	db          map[int]incdb.Database
-	stateBlooms map[int]*trie.StateBloom
+	db map[int]incdb.Database
 }
 
 func NewPrunerWithValue(db map[int]incdb.Database) *Pruner {
-	stateBlooms := make(map[int]*trie.StateBloom)
-	for i := 0; i < common.MaxShardNumber; i++ {
-		stateBloom, err := trie.NewStateBloomWithSize(2048)
-		if err != nil {
-			panic(err)
-		}
-		stateBlooms[i] = stateBloom
-	}
-
 	return &Pruner{
-		db:          db,
-		stateBlooms: stateBlooms,
+		db: db,
 	}
 }
 
@@ -42,11 +31,15 @@ func (p *Pruner) Prune() error {
 }
 
 func (p *Pruner) prune(sID int) error {
+	stateBloom, err := trie.NewStateBloomWithSize(2048)
+	if err != nil {
+		panic(err)
+	}
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
 
 	Logger.log.Infof("[state-prune] Start state pruning for shardID %v", sID)
-	finalHeight, err := p.collectStateBloomData(shardID, db)
+	finalHeight, err := p.collectStateBloomData(shardID, db, stateBloom)
 	if err != nil {
 		return err
 	}
@@ -73,7 +66,7 @@ func (p *Pruner) prune(sID int) error {
 	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
 	// delete all nodes which are not in state bloom
 	for height := lastPrunedHeight; height < finalHeight; height++ {
-		count, size, err := p.pruneByHeight(height, db, shardID)
+		count, size, err := p.pruneByHeight(height, db, shardID, stateBloom)
 		if err != nil {
 			return err
 		}
@@ -91,7 +84,7 @@ func (p *Pruner) prune(sID int) error {
 	return nil
 }
 
-func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database) (uint64, error) {
+func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database, stateBloom *trie.StateBloom) (uint64, error) {
 	var finalHeight uint64
 	//restore best views and final view from database
 	allViews := []*blockchain.ShardBestState{}
@@ -120,7 +113,7 @@ func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database) (uint64,
 			return 0, err
 		}
 		//Retrieve all state tree for this state
-		_, _, err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, p.stateBlooms[int(shardID)])
+		_, _, err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, stateBloom)
 		if err != nil {
 			return 0, err
 		}
@@ -129,7 +122,7 @@ func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database) (uint64,
 	return finalHeight, nil
 }
 
-func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte) (int, int, error) {
+func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte, stateBloom *trie.StateBloom) (int, int, error) {
 	h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(db, shardID, height)
 	if err != nil {
 		return 0, 0, err
@@ -147,7 +140,7 @@ func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte) (
 	if err != nil {
 		return 0, 0, nil
 	}
-	if count, size, err = sDB.Retrieve(db, false, true, p.stateBlooms[int(shardID)]); err != nil {
+	if count, size, err = sDB.Retrieve(db, false, true, stateBloom); err != nil {
 		return 0, 0, err
 	}
 	if err = rawdbv2.StoreLastPrunedHeight(db, shardID, height); err != nil {
