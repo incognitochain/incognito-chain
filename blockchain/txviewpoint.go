@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -313,15 +314,18 @@ func (view *TxViewPoint) processFetchCrossOutputViewPointFromOutputCoins(stateDB
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
 	for _, item := range outputCoins {
-		// commitment := item.GetCommitment().ToBytesS()
 		pubkey := item.GetPublicKey().ToBytesS()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		// ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
-		// if err != nil {
-		// 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
-		// }
-		// if !ok {
-		// pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+		otaExists, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, pubkey)
+		if err != nil {
+			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, fmt.Errorf("error getting cross-shard OTA %s", pubkeyStr)
+		} else if otaExists {
+			if !common.IsPublicKeyBurningAddress(pubkey) {
+				Logger.log.Warnf("Duplicate cross-shard OTA %s with status %d", pubkeyStr, status)
+				continue
+			}
+		}
+
 		if acceptedCommitments[pubkeyStr] == nil {
 			acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 		}
@@ -338,10 +342,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPointFromOutputCoins(stateDB
 		// get data for Snderivators
 		snD := item.GetSNDerivator()
 		if snD != nil {
-			// ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
-			// if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
-			// }
 		}
 	}
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil

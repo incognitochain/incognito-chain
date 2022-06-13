@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -108,7 +108,7 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddre
 	overBalance := int64(sumInputValue - sumOutputValue - params.Fee)
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return utils.NewTransactionErr(utils.WrongInputError, fmt.Errorf("Sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.Fee))
+		return utils.NewTransactionErr(utils.WrongInputError, fmt.Errorf("sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.Fee))
 	}
 	// Create a new payment to sender's pk where amount is overBalance if > 0
 	if overBalance > 0 {
@@ -134,12 +134,12 @@ func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 
 	// If inputCoins contain 2 versions
 	if check[1] && check[2] {
-		return 0, errors.New("Cannot get tx version because there are 2 versions of input coins")
+		return 0, fmt.Errorf("cannot get tx version because there are 2 versions of input coins")
 	}
 
 	// If somehow no version is checked???
 	if !check[1] && !check[2] {
-		return 0, errors.New("Cannot get tx version, something is wrong with coins.version, it should be 1 or 2 only")
+		return 0, fmt.Errorf("cannot get tx version, something is wrong with coins.version, it should be 1 or 2 only")
 	}
 
 	if check[2] {
@@ -305,13 +305,6 @@ func (tx *TxBase) SetCachedHash(h *common.Hash) {
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 
 func (tx TxBase) GetTxActualSize() uint64 {
-	// txBytes, _ := json.Marshal(tx)
-	// txSizeInByte := len(txBytes)
-	//
-	// return uint64(math.Ceil(float64(txSizeInByte) / 1024))
-	if tx.cachedActualSize != nil {
-		return *tx.cachedActualSize
-	}
 	sizeTx := uint64(1)                // int8
 	sizeTx += uint64(len(tx.Type) + 1) // string
 	sizeTx += uint64(8)                // int64
@@ -335,9 +328,7 @@ func (tx TxBase) GetTxActualSize() uint64 {
 		metaSize := meta.CalculateSize()
 		sizeTx += metaSize
 	}
-	result := uint64(math.Ceil(float64(sizeTx) / 1024))
-	tx.cachedActualSize = &result
-	return *tx.cachedActualSize
+	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
 
 func (tx TxBase) GetReceivers() ([][]byte, []uint64) {
@@ -414,7 +405,7 @@ func (tx *TxBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (txToken *TxBase) HashWithoutMetadataSig() *common.Hash {
+func (tx *TxBase) HashWithoutMetadataSig() *common.Hash {
 	// hashing to sign metadata is version-specific
 	return nil
 }
@@ -460,7 +451,7 @@ func (tx *TxBase) IsNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 	if len(params.InputCoins) == 0 && params.Fee == 0 && !params.HasPrivacy {
 		tx.sigPrivKey = *params.SenderSK
 		if tx.Sig, tx.SigPubKey, err = SignNoPrivacy(params.SenderSK, tx.Hash()[:]); err != nil {
-			utils.Logger.Log.Error(fmt.Sprintf("Cannot signOnMessage tx %v\n", err))
+			utils.Logger.Log.Error(fmt.Sprintf("Cannot signOnMessage tx %v", err))
 			return true, utils.NewTransactionErr(utils.SignTxError, err)
 		}
 		return true, nil
@@ -532,7 +523,7 @@ func (tx TxBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) erro
 	for _, listSerialNumbers := range poolSerialNumbersHashH {
 		for _, serialNumberHash := range listSerialNumbers {
 			if _, ok := temp[serialNumberHash]; ok {
-				return errors.New("double spend in mempool")
+				return fmt.Errorf("double spend in mempool")
 			}
 		}
 	}
@@ -562,9 +553,14 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 			return err
 		}
 		if ok {
-			return errors.New("double spend")
+			return fmt.Errorf("double spend")
 		}
 	}
+
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	bHeight := tx.GetValidationEnv().BeaconHeight()
+	afterCoinOriginHeight := bHeight >= config.Param().BCHeightBreakPointCoinOrigin
+
 	for _, outCoin := range tx.GetProof().GetOutputCoins() {
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
 		if common.IsPublicKeyBurningAddress(otaPublicKey) {
@@ -589,7 +585,24 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 					return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 				}
 			default:
-				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
+				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("invalid onetimeaddress status in database"))
+			}
+		}
+
+		if afterCoinOriginHeight {
+			cptype := privacy.CoinPrivacyTypeTransfer
+			if isMint := len(tx.Proof.GetOutputCoins()) == 1 && len(tx.Proof.GetInputCoins()) == 0; isMint {
+				cptype = privacy.CoinPrivacyTypeMint
+			}
+			coinSenderShardID, _, coinPrivacyType, err := privacy.DeriveShardInfoFromCoin(outCoin.GetPublicKey().ToBytesS())
+			if err != nil {
+				return err
+			}
+			if coinSenderShardID != int(senderShardID) {
+				return fmt.Errorf("invalid sender shard %d on coin, expect %d", coinSenderShardID, senderShardID)
+			}
+			if coinPrivacyType != cptype {
+				return fmt.Errorf("invalid coin privacy type %d, expect %d", coinPrivacyType, cptype)
 			}
 		}
 	}
@@ -604,7 +617,20 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 		if exists {
 			return fmt.Errorf("TX %s : OTA %x in metadata already in database with status %d", tx.Hash().String(), otaPublicKey, status)
 		}
+		if afterCoinOriginHeight {
+			coinSenderShardID, _, coinPrivacyType, err := privacy.DeriveShardInfoFromCoin(otaDeclaration.PublicKey[:])
+			if err != nil {
+				return err
+			}
+			if coinSenderShardID != int(senderShardID) {
+				return fmt.Errorf("invalid sender shard %d on declared coin, expect %d", coinSenderShardID, senderShardID)
+			}
+			if coinPrivacyType != privacy.CoinPrivacyTypeMint {
+				return fmt.Errorf("invalid declared coin privacy type %d, expect %d", coinPrivacyType, privacy.CoinPrivacyTypeMint)
+			}
+		}
 	}
+
 	return nil
 }
 

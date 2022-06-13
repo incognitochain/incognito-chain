@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -9,15 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
-
-func IsBridgeTxHashUsedInBlock(uniqTx []byte, uniqTxsUsed [][]byte) bool {
-	for _, item := range uniqTxsUsed {
-		if bytes.Equal(uniqTx, item) {
-			return true
-		}
-	}
-	return false
-}
 
 func (blockchain *BlockChain) GetTransactionsByHashesWithShardID(
 	hashes []common.Hash,

@@ -204,7 +204,7 @@ func getBurnProofByHeightV2(
 	// Get proof of instruction on beacon
 	inst, instID := findBurnConfirmInst(burningMetaType, beaconBlock.Body.Instructions, txID)
 	if instID == -1 {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find inst %s in beacon block %d", txID.String(), height))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find tx %s in beacon block %d", txID.String(), height))
 	}
 
 	beaconInstProof, err := getBurnProofOnBeacon(inst, []*types.BeaconBlock{beaconBlock}, httpServer.config.ConsensusEngine)

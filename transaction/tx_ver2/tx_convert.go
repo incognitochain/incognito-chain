@@ -3,7 +3,6 @@ package tx_ver2
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -69,13 +68,12 @@ func validateTxConvertVer1ToVer2Params(params *TxConvertVer1ToVer2InitParams) er
 	sumInput, sumOutput := uint64(0), uint64(0)
 	for _, c := range params.inputCoins {
 		if c.GetVersion() != 1 {
-			err := errors.New("TxConversion should only have inputCoins version 1")
-			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, err)
+			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, fmt.Errorf("txConversion should only have inputCoins version 1"))
 		}
 
 		// Verify if input coins have been concealed
 		if c.GetRandomness() == nil || c.GetSNDerivator() == nil || c.GetPublicKey() == nil || c.GetCommitment() == nil {
-			err := errors.New("input coins should not be concealed")
+			err := fmt.Errorf("input coins should not be concealed")
 			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, err)
 		}
 		sumInput += c.GetValue()
@@ -84,8 +82,7 @@ func validateTxConvertVer1ToVer2Params(params *TxConvertVer1ToVer2InitParams) er
 		sumOutput += c.Amount
 	}
 	if sumInput != sumOutput+params.fee {
-		err := errors.New("TxConversion's sum input coin and output coin (with fee) is not the same")
-		return utils.NewTransactionErr(utils.SumInputCoinsAndOutputCoinsError, err)
+		return utils.NewTransactionErr(utils.SumInputCoinsAndOutputCoinsError, fmt.Errorf("txConversion's sum input coin and output coin (with fee) is not the same"))
 	}
 
 	if params.tokenID == nil {
@@ -150,13 +147,13 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 
 	for i := 0; i < len(paymentInfos); i++ {
 		if isPRV {
-			c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
+			c[i], err = privacy.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfos[i]))
 			if err != nil {
 				utils.Logger.Log.Errorf("TxConversion cannot create new coin unique OTA, got error %v", err)
 				return nil, err
 			}
 		} else {
-			createdCACoin, _, err := createUniqueOTACoinCA(paymentInfos[i], tokenID, db)
+			createdCACoin, _, err := privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(paymentInfos[i]), tokenID)
 			if err != nil {
 				utils.Logger.Log.Errorf("TxConversion cannot create new CA coin - %v", err)
 				return nil, err
@@ -203,7 +200,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 	utils.Logger.Log.Infof("Begin verifying TX %s", string(jsb))
 	if valid, err := tx_generic.VerifySigNoPrivacy(tx.GetSig(), tx.GetSigPubKey(), tx.Hash()[:]); !valid {
 		if err != nil {
-			utils.Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v \n", tx.Hash().String(), err)
+			utils.Logger.Log.Errorf("Error verifying signature conversion with tx hash %s: %+v", tx.Hash().String(), err)
 			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 		}
 		utils.Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE conversion with tx hash %s", tx.Hash().String())
@@ -212,7 +209,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 	proofConversion, ok := tx.GetProof().(*privacy_v2.ConversionProofVer1ToVer2)
 	if !ok {
 		utils.Logger.Log.Error("Error casting ConversionProofVer1ToVer2")
-		return false, errors.New("Error casting ConversionProofVer1ToVer2")
+		return false, fmt.Errorf("error casting ConversionProofVer1ToVer2")
 	}
 
 	// Verify that input coins have been created and have not been spent
@@ -221,19 +218,17 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		// Check if commitment has existed
 		if ok, err := statedb.HasCommitment(db, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID); !ok || err != nil {
 			if err != nil {
-				errStr := fmt.Sprintf("TxConversion database inputCommitment got error: %v", err)
-				return false, errors.New(errStr)
+				return false, fmt.Errorf("txConversion database inputCommitment got error: %v", err)
 			}
-			return false, errors.New("TxConversion not found existing inputCommitment in database error")
+			return false, fmt.Errorf("txConversion not found existing inputCommitment in database error")
 		}
 
 		// Check if input coin has not been spent
 		if ok, err := statedb.HasSerialNumber(db, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
 			if err != nil {
-				errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)
-				return false, errors.New(errStr)
+				return false, fmt.Errorf("txConversion database serialNumber got error: %v", err)
 			}
-			return false, errors.New("TxConversion found existing serialNumber in database error")
+			return false, fmt.Errorf("txConversion found existing serialNumber in database error")
 		}
 	}
 
@@ -243,17 +238,16 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 	for i := 0; i < len(outputCoins); i++ {
 		if ok, _, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
 			if err != nil {
-				errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
-				return false, errors.New(errStr)
+				return false, fmt.Errorf("txConversion database onetimeAddress got error: %v", err)
 			}
-			return false, errors.New("TxConversion found existing one-time-address in database error")
+			return false, fmt.Errorf("txConversion found existing one-time-address in database error")
 		}
 		dst := make([]byte, hex.EncodedLen(len(outputCoins[i].GetPublicKey().ToBytesS())))
 		hex.Encode(dst, outputCoins[i].GetPublicKey().ToBytesS())
 		mapOutputCoins[string(dst)] = i
 	}
 	if len(mapOutputCoins) != len(outputCoins) {
-		return false, errors.New("TxConversion found duplicate one-time-address error")
+		return false, fmt.Errorf("txConversion found duplicate one-time-address error")
 	}
 
 	boolParams := make(map[string]bool)
@@ -329,33 +323,33 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 
 func validateTxTokenConvertVer1ToVer2Params(params *TxTokenConvertVer1ToVer2InitParams) error {
 	if len(params.feeInputs) > 255 {
-		return errors.New("FeeInput is too large, feeInputs length = " + strconv.Itoa(len(params.feeInputs)))
+		return fmt.Errorf("FeeInput is too large, feeInputs length = " + strconv.Itoa(len(params.feeInputs)))
 	}
 	if len(params.feePayments) > 255 {
-		return errors.New("FeePayment is too large, feePayments length = " + strconv.Itoa(len(params.feePayments)))
+		return fmt.Errorf("FeePayment is too large, feePayments length = " + strconv.Itoa(len(params.feePayments)))
 	}
 	if len(params.tokenParams.tokenPayments) > 255 {
-		return errors.New("tokenPayments is too large, tokenPayments length = " + strconv.Itoa(len(params.tokenParams.tokenPayments)))
+		return fmt.Errorf("tokenPayments is too large, tokenPayments length = " + strconv.Itoa(len(params.tokenParams.tokenPayments)))
 	}
 	if len(params.tokenParams.tokenInputs) > 255 {
-		return errors.New("tokenInputs length = " + strconv.Itoa(len(params.tokenParams.tokenInputs)))
+		return fmt.Errorf("tokenInputs length = " + strconv.Itoa(len(params.tokenParams.tokenInputs)))
 	}
 
 	for _, c := range params.feeInputs {
 		if c.GetVersion() != utils.TxVersion2Number {
-			return errors.New("TxConversion should only have fee input coins version 2")
+			return fmt.Errorf("txConversion should only have fee input coins version 2")
 		}
 	}
 	tokenParams := params.tokenParams
 	if tokenParams.tokenID == nil {
-		return utils.NewTransactionErr(utils.TokenIDInvalidError, errors.New("TxTokenConversion should have its tokenID not null"))
+		return utils.NewTransactionErr(utils.TokenIDInvalidError, fmt.Errorf("txTokenConversion should have its tokenID not null"))
 	}
 	sumInput := uint64(0)
 	for _, c := range tokenParams.tokenInputs {
 		sumInput += c.GetValue()
 	}
 	if sumInput != tokenParams.tokenPayments[0].Amount {
-		return utils.NewTransactionErr(utils.SumInputCoinsAndOutputCoinsError, errors.New("sumInput and sum TokenPayment amount is not equal"))
+		return utils.NewTransactionErr(utils.SumInputCoinsAndOutputCoinsError, fmt.Errorf("sumInput and sum TokenPayment amount is not equal"))
 	}
 	return nil
 }

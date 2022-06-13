@@ -36,7 +36,7 @@ func ValidateProducerSigV1(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(block.ProposeHash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -56,7 +56,7 @@ func ValidateProducerSigV2(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(block.ProposeHash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -94,7 +94,7 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
 	}
 
-	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+	if err := validateBLSSig(block.ProposeHash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil

@@ -71,6 +71,16 @@ func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
 	return has
 }
 
+func CheckTokenIDExisted(sDBs map[int]*StateDB, tokenID common.Hash) (bool, error) {
+	for _, sDB := range sDBs {
+		isExisted := PrivacyTokenIDExisted(sDB, tokenID)
+		if isExisted {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func GetPrivacyTokenState(stateDB *StateDB, tokenID common.Hash) (*TokenState, bool, error) {
 	key := GenerateTokenObjectKey(tokenID)
 	tokenState, has, err := stateDB.getTokenState(key)

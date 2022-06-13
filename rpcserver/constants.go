@@ -148,6 +148,8 @@ const (
 	removeByzantineDetector    = "removebyzantinedetector"
 	getConsensusData           = "getconsensusdata"
 	getProposerIndex           = "getproposerindex"
+	resetCache                 = "resetcache"
+	handleTestValidate         = "testvalidate"
 	enableFastSyncMode         = "enablefastsyncmode"
 	setFullValidation          = "setfullvalidation"
 	getRootHash                = "getroothash"
@@ -304,6 +306,21 @@ const (
 	createAndSendTxWithPdexv3WithdrawStakingReward = "pdexv3_txWithdrawStakingReward"
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
+	// bridgeagg method
+	bridgeaggModifyRewardReserve         = "bridgeaggModifyRewardReserve"
+	bridgeaggState                       = "bridgeaggGetState"
+	bridgeaggGetStatusModifyRewarReserve = "bridgeaggGetStatusModifyRewarReserve"
+	bridgeaggConvert                     = "bridgeaggConvert"
+	bridgeaggStatusConvert               = "bridgeaggGetStatusConvert"
+	bridgeaggShield                      = "bridgeaggShield"
+	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
+	bridgeaggUnshield                    = "bridgeaggUnshield"
+	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
+	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
+	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
+	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
+	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
+
 	// get burning address
 	getBurningAddress = "getburningaddress"
 
@@ -383,6 +400,7 @@ const (
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
 	getAllView            = "getallview"
 	getAllViewDetail      = "getallviewdetail"
+	isInstantFinality     = "isinstantfinality"
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
