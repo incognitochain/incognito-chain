@@ -878,7 +878,7 @@ func calUnshieldFeeByShortageBurnAmount(burnAmount uint64, percentFeeWithDec uin
 
 	fee := new(big.Int).Div(x, y).Uint64()
 
-	if fee == 0 {
+	if fee == 0 && percentFeeWithDec != 0 {
 		fee = 1 // at least 1
 	}
 	if fee > burnAmount {
@@ -899,7 +899,7 @@ func calUnshieldFeeByShortageReceivedAmount(receivedAmount uint64, percentFeeWit
 	feeBN = feeBN.Div(feeBN, new(big.Int).SetUint64(percentFeeDec))
 	fee := feeBN.Uint64()
 
-	if fee == 0 {
+	if fee == 0 && percentFeeWithDec != 0 {
 		fee = 1 // at least 1
 	}
 
@@ -1012,7 +1012,6 @@ func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint6
 	return isEnoughVault, fee, nil
 }
 
-//TODO:
 func CalUnshieldFeeByReceivedAmount(v *statedb.BridgeAggVaultState, receivedAmt uint64, percentFeeWithDec uint64) (bool, uint64, error) {
 	isEnoughVault := true
 	shortageAmt := uint64(0)
