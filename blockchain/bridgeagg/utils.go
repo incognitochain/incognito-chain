@@ -960,6 +960,7 @@ func checkVaultForWaitUnshieldReq(
 	unshieldDatas []statedb.WaitingUnshieldReqData,
 	lockedVaults map[common.Hash]uint64,
 ) (bool, map[common.Hash]uint64) {
+	// check vaults are enough for process waiting unshield req
 	isEnoughVault := true
 	for _, data := range unshieldDatas {
 		if lockedVaults[data.IncTokenID] >= vaults[data.IncTokenID].Amount() {
@@ -972,7 +973,7 @@ func checkVaultForWaitUnshieldReq(
 			break
 		}
 	}
-
+	// update lockedVaults (mem) if not enough
 	if !isEnoughVault {
 		for _, data := range unshieldDatas {
 			receivedAmount := data.BurningAmount - data.Fee
@@ -1050,8 +1051,6 @@ func checkVaultForNewUnshieldReq(
 ) (bool, []statedb.WaitingUnshieldReqData, error) {
 	waitingUnshieldDatas := []statedb.WaitingUnshieldReqData{}
 	isEnoughVault := true
-	fee := uint64(0)
-	var err error
 
 	for _, data := range unshieldDatas {
 		v := vaults[data.IncTokenID]
@@ -1060,13 +1059,18 @@ func checkVaultForNewUnshieldReq(
 		}
 
 		// calculate unshield fee
-		isEnoughVault, fee, err = CalUnshieldFeeByBurnAmount(v, data.BurningAmount, percentFeeWithDec)
+		isEnoughVaultTmp, fee, err := CalUnshieldFeeByBurnAmount(v, data.BurningAmount, percentFeeWithDec)
 		if err != nil {
 			return false, nil, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}
 		// reject if vault not enough for deposit to SC
-		if !isEnoughVault && isDepositToSC {
+		if !isEnoughVaultTmp && isDepositToSC {
 			return false, nil, fmt.Errorf("Not enough vaults for unshield to deposit to SC - IncTokenID %v", data.IncTokenID)
+		}
+
+		// update isEnoughVault = false when there is any vault is not enough
+		if !isEnoughVaultTmp {
+			isEnoughVault = false
 		}
 
 		// check minExpectedAmount
