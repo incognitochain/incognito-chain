@@ -103,7 +103,7 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningNearConfirmMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
-		case metadata.BurningNearConfirmForDepositToSCMeta:
+		case metadata.BurningNearForDepositToSCRequestMeta:
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningNearConfirmForDepositToSCMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}

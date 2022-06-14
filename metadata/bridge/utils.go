@@ -244,11 +244,11 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 		return nil, err
 	}
 
-	if len(tokenID) < common.ExternalBridgeTokenLength {
-		return nil, errors.New("invalid external token id")
-	}
-
 	if metaType != metadataCommon.BurningNearConfirmMeta && metaType != metadataCommon.BurningNearConfirmForDepositToSCMeta {
+		if len(tokenID) < common.ExternalBridgeTokenLength {
+			return nil, errors.New("invalid external token id")
+		}
+
 		prefixLen := len(prefix)
 		if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
 			return nil, errors.New(fmt.Sprintf("metadata type %v with invalid external tokenID %v", metaType, tokenID))
