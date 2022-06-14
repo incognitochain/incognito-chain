@@ -112,20 +112,18 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	return res, ac, nil
 }
 
-func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconHeight uint64, unshieldInsts [][]string) ([][]string, error) {
+func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconHeight uint64, unshieldActionForProducers []UnshieldActionForProducer) ([][]string, error) {
 	res := [][]string{}
 	insts := [][]string{}
 	var err error
 
 	// build instruction for new unshielding actions
-	for shardID, actions := range unshieldInsts {
-		for _, action := range actions {
-			insts, m.state, err = m.producer.unshield(action, m.state, beaconHeight, byte(shardID), stateDB)
-			if err != nil {
-				return [][]string{}, err
-			}
-			res = append(res, insts...)
+	for _, unshieldActionForProducer := range unshieldActionForProducers {
+		insts, m.state, err = m.producer.unshield(unshieldActionForProducer, m.state, beaconHeight, stateDB)
+		if err != nil {
+			return [][]string{}, err
 		}
+		res = append(res, insts...)
 	}
 
 	Logger.log.Info("bridgeagg new unshield instructions:", res)

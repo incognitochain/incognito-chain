@@ -288,10 +288,9 @@ func buildUnshieldInst(unifiedTokenID common.Hash, isDepositToSC bool, waitingUn
 	return inst.StringSlice()
 }
 
-func buildBurningConfirmInsts(waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq) [][]string {
+func buildBurningConfirmInsts(waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, beaconHeightForConfirmInst uint64) [][]string {
 	burningInsts := [][]string{}
-	beaconHeight := waitingUnshieldReq.GetBeaconHeight()
-	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeight)
+	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
 	txID := waitingUnshieldReq.GetUnshieldID()
 
 	for index, data := range waitingUnshieldReq.GetData() {
@@ -1284,20 +1283,37 @@ func updateStateForModifyParam(state *State, newPercentFeeWithDec uint64) *State
 	return state
 }
 
-func CollectBridgeAggBurnInsts(insts [][]string) []string {
-	unshieldInsts := []string{}
+type UnshieldActionForProducer struct {
+	TxReqID      common.Hash
+	Meta         metadataBridge.UnshieldRequest
+	ShardID      byte
+	BeaconHeight uint64
+}
+
+func BuildUnshieldActionForProducerFromInsts(insts [][]string, shardID byte, beaconHeight uint64) []UnshieldActionForProducer {
+	unshieldActions := []UnshieldActionForProducer{}
 	for _, inst := range insts {
 		if len(inst) < 2 {
 			continue
 		}
-		metaType, err := strconv.Atoi(inst[0])
+		contentStr := inst[1]
+
+		// decode action from shard
+		action := metadataCommon.NewAction()
+		meta := &metadataBridge.UnshieldRequest{}
+		action.Meta = meta
+		err := action.FromString(contentStr)
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.log.Warnf("Can not decode content string for unshield from shard: %v\n", err)
 			continue
 		}
-		if metaType == metadataCommon.BurningUnifiedTokenRequestMeta {
-			unshieldInsts = append(unshieldInsts, inst[1])
-		}
+
+		unshieldActions = append(unshieldActions, UnshieldActionForProducer{
+			TxReqID:      action.TxReqID,
+			Meta:         *meta,
+			ShardID:      shardID,
+			BeaconHeight: beaconHeight,
+		})
 	}
-	return unshieldInsts
+	return unshieldActions
 }

@@ -1091,3 +1091,53 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	}
 	return instructions, pdexTxs, nil
 }
+
+// CreateShardBridgeUnshieldInstsFromTxs create bridge unshield insts from transactions in shard block
+func CreateShardBridgeUnshieldInstsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeInsts := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Unshield Error %+v", err)
+			}
+			bridgeInsts = append(bridgeInsts, actionPairs...)
+		}
+	}
+	return bridgeInsts, nil
+}
+
+// CreateShardBridgeAggUnshieldInstsFromTxs create bridge agg unshield insts from transactions in shard block
+func CreateShardBridgeAggUnshieldInstsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeAggInsts := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeAggUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Agg Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Agg Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Agg Unshield Error %+v", err)
+			}
+			bridgeAggInsts = append(bridgeAggInsts, actionPairs...)
+		}
+	}
+	return bridgeAggInsts, nil
+}

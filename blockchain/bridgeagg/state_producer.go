@@ -337,7 +337,7 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 			}
 
 			// build burning confirm insts
-			burningConfirmInsts := buildBurningConfirmInsts(waitingUnshieldReq)
+			burningConfirmInsts := buildBurningConfirmInsts(waitingUnshieldReq, beaconHeight)
 			// build unshield inst with filled status
 			// unshield requests in waiting list isDepositToSC is always false
 			filledInst := buildUnshieldInst(unifiedTokenID, false, waitingUnshieldReq, common.FilledStatusStr, common.BridgeShardID)
@@ -349,20 +349,15 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 }
 
 func (sp *stateProducer) unshield(
-	contentStr string,
+	unshieldAction UnshieldActionForProducer,
 	state *State,
-	beaconHeight uint64, shardID byte,
+	beaconHeightForConfirmInst uint64,
 	stateDB *statedb.StateDB,
 ) ([][]string, *State, error) {
-	// decode action from shard
-	action := metadataCommon.NewAction()
-	meta := &metadataBridge.UnshieldRequest{}
-	action.Meta = meta
-	err := action.FromString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("[BridgeAgg] Can not decode unshield action from shard %v", err)
-		return [][]string{}, state, nil
-	}
+	meta := unshieldAction.Meta
+	txReqID := unshieldAction.TxReqID
+	beaconHeightForUnshield := unshieldAction.BeaconHeight
+	shardID := unshieldAction.ShardID
 
 	var insts [][]string
 	var burningConfirmInsts [][]string
@@ -373,7 +368,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			*meta, shardID, action.TxReqID, NotFoundUnifiedTokenIDError)
+			meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
@@ -388,18 +383,18 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			*meta, shardID, action.TxReqID, CheckVaultUnshieldError)
+			meta, shardID, txReqID, CheckVaultUnshieldError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
-	waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, action.TxReqID, beaconHeight)
+	waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)
 	statusStr := common.WaitingStatusStr
 
 	if isEnoughVault {
 		statusStr = common.AcceptedStatusStr
 
 		// build burning confirm insts
-		burningConfirmInsts = buildBurningConfirmInsts(waitingUnshieldReq)
+		burningConfirmInsts = buildBurningConfirmInsts(waitingUnshieldReq, beaconHeightForConfirmInst)
 		insts = append(insts, burningConfirmInsts...)
 	}
 
@@ -412,7 +407,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when updating state for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			*meta, shardID, action.TxReqID, ProducerUpdateStateError)
+			meta, shardID, txReqID, ProducerUpdateStateError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
