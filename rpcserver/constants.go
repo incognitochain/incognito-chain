@@ -429,6 +429,9 @@ const (
 	unstake = "createunstaketransaction"
 
 	connectionStatus = "getconnectionstatus"
+
+	// prune
+	prune = "prune"
 )
 
 const (

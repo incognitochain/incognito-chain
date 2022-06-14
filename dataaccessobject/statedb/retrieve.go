@@ -1,8 +1,6 @@
 package statedb
 
 import (
-	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
@@ -16,15 +14,12 @@ func (stateDB *StateDB) Retrieve(
 
 	keyShouldBeDeleted := make(map[common.Hash]struct{})
 	var totalSize int
-	keys := make(map[common.Hash]struct{})
-	cnt := 0
 	descend := true
-	for it.Next(false, descend) {
+	for it.Next(false, descend, false) {
 		descend = true
 		if len(it.Key) == 0 {
 			continue
 		}
-		cnt++
 		key := it.Key
 		h := common.Hash{}
 		err := h.SetBytes(key)
@@ -32,13 +27,6 @@ func (stateDB *StateDB) Retrieve(
 			return 0, 0, err
 		}
 		if shouldAddToStateBloom {
-			if cnt%1000 == 0 {
-				fmt.Println(cnt)
-			}
-
-			keys[h] = struct{}{}
-			temp, _ := db.Get(key)
-			totalSize += len(temp) + len(key)
 			if err := stateBloom.Put(key, nil); err != nil {
 				return 0, 0, err
 			}
@@ -72,9 +60,6 @@ func (stateDB *StateDB) Retrieve(
 			batch.Write()
 			batch.Reset()
 		}
-	}
-	if shouldAddToStateBloom {
-		fmt.Printf("[state-prune] totalNodes %v data size %v\n", len(keys), totalSize)
 	}
 
 	return len(keyShouldBeDeleted), totalSize, nil

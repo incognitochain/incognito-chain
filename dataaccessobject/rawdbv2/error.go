@@ -106,6 +106,7 @@ const (
 
 	// state prune
 	StoreShardLastPrunedHeightError
+	StorePruneStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -200,6 +201,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreCoinHashError:              {-6006, "Store coin hash error"},
 	GetCoinHashError:                {-6007, "Get coin hash error"},
 	StoreShardLastPrunedHeightError: {-7000, "Store shard last pruned height error"},
+	StorePruneStatusError:           {-7001, "Store prune status error"},
 }
 
 type RawdbError struct {

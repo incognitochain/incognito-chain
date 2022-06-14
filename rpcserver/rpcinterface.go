@@ -404,6 +404,9 @@ var HttpHandler = map[string]httpHandler{
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 
 	connectionStatus: (*HttpServer).handleGetConnectionStatus,
+
+	// prune
+	prune: (*HttpServer).handlePrune,
 }
 
 // Commands that are available to a limited user

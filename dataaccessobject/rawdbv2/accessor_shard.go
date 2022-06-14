@@ -167,3 +167,20 @@ func GetLastPrunedHeight(db incdb.KeyValueReader, shardID byte) ([]byte, error) 
 	key := GetLastPrunedHeightKey(shardID)
 	return db.Get(key)
 }
+
+func StorePruneStatus(db incdb.KeyValueWriter, shardID byte, v interface{}) error {
+	key := GetPruneStatusKey(shardID)
+	val, err := json.Marshal(v)
+	if err != nil {
+		return NewRawdbError(StorePruneStatusError, err)
+	}
+	if err := db.Put(key, val); err != nil {
+		return NewRawdbError(StorePruneStatusError, err)
+	}
+	return nil
+}
+
+func GetPruneStatus(db incdb.KeyValueReader, shardID byte) ([]byte, error) {
+	key := GetPruneStatusKey(shardID)
+	return db.Get(key)
+}

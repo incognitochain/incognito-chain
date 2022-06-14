@@ -2,7 +2,10 @@ package pruner
 
 import (
 	"encoding/json"
+	"fmt"
+	"runtime"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -21,22 +24,29 @@ func NewPrunerWithValue(db map[int]incdb.Database) *Pruner {
 	}
 }
 
-func (p *Pruner) Prune() error {
+func (p *Pruner) PruneImmediately() error {
 	for i := 0; i < common.MaxShardNumber; i++ {
-		if err := p.prune(i); err != nil {
+		if err := p.Prune(i); err != nil {
 			panic(err)
 		}
 	}
 	return nil
 }
 
-func (p *Pruner) prune(sID int) error {
+func (p *Pruner) Prune(sID int) error {
 	stateBloom, err := trie.NewStateBloomWithSize(2048)
 	if err != nil {
 		panic(err)
 	}
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
+	rootHashCache, err := lru.New(100)
+	if err != nil {
+		panic(err)
+	}
+	numWorkers := runtime.NumCPU() - 1
+	if numWorkers == 0 {
+	}
 
 	Logger.log.Infof("[state-prune] Start state pruning for shardID %v", sID)
 	finalHeight, err := p.collectStateBloomData(shardID, db, stateBloom)
@@ -66,7 +76,7 @@ func (p *Pruner) prune(sID int) error {
 	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
 	// delete all nodes which are not in state bloom
 	for height := lastPrunedHeight; height < finalHeight; height++ {
-		count, size, err := p.pruneByHeight(height, db, shardID, stateBloom)
+		count, size, err := p.pruneByHeight(height, db, shardID, stateBloom, rootHashCache)
 		if err != nil {
 			return err
 		}
@@ -78,6 +88,10 @@ func (p *Pruner) prune(sID int) error {
 	}
 	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", totalNodes, totalSize)
 	if err = p.compact(db, totalNodes); err != nil {
+		return err
+	}
+	err = rawdbv2.StorePruneStatus(db, shardID, rawdbv2.FinishPruneStatus)
+	if err != nil {
 		return err
 	}
 	Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
@@ -108,12 +122,13 @@ func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database, stateBlo
 			finalHeight = v.ShardHeight
 		}
 		Logger.log.Infof("[state-prune] Start retrieve view %s", v.BestBlockHash.String())
-		err = v.InitStateRootHash(db)
+		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+		stateDB, err := statedb.NewWithPrefixTrie(v.TransactionStateDBRootHash, dbAccessWarper)
 		if err != nil {
 			return 0, err
 		}
 		//Retrieve all state tree for this state
-		_, _, err = v.GetCopiedTransactionStateDB().Retrieve(db, true, false, stateBloom)
+		_, _, err = stateDB.Retrieve(db, true, false, stateBloom)
 		if err != nil {
 			return 0, err
 		}
@@ -122,7 +137,9 @@ func (p *Pruner) collectStateBloomData(shardID byte, db incdb.Database, stateBlo
 	return finalHeight, nil
 }
 
-func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte, stateBloom *trie.StateBloom) (int, int, error) {
+func (p *Pruner) pruneByHeight(
+	height uint64, db incdb.Database, shardID byte, stateBloom *trie.StateBloom, rootHashCache *lru.Cache,
+) (int, int, error) {
 	h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(db, shardID, height)
 	if err != nil {
 		return 0, 0, err
@@ -135,12 +152,8 @@ func (p *Pruner) pruneByHeight(height uint64, db incdb.Database, shardID byte, s
 	if err = json.Unmarshal(data, sRH); err != nil {
 		return 0, 0, err
 	}
-	var count, size int
-	sDB, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	count, size, err := p.pruneTxStateDB(sRH, db, stateBloom, rootHashCache)
 	if err != nil {
-		return 0, 0, nil
-	}
-	if count, size, err = sDB.Retrieve(db, false, true, stateBloom); err != nil {
 		return 0, 0, err
 	}
 	if err = rawdbv2.StoreLastPrunedHeight(db, shardID, height); err != nil {
@@ -166,4 +179,22 @@ func (p *Pruner) compact(db incdb.Database, count int) error {
 		}
 	}
 	return nil
+}
+
+func (p *Pruner) pruneTxStateDB(sRH *blockchain.ShardRootHash, db incdb.Database, stateBloom *trie.StateBloom, rootHashCache *lru.Cache) (int, int, error) {
+	if _, ok := rootHashCache.Get(sRH.TransactionStateDBRootHash.String()); ok {
+		return 0, 0, nil
+	}
+	var count, size int
+	sDB, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return 0, 0, nil
+	}
+	if count, size, err = sDB.Retrieve(db, false, true, stateBloom); err != nil {
+		return 0, 0, err
+	}
+	if ok := rootHashCache.Add(sRH.TransactionStateDBRootHash.String(), struct{}{}); !ok {
+		return 0, 0, fmt.Errorf("Cannot add rootHash to lru cache")
+	}
+	return count, size, nil
 }
