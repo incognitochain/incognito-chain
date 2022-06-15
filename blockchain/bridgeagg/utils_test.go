@@ -1,6 +1,8 @@
 package bridgeagg
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -27,14 +30,19 @@ type TestSuite struct {
 	sDB                 *statedb.StateDB
 }
 
-type TestCase struct {
-	ExpectedInstructions      [][]string                                    `json:"expected_instructions"`
-	UnifiedTokens             map[common.Hash]map[uint]*Vault               `json:"unified_tokens"`
-	ExpectedUnifiedTokens     map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
-	TxIDs                     []common.Hash                                 `json:"tx_ids"`
-	BridgeTokensInfo          map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
-	AccumulatedValues         *metadata.AccumulatedValues                   `json:"accumulated_values"`
-	ExpectedAccumulatedValues *metadata.AccumulatedValues                   `json:"expected_accumulated_values"`
+type TestData struct {
+	State             *State                                        `json:"state"`
+	TxIDs             []common.Hash                                 `json:"tx_ids"`
+	BridgeTokensInfo  map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+	AccumulatedValues *metadata.AccumulatedValues                   `json:"accumulated_values"`
+	env               *stateEnvironment
+}
+
+type ExpectedResult struct {
+	State             *State                                   `json:"state"`
+	Instructions      [][]string                               `json:"instructions"`
+	AccumulatedValues *metadata.AccumulatedValues              `json:"accumulated_values"`
+	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo `json:"bridge_tokens_info"`
 }
 
 type ActualResult struct {
@@ -42,6 +50,7 @@ type ActualResult struct {
 	ProducerState     *State
 	ProcessorState    *State
 	AccumulatedValues *metadata.AccumulatedValues
+	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo
 }
 
 var _ = func() (_ struct{}) {
@@ -347,12 +356,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	config.AbortParam()
 	config.Param().BridgeAggParam.BaseDecimal = 9
 	type args struct {
-		amount      big.Int
-		decimal     uint
-		operator    byte
-		prefix      string
-		networkType uint
-		token       []byte
+		amount             *big.Int
+		decimal            uint
+		isToUnifiedDecimal bool
 	}
 	tests := []struct {
 		name    string
@@ -363,9 +369,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Add",
 			args: args{
-				amount:   *big.NewInt(100000),
-				decimal:  6,
-				operator: AddOperator,
+				amount:             big.NewInt(100000),
+				decimal:            6,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(100000000),
 			wantErr: false,
@@ -373,9 +379,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Sub",
 			args: args{
-				amount:   *big.NewInt(100000000),
-				decimal:  6,
-				operator: SubOperator,
+				amount:             big.NewInt(100000000),
+				decimal:            6,
+				isToUnifiedDecimal: false,
 			},
 			want:    big.NewInt(100000),
 			wantErr: false,
@@ -383,9 +389,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Convert",
 			args: args{
-				amount:   *big.NewInt(100),
-				decimal:  config.Param().BridgeAggParam.BaseDecimal,
-				operator: AddOperator,
+				amount:             big.NewInt(100),
+				decimal:            config.Param().BridgeAggParam.BaseDecimal,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(100),
 			wantErr: false,
@@ -393,9 +399,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield",
 			args: args{
-				amount:   *big.NewInt(1234567890000000),
-				decimal:  18,
-				operator: AddOperator,
+				amount:             big.NewInt(1234567890000000),
+				decimal:            18,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(1234567),
 			wantErr: false,
@@ -403,9 +409,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield - 2",
 			args: args{
-				amount:   *big.NewInt(50000000000000000),
-				decimal:  18,
-				operator: AddOperator,
+				amount:             big.NewInt(50000000000000000),
+				decimal:            18,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(50000000),
 			wantErr: false,
@@ -413,7 +419,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator)
+			got, err := ConvertAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.isToUnifiedDecimal)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateAmountByDecimal() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -657,4 +663,19 @@ func TestCalculateDeltaY(t *testing.T) {
 			}
 		})
 	}
+}
+
+func CheckInterfacesIsEqual(expected interface{}, actual interface{}) error {
+	expectedData, err := json.Marshal(expected)
+	if err != nil {
+		return err
+	}
+	actualData, err := json.Marshal(actual)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(expectedData, actualData) {
+		return fmt.Errorf("expected %s but get %s", string(expectedData), string(actualData))
+	}
+	return nil
 }

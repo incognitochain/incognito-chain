@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,9 +33,9 @@ func StoreBridgeAggUnifiedToken(stateDB *StateDB, unifiedTokenID common.Hash, st
 	return stateDB.SetStateObject(BridgeAggUnifiedTokenObjectType, key, state)
 }
 
-func StoreBridgeAggConvertedToken(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggConvertedTokenState) error {
-	key := GenerateBridgeAggConvertedTokenObjectKey(unifiedTokenID, tokenID)
-	return stateDB.SetStateObject(BridgeAggConvertedTokenObjectType, key, state)
+func GetBridgeAggUnifiedTokens(stateDB *StateDB) ([]*BridgeAggUnifiedTokenState, error) {
+	prefixHash := generateBridgeAggUnifiedTokenObjectPrefix()
+	return stateDB.iterateBridgeAggUnifiedTokens(prefixHash)
 }
 
 func StoreBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, state *BridgeAggVaultState) error {
@@ -44,24 +43,45 @@ func StoreBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash, 
 	return stateDB.SetStateObject(BridgeAggVaultObjectType, key, state)
 }
 
-func GetBridgeAggUnifiedTokens(stateDB *StateDB) ([]*BridgeAggUnifiedTokenState, error) {
-	prefixHash := generateBridgeAggUnifiedTokenObjectPrefix()
-	return stateDB.iterateWithBridgeAggUnifiedTokens(prefixHash)
+func GetBridgeAggVaults(stateDB *StateDB, unifiedTokenID common.Hash) (map[common.Hash]*BridgeAggVaultState, error) {
+	prefixHash := generateBridgeAggVaultObjectPrefix(unifiedTokenID)
+	return stateDB.iterateBridgeAggVaults(prefixHash)
 }
 
-func GetBridgeAggConvertedTokens(stateDB *StateDB, unifiedTokenID common.Hash) ([]*BridgeAggConvertedTokenState, error) {
-	prefixHash := generateBridgeAggConvertedTokenObjectPrefix(unifiedTokenID)
-	return stateDB.iterateWithBridgeAggConvertedTokens(prefixHash)
+func StoreBridgeAggWaitingUnshieldReq(stateDB *StateDB, unifiedTokenID, unshieldID common.Hash, waitingUnshieldReq *BridgeAggWaitingUnshieldReq) error {
+	key := GenerateBridgeAggWaitingUnshieldReqObjectKey(unifiedTokenID, unshieldID)
+	return stateDB.SetStateObject(BridgeAggWaitingUnshieldReqObjectType, key, waitingUnshieldReq)
 }
 
-func GetBridgeAggVault(stateDB *StateDB, unifiedTokenID, tokenID common.Hash) (*BridgeAggVaultState, error) {
-	key := GenerateBridgeAggVaultObjectKey(unifiedTokenID, tokenID)
-	state, ok, err := stateDB.getBridgeAggVault(key)
+// return list of waiting unshield requests by unifiedTokenID and the list is sorted ascending by beaconHeight
+func GetBridgeAggWaitingUnshieldReqs(stateDB *StateDB, unifiedTokenID common.Hash) ([]*BridgeAggWaitingUnshieldReq, error) {
+	prefixHash := GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID.Bytes())
+	return stateDB.iterateBridgeAggWaitingUnshieldReqs(prefixHash)
+}
+
+func DeleteBridgeAggWaitingUnshieldReqs(stateDB *StateDB, waitUnshieldKeys []common.Hash) error {
+	for _, keyHash := range waitUnshieldKeys {
+		stateDB.MarkDeleteStateObject(BridgeAggWaitingUnshieldReqObjectType, keyHash)
+	}
+
+	return nil
+}
+
+// Get bridge agg param from statedb
+// if not found in db, return the default param
+func GetBridgeAggParam(stateDB *StateDB) (*BridgeAggParamState, error) {
+	key := GenerateBridgeAggParamObjectKey()
+	param, has, err := stateDB.getBridgeAggParamByKey(key)
 	if err != nil {
-		return nil, err
+		return nil, NewStatedbError(GetBridgeAggStatusError, err)
 	}
-	if !ok {
-		return nil, errors.New("Can't find bridge agg vault")
+	if !has {
+		return nil, nil
 	}
-	return state, nil
+	return param, nil
+}
+
+func StoreBridgeAggParam(stateDB *StateDB, param *BridgeAggParamState) error {
+	key := GenerateBridgeAggParamObjectKey()
+	return stateDB.SetStateObject(BridgeAggParamObjectType, key, param)
 }

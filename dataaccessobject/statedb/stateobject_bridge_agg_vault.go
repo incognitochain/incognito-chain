@@ -10,26 +10,37 @@ import (
 )
 
 type BridgeAggVaultState struct {
-	reserve                  uint64
-	lastUpdatedRewardReserve uint64
-	currentRewardReserve     uint64
-	decimal                  uint
-	isPaused                 bool
+	// vault's volume amount - available for unshield
+	amount uint64
+	// vault's amount was locked with current waiting unshield reqs
+	lockedAmount uint64
+	// total shortage unshield amount of current waiting unshield reqs
+	waitingUnshieldAmount uint64
+	// total unshield fee corresponding to waitingUnshieldAmount
+	waitingUnshieldFee uint64
+
+	extDecimal uint
+	networkID  uint
+	tokenID    common.Hash
 }
 
 func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Reserve                  uint64 `json:"Reserve"`
-		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
-		CurrentRewardReserve     uint64 `json:"CurrentRewardReserve"`
-		Decimal                  uint   `json:"Decimal"`
-		IsPaused                 bool   `json:"IsPaused"`
+		Amount                uint64      `json:"Amount"`
+		LockedAmount          uint64      `json:"LockedAmount"`
+		WaitingUnshieldAmount uint64      `json:"WaitingUnshieldAmount"`
+		WaitingUnshieldFee    uint64      `json:"WaitingUnshieldFee"`
+		ExtDecimal            uint        `json:"ExtDecimal"`
+		NetworkID             uint        `json:"NetworkID"`
+		TokenID               common.Hash `json:"TokenID"`
 	}{
-		Reserve:                  state.reserve,
-		LastUpdatedRewardReserve: state.lastUpdatedRewardReserve,
-		CurrentRewardReserve:     state.currentRewardReserve,
-		Decimal:                  state.decimal,
-		IsPaused:                 state.isPaused,
+		Amount:                state.amount,
+		LockedAmount:          state.lockedAmount,
+		WaitingUnshieldAmount: state.waitingUnshieldAmount,
+		WaitingUnshieldFee:    state.waitingUnshieldFee,
+		ExtDecimal:            state.extDecimal,
+		NetworkID:             state.networkID,
+		TokenID:               state.tokenID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -39,21 +50,25 @@ func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 
 func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Reserve                  uint64 `json:"Reserve"`
-		LastUpdatedRewardReserve uint64 `json:"LastUpdatedRewardReserve"`
-		CurrentRewardReserve     uint64 `json:"CurrentRewardReserve"`
-		Decimal                  uint   `json:"Decimal"`
-		IsPaused                 bool   `json:"IsPaused"`
+		Amount                uint64      `json:"Amount"`
+		LockedAmount          uint64      `json:"LockedAmount"`
+		WaitingUnshieldAmount uint64      `json:"WaitingUnshieldAmount"`
+		WaitingUnshieldFee    uint64      `json:"WaitingUnshieldFee"`
+		ExtDecimal            uint        `json:"ExtDecimal"`
+		NetworkID             uint        `json:"NetworkID"`
+		TokenID               common.Hash `json:"TokenID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	state.reserve = temp.Reserve
-	state.lastUpdatedRewardReserve = temp.LastUpdatedRewardReserve
-	state.currentRewardReserve = temp.CurrentRewardReserve
-	state.decimal = temp.Decimal
-	state.isPaused = temp.IsPaused
+	state.amount = temp.Amount
+	state.lockedAmount = temp.LockedAmount
+	state.waitingUnshieldAmount = temp.WaitingUnshieldAmount
+	state.waitingUnshieldFee = temp.WaitingUnshieldFee
+	state.extDecimal = temp.ExtDecimal
+	state.networkID = temp.NetworkID
+	state.tokenID = temp.TokenID
 	return nil
 }
 
@@ -62,64 +77,84 @@ func NewBridgeAggVaultState() *BridgeAggVaultState {
 }
 
 func NewBridgeAggVaultStateWithValue(
-	reserve, lastUpdatedRewardReserve, currentRewardReserve uint64, decimal uint, isPaused bool,
+	amount, lockedAmount, waitingUnshieldAmount, waitingUnshieldFee uint64, extDecimal uint, networkID uint, tokenID common.Hash,
 ) *BridgeAggVaultState {
 	return &BridgeAggVaultState{
-		reserve:                  reserve,
-		lastUpdatedRewardReserve: lastUpdatedRewardReserve,
-		currentRewardReserve:     currentRewardReserve,
-		decimal:                  decimal,
-		isPaused:                 isPaused,
+		amount:                amount,
+		lockedAmount:          lockedAmount,
+		waitingUnshieldAmount: waitingUnshieldAmount,
+		waitingUnshieldFee:    waitingUnshieldFee,
+		extDecimal:            extDecimal,
+		networkID:             networkID,
+		tokenID:               tokenID,
 	}
 }
 
-func (b *BridgeAggVaultState) Decimal() uint {
-	return b.decimal
+func (b *BridgeAggVaultState) Amount() uint64 {
+	return b.amount
 }
 
-func (b *BridgeAggVaultState) Reserve() uint64 {
-	return b.reserve
+func (b *BridgeAggVaultState) LockedAmount() uint64 {
+	return b.lockedAmount
 }
 
-func (b *BridgeAggVaultState) LastUpdatedRewardReserve() uint64 {
-	return b.lastUpdatedRewardReserve
+func (b *BridgeAggVaultState) WaitingUnshieldAmount() uint64 {
+	return b.waitingUnshieldAmount
 }
 
-func (b *BridgeAggVaultState) CurrentRewardReserve() uint64 {
-	return b.currentRewardReserve
+func (b *BridgeAggVaultState) WaitingUnshieldFee() uint64 {
+	return b.waitingUnshieldFee
 }
 
-func (b *BridgeAggVaultState) IsPaused() bool {
-	return b.isPaused
+func (b *BridgeAggVaultState) ExtDecimal() uint {
+	return b.extDecimal
 }
 
-func (b *BridgeAggVaultState) SetReserve(reserve uint64) {
-	b.reserve = reserve
+func (b *BridgeAggVaultState) NetworkID() uint {
+	return b.networkID
 }
 
-func (b *BridgeAggVaultState) SetLastUpdatedRewardReserve(lastUpdatedRewardReserve uint64) {
-	b.lastUpdatedRewardReserve = lastUpdatedRewardReserve
+func (b *BridgeAggVaultState) TokenID() common.Hash {
+	return b.tokenID
 }
 
-func (b *BridgeAggVaultState) SetCurrentRewardReserve(currentRewardReserve uint64) {
-	b.currentRewardReserve = currentRewardReserve
+func (b *BridgeAggVaultState) SetAmount(amount uint64) {
+	b.amount = amount
 }
 
-func (b *BridgeAggVaultState) SetDecimal(decimal uint) {
-	b.decimal = decimal
+func (b *BridgeAggVaultState) SetLockedAmount(amount uint64) {
+	b.lockedAmount = amount
 }
 
-func (b *BridgeAggVaultState) SetIsPaused(isPaused bool) {
-	b.isPaused = isPaused
+func (b *BridgeAggVaultState) SetWaitingUnshieldAmount(amount uint64) {
+	b.waitingUnshieldAmount = amount
+}
+
+func (b *BridgeAggVaultState) SetWaitingUnshieldFee(amount uint64) {
+	b.waitingUnshieldFee = amount
+}
+
+func (b *BridgeAggVaultState) SetExtDecimal(extDecimal uint) {
+	b.extDecimal = extDecimal
+}
+
+func (b *BridgeAggVaultState) SetNetworkID(networkID uint) {
+	b.networkID = networkID
+}
+
+func (b *BridgeAggVaultState) SetTokenID(tokenID common.Hash) {
+	b.tokenID = tokenID
 }
 
 func (b *BridgeAggVaultState) Clone() *BridgeAggVaultState {
 	return &BridgeAggVaultState{
-		reserve:                  b.reserve,
-		lastUpdatedRewardReserve: b.lastUpdatedRewardReserve,
-		currentRewardReserve:     b.currentRewardReserve,
-		decimal:                  b.decimal,
-		isPaused:                 b.isPaused,
+		amount:                b.amount,
+		lockedAmount:          b.lockedAmount,
+		waitingUnshieldAmount: b.waitingUnshieldAmount,
+		waitingUnshieldFee:    b.waitingUnshieldFee,
+		extDecimal:            b.extDecimal,
+		networkID:             b.networkID,
+		tokenID:               b.tokenID,
 	}
 }
 
@@ -127,17 +162,32 @@ func (b *BridgeAggVaultState) GetDiff(compareState *BridgeAggVaultState) (*Bridg
 	if compareState == nil {
 		return nil, errors.New("compareState is nil")
 	}
-	if b.reserve != compareState.reserve ||
-		b.currentRewardReserve != compareState.currentRewardReserve ||
-		b.lastUpdatedRewardReserve != compareState.lastUpdatedRewardReserve ||
-		b.decimal != compareState.decimal || b.isPaused != compareState.isPaused {
+	if b.amount != compareState.amount || b.lockedAmount != compareState.lockedAmount ||
+		b.waitingUnshieldAmount != compareState.waitingUnshieldAmount || b.waitingUnshieldFee != compareState.waitingUnshieldFee ||
+		b.extDecimal != compareState.extDecimal ||
+		b.networkID != compareState.networkID || b.tokenID != compareState.tokenID {
 		return b.Clone(), nil
 	}
 	return nil, nil
 }
 
+func (b *BridgeAggVaultState) IsDiff(compareState *BridgeAggVaultState) (bool, error) {
+	if compareState == nil {
+		return false, errors.New("compareState is nil")
+	}
+	if b.amount != compareState.amount || b.lockedAmount != compareState.lockedAmount ||
+		b.waitingUnshieldAmount != compareState.waitingUnshieldAmount || b.waitingUnshieldFee != compareState.waitingUnshieldFee ||
+		b.extDecimal != compareState.extDecimal ||
+		b.networkID != compareState.networkID || b.tokenID != compareState.tokenID {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (b *BridgeAggVaultState) IsEmpty() bool {
-	return b.reserve == 0 && b.currentRewardReserve == 0 && b.lastUpdatedRewardReserve == 0 && b.decimal == 0
+	return b.amount == 0 && b.lockedAmount == 0 &&
+		b.waitingUnshieldAmount == 0 && b.waitingUnshieldFee == 0 &&
+		b.extDecimal == 0 && b.tokenID == common.Hash{}
 }
 
 type BridgeAggVaulltObject struct {

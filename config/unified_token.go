@@ -11,31 +11,32 @@ import (
 	"github.com/spf13/viper"
 )
 
-var unifiedToken map[uint64]map[common.Hash]map[uint]Vault
+var unifiedToken map[uint64]map[common.Hash]map[common.Hash]Vault
 
-func UnifiedToken() map[uint64]map[common.Hash]map[uint]Vault {
+func UnifiedToken() map[uint64]map[common.Hash]map[common.Hash]Vault {
 	return unifiedToken
 }
 
 //AbortUnifiedToken use for unit test only
 // DO NOT use this function for development process
 func AbortUnifiedToken() {
-	unifiedToken = make(map[uint64]map[common.Hash]map[uint]Vault)
+	unifiedToken = make(map[uint64]map[common.Hash]map[common.Hash]Vault)
 }
 
+// SetUnifiedToken
 // DO NOT use this function for development process
-func SetUnifiedToken(UnifiedToken map[uint64]map[common.Hash]map[uint]Vault) {
+func SetUnifiedToken(UnifiedToken map[uint64]map[common.Hash]map[common.Hash]Vault) {
 	unifiedToken = UnifiedToken
 }
 
 type Vault struct {
 	ExternalDecimal uint   `mapstructure:"external_decimal"`
 	ExternalTokenID string `mapstructure:"external_token_id"`
-	IncTokenID      string `mapstructure:"inc_token_id"`
+	NetworkID       uint   `mapstructure:"network_id"`
 }
 
 func LoadUnifiedToken(data []byte) {
-	unifiedToken = make(map[uint64]map[common.Hash]map[uint]Vault)
+	unifiedToken = make(map[uint64]map[common.Hash]map[common.Hash]Vault)
 	temp := make(map[string]map[string]map[string]Vault)
 	network := c.Network()
 	//read config from file
@@ -66,19 +67,19 @@ func LoadUnifiedToken(data []byte) {
 		if err != nil {
 			panic(err)
 		}
-		unifiedToken[beaconHeight] = make(map[common.Hash]map[uint]Vault)
+		unifiedToken[beaconHeight] = make(map[common.Hash]map[common.Hash]Vault)
 		for unifiedTokenID, vaults := range unifiedTokens {
 			unifiedTokenHash, err := common.Hash{}.NewHashFromStr(unifiedTokenID)
 			if err != nil {
 				panic(err)
 			}
-			unifiedToken[beaconHeight][*unifiedTokenHash] = make(map[uint]Vault)
-			for networkIDStr, vault := range vaults {
-				networkID, err := strconv.Atoi(networkIDStr)
+			unifiedToken[beaconHeight][*unifiedTokenHash] = make(map[common.Hash]Vault)
+			for tokenIDStr, vault := range vaults {
+				tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 				if err != nil {
 					panic(err)
 				}
-				unifiedToken[beaconHeight][*unifiedTokenHash][uint(networkID)] = vault
+				unifiedToken[beaconHeight][*unifiedTokenHash][*tokenID] = vault
 			}
 		}
 	}

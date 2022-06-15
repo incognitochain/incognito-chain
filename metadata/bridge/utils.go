@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -21,14 +20,57 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
+type EVMProof struct {
+	BlockHash rCommon.Hash `json:"BlockHash"`
+	TxIndex   uint         `json:"TxIndex"`
+	Proof     []string     `json:"Proof"`
+}
+
+type EVMInfo struct {
+	ContractAddress   string
+	Prefix            string
+	IsTxHashIssued    func(stateDB *statedb.StateDB, uniqTx []byte) (bool, error)
+	ListTxUsedInBlock [][]byte
+}
+
+func GetEVMInfoByNetworkID(networkID uint, ac *metadataCommon.AccumulatedValues) (*EVMInfo, error) {
+	res := &EVMInfo{}
+	switch networkID {
+	case common.ETHNetworkID:
+		res.ListTxUsedInBlock = ac.UniqETHTxsUsed
+		res.ContractAddress = config.Param().EthContractAddressStr
+		res.Prefix = utils.EmptyString
+		res.IsTxHashIssued = statedb.IsETHTxHashIssued
+	case common.BSCNetworkID:
+		res.ListTxUsedInBlock = ac.UniqBSCTxsUsed
+		res.ContractAddress = config.Param().BscContractAddressStr
+		res.Prefix = common.BSCPrefix
+		res.IsTxHashIssued = statedb.IsBSCTxHashIssued
+	case common.PLGNetworkID:
+		res.ListTxUsedInBlock = ac.UniqPLGTxsUsed
+		res.ContractAddress = config.Param().PlgContractAddressStr
+		res.Prefix = common.PLGPrefix
+		res.IsTxHashIssued = statedb.IsPLGTxHashIssued
+	case common.FTMNetworkID:
+		res.ListTxUsedInBlock = ac.UniqFTMTxsUsed
+		res.ContractAddress = config.Param().FtmContractAddressStr
+		res.Prefix = common.FTMPrefix
+		res.IsTxHashIssued = statedb.IsFTMTxHashIssued
+	default:
+		return nil, errors.New("Invalid networkID")
+	}
+	return res, nil
+}
+
 func IsBridgeAggMetaType(metaType int) bool {
 	switch metaType {
-	case metadataCommon.BridgeAggModifyRewardReserveMeta:
+	case metadataCommon.BridgeAggModifyParamMeta:
 		return true
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 		return true
@@ -37,8 +79,6 @@ func IsBridgeAggMetaType(metaType int) bool {
 	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		return true
 	case metadataCommon.IssuingUnifiedTokenResponseMeta:
-		return true
-	case metadataCommon.IssuingUnifiedRewardResponseMeta:
 		return true
 	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		return true
@@ -51,51 +91,6 @@ func IsBridgeAggMetaType(metaType int) bool {
 	}
 }
 
-type Vault struct {
-	statedb.BridgeAggConvertedTokenState
-	RewardReserve uint64 `json:"RewardReserve"`
-	Decimal       uint   `json:"Decimal"`
-	IsPaused      bool   `json:"IsPaused"`
-}
-
-func (v *Vault) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		State         *statedb.BridgeAggConvertedTokenState `json:"State"`
-		RewardReserve uint64                                `json:"RewardReserve"`
-		Decimal       uint                                  `json:"Decimal"`
-		IsPaused      bool                                  `json:"IsPaused"`
-	}{
-		State:         &v.BridgeAggConvertedTokenState,
-		RewardReserve: v.RewardReserve,
-		Decimal:       v.Decimal,
-		IsPaused:      v.IsPaused,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (v *Vault) UnmarshalJSON(data []byte) error {
-	temp := struct {
-		State         *statedb.BridgeAggConvertedTokenState `json:"State"`
-		RewardReserve uint64                                `json:"RewardReserve"`
-		Decimal       uint                                  `json:"Decimal"`
-		IsPaused      bool                                  `json:"IsPaused"`
-	}{}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-	v.RewardReserve = temp.RewardReserve
-	if temp.State != nil {
-		v.BridgeAggConvertedTokenState = *temp.State
-	}
-	v.Decimal = temp.Decimal
-	v.IsPaused = temp.IsPaused
-	return nil
-}
-
 func IsBridgeTxHashUsedInBlock(uniqTx []byte, uniqTxsUsed [][]byte) bool {
 	for _, item := range uniqTxsUsed {
 		if bytes.Equal(uniqTx, item) {
@@ -105,50 +100,39 @@ func IsBridgeTxHashUsedInBlock(uniqTx []byte, uniqTxsUsed [][]byte) bool {
 	return false
 }
 
-func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
+func GetShardIDFromPaymentAddress(paymentAddress key.PaymentAddress) (byte, error) {
+	// calculate shard ID
+	lastByte := paymentAddress.Pk[len(paymentAddress.Pk)-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
+	return shardID, nil
+}
+
+func GetShardIDFromPaymentAddressStr(addressStr string) (byte, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(addressStr)
 	if err != nil {
 		return byte(0), err
 	}
 	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return byte(0), fmt.Errorf("Payment address' public key must not be empty")
+		return byte(0), errors.New("Payment address' public key must not be empty")
 	}
 	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
-	return shardID, nil
+	return GetShardIDFromPaymentAddress(keyWallet.KeySet.PaymentAddress)
 }
 
-func ExtractIssueEVMData(
-	stateDB *statedb.StateDB, shardID byte, listTxUsed [][]byte, contractAddress string, prefix string,
-	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
-	txReceipt *types.Receipt, blockHash rCommon.Hash, txIndex uint,
-) (*big.Int, byte, string, []byte, []byte, error) {
+func ExtractIssueEVMDataFromReceipt(
+	txReceipt *types.Receipt,
+	contractAddress string, prefix string,
+	expectedIncAddrStr string,
+) (*big.Int, string, []byte, error) {
 	if txReceipt == nil {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: bridge tx receipt is null")
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: bridge tx receipt is null")
 	}
-
-	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
-	// so must build unique eth tx as combination of block hash and tx index.
-	uniqTx := append(blockHash[:], []byte(strconv.Itoa(int(txIndex)))...)
-	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
-	if isUsedInBlock {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in current block: ", uniqTx)
-	}
-	isIssued, err := isTxHashIssued(stateDB, uniqTx)
-	if err != nil {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
-	}
-	if isIssued {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: already issued for the hash in previous blocks: ", uniqTx)
-	}
-
 	logMap, err := PickAndParseLogMapFromReceiptByContractAddr(txReceipt, contractAddress, "Deposit")
 	if err != nil {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an error occurred while parsing log map from receipt: ", err)
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: an error occurred while parsing log map from receipt: ", err)
 	}
 	if logMap == nil {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not find log map out from receipt")
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: could not find log map out from receipt")
 	}
 
 	logMapBytes, _ := json.Marshal(logMap)
@@ -157,23 +141,29 @@ func ExtractIssueEVMData(
 	// the token might be ETH/ERC20 BNB/BEP20
 	tokenAddr, ok := logMap["token"].(rCommon.Address)
 	if !ok {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse evm token id from log map.")
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: could not parse evm token id from log map.")
 	}
-	token := append([]byte(prefix), tokenAddr.Bytes()...)
+	extTokenID := append([]byte(prefix), tokenAddr.Bytes()...)
 
-	addressStr, ok := logMap["incognitoAddress"].(string)
+	incAddrStr, ok := logMap["incognitoAddress"].(string)
 	if !ok {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse incognito address from bridge log map.")
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: could not parse incognito address from bridge log map.")
 	}
+	if expectedIncAddrStr != "" && incAddrStr != expectedIncAddrStr {
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: different incognito address from bridge log map.")
+	}
+	if expectedIncAddrStr == "" {
+		key, err := wallet.Base58CheckDeserialize(incAddrStr)
+		if err != nil || len(key.KeySet.PaymentAddress.Pk) == 0 {
+			return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: invalid incognito address from bridge log map.")
+		}
+	}
+
 	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: could not parse amount from bridge log map.")
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: could not parse amount from bridge log map.")
 	}
-	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
-	if err != nil {
-		return nil, 0, utils.EmptyString, nil, nil, fmt.Errorf("WARNING: an error occurred while getting shard id from payment address: ", err)
-	}
-	return amt, receivingShardID, addressStr, token, uniqTx, nil
+	return amt, incAddrStr, extTokenID, nil
 }
 
 func VerifyTokenPair(
@@ -203,7 +193,7 @@ func VerifyTokenPair(
 	return nil
 }
 
-func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefix string, metaType int) ([]byte, error) {
+func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefix string) ([]byte, error) {
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(stateDB, &incTokenID)
 	if err != nil {
@@ -216,7 +206,7 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 
 	prefixLen := len(prefix)
 	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("metadata type %v with invalid external tokenID %v", metaType, tokenID))
+		return nil, errors.New(fmt.Sprintf("invalid prefix in external tokenID %v", tokenID))
 	}
 	return tokenID, nil
 }
@@ -421,5 +411,24 @@ func GetNetworkTypeByNetworkID(networkID uint) (uint, error) {
 		return common.EVMNetworkType, nil
 	default:
 		return 0, errors.New("Not found networkID")
+	}
+}
+
+func IsBurningConfirmMetaType(metaType int) bool {
+	switch metaType {
+	case metadataCommon.BurningConfirmMeta, metadataCommon.BurningConfirmMetaV2:
+		return true
+	case metadataCommon.BurningConfirmForDepositToSCMeta, metadataCommon.BurningConfirmForDepositToSCMetaV2:
+		return true
+	case metadataCommon.BurningBSCConfirmMeta, metadataCommon.BurningPBSCConfirmForDepositToSCMeta:
+		return true
+	case metadataCommon.BurningFantomConfirmForDepositToSCMeta, metadataCommon.BurningFantomConfirmMeta:
+		return true
+	case metadataCommon.BurningPLGConfirmMeta, metadataCommon.BurningPLGConfirmForDepositToSCMeta:
+		return true
+	case metadataCommon.BurningPRVBEP20ConfirmMeta, metadataCommon.BurningPRVERC20ConfirmMeta:
+		return true
+	default:
+		return false
 	}
 }

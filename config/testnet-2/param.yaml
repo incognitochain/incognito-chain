@@ -122,6 +122,10 @@ auto_enable_feature:
       min_trigger: 3965040
       force_trigger: 1000000000
       require_percentage: 90
+  - unified_token_202205041100:
+      min_trigger: 4332193
+      force_trigger: 1000000000
+      require_percentage: 90
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
