@@ -91,13 +91,13 @@ func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenI
 		maxReceivedAmt = burntAmount - maxFee
 	}
 
-	return &jsonresult.BridgeAggEstimateFee{
-		Fee:               fee,
-		ReceivedAmount:    receivedAmt,
-		BurntAmount:       burntAmount,
+	return &jsonresult.BridgeAggEstimateFeeByBurntAmount{
+		BurntAmount:    burntAmount,
+		Fee:            fee,
+		ReceivedAmount: receivedAmt,
+
 		MaxFee:            maxFee,
-		MaxBurntAmount:    burntAmount,
-		MaxReceivedAmount: maxReceivedAmt,
+		MinReceivedAmount: maxReceivedAmt,
 	}, nil
 }
 
@@ -128,13 +128,13 @@ func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTok
 		maxBurnAmount = amount + maxFee
 	}
 
-	return &jsonresult.BridgeAggEstimateFee{
-		Fee:               fee,
-		ReceivedAmount:    amount,
-		BurntAmount:       burnAmt,
-		MaxFee:            maxFee,
-		MaxBurntAmount:    maxBurnAmount,
-		MaxReceivedAmount: amount,
+	return &jsonresult.BridgeAggEstimateFeeByReceivedAmount{
+		ReceivedAmount: amount,
+		Fee:            fee,
+		BurntAmount:    burnAmt,
+
+		MaxFee:         maxFee,
+		MaxBurntAmount: maxBurnAmount,
 	}, nil
 }
 

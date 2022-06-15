@@ -180,7 +180,7 @@ func (blockchain *BlockChain) generateBridgeInstruction(
 	for _, v := range keys {
 		shardID := byte(v)
 		for _, shardBlock := range currentShardStateBlock[shardID] {
-			bridgeInsts, err := CreateShardBridgeUnshieldInstsFromTxs(shardBlock.Body.Transactions, blockchain,
+			actions, err := CreateShardBridgeUnshieldActionsFromTxs(shardBlock.Body.Transactions, blockchain,
 				shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
 			if err != nil {
 				BLogger.log.Errorf("Build bridge unshield instructions failed: %s", err.Error())
@@ -191,7 +191,7 @@ func (blockchain *BlockChain) generateBridgeInstruction(
 			bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
 				curView.GetBeaconFeatureStateDB(),
 				shardID,
-				bridgeInsts,
+				actions,
 				newBeaconBlock.GetHeight(),
 			)
 			if err != nil {
@@ -217,7 +217,7 @@ func (blockchain *BlockChain) generateBridgeAggInstruction(
 	for beaconHeight, shardBlkMaps := range currentShardStateBlockForBridgeAgg {
 		for shardID, shardBlks := range shardBlkMaps {
 			for _, shardBlk := range shardBlks {
-				instructions, err := CreateShardBridgeAggUnshieldInstsFromTxs(
+				actions, err := CreateShardBridgeAggUnshieldActionsFromTxs(
 					shardBlk.Body.Transactions, blockchain,
 					shardID, shardBlk.Header.Height, shardBlk.Header.BeaconHeight)
 				if err != nil {
@@ -225,7 +225,7 @@ func (blockchain *BlockChain) generateBridgeAggInstruction(
 					return nil, err
 				}
 				unshieldActions = append(unshieldActions,
-					bridgeagg.BuildUnshieldActionForProducerFromInsts(instructions, shardID, beaconHeight)...)
+					bridgeagg.BuildUnshieldActionForProducerFromInsts(actions, shardID, beaconHeight)...)
 			}
 		}
 	}
