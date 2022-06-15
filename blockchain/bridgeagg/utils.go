@@ -860,7 +860,7 @@ func convertPTokenAmtToPUnifiedTokenAmt(extDec uint, amount uint64) (uint64, err
 }
 
 // calculate actual received amount and actual fee
-func calUnshieldFeeByShortageBurnAmount(burnAmount uint64, percentFeeWithDec uint64) (uint64, error) {
+func CalUnshieldFeeByShortageBurnAmount(burnAmount uint64, percentFeeWithDec uint64) (uint64, error) {
 	percentFeeDec := config.Param().BridgeAggParam.PercentFeeDecimal
 	// receiveAmt + fee = shortageAmt
 	// fee = (percentFee * shortageAmt) / (percentFee + 1)
@@ -886,7 +886,7 @@ func calUnshieldFeeByShortageBurnAmount(burnAmount uint64, percentFeeWithDec uin
 }
 
 // calculate actual received amount and actual fee
-func calUnshieldFeeByShortageReceivedAmount(receivedAmount uint64, percentFeeWithDec uint64) (uint64, error) {
+func CalUnshieldFeeByShortageReceivedAmount(receivedAmount uint64, percentFeeWithDec uint64) (uint64, error) {
 	percentFeeDec := config.Param().BridgeAggParam.PercentFeeDecimal
 
 	// fee = percentFee * receivedAmount
@@ -1001,7 +1001,7 @@ func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint6
 		isEnoughVault = false
 
 		// calculate unshield fee by shortage amount
-		fee, err = calUnshieldFeeByShortageBurnAmount(shortageAmt, percentFeeWithDec)
+		fee, err = CalUnshieldFeeByShortageBurnAmount(shortageAmt, percentFeeWithDec)
 		if err != nil {
 			return false, 0, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}
@@ -1030,7 +1030,7 @@ func CalUnshieldFeeByReceivedAmount(v *statedb.BridgeAggVaultState, receivedAmt 
 		isEnoughVault = false
 
 		// calculate unshield fee by shortage amount
-		fee, err = calUnshieldFeeByShortageReceivedAmount(shortageAmt, percentFeeWithDec)
+		fee, err = CalUnshieldFeeByShortageReceivedAmount(shortageAmt, percentFeeWithDec)
 		if err != nil {
 			return false, 0, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}

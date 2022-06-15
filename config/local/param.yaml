@@ -42,7 +42,7 @@ epoch_param:
   random_time: 25
   random_time_v2: 1e9
 eth_contract_address: "0xf90860014c7e13dE4A86B81c54dDE797820c72bE"
-bsc_contract_address: "0x5cAA31ADf0Ae8767f651EdEe1Cd6C57C0a707EC1"
+bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
 plg_contract_address: "0x141aa0C4c7d27f7B526a254202F979B60F056333"
 ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
 prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
