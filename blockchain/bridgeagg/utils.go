@@ -15,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -391,11 +390,11 @@ func ValidateDoubleShieldProof(
 }
 
 // func shieldEVM(
-// 	unifiedTokenID, incTokenID common.Hash, networkID uint, ac *metadata.AccumulatedValues,
+// 	unifiedTokenID, incTokenID common.Hash, networkID uint, ac *metadataCommon.AccumulatedValues,
 // 	shardID byte, txReqID common.Hash,
 // 	vault *statedb.BridgeAggVaultState, stateDBs map[int]*statedb.StateDB, extraData []byte,
 // 	blockHash rCommon.Hash, txIndex uint,
-// ) (*statedb.BridgeAggVaultState, uint64, uint64, byte, []byte, []byte, string, *metadata.AccumulatedValues, int, error) {
+// ) (*statedb.BridgeAggVaultState, uint64, uint64, byte, []byte, []byte, string, *metadataCommon.AccumulatedValues, int, error) {
 // 	var txReceipt *types.Receipt
 // 	err := json.Unmarshal(extraData, &txReceipt)
 // 	if err != nil {
@@ -482,27 +481,27 @@ func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) 
 	switch networkID {
 	case common.ETHNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
+			burningMetaType = metadataCommon.BurningConfirmForDepositToSCMetaV2
 		} else {
-			burningMetaType = metadata.BurningConfirmMetaV2
+			burningMetaType = metadataCommon.BurningConfirmMetaV2
 		}
 	case common.BSCNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningBSCConfirmMeta
+			burningMetaType = metadataCommon.BurningBSCConfirmMeta
 		}
 	case common.PLGNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningPLGConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningPLGConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningPLGConfirmMeta
+			burningMetaType = metadataCommon.BurningPLGConfirmMeta
 		}
 	case common.FTMNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningFantomConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningFantomConfirmMeta
+			burningMetaType = metadataCommon.BurningFantomConfirmMeta
 		}
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
@@ -520,30 +519,30 @@ func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) 
 // 	switch vault.NetworkID() {
 // 	case common.ETHNetworkID:
 // 		if isDepositToSC {
-// 			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
+// 			burningMetaType = metadataCommon.BurningConfirmForDepositToSCMetaV2
 // 		} else {
-// 			burningMetaType = metadata.BurningConfirmMetaV2
+// 			burningMetaType = metadataCommon.BurningConfirmMetaV2
 // 		}
 // 		prefix = utils.EmptyString
 // 	case common.BSCNetworkID:
 // 		if isDepositToSC {
-// 			burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta
+// 			burningMetaType = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
 // 		} else {
-// 			burningMetaType = metadata.BurningBSCConfirmMeta
+// 			burningMetaType = metadataCommon.BurningBSCConfirmMeta
 // 		}
 // 		prefix = common.BSCPrefix
 // 	case common.PLGNetworkID:
 // 		if isDepositToSC {
-// 			burningMetaType = metadata.BurningPLGConfirmForDepositToSCMeta
+// 			burningMetaType = metadataCommon.BurningPLGConfirmForDepositToSCMeta
 // 		} else {
-// 			burningMetaType = metadata.BurningPLGConfirmMeta
+// 			burningMetaType = metadataCommon.BurningPLGConfirmMeta
 // 		}
 // 		prefix = common.PLGPrefix
 // 	case common.FTMNetworkID:
 // 		if isDepositToSC {
-// 			burningMetaType = metadata.BurningFantomConfirmForDepositToSCMeta
+// 			burningMetaType = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 // 		} else {
-// 			burningMetaType = metadata.BurningFantomConfirmMeta
+// 			burningMetaType = metadataCommon.BurningFantomConfirmMeta
 // 		}
 // 		prefix = common.FTMPrefix
 // 	case common.DefaultNetworkID:
@@ -616,30 +615,30 @@ func getBurningConfirmMeta(networkID int, isDepositToSC bool) (int, string, erro
 	switch networkID {
 	case common.ETHNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
+			burningMetaType = metadataCommon.BurningConfirmForDepositToSCMetaV2
 		} else {
-			burningMetaType = metadata.BurningConfirmMetaV2
+			burningMetaType = metadataCommon.BurningConfirmMetaV2
 		}
 		prefix = utils.EmptyString
 	case common.BSCNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningBSCConfirmMeta
+			burningMetaType = metadataCommon.BurningBSCConfirmMeta
 		}
 		prefix = common.BSCPrefix
 	case common.PLGNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningPLGConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningPLGConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningPLGConfirmMeta
+			burningMetaType = metadataCommon.BurningPLGConfirmMeta
 		}
 		prefix = common.PLGPrefix
 	case common.FTMNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningFantomConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningFantomConfirmMeta
+			burningMetaType = metadataCommon.BurningFantomConfirmMeta
 		}
 		prefix = common.FTMPrefix
 	case common.DefaultNetworkID:
@@ -1284,8 +1283,7 @@ func updateStateForModifyParam(state *State, newPercentFeeWithDec uint64) *State
 }
 
 type UnshieldActionForProducer struct {
-	TxReqID      common.Hash
-	Meta         metadataBridge.UnshieldRequest
+	metadataCommon.Action
 	ShardID      byte
 	BeaconHeight uint64
 }
@@ -1300,20 +1298,44 @@ func BuildUnshieldActionForProducerFromInsts(insts [][]string, shardID byte, bea
 
 		// decode action from shard
 		action := metadataCommon.NewAction()
-		meta := &metadataBridge.UnshieldRequest{}
-		action.Meta = meta
+		switch inst[0] {
+		case strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta):
+			action.Meta = &metadataBridge.UnshieldRequest{}
+		case strconv.Itoa(metadataCommon.BurnForCallRequestMeta):
+			action.Meta = &metadataBridge.BurnForCallRequest{}
+		default:
+			Logger.log.Warnf("Invalid metadata type %s for unshield from shard", inst[0])
+			continue
+		}
 		err := action.FromString(contentStr)
 		if err != nil {
-			Logger.log.Warnf("Can not decode content string for unshield from shard: %v\n", err)
+			Logger.log.Warnf("Can not decode content string for unshield from shard: %v", err)
 			continue
 		}
 
 		unshieldActions = append(unshieldActions, UnshieldActionForProducer{
-			TxReqID:      action.TxReqID,
-			Meta:         *meta,
+			Action:       *action,
 			ShardID:      shardID,
 			BeaconHeight: beaconHeight,
 		})
 	}
 	return unshieldActions
+}
+
+func buildRejectedBurnForCallReqInst(meta metadataBridge.BurnForCallRequest, shardID byte, txReqID common.Hash, errorType int) []string {
+	var totalBurnAmt uint64 = meta.BurningAmount
+	rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
+		UnifiedTokenID: meta.BurnTokenID,
+		Amount:         totalBurnAmt,
+		Receiver:       meta.RefundReceiver,
+	}
+	rejectedContent, _ := json.Marshal(rejectedUnshieldRequest)
+	rejectContentStr, _ := metadataCommon.NewRejectContentWithValue(txReqID, ErrCodeMessage[errorType].Code, rejectedContent).String()
+	rejectedInst := metadataCommon.NewInstructionWithValue(
+		metadataCommon.BurnForCallRequestMeta,
+		common.RejectedStatusStr,
+		shardID,
+		rejectContentStr,
+	)
+	return rejectedInst.StringSlice()
 }

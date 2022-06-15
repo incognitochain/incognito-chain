@@ -3,6 +3,7 @@ package bridgeagg
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -354,7 +355,10 @@ func (sp *stateProducer) unshield(
 	beaconHeightForConfirmInst uint64,
 	stateDB *statedb.StateDB,
 ) ([][]string, *State, error) {
-	meta := unshieldAction.Meta
+	meta, ok := unshieldAction.Meta.(*metadataBridge.UnshieldRequest)
+	if !ok {
+		return [][]string{}, state, fmt.Errorf("Cannot parse UnshieldRequest metadata")
+	}
 	txReqID := unshieldAction.TxReqID
 	beaconHeightForUnshield := unshieldAction.BeaconHeight
 	shardID := unshieldAction.ShardID
@@ -368,7 +372,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
+			*meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
@@ -383,7 +387,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			meta, shardID, txReqID, CheckVaultUnshieldError)
+			*meta, shardID, txReqID, CheckVaultUnshieldError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
@@ -407,7 +411,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when updating state for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			meta, shardID, txReqID, ProducerUpdateStateError)
+			*meta, shardID, txReqID, ProducerUpdateStateError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
@@ -518,4 +522,88 @@ func (sp *stateProducer) addToken(
 		return temp, state, clonedAC, nil
 	}
 	return []string{}, state, ac, nil
+}
+
+func (sp *stateProducer) burnForCall(
+	action UnshieldActionForProducer,
+	state *State,
+	beaconHeightForConfirmInst uint64,
+	stateDB *statedb.StateDB,
+) ([][]string, *State, error) {
+	meta, ok := action.Meta.(*metadataBridge.BurnForCallRequest)
+	if !ok {
+		return [][]string{}, state, fmt.Errorf("Cannot parse BurnForCallRequest metadata")
+	}
+	txReqID := action.TxReqID
+	beaconHeightForUnshield := action.BeaconHeight
+	shardID := action.ShardID
+
+	var insts [][]string
+	var burningConfirmInsts [][]string
+	clonedState := state.Clone()
+
+	useUnifiedToken := meta.BurnTokenID != meta.IncTokenID
+	if useUnifiedToken {
+		// check UnifiedTokenID
+		vaults, err := clonedState.CloneVaultsByUnifiedTokenID(meta.BurnTokenID)
+		if err != nil {
+			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.BurnTokenID)
+			rejectedInst := buildRejectedBurnForCallReqInst(
+				*meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
+			return [][]string{rejectedInst}, state, nil
+		}
+
+		// check vaults
+		isEnoughVault, waitingUnshieldDatas, err := checkVaultForNewUnshieldReq(
+			vaults,
+			[]metadataBridge.UnshieldRequestData{
+				metadataBridge.UnshieldRequestData{
+					IncTokenID: meta.IncTokenID,
+					BurningAmount: meta.BurningAmount,
+					MinExpectedAmount: meta.MinExpectedAmount,
+				},
+			},
+			true,
+			clonedState.param.PercentFeeWithDec(),
+			stateDB,
+		)
+		if err != nil {
+			Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
+			rejectedInst := buildRejectedBurnForCallReqInst(
+				*meta, shardID, txReqID, CheckVaultUnshieldError)
+			return [][]string{rejectedInst}, state, nil
+		}
+
+		waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)
+		statusStr := common.WaitingStatusStr
+
+		if isEnoughVault {
+			statusStr = common.AcceptedStatusStr
+
+			// build burning confirm insts
+			burningConfirmInsts = buildBurningConfirmInsts(waitingUnshieldReq, beaconHeightForConfirmInst)
+			insts = append(insts, burningConfirmInsts...)
+			clonedState, err = updateStateForUnshield(clonedState, meta.BurnTokenID, waitingUnshieldReq, statusStr)
+			if err != nil {
+				Logger.log.Errorf("[BridgeAgg] Error producing burnForCall: %v", err)
+				rejectedInst := buildRejectedBurnForCallReqInst(
+					*meta, shardID, txReqID, ProducerUpdateStateError)
+				return [][]string{rejectedInst}, state, nil
+			}
+		} else {
+			err = fmt.Errorf("not enough funds for unshielding")
+			rejectedInst := buildRejectedBurnForCallReqInst(
+				*meta, shardID, txReqID, ProducerUpdateStateError)
+			return [][]string{rejectedInst}, state, nil
+		}
+
+		if err != nil {
+			Logger.log.Errorf("[BridgeAgg] Error when updating state for burnForCall: %v", err)
+			rejectedInst := buildRejectedBurnForCallReqInst(
+				*meta, shardID, txReqID, ProducerUpdateStateError)
+			return [][]string{rejectedInst}, state, nil
+		}
+	}
+
+	return insts, clonedState, nil
 }

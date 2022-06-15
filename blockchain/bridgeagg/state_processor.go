@@ -432,3 +432,13 @@ func (sp *stateProcessor) addToken(inst []string, state *State, sDB *statedb.Sta
 	}
 	return clonedState, nil
 }
+
+func (sp *stateProcessor) burnForCall(
+	inst metadataCommon.Instruction,
+	state *State,
+	sDB *statedb.StateDB,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (*State, map[common.Hash]metadata.UpdatingInfo, error) {
+	
+	return state, updatingInfoByTokenID, nil
+}

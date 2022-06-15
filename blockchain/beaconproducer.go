@@ -205,7 +205,7 @@ func (blockchain *BlockChain) generateBridgeInstruction(
 	return bridgeInstructions, nil
 }
 
-// generateBridgeAggInstruction creates bridge agg unshield instructions for finalized unshield reqs
+// generateBridgeAggInstruction creates bridge agg unshield instructions for FINALIZED unshield reqs
 func (blockchain *BlockChain) generateBridgeAggInstruction(
 	curView *BeaconBestState,
 	currentShardStateBlockForBridgeAgg map[uint64]map[byte][]*types.ShardBlock,
@@ -217,6 +217,7 @@ func (blockchain *BlockChain) generateBridgeAggInstruction(
 	for beaconHeight, shardBlkMaps := range currentShardStateBlockForBridgeAgg {
 		for shardID, shardBlks := range shardBlkMaps {
 			for _, shardBlk := range shardBlks {
+				// grab relevant actions as string slices
 				instructions, err := CreateShardBridgeAggUnshieldInstsFromTxs(
 					shardBlk.Body.Transactions, blockchain,
 					shardID, shardBlk.Header.Height, shardBlk.Header.BeaconHeight)

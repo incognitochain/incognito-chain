@@ -213,6 +213,9 @@ const (
 	BurningUnifiedTokenRequestMeta                  = 345
 	BurningUnifiedTokenResponseMeta                 = 346
 	BridgeAggAddTokenMeta                           = 347
+
+	BurnForCallRequestMeta = 158
+	BurnForCallResponseMeta = 348
 )
 
 var minerCreatedMetaTypes = []int{
@@ -379,3 +382,8 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 	common.PortalV3Flag:       portalMetaTypesV3,
 	common.PortalV4Flag:       portalV4MetaTypes,
 }
+
+const (
+	BurnForCallReceiveTypeRedeposit = iota
+	BurnForCallReceiveTypeWithdraw
+)
