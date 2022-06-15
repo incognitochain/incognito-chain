@@ -82,16 +82,22 @@ func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenI
 
 	receivedAmt := burntAmount - fee
 	maxFee := fee
+	maxReceivedAmt := receivedAmt
 	if fee > 0 {
-		maxFee = calMaxUnshieldFee(receivedAmt, state.Param().PercentFeeWithDec(), config.Param().BridgeAggParam.PercentFeeDecimal)
+		maxFee, err = bridgeagg.CalUnshieldFeeByShortageBurnAmount(burntAmount, state.Param().PercentFeeWithDec())
+		if err != nil {
+			return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
+		}
+		maxReceivedAmt = burntAmount - maxFee
 	}
 
 	return &jsonresult.BridgeAggEstimateFee{
-		Fee:            fee,
-		ReceivedAmount: receivedAmt,
-		BurntAmount:    burntAmount,
-		MaxFee:         maxFee,
-		MaxBurntAmount: burntAmount,
+		Fee:               fee,
+		ReceivedAmount:    receivedAmt,
+		BurntAmount:       burntAmount,
+		MaxFee:            maxFee,
+		MaxBurntAmount:    burntAmount,
+		MaxReceivedAmount: maxReceivedAmt,
 	}, nil
 }
 
@@ -123,11 +129,12 @@ func (blockService BlockService) BridgeAggEstimateFeeByExpectedAmount(unifiedTok
 	}
 
 	return &jsonresult.BridgeAggEstimateFee{
-		Fee:            fee,
-		ReceivedAmount: amount,
-		BurntAmount:    burnAmt,
-		MaxFee:         maxFee,
-		MaxBurntAmount: maxBurnAmount,
+		Fee:               fee,
+		ReceivedAmount:    amount,
+		BurntAmount:       burnAmt,
+		MaxFee:            maxFee,
+		MaxBurntAmount:    maxBurnAmount,
+		MaxReceivedAmount: amount,
 	}, nil
 }
 
