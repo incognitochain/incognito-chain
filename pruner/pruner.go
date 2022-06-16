@@ -83,7 +83,7 @@ func (p *Pruner) Prune(sID int) error {
 	for height := lastPrunedHeight; height < finalHeight; height++ {
 		wg.Add(1)
 		heightCh <- height
-		if height%100 == 0 || height == finalHeight-1 {
+		if height%uint64(runtime.NumCPU()) == 0 || height == finalHeight-1 {
 			wg.Wait()
 			count, storage, err = p.removeNodes(db, shardID, height, listKeysShouldBeRemoved, count, storage)
 			if err != nil {
@@ -165,27 +165,31 @@ func (p *Pruner) compact(db incdb.Database, count uint64) error {
 // removeNodes after removeNodes keys map will be reset to empty value
 func (p *Pruner) removeNodes(
 	db incdb.Database, shardID byte, height uint64, listKeysShouldBeRemoved *[]map[common.Hash]struct{},
-	totalStorage, totalNodes uint64,
+	totalNodes, totalStorage uint64,
 ) (uint64, uint64, error) {
 	var storage, count uint64
 
 	if len(*listKeysShouldBeRemoved) != 0 {
-		batch := db.NewBatch()
+		keysShouldBeRemoved := make(map[common.Hash]struct{})
 		for _, keys := range *listKeysShouldBeRemoved {
 			for key := range keys {
-				temp, _ := db.Get(key.Bytes())
-				storage += uint64(len(temp) + len(key.Bytes()))
-				if err := batch.Delete(key.Bytes()); err != nil {
+				keysShouldBeRemoved[key] = struct{}{}
+			}
+		}
+		batch := db.NewBatch()
+		for key := range keysShouldBeRemoved {
+			temp, _ := db.Get(key.Bytes())
+			storage += uint64(len(temp) + len(key.Bytes()))
+			if err := batch.Delete(key.Bytes()); err != nil {
+				return 0, 0, err
+			}
+			if batch.ValueSize() >= incdb.IdealBatchSize {
+				if err := batch.Write(); err != nil {
 					return 0, 0, err
 				}
-				if batch.ValueSize() >= incdb.IdealBatchSize {
-					if err := batch.Write(); err != nil {
-						return 0, 0, err
-					}
-					batch.Reset()
-				}
-				count++
+				batch.Reset()
 			}
+			count++
 		}
 		if batch.ValueSize() > 0 {
 			batch.Write()
