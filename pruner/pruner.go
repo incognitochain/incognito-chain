@@ -44,7 +44,10 @@ func (p *Pruner) Prune(sID int) error {
 	if err != nil {
 		panic(err)
 	}
-	Logger.log.Infof("[state-prune] Start state pruning for shardID %v", sID)
+	Logger.log.Infof("[state-prune] Start state pruning for shard %v", sID)
+	defer func() {
+		Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
+	}()
 	finalHeight, err := p.addDataToStateBloom(shardID, db, stateBloom)
 	if err != nil {
 		return err
@@ -54,53 +57,71 @@ func (p *Pruner) Prune(sID int) error {
 	}
 
 	// get last pruned height before
-	var lastPrunedHeight uint64
-	temp, err := rawdbv2.GetLastPrunedHeight(db, shardID)
+	lastPrunedKey, err := rawdbv2.GetLastPrunedKeyTrie(db, shardID)
 	if err == nil {
-		err := json.Unmarshal(temp, &lastPrunedHeight)
+		return err
+	}
+	stopCh := make(chan interface{})
+	rootHashCh := make(chan blockchain.ShardRootHash)
+	listKeysShouldBeRemoved := &[]map[common.Hash]struct{}{}
+	wg := new(sync.WaitGroup)
+	for i := 0; i < runtime.NumCPU()-1; i++ {
+		worker := NewWorker(stopCh, rootHashCh, rootHashCache, stateBloom, listKeysShouldBeRemoved, db, shardID, wg)
+		go worker.start()
+		defer worker.stop()
+	}
+	Logger.log.Infof("[state-prune] begin pruning from key %v", lastPrunedKey)
+	// retrieve all state tree by shard rooth hash prefix
+	// delete all nodes which are not in state bloom
+	var start []byte
+	if len(lastPrunedKey) != 0 {
+		start = lastPrunedKey
+	}
+	var nodes, storage, count uint64
+	iter := db.NewIteratorWithPrefixStart(rawdbv2.GetShardRootsHashPrefix(shardID), start)
+	defer func() {
+		iter.Release()
+	}()
+	var finalPrunedKey []byte
+	for iter.Next() {
+		key := iter.Key()
+		rootHash := blockchain.ShardRootHash{}
+		err := json.Unmarshal(iter.Value(), &rootHash)
+		if err != nil {
+			return err
+		}
+		wg.Add(1)
+		rootHashCh <- rootHash
+		finalPrunedKey = key
+		if count%uint64(runtime.NumCPU()) == 0 {
+			wg.Wait()
+			nodes, storage, err = p.removeNodes(db, shardID, key, listKeysShouldBeRemoved, nodes, storage)
+			if err != nil {
+				return err
+			}
+			if count%10000 == 0 {
+				Logger.log.Infof("[state-prune] Finish prune for key %v count %v delete totalNodes %v with storage %v", key, count, nodes, storage)
+			}
+			finalPrunedKey = []byte{}
+		}
+		count++
+	}
+	if len(finalPrunedKey) == 0 {
+		nodes, storage, err = p.removeNodes(db, shardID, finalPrunedKey, listKeysShouldBeRemoved, nodes, storage)
 		if err != nil {
 			return err
 		}
 	}
-	if lastPrunedHeight == 0 {
-		lastPrunedHeight = 1
-	} else {
-		lastPrunedHeight++
-	}
-	stopCh := make(chan interface{})
-	heightCh := make(chan uint64)
-	listKeysShouldBeRemoved := &[]map[common.Hash]struct{}{}
-	wg := new(sync.WaitGroup)
-	for i := 0; i < runtime.NumCPU()-1; i++ {
-		worker := NewWorker(stopCh, heightCh, rootHashCache, stateBloom, listKeysShouldBeRemoved, db, shardID, wg)
-		go worker.start()
-		defer worker.stop()
-	}
-	Logger.log.Infof("[state-prune] begin pruning from height %v", lastPrunedHeight)
-	// retrieve all state tree from lastPrunedHeight to finalHeight - 1
-	// delete all nodes which are not in state bloom
-	var count, storage uint64
-	for height := lastPrunedHeight; height < finalHeight; height++ {
-		wg.Add(1)
-		heightCh <- height
-		if height%uint64(runtime.NumCPU()) == 0 || height == finalHeight-1 {
-			wg.Wait()
-			count, storage, err = p.removeNodes(db, shardID, height, listKeysShouldBeRemoved, count, storage)
-			if err != nil {
-				return err
-			}
 
-		}
-	}
-	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", count, storage)
-	if err = p.compact(db, count); err != nil {
+	iter.Release()
+	if err = p.compact(db, nodes); err != nil {
 		return err
 	}
+	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", nodes, storage)
 	err = rawdbv2.StorePruneStatus(db, shardID, rawdbv2.FinishPruneStatus)
 	if err != nil {
 		return err
 	}
-	Logger.log.Infof("[state-prune] Finish state pruning for shard %v", sID)
 	return nil
 }
 
@@ -164,8 +185,8 @@ func (p *Pruner) compact(db incdb.Database, count uint64) error {
 
 // removeNodes after removeNodes keys map will be reset to empty value
 func (p *Pruner) removeNodes(
-	db incdb.Database, shardID byte, height uint64, listKeysShouldBeRemoved *[]map[common.Hash]struct{},
-	totalNodes, totalStorage uint64,
+	db incdb.Database, shardID byte, key []byte,
+	listKeysShouldBeRemoved *[]map[common.Hash]struct{}, totalNodes, totalStorage uint64,
 ) (uint64, uint64, error) {
 	var storage, count uint64
 
@@ -198,11 +219,8 @@ func (p *Pruner) removeNodes(
 	}
 	totalStorage += uint64(storage)
 	totalNodes += count
-	if err := rawdbv2.StoreLastPrunedHeight(db, shardID, height); err != nil {
+	if err := rawdbv2.StoreLastPrunedKeyTrie(db, shardID, key); err != nil {
 		return 0, 0, err
-	}
-	if height%10000 == 0 {
-		Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, totalNodes, totalStorage)
 	}
 	*listKeysShouldBeRemoved = make([]map[common.Hash]struct{}, 0)
 	return totalNodes, totalStorage, nil

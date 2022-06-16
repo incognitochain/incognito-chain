@@ -45,7 +45,7 @@ var (
 	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
-	lastPrunedHeightPrefix    = []byte("l-p-h" + string(splitter))
+	lastPrunedKeyTriePrefix   = []byte("l-p-k" + string(splitter))
 	pruneStatusPrefix         = []byte("p-s" + string(splitter))
 )
 
@@ -267,6 +267,14 @@ func GetShardRootsHashKey(shardID byte, hash common.Hash) []byte {
 	return key
 }
 
+func GetShardRootsHashPrefix(shardID byte) []byte {
+	temp := make([]byte, 0, len(shardRootHashPrefix))
+	temp = append(temp, shardRootHashPrefix...)
+	key := append(temp, shardID)
+	key = append(key, splitter...)
+	return key
+}
+
 func GetBeaconRootsHashKey(hash common.Hash) []byte {
 	temp := make([]byte, 0, len(beaconRootHashPrefix))
 	temp = append(temp, beaconRootHashPrefix...)
@@ -434,9 +442,9 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 }
 
 // ============================= State prune =======================================
-func GetLastPrunedHeightKey(shardID byte) []byte {
-	temp := make([]byte, 0, len(lastPrunedHeightPrefix))
-	temp = append(temp, lastPrunedHeightPrefix...)
+func GetLastPrunedKeyTrieKey(shardID byte) []byte {
+	temp := make([]byte, 0, len(lastPrunedKeyTriePrefix))
+	temp = append(temp, lastPrunedKeyTriePrefix...)
 	return append(temp, shardID)
 }
 

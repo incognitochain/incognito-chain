@@ -142,6 +142,13 @@ func (db *db) NewIterator() incdb.Iterator {
 	return db.lvdb.NewIterator(new(util.Range), nil)
 }
 
+// NewIteratorWithPrefixStart creates a binary-alphabetical iterator over a subset
+// of database content with a particular key prefix, starting at a particular
+// initial key (or after, if it does not exist).
+func (db *db) NewIteratorWithPrefixStart(prefix []byte, start []byte) incdb.Iterator {
+	return db.lvdb.NewIterator(bytesPrefixRange(prefix, start), nil)
+}
+
 // NewIteratorWithStart creates a binary-alphabetical iterator over a subset of
 // database content starting at a particular initial key (or after, if it does
 // not exist).
@@ -422,4 +429,13 @@ func uncompress(srcPath, desPath string) error {
 
 	fmt.Println("done decompress", desPath)
 	return nil
+}
+
+// bytesPrefixRange returns key range that satisfy
+// - the given prefix, and
+// - the given seek position
+func bytesPrefixRange(prefix, start []byte) *util.Range {
+	r := util.BytesPrefix(prefix)
+	r.Start = append(r.Start, start...)
+	return r
 }
