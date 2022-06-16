@@ -24,18 +24,20 @@ func (stateDB *StateDB) Retrieve(
 		if err != nil {
 			return nil, err
 		}
-		if shouldAddToStateBloom {
-			if err := stateBloom.Put(key, nil); err != nil {
-				return nil, err
-			}
-		}
-		if shouldDelete {
+		if shouldAddToStateBloom || shouldDelete {
 			if ok, err := stateBloom.Contain(key); err != nil {
 				return nil, err
 			} else if ok {
 				descend = false
 				continue
 			}
+		}
+		if shouldAddToStateBloom {
+			if err := stateBloom.Put(key, nil); err != nil {
+				return nil, err
+			}
+		}
+		if shouldDelete {
 			keysShouldBeRemoved[h] = struct{}{}
 		}
 	}
