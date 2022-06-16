@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	"github.com/stretchr/testify/suite"
 )
@@ -112,7 +114,15 @@ func (u *UnshieldTestSuite) test() {
 	producerManager := NewManagerWithValue(producerState)
 	processorState := testCase.Data.State.Clone()
 	processorManager := NewManagerWithValue(processorState)
-	actualInstructions, accumulatedValues, err := producerManager.BuildInstructions(testCase.Data.env)
+	actions := [][]string{}
+	for _, unshieldActions := range testCase.Data.env.unshieldActions {
+		for _, action := range unshieldActions {
+			temp := []string{strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta), action}
+			actions = append(actions, temp)
+		}
+	}
+	unshieldActions := BuildUnshieldActionForProducerFromInsts(actions, 0, 104)
+	actualInstructions, err := producerManager.BuildNewUnshieldInstructions(u.sDB, 10, unshieldActions)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
 	err = processorManager.Process(actualInstructions, u.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
@@ -122,7 +132,7 @@ func (u *UnshieldTestSuite) test() {
 			Instructions:      actualInstructions,
 			ProducerState:     producerManager.state,
 			ProcessorState:    processorManager.state,
-			AccumulatedValues: accumulatedValues,
+			AccumulatedValues: testCase.Data.AccumulatedValues,
 		},
 	}
 
