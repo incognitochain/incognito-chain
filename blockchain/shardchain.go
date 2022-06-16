@@ -3,9 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 

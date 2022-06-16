@@ -5,10 +5,14 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
 func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if !config.Config().AllowStatePrune {
+		return nil, rpcservice.NewRPCError(rpcservice.PruneError, errors.New("Node is not able to prune"))
+	}
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))

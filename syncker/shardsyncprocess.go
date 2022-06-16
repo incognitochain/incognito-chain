@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -42,6 +43,7 @@ type ShardSyncProcess struct {
 	consensus             peerv2.ConsensusData
 	lock                  *sync.RWMutex
 	lastInsert            string
+	p                     *pruner.Pruner
 }
 
 func NewShardSyncProcess(
@@ -51,6 +53,7 @@ func NewShardSyncProcess(
 	beaconChain BeaconChainInterface,
 	chain ShardChainInterface,
 	consensus peerv2.ConsensusData,
+	p *pruner.Pruner,
 ) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -70,6 +73,7 @@ func NewShardSyncProcess(
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
+		p:                p,
 
 		actionCh: make(chan func()),
 	}

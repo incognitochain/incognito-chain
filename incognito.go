@@ -118,9 +118,11 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
+
+	p := pruner.NewPrunerWithValue(db)
 	//check if prune flag is available
 	if config.Config().StatePrune {
-		if err := pruner.NewPrunerWithValue(db).PruneImmediately(); err != nil {
+		if err := p.PruneImmediately(); err != nil {
 			panic(err)
 		}
 	}
@@ -206,7 +208,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, dbmp, outcoinDb, cfg.NumIndexerWorkers, cfg.IndexerAccessTokens, version, btcChain, bnbChainState, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, outcoinDb, cfg.NumIndexerWorkers, cfg.IndexerAccessTokens, version, btcChain, bnbChainState, p, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)

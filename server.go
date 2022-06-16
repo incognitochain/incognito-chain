@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	"github.com/incognitochain/incognito-chain/pruner"
 
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
@@ -200,6 +201,7 @@ func (serverObj *Server) NewServer(
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
+	p *pruner.Pruner,
 	interrupt <-chan struct{},
 ) error {
 	// Init data for Server
