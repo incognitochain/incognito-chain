@@ -2,12 +2,10 @@ package pruner
 
 import (
 	"encoding/json"
-	"runtime"
+	"fmt"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -25,11 +23,15 @@ func NewPrunerWithValue(db map[int]incdb.Database) *Pruner {
 }
 
 func (p *Pruner) PruneImmediately() error {
-	for i := 0; i < common.MaxShardNumber; i++ {
-		if err := p.Prune(i); err != nil {
-			panic(err)
-		}
+	if err := p.Prune(2); err != nil {
+		panic(err)
 	}
+	panic(1)
+	//for i := 0; i < common.MaxShardNumber; i++ {
+	//	if err := p.Prune(i); err != nil {
+	//		panic(err)
+	//	}
+	//}
 	return nil
 }
 
@@ -40,7 +42,6 @@ func (p *Pruner) Prune(sID int) error {
 	}
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
-	rootHashCache, err := lru.New(100)
 	if err != nil {
 		panic(err)
 	}
@@ -63,14 +64,16 @@ func (p *Pruner) Prune(sID int) error {
 	}
 	stopCh := make(chan interface{})
 	rootHashCh := make(chan blockchain.ShardRootHash)
-	listKeysShouldBeRemoved := &[]map[common.Hash]struct{}{}
+
 	wg := new(sync.WaitGroup)
-	for i := 0; i < runtime.NumCPU()-1; i++ {
-		worker := NewWorker(stopCh, rootHashCh, rootHashCache, stateBloom, listKeysShouldBeRemoved, db, shardID, wg)
+	workerGroup := []*Worker{}
+	NUMPROCESS := 40
+	for i := 0; i < NUMPROCESS; i++ {
+		worker := NewWorker(stopCh, rootHashCh, stateBloom, db, shardID, wg)
+		workerGroup = append(workerGroup, worker)
 		go worker.start()
 		defer worker.stop()
 	}
-	Logger.log.Infof("[state-prune] begin pruning from key %v", lastPrunedKey)
 	// retrieve all state tree by shard rooth hash prefix
 	// delete all nodes which are not in state bloom
 	var start []byte
@@ -82,9 +85,9 @@ func (p *Pruner) Prune(sID int) error {
 	defer func() {
 		iter.Release()
 	}()
-	var finalPrunedKey []byte
+
 	for iter.Next() {
-		key := iter.Key()
+		_ = iter.Key()
 		rootHash := blockchain.ShardRootHash{}
 		err := json.Unmarshal(iter.Value(), &rootHash)
 		if err != nil {
@@ -92,36 +95,48 @@ func (p *Pruner) Prune(sID int) error {
 		}
 		wg.Add(1)
 		rootHashCh <- rootHash
-		finalPrunedKey = key
-		if count%uint64(runtime.NumCPU()) == 0 {
+
+		Logger.log.Infof("[state-prune] Prune counter ... %v %v", count, rootHash.TransactionStateDBRootHash.String())
+		if count%uint64(NUMPROCESS) == 0 {
 			wg.Wait()
-			nodes, storage, err = p.removeNodes(db, shardID, key, listKeysShouldBeRemoved, nodes, storage)
-			if err != nil {
-				return err
+			for _, w := range workerGroup {
+				wg.Add(1)
+				go func() {
+					c, t, e := w.removeDB()
+					if e != nil {
+						fmt.Println(e)
+					}
+					storage += t
+					nodes += c
+					wg.Done()
+				}()
 			}
-			if count%10000 == 0 {
-				Logger.log.Infof("[state-prune] Finish prune for key %v count %v delete totalNodes %v with storage %v", key, count, nodes, storage)
-			}
-			finalPrunedKey = []byte{}
+			wg.Wait()
+
+			Logger.log.Infof("[state-prune] Finish prune for %v roothash: delete totalNodes %v with storage %v", count, nodes, storage)
 		}
 		count++
 	}
-	if len(finalPrunedKey) == 0 {
-		nodes, storage, err = p.removeNodes(db, shardID, finalPrunedKey, listKeysShouldBeRemoved, nodes, storage)
-		if err != nil {
-			return err
-		}
-	}
 
-	iter.Release()
+	wg.Wait()
+	for _, w := range workerGroup {
+		wg.Add(1)
+		go func() {
+			c, t, e := w.removeDB()
+			if e != nil {
+				fmt.Println(e)
+			}
+			storage += t
+			nodes += c
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 	if err = p.compact(db, nodes); err != nil {
 		return err
 	}
+
 	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", nodes, storage)
-	err = rawdbv2.StorePruneStatus(db, shardID, rawdbv2.FinishPruneStatus)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -154,11 +169,12 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database, stateBloom
 			return 0, err
 		}
 		//Retrieve all state tree for this state
-		_, err = stateDB.Retrieve(true, false, stateBloom)
+		err = stateDB.Retrieve(true, false, stateBloom, nil)
 		if err != nil {
 			return 0, err
 		}
 		Logger.log.Infof("[state-prune] Finish retrieve view %s", v.BestBlockHash.String())
+		break
 	}
 
 	return finalHeight, nil
@@ -181,47 +197,4 @@ func (p *Pruner) compact(db incdb.Database, count uint64) error {
 		}
 	}
 	return nil
-}
-
-// removeNodes after removeNodes keys map will be reset to empty value
-func (p *Pruner) removeNodes(
-	db incdb.Database, shardID byte, key []byte,
-	listKeysShouldBeRemoved *[]map[common.Hash]struct{}, totalNodes, totalStorage uint64,
-) (uint64, uint64, error) {
-	var storage, count uint64
-
-	if len(*listKeysShouldBeRemoved) != 0 {
-		keysShouldBeRemoved := make(map[common.Hash]struct{})
-		for _, keys := range *listKeysShouldBeRemoved {
-			for key := range keys {
-				keysShouldBeRemoved[key] = struct{}{}
-			}
-		}
-		batch := db.NewBatch()
-		for key := range keysShouldBeRemoved {
-			temp, _ := db.Get(key.Bytes())
-			storage += uint64(len(temp) + len(key.Bytes()))
-			if err := batch.Delete(key.Bytes()); err != nil {
-				return 0, 0, err
-			}
-			if batch.ValueSize() >= incdb.IdealBatchSize {
-				if err := batch.Write(); err != nil {
-					return 0, 0, err
-				}
-				batch.Reset()
-			}
-			count++
-		}
-		if batch.ValueSize() > 0 {
-			batch.Write()
-			batch.Reset()
-		}
-	}
-	totalStorage += uint64(storage)
-	totalNodes += count
-	if err := rawdbv2.StoreLastPrunedKeyTrie(db, shardID, key); err != nil {
-		return 0, 0, err
-	}
-	*listKeysShouldBeRemoved = make([]map[common.Hash]struct{}, 0)
-	return totalNodes, totalStorage, nil
 }

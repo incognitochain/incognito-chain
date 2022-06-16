@@ -119,10 +119,8 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	//check if prune flag is available
-	if config.Config().StatePrune {
-		if err := pruner.NewPrunerWithValue(db).PruneImmediately(); err != nil {
-			panic(err)
-		}
+	if err := pruner.NewPrunerWithValue(db).PruneImmediately(); err != nil {
+		panic(err)
 	}
 
 	// Create db for mempool and use it

@@ -1,9 +1,9 @@
 package pruner
 
 import (
+	"fmt"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,29 +12,26 @@ import (
 )
 
 type Worker struct {
-	stopCh                  chan interface{}
-	rootHashCh              chan blockchain.ShardRootHash
-	rootHashCache           *lru.Cache
-	listKeysShouldBeRemoved *[]map[common.Hash]struct{}
-	db                      incdb.Database
-	shardID                 byte
-	stateBloom              *trie.StateBloom
-	wg                      *sync.WaitGroup
+	stopCh              chan interface{}
+	rootHashCh          chan blockchain.ShardRootHash
+	keysShouldBeRemoved map[common.Hash]struct{}
+	db                  incdb.Database
+	shardID             byte
+	stateBloom          *trie.StateBloom
+	wg                  *sync.WaitGroup
 }
 
 func NewWorker(
-	stopCh chan interface{}, rootHashCh chan blockchain.ShardRootHash, rootHashCache *lru.Cache, stateBloom *trie.StateBloom,
-	listKeysShouldBeRemoved *[]map[common.Hash]struct{}, db incdb.Database, shardID byte, wg *sync.WaitGroup,
+	stopCh chan interface{}, rootHashCh chan blockchain.ShardRootHash, stateBloom *trie.StateBloom, db incdb.Database, shardID byte, wg *sync.WaitGroup,
 ) *Worker {
 	return &Worker{
-		stopCh:                  stopCh,
-		rootHashCh:              rootHashCh,
-		rootHashCache:           rootHashCache,
-		stateBloom:              stateBloom,
-		listKeysShouldBeRemoved: listKeysShouldBeRemoved,
-		db:                      db,
-		shardID:                 shardID,
-		wg:                      wg,
+		stopCh:              stopCh,
+		rootHashCh:          rootHashCh,
+		stateBloom:          stateBloom,
+		keysShouldBeRemoved: make(map[common.Hash]struct{}),
+		db:                  db,
+		shardID:             shardID,
+		wg:                  wg,
 	}
 }
 
@@ -47,6 +44,7 @@ func (w *Worker) start() {
 		select {
 		case rootHash := <-w.rootHashCh:
 			err := w.pruneByRootHash(rootHash)
+			w.wg.Done()
 			if err != nil {
 				panic(err)
 			}
@@ -56,18 +54,40 @@ func (w *Worker) start() {
 	}
 }
 
-func (w *Worker) pruneByRootHash(rootHash blockchain.ShardRootHash) error {
-	defer func() {
-		w.wg.Done()
-	}()
-	if _, ok := w.rootHashCache.Get(rootHash.TransactionStateDBRootHash.String()); ok {
-		return nil
+func (w *Worker) removeDB() (uint64, uint64, error) {
+	var storage = uint64(0)
+	var count = uint64(0)
+
+	batch := w.db.NewBatch()
+	fmt.Println("remove", len(w.keysShouldBeRemoved))
+	for key := range w.keysShouldBeRemoved {
+		temp, _ := w.db.Get(key.Bytes())
+		storage += uint64(len(temp) + len(key.Bytes()))
+		if err := batch.Delete(key.Bytes()); err != nil {
+			return 0, 0, err
+		}
+		if batch.ValueSize() >= incdb.IdealBatchSize {
+			if err := batch.Write(); err != nil {
+				return 0, 0, err
+			}
+			batch.Reset()
+		}
+		count++
 	}
+	if batch.ValueSize() > 0 {
+		batch.Write()
+		batch.Reset()
+	}
+
+	w.keysShouldBeRemoved = make(map[common.Hash]struct{})
+	return count, storage, nil
+}
+
+func (w *Worker) pruneByRootHash(rootHash blockchain.ShardRootHash) error {
 	err := w.pruneTxStateDB(&rootHash)
 	if err != nil {
 		return err
 	}
-	w.rootHashCache.Add(rootHash.TransactionStateDBRootHash.String(), struct{}{})
 	return nil
 }
 
@@ -76,12 +96,9 @@ func (w *Worker) pruneTxStateDB(sRH *blockchain.ShardRootHash) error {
 	if err != nil {
 		return nil
 	}
-	keysShouldBeRemoved, err := sDB.Retrieve(false, true, w.stateBloom)
+	err = sDB.Retrieve(false, true, w.stateBloom, w.keysShouldBeRemoved)
 	if err != nil {
 		return err
-	}
-	if len(keysShouldBeRemoved) != 0 {
-		*w.listKeysShouldBeRemoved = append(*w.listKeysShouldBeRemoved, keysShouldBeRemoved)
 	}
 	return nil
 }
