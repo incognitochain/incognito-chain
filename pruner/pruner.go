@@ -78,10 +78,8 @@ func (p *Pruner) Prune(sID int) error {
 		start = lastPrunedKey
 	}
 	var nodes, storage, count uint64
+	nodes, _ = rawdbv2.GetPendingPrunedNodes(db, shardID) // not checking error avoid case not store pruned node yet
 	iter := db.NewIteratorWithPrefixStart(rawdbv2.GetShardRootsHashPrefix(shardID), start)
-	defer func() {
-		iter.Release()
-	}()
 	var finalPrunedKey []byte
 	for iter.Next() {
 		key := iter.Key()
@@ -100,13 +98,13 @@ func (p *Pruner) Prune(sID int) error {
 				return err
 			}
 			if count%10000 == 0 {
-				Logger.log.Infof("[state-prune] Finish prune for key %v count %v delete totalNodes %v with storage %v", key, count, nodes, storage)
+				Logger.log.Infof("[state-prune] Finish prune for key %v totalKeys %v delete totalNodes %v with storage %v", key, count, nodes, storage)
 			}
 			finalPrunedKey = []byte{}
 		}
 		count++
 	}
-	if len(finalPrunedKey) == 0 {
+	if len(finalPrunedKey) != 0 {
 		nodes, storage, err = p.removeNodes(db, shardID, finalPrunedKey, listKeysShouldBeRemoved, nodes, storage)
 		if err != nil {
 			return err
@@ -119,6 +117,10 @@ func (p *Pruner) Prune(sID int) error {
 	}
 	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", nodes, storage)
 	err = rawdbv2.StorePruneStatus(db, shardID, rawdbv2.FinishPruneStatus)
+	if err != nil {
+		return err
+	}
+	err = rawdbv2.StorePendingPrunedNodes(db, shardID, 0)
 	if err != nil {
 		return err
 	}
@@ -147,7 +149,7 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database, stateBloom
 		if finalHeight == 0 || finalHeight > v.ShardHeight {
 			finalHeight = v.ShardHeight
 		}
-		Logger.log.Infof("[state-prune] Start retrieve view %s", v.BestBlockHash.String())
+		Logger.log.Infof("[state-prune] Start retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
 		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 		stateDB, err := statedb.NewWithPrefixTrie(v.TransactionStateDBRootHash, dbAccessWarper)
 		if err != nil {
@@ -158,7 +160,7 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database, stateBloom
 		if err != nil {
 			return 0, err
 		}
-		Logger.log.Infof("[state-prune] Finish retrieve view %s", v.BestBlockHash.String())
+		Logger.log.Infof("[state-prune] Finish retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
 	}
 
 	return finalHeight, nil
@@ -220,6 +222,9 @@ func (p *Pruner) removeNodes(
 	totalStorage += uint64(storage)
 	totalNodes += count
 	if err := rawdbv2.StoreLastPrunedKeyTrie(db, shardID, key); err != nil {
+		return 0, 0, err
+	}
+	if err := rawdbv2.StorePendingPrunedNodes(db, shardID, totalNodes); err != nil {
 		return 0, 0, err
 	}
 	*listKeysShouldBeRemoved = make([]map[common.Hash]struct{}, 0)

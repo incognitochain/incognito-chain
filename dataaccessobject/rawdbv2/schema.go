@@ -47,6 +47,7 @@ var (
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
 	lastPrunedKeyTriePrefix   = []byte("l-p-k" + string(splitter))
 	pruneStatusPrefix         = []byte("p-s" + string(splitter))
+	pendingPrunedNodesPrefix  = []byte("p-p-n" + string(splitter))
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -451,6 +452,12 @@ func GetLastPrunedKeyTrieKey(shardID byte) []byte {
 func GetPruneStatusKey(shardID byte) []byte {
 	temp := make([]byte, 0, len(pruneStatusPrefix))
 	temp = append(temp, pruneStatusPrefix...)
+	return append(temp, shardID)
+}
+
+func GetPendingPrunedNodesKey(shardID byte) []byte {
+	temp := make([]byte, 0, len(pendingPrunedNodesPrefix))
+	temp = append(temp, pendingPrunedNodesPrefix...)
 	return append(temp, shardID)
 }
 
