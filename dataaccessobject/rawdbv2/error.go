@@ -106,7 +106,8 @@ const (
 
 	// state prune
 	StoreShardLastPrunedKeyTrieError
-	StorePruneStatusError
+	StoreShardPendingPrunedNodesError
+	StoreShardPruneStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -193,15 +194,16 @@ var ErrCodeMessage = map[int]struct {
 	GetRelayingBNBHeaderError:   {-5002, "Get relaying header bnb error"},
 	GetBNBDataHashError:         {-5003, "Get bnb data hash by block height error"},
 
-	StoreOutcoinByOTAKeyError:        {-6001, "Store output coin by OTA key error"},
-	GetOutcoinByOTAKeyError:          {-6002, "Get output coin by OTA key error"},
-	StoreOTAKeyError:                 {-6003, "Store OTA key error"},
-	GetOTAKeyError:                   {-6004, "Get OTA keys error"},
-	DeleteOTAKeyError:                {-6005, "Delete OTA keys error"},
-	StoreCoinHashError:               {-6006, "Store coin hash error"},
-	GetCoinHashError:                 {-6007, "Get coin hash error"},
-	StoreShardLastPrunedKeyTrieError: {-7000, "Store shard last pruned key trie error"},
-	StorePruneStatusError:            {-7001, "Store prune status error"},
+	StoreOutcoinByOTAKeyError:         {-6001, "Store output coin by OTA key error"},
+	GetOutcoinByOTAKeyError:           {-6002, "Get output coin by OTA key error"},
+	StoreOTAKeyError:                  {-6003, "Store OTA key error"},
+	GetOTAKeyError:                    {-6004, "Get OTA keys error"},
+	DeleteOTAKeyError:                 {-6005, "Delete OTA keys error"},
+	StoreCoinHashError:                {-6006, "Store coin hash error"},
+	GetCoinHashError:                  {-6007, "Get coin hash error"},
+	StoreShardLastPrunedKeyTrieError:  {-7000, "Store shard last pruned key trie error"},
+	StoreShardPruneStatusError:        {-7001, "Store shard prune status error"},
+	StoreShardPendingPrunedNodesError: {-7002, "Store shard pending prune nodes error"},
 }
 
 type RawdbError struct {
