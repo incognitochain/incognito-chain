@@ -354,7 +354,11 @@ func (sp *stateProducer) unshield(
 	beaconHeightForConfirmInst uint64,
 	stateDB *statedb.StateDB,
 ) ([][]string, *State, error) {
-	meta := unshieldAction.Meta
+	meta, ok := unshieldAction.Meta.(*metadataBridge.UnshieldRequest)
+	if !ok {
+		Logger.log.Errorf("[BridgeAgg] Cannot parse BridgeAgg UnshieldRequest metadata")
+		return [][]string{}, state, nil
+	}
 	txReqID := unshieldAction.TxReqID
 	beaconHeightForUnshield := unshieldAction.BeaconHeight
 	shardID := unshieldAction.ShardID
@@ -368,7 +372,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.UnifiedTokenID)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
+			*meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
@@ -383,7 +387,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			meta, shardID, txReqID, CheckVaultUnshieldError)
+			*meta, shardID, txReqID, CheckVaultUnshieldError)
 		return [][]string{rejectedInst}, state, nil
 	}
 
@@ -407,7 +411,7 @@ func (sp *stateProducer) unshield(
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Error when updating state for unshield: %v", err)
 		rejectedInst := buildRejectedUnshieldReqInst(
-			meta, shardID, txReqID, ProducerUpdateStateError)
+			*meta, shardID, txReqID, ProducerUpdateStateError)
 		return [][]string{rejectedInst}, state, nil
 	}
 

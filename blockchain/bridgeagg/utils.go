@@ -1284,8 +1284,9 @@ func updateStateForModifyParam(state *State, newPercentFeeWithDec uint64) *State
 }
 
 type UnshieldActionForProducer struct {
-	TxReqID      common.Hash
-	Meta         metadataBridge.UnshieldRequest
+	// TxReqID      common.Hash
+	// Meta         metadataBridge.UnshieldRequest
+	metadataCommon.Action
 	ShardID      byte
 	BeaconHeight uint64
 }
@@ -1309,8 +1310,7 @@ func BuildUnshieldActionForProducerFromInsts(insts [][]string, shardID byte, bea
 		}
 
 		unshieldActions = append(unshieldActions, UnshieldActionForProducer{
-			TxReqID:      action.TxReqID,
-			Meta:         *meta,
+			Action:       *action,
 			ShardID:      shardID,
 			BeaconHeight: beaconHeight,
 		})
