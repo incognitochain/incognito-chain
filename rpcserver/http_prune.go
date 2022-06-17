@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -29,7 +30,12 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	result, err := httpServer.blockService.Prune(d.ShardIDs)
+	s, ok := httpServer.synkerService.Synker.ShardSyncProcess[0]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.PruneError, fmt.Errorf("Not found shard sync process"))
+	}
+	var result interface{}
+	result, s.Pruner, err = httpServer.blockService.Prune(d.ShardIDs, s.Pruner)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.PruneError, err)
 	}

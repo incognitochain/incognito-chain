@@ -485,6 +485,7 @@ func (serverObj *Server) NewServer(
 			Blockchain: serverObj.blockChain,
 			Consensus:  serverObj.consensusEngine,
 			MiningKey:  serverObj.miningKeys,
+			Pruner:     p,
 		})
 
 	// Start up persistent peers.

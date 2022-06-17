@@ -164,21 +164,21 @@ func GetLastPrunedKeyTrie(db incdb.KeyValueReader, shardID byte) ([]byte, error)
 	return db.Get(key)
 }
 
-func StorePruneStatus(db incdb.KeyValueWriter, shardID byte, v interface{}) error {
+func StorePruneStatus(db incdb.KeyValueWriter, shardID byte, v byte) error {
 	key := GetPruneStatusKey(shardID)
-	val, err := json.Marshal(v)
-	if err != nil {
-		return NewRawdbError(StoreShardPruneStatusError, err)
-	}
-	if err := db.Put(key, val); err != nil {
+	if err := db.Put(key, []byte{v}); err != nil {
 		return NewRawdbError(StoreShardPruneStatusError, err)
 	}
 	return nil
 }
 
-func GetPruneStatus(db incdb.KeyValueReader, shardID byte) ([]byte, error) {
+func GetPruneStatus(db incdb.KeyValueReader, shardID byte) (byte, error) {
 	key := GetPruneStatusKey(shardID)
-	return db.Get(key)
+	d, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return d[0], nil
 }
 
 func StorePendingPrunedNodes(db incdb.KeyValueWriter, shardID byte, v uint64) error {

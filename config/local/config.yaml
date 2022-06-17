@@ -24,8 +24,8 @@ rpc_user: "" #
 rpc_pass: "" #
 rpc_limit_user: "" #
 rpc_limit_pass: "" #
-rpc_listeners: "0.0.0.0:9334" #
-rpc_ws_listeners: "0.0.0.0:9335" #
+rpc_listeners: "0.0.0.0:8334" #
+rpc_ws_listeners: "0.0.0.0:8335" #
 rpc_cert: "rpc.cert" #
 rpc_key: "rpc.key" #
 rpc_limit_request_per_day: 0 #
@@ -60,5 +60,5 @@ use_coin_data:
   - true
 num_indexer_workers: 5
 indexer_access_token: "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
-allow_state_prune: false
+allow_state_prune: true
 state_prune: false

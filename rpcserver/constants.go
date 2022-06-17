@@ -431,7 +431,7 @@ const (
 	connectionStatus = "getconnectionstatus"
 
 	// prune
-	prune = "prune"
+	prune = "pruneState"
 )
 
 const (

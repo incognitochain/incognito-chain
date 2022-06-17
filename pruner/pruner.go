@@ -15,12 +15,23 @@ import (
 )
 
 type Pruner struct {
-	db map[int]incdb.Database
+	db       map[int]incdb.Database
+	Statuses map[int]byte
+	StatusMu sync.RWMutex
+	mu       sync.Mutex
 }
 
-func NewPrunerWithValue(db map[int]incdb.Database) *Pruner {
+func NewPrunerWithValue(db map[int]incdb.Database, statuses map[int]byte) *Pruner {
 	return &Pruner{
-		db: db,
+		db:       db,
+		Statuses: statuses,
+	}
+}
+
+func (p *Pruner) ReadStatus() {
+	for i := 0; i < common.MaxShardNumber; i++ {
+		status, _ := rawdbv2.GetPruneStatus(p.db[i], byte(i)) //ignore error for case not store status yet
+		p.Statuses[i] = status
 	}
 }
 
@@ -34,12 +45,23 @@ func (p *Pruner) PruneImmediately() error {
 }
 
 func (p *Pruner) Prune(sID int) error {
+	p.mu.Lock()
+	defer func() {
+		p.mu.Unlock()
+	}()
+	shardID := byte(sID)
+	db := p.db[int(shardID)]
+	err := rawdbv2.StorePruneStatus(db, shardID, rawdbv2.ProcessingPruneStatus)
+	if err != nil {
+		return err
+	}
+	p.StatusMu.Lock()
+	p.Statuses[sID] = rawdbv2.ProcessingPruneStatus
+	p.StatusMu.Unlock()
 	stateBloom, err := trie.NewStateBloomWithSize(2048)
 	if err != nil {
 		panic(err)
 	}
-	shardID := byte(sID)
-	db := p.db[int(shardID)]
 	rootHashCache, err := lru.New(100)
 	if err != nil {
 		panic(err)
@@ -56,11 +78,6 @@ func (p *Pruner) Prune(sID int) error {
 		return nil
 	}
 
-	// get last pruned height before
-	lastPrunedKey, err := rawdbv2.GetLastPrunedKeyTrie(db, shardID)
-	if err == nil {
-		return err
-	}
 	stopCh := make(chan interface{})
 	rootHashCh := make(chan blockchain.ShardRootHash)
 	listKeysShouldBeRemoved := &[]map[common.Hash]struct{}{}
@@ -70,48 +87,10 @@ func (p *Pruner) Prune(sID int) error {
 		go worker.start()
 		defer worker.stop()
 	}
-	Logger.log.Infof("[state-prune] begin pruning from key %v", lastPrunedKey)
-	// retrieve all state tree by shard rooth hash prefix
-	// delete all nodes which are not in state bloom
-	var start []byte
-	if len(lastPrunedKey) != 0 {
-		start = lastPrunedKey
+	nodes, storage, err := p.traverseAndDelete(db, shardID, listKeysShouldBeRemoved, rootHashCh, wg)
+	if err != nil {
+		return err
 	}
-	var nodes, storage, count uint64
-	nodes, _ = rawdbv2.GetPendingPrunedNodes(db, shardID) // not checking error avoid case not store pruned node yet
-	iter := db.NewIteratorWithPrefixStart(rawdbv2.GetShardRootsHashPrefix(shardID), start)
-	var finalPrunedKey []byte
-	for iter.Next() {
-		key := iter.Key()
-		rootHash := blockchain.ShardRootHash{}
-		err := json.Unmarshal(iter.Value(), &rootHash)
-		if err != nil {
-			return err
-		}
-		wg.Add(1)
-		rootHashCh <- rootHash
-		finalPrunedKey = key
-		if count%uint64(runtime.NumCPU()) == 0 {
-			wg.Wait()
-			nodes, storage, err = p.removeNodes(db, shardID, key, listKeysShouldBeRemoved, nodes, storage)
-			if err != nil {
-				return err
-			}
-			if count%10000 == 0 {
-				Logger.log.Infof("[state-prune] Finish prune for key %v totalKeys %v delete totalNodes %v with storage %v", key, count, nodes, storage)
-			}
-			finalPrunedKey = []byte{}
-		}
-		count++
-	}
-	if len(finalPrunedKey) != 0 {
-		nodes, storage, err = p.removeNodes(db, shardID, finalPrunedKey, listKeysShouldBeRemoved, nodes, storage)
-		if err != nil {
-			return err
-		}
-	}
-
-	iter.Release()
 	if err = p.compact(db, nodes); err != nil {
 		return err
 	}
@@ -229,4 +208,58 @@ func (p *Pruner) removeNodes(
 	}
 	*listKeysShouldBeRemoved = make([]map[common.Hash]struct{}, 0)
 	return totalNodes, totalStorage, nil
+}
+
+func (p *Pruner) traverseAndDelete(
+	db incdb.Database, shardID byte, listKeysShouldBeRemoved *[]map[common.Hash]struct{},
+	rootHashCh chan blockchain.ShardRootHash, wg *sync.WaitGroup,
+) (uint64, uint64, error) {
+	var nodes, storage, count uint64
+	// get last pruned height before
+	lastPrunedKey, err := rawdbv2.GetLastPrunedKeyTrie(db, shardID)
+	if err == nil {
+		return 0, 0, err
+	}
+	var start []byte
+	if len(lastPrunedKey) != 0 {
+		start = lastPrunedKey
+	}
+	Logger.log.Infof("[state-prune] begin pruning from key %v", lastPrunedKey)
+	nodes, _ = rawdbv2.GetPendingPrunedNodes(db, shardID) // not checking error avoid case not store pruned node yet
+	iter := db.NewIteratorWithPrefixStart(rawdbv2.GetShardRootsHashPrefix(shardID), start)
+	var finalPrunedKey []byte
+
+	// retrieve all state tree by shard rooth hash prefix
+	// delete all nodes which are not in state bloom
+	for iter.Next() {
+		key := iter.Key()
+		rootHash := blockchain.ShardRootHash{}
+		err := json.Unmarshal(iter.Value(), &rootHash)
+		if err != nil {
+			return 0, 0, err
+		}
+		wg.Add(1)
+		rootHashCh <- rootHash
+		finalPrunedKey = key
+		if count%uint64(runtime.NumCPU()) == 0 {
+			wg.Wait()
+			nodes, storage, err = p.removeNodes(db, shardID, key, listKeysShouldBeRemoved, nodes, storage)
+			if err != nil {
+				return 0, 0, err
+			}
+			if count%10000 == 0 {
+				Logger.log.Infof("[state-prune] Finish prune for key %v totalKeys %v delete totalNodes %v with storage %v", key, count, nodes, storage)
+			}
+			finalPrunedKey = []byte{}
+		}
+		count++
+	}
+	if len(finalPrunedKey) != 0 {
+		nodes, storage, err = p.removeNodes(db, shardID, finalPrunedKey, listKeysShouldBeRemoved, nodes, storage)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+	iter.Release()
+	return nodes, storage, nil
 }
