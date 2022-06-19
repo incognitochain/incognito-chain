@@ -970,7 +970,7 @@
             "instructions": [
                 [
                     "343", "0", "rejected", 
-                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwOH0="
+                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAxMn0="
                 ]
             ],
             "state": {
@@ -1027,7 +1027,7 @@
             "statuses": [
                 {
                     "Status": 0,
-                    "ErrorCode": 1008
+                    "ErrorCode": 1012
                 }
             ],
             "bridge_tokens_info": {
@@ -1489,7 +1489,7 @@
                 ],
                 [
                     "343", "0", "rejected", 
-                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkVycm9yQ29kZSI6MX0="
+                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkVycm9yQ29kZSI6MTAwOX0="
                 ]
             ],
             "state": {
@@ -1559,7 +1559,7 @@
                 },
                 {
                     "Status": 0,
-                    "ErrorCode": 1007
+                    "ErrorCode": 1009
                 }
             ],
             "bridge_tokens_info": {
@@ -1676,7 +1676,7 @@
             "instructions": [
                 [
                     "343", "0", "rejected", 
-                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MX0="
+                    "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwOX0="
                 ]
             ],
             "state": {
@@ -1733,7 +1733,7 @@
             "statuses": [
                 {
                     "Status": 0,
-                    "ErrorCode": 1007
+                    "ErrorCode": 1009
                 }
             ],
             "bridge_tokens_info": {

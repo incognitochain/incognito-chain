@@ -7,9 +7,9 @@
                     "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                         "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                             "Amount": 1000,
-                            "LockedAmount": 1000,
-                            "WaitingUnshieldAmount": 0,
-                            "WaitingUnshieldFee": 1000,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 100,
+                            "WaitingUnshieldFee": 1,
                             "ExtDecimal": 18,
                             "NetworkID": 1,
                             "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
@@ -46,7 +46,7 @@
                                     "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
                                     "BurningAmount": 2000,
                                     "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
-                                    "Fee": 1000,
+                                    "Fee": 1,
                                     "ExternalTokenID": [
                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                                     ],
@@ -103,9 +103,9 @@
                     "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                         "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                             "Amount": 1000,
-                            "LockedAmount": 1000,
-                            "WaitingUnshieldAmount": 0,
-                            "WaitingUnshieldFee": 1000,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 100,
+                            "WaitingUnshieldFee": 1,
                             "ExtDecimal": 18,
                             "NetworkID": 1,
                             "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
@@ -142,7 +142,7 @@
                                     "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
                                     "BurningAmount": 2000,
                                     "RemoteAddress": "a5666183FD7c5bBe7861A2664Cd30Daf25A2d2bA",
-                                    "Fee": 1000,
+                                    "Fee": 1,
                                     "ExternalTokenID": [
                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                                     ],
@@ -280,7 +280,7 @@
                     "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
                         "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                             "Amount": 2000,
-                            "LockedAmount": 1000,
+                            "LockedAmount": 0,
                             "WaitingUnshieldAmount": 0,
                             "WaitingUnshieldFee": 1000,
                             "ExtDecimal": 18,
@@ -309,7 +309,9 @@
                         }
                     } 
                 },
-                "WaitingUnshieldReqs": {},
+                "WaitingUnshieldReqs": {
+                    "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": []
+                },
                 "NewWaitingUnshieldReqs": {},
                 "DeletedWaitingUnshieldReqKeyHashes": ["14e1d013f6313294be83fe2c2ca82ea9b0f965fc4244914256ed5fef6b604349"],
                 "Param": {
