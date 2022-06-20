@@ -46,7 +46,7 @@ func TestPaymentV2InitAndMarshalling(t *testing.T) {
 		inputCoins := make([]coin.PlainCoin, outCoinCount)
 		for i:=0;i<outCoinCount;i++ {
 			var err error
-			inputCoins[i],err = coin.NewCoinFromPaymentInfo(paymentInfo[i])
+			inputCoins[i],err = coin.NewCoinFromPaymentInfo((&coin.CoinParams{}).FromPaymentInfo(paymentInfo[i]))
 			if err!=nil{
 				fmt.Println(err)
 			}
@@ -58,7 +58,7 @@ func TestPaymentV2InitAndMarshalling(t *testing.T) {
 		outputCoins := make([]*coin.CoinV2, outCoinCount)
 		for i:=0;i<outCoinCount;i++ {
 			var err error
-			outputCoins[i],err = coin.NewCoinFromPaymentInfo(paymentInfo[i])
+			outputCoins[i],err = coin.NewCoinFromPaymentInfo((&coin.CoinParams{}).FromPaymentInfo(paymentInfo[i]))
 			if err!=nil{
 				fmt.Println(err)
 			}
@@ -103,7 +103,7 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 		inputCoins := make([]coin.PlainCoin, outCoinCount)
 		for i:=0;i<outCoinCount;i++ {
 			var err error
-			inputCoins[i],err = coin.NewCoinFromPaymentInfo(paymentInfo[i])
+			inputCoins[i],err = coin.NewCoinFromPaymentInfo((&coin.CoinParams{}).FromPaymentInfo(paymentInfo[i]))
 			if err!=nil{
 				fmt.Println(err)
 			}
@@ -122,7 +122,7 @@ func TestPaymentV2ProveWithPrivacy(t *testing.T) {
 		outputCoins := make([]*coin.CoinV2, outCoinCount)
 		for i:=0;i<outCoinCount;i++ {
 			var err error
-			outputCoins[i],err = coin.NewCoinFromPaymentInfo(outPaymentInfo[i])
+			outputCoins[i],err = coin.NewCoinFromPaymentInfo((&coin.CoinParams{}).FromPaymentInfo(outPaymentInfo[i]))
 			if err!=nil{
 				fmt.Println(err)
 			}

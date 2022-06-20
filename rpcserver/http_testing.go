@@ -1,11 +1,15 @@
 package rpcserver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"io/ioutil"
+	"log"
 	"reflect"
 	"time"
 
@@ -397,12 +401,25 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	insertRule := param["insert_rule"]
 	validatorRule := param["validator_rule"]
 
-	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
-	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
-	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
-	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
-	blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
-	blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	if voteRule != nil {
+		blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+	}
+	if createRule != nil {
+		blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+	}
+	if handleVoteRule != nil {
+		blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	}
+	if handleProposeRule != nil {
+		blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
+	}
+	if insertRule != nil {
+		blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+	}
+	if validatorRule != nil {
+		blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	}
+
 	return map[string]interface{}{
 		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
 		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
@@ -1024,3 +1041,61 @@ func (httpServer *HttpServer) handleConvertPaymentAddress(params interface{}, cl
 // 	}
 // 	return result, nil
 // }
+
+func (httpServer *HttpServer) handleResetCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	n := int(arrayParams[0].(float64))
+	switch n {
+	case 1:
+		incognitokey.GetMiningKeyBase58Cache, _ = lru.New(2000)
+		log.Println("reset GetMiningKeyBase58Cache")
+	case 2:
+		incognitokey.ToBase58Cache, _ = lru.New(2000)
+		log.Println("reset ToBase58Cache")
+	case 3:
+		blsmultisig.Cacher, _ = lru.New(1000)
+		log.Println("reset blsmultisig.Cacher")
+	default:
+	}
+	return "ok", nil
+}
+
+func (httpServer *HttpServer) handleTestValidate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	log.Println(arrayParams)
+	aggSigHash, err := base64.StdEncoding.DecodeString(arrayParams[0].(string))
+	if err != nil {
+		return "Cannot decode aggsig", nil
+	}
+
+	blkHash := common.Hash{}.NewHashFromStr2(arrayParams[1].(string))
+	valIdx := make([]int, len(arrayParams[2].([]interface{})))
+	for id, x := range arrayParams[2].([]interface{}) {
+		valIdx[id] = int(x.(float64))
+	}
+	committeeFromBlockHash := common.Hash{}.NewHashFromStr2(arrayParams[3].(string))
+	chainID := int(arrayParams[4].(float64))
+	proposerIndex := int(arrayParams[5].(float64))
+	blockVersion := int(arrayParams[6].(float64))
+	var committee []incognitokey.CommitteePublicKey
+	if chainID == -1 {
+		committee = httpServer.GetBlockchain().BeaconChain.GetCommittee()
+	} else {
+		committee, _ = httpServer.GetBlockchain().GetShardCommitteeFromBeaconHash(committeeFromBlockHash, byte(chainID))
+		committee = httpServer.GetBlockchain().ShardChain[chainID].GetSigningCommittees(proposerIndex, committee, blockVersion)
+	}
+
+	committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committee {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
+	}
+
+	log.Printf("Sig %+v\n BlockHash %+v \n Valindex %+v \n Committee %+v \n", aggSigHash, blkHash.GetBytes(), valIdx, committeeBLSKeys)
+
+	if ok, err := blsmultisig.Verify(aggSigHash, blkHash.GetBytes(), valIdx, committeeBLSKeys); !ok {
+		return fmt.Sprintf("Invalid Signature: aggSig %+v blkHash: %+v, valIdx %+v, committeeStr %+v %+v", aggSigHash, blkHash.String(), valIdx, committeeStr, err), nil
+	}
+
+	return "ok", nil
+}

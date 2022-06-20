@@ -1,0 +1,1074 @@
+{
+    "TestAcceptedNotEqualTo0NativeToken": {
+        "name": "Accepted, 1 valid tx, y != 0, native token",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjUwMDAwMDAwLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjF9XX0="
+            ],
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6dHJ1ZSwiU2hhcmRJRCI6MCwiRGF0YSI6W3siSXNzdWluZ0Ftb3VudCI6OTksIk5ldHdvcmtJRCI6MX1dfQ=="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 100,
+                        "CurrentRewardReserve": 100,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 50000000,
+                        "LastUpdatedRewardReserve": 100,
+                        "CurrentRewardReserve": 1,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "Data": [
+                    {
+                        "Amount": 50000000,
+                        "Reward": 99
+                    }
+                ]
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestAcceptedNotEqualTo0NotNativeToken": {
+        "name": "Accepted, 1 valid tx, y != 0, not native token",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
+                        "TxIndex": 0,
+                        "Proof": [
+                            "+QMOgiCAuQMI+QMFAYMBDUC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAABAACAAAAAAAgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA+QH6+JuU+v7bBBwN1PotwNh6awl57m+nr1/4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADOQM5RGl0IQBfb7n4/8+RV6jLYXKAAAAAAAAAAAAAAAABSZ2ijf+2G/Y1dcsp4kT3/ZKxeFaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNyzqKAPkBWpRSZ2ijf+2G/Y1dcsp4kT3/ZKxeFeGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65ASAAAAAAAAAAAAAAAAD6/tsEHA3U+i3A2HprCXnub6evXwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlDEyc3g1UGFMaGI1MUhydzI4UUNKZDY4RWZRRjlWVmJBTW9ibXFoQzdwTXpaYlN0eWlkdmJzWjQ1Z0RQdlB1TjNWZm5IeGlYNEp2dFdmdmhjZWZnVlBNOFRHQVdZRmdqbTRma0ExUW1VakFkellyNnp3NWg1QkViRmVvN21QWVRUd3hScXdIRWJlMkZaSlhockxkSmoAAAAAAAAAAAAAAAA="
+                        ],
+                        "NetworkID": 4
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjYwOSwiVW5pcVR4IjoiQUFBZ2dRQUFKMWIvNnNzRmlIWWt6ZElaWHB6aU41NUYySjY3VXd4Zk5Nb3ciLCJFeHRlcm5hbFRva2VuSUQiOiJSbFJOK3Y3YkJCd04xUG90d05oNmF3bDU3bStucjE4PSIsIk5ldHdvcmtJRCI6NH1dfQ=="
+            ],
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6dHJ1ZSwiU2hhcmRJRCI6MiwiRGF0YSI6W3siSXNzdWluZ0Ftb3VudCI6OTksIk5ldHdvcmtJRCI6NH1dfQ=="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "4": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 100,
+                        "CurrentRewardReserve": 100,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "4": {
+                    "State": {
+                        "Reserve": 609,
+                        "LastUpdatedRewardReserve": 100,
+                        "CurrentRewardReserve": 1,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [70, 84, 77, 250, 254, 219, 4, 28, 13, 212, 250, 45, 192, 216, 122, 107, 9, 121, 238, 111, 167, 175, 95],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "Data": [
+                    {
+                        "Amount": 609,
+                        "Reward": 99
+                    }
+                ]
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [
+                [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+            ],
+            "DBridgeTokenPair": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestAcceptedYEqualTo0NativeToken": {
+        "name": "Accepted, 1 valid tx, y = 0, native token",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjUwMDAwMDAwLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjF9XX0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 50000000,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "Data": [
+                    {
+                        "Amount": 50000000
+                    }
+                ]
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestAcceptedYEqualTo0NotNativeTokenDecimalGreaterBaseExternalDecimal": {
+        "name": "Accepted, 1 valid tx, y = 0, not native token decimal > base external decimal = 9",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
+                        "TxIndex": 0,
+                        "Proof": [
+                            "+QMOgiCAuQMI+QMFAYMBDUC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAABAACAAAAAAAgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA+QH6+JuU+v7bBBwN1PotwNh6awl57m+nr1/4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADOQM5RGl0IQBfb7n4/8+RV6jLYXKAAAAAAAAAAAAAAAABSZ2ijf+2G/Y1dcsp4kT3/ZKxeFaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNyzqKAPkBWpRSZ2ijf+2G/Y1dcsp4kT3/ZKxeFeGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65ASAAAAAAAAAAAAAAAAD6/tsEHA3U+i3A2HprCXnub6evXwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlDEyc3g1UGFMaGI1MUhydzI4UUNKZDY4RWZRRjlWVmJBTW9ibXFoQzdwTXpaYlN0eWlkdmJzWjQ1Z0RQdlB1TjNWZm5IeGlYNEp2dFdmdmhjZWZnVlBNOFRHQVdZRmdqbTRma0ExUW1VakFkellyNnp3NWg1QkViRmVvN21QWVRUd3hScXdIRWJlMkZaSlhockxkSmoAAAAAAAAAAAAAAAA="
+                        ],
+                        "NetworkID": 4
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjYwOSwiVW5pcVR4IjoiQUFBZ2dRQUFKMWIvNnNzRmlIWWt6ZElaWHB6aU41NUYySjY3VXd4Zk5Nb3ciLCJFeHRlcm5hbFRva2VuSUQiOiJSbFJOK3Y3YkJCd04xUG90d05oNmF3bDU3bStucjE4PSIsIk5ldHdvcmtJRCI6NH1dfQ=="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "4": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "4": {
+                    "State": {
+                        "Reserve": 609,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [70, 84, 77, 250, 254, 219, 4, 28, 13, 212, 250, 45, 192, 216, 122, 107, 9, 121, 238, 111, 167, 175, 95],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "Data": [
+                    {
+                        "Amount": 609
+                    }
+                ]
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [
+                [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+            ],
+            "DBridgeTokenPair": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestAcceptedYEqualTo0NotNativeTokenDecimalSmallerBaseExternalDecimal": {
+        "name": "Accepted, 1 valid tx, y = 0, not native token decimal < base external decimal = 9",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x0000208100002756ffeacb05887624cdd2195e9ce2379e45d89ebb530c5f34ca",
+                        "TxIndex": 0,
+                        "Proof": [
+                            "+QMOgiCAuQMI+QMFAYMBDUC5AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBAAAAAAAAAAAAAABAACAAAAAAAgAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA+QH6+JuU+v7bBBwN1PotwNh6awl57m+nr1/4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADOQM5RGl0IQBfb7n4/8+RV6jLYXKAAAAAAAAAAAAAAAABSZ2ijf+2G/Y1dcsp4kT3/ZKxeFaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACNyzqKAPkBWpRSZ2ijf+2G/Y1dcsp4kT3/ZKxeFeGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65ASAAAAAAAAAAAAAAAAD6/tsEHA3U+i3A2HprCXnub6evXwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlDEyc3g1UGFMaGI1MUhydzI4UUNKZDY4RWZRRjlWVmJBTW9ibXFoQzdwTXpaYlN0eWlkdmJzWjQ1Z0RQdlB1TjNWZm5IeGlYNEp2dFdmdmhjZWZnVlBNOFRHQVdZRmdqbTRma0ExUW1VakFkellyNnp3NWg1QkViRmVvN21QWVRUd3hScXdIRWJlMkZaSlhockxkSmoAAAAAAAAAAAAAAAA="
+                        ],
+                        "NetworkID": 4
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "accepted", 
+                "eyJSZWNlaXZlciI6eyJQayI6Ijk0L096eXNPS3pKbjFhR0VYREZMZHZONGY0YVlISHE4eGJCS3ZFbXVRMG89IiwiVGsiOiI2YVlia1FmLzJtWUdLSUFRNW9zVEI5aWJ1clhWeTdNaW5GUi96Ky94cHRnPSIsIk9UQVB1YmxpYyI6IndrMCtRL0UwVDVyd3RTd294RWxIQ2piRGNsMSt5bWFZSHE2YkhVeGJYSms9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjIsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjYwOTAwMCwiVW5pcVR4IjoiQUFBZ2dRQUFKMWIvNnNzRmlIWWt6ZElaWHB6aU41NUYySjY3VXd4Zk5Nb3ciLCJFeHRlcm5hbFRva2VuSUQiOiJSbFJOK3Y3YkJCd04xUG90d05oNmF3bDU3bStucjE4PSIsIk5ldHdvcmtJRCI6NH1dfQ=="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "4": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "4": {
+                    "State": {
+                        "Reserve": 609000,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [70, 84, 77, 250, 254, 219, 4, 28, 13, 212, 250, 45, 192, 216, 122, 107, 9, 121, 238, 111, 167, 175, 95],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "Data": [
+                    {
+                        "Amount": 609000
+                    }
+                ]
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [
+                [0, 0, 32, 129, 0, 0, 39, 86, 255, 234, 203, 5, 136, 118, 36, 205, 210, 25, 94, 156, 226, 55, 158, 69, 216, 158, 187, 83, 12, 95, 52, 202, 48]
+            ],
+            "DBridgeTokenPair": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestRejectedInvalidExternalTokenID": {
+        "name": "Rejected, invalid external tokenID",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwOCwiRGF0YSI6IjhFRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1008
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestRejectedInvalidTokenID": {
+        "name": "Rejected invalid TokenID",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwMCwiRGF0YSI6IjhFRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1000
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestRejectedTwoProofs": {
+        "name": "Rejected 2 same proofs",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            },
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0",
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f1"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "accepted",
+                "eyJSZWNlaXZlciI6eyJQayI6IjV4VlN6Y1pwQTN1SG1CTzVlakVOazEzaWF5ZXhJTG9weVNBQ2RpZUx1Z0E9IiwiVGsiOiJjejNocVd4K293NisrRWgybzBpdXAzNmM1SEY1dUo0ZGdWWSsrR2dyZjY0PSIsIk9UQVB1YmxpYyI6IkE0aE12aWRBODZleEFFT3VIS2pjYkxqRmpncFBKWlc5dEtNVjRoT2FvdlU9In0sIlRva2VuSUQiOiJjOGFlZmE2YjM0N2JiMTc0MTE2MDYwZGE2MTcxZWIyMzQ3NmY0NDRiYjNmZjE0MzZlODk0MGIyN2VkMWFmNTcwIiwiVHhSZXFJRCI6ImU0MzlhNTc3OWUwMWY0ZjhlNjZiYzJhMWVkODVhY2JmZTk4ZDFmZTI3MzFjNDk5OTQyOTBmYmM5ZWY0MzQxZjAiLCJJc1Jld2FyZCI6ZmFsc2UsIlNoYXJkSUQiOjAsIkRhdGEiOlt7Iklzc3VpbmdBbW91bnQiOjUwMDAwMDAwLCJVbmlxVHgiOiJjd0NqMHlPR2h2NWk1UzUvREM3aERsUkplSjNXa3RDK0VNQ2hmc2IwODBzeCIsIkV4dGVybmFsVG9rZW5JRCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJOZXR3b3JrSUQiOjF9XX0="
+            ],
+            [
+                "343", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMSIsIkVycm9yQ29kZSI6MTAwNywiRGF0YSI6IjhVRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 50000000,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 1,
+                "Data": [
+                    {
+                        "Amount": 50000000
+                    }
+                ]
+            },
+            {
+                "Status": 0,
+                "ErrorCode": 1007
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+                [115, 0, 163, 211, 35, 134, 134, 254, 98, 229, 46, 127, 12, 46, 225, 14, 84, 73, 120, 157, 214, 146, 208, 190, 16, 192, 161, 126, 198, 244, 243, 75, 49]
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+                "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": [85, 84]
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    },
+    "TestRejectedTwoProofsInOneRequest": {
+        "name": "Rejected 2 same proofs in one request",
+        "metadatas": [
+            {
+                "TokenID": "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570",
+                "Data": [
+                    {
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    },
+                    {           
+                        "BlockHash": "0x7300a3d3238686fe62e52e7f0c2ee10e5449789dd692d0be10c0a17ec6f4f34b",
+                        "TxIndex": 1,
+                        "Proof": [
+                            "+FGgwlM4jp+0BOgNwk+4/GZtHob6lC0yBAvRpdCHT5i8hdqAgICAgICAoNGvkRH0SBvWIsBVK9rHkF8vbABuUfwQh6XzddOzSkG3gICAgICAgIA=",
+                            "+LGAoGVE33sWgFecpCnrypTROFmFWne34gkVlfWbMcvaddTEoBwfAtfhkAozhQe49ZsaWm5vcWPQAKzRkGytrO7a/Ic1oKxgrSJB8Z2D2tcfGFoBoCRFEnVWiOB6+W6YRUHIef2hoErdSSsHt1BOdT3C7CilvxVp9CkaeOV6+dYSA4ECiDZRoDXEPOde9Rp9nHcENByWrmlhJSkfSk8wXe2SfcPTaNkugICAgICAgICAgIA=",
+                            "+QJwILkCbAL5AmgBgxJxqbkBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAACAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAEAD5AV35AVqUe+vIRFxiI7Qbe7SwrpdC4v0vR/PhoC1LWXk1881n+y7r8dtN68k0zuXHuqcVP5gP2+sudAhOuQEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACxorwuxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJQxMnN2ZmtQNnc1VURKRFNDd3FIOTc4UHZxaXFCeEttVW5BOWVtOXlBWVdZSlZSdjd3dVhZMXFoaFlwUEFtNEJEejJtTGJGclJtZEszeVJoblRxSkNaWEtIVW1vaTdOVjgzSENIMllGcGN0SE5hRGRrU2lRc2hzancyVUZVdXdkRXZjaWRnYUttRjNWSnBZNWY4UmROAAAAAAAAAAAAAAAA"
+                        ],
+                        "NetworkID": 1
+                    }
+                ],
+                "Type": 343
+            }
+        ],
+        "tx_ids": [
+            "e439a5779e01f4f8e66bc2a1ed85acbfe98d1fe2731c49994290fbc9ef4341f0"
+        ],
+        "expected_instructions": [
+            [
+                "343", "0", "rejected", 
+                "eyJUeFJlcUlEIjoiZTQzOWE1Nzc5ZTAxZjRmOGU2NmJjMmExZWQ4NWFjYmZlOThkMWZlMjczMWM0OTk5NDI5MGZiYzllZjQzNDFmMCIsIkVycm9yQ29kZSI6MTAwNywiRGF0YSI6IjhFRkQ3OG43a0VLWlNSeHo0aCtONmIrc2hlMmh3bXZtK1BRQm5uZWxPZVE9In0="
+            ]
+        ],
+        "unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "expected_unified_tokens": {
+            "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
+                "1": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 18,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                },
+                "2": {
+                    "State": {
+                        "Reserve": 0,
+                        "LastUpdatedRewardReserve": 0,
+                        "CurrentRewardReserve": 0,
+                        "Decimal": 6,
+                        "IsPaused": false
+                    },
+                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                }
+            }
+        },
+        "accumulated_values": {
+            "UniqETHTxsUsed":    [],
+		    "UniqBSCTxsUsed":    [],
+		    "UniqPLGTxsUsed":    [],
+		    "UniqPRVEVMTxsUsed": [],
+		    "UniqFTMTxsUsed":    [],
+		    "DBridgeTokenPair":  {},
+		    "CBridgeTokens":     [],
+		    "InitTokens":        []
+        },
+        "bridge_tokens_info": {
+            "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
+                "IncTokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769",
+                "ExternalTokenID": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "Amount": 0
+            }
+        },
+        "expected_statuses": [
+            {
+                "Status": 0,
+                "ErrorCode": 1007
+            }
+        ],
+        "expected_accumulated_values": {
+            "UniqETHTxsUsed": [
+            ],
+            "UniqBSCTxsUsed": [],
+            "UniqPRVEVMTxsUsed": [],
+            "UniqPLGTxsUsed": [],
+            "UniqFTMTxsUsed": [],
+            "DBridgeTokenPair": {
+            },
+            "CBridgeTokens": [],
+            "InitTokens": []
+        }
+    } 
+}

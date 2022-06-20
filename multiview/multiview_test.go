@@ -47,7 +47,7 @@ func TestNewMultiView(t *testing.T) {
 
 	var print = func() {
 		fmt.Println("best", multiView.bestView.GetHash().String())
-		fmt.Println("final", multiView.finalView.GetHash().String())
+		fmt.Println("final", multiView.expectedFinalView.GetHash().String())
 		fmt.Println(" ")
 	}
 
@@ -90,7 +90,7 @@ func TestNewMultiView(t *testing.T) {
 		fmt.Println("->")
 	}
 
-	if multiView.bestView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000004" || multiView.finalView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000003" {
+	if multiView.bestView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000004" || multiView.expectedFinalView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000003" {
 		panic("Wrong")
 	}
 }

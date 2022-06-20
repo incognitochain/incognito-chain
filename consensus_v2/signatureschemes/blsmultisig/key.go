@@ -40,7 +40,7 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
 	akByte := []byte{}
 	akByte = append(akByte, idxPKByte...)
 	akByte = append(akByte, combinedPKBytes...)
-	if res, exist := cacher.Get(string(akByte)); exist {
+	if res, exist := Cacher.Get(string(akByte)); exist {
 		if result, ok := res.(*bn256.G2); ok {
 			return result
 		} else {
@@ -57,7 +57,7 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
 
 	result := new(bn256.G2)
 	result.ScalarMult(pkPn, akBInt)
-	cacher.Add(string(akByte), result)
+	Cacher.Add(string(akByte), result)
 	return result
 }
 

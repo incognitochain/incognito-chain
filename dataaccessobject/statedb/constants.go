@@ -102,6 +102,12 @@ const (
 	Pdexv3ShareLastLmRewardPerShareObjectType = 67
 	Pdexv3PoolPairLmRewardPerShareObjectType  = 68
 	Pdexv3PoolPairLmLockedShareObjectType     = 69
+
+	// bridge agg
+	BridgeAggStatusObjectType         = 71
+	BridgeAggUnifiedTokenObjectType   = 72
+	BridgeAggConvertedTokenObjectType = 73
+	BridgeAggVaultObjectType          = 74
 )
 
 // Prefix length

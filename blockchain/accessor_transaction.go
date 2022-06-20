@@ -859,8 +859,8 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 		if (view.beaconHeight >= config.Param().ConsensusParam.NotUseBurnedCoins) && common.IsPublicKeyBurningAddress(publicKeyBytes) {
 			continue
 		}
-		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
-		if publicKeyShardID == shardID {
+		senderShardID, recvShardID, _, _ := privacy.DeriveShardInfoFromCoin(publicKeyBytes)
+		if recvShardID == int(shardID) {
 			// outputs
 			outputCoinArray := view.mapOutputCoins[publicKey]
 			otaCoinArray := make([][]byte, 0)
@@ -899,8 +899,17 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
 			}
-			if err = statedb.StoreOTACoinsAndOnetimeAddresses(stateDB, *view.tokenID, view.height, otaCoinArray, onetimeAddressArray, publicKeyShardID); err != nil {
+			if err = statedb.StoreOTACoinsAndOnetimeAddresses(stateDB, *view.tokenID, view.height, otaCoinArray, onetimeAddressArray, shardID); err != nil {
 				return err
+			}
+		} else if view.height >= config.Param().BCHeightBreakPointCoinOrigin {
+			if senderShardID == int(shardID) {
+				var b [32]byte
+				copy(b[:], publicKeyBytes)
+				err := statedb.StoreOccupiedOneTimeAddress(stateDB, *view.tokenID, b)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

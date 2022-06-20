@@ -203,6 +203,17 @@ const (
 	// pFantom ( Fantom )
 	BurningFantomForDepositToSCRequestMeta = 334
 	BurningFantomConfirmForDepositToSCMeta = 156
+
+	// bridgeagg
+	BridgeAggModifyRewardReserveMeta                = 340
+	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
+	IssuingUnifiedTokenRequestMeta                  = 343
+	IssuingUnifiedTokenResponseMeta                 = 344
+	IssuingUnifiedRewardResponseMeta                = 345
+	BurningUnifiedTokenRequestMeta                  = 346
+	BurningUnifiedTokenResponseMeta                 = 347
+	BridgeAggAddTokenMeta                           = 348
 )
 
 var minerCreatedMetaTypes = []int{
@@ -250,6 +261,10 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3StakingResponseMeta,
 	Pdexv3UnstakingResponseMeta,
 	Pdexv3WithdrawStakingRewardResponseMeta,
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
+	IssuingUnifiedTokenResponseMeta,
+	IssuingUnifiedRewardResponseMeta,
+	BurningUnifiedTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -270,7 +285,7 @@ const (
 const (
 	StopAutoStakingAmount    = 0
 	EVMConfirmationBlocks    = 15
-	PLGConfirmationBlocks    = 35
+	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
 )
 
