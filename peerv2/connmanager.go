@@ -222,6 +222,10 @@ type ConnManager struct {
 	stop chan int
 }
 
+func (cm *ConnManager) SetSyncMode(syncMode string) {
+	cm.syncMode = syncMode
+}
+
 func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
 	cm.messages <- msg
 }
