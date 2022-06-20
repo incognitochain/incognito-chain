@@ -2585,7 +2585,7 @@ func (stateDB *StateDB) iterateBridgeAggVaults(prefix []byte) (map[common.Hash]*
 		if err != nil {
 			return res, err
 		}
-		res[vault.tokenID] = vault
+		res[vault.incTokenID] = vault
 	}
 	return res, nil
 }

@@ -22,7 +22,7 @@ type WaitingUnshieldReqData struct {
 	Fee                    uint64      `json:"Fee"`
 	ExternalTokenID        []byte      `json:"ExternalTokenID"`
 	ExternalReceivedAmt    *big.Int    `json:"ExternalReceivedAmt"`
-	BurningConfirmMetaType int         `json:"BurningConfirmMetaType"`
+	BurningConfirmMetaType uint        `json:"BurningConfirmMetaType"`
 }
 
 func (w WaitingUnshieldReqData) Clone() WaitingUnshieldReqData {
@@ -39,7 +39,7 @@ func (w WaitingUnshieldReqData) Clone() WaitingUnshieldReqData {
 
 func (us *BridgeAggWaitingUnshieldReq) Clone() *BridgeAggWaitingUnshieldReq {
 	clonedData := []WaitingUnshieldReqData{}
-	clonedData = append(clonedData, us.data...)
+	clonedData = append(clonedData, us.data...) 
 	cloned := &BridgeAggWaitingUnshieldReq{
 		unshieldID:   us.unshieldID,
 		data:         clonedData,

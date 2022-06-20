@@ -10,8 +10,8 @@ type BridgeAggState struct {
 	UnifiedTokenVaults  map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
 	WaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
 	Param               *statedb.BridgeAggParamState                                 `json:"Param"`
-	BaseDecimal         uint                                                         `json:"BaseDecimal"`
-	MaxLenOfPath        int                                                          `json:"MaxLenOfPath"`
+	BaseDecimal         uint8                                                        `json:"BaseDecimal"`
+	MaxLenOfPath        uint8                                                        `json:"MaxLenOfPath"`
 }
 
 type BridgeAggEstimateFeeByBurntAmount struct {

@@ -18,7 +18,7 @@ type AccumulatedValues struct {
 	InitTokens        []*common.Hash
 }
 
-func (ac *AccumulatedValues) UpdateUniqTxsUsed(networkID uint, uniqTxsUsed [][]byte) (*AccumulatedValues, error) {
+func (ac *AccumulatedValues) UpdateUniqTxsUsed(networkID uint8, uniqTxsUsed [][]byte) (*AccumulatedValues, error) {
 	switch networkID {
 	case common.ETHNetworkID:
 		ac.UniqETHTxsUsed = uniqTxsUsed

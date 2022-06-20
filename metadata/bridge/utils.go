@@ -39,7 +39,7 @@ type EVMInfo struct {
 	ListTxUsedInBlock [][]byte
 }
 
-func GetEVMInfoByNetworkID(networkID uint, ac *metadataCommon.AccumulatedValues) (*EVMInfo, error) {
+func GetEVMInfoByNetworkID(networkID uint8, ac *metadataCommon.AccumulatedValues) (*EVMInfo, error) {
 	res := &EVMInfo{}
 	switch networkID {
 	case common.ETHNetworkID:
@@ -405,7 +405,7 @@ func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{
 	return dataMap, nil
 }
 
-func GetNetworkTypeByNetworkID(networkID uint) (uint, error) {
+func GetNetworkTypeByNetworkID(networkID uint8) (uint, error) {
 	switch networkID {
 	case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
 		return common.EVMNetworkType, nil

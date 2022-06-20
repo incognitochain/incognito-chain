@@ -77,7 +77,7 @@ func NewStateChange() *StateChange {
 	}
 }
 
-func GetInsertTxHashIssuedFuncByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
+func GetInsertTxHashIssuedFuncByNetworkID(networkID uint8) func(*statedb.StateDB, []byte) error {
 	switch networkID {
 	case common.PLGNetworkID:
 		return statedb.InsertPLGTxHashIssued
@@ -186,7 +186,7 @@ func buildBurningConfirmInsts(waitingUnshieldReq *statedb.BridgeAggWaitingUnshie
 		// maybe there are multiple  proofs for one txID, so append index to make newTxReqID unique
 		newTxReqID := common.HashH(append(txID.Bytes(), common.IntToBytes(index)...))
 		burningInst := []string{
-			strconv.Itoa(data.BurningConfirmMetaType),
+			strconv.Itoa(int(data.BurningConfirmMetaType)),
 			strconv.Itoa(int(common.BridgeShardID)),
 			base58.Base58Check{}.Encode(data.ExternalTokenID, 0x00),
 			data.RemoteAddress,
@@ -366,7 +366,7 @@ func ValidateDoubleShieldProof(
 // 	return v, actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
 // }
 
-func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) {
+func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error) {
 	var burningMetaType int
 	switch networkID {
 	case common.ETHNetworkID:
@@ -396,7 +396,7 @@ func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) 
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
 	}
-	return burningMetaType, nil
+	return uint(burningMetaType), nil
 
 }
 
@@ -483,7 +483,7 @@ func buildAcceptedShieldContent(
 	return json.Marshal(acceptedContent)
 }
 
-func ConvertAmountByDecimal(amount *big.Int, decimal uint, isToUnifiedDecimal bool) (*big.Int, error) {
+func ConvertAmountByDecimal(amount *big.Int, decimal uint8, isToUnifiedDecimal bool) (*big.Int, error) {
 	res := big.NewInt(0).Set(amount)
 	if isToUnifiedDecimal {
 		res.Mul(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
@@ -540,7 +540,7 @@ func getBurningConfirmMeta(networkID int, isDepositToSC bool) (int, string, erro
 	return burningMetaType, prefix, nil
 }
 
-func CalculateIncDecimal(decimal, baseDecimal uint) uint {
+func CalculateIncDecimal(decimal, baseDecimal uint8) uint8 {
 	if decimal > baseDecimal {
 		return baseDecimal
 	}
@@ -602,7 +602,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 	return nil
 }
 
-func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]byte, error) {
+func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]byte, error) {
 	var res []byte
 	var prefix string
 	switch networkID {
@@ -651,7 +651,7 @@ func GetExternalTokenIDForUnifiedToken() []byte {
 	return []byte(common.UnifiedTokenPrefix)
 }
 
-func getPrefixByNetworkID(networkID uint) (string, error) {
+func getPrefixByNetworkID(networkID uint8) (string, error) {
 	var prefix string
 	switch networkID {
 	case common.ETHNetworkID:
@@ -668,7 +668,7 @@ func getPrefixByNetworkID(networkID uint) (string, error) {
 	return prefix, nil
 }
 
-func CalculateReceivedAmount(amount uint64, tokenID common.Hash, decimal uint, networkID uint, sDB *statedb.StateDB) (uint64, error) {
+func CalculateReceivedAmount(amount uint64, tokenID common.Hash, decimal uint8, networkID uint8, sDB *statedb.StateDB) (uint64, error) {
 	prefix, err := getPrefixByNetworkID(networkID)
 	if err != nil {
 		return 0, err
@@ -734,7 +734,7 @@ func increaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*stated
 // 	return v, tmpAmount.Uint64(), nil
 // }
 
-func convertPTokenAmtToPUnifiedTokenAmt(extDec uint, amount uint64) (uint64, error) {
+func convertPTokenAmtToPUnifiedTokenAmt(extDec uint8, amount uint64) (uint64, error) {
 	pDecimal := CalculateIncDecimal(extDec, config.Param().BridgeAggParam.BaseDecimal)
 	tmpAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), pDecimal, true)
 	if err != nil {

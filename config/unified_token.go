@@ -30,9 +30,9 @@ func SetUnifiedToken(UnifiedToken map[uint64]map[common.Hash]map[common.Hash]Vau
 }
 
 type Vault struct {
-	ExternalDecimal uint   `mapstructure:"external_decimal"`
+	ExternalDecimal uint8   `mapstructure:"external_decimal"`
 	ExternalTokenID string `mapstructure:"external_token_id"`
-	NetworkID       uint   `mapstructure:"network_id"`
+	NetworkID       uint8   `mapstructure:"network_id"`
 }
 
 func LoadUnifiedToken(data []byte) {

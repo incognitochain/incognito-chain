@@ -326,7 +326,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 			BlockHash  string      `json:"BlockHash"`
 			TxIndex    *uint       `json:"TxIndex"`
 			Proof      []string    `json:"Proof"`
-			NetworkID  uint        `json:"NetworkID"`
+			NetworkID  uint8       `json:"NetworkID"`
 			IncTokenID common.Hash `json:"IncTokenID"`
 		} `json:"Data"`
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
