@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -68,6 +69,10 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		} else {
 			config.Blockchain.RestoreBeaconViews()
 		}
+	}
+
+	if os.Getenv("FULLNODE") == "1" {
+		synckerManager.config.Network.SetSyncMode("fullnode")
 	}
 
 	//init beacon sync process
