@@ -142,13 +142,6 @@ func (db *db) NewIterator() incdb.Iterator {
 	return db.lvdb.NewIterator(new(util.Range), nil)
 }
 
-// NewIteratorWithPrefixStart creates a binary-alphabetical iterator over a subset
-// of database content with a particular key prefix, starting at a particular
-// initial key (or after, if it does not exist).
-func (db *db) NewIteratorWithPrefixStart(prefix []byte, start []byte) incdb.Iterator {
-	return db.lvdb.NewIterator(bytesPrefixRange(prefix, start), nil)
-}
-
 // NewIteratorWithStart creates a binary-alphabetical iterator over a subset of
 // database content starting at a particular initial key (or after, if it does
 // not exist).
@@ -160,6 +153,13 @@ func (db *db) NewIteratorWithStart(start []byte) incdb.Iterator {
 // of database content with a particular key prefix.
 func (db *db) NewIteratorWithPrefix(prefix []byte) incdb.Iterator {
 	return db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+}
+
+// NewIteratorWithPrefixStart creates a binary-alphabetical iterator over a subset
+// of database content with a particular key prefix, starting at a particular
+// initial key (or after, if it does not exist).
+func (db *db) NewIteratorWithPrefixStart(prefix []byte, start []byte) incdb.Iterator {
+	return db.lvdb.NewIterator(bytesPrefixRange(prefix, start), nil)
 }
 
 // Stat returns a particular internal stat of the database.

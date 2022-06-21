@@ -220,6 +220,14 @@ func (serverObj *Server) NewServer(
 	// init an pubsub manager
 	var pubsubManager = pubsub.NewPubSubManager()
 
+	// set value for pubsubManager of pruner object
+	p.PubSubManager = pubsubManager
+	go func() {
+		if err := p.Start(); err != nil {
+			panic(err)
+		}
+	}()
+
 	cfg := config.Config()
 
 	serverObj.miningKeys = cfg.MiningKeys
@@ -485,7 +493,6 @@ func (serverObj *Server) NewServer(
 			Blockchain: serverObj.blockChain,
 			Consensus:  serverObj.consensusEngine,
 			MiningKey:  serverObj.miningKeys,
-			Pruner:     p,
 		})
 
 	// Start up persistent peers.

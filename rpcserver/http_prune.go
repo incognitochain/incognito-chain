@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -18,26 +17,26 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 	if len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	type data struct {
-		ShardIDs []byte `json:"ShardIDs"`
+	type Temp struct {
+		Data map[byte]rpcservice.PruneData `json:"Data"`
 	}
-	d := data{}
+	t := Temp{}
 	b, err := json.Marshal(arrayParams[0])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	err = json.Unmarshal(b, &d)
+	err = json.Unmarshal(b, &t)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	s, ok := httpServer.synkerService.Synker.ShardSyncProcess[0]
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.PruneError, fmt.Errorf("Not found shard sync process"))
-	}
+	/*s, ok := httpServer.synkerService.Synker.ShardSyncProcess[0]*/
+	/*if !ok {*/
+	/*return nil, rpcservice.NewRPCError(rpcservice.PruneError, fmt.Errorf("Not found shard sync process"))*/
+	/*}*/
 	var result interface{}
-	result, s.Pruner, err = httpServer.blockService.Prune(d.ShardIDs, s.Pruner)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.PruneError, err)
-	}
+	/*result, s.Pruner, err = httpServer.blockService.Prune(t.Data, s.Pruner)*/
+	/*if err != nil {*/
+	/*return nil, rpcservice.NewRPCError(rpcservice.PruneError, err)*/
+	/*}*/
 	return result, nil
 }

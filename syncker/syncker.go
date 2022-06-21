@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/pruner"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -33,7 +32,6 @@ type SynckerManagerConfig struct {
 	Blockchain *blockchain.BlockChain
 	Consensus  peerv2.ConsensusData
 	MiningKey  string
-	Pruner     *pruner.Pruner
 }
 
 type SynckerManager struct {
@@ -84,7 +82,6 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 			synckerManager.config.Blockchain,
 			synckerManager.config.Blockchain.BeaconChain,
 			chain, synckerManager.config.Consensus,
-			synckerManager.config.Pruner,
 		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess

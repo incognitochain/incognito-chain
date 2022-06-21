@@ -105,6 +105,7 @@ const (
 	GetTxBySerialNumberError
 
 	// state prune
+	StoreShardLastPrunedHeightError
 	StoreShardLastPrunedKeyTrieError
 	StoreShardPendingPrunedNodesError
 	StoreShardPruneStatusError
@@ -201,6 +202,7 @@ var ErrCodeMessage = map[int]struct {
 	DeleteOTAKeyError:                 {-6005, "Delete OTA keys error"},
 	StoreCoinHashError:                {-6006, "Store coin hash error"},
 	GetCoinHashError:                  {-6007, "Get coin hash error"},
+	StoreShardLastPrunedHeightError:   {-7000, "Store shard last pruned height error"},
 	StoreShardLastPrunedKeyTrieError:  {-7000, "Store shard last pruned key trie error"},
 	StoreShardPruneStatusError:        {-7001, "Store shard prune status error"},
 	StoreShardPendingPrunedNodesError: {-7002, "Store shard pending prune nodes error"},

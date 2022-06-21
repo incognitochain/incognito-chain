@@ -13,9 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/peerv2"
-	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -44,7 +42,6 @@ type ShardSyncProcess struct {
 	consensus             peerv2.ConsensusData
 	lock                  *sync.RWMutex
 	lastInsert            string
-	Pruner                *pruner.Pruner
 }
 
 func NewShardSyncProcess(
@@ -54,7 +51,6 @@ func NewShardSyncProcess(
 	beaconChain BeaconChainInterface,
 	chain ShardChainInterface,
 	consensus peerv2.ConsensusData,
-	p *pruner.Pruner,
 ) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -74,7 +70,6 @@ func NewShardSyncProcess(
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState, 100),
 		consensus:        consensus,
-		Pruner:           p,
 
 		actionCh: make(chan func()),
 	}
@@ -92,16 +87,6 @@ func NewShardSyncProcess(
 				s.crossShardSyncProcess.start()
 			} else {
 				s.crossShardSyncProcess.stop()
-				if s.Chain.GetBestViewHeight() != 1 && s.Chain.GetFinalViewHeight() != 1 {
-					if s.isCatchUp {
-						if s.Pruner.Statuses[shardID] == rawdbv2.WaitingPruneStatus {
-							err := s.Pruner.Prune(shardID)
-							if err != nil {
-								panic(err)
-							}
-						}
-					}
-				}
 			}
 
 			select {
@@ -175,10 +160,6 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		}
 	}()
 
-	if s.isPruning() {
-		return
-	}
-
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
 		blocks := s.shardPool.GetBlockByPrevHash(viewHash)
@@ -219,9 +200,6 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 func (s *ShardSyncProcess) syncShardProcess() {
 	for {
-		if s.isPruning() {
-			continue
-		}
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
 			s.isCatchUp = false
@@ -272,9 +250,6 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 
 	sleepTime := time.Duration(common.TIMESLOT/2) * time.Second
 	for {
-		if s.isPruning() {
-			continue
-		}
 		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 		if committeeView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
 			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
@@ -400,8 +375,4 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		}
 	}
 
-}
-
-func (s *ShardSyncProcess) isPruning() bool {
-	return s.Pruner.Statuses[s.shardID] == rawdbv2.ProcessingPruneStatus || s.Pruner.Statuses[s.shardID] == rawdbv2.WaitingPruneStatus
 }

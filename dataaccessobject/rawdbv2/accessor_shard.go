@@ -151,12 +151,29 @@ func GetShardRootsHash(db incdb.KeyValueReader, shardID byte, hash common.Hash) 
 	return db.Get(key)
 }
 
+func StoreLastPrunedHeight(db incdb.KeyValueWriter, shardID byte, v uint64) error {
+	key := GetLastPrunedHeightKey(shardID)
+	if err := db.Put(key, common.Uint64ToBytes(v)); err != nil {
+		return NewRawdbError(StoreShardLastPrunedHeightError, err)
+	}
+	return nil
+}
+
 func StoreLastPrunedKeyTrie(db incdb.KeyValueWriter, shardID byte, v []byte) error {
 	key := GetLastPrunedKeyTrieKey(shardID)
 	if err := db.Put(key, v); err != nil {
 		return NewRawdbError(StoreShardLastPrunedKeyTrieError, err)
 	}
 	return nil
+}
+
+func GetLastPrunedHeight(db incdb.KeyValueReader, shardID byte) (uint64, error) {
+	key := GetLastPrunedHeightKey(shardID)
+	b, err := db.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	return common.BytesToUint64(b)
 }
 
 func GetLastPrunedKeyTrie(db incdb.KeyValueReader, shardID byte) ([]byte, error) {
