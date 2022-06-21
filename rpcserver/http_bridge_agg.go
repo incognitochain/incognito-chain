@@ -690,7 +690,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleBridgeAggGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
