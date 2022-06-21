@@ -163,8 +163,9 @@ func (sub *SubManager) Subscribe(forced bool) error {
 				}
 			}
 		}
-	} else if sub.syncMode == "netmonitor" {
-		rolehash = common.HashH([]byte("netmonitor")).String()
+	} else if sub.syncMode == "netmonitor" || sub.syncMode == "fullnode" {
+		role := sub.syncMode
+		rolehash = common.HashH([]byte(role)).String()
 
 		//check if role hash is changed
 		if rolehash == sub.rolehash && !forced { // Not forced => no need to subscribe when role stays the same
@@ -174,7 +175,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		topics, _, err := sub.registerToProxy(
 			nodePK,
 			"",
-			"netmonitor",
+			role,
 			[]byte{255},
 		)
 		if err != nil {
@@ -183,7 +184,6 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		for msg, topic := range topics {
 			newTopics[msg] = append(newTopics[msg], topic...)
 		}
-
 	}
 
 	Logger.Infof("newTopics %v", newTopics)
