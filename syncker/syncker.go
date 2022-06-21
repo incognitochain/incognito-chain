@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -66,6 +67,10 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		} else {
 			config.Blockchain.RestoreBeaconViews()
 		}
+	}
+
+	if os.Getenv("FULLNODE") == "1" {
+		synckerManager.config.Network.SetSyncMode("fullnode")
 	}
 
 	//init beacon sync process
@@ -573,6 +578,10 @@ func (blk *TmpBlock) Hash() *common.Hash {
 
 func (blk *TmpBlock) GetPrevHash() common.Hash {
 	return blk.PreHash
+}
+
+func (blk *TmpBlock) FullHashString() string {
+	return blk.Hash().String()
 }
 
 func (blk *TmpBlock) GetShardID() int {

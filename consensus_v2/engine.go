@@ -2,6 +2,8 @@ package consensus_v2
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"log"
 	"strings"
 	"time"
 
@@ -120,7 +122,7 @@ func (engine *Engine) WatchCommitteeChange() {
 
 		keyBytes := validator.MiningKey.PubKey[common.BlsConsensus]
 		logKey := base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
-		Logger.Log.Infof("validator key %+v, shardID %+v, role %+v", logKey, chainID, role)
+		log.Printf("validator key %+v, shardID %+v, role %+v \n", logKey, chainID, role)
 
 		if chainID == common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
@@ -305,12 +307,19 @@ func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 func (engine *Engine) getBlockVersion(chainID int) int {
 	chainEpoch := uint64(1)
 	chainHeight := uint64(1)
+	triggerFeature := make(map[string]uint64)
 	if chainID == -1 {
 		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
 		chainHeight = engine.config.Blockchain.BeaconChain.GetBestViewHeight()
+		triggerFeature = engine.config.Blockchain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState).TriggeredFeature
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
+		triggerFeature = engine.config.Blockchain.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
+	}
+
+	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
+		return types.INSTANT_FINALITY_VERSION
 	}
 
 	if chainHeight >= config.Param().ConsensusParam.BlockProducingV3Height {

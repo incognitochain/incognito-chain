@@ -138,7 +138,7 @@ func BuildCommitteePubkey(minerPrivateKey string, stakerAddr string) (*incognito
 	return &committeeKey, err
 }
 
-func (acc *Account) ParseCommitteePubkey(committeeKey string) (*incognitokey.CommitteePublicKey, error) {
+func ParseCommitteePubkey(committeeKey string) (*incognitokey.CommitteePublicKey, error) {
 	cm := &incognitokey.CommitteePublicKey{}
 	err := cm.FromBase58(committeeKey)
 	if err != nil {

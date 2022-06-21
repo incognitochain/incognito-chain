@@ -110,11 +110,15 @@ batch_commit_sync_mode_param:
   trie_node_limit: 1e9
   trie_img_limit: 4e6
 auto_enable_feature:
+  - instantfinality:
+      min_trigger: 2076793
+      force_trigger: 1e9
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
       require_percentage: 85
+bc_height_break_point_coin_origin: 2087774
 flatfileparam:
   maxcachesize: 536870912 #500Mb
   compresslevel: -1 #default compression
-

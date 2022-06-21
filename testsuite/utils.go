@@ -304,7 +304,7 @@ func (sim *NodeEngine) PrintChainInfo(chainIDs []int) {
 }
 
 func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (multiview.View, multiview.View) {
-	multiView0 := &multiview.MultiView{}
+	var multiView0 multiview.MultiView
 	if chainID == -1 {
 		multiView0 = node.GetBlockchain().BeaconChain.CloneMultiView()
 	} else {

@@ -2,7 +2,6 @@ package coin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,7 +14,7 @@ import (
 // OTAReceiver holds the data necessary to send a coin to your receiver with privacy.
 // It is somewhat equivalent in usage with PaymentAddress
 type OTAReceiver struct {
-	PublicKey operation.Point
+	PublicKey *operation.Point
 	TxRandom  TxRandom
 }
 
@@ -35,18 +34,17 @@ func (recv OTAReceiver) IsValid() bool {
 
 func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 	if recv == nil {
-		return errors.New("OTAReceiver not initialized")
+		return fmt.Errorf("OTAReceiver not initialized")
 	}
 
 	targetShardID := common.GetShardIDFromLastByte(addr.Pk[len(addr.Pk)-1])
 	otaRand := operation.RandomScalar()
 	concealRand := operation.RandomScalar()
 
-	// Increase index until have the right shardID
 	index := uint32(0)
 	publicOTA := addr.GetOTAPublicKey()
 	if publicOTA == nil {
-		return errors.New("Missing public OTA in payment address")
+		return fmt.Errorf("missing public OTA in payment address")
 	}
 	publicSpend := addr.GetPublicSpend()
 	rK := (&operation.Point{}).ScalarMult(publicOTA, otaRand)
@@ -57,11 +55,11 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 		publicKey := (&operation.Point{}).Add(HrKG, publicSpend)
 
 		pkb := publicKey.ToBytesS()
-		currentShardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
-		if currentShardID == targetShardID {
+		senderShardID, recvShardID, coinPrivacyType, _ := DeriveShardInfoFromCoin(pkb)
+		if recvShardID == int(targetShardID) && senderShardID == int(targetShardID) && coinPrivacyType == PrivacyTypeMint {
 			otaRandomPoint := (&operation.Point{}).ScalarMultBase(otaRand)
 			concealRandomPoint := (&operation.Point{}).ScalarMultBase(concealRand)
-			recv.PublicKey = *publicKey
+			recv.PublicKey = publicKey
 			recv.TxRandom = *NewTxRandom()
 			recv.TxRandom.SetTxOTARandomPoint(otaRandomPoint)
 			recv.TxRandom.SetTxConcealRandomPoint(concealRandomPoint)
@@ -69,7 +67,7 @@ func (recv *OTAReceiver) FromAddress(addr key.PaymentAddress) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Cannot generate OTAReceiver after %d attempts", MaxAttempts)
+	return fmt.Errorf("cannot generate OTAReceiver after %d attempts", MaxAttempts)
 }
 
 // FromString() returns a new OTAReceiver parsed from the input string,
@@ -104,10 +102,10 @@ func (recv OTAReceiver) Bytes() ([]byte, error) {
 
 func (recv *OTAReceiver) SetBytes(b []byte) error {
 	if len(b) == 0 {
-		return errors.New("Not enough bytes to parse ReceivingAddress")
+		return fmt.Errorf("not enough bytes to parse ReceivingAddress")
 	}
 	if recv == nil {
-		return errors.New("OTAReceiver not initialized")
+		return fmt.Errorf("OTAReceiver not initialized")
 	}
 	keyType := b[0]
 	switch keyType {
@@ -116,9 +114,10 @@ func (recv *OTAReceiver) SetBytes(b []byte) error {
 		copy(buf, b[1:33])
 		pk, err := (&operation.Point{}).FromBytesS(buf)
 		if err != nil {
-			return err
+			recv.PublicKey = nil
+		} else {
+			recv.PublicKey = pk
 		}
-		recv.PublicKey = *pk
 		txr := NewTxRandom()
 		// SetBytes() will perform length check
 		err = txr.SetBytes(b[33:])
@@ -128,7 +127,7 @@ func (recv *OTAReceiver) SetBytes(b []byte) error {
 		recv.TxRandom = *txr
 		return nil
 	default:
-		return errors.New("Unrecognized prefix for ReceivingAddress")
+		return fmt.Errorf("unrecognized prefix for ReceivingAddress")
 	}
 }
 
