@@ -22,6 +22,7 @@ type Network interface {
 	RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	PublishMessageToShard(msg wire.Message, shardID byte) error
+	SetSyncMode(string)
 }
 
 type BeaconChainInterface interface {
