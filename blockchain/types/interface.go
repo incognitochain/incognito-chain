@@ -8,12 +8,15 @@ type BlockPoolInterface interface {
 	GetHeight() uint64
 	GetShardID() int
 	GetRound() int
+	FullHashString() string //hash-proposehash
 }
 
 type BlockInterface interface {
 	GetVersion() int
 	GetHeight() uint64
 	Hash() *common.Hash
+	ProposeHash() *common.Hash
+	FullHashString() string //hash-proposehash
 	//AddValidationField(validateData string) error
 	GetProducer() string
 	GetProduceTime() int64

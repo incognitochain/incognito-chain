@@ -2079,6 +2079,17 @@ func (stateDB *StateDB) getPdexv3ParamsByKey(key common.Hash) (*Pdexv3Params, bo
 	return NewPdexv3Params(), false, nil
 }
 
+func (stateDB *StateDB) getPdexv3StakerByKey(key common.Hash) (*Pdexv3StakerState, bool, error) {
+	state, err := stateDB.getStateObject(Pdexv3StakerObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if state != nil {
+		return state.GetValue().(*Pdexv3StakerState), true, nil
+	}
+	return NewPdexv3StakerState(), false, nil
+}
+
 func (stateDB *StateDB) getPdexv3PoolPairState(key common.Hash) (*Pdexv3PoolPairState, bool, error) {
 	obj, err := stateDB.getStateObject(Pdexv3PoolPairObjectType, key)
 	if err != nil {
@@ -2088,6 +2099,28 @@ func (stateDB *StateDB) getPdexv3PoolPairState(key common.Hash) (*Pdexv3PoolPair
 		return obj.GetValue().(*Pdexv3PoolPairState), true, nil
 	}
 	return NewPdexv3PoolPairState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3ShareState(key common.Hash) (*Pdexv3ShareState, bool, error) {
+	obj, err := stateDB.getStateObject(Pdexv3ShareObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*Pdexv3ShareState), true, nil
+	}
+	return NewPdexv3ShareState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3NftIDState(key common.Hash) (*Pdexv3NftState, bool, error) {
+	obj, err := stateDB.getStateObject(Pdexv3NftObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*Pdexv3NftState), true, nil
+	}
+	return NewPdexv3NftState(), false, nil
 }
 
 func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {
@@ -2496,6 +2529,65 @@ func (stateDB *StateDB) getBridgePLGTxState(key common.Hash) (*BridgePLGTxState,
 		return plgTxState.GetValue().(*BridgePLGTxState), true, nil
 	}
 	return NewBridgePLGTxState(), false, nil
+}
+
+// ================================= bridge agg OBJECT =======================================
+func (stateDB *StateDB) getBridgeAggStatusByKey(key common.Hash) (*BridgeAggStatusState, bool, error) {
+	bridgeAggStatusState, err := stateDB.getStateObject(BridgeAggStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bridgeAggStatusState != nil {
+		return bridgeAggStatusState.GetValue().(*BridgeAggStatusState), true, nil
+	}
+	return NewBridgeAggStatusState(), false, nil
+}
+
+func (stateDB *StateDB) iterateWithBridgeAggUnifiedTokens(prefix []byte) ([]*BridgeAggUnifiedTokenState, error) {
+	res := []*BridgeAggUnifiedTokenState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		unifiedTokenState := NewBridgeAggUnifiedTokenState()
+		err := json.Unmarshal(newValue, &unifiedTokenState)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, unifiedTokenState)
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateWithBridgeAggConvertedTokens(prefix []byte) ([]*BridgeAggConvertedTokenState, error) {
+	res := []*BridgeAggConvertedTokenState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		convertedTokenState := NewBridgeAggConvertedTokenState()
+		err := json.Unmarshal(newValue, &convertedTokenState)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, convertedTokenState)
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) getBridgeAggVault(key common.Hash) (*BridgeAggVaultState, bool, error) {
+	vaultObject, err := stateDB.getStateObject(BridgeAggVaultObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if vaultObject != nil {
+		return vaultObject.GetValue().(*BridgeAggVaultState), true, nil
+	}
+	return NewBridgeAggVaultState(), false, nil
 }
 
 // ================================= Fantom bridge OBJECT =======================================

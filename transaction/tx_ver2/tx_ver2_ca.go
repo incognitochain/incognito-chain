@@ -1,13 +1,13 @@
 package tx_ver2
 
 import (
-	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
@@ -40,7 +40,7 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 
 		inputCoin_specific, ok := inputCoins[i].(*privacy.CoinV2)
 		if !ok || inputCoin_specific.GetAssetTag() == nil {
-			return nil, errors.New("Cannot cast a coin as v2-CA")
+			return nil, fmt.Errorf("cannot cast a coin as v2-CA")
 		}
 
 		isUnblinded := privacy.IsPointEqual(rehashed, inputCoin_specific.GetAssetTag())
@@ -63,11 +63,11 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 			}
 		}
 
-		utils.Logger.Log.Infof("CA-MLSAG : processing input asset tag %s\n", string(inputCoin_specific.GetAssetTag().MarshalText()))
-		utils.Logger.Log.Debugf("Shared secret is %s\n", string(sharedSecret.MarshalText()))
-		utils.Logger.Log.Debugf("Blinder is %s\n", string(bl.MarshalText()))
+		utils.Logger.Log.Infof("CA-MLSAG : processing input asset tag %s", string(inputCoin_specific.GetAssetTag().MarshalText()))
+		utils.Logger.Log.Debugf("Shared secret is %s", string(sharedSecret.MarshalText()))
+		utils.Logger.Log.Debugf("Blinder is %s", string(bl.MarshalText()))
 		v := inputCoin_specific.GetAmount()
-		utils.Logger.Log.Debugf("Value is %d\n", v.ToUint64Little())
+		utils.Logger.Log.Debugf("Value is %d", v.ToUint64Little())
 		effectiveRCom := new(privacy.Scalar).Mul(bl, v)
 		effectiveRCom.Add(effectiveRCom, inputCoin_specific.GetRandomness())
 
@@ -81,7 +81,7 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 	var err error
 	for i, oc := range outputCoins {
 		if oc.GetAssetTag() == nil {
-			return nil, errors.New("Cannot cast a coin as v2-CA")
+			return nil, fmt.Errorf("cannot cast a coin as v2-CA")
 		}
 		// lengths between 0 and len(outputCoins) were rejected before
 		bl := new(privacy.Scalar).FromUint64(0)
@@ -89,17 +89,17 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 		if isUnblinded {
 			utils.Logger.Log.Infof("Signing TX : processing an unblinded output coin")
 		} else {
-			utils.Logger.Log.Debugf("Shared secret is %s\n", string(outputSharedSecrets[i].MarshalText()))
+			utils.Logger.Log.Debugf("Shared secret is %s", string(outputSharedSecrets[i].MarshalText()))
 			bl, err = privacy.ComputeAssetTagBlinder(outputSharedSecrets[i])
 			if err != nil {
 				return nil, err
 			}
 		}
-		utils.Logger.Log.Infof("CA-MLSAG : processing output asset tag %s\n", string(oc.GetAssetTag().MarshalText()))
-		utils.Logger.Log.Debugf("Blinder is %s\n", string(bl.MarshalText()))
+		utils.Logger.Log.Infof("CA-MLSAG : processing output asset tag %s", string(oc.GetAssetTag().MarshalText()))
+		utils.Logger.Log.Debugf("Blinder is %s", string(bl.MarshalText()))
 
 		v := oc.GetAmount()
-		utils.Logger.Log.Debugf("Value is %d\n", v.ToUint64Little())
+		utils.Logger.Log.Debugf("Value is %d", v.ToUint64Little())
 		effectiveRCom := new(privacy.Scalar).Mul(bl, v)
 		effectiveRCom.Add(effectiveRCom, oc.GetRandomness())
 		sumOutputAssetTagBlinders.Add(sumOutputAssetTagBlinders, bl)
@@ -113,12 +113,12 @@ func createPrivKeyMlsagCA(inputCoins []privacy.PlainCoin, outputCoins []*privacy
 	secondCommitmentToZeroRecomputed := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], sumRand)
 	if len(commitmentsToZero) != 2 {
 		utils.Logger.Log.Errorf("Received %d points to check when signing MLSAG", len(commitmentsToZero))
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Error : need exactly 2 points for MLSAG double-checking"))
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error : need exactly 2 points for MLSAG double-checking"))
 	}
 	match1 := privacy.IsPointEqual(firstCommitmentToZeroRecomputed, commitmentsToZero[0])
 	match2 := privacy.IsPointEqual(secondCommitmentToZeroRecomputed, commitmentsToZero[1])
 	if !match1 || !match2 {
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Error : asset tag sum or commitment sum mismatch"))
+		return nil, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error : asset tag sum or commitment sum mismatch"))
 	}
 
 	utils.Logger.Log.Debugf("Last 2 private keys will correspond to points %s and %s", firstCommitmentToZeroRecomputed.MarshalText(), secondCommitmentToZeroRecomputed.MarshalText())
@@ -147,7 +147,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 	for _, oc := range outputCoins {
 		if oc.GetAssetTag() == nil {
 			utils.Logger.Log.Errorf("CA error: missing asset tag for signing in output coin - %v", oc.Bytes())
-			err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : an output coin does not have asset tag"))
+			err := utils.NewTransactionErr(utils.SignTxError, fmt.Errorf("cannot sign CA token : an output coin does not have asset tag"))
 			return nil, nil, nil, err
 		}
 		sumOutputAssetTags.Add(sumOutputAssetTags, oc.GetAssetTag())
@@ -176,11 +176,11 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 				sumInputs.Add(sumInputs, inputCoins[j].GetCommitment())
 				inputCoin_specific, ok := inputCoins[j].(*privacy.CoinV2)
 				if !ok {
-					return nil, nil, nil, errors.New("Cannot cast a coin as v2")
+					return nil, nil, nil, fmt.Errorf("cannot cast a coin as v2")
 				}
 				if inputCoin_specific.GetAssetTag() == nil {
 					utils.Logger.Log.Errorf("CA error: missing asset tag for signing in input coin - %v", inputCoin_specific.Bytes())
-					err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : an input coin does not have asset tag"))
+					err := utils.NewTransactionErr(utils.SignTxError, fmt.Errorf("cannot sign CA token : an input coin does not have asset tag"))
 					return nil, nil, nil, err
 				}
 				sumInputAssetTags.Add(sumInputAssetTags, inputCoin_specific.GetAssetTag())
@@ -203,7 +203,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 
 					if coinDB.GetAssetTag() == nil {
 						utils.Logger.Log.Errorf("CA error: missing asset tag for signing in DB coin - %v", coinBytes)
-						err := utils.NewTransactionErr(utils.SignTxError, errors.New("Cannot sign CA token : a CA coin in DB does not have asset tag"))
+						err := utils.NewTransactionErr(utils.SignTxError, fmt.Errorf("cannot sign CA token : a CA coin in DB does not have asset tag"))
 						return nil, nil, nil, err
 					}
 
@@ -229,7 +229,7 @@ func generateMlsagRingWithIndexesCA(inputCoins []privacy.PlainCoin, outputCoins 
 		row = append(row, assetSum)
 		row = append(row, sumInputs)
 		if i == pi {
-			utils.Logger.Log.Debugf("Last 2 columns in ring are %s and %s\n", assetSum.MarshalText(), sumInputs.MarshalText())
+			utils.Logger.Log.Debugf("Last 2 columns in ring are %s and %s", assetSum.MarshalText(), sumInputs.MarshalText())
 			lastTwoColumnsCommitmentToZero = []*privacy.Point{assetSum, sumInputs}
 		}
 
@@ -243,11 +243,13 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	var err error
 	var outputCoins []*privacy.CoinV2
 	var sharedSecrets []*privacy.Point
-	// fmt.Printf("tokenID is %v\n",params.TokenID)
 	var numOfCoinsBurned uint = 0
 	var isBurning bool = false
+	var senderKeySet incognitokey.KeySet
+	_ = senderKeySet.InitFromPrivateKey(params.SenderSK)
+	b := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	for _, inf := range params.PaymentInfo {
-		c, ss, err := createUniqueOTACoinCA(inf, params.TokenID, params.StateDB)
+		c, ss, err := createUniqueOTACoinCA(inf, int(common.GetShardIDFromLastByte(b)), params.TokenID, params.StateDB)
 		if err != nil {
 			utils.Logger.Log.Errorf("Cannot parse outputCoinV2 to outputCoins, error %v ", err)
 			return false, err
@@ -263,7 +265,7 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 	// first, reject the invalid case. After this, isBurning will correctly determine if TX is burning
 	if numOfCoinsBurned > 1 {
 		utils.Logger.Log.Errorf("Cannot burn multiple coins")
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output must not have more than 1 burned coin"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("output must not have more than 1 burned coin"))
 	}
 	// outputCoins, err := newCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
 
@@ -281,7 +283,7 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 
 func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputSharedSecrets []*privacy.Point, params *tx_generic.TxPrivacyInitParams, hashedMessage []byte) error {
 	if tx.Sig != nil {
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an unsigned one"))
+		return utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("input transaction must be an unsigned one"))
 	}
 	ringSize := privacy.RingSize
 
@@ -334,62 +336,14 @@ func (tx *Tx) signCA(inp []privacy.PlainCoin, out []*privacy.CoinV2, outputShare
 	return err
 }
 
-func reconstructRingCA(sigPubKey []byte, sumOutputsWithFee, sumOutputAssetTags *privacy.Point, numOfOutputs *privacy.Scalar, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (*mlsag.Ring, error) {
-	txSigPubKey := new(SigPubKey)
-	if err := txSigPubKey.SetBytes(sigPubKey); err != nil {
-		errStr := fmt.Sprintf("Error when parsing bytes of txSigPubKey %v", err)
-		return nil, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
-	}
-	indexes := txSigPubKey.Indexes
-	n := len(indexes)
-	if n == 0 {
-		return nil, errors.New("Cannot get ring from Indexes: Indexes is empty")
-	}
-
-	m := len(indexes[0])
-
-	ring := make([][]*privacy.Point, n)
-	for i := 0; i < n; i++ {
-		sumCommitment := new(privacy.Point).Identity()
-		sumCommitment.Sub(sumCommitment, sumOutputsWithFee)
-		sumAssetTags := new(privacy.Point).Identity()
-		sumAssetTags.Sub(sumAssetTags, sumOutputAssetTags)
-		row := make([]*privacy.Point, m+2)
-		for j := 0; j < m; j++ {
-			index := indexes[i][j]
-			randomCoinBytes, err := statedb.GetOTACoinByIndex(transactionStateDB, *tokenID, index.Uint64(), shardID)
-			if err != nil {
-				utils.Logger.Log.Errorf("Get random onetimeaddresscoin error %v ", err)
-				return nil, err
-			}
-			randomCoin := new(privacy.CoinV2)
-			if err := randomCoin.SetBytes(randomCoinBytes); err != nil {
-				utils.Logger.Log.Errorf("Set coin Byte error %v ", err)
-				return nil, err
-			}
-			row[j] = randomCoin.GetPublicKey()
-			sumCommitment.Add(sumCommitment, randomCoin.GetCommitment())
-			temp := new(privacy.Point).ScalarMult(randomCoin.GetAssetTag(), numOfOutputs)
-			sumAssetTags.Add(sumAssetTags, temp)
-		}
-
-		row[m] = new(privacy.Point).Set(sumAssetTags)
-		row[m+1] = new(privacy.Point).Set(sumCommitment)
-		ring[i] = row
-	}
-	return mlsag.NewRing(ring), nil
-}
-
-//nolint:staticcheck // overwrite tokenID to fit existing prototype
+// overwrite tokenID to fit existing prototype
 func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isNewTransaction bool) (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be a signed one"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("input transaction must be a signed one"))
 	}
-	var err error
 
-	// confidential asset TX always use umbrella ID to verify
-	tokenID = &common.ConfidentialAssetID
+	var err error
 	// Reform Ring
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(tx.Proof.GetOutputCoins(), tx.Fee)
 	sumOutputAssetTags := new(privacy.Point).Identity()
@@ -397,7 +351,7 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 		output_specific, ok := oc.(*privacy.CoinV2)
 		if !ok {
 			utils.Logger.Log.Errorf("Error when casting coin as v2")
-			return false, errors.New("Error when casting coin as v2")
+			return false, fmt.Errorf("error when casting coin as v2")
 		}
 		sumOutputAssetTags.Add(sumOutputAssetTags, output_specific.GetAssetTag())
 	}
@@ -405,7 +359,6 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	outCount := new(privacy.Scalar).FromUint64(uint64(len(tx.GetProof().GetOutputCoins())))
 	sumOutputAssetTags.ScalarMult(sumOutputAssetTags, inCount)
 
-	// fmt.Printf("Token id is %v\n",tokenID)
 	ring, err := reconstructRingCAV2(tx.GetValidationEnv(), sumOutputsWithFee, sumOutputAssetTags, outCount, transactionStateDB)
 	if err != nil {
 		utils.Logger.Log.Errorf("Error when querying database to construct mlsag ring: %v ", err)
@@ -433,14 +386,14 @@ func (tx *Tx) verifySigCA(transactionStateDB *statedb.StateDB, shardID byte, tok
 	return mlsag.VerifyConfidentialAsset(mlsagSignature, ring, tx.Hash()[:])
 }
 
-func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, *privacy.Point, error) {
+func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, senderShardID int, tokenID *common.Hash, stateDB *statedb.StateDB) (*privacy.CoinV2, *privacy.Point, error) {
 	if tokenID == nil {
 		tokenID = &common.PRVCoinID
 	}
 	for i := privacy.MaxPrivacyAttempts; i > 0; i-- {
-		c, sharedSecret, err := privacy.NewCoinCA(paymentInfo, tokenID)
+		c, sharedSecret, err := privacy.NewCoinCA(privacy.NewCoinParams().From(paymentInfo, senderShardID, privacy.CoinPrivacyTypeTransfer), tokenID)
 		if tokenID != nil && sharedSecret != nil && c != nil && c.GetAssetTag() != nil {
-			utils.Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s\n", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
+			utils.Logger.Log.Infof("Created a new coin with tokenID %s, shared secret %s, asset tag %s", tokenID.String(), sharedSecret.MarshalText(), c.GetAssetTag().MarshalText())
 		}
 		if err != nil {
 			utils.Logger.Log.Errorf("Cannot parse coin based on payment info err: %v", err)
@@ -466,5 +419,5 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 	}
 	// MaxPrivacyAttempts could be exceeded if the OS's RNG or the statedb is corrupted
 	utils.Logger.Log.Errorf("Cannot create unique OTA after %d attempts", privacy.MaxPrivacyAttempts)
-	return nil, nil, errors.New("Cannot create unique OTA")
+	return nil, nil, fmt.Errorf("cannot create unique OTA")
 }

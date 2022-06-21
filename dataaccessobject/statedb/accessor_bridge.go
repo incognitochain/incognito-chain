@@ -169,6 +169,10 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 	return has, nil
 }
 
+func GetBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
+	return getBridgeTokenByType(stateDB, incTokenID, isCentralized)
+}
+
 func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
 	key := GenerateBridgeTokenInfoObjectKey(isCentralized, incTokenID)
 	tokenInfoState, has, err := stateDB.getBridgeTokenInfoState(key)
@@ -318,4 +322,17 @@ func IsBridgeToken(stateDB *StateDB, tokenID common.Hash) (
 		return IsBridgeTokenExistedByType(stateDB, tokenID, false)
 	}
 	return isBridgeTokens, err
+}
+
+func GetBridgeTokens(stateDB *StateDB) ([]*rawdbv2.BridgeTokenInfo, error) {
+	cBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(true)
+	dBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
+	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
+	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
+	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
+		tokenID := bridgeTokenInfoState.IncTokenID()
+		tempBridgeTokenInfo := rawdbv2.NewBridgeTokenInfo(&tokenID, bridgeTokenInfoState.Amount(), bridgeTokenInfoState.ExternalTokenID(), bridgeTokenInfoState.Network(), bridgeTokenInfoState.IsCentralized())
+		bridgeTokenInfos = append(bridgeTokenInfos, tempBridgeTokenInfo)
+	}
+	return bridgeTokenInfos, nil
 }

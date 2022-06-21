@@ -46,7 +46,7 @@ func DecmprG1(bytes []byte) (*bn256.G1, error) {
 
 // DecmprG2 is
 func DecmprG2(bytes []byte) (*bn256.G2, error) {
-	if res, exist := cacher.Get(string(bytes)); exist {
+	if res, exist := Cacher.Get(string(bytes)); exist {
 		if result, ok := res.(*bn256.G2); ok {
 			return result, nil
 		} else {
@@ -58,7 +58,7 @@ func DecmprG2(bytes []byte) (*bn256.G2, error) {
 	if err != nil {
 		return nil, NewBLSSignatureError(DecompressFromByteErr, nil)
 	}
-	cacher.Add(string(bytes), pn, 4*time.Hour)
+	Cacher.Add(string(bytes), pn, 4*time.Hour)
 	return pn, nil
 }
 

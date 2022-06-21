@@ -123,6 +123,7 @@ const (
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
 	ExternalBridgeTokenLength = 20
+	UnifiedTokenPrefix        = "UT"
 )
 
 // Bridge, PDE & Portal statuses for RPCs
@@ -192,6 +193,13 @@ const (
 	Pdexv3RejectStatus = byte(2)
 )
 
+const (
+	RejectedStatusStr  = "rejected"
+	AcceptedStatusStr  = "accepted"
+	RejectedStatusByte = byte(0)
+	AcceptedStatusByte = byte(1)
+)
+
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
 const PDEXIDStr = "0000000000000000000000000000000000000000000000000000000000000006"
 const PDEXDenominatingDecimal = 9
@@ -228,4 +236,17 @@ var TIMESLOT = uint64(0) //need to be set when init chain
 var (
 	BurningAddressByte  []byte
 	BurningAddressByte2 []byte
+)
+
+// Add to the end of the list. DO NOT edit the order
+const (
+	DefaultNetworkID = iota
+	ETHNetworkID
+	BSCNetworkID
+	PLGNetworkID
+	FTMNetworkID
+)
+
+const (
+	EVMNetworkType = iota
 )

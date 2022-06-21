@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -1207,7 +1208,7 @@ func (p *PortalCustodianTopupProcessorV3) BuildNewInsts(
 
 		// verify proof and parse receipt
 		// Note: currently only support ETH
-		ethReceipt, err := metadata.VerifyProofAndParseEVMReceipt(
+		ethReceipt, err := metadataBridge.VerifyProofAndParseEVMReceipt(
 			meta.BlockHash, meta.TxIndex, meta.ProofStrs,
 			config.Param().GethParam.Host,
 			metadata.EVMConfirmationBlocks,
@@ -1223,7 +1224,7 @@ func (p *PortalCustodianTopupProcessorV3) BuildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+		logMap, err := metadataBridge.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil
@@ -1584,7 +1585,7 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 
 		// verify proof and parse receipt
 		// Note: currently only support ETH
-		ethReceipt, err := metadata.VerifyProofAndParseEVMReceipt(
+		ethReceipt, err := metadataBridge.VerifyProofAndParseEVMReceipt(
 			meta.BlockHash, meta.TxIndex, meta.ProofStrs,
 			config.Param().GethParam.Host,
 			metadata.EVMConfirmationBlocks,
@@ -1600,7 +1601,7 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+		logMap, err := metadataBridge.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil

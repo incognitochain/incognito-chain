@@ -54,9 +54,8 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.Committees = tempBeaconBlock.Alias.Committees
 		p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
 		p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
-		p.Votes = tempBeaconBlock.Alias.Votes
 		p.IsValid = tempBeaconBlock.Alias.IsValid
-		p.HasNewVote = tempBeaconBlock.Alias.HasNewVote
+		p.HasNewVote = true //force check 2/3+1 after init
 		p.IsVoted = tempBeaconBlock.Alias.IsVoted
 		p.IsCommitted = tempBeaconBlock.Alias.IsCommitted
 		p.ValidVotes = tempBeaconBlock.Alias.ValidVotes
@@ -83,9 +82,8 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.Committees = tempShardBlock.Alias.Committees
 		p.SigningCommittees = tempShardBlock.Alias.SigningCommittees
 		p.UserKeySet = tempShardBlock.Alias.UserKeySet
-		p.Votes = tempShardBlock.Alias.Votes
 		p.IsValid = tempShardBlock.Alias.IsValid
-		p.HasNewVote = tempShardBlock.Alias.HasNewVote
+		p.HasNewVote = true //force check 2/3+1 after init
 		p.IsVoted = tempShardBlock.Alias.IsVoted
 		p.IsCommitted = tempShardBlock.Alias.IsCommitted
 		p.ValidVotes = tempShardBlock.Alias.ValidVotes
@@ -114,7 +112,6 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				Committees:              p.Committees,
 				SigningCommittees:       p.SigningCommittees,
 				UserKeySet:              p.UserKeySet,
-				Votes:                   p.Votes,
 				IsValid:                 p.IsValid,
 				HasNewVote:              p.HasNewVote,
 				IsVoted:                 p.IsVoted,
@@ -144,7 +141,6 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				Committees:              p.Committees,
 				SigningCommittees:       p.SigningCommittees,
 				UserKeySet:              p.UserKeySet,
-				Votes:                   p.Votes,
 				IsValid:                 p.IsValid,
 				HasNewVote:              p.HasNewVote,
 				IsVoted:                 p.IsVoted,
@@ -163,25 +159,6 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 			return []byte{}, err
 		}
 		return data, nil
-	}
-}
-
-//NewProposeBlockInfoValue : new propose block info
-func newProposeBlockForProposeMsg(
-	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey,
-	signingCommittes []incognitokey.CommitteePublicKey,
-	userKeySet []signatureschemes2.MiningKey,
-	proposerMiningKeyBase58 string,
-) *ProposeBlockInfo {
-	return &ProposeBlockInfo{
-		block:                   block,
-		ReceiveTime:             time.Now(),
-		Votes:                   make(map[string]*BFTVote),
-		Committees:              incognitokey.DeepCopy(committees),
-		SigningCommittees:       incognitokey.DeepCopy(signingCommittes),
-		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
-		ProposerMiningKeyBase58: proposerMiningKeyBase58,
 	}
 }
 
@@ -206,40 +183,6 @@ func newProposeBlockForProposeMsgLemma2(
 		ReProposeHashSignature:  proposeMsg.ReProposeHashSignature,
 		FinalityProof:           proposeMsg.FinalityProof,
 	}
-}
-
-func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
-	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey,
-	signingCommittes []incognitokey.CommitteePublicKey,
-	userKeySet []signatureschemes2.MiningKey,
-	validVotes, errVotes int,
-) {
-	proposeBlockInfo.block = block
-	proposeBlockInfo.ReceiveTime = time.Now()
-	proposeBlockInfo.Committees = incognitokey.DeepCopy(committees)
-	proposeBlockInfo.SigningCommittees = incognitokey.DeepCopy(signingCommittes)
-	proposeBlockInfo.UserKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
-	proposeBlockInfo.ValidVotes = validVotes
-	proposeBlockInfo.ErrVotes = errVotes
-}
-
-func newBlockInfoForVoteMsg(chainID int) *ProposeBlockInfo {
-	proposeBlockInfo := &ProposeBlockInfo{
-		Votes:      make(map[string]*BFTVote),
-		HasNewVote: true,
-	}
-	if chainID == common.BeaconChainID {
-		if proposeBlockInfo.block == nil {
-			proposeBlockInfo.block = types.NewBeaconBlock()
-		}
-	} else {
-		if proposeBlockInfo.block == nil {
-			proposeBlockInfo.block = types.NewShardBlock()
-		}
-	}
-
-	return proposeBlockInfo
 }
 
 type FinalityProof struct {

@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -40,6 +40,9 @@ const (
 	RingSize           = privacy_util.RingSize
 	MaxPrivacyAttempts = coin.MaxAttempts
 	TxRandomGroupSize  = coin.TxRandomGroupSize
+
+	CoinPrivacyTypeTransfer = coin.PrivacyTypeTransfer
+	CoinPrivacyTypeMint     = coin.PrivacyTypeMint
 )
 
 var PedCom = operation.PedCom
@@ -128,7 +131,7 @@ func ArrayScalarToBytes(arr *[]*operation.Scalar) ([]byte, error) {
 
 	n := len(scalarArr)
 	if n > 255 {
-		return nil, errors.New("ArrayScalarToBytes: length of scalar array is too big")
+		return nil, fmt.Errorf("arrayScalarToBytes: length of scalar array is too big")
 	}
 	b := make([]byte, 1)
 	b[0] = byte(n)
@@ -141,11 +144,11 @@ func ArrayScalarToBytes(arr *[]*operation.Scalar) ([]byte, error) {
 
 func ArrayScalarFromBytes(b []byte) (*[]*operation.Scalar, error) {
 	if len(b) == 0 {
-		return nil, errors.New("ArrayScalarFromBytes error: length of byte is 0")
+		return nil, fmt.Errorf("arrayScalarFromBytes error: length of byte is 0")
 	}
 	n := int(b[0])
 	if n*Ed25519KeySize+1 != len(b) {
-		return nil, errors.New("ArrayScalarFromBytes error: length of byte is not correct")
+		return nil, fmt.Errorf("arrayScalarFromBytes error: length of byte is not correct")
 	}
 	scalarArr := make([]*operation.Scalar, n)
 	offset := 1
@@ -171,8 +174,8 @@ func IsScalarEqual(pa *Scalar, pb *Scalar) bool {
 	return operation.IsScalarEqual(pa, pb)
 }
 
-func NewCoinFromPaymentInfo(info *PaymentInfo) (*CoinV2, error) {
-	return coin.NewCoinFromPaymentInfo(info)
+func NewCoinFromPaymentInfo(p *coin.CoinParams) (*CoinV2, error) {
+	return coin.NewCoinFromPaymentInfo(p)
 }
 
 func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point, txRandom *TxRandom, info []byte) *CoinV2 {
@@ -187,6 +190,10 @@ func ComputeAssetTagBlinder(sharedSecret *Point) (*Scalar, error) {
 	return coin.ComputeAssetTagBlinder(sharedSecret)
 }
 
-func NewCoinCA(info *PaymentInfo, tokenID *common.Hash) (*CoinV2, *Point, error) {
-	return coin.NewCoinCA(info, tokenID)
+func NewCoinCA(p *coin.CoinParams, tokenID *common.Hash) (*CoinV2, *Point, error) {
+	return coin.NewCoinCA(p, tokenID)
 }
+
+func NewCoinParams() *coin.CoinParams { return &coin.CoinParams{} }
+
+var DeriveShardInfoFromCoin = coin.DeriveShardInfoFromCoin
