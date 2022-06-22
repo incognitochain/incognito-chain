@@ -315,13 +315,12 @@ func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error
 
 func buildAcceptedShieldContent(
 	shieldData []metadataBridge.AcceptedShieldRequestData,
-	paymentAddress privacy.PaymentAddress, unifiedTokenID, txReqID common.Hash, shardID byte,
+	paymentAddress privacy.PaymentAddress, unifiedTokenID, txReqID common.Hash,
 ) ([]byte, error) {
 	acceptedContent := metadataBridge.AcceptedInstShieldRequest{
 		Receiver:       paymentAddress,
 		UnifiedTokenID: unifiedTokenID,
 		TxReqID:        txReqID,
-		ShardID:        shardID,
 		Data:           shieldData,
 	}
 	return json.Marshal(acceptedContent)

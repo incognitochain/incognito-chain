@@ -288,7 +288,7 @@ func (sp *stateProducer) shield(
 	// incAddrStr was validated in func ExtractIssueEVMDataFromReceipt => don't catch error here
 	key, _ := wallet.Base58CheckDeserialize(incAddrStr)
 	receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
-	content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID, receivingShardID)
+	content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID)
 	if err != nil {
 		Logger.log.Errorf("[BridgeAgg] Can not build contents for shield instruction: %v", err)
 		rejectedInst := buildRejectedInst(
@@ -296,7 +296,7 @@ func (sp *stateProducer) shield(
 		return [][]string{rejectedInst}, state, ac, nil
 	}
 
-	resInst := buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, [][]byte{content})
+	resInst := buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, receivingShardID, [][]byte{content})
 	// update vaults state
 	state.unifiedTokenVaults[meta.UnifiedTokenID] = clonedVaults
 	clonedAC.DBridgeTokenPair[meta.UnifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
