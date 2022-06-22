@@ -8,6 +8,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -76,7 +77,7 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool) error {
 	if err != nil {
 		panic(err)
 	}
-	p.stateBloom, err = trie.NewStateBloomWithSize(2048)
+	p.stateBloom, err = trie.NewStateBloomWithSize(config.Config().StateBloomSize)
 	if err != nil {
 		panic(err)
 	}

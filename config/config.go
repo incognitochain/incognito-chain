@@ -119,6 +119,7 @@ type config struct {
 	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 	AllowStatePrune     bool   `mapstructure:"allow_state_prune" long:"allowstateprune" description:"allow state pruning flag"`
 	StatePrune          bool   `mapstructure:"state_prune" long:"stateprune" description:"state pruning flag"`
+	StateBloomSize      uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
