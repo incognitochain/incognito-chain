@@ -1,7 +1,7 @@
 package rawdbv2
 
 const (
-	NotPruneYetStatus = iota
+	NotPruneYetStatus = byte(iota)
 	WaitingPruneByHeightStatus
 	WaitingPruneByHashStatus
 	ProcessingPruneStatus

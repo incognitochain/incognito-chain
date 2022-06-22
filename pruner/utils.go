@@ -15,3 +15,18 @@ type TraverseHelper struct {
 	heightCh    chan uint64
 	rootHashCh  chan blockchain.ShardRootHash
 }
+
+type UpdateStatus struct {
+	ShardID           byte
+	Status            byte
+	ShouldPruneByHash bool
+}
+
+type Config struct {
+	ShouldPruneByHash bool `json:"ShouldPruneByHash"`
+}
+
+type ExtendedConfig struct {
+	Config
+	ShardID byte `json:"ShardID"`
+}

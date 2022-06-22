@@ -3,9 +3,11 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
@@ -18,7 +20,7 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
 	type Temp struct {
-		Data map[byte]rpcservice.PruneData `json:"Data"`
+		Config map[byte]pruner.Config `json:"Config"`
 	}
 	t := Temp{}
 	b, err := json.Marshal(arrayParams[0])
@@ -29,14 +31,18 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	/*s, ok := httpServer.synkerService.Synker.ShardSyncProcess[0]*/
-	/*if !ok {*/
-	/*return nil, rpcservice.NewRPCError(rpcservice.PruneError, fmt.Errorf("Not found shard sync process"))*/
-	/*}*/
-	var result interface{}
-	/*result, s.Pruner, err = httpServer.blockService.Prune(t.Data, s.Pruner)*/
-	/*if err != nil {*/
-	/*return nil, rpcservice.NewRPCError(rpcservice.PruneError, err)*/
-	/*}*/
-	return result, nil
+	for shardID, c := range t.Config {
+		if int(shardID) > config.Param().ActiveShards {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID is %v is invalid", shardID))
+		}
+		ec := pruner.ExtendedConfig{
+			Config:  pruner.Config{ShouldPruneByHash: c.ShouldPruneByHash},
+			ShardID: shardID,
+		}
+		httpServer.Pruner.ForwardCh <- ec
+	}
+	type Result struct {
+		Message string `json:"Message"`
+	}
+	return Result{Message: "Success"}, nil
 }

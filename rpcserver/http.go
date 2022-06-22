@@ -17,6 +17,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/pruner"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -46,6 +47,8 @@ type HttpServer struct {
 	portal            *rpcservice.PortalService
 	synkerService     *rpcservice.SynkerService
 	pdexTxService     *rpcservice.PdexTxService
+
+	Pruner *pruner.Pruner
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -95,6 +98,7 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		BlockChain: httpServer.config.BlockChain,
 	}
 	httpServer.pdexTxService = &rpcservice.PdexTxService{httpServer.txService}
+	httpServer.Pruner = config.Pruner
 }
 
 // Start is used by rpcserver.go to start the rpc listener.

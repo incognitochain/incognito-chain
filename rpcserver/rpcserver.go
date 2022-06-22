@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -109,6 +110,7 @@ type RpcServerConfig struct {
 	// IsMiningNode    bool   // flag mining node. True: mining, False: not mining
 	MiningKeys    string // encode of mining key
 	PubSubManager *pubsub.PubSubManager
+	Pruner        *pruner.Pruner
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {

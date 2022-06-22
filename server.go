@@ -83,6 +83,7 @@ type Server struct {
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
 	highway      *peerv2.ConnManager
+	Pruner       *pruner.Pruner
 
 	cQuit     chan struct{}
 	cNewPeers chan *peer.Peer
@@ -222,11 +223,6 @@ func (serverObj *Server) NewServer(
 
 	// set value for pubsubManager of pruner object
 	p.PubSubManager = pubsubManager
-	go func() {
-		if err := p.Start(); err != nil {
-			panic(err)
-		}
-	}()
 
 	cfg := config.Config()
 
@@ -548,6 +544,7 @@ func (serverObj *Server) NewServer(
 			ConsensusEngine: serverObj.consensusEngine,
 			MemCache:        serverObj.memCache,
 			Syncker:         serverObj.syncker,
+			Pruner:          p,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -755,6 +752,7 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
+	go serverObj.Pruner.Start()
 
 	err := serverObj.consensusEngine.Start()
 	if err != nil {
