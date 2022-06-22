@@ -237,6 +237,7 @@ func (p *Pruner) traverseAndDeleteByHash(
 	// retrieve all state tree by shard rooth hash prefix
 	// delete all nodes which are not in state bloom
 	for iter.Next() {
+		p.insertLock.Lock()
 		key := iter.Key()
 		rootHash := blockchain.ShardRootHash{}
 		err := json.Unmarshal(iter.Value(), &rootHash)
@@ -256,6 +257,10 @@ func (p *Pruner) traverseAndDeleteByHash(
 		}
 		finalPrunedKey = []byte{}
 		count++
+		p.insertLock.Unlock()
+		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
+			return nodes, storage, nil
+		}
 	}
 	if len(finalPrunedKey) != 0 {
 		nodes, storage, err = p.removeNodes(helper.db, helper.shardID, finalPrunedKey, 0, listKeysShouldBeRemoved, nodes, storage, true)
@@ -294,6 +299,9 @@ func (p *Pruner) traverseAndDeleteByHeight(
 			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, nodes, storage)
 		}
 		p.insertLock.Unlock()
+		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
+			return nodes, storage, nil
+		}
 	}
 	return nodes, storage, nil
 }
@@ -433,6 +441,7 @@ func (p *Pruner) updateStatus(status UpdateStatus) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -440,9 +449,7 @@ func (p *Pruner) handleNewRole(newRole *pubsub.NodeRole) error {
 	if newRole.CID > common.BeaconChainID {
 		if newRole.Role == common.CommitteeRole {
 			switch p.statuses[byte(newRole.CID)] {
-			case rawdbv2.ProcessingPruneByHeightStatus, rawdbv2.WaitingPruneByHeightStatus:
-				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.FinishPruneStatus})
-			case rawdbv2.ProcessingPruneByHashStatus, rawdbv2.WaitingPruneByHashStatus:
+			case rawdbv2.ProcessingPruneByHeightStatus, rawdbv2.WaitingPruneByHeightStatus, rawdbv2.ProcessingPruneByHashStatus, rawdbv2.WaitingPruneByHashStatus:
 				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.FinishPruneStatus})
 			}
 		}
