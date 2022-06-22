@@ -187,13 +187,18 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		return utils.EmptyStringMatrix, err
 	}
 
-	newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues)
-	if err != nil {
-		return [][]string{}, err
-	}
-	if len(newInsts) > 0 {
-		instructions = append(instructions, newInsts...)
-		accumulatedValues = newAccumulatedValues
+	epochBlocks := config.Param().EpochParam.NumberOfBlockInEpoch
+	currentEpoch := common.GetEpochFromBeaconHeight(beaconHeight, epochBlocks)
+	isEnableBridgeAgg := blockchain.IsEnableFeature(common.BridgeAggFlag, currentEpoch)
+	if isEnableBridgeAgg {
+		newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues)
+		if err != nil {
+			return [][]string{}, err
+		}
+		if len(newInsts) > 0 {
+			instructions = append(instructions, newInsts...)
+			accumulatedValues = newAccumulatedValues
+		}
 	}
 
 	for _, value := range keys {
@@ -402,24 +407,26 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, portalInsts...)
 	}
 
-	bridgeAggEnv := bridgeagg.
-		NewStateEnvBuilder().
-		BuildConvertActions(convertActions).
-		BuildModifyRewardReserveActions(modifyRewardReserveActions).
-		BuildShieldActions(shieldActions).
-		BuildUnshieldActions(unshieldActions).
-		BuildAccumulatedValues(accumulatedValues).
-		BuildBeaconHeight(beaconHeight).
-		BuildStateDBs(sDBs).
-		Build()
-	bridgeAggInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)
-	if err != nil {
-		return instructions, err
+	if isEnableBridgeAgg {
+		bridgeAggEnv := bridgeagg.
+			NewStateEnvBuilder().
+			BuildConvertActions(convertActions).
+			BuildModifyRewardReserveActions(modifyRewardReserveActions).
+			BuildShieldActions(shieldActions).
+			BuildUnshieldActions(unshieldActions).
+			BuildAccumulatedValues(accumulatedValues).
+			BuildBeaconHeight(beaconHeight).
+			BuildStateDBs(sDBs).
+			Build()
+		bridgeAggInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)
+		if err != nil {
+			return instructions, err
+		}
+		if len(bridgeAggInsts) > 0 {
+			instructions = append(instructions, bridgeAggInsts...)
+		}
+		accumulatedValues = newAccumulatedValues
 	}
-	if len(bridgeAggInsts) > 0 {
-		instructions = append(instructions, bridgeAggInsts...)
-	}
-	accumulatedValues = newAccumulatedValues
 
 	return instructions, nil
 }
