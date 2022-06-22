@@ -62,7 +62,7 @@
                             "WaitingUnshieldFee": 0,
                             "ExtDecimal": 18,
                             "NetworkID": 1,
-                            "TokenID": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1"
+                            "IncTokenID": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1"
                         },
                         "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
                             "Amount": 0,
@@ -71,7 +71,7 @@
                             "WaitingUnshieldFee": 0,
                             "ExtDecimal": 18,
                             "NetworkID": 2,
-                            "TokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                            "IncTokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
                         }
                     },
                     "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
@@ -82,7 +82,7 @@
                             "WaitingUnshieldFee": 0,
                             "ExtDecimal": 18,
                             "NetworkID": 4,
-                            "TokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                            "IncTokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
                         }
                     }
                 },

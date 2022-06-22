@@ -103,7 +103,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	config.Param().BridgeAggParam.BaseDecimal = 9
 	type args struct {
 		amount             *big.Int
-		decimal            uint
+		decimal            uint8
 		isToUnifiedDecimal bool
 	}
 	tests := []struct {

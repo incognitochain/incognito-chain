@@ -17,9 +17,9 @@ import (
 )
 
 type ConfigVault struct {
-	ExternalDecimal uint   `json:"external_decimal"`
+	ExternalDecimal uint8  `json:"external_decimal"`
 	ExternalTokenID string `json:"external_token_id"`
-	NetworkID       uint   `json:"network_id"`
+	NetworkID       uint8  `json:"network_id"`
 }
 
 type AddTokenTestData struct {
