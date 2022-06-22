@@ -7,7 +7,7 @@ import (
 
 func (stateDB *StateDB) Retrieve(
 	shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom,
-) (map[common.Hash]struct{}, error) {
+) (map[common.Hash]struct{}, *trie.StateBloom, error) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	keysShouldBeRemoved := make(map[common.Hash]struct{})
@@ -22,11 +22,11 @@ func (stateDB *StateDB) Retrieve(
 		h := common.Hash{}
 		err := h.SetBytes(key)
 		if err != nil {
-			return nil, err
+			return nil, stateBloom, err
 		}
 		if shouldAddToStateBloom || shouldDelete {
 			if ok, err := stateBloom.Contain(key); err != nil {
-				return nil, err
+				return nil, stateBloom, err
 			} else if ok {
 				descend = false
 				continue
@@ -34,7 +34,7 @@ func (stateDB *StateDB) Retrieve(
 		}
 		if shouldAddToStateBloom {
 			if err := stateBloom.Put(key, nil); err != nil {
-				return nil, err
+				return nil, stateBloom, err
 			}
 		}
 		if shouldDelete {
@@ -42,5 +42,5 @@ func (stateDB *StateDB) Retrieve(
 		}
 	}
 
-	return keysShouldBeRemoved, nil
+	return keysShouldBeRemoved, stateBloom, nil
 }

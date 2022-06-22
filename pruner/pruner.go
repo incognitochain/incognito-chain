@@ -7,7 +7,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -21,10 +20,11 @@ type Pruner struct {
 	statuses                map[byte]byte
 	updateStatusCh          chan UpdateStatus
 	ForwardCh               chan ExtendedConfig
-	InsertLock              *sync.Mutex
+	insertLock              *sync.Mutex
 	PubSubManager           *pubsub.PubSubManager
 	currentValidatorShardID int
 	stateBloom              *trie.StateBloom
+	addedViewsCache         map[common.Hash]struct{}
 }
 
 func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Pruner {
@@ -34,6 +34,8 @@ func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Prun
 		updateStatusCh:          make(chan UpdateStatus),
 		ForwardCh:               make(chan ExtendedConfig, 1),
 		currentValidatorShardID: -2,
+		insertLock:              new(sync.Mutex),
+		addedViewsCache:         make(map[common.Hash]struct{}),
 	}
 }
 
@@ -64,15 +66,14 @@ func (p *Pruner) Prune(sID int, shouldPruneByHash bool) error {
 	if err != nil {
 		panic(err)
 	}
-	stateBloom, err := trie.NewStateBloomWithSize(2048)
+	p.stateBloom, err = trie.NewStateBloomWithSize(2048)
 	if err != nil {
 		panic(err)
 	}
-	stateBloom, finalHeight, err := p.addDataToStateBloom(shardID, db, stateBloom)
+	finalHeight, err := p.addDataToStateBloom(shardID, db)
 	if err != nil {
 		return err
 	}
-	p.stateBloom = stateBloom
 	if finalHeight == 0 {
 		return nil
 	}
@@ -83,7 +84,7 @@ func (p *Pruner) Prune(sID int, shouldPruneByHash bool) error {
 	listKeysShouldBeRemoved := &[]map[common.Hash]struct{}{}
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 1; i++ {
-		worker := NewWorker(stopCh, heightCh, rootHashCache, p.stateBloom, listKeysShouldBeRemoved, db, shardID, wg, p.InsertLock)
+		worker := NewWorker(stopCh, heightCh, rootHashCache, p.stateBloom, listKeysShouldBeRemoved, db, shardID, wg, p.insertLock)
 		go worker.start()
 		defer worker.stop()
 	}
@@ -103,47 +104,57 @@ func (p *Pruner) Prune(sID int, shouldPruneByHash bool) error {
 	if err != nil {
 		return err
 	}
-	p.stateBloom = nil
+	p.reset()
 	return nil
 }
 
-func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database, stateBloom *trie.StateBloom) (*trie.StateBloom, uint64, error) {
+func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, error) {
 	var finalHeight uint64
 	//restore best views and final view from database
 	allViews := []*blockchain.ShardBestState{}
 	views, err := rawdbv2.GetShardBestState(db, shardID)
 	if err != nil {
 		Logger.log.Info("debug Cannot see shard best state")
-		return nil, 0, err
+		return 0, err
 	}
 	err = json.Unmarshal(views, &allViews)
 	if err != nil {
 		Logger.log.Info("debug Cannot unmarshall shard best state", string(views))
-		return nil, 0, err
+		return 0, err
 	}
 	//collect tree nodes want to keep, add them to state bloom
 	for _, v := range allViews {
-		if v.ShardHeight == 1 {
-			return nil, 0, nil
-		}
 		if finalHeight == 0 || finalHeight > v.ShardHeight {
 			finalHeight = v.ShardHeight
 		}
-		Logger.log.Infof("[state-prune] Start retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
-		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-		stateDB, err := statedb.NewWithPrefixTrie(v.TransactionStateDBRootHash, dbAccessWarper)
+		err = p.addNewViewToStateBloom(v, db)
 		if err != nil {
-			return nil, 0, err
+			return 0, err
 		}
-		//Retrieve all state tree for this state
-		_, err = stateDB.Retrieve(true, false, stateBloom)
-		if err != nil {
-			return nil, 0, err
-		}
-		Logger.log.Infof("[state-prune] Finish retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
 	}
 
-	return stateBloom, finalHeight, nil
+	return finalHeight, nil
+}
+
+func (p *Pruner) addNewViewToStateBloom(
+	v *blockchain.ShardBestState, db incdb.Database,
+) error {
+	if v.ShardHeight == 1 {
+		return nil
+	}
+	Logger.log.Infof("[state-prune] Start retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	stateDB, err := statedb.NewWithPrefixTrie(v.TransactionStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	//Retrieve all state tree for this state
+	_, p.stateBloom, err = stateDB.Retrieve(true, false, p.stateBloom)
+	if err != nil {
+		return err
+	}
+	Logger.log.Infof("[state-prune] Finish retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
+	return nil
 }
 
 func (p *Pruner) compact(db incdb.Database, count uint64) error {
@@ -256,6 +267,7 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		lastPrunedHeight++
 	}
 	for height := lastPrunedHeight; height < helper.finalHeight; height++ {
+		p.insertLock.Lock()
 		helper.wg.Add(1)
 		helper.heightCh <- height
 		helper.wg.Wait()
@@ -267,6 +279,7 @@ func (p *Pruner) traverseAndDeleteByHeight(
 			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, nodes, storage)
 		}
 		count++
+		p.insertLock.Unlock()
 	}
 	return nodes, storage, nil
 }
@@ -335,7 +348,7 @@ func (p *Pruner) Start() {
 	if err != nil {
 		panic(err)
 	}
-	_, newShardBlockCh, err := p.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+	_, newShardBestStateCh, err := p.PubSubManager.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
 	if err != nil {
 		panic(err)
 	}
@@ -374,27 +387,34 @@ func (p *Pruner) Start() {
 			} else {
 				Logger.log.Errorf("Cannot parse node role %v", *nodeRole)
 			}
-		case newShardBlock := <-newShardBlockCh:
+		case newShardBestState := <-newShardBestStateCh:
 			// if new insert block reach to current
-			shardBlock, ok := newShardBlock.Value.(*types.ShardBlock)
+			shardBestState, ok := newShardBestState.Value.(*blockchain.ShardBestState)
 			if ok {
-				if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBlock.Header.Timestamp) {
-					if p.statuses[shardBlock.Header.ShardID] == rawdbv2.WaitingPruneByHashStatus || p.statuses[shardBlock.Header.ShardID] == rawdbv2.WaitingPruneByHeightStatus {
-						shouldPruneByHash := p.statuses[shardBlock.Header.ShardID] == rawdbv2.WaitingPruneByHashStatus
-						p.updateStatusCh <- UpdateStatus{ShardID: shardBlock.Header.ShardID, Status: rawdbv2.ProcessingPruneStatus, ShouldPruneByHash: shouldPruneByHash}
+				status := p.statuses[shardBestState.ShardID]
+				if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) {
+					if status == rawdbv2.ProcessingPruneStatus {
+						p.insertLock.Lock()
+						err = p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
+						if err != nil {
+							panic(err)
+						}
+						p.insertLock.Unlock()
+					}
+					if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
+						shouldPruneByHash := status == rawdbv2.WaitingPruneByHashStatus
+						p.updateStatusCh <- UpdateStatus{ShardID: shardBestState.ShardID, Status: rawdbv2.ProcessingPruneStatus, ShouldPruneByHash: shouldPruneByHash}
 					}
 				}
 			} else {
-				Logger.log.Errorf("Cannot parse shardBlock %v", newShardBlock)
+				Logger.log.Errorf("Cannot parse newShardBestState %v", newShardBestState)
 			}
 		case ec := <-p.ForwardCh:
 			if p.currentValidatorShardID <= common.BeaconChainID {
 				p.updateStatusCh <- UpdateStatus{ShardID: ec.ShardID, Status: rawdbv2.ProcessingPruneStatus}
-
 			} else {
 				if byte(p.currentValidatorShardID) != ec.ShardID {
 					p.updateStatusCh <- UpdateStatus{ShardID: ec.ShardID, Status: rawdbv2.ProcessingPruneStatus}
-
 				} else {
 					status := rawdbv2.WaitingPruneByHeightStatus
 					if ec.ShouldPruneByHash {
@@ -405,4 +425,10 @@ func (p *Pruner) Start() {
 			}
 		}
 	}
+}
+
+func (p *Pruner) reset() {
+	p.stateBloom = nil
+	p.insertLock = new(sync.Mutex)
+	p.addedViewsCache = make(map[common.Hash]struct{})
 }
