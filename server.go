@@ -223,6 +223,7 @@ func (serverObj *Server) NewServer(
 
 	// set value for pubsubManager of pruner object
 	p.PubSubManager = pubsubManager
+	serverObj.Pruner = p
 
 	cfg := config.Config()
 
@@ -752,7 +753,6 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
-	Logger.log.Info("[state-prune] serverObj.pusubManager:", serverObj.pusubManager)
 	go serverObj.Pruner.Start()
 
 	err := serverObj.consensusEngine.Start()

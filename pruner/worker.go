@@ -52,19 +52,15 @@ func (w *Worker) start() {
 	for {
 		select {
 		case height := <-w.heightCh:
-			//w.insertLock.Lock()
 			err := w.pruneByHeight(height)
 			if err != nil {
 				panic(err)
 			}
-			//w.insertLock.Unlock()
 		case hash := <-w.rootHashCh:
-			//w.insertLock.Lock()
 			err := w.pruneByHash(hash)
 			if err != nil {
 				panic(err)
 			}
-			//w.insertLock.Unlock()
 		case <-w.stopCh:
 			return
 		}

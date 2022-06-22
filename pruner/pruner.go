@@ -17,9 +17,9 @@ import (
 
 type Pruner struct {
 	db                      map[int]incdb.Database
-	statuses                map[byte]byte
+	statuses                map[byte]int
 	updateStatusCh          chan UpdateStatus
-	ForwardCh               chan ExtendedConfig
+	TriggerCh               chan ExtendedConfig
 	insertLock              *sync.Mutex
 	PubSubManager           *pubsub.PubSubManager
 	currentValidatorShardID int
@@ -27,12 +27,12 @@ type Pruner struct {
 	addedViewsCache         map[common.Hash]struct{}
 }
 
-func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Pruner {
+func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]int) *Pruner {
 	return &Pruner{
 		db:                      db,
 		statuses:                statuses,
 		updateStatusCh:          make(chan UpdateStatus),
-		ForwardCh:               make(chan ExtendedConfig, 1),
+		TriggerCh:               make(chan ExtendedConfig, 1),
 		currentValidatorShardID: -2,
 		insertLock:              new(sync.Mutex),
 		addedViewsCache:         make(map[common.Hash]struct{}),
@@ -41,7 +41,17 @@ func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Prun
 
 func (p *Pruner) ReadStatus() {
 	for i := 0; i < common.MaxShardNumber; i++ {
-		status, _ := rawdbv2.GetPruneStatus(p.db[i], byte(i)) //ignore error for case not store status yet
+		s, _ := rawdbv2.GetPruneStatus(p.db[i], byte(i)) //ignore error for case not store status yet
+		status := s
+		if s == rawdbv2.ProcessingPruneByHashStatus {
+			status = rawdbv2.WaitingPruneByHashStatus
+		}
+		if s == rawdbv2.ProcessingPruneByHeightStatus {
+			status = rawdbv2.WaitingPruneByHeightStatus
+		}
+		if s != status {
+			rawdbv2.StorePruneStatus(p.db[i], byte(i), status)
+		}
 		p.statuses[byte(i)] = status
 	}
 }
@@ -139,7 +149,7 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 func (p *Pruner) addNewViewToStateBloom(
 	v *blockchain.ShardBestState, db incdb.Database,
 ) error {
-	if _, found := p.addedViewsCache[v.Hash()]; found {
+	if _, found := p.addedViewsCache[v.BestBlockHash]; found {
 		return nil
 	}
 	if v.ShardHeight == 1 {
@@ -156,7 +166,7 @@ func (p *Pruner) addNewViewToStateBloom(
 	if err != nil {
 		return err
 	}
-	p.addedViewsCache[v.Hash()] = struct{}{}
+	p.addedViewsCache[v.BestBlockHash] = struct{}{}
 	Logger.log.Infof("[state-prune] Finish retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
 	return nil
 }
@@ -259,7 +269,7 @@ func (p *Pruner) traverseAndDeleteByHash(
 func (p *Pruner) traverseAndDeleteByHeight(
 	helper TraverseHelper, listKeysShouldBeRemoved *[]map[common.Hash]struct{},
 ) (uint64, uint64, error) {
-	var nodes, storage, count uint64
+	var nodes, storage uint64
 	// get last pruned height before
 	lastPrunedHeight, err := rawdbv2.GetLastPrunedHeight(helper.db, helper.shardID)
 	if err == nil {
@@ -279,10 +289,9 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		if err != nil {
 			return 0, 0, err
 		}
-		if count%10000 == 0 {
+		if height%10000 == 0 {
 			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, nodes, storage)
 		}
-		count++
 		p.insertLock.Unlock()
 	}
 	return nodes, storage, nil
@@ -348,10 +357,6 @@ func (p *Pruner) removeNodes(
 }
 
 func (p *Pruner) Start() {
-	if p.PubSubManager == nil {
-		Logger.log.Info("[state-prune] 1000")
-	}
-	Logger.log.Info("[state-prune] p.PubSubManager:", p.PubSubManager)
 	_, nodeRoleCh, err := p.PubSubManager.RegisterNewSubscriber(pubsub.NodeRoleDetailTopic)
 	if err != nil {
 		panic(err)
@@ -364,75 +369,113 @@ func (p *Pruner) Start() {
 	for {
 		select {
 		case updateStatus := <-p.updateStatusCh:
-			p.statuses[updateStatus.ShardID] = updateStatus.Status
-			err := rawdbv2.StorePruneStatus(p.db[int(updateStatus.ShardID)], byte(updateStatus.ShardID), updateStatus.Status)
-			if err != nil {
+			if err := p.updateStatus(updateStatus); err != nil {
 				panic(err)
-			}
-			if updateStatus.Status == rawdbv2.ProcessingPruneStatus {
-				if err := p.prune(int(updateStatus.ShardID), updateStatus.ShouldPruneByHash); err != nil {
-					panic(err)
-				}
-				p.statuses[updateStatus.ShardID] = rawdbv2.FinishPruneStatus
-				err := rawdbv2.StorePruneStatus(p.db[int(updateStatus.ShardID)], byte(updateStatus.ShardID), rawdbv2.FinishPruneStatus)
-				if err != nil {
-					panic(err)
-				}
 			}
 		case nodeRole := <-nodeRoleCh:
 			newRole, ok := nodeRole.Value.(*pubsub.NodeRole)
 			if ok {
 				Logger.log.Infof("Receive new role %v at shard %v", newRole.Role, newRole.CID)
-				if newRole.CID > common.BeaconChainID {
-					if newRole.Role == common.CommitteeRole {
-						switch p.statuses[byte(newRole.CID)] {
-						case rawdbv2.ProcessingPruneStatus, rawdbv2.WaitingPruneByHashStatus, rawdbv2.WaitingPruneByHeightStatus:
-							p.updateStatusCh <- UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.PausePruneStatus}
-						}
-					}
-					p.currentValidatorShardID = newRole.CID
+				if err := p.handleNewRole(newRole); err != nil {
+					panic(err)
 				}
 			} else {
 				Logger.log.Errorf("Cannot parse node role %v", *nodeRole)
 			}
 		case newShardBestState := <-newShardBestStateCh:
-			// if new insert block reach to current
 			shardBestState, ok := newShardBestState.Value.(*blockchain.ShardBestState)
 			if ok {
-				status := p.statuses[shardBestState.ShardID]
-				if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) {
-					if status == rawdbv2.ProcessingPruneStatus {
-						p.insertLock.Lock()
-						err = p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
-						if err != nil {
-							panic(err)
-						}
-						p.insertLock.Unlock()
-					}
-					if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
-						shouldPruneByHash := status == rawdbv2.WaitingPruneByHashStatus
-						p.updateStatusCh <- UpdateStatus{ShardID: shardBestState.ShardID, Status: rawdbv2.ProcessingPruneStatus, ShouldPruneByHash: shouldPruneByHash}
-					}
+				Logger.log.Infof("Receive new view %s at shard %v", shardBestState.BestBlockHash.String(), shardBestState.ShardID)
+				if err := p.handleNewView(shardBestState); err != nil {
+					panic(err)
 				}
 			} else {
 				Logger.log.Errorf("Cannot parse newShardBestState %v", newShardBestState)
 			}
-		case ec := <-p.ForwardCh:
+		case ec := <-p.TriggerCh:
+			status := rawdbv2.ProcessingPruneByHeightStatus
+			if ec.ShouldPruneByHash {
+				status = rawdbv2.ProcessingPruneByHashStatus
+			}
 			if p.currentValidatorShardID <= common.BeaconChainID {
-				p.updateStatusCh <- UpdateStatus{ShardID: ec.ShardID, Status: rawdbv2.ProcessingPruneStatus}
+				p.triggerUpdateStatus(UpdateStatus{ShardID: ec.ShardID, Status: status})
 			} else {
 				if byte(p.currentValidatorShardID) != ec.ShardID {
-					p.updateStatusCh <- UpdateStatus{ShardID: ec.ShardID, Status: rawdbv2.ProcessingPruneStatus}
+					p.triggerUpdateStatus(UpdateStatus{ShardID: ec.ShardID, Status: status})
 				} else {
 					status := rawdbv2.WaitingPruneByHeightStatus
 					if ec.ShouldPruneByHash {
 						status = rawdbv2.WaitingPruneByHashStatus
 					}
-					p.updateStatusCh <- UpdateStatus{ShardID: ec.ShardID, Status: status}
+					p.triggerUpdateStatus(UpdateStatus{ShardID: ec.ShardID, Status: status})
 				}
 			}
 		}
 	}
+}
+
+func (p *Pruner) updateStatus(status UpdateStatus) error {
+	p.statuses[status.ShardID] = status.Status
+	err := rawdbv2.StorePruneStatus(p.db[int(status.ShardID)], byte(status.ShardID), status.Status)
+	if err != nil {
+		return err
+	}
+
+	if status.Status == rawdbv2.ProcessingPruneByHashStatus || status.Status == rawdbv2.ProcessingPruneByHeightStatus {
+		shouldPruneByHash := status.Status == rawdbv2.ProcessingPruneByHashStatus
+		if err := p.prune(int(status.ShardID), shouldPruneByHash); err != nil {
+			return err
+		}
+		p.statuses[status.ShardID] = rawdbv2.FinishPruneStatus
+		err := rawdbv2.StorePruneStatus(p.db[int(status.ShardID)], byte(status.ShardID), rawdbv2.FinishPruneStatus)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Pruner) handleNewRole(newRole *pubsub.NodeRole) error {
+	if newRole.CID > common.BeaconChainID {
+		if newRole.Role == common.CommitteeRole {
+			switch p.statuses[byte(newRole.CID)] {
+			case rawdbv2.ProcessingPruneByHeightStatus, rawdbv2.WaitingPruneByHeightStatus:
+				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.PausePruneByHeightStatus})
+			case rawdbv2.ProcessingPruneByHashStatus, rawdbv2.WaitingPruneByHashStatus:
+				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.PausePruneByHashStatus})
+			}
+		}
+		p.currentValidatorShardID = newRole.CID
+	}
+	return nil
+}
+
+func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error {
+	status := p.statuses[shardBestState.ShardID]
+	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) {
+		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
+			p.insertLock.Lock()
+			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
+			if err != nil {
+				panic(err)
+			}
+			p.insertLock.Unlock()
+		}
+		if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
+			s := rawdbv2.ProcessingPruneByHeightStatus
+			if status == rawdbv2.WaitingPruneByHashStatus {
+				s = rawdbv2.ProcessingPruneByHashStatus
+			}
+			p.triggerUpdateStatus(UpdateStatus{ShardID: shardBestState.ShardID, Status: s})
+		}
+	}
+	return nil
+}
+
+func (p *Pruner) triggerUpdateStatus(status UpdateStatus) {
+	go func() {
+		p.updateStatusCh <- status
+	}()
 }
 
 func (p *Pruner) reset() {

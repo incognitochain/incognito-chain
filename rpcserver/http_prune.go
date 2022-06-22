@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -39,10 +40,19 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 			Config:  pruner.Config{ShouldPruneByHash: c.ShouldPruneByHash},
 			ShardID: shardID,
 		}
-		httpServer.Pruner.ForwardCh <- ec
+		httpServer.Pruner.TriggerCh <- ec
 	}
 	type Result struct {
 		Message string `json:"Message"`
 	}
 	return Result{Message: "Success"}, nil
+}
+
+func (httpServer *HttpServer) getPruneState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	results := make(map[byte]int)
+	for i := 0; i < common.MaxShardNumber; i++ {
+		status, _ := rawdbv2.GetPruneStatus(httpServer.GetShardChainDatabase(byte(i)), byte(i))
+		results[byte(i)] = status
+	}
+	return results, nil
 }
