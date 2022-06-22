@@ -18,7 +18,7 @@ type TraverseHelper struct {
 
 type UpdateStatus struct {
 	ShardID byte
-	Status  int
+	Status  byte
 }
 
 type Config struct {

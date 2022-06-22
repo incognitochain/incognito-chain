@@ -17,7 +17,7 @@ import (
 
 type Pruner struct {
 	db                      map[int]incdb.Database
-	statuses                map[byte]int
+	statuses                map[byte]byte
 	updateStatusCh          chan UpdateStatus
 	TriggerCh               chan ExtendedConfig
 	insertLock              *sync.Mutex
@@ -27,7 +27,7 @@ type Pruner struct {
 	addedViewsCache         map[common.Hash]struct{}
 }
 
-func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]int) *Pruner {
+func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Pruner {
 	return &Pruner{
 		db:                      db,
 		statuses:                statuses,
@@ -440,9 +440,9 @@ func (p *Pruner) handleNewRole(newRole *pubsub.NodeRole) error {
 		if newRole.Role == common.CommitteeRole {
 			switch p.statuses[byte(newRole.CID)] {
 			case rawdbv2.ProcessingPruneByHeightStatus, rawdbv2.WaitingPruneByHeightStatus:
-				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.PausePruneByHeightStatus})
+				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.FinishPruneStatus})
 			case rawdbv2.ProcessingPruneByHashStatus, rawdbv2.WaitingPruneByHashStatus:
-				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.PausePruneByHashStatus})
+				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.FinishPruneStatus})
 			}
 		}
 		p.currentValidatorShardID = newRole.CID

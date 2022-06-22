@@ -49,7 +49,7 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 }
 
 func (httpServer *HttpServer) getPruneState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	results := make(map[byte]int)
+	results := make(map[byte]byte)
 	for i := 0; i < common.MaxShardNumber; i++ {
 		status, _ := rawdbv2.GetPruneStatus(httpServer.GetShardChainDatabase(byte(i)), byte(i))
 		results[byte(i)] = status
