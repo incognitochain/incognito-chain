@@ -71,7 +71,7 @@ func (request *UnshieldRequest) ValidateSanityData(chainRetriever metadataCommon
 	if request.UnifiedTokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggConvertRequestValidateSanityDataError, fmt.Errorf("UnifiedTokenID can not be empty"))
 	}
-	if len(request.Data) <= 0 || len(request.Data) > config.Param().BridgeAggParam.MaxLenOfPath {
+	if len(request.Data) <= 0 || len(request.Data) > int(config.Param().BridgeAggParam.MaxLenOfPath) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
 	if !request.Receiver.IsValid() {

@@ -326,7 +326,7 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 			BlockHash  string      `json:"BlockHash"`
 			TxIndex    *uint       `json:"TxIndex"`
 			Proof      []string    `json:"Proof"`
-			NetworkID  uint        `json:"NetworkID"`
+			NetworkID  uint8       `json:"NetworkID"`
 			IncTokenID common.Hash `json:"IncTokenID"`
 		} `json:"Data"`
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
@@ -690,7 +690,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleBridgeAggGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {

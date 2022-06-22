@@ -357,7 +357,8 @@ func (sp *stateProducer) unshield(
 ) ([][]string, *State, error) {
 	meta, ok := unshieldAction.Meta.(*metadataBridge.UnshieldRequest)
 	if !ok {
-		return [][]string{}, state, fmt.Errorf("Cannot parse UnshieldRequest metadata")
+		Logger.log.Errorf("[BridgeAgg] Cannot parse BridgeAgg UnshieldRequest metadata")
+		return [][]string{}, state, nil
 	}
 	txReqID := unshieldAction.TxReqID
 	beaconHeightForUnshield := unshieldAction.BeaconHeight

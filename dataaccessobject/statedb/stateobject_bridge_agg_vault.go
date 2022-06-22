@@ -19,9 +19,9 @@ type BridgeAggVaultState struct {
 	// total unshield fee corresponding to waitingUnshieldAmount
 	waitingUnshieldFee uint64
 
-	extDecimal uint
-	networkID  uint
-	tokenID    common.Hash
+	extDecimal uint8
+	networkID  uint8
+	incTokenID common.Hash
 }
 
 func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
@@ -30,9 +30,9 @@ func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 		LockedAmount          uint64      `json:"LockedAmount"`
 		WaitingUnshieldAmount uint64      `json:"WaitingUnshieldAmount"`
 		WaitingUnshieldFee    uint64      `json:"WaitingUnshieldFee"`
-		ExtDecimal            uint        `json:"ExtDecimal"`
-		NetworkID             uint        `json:"NetworkID"`
-		TokenID               common.Hash `json:"TokenID"`
+		ExtDecimal            uint8       `json:"ExtDecimal"`
+		NetworkID             uint8       `json:"NetworkID"`
+		IncTokenID            common.Hash `json:"IncTokenID"`
 	}{
 		Amount:                state.amount,
 		LockedAmount:          state.lockedAmount,
@@ -40,7 +40,7 @@ func (state *BridgeAggVaultState) MarshalJSON() ([]byte, error) {
 		WaitingUnshieldFee:    state.waitingUnshieldFee,
 		ExtDecimal:            state.extDecimal,
 		NetworkID:             state.networkID,
-		TokenID:               state.tokenID,
+		IncTokenID:            state.incTokenID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -54,9 +54,9 @@ func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 		LockedAmount          uint64      `json:"LockedAmount"`
 		WaitingUnshieldAmount uint64      `json:"WaitingUnshieldAmount"`
 		WaitingUnshieldFee    uint64      `json:"WaitingUnshieldFee"`
-		ExtDecimal            uint        `json:"ExtDecimal"`
-		NetworkID             uint        `json:"NetworkID"`
-		TokenID               common.Hash `json:"TokenID"`
+		ExtDecimal            uint8       `json:"ExtDecimal"`
+		NetworkID             uint8       `json:"NetworkID"`
+		IncTokenID            common.Hash `json:"IncTokenID"`
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -68,7 +68,7 @@ func (state *BridgeAggVaultState) UnmarshalJSON(data []byte) error {
 	state.waitingUnshieldFee = temp.WaitingUnshieldFee
 	state.extDecimal = temp.ExtDecimal
 	state.networkID = temp.NetworkID
-	state.tokenID = temp.TokenID
+	state.incTokenID = temp.IncTokenID
 	return nil
 }
 
@@ -77,7 +77,7 @@ func NewBridgeAggVaultState() *BridgeAggVaultState {
 }
 
 func NewBridgeAggVaultStateWithValue(
-	amount, lockedAmount, waitingUnshieldAmount, waitingUnshieldFee uint64, extDecimal uint, networkID uint, tokenID common.Hash,
+	amount, lockedAmount, waitingUnshieldAmount, waitingUnshieldFee uint64, extDecimal uint8, networkID uint8, tokenID common.Hash,
 ) *BridgeAggVaultState {
 	return &BridgeAggVaultState{
 		amount:                amount,
@@ -86,7 +86,7 @@ func NewBridgeAggVaultStateWithValue(
 		waitingUnshieldFee:    waitingUnshieldFee,
 		extDecimal:            extDecimal,
 		networkID:             networkID,
-		tokenID:               tokenID,
+		incTokenID:            tokenID,
 	}
 }
 
@@ -106,16 +106,16 @@ func (b *BridgeAggVaultState) WaitingUnshieldFee() uint64 {
 	return b.waitingUnshieldFee
 }
 
-func (b *BridgeAggVaultState) ExtDecimal() uint {
+func (b *BridgeAggVaultState) ExtDecimal() uint8 {
 	return b.extDecimal
 }
 
-func (b *BridgeAggVaultState) NetworkID() uint {
+func (b *BridgeAggVaultState) NetworkID() uint8 {
 	return b.networkID
 }
 
-func (b *BridgeAggVaultState) TokenID() common.Hash {
-	return b.tokenID
+func (b *BridgeAggVaultState) IncTokenID() common.Hash {
+	return b.incTokenID
 }
 
 func (b *BridgeAggVaultState) SetAmount(amount uint64) {
@@ -134,16 +134,16 @@ func (b *BridgeAggVaultState) SetWaitingUnshieldFee(amount uint64) {
 	b.waitingUnshieldFee = amount
 }
 
-func (b *BridgeAggVaultState) SetExtDecimal(extDecimal uint) {
+func (b *BridgeAggVaultState) SetExtDecimal(extDecimal uint8) {
 	b.extDecimal = extDecimal
 }
 
-func (b *BridgeAggVaultState) SetNetworkID(networkID uint) {
+func (b *BridgeAggVaultState) SetNetworkID(networkID uint8) {
 	b.networkID = networkID
 }
 
-func (b *BridgeAggVaultState) SetTokenID(tokenID common.Hash) {
-	b.tokenID = tokenID
+func (b *BridgeAggVaultState) SetIncTokenID(tokenID common.Hash) {
+	b.incTokenID = tokenID
 }
 
 func (b *BridgeAggVaultState) Clone() *BridgeAggVaultState {
@@ -154,7 +154,7 @@ func (b *BridgeAggVaultState) Clone() *BridgeAggVaultState {
 		waitingUnshieldFee:    b.waitingUnshieldFee,
 		extDecimal:            b.extDecimal,
 		networkID:             b.networkID,
-		tokenID:               b.tokenID,
+		incTokenID:            b.incTokenID,
 	}
 }
 
@@ -165,7 +165,7 @@ func (b *BridgeAggVaultState) GetDiff(compareState *BridgeAggVaultState) (*Bridg
 	if b.amount != compareState.amount || b.lockedAmount != compareState.lockedAmount ||
 		b.waitingUnshieldAmount != compareState.waitingUnshieldAmount || b.waitingUnshieldFee != compareState.waitingUnshieldFee ||
 		b.extDecimal != compareState.extDecimal ||
-		b.networkID != compareState.networkID || b.tokenID != compareState.tokenID {
+		b.networkID != compareState.networkID || b.incTokenID != compareState.incTokenID {
 		return b.Clone(), nil
 	}
 	return nil, nil
@@ -178,7 +178,7 @@ func (b *BridgeAggVaultState) IsDiff(compareState *BridgeAggVaultState) (bool, e
 	if b.amount != compareState.amount || b.lockedAmount != compareState.lockedAmount ||
 		b.waitingUnshieldAmount != compareState.waitingUnshieldAmount || b.waitingUnshieldFee != compareState.waitingUnshieldFee ||
 		b.extDecimal != compareState.extDecimal ||
-		b.networkID != compareState.networkID || b.tokenID != compareState.tokenID {
+		b.networkID != compareState.networkID || b.incTokenID != compareState.incTokenID {
 		return true, nil
 	}
 	return false, nil
@@ -187,7 +187,7 @@ func (b *BridgeAggVaultState) IsDiff(compareState *BridgeAggVaultState) (bool, e
 func (b *BridgeAggVaultState) IsEmpty() bool {
 	return b.amount == 0 && b.lockedAmount == 0 &&
 		b.waitingUnshieldAmount == 0 && b.waitingUnshieldFee == 0 &&
-		b.extDecimal == 0 && b.tokenID == common.Hash{}
+		b.extDecimal == 0 && b.incTokenID == common.Hash{}
 }
 
 type BridgeAggVaulltObject struct {

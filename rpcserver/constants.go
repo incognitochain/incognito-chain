@@ -316,7 +316,7 @@ const (
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
 	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
-	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
+	bridgeaggGetBurnProof                = "bridgeaggGetBurnProof"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"

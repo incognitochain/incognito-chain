@@ -76,118 +76,7 @@ func NewStateChange() *StateChange {
 	}
 }
 
-func CalculateDeltaY(x, y, deltaX uint64, operator byte, isPaused bool) (uint64, error) {
-	if operator != SubOperator && operator != AddOperator {
-		return 0, errors.New("Cannot recognize operator")
-	}
-	if deltaX == 0 {
-		return 0, errors.New("Cannot process with deltaX = 0")
-	}
-	if y == 0 || isPaused {
-		return 0, nil
-	}
-	if x == 0 {
-		return y - 1, nil
-	}
-	newX := big.NewInt(0) // x'
-	switch operator {
-	case AddOperator:
-		newX.Add(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(deltaX))
-	case SubOperator:
-		newX.Sub(big.NewInt(0).SetUint64(x), big.NewInt(0).SetUint64(deltaX))
-	default:
-		return 0, errors.New("Cannot recognize operator")
-	}
-	temp := big.NewInt(0).Mul(big.NewInt(0).SetUint64(y), big.NewInt(0).SetUint64(deltaX))
-	deltaY := temp.Div(temp, newX)
-	if !deltaY.IsUint64() {
-		return 0, errors.New("Actual amount is not uint64")
-	}
-	return deltaY.Uint64(), nil
-}
-
-func CalculateShieldActualAmount(x, y, deltaX uint64, isPaused bool) (uint64, error) {
-	deltaY, err := CalculateDeltaY(x, y, deltaX, AddOperator, isPaused)
-	if err != nil {
-		return 0, err
-	}
-	actualAmount := big.NewInt(0).Add(big.NewInt(0).SetUint64(deltaX), big.NewInt(0).SetUint64(deltaY))
-	if actualAmount.Cmp(big.NewInt(0).SetUint64(deltaX)) < 0 {
-		return 0, errors.New("actualAmount < deltaX")
-	}
-	if !actualAmount.IsUint64() {
-		return 0, errors.New("Actual amount is not uint64")
-	}
-	return actualAmount.Uint64(), nil
-}
-
-func EstimateActualAmountByBurntAmount(x, y, burntAmount uint64, isPaused bool) (uint64, error) {
-	if x == 0 || x == 1 {
-		return 0, fmt.Errorf("x is 0 or 1")
-	}
-	if burntAmount == 0 {
-		return 0, errors.New("Cannot process with burntAmount = 0")
-	}
-	if y == 0 || isPaused {
-		if burntAmount > x {
-			return 0, fmt.Errorf("BurntAmount %d is > x %d", burntAmount, x)
-		}
-		if burntAmount == x {
-			burntAmount -= 1
-		}
-		if burntAmount == 0 {
-			return 0, fmt.Errorf("Receive actualAmount is 0")
-		}
-		return burntAmount, nil
-	}
-	X := big.NewInt(0).SetUint64(x)
-	Y := big.NewInt(0).SetUint64(y)
-	Z := big.NewInt(0).SetUint64(burntAmount)
-	t1 := big.NewInt(0).Add(X, Y)
-	t1 = t1.Add(t1, Z)
-	t2 := big.NewInt(0).Mul(X, X)
-	temp := big.NewInt(0).Sub(Y, Z)
-	temp = temp.Mul(temp, X)
-	temp = temp.Mul(temp, big.NewInt(2))
-	t2 = t2.Add(t2, temp)
-	temp = big.NewInt(0).Add(Y, Z)
-	temp = temp.Mul(temp, temp)
-	t2 = t2.Add(t2, temp)
-	t2 = big.NewInt(0).Sqrt(t2)
-
-	A1 := big.NewInt(0).Add(t1, t2)
-	A1 = A1.Div(A1, big.NewInt(2))
-	A2 := big.NewInt(0).Sub(t1, t2)
-	A2 = A2.Div(A2, big.NewInt(2))
-	var a1, a2 uint64
-
-	if A1.IsUint64() {
-		a1 = A1.Uint64()
-	}
-	if A2.IsUint64() {
-		a2 = A2.Uint64()
-	}
-	if a1 > burntAmount {
-		a1 = 0
-	}
-	if a2 > burntAmount {
-		a2 = 0
-	}
-	if a1 == 0 && a2 == 0 {
-		return 0, fmt.Errorf("x %d y %d z %d cannot find solutions", x, y, burntAmount)
-	}
-	a := a1
-	if a < a2 {
-		a = a2
-	}
-	if a > x {
-		return 0, fmt.Errorf("a %d is > x %d", a, x)
-	}
-
-	return a, nil
-}
-
-func GetInsertTxHashIssuedFuncByNetworkID(networkID uint) func(*statedb.StateDB, []byte) error {
+func GetInsertTxHashIssuedFuncByNetworkID(networkID uint8) func(*statedb.StateDB, []byte) error {
 	switch networkID {
 	case common.PLGNetworkID:
 		return statedb.InsertPLGTxHashIssued
@@ -296,7 +185,7 @@ func buildBurningConfirmInsts(waitingUnshieldReq *statedb.BridgeAggWaitingUnshie
 		// maybe there are multiple  proofs for one txID, so append index to make newTxReqID unique
 		newTxReqID := common.HashH(append(txID.Bytes(), common.IntToBytes(index)...))
 		burningInst := []string{
-			strconv.Itoa(data.BurningConfirmMetaType),
+			strconv.Itoa(int(data.BurningConfirmMetaType)),
 			strconv.Itoa(int(common.BridgeShardID)),
 			base58.Base58Check{}.Encode(data.ExternalTokenID, 0x00),
 			data.RemoteAddress,
@@ -506,7 +395,7 @@ func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) 
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
 	}
-	return burningMetaType, nil
+	return uint(burningMetaType), nil
 
 }
 
@@ -593,7 +482,7 @@ func buildAcceptedShieldContent(
 	return json.Marshal(acceptedContent)
 }
 
-func ConvertAmountByDecimal(amount *big.Int, decimal uint, isToUnifiedDecimal bool) (*big.Int, error) {
+func ConvertAmountByDecimal(amount *big.Int, decimal uint8, isToUnifiedDecimal bool) (*big.Int, error) {
 	res := big.NewInt(0).Set(amount)
 	if isToUnifiedDecimal {
 		res.Mul(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
@@ -650,7 +539,7 @@ func getBurningConfirmMeta(networkID int, isDepositToSC bool) (int, string, erro
 	return burningMetaType, prefix, nil
 }
 
-func CalculateIncDecimal(decimal, baseDecimal uint) uint {
+func CalculateIncDecimal(decimal, baseDecimal uint8) uint8 {
 	if decimal > baseDecimal {
 		return baseDecimal
 	}
@@ -712,7 +601,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 	return nil
 }
 
-func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint) ([]byte, error) {
+func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]byte, error) {
 	var res []byte
 	var prefix string
 	switch networkID {
@@ -761,7 +650,7 @@ func GetExternalTokenIDForUnifiedToken() []byte {
 	return []byte(common.UnifiedTokenPrefix)
 }
 
-func getPrefixByNetworkID(networkID uint) (string, error) {
+func getPrefixByNetworkID(networkID uint8) (string, error) {
 	var prefix string
 	switch networkID {
 	case common.ETHNetworkID:
@@ -778,7 +667,7 @@ func getPrefixByNetworkID(networkID uint) (string, error) {
 	return prefix, nil
 }
 
-func CalculateReceivedAmount(amount uint64, tokenID common.Hash, decimal uint, networkID uint, sDB *statedb.StateDB) (uint64, error) {
+func CalculateReceivedAmount(amount uint64, tokenID common.Hash, decimal uint8, networkID uint8, sDB *statedb.StateDB) (uint64, error) {
 	prefix, err := getPrefixByNetworkID(networkID)
 	if err != nil {
 		return 0, err
@@ -828,23 +717,7 @@ func increaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*stated
 	return v, nil
 }
 
-// func convert(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, uint64, error) {
-// 	decimal := CalculateIncDecimal(v.ExtDecimal(), config.Param().BridgeAggParam.BaseDecimal)
-// 	tmpAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), decimal, true)
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-// 	if tmpAmount.Cmp(big.NewInt(0)) == 0 {
-// 		return nil, 0, fmt.Errorf("amount %d is not enough for converting", amount)
-// 	}
-// 	v, err = increaseVaultAmount(v, tmpAmount.Uint64())
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-// 	return v, tmpAmount.Uint64(), nil
-// }
-
-func convertPTokenAmtToPUnifiedTokenAmt(extDec uint, amount uint64) (uint64, error) {
+func convertPTokenAmtToPUnifiedTokenAmt(extDec uint8, amount uint64) (uint64, error) {
 	pDecimal := CalculateIncDecimal(extDec, config.Param().BridgeAggParam.BaseDecimal)
 	tmpAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), pDecimal, true)
 	if err != nil {

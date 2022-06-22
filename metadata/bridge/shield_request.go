@@ -21,7 +21,7 @@ type ShieldRequest struct {
 
 type ShieldRequestData struct {
 	Proof      []byte      `json:"Proof"`
-	NetworkID  uint        `json:"NetworkID"`
+	NetworkID  uint8       `json:"NetworkID"`
 	IncTokenID common.Hash `json:"IncTokenID"`
 }
 
@@ -38,7 +38,7 @@ type AcceptedShieldRequestData struct {
 	Reward          uint64      `json:"Reward"`
 	UniqTx          []byte      `json:"UniqTx"`
 	ExternalTokenID []byte      `json:"ExternalTokenID"`
-	NetworkID       uint        `json:"NetworkID"`
+	NetworkID       uint8       `json:"NetworkID"`
 	IncTokenID      common.Hash `json:"IncTokenID"`
 }
 
@@ -76,7 +76,7 @@ func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.C
 	if request.UnifiedTokenID.IsZeroValue() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, errors.New("UnifiedTokenID can not be empty"))
 	}
-	if len(request.Data) <= 0 || len(request.Data) > config.Param().BridgeAggParam.MaxLenOfPath {
+	if len(request.Data) <= 0 || len(request.Data) > int(config.Param().BridgeAggParam.MaxLenOfPath) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
 	for _, data := range request.Data {
@@ -103,7 +103,7 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 				metadataCommon.Logger.Log.Errorf("Can not unmarshal evm proof: %v\n", err)
 				return false
 			}
-			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, data.NetworkID, request.UnifiedTokenID)
+			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, uint(data.NetworkID), request.UnifiedTokenID)
 			if err != nil {
 				return false
 			}
@@ -137,7 +137,7 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 			if err != nil {
 				return [][]string{}, err
 			}
-			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, data.NetworkID, request.UnifiedTokenID)
+			evmShieldRequest, err := NewIssuingEVMRequestFromProofData(proofData, uint(data.NetworkID), request.UnifiedTokenID)
 			if err != nil {
 				return [][]string{}, err
 			}

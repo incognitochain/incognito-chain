@@ -348,8 +348,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
-			// case metadataCommon.BurningUnifiedTokenRequestMeta:
-			// 	unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
 			default:
 				continue
 			}
@@ -408,7 +406,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildConvertActions(convertActions).
 		BuildModifyParamActions(modifyParamActions).
 		BuildShieldActions(shieldActions).
-		// BuildUnshieldActions(unshieldActions).
 		BuildAccumulatedValues(accumulatedValues).
 		BuildBeaconHeight(beaconHeight).
 		BuildStateDBs(sDBs).
