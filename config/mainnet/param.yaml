@@ -68,6 +68,7 @@ enable_feature_flags:
   - PortalRelaying: 1
   - PortalV3: 0
   - PortalV4: 4079
+  - BridgeAgg: 1e9
 portal_v3_height: 10000000
 tx_pool_version: 0
 geth_param:
@@ -105,6 +106,10 @@ pdex_param:
     min_prv_reserve_trading_rate: 10000000000000
 is_enable_bpv3_stats: false
 auto_enable_feature:
+  - instantfinality:
+      min_trigger: 2076793
+      force_trigger: 1e9
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000

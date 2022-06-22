@@ -173,6 +173,11 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 				continue
 			}
 
+			linkView := s.Chain.GetViewByHash(viewHash)
+			if linkView == nil {
+				continue
+			}
+
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
@@ -188,10 +193,12 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 				if err != nil {
 					continue
 				}
-				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), *block.(*types.ShardBlock).ProposeHash(), previousValidationData)
+
+				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), previousValidationData)
 				if err1 != nil {
 					Logger.Error("Replace Previous Validation Data Fail", block.GetPrevHash(), previousValidationData, err)
 				}
+				Logger.Infof("Insert from pool shard %v , %v, %v", block.GetShardID(), block.GetHeight(), block.FullHashString())
 			}
 			s.shardPool.RemoveBlock(block)
 		}

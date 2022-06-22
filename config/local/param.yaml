@@ -77,6 +77,7 @@ enable_feature_flags:
   - PortalRelaying: 1
   - PortalV3: 0
   - PortalV4: 1
+  - BridgeAgg: 1e9
 portal_v3_height: 1e9
 tx_pool_version: 0
 geth_param:
