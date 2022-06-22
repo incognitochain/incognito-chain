@@ -123,7 +123,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	p.ReadStatus()
 	//check if prune flag is available
 	if config.Config().StatePrune {
-		if err := p.PruneImmediately(); err != nil {
+		if err := p.Prune(); err != nil {
 			panic(err)
 		}
 	}

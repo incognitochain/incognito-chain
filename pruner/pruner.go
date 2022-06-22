@@ -46,16 +46,16 @@ func (p *Pruner) ReadStatus() {
 	}
 }
 
-func (p *Pruner) PruneImmediately() error {
+func (p *Pruner) Prune() error {
 	for i := 0; i < common.MaxShardNumber; i++ {
-		if err := p.Prune(i, false); err != nil {
+		if err := p.prune(i, false); err != nil {
 			panic(err)
 		}
 	}
 	return nil
 }
 
-func (p *Pruner) Prune(sID int, shouldPruneByHash bool) error {
+func (p *Pruner) prune(sID int, shouldPruneByHash bool) error {
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
 	Logger.log.Infof("[state-prune] Start state pruning for shard %v", sID)
@@ -139,6 +139,9 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 func (p *Pruner) addNewViewToStateBloom(
 	v *blockchain.ShardBestState, db incdb.Database,
 ) error {
+	if _, found := p.addedViewsCache[v.Hash()]; found {
+		return nil
+	}
 	if v.ShardHeight == 1 {
 		return nil
 	}
@@ -153,6 +156,7 @@ func (p *Pruner) addNewViewToStateBloom(
 	if err != nil {
 		return err
 	}
+	p.addedViewsCache[v.Hash()] = struct{}{}
 	Logger.log.Infof("[state-prune] Finish retrieve view %s at height %v", v.BestBlockHash.String(), v.ShardHeight)
 	return nil
 }
@@ -344,6 +348,10 @@ func (p *Pruner) removeNodes(
 }
 
 func (p *Pruner) Start() {
+	if p.PubSubManager == nil {
+		Logger.log.Info("[state-prune] 1000")
+	}
+	Logger.log.Info("[state-prune] p.PubSubManager:", p.PubSubManager)
 	_, nodeRoleCh, err := p.PubSubManager.RegisterNewSubscriber(pubsub.NodeRoleDetailTopic)
 	if err != nil {
 		panic(err)
@@ -362,7 +370,7 @@ func (p *Pruner) Start() {
 				panic(err)
 			}
 			if updateStatus.Status == rawdbv2.ProcessingPruneStatus {
-				if err := p.Prune(int(updateStatus.ShardID), updateStatus.ShouldPruneByHash); err != nil {
+				if err := p.prune(int(updateStatus.ShardID), updateStatus.ShouldPruneByHash); err != nil {
 					panic(err)
 				}
 				p.statuses[updateStatus.ShardID] = rawdbv2.FinishPruneStatus
