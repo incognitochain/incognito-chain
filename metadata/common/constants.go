@@ -205,15 +205,14 @@ const (
 	BurningFantomConfirmForDepositToSCMeta = 156
 
 	// bridgeagg
-	BridgeAggModifyRewardReserveMeta                = 340
+	BridgeAggModifyParamMeta                        = 340
 	BridgeAggConvertTokenToUnifiedTokenRequestMeta  = 341
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta = 342
 	IssuingUnifiedTokenRequestMeta                  = 343
 	IssuingUnifiedTokenResponseMeta                 = 344
-	IssuingUnifiedRewardResponseMeta                = 345
-	BurningUnifiedTokenRequestMeta                  = 346
-	BurningUnifiedTokenResponseMeta                 = 347
-	BridgeAggAddTokenMeta                           = 348
+	BurningUnifiedTokenRequestMeta                  = 345
+	BurningUnifiedTokenResponseMeta                 = 346
+	BridgeAggAddTokenMeta                           = 347
 )
 
 var minerCreatedMetaTypes = []int{
@@ -263,7 +262,6 @@ var minerCreatedMetaTypes = []int{
 	Pdexv3WithdrawStakingRewardResponseMeta,
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 	IssuingUnifiedTokenResponseMeta,
-	IssuingUnifiedRewardResponseMeta,
 	BurningUnifiedTokenResponseMeta,
 }
 
@@ -375,22 +373,9 @@ var portalV4MetaTypes = []int{
 	PortalV4ConvertVaultRequestMeta,
 }
 
-var bridgeAggMetaTypes = []int{
-	BridgeAggModifyRewardReserveMeta,
-	BridgeAggConvertTokenToUnifiedTokenRequestMeta,
-	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
-	IssuingUnifiedTokenRequestMeta,
-	IssuingUnifiedTokenResponseMeta,
-	IssuingUnifiedRewardResponseMeta,
-	BurningUnifiedTokenRequestMeta,
-	BurningUnifiedTokenResponseMeta,
-	BridgeAggAddTokenMeta,
-}
-
 // NOTE: add new records when add new feature flags
 var FeatureFlagWithMetaTypes = map[string][]int{
 	common.PortalRelayingFlag: portalRelayingMetaTypes,
 	common.PortalV3Flag:       portalMetaTypesV3,
 	common.PortalV4Flag:       portalV4MetaTypes,
-	common.BridgeAggFlag:      bridgeAggMetaTypes,
 }

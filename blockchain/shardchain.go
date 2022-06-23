@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -102,7 +102,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
 				bcHash := sBestView.GetBeaconHash()
-				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true)
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, false, false)
 				if err != nil {
 					Logger.log.Errorf("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
 				} else {

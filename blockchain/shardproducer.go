@@ -394,7 +394,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		return nil, err
 	}
 	bView := &BeaconBestState{}
-	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
 
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
@@ -1090,4 +1090,54 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		instructions = append(instructions, inst)
 	}
 	return instructions, pdexTxs, nil
+}
+
+// CreateShardBridgeUnshieldActionsFromTxs create bridge unshield insts from transactions in shard block
+func CreateShardBridgeUnshieldActionsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeActions := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Unshield Error %+v", err)
+			}
+			bridgeActions = append(bridgeActions, actionPairs...)
+		}
+	}
+	return bridgeActions, nil
+}
+
+// CreateShardBridgeAggUnshieldActionsFromTxs create bridge agg unshield insts from transactions in shard block
+func CreateShardBridgeAggUnshieldActionsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeAggActions := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeAggUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Agg Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Agg Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Agg Unshield Error %+v", err)
+			}
+			bridgeAggActions = append(bridgeAggActions, actionPairs...)
+		}
+	}
+	return bridgeAggActions, nil
 }

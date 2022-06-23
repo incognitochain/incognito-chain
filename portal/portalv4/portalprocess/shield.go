@@ -7,10 +7,12 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 )
 
@@ -227,6 +229,10 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		meta.TokenID, proofHash, listUTXO[0].GetTxHash(),
 		meta.IncogAddressStr, shieldingAmount)
 
+	// calculate receiving shardID
+	key, _ := wallet.Base58CheckDeserialize(actionData.Meta.IncogAddressStr)
+	receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
+
 	inst := buildPortalShieldingRequestInstV4(
 		actionData.Meta.TokenID,
 		actionData.Meta.IncogAddressStr,
@@ -234,7 +240,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		listUTXO,
 		mintingAmount,
 		actionData.Meta.Type,
-		shardID,
+		receivingShardID,
 		actionData.TxReqID,
 		listUTXO[0].GetTxHash(),
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,

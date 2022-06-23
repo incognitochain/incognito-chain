@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/pkg/errors"
 )
 
 type AccumulatedValues struct {
@@ -15,6 +16,22 @@ type AccumulatedValues struct {
 	DBridgeTokenPair  map[string][]byte
 	CBridgeTokens     []*common.Hash
 	InitTokens        []*common.Hash
+}
+
+func (ac *AccumulatedValues) UpdateUniqTxsUsed(networkID uint8, uniqTxsUsed [][]byte) (*AccumulatedValues, error) {
+	switch networkID {
+	case common.ETHNetworkID:
+		ac.UniqETHTxsUsed = uniqTxsUsed
+	case common.BSCNetworkID:
+		ac.UniqBSCTxsUsed = uniqTxsUsed
+	case common.PLGNetworkID:
+		ac.UniqPLGTxsUsed = uniqTxsUsed
+	case common.FTMNetworkID:
+		ac.UniqFTMTxsUsed = uniqTxsUsed
+	default:
+		return nil, errors.New("Invalid networkID")
+	}
+	return ac, nil
 }
 
 func (ac AccumulatedValues) CanProcessTokenPair(
