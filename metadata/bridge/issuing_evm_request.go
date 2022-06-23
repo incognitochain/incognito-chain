@@ -138,15 +138,9 @@ func NewIssuingEVMRequestFromMap(
 	return req, nil
 }
 
-func NewIssuingEVMRequestWithShieldRequest(data ShieldRequestData, incTokenID common.Hash) (*IssuingEVMRequest, error) {
-	blockHash := rCommon.Hash{}
-	err := blockHash.UnmarshalText([]byte(data.BlockHash))
-	if err != nil {
-		return nil, err
-	}
-
+func NewIssuingEVMRequestFromProofData(proofData EVMProof, networkID uint, incTokenID common.Hash) (*IssuingEVMRequest, error) {
 	evmShieldRequest, _ := NewIssuingEVMRequest(
-		blockHash, data.TxIndex, data.Proof, incTokenID, data.NetworkID,
+		proofData.BlockHash, proofData.TxIndex, proofData.Proof, incTokenID, networkID,
 		metadataCommon.IssuingUnifiedTokenRequestMeta,
 	) // error always null
 	return evmShieldRequest, nil

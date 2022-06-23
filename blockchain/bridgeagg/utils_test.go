@@ -1,6 +1,8 @@
 package bridgeagg
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -27,14 +30,19 @@ type TestSuite struct {
 	sDB                 *statedb.StateDB
 }
 
-type TestCase struct {
-	ExpectedInstructions      [][]string                                    `json:"expected_instructions"`
-	UnifiedTokens             map[common.Hash]map[uint]*Vault               `json:"unified_tokens"`
-	ExpectedUnifiedTokens     map[common.Hash]map[uint]*Vault               `json:"expected_unified_tokens"`
-	TxIDs                     []common.Hash                                 `json:"tx_ids"`
-	BridgeTokensInfo          map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
-	AccumulatedValues         *metadata.AccumulatedValues                   `json:"accumulated_values"`
-	ExpectedAccumulatedValues *metadata.AccumulatedValues                   `json:"expected_accumulated_values"`
+type TestData struct {
+	State             *State                                        `json:"state"`
+	TxIDs             []common.Hash                                 `json:"tx_ids"`
+	BridgeTokensInfo  map[common.Hash]*statedb.BridgeTokenInfoState `json:"bridge_tokens_info"`
+	AccumulatedValues *metadata.AccumulatedValues                   `json:"accumulated_values"`
+	env               *stateEnvironment
+}
+
+type ExpectedResult struct {
+	State             *State                                   `json:"state"`
+	Instructions      [][]string                               `json:"instructions"`
+	AccumulatedValues *metadata.AccumulatedValues              `json:"accumulated_values"`
+	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo `json:"bridge_tokens_info"`
 }
 
 type ActualResult struct {
@@ -42,6 +50,7 @@ type ActualResult struct {
 	ProducerState     *State
 	ProcessorState    *State
 	AccumulatedValues *metadata.AccumulatedValues
+	BridgeTokensInfo  map[common.Hash]*rawdbv2.BridgeTokenInfo
 }
 
 var _ = func() (_ struct{}) {
@@ -51,260 +60,6 @@ var _ = func() (_ struct{}) {
 	Logger.log.Info("Init logger")
 	return
 }()
-
-func TestCalculateShieldActualAmount(t *testing.T) {
-	type args struct {
-		x        uint64
-		y        uint64
-		deltaX   uint64
-		operator byte
-		isPaused bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    uint64
-		wantErr bool
-	}{
-		{
-			name: "Cannot recognize operator",
-			args: args{
-				operator: 3,
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{
-			name: "y == 0, first shield",
-			args: args{
-				deltaX:   100,
-				operator: AddOperator,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
-			name: "y == 0, second shield",
-			args: args{
-				x:        100,
-				deltaX:   300,
-				operator: AddOperator,
-			},
-			want:    300,
-			wantErr: false,
-		},
-		{
-			name: "y != 0, first shield",
-			args: args{
-				y:        100,
-				deltaX:   100,
-				operator: AddOperator,
-			},
-			want:    199,
-			wantErr: false,
-		},
-		{
-			name: "y != 0, second shield",
-			args: args{
-				y:        100,
-				deltaX:   100,
-				x:        1000,
-				operator: AddOperator,
-			},
-			want:    109,
-			wantErr: false,
-		},
-		{
-			name: "isPaused shield",
-			args: args{
-				y:        10,
-				deltaX:   100,
-				x:        1000,
-				operator: AddOperator,
-				isPaused: true,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
-			name: "shield with large amount",
-			args: args{
-				y:        1e10,
-				deltaX:   1234567,
-				x:        1234567,
-				operator: AddOperator,
-				isPaused: false,
-			},
-			want:    5001234567,
-			wantErr: false,
-		},
-		{
-			name: "shield with large amount - 2",
-			args: args{
-				y:        5e9,
-				deltaX:   609,
-				x:        2469134,
-				operator: SubOperator,
-				isPaused: false,
-			},
-			want:    1233530,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateShieldActualAmount(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.isPaused)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateActualAmount() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("CalculateActualAmount() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestEstimateActualAmountByBurntAmount(t *testing.T) {
-	type args struct {
-		x           uint64
-		y           uint64
-		burntAmount uint64
-		isPaused    bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    uint64
-		wantErr bool
-	}{
-		{
-			name: "x == 0",
-			args: args{
-				x: 0,
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{
-			name: "x == 1",
-			args: args{
-				x: 1,
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{
-			name: "burntAmount == 0",
-			args: args{
-				x:           100,
-				burntAmount: 0,
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{
-			name: "y == 0, burntAmount > x",
-			args: args{
-				x:           10,
-				burntAmount: 100,
-			},
-			want:    0,
-			wantErr: true,
-		},
-		{
-			name: "y == 0, burntAmount < x",
-			args: args{
-				x:           150,
-				burntAmount: 100,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
-			name: "y == 0, burntAmount = x",
-			args: args{
-				x:           100,
-				burntAmount: 100,
-			},
-			want:    99,
-			wantErr: false,
-		},
-		{
-			name: "y != 0, burntAmount <= x",
-			args: args{
-				x:           1000,
-				y:           100,
-				burntAmount: 111,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
-			name: "y != 0, burntAmount <= x - example 2",
-			args: args{
-				x:           50000000,
-				y:           1000000,
-				burntAmount: 300,
-			},
-			want:    294,
-			wantErr: false,
-		},
-		{
-			name: "y != 0, burntAmount > x - valid",
-			args: args{
-				x:           1000,
-				y:           100,
-				burntAmount: 1050,
-			},
-			want:    750,
-			wantErr: false,
-		},
-		{
-			name: "unshield after shield",
-			args: args{
-				x:           1100,
-				y:           91,
-				burntAmount: 109,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
-			name: "isPaused",
-			args: args{
-				x:           1000,
-				y:           10,
-				burntAmount: 100,
-				isPaused:    true,
-			},
-			want:    100,
-			wantErr: false,
-		},
-		{
-			name: "unshield with large amount",
-			args: args{
-				x:           2469134,
-				y:           5e9,
-				burntAmount: 1234567,
-			},
-			want:    609,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := EstimateActualAmountByBurntAmount(tt.args.x, tt.args.y, tt.args.burntAmount, tt.args.isPaused)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("EstimateActualAmountByBurntAmount() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("EstimateActualAmountByBurntAmount() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
 // create roll files in the same directory.  It must be called before the
@@ -347,12 +102,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	config.AbortParam()
 	config.Param().BridgeAggParam.BaseDecimal = 9
 	type args struct {
-		amount      big.Int
-		decimal     uint
-		operator    byte
-		prefix      string
-		networkType uint
-		token       []byte
+		amount             *big.Int
+		decimal            uint8
+		isToUnifiedDecimal bool
 	}
 	tests := []struct {
 		name    string
@@ -363,9 +115,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Add",
 			args: args{
-				amount:   *big.NewInt(100000),
-				decimal:  6,
-				operator: AddOperator,
+				amount:             big.NewInt(100000),
+				decimal:            6,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(100000000),
 			wantErr: false,
@@ -373,9 +125,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Decimal < base decimal - Sub",
 			args: args{
-				amount:   *big.NewInt(100000000),
-				decimal:  6,
-				operator: SubOperator,
+				amount:             big.NewInt(100000000),
+				decimal:            6,
+				isToUnifiedDecimal: false,
 			},
 			want:    big.NewInt(100000),
 			wantErr: false,
@@ -383,9 +135,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Convert",
 			args: args{
-				amount:   *big.NewInt(100),
-				decimal:  config.Param().BridgeAggParam.BaseDecimal,
-				operator: AddOperator,
+				amount:             big.NewInt(100),
+				decimal:            config.Param().BridgeAggParam.BaseDecimal,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(100),
 			wantErr: false,
@@ -393,9 +145,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield",
 			args: args{
-				amount:   *big.NewInt(1234567890000000),
-				decimal:  18,
-				operator: AddOperator,
+				amount:             big.NewInt(1234567890000000),
+				decimal:            18,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(1234567),
 			wantErr: false,
@@ -403,9 +155,9 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 		{
 			name: "Shield - 2",
 			args: args{
-				amount:   *big.NewInt(50000000000000000),
-				decimal:  18,
-				operator: AddOperator,
+				amount:             big.NewInt(50000000000000000),
+				decimal:            18,
+				isToUnifiedDecimal: true,
 			},
 			want:    big.NewInt(50000000),
 			wantErr: false,
@@ -413,7 +165,7 @@ func TestCalculateAmountByDecimal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.operator)
+			got, err := ConvertAmountByDecimal(tt.args.amount, tt.args.decimal, tt.args.isToUnifiedDecimal)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CalculateAmountByDecimal() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -585,76 +337,17 @@ func readTestCases(fileName string) ([]byte, error) {
 	return raw, nil
 }
 
-func TestCalculateDeltaY(t *testing.T) {
-	type args struct {
-		x        uint64
-		y        uint64
-		deltaX   uint64
-		operator byte
-		isPaused bool
+func CheckInterfacesIsEqual(expected interface{}, actual interface{}) error {
+	expectedData, err := json.Marshal(expected)
+	if err != nil {
+		return err
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    uint64
-		wantErr bool
-	}{
-		{
-			name: "unshield y != 0",
-			args: args{
-				y:        100,
-				deltaX:   100,
-				x:        1000,
-				operator: SubOperator,
-			},
-			want:    11,
-			wantErr: false,
-		},
-		{
-			name: "unshield y != 0, isPaused",
-			args: args{
-				y:        100,
-				deltaX:   100,
-				x:        1000,
-				operator: SubOperator,
-				isPaused: true,
-			},
-			want:    0,
-			wantErr: false,
-		},
-		{
-			name: "unshield y == 0",
-			args: args{
-				y:        0,
-				deltaX:   100,
-				x:        1000,
-				operator: SubOperator,
-			},
-			want:    0,
-			wantErr: false,
-		},
-		{
-			name: "Try to shield to y = 0",
-			args: args{
-				y:        100,
-				deltaX:   10000000000000000000,
-				x:        1000,
-				operator: AddOperator,
-			},
-			want:    99,
-			wantErr: false,
-		},
+	actualData, err := json.Marshal(actual)
+	if err != nil {
+		return err
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := CalculateDeltaY(tt.args.x, tt.args.y, tt.args.deltaX, tt.args.operator, tt.args.isPaused)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CalculateDeltaY() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("CalculateDeltaY() = %v, want %v", got, tt.want)
-			}
-		})
+	if !bytes.Equal(expectedData, actualData) {
+		return fmt.Errorf("expected %s but get %s", string(expectedData), string(actualData))
 	}
+	return nil
 }

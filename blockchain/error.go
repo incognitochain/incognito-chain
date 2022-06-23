@@ -100,6 +100,7 @@ const (
 	BeaconCommitteeLengthAndCommitteeIndexError
 	BuildRewardInstructionError
 	BuildBridgeError
+	BuildBridgeAggError
 	GenerateBeaconCommitteeAndValidatorRootError
 	GenerateShardCommitteeAndValidatorRootError
 	GenerateBeaconCandidateRootError
@@ -372,7 +373,8 @@ var ErrCodeMessage = map[int]struct {
 	CommitteeFromBlockNotFoundError:                   {-1163, "Committee From Beacon Block Not Found Error"},
 	ShardSyncValidatorHashError:                       {-1164, "Shard Sync Validator Hash Error"},
 	FinishSyncInstructionError:                        {-1165, "Checking finish sync instruction error"},
-	BuildBridgeError:                                  {-1166, "Build bridge instant finality error"},
+	BuildBridgeError:                                  {-1166, "Build bridge unshield instruction error"},
+	BuildBridgeAggError:                               {-1167, "Build bridge agg unshield instruction error"},
 
 	GetListOutputCoinsByKeysetError:                 {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                   {-3000, "Get Total Locked Collateral Error"},

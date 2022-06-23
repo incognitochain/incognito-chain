@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -29,20 +30,6 @@ func buildInstruction(metaType int, shardID byte, instStatus string, contentStr 
 		instStatus,
 		contentStr,
 	}
-}
-
-func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(addressStr)
-	if err != nil {
-		return byte(0), err
-	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return byte(0), errors.New("Payment address' public key must not be empty")
-	}
-	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
-	return shardID, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForContractingReq(
@@ -152,13 +139,35 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	)
 	rejectedInst := inst.StringSlice()
 
-	amt, receivingShardID, addressStr, token, uniqTx, err := metadataBridge.ExtractIssueEVMData(
-		stateDBs[common.BeaconChainID], shardID, listTxUsed,
-		contractAddress, prefix, isTxHashIssued,
+	evmProof := metadataBridge.EVMProof{
+		BlockHash: md.BlockHash,
+		TxIndex:   md.TxIndex,
+		Proof:     md.ProofStrs,
+	}
+
+	// check double use shielding proof in current block and previous blocks
+	isValid, uniqTx, err := bridgeagg.ValidateDoubleShieldProof(&evmProof, listTxUsed, isTxHashIssued, stateDBs[common.BeaconChainID])
+	if err != nil {
+		Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
+		return [][]string{rejectedInst}, nil, nil
+	}
+	if !isValid {
+		Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
+		return [][]string{rejectedInst}, nil, nil
+	}
+
+	amt, addressStr, token, err := metadataBridge.ExtractIssueEVMDataFromReceipt(
 		issuingEVMBridgeReqAction.EVMReceipt,
-		issuingEVMBridgeReqAction.Meta.BlockHash,
-		issuingEVMBridgeReqAction.Meta.TxIndex,
+		contractAddress,
+		prefix,
+		"",
 	)
+	if err != nil {
+		Logger.log.Warnf(err.Error())
+		return [][]string{rejectedInst}, nil, nil
+	}
+
+	receivingShardID, err := metadataBridge.GetShardIDFromPaymentAddressStr(addressStr)
 	if err != nil {
 		Logger.log.Warnf(err.Error())
 		return [][]string{rejectedInst}, nil, nil

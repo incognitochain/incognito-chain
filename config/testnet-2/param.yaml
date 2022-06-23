@@ -77,7 +77,6 @@ enable_feature_flags:
   - PortalRelaying: 1
   - PortalV3: 0
   - PortalV4: 30225
-  - BridgeAgg: 1e9
 portal_v3_height: 1328816
 tx_pool_version: 0
 geth_param:
@@ -123,8 +122,14 @@ auto_enable_feature:
       min_trigger: 3965040
       force_trigger: 1000000000
       require_percentage: 90
+  - unified_token_23062022:
+      min_trigger: 4762600
+      force_trigger: 1000000000
+      require_percentage: 90
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
   max_len_of_path: 3
+  percent_fee_decimal: 1e6
+  default_percent_fee_with_decimal: 500 # 0.05% * 1e6  #TODO
 bc_height_break_point_coin_origin: 4565727
