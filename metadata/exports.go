@@ -211,6 +211,9 @@ const (
 
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
+
+	BurnForCallRequestMeta = metadataCommon.BurnForCallRequestMeta
+	BurnForCallConfirmMeta = metadataCommon.BurnForCallConfirmMeta
 )
 
 // export error codes

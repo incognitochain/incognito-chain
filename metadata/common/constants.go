@@ -214,8 +214,8 @@ const (
 	BurningUnifiedTokenResponseMeta                 = 346
 	BridgeAggAddTokenMeta                           = 347
 
-	BurnForCallRequestMeta = 158
-	BurnForCallResponseMeta = 348
+	BurnForCallConfirmMeta = 158
+	BurnForCallRequestMeta = 348
 )
 
 var minerCreatedMetaTypes = []int{

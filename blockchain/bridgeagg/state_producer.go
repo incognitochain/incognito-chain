@@ -554,7 +554,7 @@ func (sp *stateProducer) burnForCall(
 			return [][]string{rejectedInst}, state, nil
 		}
 
-		// check vaults
+		// check vault balance
 		isEnoughVault, waitingUnshieldDatas, err := checkVaultForNewUnshieldReq(
 			vaults,
 			[]metadataBridge.UnshieldRequestData{
@@ -564,27 +564,24 @@ func (sp *stateProducer) burnForCall(
 					MinExpectedAmount: meta.MinExpectedAmount,
 				},
 			},
-			true,
+			true, // use accept/reject flow without waiting
 			clonedState.param.PercentFeeWithDec(),
 			stateDB,
 		)
 		if err != nil {
-			Logger.log.Errorf("[BridgeAgg] Error when checking for unshield: %v", err)
+			Logger.log.Errorf("[BridgeAgg] Error when checking for burnForCall: %v", err)
 			rejectedInst := buildRejectedBurnForCallReqInst(
 				*meta, shardID, txReqID, CheckVaultUnshieldError)
 			return [][]string{rejectedInst}, state, nil
 		}
 
-		waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)
-		statusStr := common.WaitingStatusStr
-
 		if isEnoughVault {
-			statusStr = common.AcceptedStatusStr
-
+			// create waitingUnshieldReq to update state
+			waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)
 			// build burning confirm insts
-			burningConfirmInsts = buildBurningConfirmInsts(waitingUnshieldReq, beaconHeightForConfirmInst)
+			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, waitingUnshieldReq, beaconHeightForConfirmInst)
 			insts = append(insts, burningConfirmInsts...)
-			clonedState, err = updateStateForUnshield(clonedState, meta.BurnTokenID, waitingUnshieldReq, statusStr)
+			clonedState, err = updateStateForUnshield(clonedState, meta.BurnTokenID, waitingUnshieldReq, common.AcceptedStatusStr)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Error producing burnForCall: %v", err)
 				rejectedInst := buildRejectedBurnForCallReqInst(
@@ -592,7 +589,7 @@ func (sp *stateProducer) burnForCall(
 				return [][]string{rejectedInst}, state, nil
 			}
 		} else {
-			err = fmt.Errorf("not enough funds for unshielding")
+			err = fmt.Errorf("not enough funds for burnForCall")
 			rejectedInst := buildRejectedBurnForCallReqInst(
 				*meta, shardID, txReqID, ProducerUpdateStateError)
 			return [][]string{rejectedInst}, state, nil

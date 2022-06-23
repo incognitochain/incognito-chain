@@ -37,7 +37,7 @@ func (txBuilder TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildShieldUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
-	case metadataCommon.BurningUnifiedTokenRequestMeta:
+	case metadataCommon.BurningUnifiedTokenRequestMeta, metadataCommon.BurnForCallRequestMeta:
 		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}

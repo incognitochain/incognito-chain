@@ -1195,6 +1195,119 @@ func BuildUnshieldActionForProducerFromInsts(insts [][]string, shardID byte, bea
 	return unshieldActions
 }
 
+// DecodeBurnForCallConfirmInst packs the BurnForCall instruction into a byte slice.
+// Instruction layout: [meta(1), shard(1), network(1), recvAddrLen(1), extToken(ExternalAddressLen), extCallAddr(ExternalAddressLen), amount(32), txID(32), recvToken(ExternalAddressLen), recvAddr, extCalldata, beaconHeight(32)].
+// Last 2 fields are of dynamic length; hence need to include recvAddrLen which indicates length of ReceiveAddress.
+func DecodeBurnForCallConfirmInst(inst []string) ([]byte, error) {
+	if len(inst) != 12 {
+		return nil, errors.New("invalid BurnForCall instruction length")
+	}
+	meta, err := strconv.ParseUint(inst[0], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	shard, err := strconv.ParseUint(inst[1], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	network, err := strconv.ParseUint(inst[2], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	recvAddrLen, err := strconv.ParseUint(inst[3], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	extToken, err := hex.DecodeString(inst[4])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	extCallAddr, err := hex.DecodeString(inst[5])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	amount, success := big.NewInt(0).SetString(inst[6], 16)
+	if !success {
+		return nil, fmt.Errorf("instruction %v - expect hex string, got %s", inst, inst[6])
+	}
+	txID, err := common.Hash{}.NewHashFromStr(inst[7])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	recvToken, err := hex.DecodeString(inst[8])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	ethAddresses := [][]byte{extToken, extCallAddr, recvToken}
+	var recvAddr []byte
+	if recvAddrLen == ExternalAddressLen {
+		recvAddr, err = hex.DecodeString(inst[9])
+		if err != nil {
+			return nil, fmt.Errorf("instruction %v error %v", inst, err)
+		}
+		ethAddresses = append(ethAddresses, recvAddr)
+	} else {
+		recvAddr = []byte(inst[10])
+	}
+	extCalldata, err := hex.DecodeString(inst[10])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	bHeight, success := big.NewInt(0).SetString(inst[11], 16)
+	if !success {
+		return nil, fmt.Errorf("instruction %v - expect hex string, got %s", inst, inst[11])
+	}
+	// check length of addresses
+	for _, a := range ethAddresses {
+		if len(a) != ExternalAddressLen {
+			return nil, fmt.Errorf("instruction %v contains address with invalid length")
+		}
+	}
+
+	Logger.log.Infof("Decoded BurnForCall instruction, meta %d, shard %d, network %d, recvAddrLen %d, beaconHeight %d, extToken %x, extCallAddr %x, amount %d, txID %s, recvToken %x, recvAddr %x, extCalldata %x", meta, shard, network, recvAddrLen, bHeight, extToken, extCallAddr, amount, txID.String(), recvToken, recvAddr, extCalldata)
+	var buf bytes.Buffer
+	buf.WriteByte(byte(meta))
+	buf.WriteByte(byte(shard))
+	buf.WriteByte(byte(network))
+	buf.WriteByte(byte(recvAddrLen))
+	buf.Write(extToken)
+	buf.Write(extCallAddr)
+	buf.Write(amount.FillBytes(make([]byte, 32)))
+	buf.Write(txID[:])
+	buf.Write(recvToken)
+	buf.Write(recvAddr)
+	buf.Write(extCalldata)
+	buf.Write(bHeight.FillBytes(make([]byte, 32)))
+	return buf.Bytes(), nil
+}
+
+func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, beaconHeightForConfirmInst uint64) [][]string {
+	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
+	index := 0                                 // currently support 1 call per metadata request
+	var networkID uint8 = 1                    // TODO: other networks
+	var recvAddrLen uint8 = ExternalAddressLen // length is ExternalAddressLen when withdrawing to external network
+	if req.ReceiveType == metadataCommon.BurnForCallReceiveTypeRedeposit {
+		recvAddrLen = uint8(len(req.ReceiveAddress))
+	}
+	data := waitingUnshieldReq.GetData()[0]
+	newTxReqID := common.HashH(append(waitingUnshieldReq.GetUnshieldID().Bytes(), common.IntToBytes(index)...))
+	burningInst := []string{
+		strconv.Itoa(int(metadataCommon.BurnForCallConfirmMeta)),
+		strconv.Itoa(int(common.BridgeShardID)),
+		strconv.Itoa(int(networkID)),
+		strconv.Itoa(int(recvAddrLen)),
+		hex.EncodeToString(data.ExternalTokenID),
+		req.ExternalCallAddress,
+		data.ExternalReceivedAmt.Text(16),
+		newTxReqID.String(),
+		req.ReceiveToken,
+		req.ReceiveAddress,
+		req.ExternalCalldata,
+		beaconHeightBN.Text(16),
+	}
+	return [][]string{burningInst}
+}
+
 func buildRejectedBurnForCallReqInst(meta metadataBridge.BurnForCallRequest, shardID byte, txReqID common.Hash, errorType int) []string {
 	var totalBurnAmt uint64 = meta.BurningAmount
 	rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
@@ -1211,4 +1324,15 @@ func buildRejectedBurnForCallReqInst(meta metadataBridge.BurnForCallRequest, sha
 		rejectContentStr,
 	)
 	return rejectedInst.StringSlice()
+}
+
+func GetTxIDFromBurningConfirmInst(inst []string) (*common.Hash, error) {
+	var txhStr string
+	switch inst[0] {
+	case strconv.Itoa(metadataCommon.BurnForCallConfirmMeta):
+		txhStr = inst[7]
+	default:
+		txhStr = inst[5]
+	}
+	return common.Hash{}.NewHashFromStr(txhStr)
 }

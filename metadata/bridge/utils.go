@@ -428,6 +428,8 @@ func IsBurningConfirmMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BurningPRVBEP20ConfirmMeta, metadataCommon.BurningPRVERC20ConfirmMeta:
 		return true
+	case metadataCommon.BurnForCallConfirmMeta:
+		return true
 	default:
 		return false
 	}
