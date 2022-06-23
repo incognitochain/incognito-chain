@@ -1,12 +1,13 @@
 {
-    "23062022": {
+    "23062022": {},
+    "230620222": {
         "3a526c0fa9abfc3e3e37becc52c5c10abbb7897b0534ad17018e766fc6133590": {
             "fdd928bc86c82bd2a7c54082a68332ebb5f2cde842b1c2e0fa430ededb6e369e": {
                 "external_decimal": 6,
                 "external_token_id": "0x07de306FF27a2B630B1141956844eB1552B956B5",
                 "network_id": 1
             },
-            "39f2800e2a29413c14fd984e926aa7856bc130fd034aef48fbd51ce3ba72bfba": {
+            "037c4d7bbb0407d1e2c64981855ad8681d0d86d1e91e00167939cb6694d2c422": {
                 "external_decimal": 18,
                 "external_token_id": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
                 "network_id": 2
