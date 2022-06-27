@@ -589,11 +589,8 @@ func (tx *TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *state
 			}
 		}
 
-		if afterCoinOriginHeight {
+		if isMint := len(tx.Proof.GetOutputCoins()) == 1 && len(tx.Proof.GetInputCoins()) == 0 && tx.GetMetadata().IsMinerCreatedMetaType(); afterCoinOriginHeight && !isMint {
 			cptype := privacy.CoinPrivacyTypeTransfer
-			if isMint := len(tx.Proof.GetOutputCoins()) == 1 && len(tx.Proof.GetInputCoins()) == 0; isMint {
-				cptype = privacy.CoinPrivacyTypeMint
-			}
 			coinSenderShardID, _, coinPrivacyType, err := privacy.DeriveShardInfoFromCoin(outCoin.GetPublicKey().ToBytesS())
 			if err != nil {
 				return err

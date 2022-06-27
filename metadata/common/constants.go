@@ -375,9 +375,22 @@ var portalV4MetaTypes = []int{
 	PortalV4ConvertVaultRequestMeta,
 }
 
+var bridgeAggMetaTypes = []int{
+	BridgeAggModifyRewardReserveMeta,
+	BridgeAggConvertTokenToUnifiedTokenRequestMeta,
+	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
+	IssuingUnifiedTokenRequestMeta,
+	IssuingUnifiedTokenResponseMeta,
+	IssuingUnifiedRewardResponseMeta,
+	BurningUnifiedTokenRequestMeta,
+	BurningUnifiedTokenResponseMeta,
+	BridgeAggAddTokenMeta,
+}
+
 // NOTE: add new records when add new feature flags
 var FeatureFlagWithMetaTypes = map[string][]int{
 	common.PortalRelayingFlag: portalRelayingMetaTypes,
 	common.PortalV3Flag:       portalMetaTypesV3,
 	common.PortalV4Flag:       portalV4MetaTypes,
+	common.BridgeAggFlag:      bridgeAggMetaTypes,
 }
