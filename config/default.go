@@ -76,7 +76,6 @@ var MainnetParam = &param{
 		"PortalRelaying": 1,
 		"PortalV3":       0,
 		"PortalV4":       4079,
-		"BridgeAgg":      1e9,
 	},
 	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 10000000,
