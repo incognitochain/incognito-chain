@@ -225,6 +225,7 @@ const (
 	PortalRelayingFlag = "PortalRelaying"
 	PortalV3Flag       = "PortalV3"
 	PortalV4Flag       = "PortalV4"
+	BridgeAggFlag      = "BridgeAgg"
 )
 const (
 	PortalVersion3 = 3
