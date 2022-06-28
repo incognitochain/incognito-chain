@@ -394,7 +394,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
 			//get data from checkpoint to final view
 			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
-			retrievedShardBlockForBridge, retrievedShardBlockForBridgeAgg, err = blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
+			retrievedShardBlockForBridge, retrievedShardBlockForBridgeAgg, err = blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash(), newBeaconBlock)
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildBridgeError, err)
 			}

@@ -582,7 +582,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	//update bridge process
-	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+	if beaconBlock.GetVersion() == types.INSTANT_FINALITY_VERSION {
 		if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
 			beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight() - 1
 		}
