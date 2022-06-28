@@ -126,10 +126,18 @@ auto_enable_feature:
       min_trigger: 4762600
       force_trigger: 1000000000
       require_percentage: 90
+  - unified_token_230620222:
+      min_trigger: 4763160
+      force_trigger: 1000000000
+      require_percentage: 90
+  - unified_token_230620223:
+      min_trigger: 4806400
+      force_trigger: 1000000000
+      require_percentage: 90
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
-  max_len_of_path: 3
+  max_len_of_path: 5
   percent_fee_decimal: 1e6
-  default_percent_fee_with_decimal: 500 # 0.05% * 1e6  #TODO
+  default_percent_fee_with_decimal: 500 # 0.05% * 1e6 
 bc_height_break_point_coin_origin: 4565727
