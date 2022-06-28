@@ -14,18 +14,25 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	block                   types.BlockInterface
-	ReceiveTime             time.Time
-	Committees              []incognitokey.CommitteePublicKey
-	SigningCommittees       []incognitokey.CommitteePublicKey
-	UserKeySet              []signatureschemes2.MiningKey
-	Votes                   map[string]*BFTVote //pk->BFTVote
-	IsValid                 bool
-	HasNewVote              bool
-	IsVoted                 bool
-	IsCommitted             bool
+	block             types.BlockInterface
+	ReceiveTime       time.Time
+	Committees        []incognitokey.CommitteePublicKey
+	SigningCommittees []incognitokey.CommitteePublicKey
+	UserKeySet        []signatureschemes2.MiningKey
+	Votes             map[string]*BFTVote //pk->BFTVote
+	PreVotes          map[string]*BFTVote //pk->BFTVote
+	IsValid           bool
+	HasNewPreVote     bool
+	HasNewVote        bool
+	IsVoted           bool
+	IsPreVoted        bool
+	IsCommitted       bool
+
+	ValidPreVotes           int
+	ErrPreVotes             int
 	ValidVotes              int
 	ErrVotes                int
+	ProposerSendPreVote     bool
 	ProposerSendVote        bool
 	ProposerMiningKeyBase58 string
 	LastValidateTime        time.Time

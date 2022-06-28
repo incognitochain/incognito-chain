@@ -25,6 +25,7 @@ type BFTPropose struct {
 }
 
 type BFTVote struct {
+	Phase              string
 	RoundKey           string
 	PrevBlockHash      string
 	BlockHeight        uint64
@@ -65,6 +66,9 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
 	} else {
+		if s.Phase != "" {
+			data = append(data, []byte(s.Phase)...)
+		}
 		data = append(data, s.BlockHash...)
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
@@ -92,6 +96,9 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
 	} else {
+		if s.Phase != "" {
+			data = append(data, []byte(s.Phase)...)
+		}
 		data = append(data, s.BlockHash...)
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
