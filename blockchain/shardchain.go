@@ -621,7 +621,7 @@ func (chain *ShardChain) GetSigningCommittees(
 	proposerIndex int, committees []incognitokey.CommitteePublicKey, blockVersion int,
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 		res = FilterSigningCommitteeV3(committees, proposerIndex)
 	} else {
 		res = append(res, committees...)

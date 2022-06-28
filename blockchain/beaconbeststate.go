@@ -29,6 +29,7 @@ import (
 const (
 	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
 	INSTANT_FINALITY_FEATURE      = "instantfinality"
+	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
 )
 
 // BestState houses information about the current best block and other info
@@ -1170,7 +1171,7 @@ func (b *BeaconBestState) CalculateExpectedTotalBlock(blockVersion int) map[byte
 	subsetNumberOfShardBlock := make(map[byte]uint)
 
 	for shardID, numberOfBlock := range b.NumberOfShardBlock {
-		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock / 2
 		} else {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock

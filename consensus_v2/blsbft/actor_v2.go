@@ -496,6 +496,12 @@ func (a *actorV2) Start() error {
 	return nil
 }
 
+func (a *actorV2) closeActor() {
+	close(a.destroyCh)
+	close(a.proposeMessageCh)
+	close(a.voteMessageCh)
+}
+
 func (a *actorV2) run() error {
 	go func() {
 		//init view maps
@@ -526,7 +532,7 @@ func (a *actorV2) run() error {
 			select {
 			case <-a.destroyCh:
 				a.logger.Infof("exit bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
-				close(a.destroyCh)
+				a.closeActor()
 				return
 			case proposeMsg := <-a.proposeMessageCh:
 				err := a.handleProposeMsg(proposeMsg)

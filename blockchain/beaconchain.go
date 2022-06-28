@@ -366,6 +366,8 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, s string) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
+
 	return chain.InsertBlock(block, true)
 }
 func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {

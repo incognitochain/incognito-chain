@@ -149,12 +149,16 @@ func (engine *Engine) WatchCommitteeChange() {
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
 		}
-
+		oldVersion := engine.version[chainID]
 		engine.updateVersion(chainID)
 
-		if _, ok := engine.bftProcess[chainID]; !ok {
+		if bftActor, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
 		} else {
+			if oldVersion < types.INSTANT_FINALITY_VERSION_V2 && engine.version[chainID] >= 9 {
+				bftActor.Destroy()
+				engine.initProcess(chainID, chainName)
+			}
 			engine.bftProcess[chainID].SetBlockVersion(engine.version[chainID])
 		}
 
@@ -196,11 +200,11 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 	var bftActor blsbft.Actor
 	blockVersion := engine.version[chainID]
 	if chainID == -1 {
-		bftActor = blsbft.NewActorV3WithValue(
+		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.BeaconChain,
-			engine.config.Blockchain.BeaconChain, chainName, blockVersion,
-			chainID, engine.config.Node, Logger.Log)
-
+			engine.config.Blockchain.BeaconChain,
+			engine.version[chainID], blockVersion,
+			chainID, chainName, engine.config.Node, Logger.Log)
 	} else {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.ShardChain[chainID],
@@ -315,6 +319,10 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 		triggerFeature = engine.config.Blockchain.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
+	}
+
+	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE_V2] != 0 {
+		return types.INSTANT_FINALITY_VERSION_V2
 	}
 
 	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
