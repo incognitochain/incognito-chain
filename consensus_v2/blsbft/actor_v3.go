@@ -693,6 +693,8 @@ func (a *actorV3) run() error {
 						a.logger.Error(err)
 						continue
 					}
+				default:
+					a.logger.Error("Cannot find vote type!")
 				}
 
 			case <-cleanMemTicker:

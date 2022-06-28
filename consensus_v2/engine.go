@@ -196,11 +196,10 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 	var bftActor blsbft.Actor
 	blockVersion := engine.version[chainID]
 	if chainID == -1 {
-		bftActor = blsbft.NewActorWithValue(
+		bftActor = blsbft.NewActorV3WithValue(
 			engine.config.Blockchain.BeaconChain,
-			engine.config.Blockchain.BeaconChain,
-			engine.version[chainID], blockVersion,
-			chainID, chainName, engine.config.Node, Logger.Log)
+			engine.config.Blockchain.BeaconChain, chainName, blockVersion,
+			chainID, engine.config.Node, Logger.Log)
 
 	} else {
 		bftActor = blsbft.NewActorWithValue(

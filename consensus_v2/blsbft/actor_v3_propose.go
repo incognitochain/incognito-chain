@@ -140,6 +140,7 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 		block:                   block,
 		ReceiveTime:             time.Now(),
 		Votes:                   make(map[string]*BFTVote),
+		PreVotes:                make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(committees),
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
 		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),

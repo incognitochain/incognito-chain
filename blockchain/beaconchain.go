@@ -365,8 +365,8 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 	panic("this function is not supported on beacon chain")
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
-	panic("this function is not supported on beacon chain")
+func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, s string) error {
+	return chain.InsertBlock(block, true)
 }
 func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")

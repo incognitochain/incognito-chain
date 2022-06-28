@@ -15,10 +15,6 @@ func (a *actorV3) maybeCommit() {
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
 		if a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 			!proposeBlockInfo.IsCommitted {
-			//no new pre vote
-			if !proposeBlockInfo.HasNewVote {
-				return
-			}
 			//has majority votes
 			if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
 				a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)",
@@ -43,7 +39,7 @@ func (a *actorV3) commitBlock(v *ProposeBlockInfo) error {
 		if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
 			previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
-			previousProposeBlockInfo = a.validateVote(previousProposeBlockInfo)
+			a.validateVote(previousProposeBlockInfo)
 
 			rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
 				previousProposeBlockInfo.SigningCommittees,

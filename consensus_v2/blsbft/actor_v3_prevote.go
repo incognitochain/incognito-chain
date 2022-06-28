@@ -37,12 +37,6 @@ func (a *actorV3) sendVote(
 	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(proposeBlockInfo.SigningCommittees, common.BlsConsensus)
 	for _, userKey := range proposeBlockInfo.UserKeySet {
 		pubKey := userKey.GetPublicKey()
-		//// When node is not connect to highway (drop connection/startup), propose and vote a block will prevent voting for any other blocks having same height but larger timestamp (rule1)
-		//// In case number of validator is 22, we need to make 22 turn to propose the old smallest timestamp block
-		//// To prevent this, proposer will not vote unless receiving at least one vote (look at receive vote event)
-		if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 {
-			continue
-		}
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(a.GetConsensusName()), committeeBLSString) != -1 {
 			switch phase {
 			case "prevote":
@@ -86,7 +80,7 @@ func (a *actorV3) createAndSendPreVote(
 	signingCommittees []incognitokey.CommitteePublicKey,
 ) error {
 
-	vote, err := CreatePreVote(userKey, block, signingCommittees)
+	vote, err := a.CreatePreVote(userKey, block, signingCommittees)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -104,7 +98,7 @@ func (a *actorV3) createAndSendPreVote(
 	return nil
 }
 
-func CreatePreVote(
+func (a actorV3) CreatePreVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -135,7 +129,6 @@ func CreatePreVote(
 	vote.Phase = "prevote"
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
-	vote.BlockProposeHash = block.ProposeHash().String()
 	vote.BlockHash = block.Hash().String()
 	vote.Validator = userBLSPk
 	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
@@ -159,9 +152,9 @@ func (a *actorV3) handlePreVoteMsg(voteMsg BFTVote) error {
 			vid, v := a.getValidatorIndex(proposeBlockInfo.SigningCommittees, voteMsg.Validator)
 			if v != nil {
 				vbase58, _ := v.ToBase58()
-				a.logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].Votes), voteMsg.BlockHash, vid, vbase58)
+				a.logger.Infof("%v Receive prevote (%d) for block %s from validator %d %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].PreVotes), voteMsg.BlockHash, vid, vbase58)
 			} else {
-				a.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].Votes), voteMsg.BlockHash, voteMsg.Validator)
+				a.logger.Infof("%v Receive prevote (%d) for block %v from unknown validator %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].PreVotes), voteMsg.BlockHash, voteMsg.Validator)
 			}
 			proposeBlockInfo.HasNewPreVote = true
 		}
@@ -192,6 +185,10 @@ func (a *actorV3) handlePreVoteMsg(voteMsg BFTVote) error {
 }
 
 func (a *actorV3) validatePreVote(proposeBlockInfo *ProposeBlockInfo) {
+	if !proposeBlockInfo.HasNewPreVote {
+		return
+	}
+
 	validVote := 0
 	errVote := 0
 
@@ -209,7 +206,7 @@ func (a *actorV3) validatePreVote(proposeBlockInfo *ProposeBlockInfo) {
 			if value, ok := committees[vote.Validator]; ok {
 				dsaKey = proposeBlockInfo.SigningCommittees[value].MiningPubKey[common.BridgeConsensus]
 			} else {
-				a.logger.Error("Receive vote from nonCommittee member")
+				a.logger.Error("Receive prevote from nonCommittee member")
 				continue
 			}
 			if len(dsaKey) == 0 {
@@ -221,10 +218,10 @@ func (a *actorV3) validatePreVote(proposeBlockInfo *ProposeBlockInfo) {
 			if err != nil {
 				a.logger.Error(dsaKey)
 				a.logger.Error(err)
-				proposeBlockInfo.Votes[id].IsValid = -1
+				proposeBlockInfo.PreVotes[id].IsValid = -1
 				errVote++
 			} else {
-				proposeBlockInfo.Votes[id].IsValid = 1
+				proposeBlockInfo.PreVotes[id].IsValid = 1
 				validVote++
 			}
 		case 1:
