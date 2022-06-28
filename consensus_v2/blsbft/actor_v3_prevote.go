@@ -4,9 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 /*
@@ -18,11 +16,11 @@ send prevote for propose block that
 */
 func (a *actorV3) maybePreVoteMsg() {
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
-		lockBlockHash := a.lockBlockHashByHeight[a.currentTimeSlot]
+		lockBlockHash := a.getLockBlockHash(a.chain.GetBestViewHeight())
 		if proposeBlockInfo.IsValid &&
 			!proposeBlockInfo.IsPreVoted &&
 			a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
-			(lockBlockHash == "" || lockBlockHash == proposeBlockInfo.block.Hash().String()) {
+			(lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
 			a.sendVote(proposeBlockInfo, "prevote")
 			proposeBlockInfo.IsPreVoted = true
 		}
@@ -44,26 +42,12 @@ func (a *actorV3) sendVote(
 				if err != nil {
 					a.logger.Error(err)
 					return NewConsensusError(UnExpectedError, err)
-				} else {
-					if !proposeBlockInfo.IsPreVoted { //not update database if field is already set
-						proposeBlockInfo.IsPreVoted = true
-						if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
-							return err
-						}
-					}
 				}
 			case "vote":
 				err := a.createAndSendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0))
 				if err != nil {
 					a.logger.Error(err)
 					return NewConsensusError(UnExpectedError, err)
-				} else {
-					if !proposeBlockInfo.IsVoted { //not update database if field is already set
-						proposeBlockInfo.IsVoted = true
-						if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
-							return err
-						}
-					}
 				}
 			default:
 				a.logger.Errorf("Send vote phase is not correct: %v", phase)
@@ -80,7 +64,7 @@ func (a *actorV3) createAndSendPreVote(
 	signingCommittees []incognitokey.CommitteePublicKey,
 ) error {
 
-	vote, err := a.CreatePreVote(userKey, block, signingCommittees)
+	vote, err := a.CreatePreVote(userKey, block)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -101,43 +85,14 @@ func (a *actorV3) createAndSendPreVote(
 func (a actorV3) CreatePreVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
-	committees []incognitokey.CommitteePublicKey,
 ) (*BFTVote, error) {
 	var vote = new(BFTVote)
-	bytelist := []blsmultisig.PublicKey{}
-	selfIdx := 0
 	userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-	for i, v := range committees {
-		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
-			selfIdx = i
-		}
-		bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
-	}
-
-	blsSig, err := userKey.BLSSignData(block.ProposeHash().GetBytes(), selfIdx, bytelist)
-	if err != nil {
-		return nil, NewConsensusError(UnExpectedError, err)
-	}
-
-	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(block.GetInstructions()) {
-		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes()) //proof is agg sig on block hash (not propose hash)
-		if err != nil {
-			return nil, NewConsensusError(UnExpectedError, err)
-		}
-	}
 	vote.Phase = "prevote"
-	vote.BLS = blsSig
-	vote.BRI = bridgeSig
-	vote.BlockHash = block.Hash().String()
+	vote.BlockHash = block.ProposeHash().String()
 	vote.Validator = userBLSPk
-	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
-	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
-	vote.PrevBlockHash = block.GetPrevHash().String()
-	vote.BlockHeight = block.GetHeight()
-	vote.CommitteeFromBlock = block.CommitteeFromBlock()
 	vote.ChainID = block.GetShardID()
-	err = vote.signVote(userKey)
+	err := vote.signVote(userKey)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
@@ -158,29 +113,12 @@ func (a *actorV3) handlePreVoteMsg(voteMsg BFTVote) error {
 			}
 			proposeBlockInfo.HasNewPreVote = true
 		}
-
-		if !proposeBlockInfo.ProposerSendPreVote {
-			for _, userKey := range a.userKeySet {
-				pubKey := userKey.GetPublicKey()
-				if proposeBlockInfo.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 { // if this node is proposer and not sending vote
-					var err error
-					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil {
-						bestViewHeight := a.chain.GetBestView().GetHeight()
-						if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
-							err := a.createAndSendPreVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees) // => send vote
-							if err != nil {
-								a.logger.Error(err)
-							} else {
-								proposeBlockInfo.ProposerSendPreVote = true
-							}
-						}
-					} else {
-						a.logger.Error(err)
-					}
-				}
-			}
-		}
 	}
+	// record new votes for restore
+	if err := AddVoteByBlockHashToDB(voteMsg.BlockHash, voteMsg); err != nil {
+		a.logger.Errorf("add receive block by hash error %+v", err)
+	}
+
 	return nil
 }
 

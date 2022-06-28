@@ -22,12 +22,13 @@ func (a *actorV3) maybeVoteMsg() {
 			!proposeBlockInfo.IsVoted {
 
 			if proposeBlockInfo.ValidPreVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
-				//TODO: lock this propose block info, so that, if same block height next time, we dont vote for different block hash
-				a.sendVote(proposeBlockInfo, "vote")
+				//set isVote = true (lock), so that, if at same block height next time, we dont vote for different block hash
 				proposeBlockInfo.IsVoted = true
-
+				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
+					return
+				}
+				a.sendVote(proposeBlockInfo, "vote")
 			}
-
 		}
 	}
 }

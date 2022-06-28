@@ -161,12 +161,13 @@ func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
 		}
 
 		//restore votes by block hash
-		votes, err := GetVotesByBlockHashFromDB(proposeBlockInfo.block.ProposeHash().String())
+		votes, prevote, err := GetVotesByBlockHashFromDB(proposeBlockInfo.block.ProposeHash().String())
 		if err != nil {
 			return nil, err
 		}
 
 		proposeBlockInfo.Votes = votes
+		proposeBlockInfo.PreVotes = prevote
 		res[k] = proposeBlockInfo
 	}
 
@@ -206,21 +207,27 @@ func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *Prop
 	return nil
 }
 
-func GetVotesByBlockHashFromDB(proposeHash string) (map[string]*BFTVote, error) {
+func GetVotesByBlockHashFromDB(proposeHash string) (map[string]*BFTVote, map[string]*BFTVote, error) {
 	votes, err := rawdb_consensus.GetVotesByBlockHash(rawdb_consensus.GetConsensusDatabase(), proposeHash)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	res := map[string]*BFTVote{}
+	vote := map[string]*BFTVote{}
+	preVote := map[string]*BFTVote{}
 	for validator, vData := range votes {
 		v := &BFTVote{}
 		err := json.Unmarshal(vData, v)
 		if err != nil {
 			continue
 		}
-		res[validator] = v
+		if v.Phase == "" || v.Phase == "vote" {
+			vote[validator] = v
+		} else {
+			preVote[validator] = v
+		}
+
 	}
-	return res, nil
+	return vote, preVote, nil
 }
 
 func (a *actorV2) GetReceiveBlockByHash(blockHash string) (*ProposeBlockInfo, bool) {

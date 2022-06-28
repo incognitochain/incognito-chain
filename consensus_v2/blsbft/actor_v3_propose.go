@@ -55,9 +55,13 @@ func (a *actorV3) maybeProposeBlock() error {
 		a.logger.Errorf("add current time slot propose history")
 	}
 
-	//TODO: get block that we already send vote message (blockhash that is lock for this height)
+	// get block that we already send vote message (blockhash that is lock for this height)
 	var block types.BlockInterface = nil
-	//if not create new block
+	lockBlockHash := a.getLockBlockHash(a.chain.GetBestViewHeight())
+	if lockBlockHash != nil {
+		block = lockBlockHash.block
+	}
+
 	if block == nil {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
@@ -80,6 +84,14 @@ func (a *actorV3) maybeProposeBlock() error {
 		if err != nil {
 			return NewConsensusError(BlockCreationError, err)
 		}
+	}
+
+	//this actor v3, finality height is always current height
+	switch block.(type) {
+	case *types.ShardBlock:
+		block.(*types.ShardBlock).Header.FinalityHeight = block.GetHeight()
+	case *types.BeaconBlock:
+		block.(*types.BeaconBlock).Header.FinalityHeight = block.GetHeight()
 	}
 
 	if block != nil {
@@ -148,12 +160,13 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 
 	//get vote for this propose block (case receive vote faster)
-	votes, err := GetVotesByBlockHashFromDB(block.ProposeHash().String())
+	votes, prevotes, err := GetVotesByBlockHashFromDB(block.ProposeHash().String())
 	if err != nil {
 		a.logger.Error("Cannot get vote by block hash for rebuild", err)
 		return err
 	}
 	proposeBlockInfo.Votes = votes
+	proposeBlockInfo.PreVotes = prevotes
 
 	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)

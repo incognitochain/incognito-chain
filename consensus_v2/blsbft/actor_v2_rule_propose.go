@@ -160,7 +160,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		isValidLemma2,
 	)
 	//get vote for this propose block (case receive vote faster)
-	votes, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
+	votes, _, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
 	if err != nil {
 		p.logger.Error("Cannot get vote by block hash for rebuild", err)
 		return nil, err

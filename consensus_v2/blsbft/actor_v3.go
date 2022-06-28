@@ -44,10 +44,9 @@ type actorV3 struct {
 	currentTime     int64
 	currentTimeSlot int64
 
-	proposeHistory        map[int64]struct{}
-	receiveBlockByHash    map[string]*ProposeBlockInfo    //blockProposeHash -> blockInfo
-	lockBlockHashByHeight map[int64]string                //height -> blockhash
-	voteHistory           map[uint64]types.BlockInterface // bestview height (previsous height )-> block
+	proposeHistory     map[int64]struct{}
+	receiveBlockByHash map[string]*ProposeBlockInfo    //blockProposeHash -> blockInfo
+	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
 	blockVersion int
 }
@@ -109,7 +108,6 @@ func newActorV3WithValue(
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 
-	//TODO: init lockBlockHashByHeight
 	return a
 }
 
@@ -756,17 +754,38 @@ func (a *actorV3) run() error {
 	return nil
 }
 
-func (a *actorV3) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+//get lock block hash, which is blockhash that we had send vote message
+//so that, we will not prevote for other block
+func (a *actorV3) getLockBlockHash(bestViewHeight uint64) (info *ProposeBlockInfo) {
+	for _, proposeBlockInfo := range a.receiveBlockByHash {
+		if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 && proposeBlockInfo.IsVoted {
+			info = proposeBlockInfo
+			break
+		}
+	}
+	return info
+}
 
+//job to validate propose block
+func (a *actorV3) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+	//not validate if already valid
 	if proposeBlockInfo.IsValid {
 		return nil
 	}
 
+	//interval 1s
+	if time.Since(proposeBlockInfo.LastValidateTime).Seconds() < 1 {
+		return nil
+	}
+
+	//should be next block height
 	if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
 		return errors.New("Not expected height!")
 	}
 
-	if blockHash := a.lockBlockHashByHeight[int64(bestViewHeight+1)]; blockHash != "" && blockHash != proposeBlockInfo.block.Hash().String() {
+	//should be the same with lock block hash
+	lockProposeInfo := a.getLockBlockHash(bestViewHeight)
+	if lockProposeInfo != nil && lockProposeInfo.block.Hash().String() != proposeBlockInfo.block.Hash().String() {
 		return errors.New("Not expected locked blockhash!")
 	}
 
@@ -775,7 +794,6 @@ func (a *actorV3) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	if err != nil {
 		return errors.New("Block is invalidated!")
 	}
-
 	proposeBlockInfo.IsValid = true
 	return nil
 }
