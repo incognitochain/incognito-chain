@@ -76,5 +76,28 @@
                 "network_id": 4
             }
         }
+    },
+    "230620223": {
+        "f5d88e2e3c8f02d6dc1e01b54c90f673d730bef7d941aeec81ad1e1db690961f": {
+            "dae027b21d8d57114da11209dce8eeb587d01adf59d4fc356a8be5eedc146859" : {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "network_id": 3
+            }
+        },
+        "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+            "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474" : {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "network_id": 4
+            }
+        },
+        "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+            "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2" : {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "network_id": 2
+            }
+        }
     }
 }
