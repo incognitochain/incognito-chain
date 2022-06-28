@@ -2,6 +2,7 @@ package bridgeagg
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"reflect"
 	"testing"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -350,4 +352,48 @@ func CheckInterfacesIsEqual(expected interface{}, actual interface{}) error {
 		return fmt.Errorf("expected %s but get %s", string(expectedData), string(actualData))
 	}
 	return nil
+}
+
+func TestA(t *testing.T) {
+
+	externalTokenIDs := []string{
+		"0x07de306FF27a2B630B1141956844eB1552B956B5",
+		"0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
+		"0x75b0622cec14130172eae9cf166b92e5c112faff",
+		"0x64544969ed7EBf5f083679233325356EbE738930",
+		"0x0000000000000000000000000000000000000000",
+		"0xd66c6b4f0be8ce5b39d52e0fd1344c389929b378",
+		"0xa36085F69e2889c224210F603D836748e7dC0088",
+		"0x84b9B910527Ad5C03A9Ca831909E21e236EA7b06",
+		"0x326c977e6efc84e512bb9c30f76e30c160ed06fb",
+		"0xfaFedb041c0DD4fA2Dc0d87a6B0979Ee6FA7af5F",
+		"0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa",
+		"0x001b3b4d0f3714ca98ba10f6042daebf0b1b7b6f",
+		"0x9440c3bB6Adb5F0D5b8A460d8a8c010690daC2E8",
+	}
+
+	prefixs := []string{
+		"",
+		common.BSCPrefix,
+		"",
+		common.BSCPrefix,
+		"",
+		common.BSCPrefix,
+		"",
+		common.BSCPrefix,
+		common.PLGPrefix,
+		common.FTMPrefix,
+		"",
+		common.PLGPrefix,
+		common.FTMPrefix,
+	}
+
+	for i := 0; i < len(prefixs); i++ {
+		tokenAddr := rCommon.HexToAddress(externalTokenIDs[i])
+		res := append([]byte(prefixs[i]), tokenAddr.Bytes()...)
+
+		bytes := base64.StdEncoding.EncodeToString(res)
+		fmt.Printf("bytes: %v\n", bytes)
+	}
+
 }
