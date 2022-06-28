@@ -9,25 +9,23 @@ import (
     "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
     metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
     "github.com/incognitochain/incognito-chain/privacy"
-    "github.com/incognitochain/incognito-chain/wallet"
 )
 
 type BurnForCallRequest struct {
-    BurnTokenID    common.Hash         `json:"BurnTokenID"`
-    RefundReceiver privacy.OTAReceiver `json:"Receiver"`
+    BurnTokenID common.Hash `json:"BurnTokenID"`
     BurnForCallRequestData
     metadataCommon.MetadataBase
 }
 
 type BurnForCallRequestData struct {
-    BurningAmount       uint64      `json:"BurningAmount"`
-    MinExpectedAmount   uint64      `json:"MinExpectedAmount"`
-    IncTokenID          common.Hash `json:"IncTokenID"`
-    ExternalCalldata    string      `json:"ExternalCalldata"`
-    ExternalCallAddress string      `json:"ExternalCallAddress"`
-    ReceiveToken        string      `json:"ReceiveToken"`
-    ReceiveAddress      string      `json:"ReceiveAddress"`
-    ReceiveType         uint8       `json:"ReceiveType"`
+    BurningAmount       uint64              `json:"BurningAmount"`
+    MinExpectedAmount   uint64              `json:"MinExpectedAmount"`
+    IncTokenID          common.Hash         `json:"IncTokenID"`
+    ExternalCalldata    string              `json:"ExternalCalldata"`
+    ExternalCallAddress string              `json:"ExternalCallAddress"`
+    ReceiveToken        string              `json:"ReceiveToken"`
+    RedepositReceiver   privacy.OTAReceiver `json:"RedepositReceiver"`
+    WithdrawAddress     string              `json:"WithdrawAddress"`
 }
 
 func (bReq BurnForCallRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
@@ -35,24 +33,16 @@ func (bReq BurnForCallRequest) ValidateTxWithBlockChain(tx metadataCommon.Transa
 }
 
 func (bReq BurnForCallRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-    hexStrings := []string{bReq.ExternalCalldata, bReq.ExternalCallAddress, bReq.ReceiveToken}
-    switch bReq.ReceiveType {
-    case metadataCommon.BurnForCallReceiveTypeRedeposit:
-        keyWallet, err := wallet.Base58CheckDeserialize(bReq.ReceiveAddress)
-        if err != nil {
-            return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("cannot base58-decode %s", bReq.ReceiveAddress))
-        }
-        pAddr := keyWallet.KeySet.PaymentAddress
-        if len(pAddr.Pk) != privacy.Ed25519KeySize || len(pAddr.Tk) != privacy.Ed25519KeySize || len(pAddr.OTAPublic) != privacy.Ed25519KeySize {
-            return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("invalid key length in payment address %s", bReq.ReceiveAddress))
-        }
-    case metadataCommon.BurnForCallReceiveTypeWithdraw:
-        hexStrings = append(hexStrings, bReq.ReceiveAddress)
-    default:
-        return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("invalid receive type %v", bReq.ReceiveType))
-    }
+    hexStrings := []string{bReq.ExternalCalldata}
     for _, s := range hexStrings {
         if _, err := hex.DecodeString(s); err != nil {
+            return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("invalid data %s, expect hex string", s))
+        }
+    }
+
+    extAddressStrings := []string{bReq.ExternalCallAddress, bReq.ReceiveToken, bReq.WithdrawAddress}
+    for _, s := range extAddressStrings {
+        if decoded, err := hex.DecodeString(s); err != nil || len(decoded) != metadataCommon.ExternalAddressLen {
             return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("invalid data %s, expect hex string", s))
         }
     }
@@ -104,7 +94,7 @@ func (bReq *BurnForCallRequest) CalculateSize() uint64 {
 func (request *BurnForCallRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
     var result []metadataCommon.OTADeclaration
     result = append(result, metadataCommon.OTADeclaration{
-        PublicKey: request.RefundReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+        PublicKey: request.RedepositReceiver.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
     })
     return result
 }

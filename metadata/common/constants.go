@@ -364,6 +364,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
+	strconv.Itoa(BurnForCallConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{
@@ -384,6 +385,5 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 }
 
 const (
-	BurnForCallReceiveTypeRedeposit = iota
-	BurnForCallReceiveTypeWithdraw
+	ExternalAddressLen        = 20
 )
