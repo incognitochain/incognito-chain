@@ -495,7 +495,7 @@ func (p *Pruner) handleNewRole(newRole *pubsub.NodeRole) error {
 
 func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error {
 	status := p.statuses[shardBestState.ShardID]
-	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) {
+	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) || config.Config().ForcePrune {
 		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
 			p.wg.Add(1)
 			p.insertLock.Lock()
@@ -534,12 +534,15 @@ func (p *Pruner) watchStorageChange() {
 				}
 				t1 := big.NewInt(0).Mul(big.NewInt(newSize), big.NewInt(10000))
 				t2 := big.NewInt(0).Mul(big.NewInt(oldSize), big.NewInt(12500))
-				if t1.Cmp(t2) >= 0 {
-					ec := ExtendedConfig{
-						Config:  Config{ShouldPruneByHash: false},
-						ShardID: byte(i),
+				if t1.Cmp(t2) >= 0 || config.Config().ForcePrune {
+					if p.statuses[byte(i)] != rawdbv2.ProcessingPruneByHashStatus && p.statuses[byte(i)] != rawdbv2.ProcessingPruneByHeightStatus {
+						ec := ExtendedConfig{
+							Config:  Config{ShouldPruneByHash: false},
+							ShardID: byte(i),
+						}
+						p.TriggerCh <- ec
 					}
-					p.TriggerCh <- ec
+
 				}
 			}
 			time.Sleep(time.Minute * 5)
