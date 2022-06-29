@@ -1274,7 +1274,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 
-	if len(userKeySet) == 0 {
+	if len(userKeySet) == 0 && block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
 		a.logger.Infof("HandleProposeMsg, Block Hash %+v,  Block Height %+v, round %+v, NOT in round for voting",
 			block.FullHashString(), block.GetHeight(), block.GetRound())
 		// Log only
