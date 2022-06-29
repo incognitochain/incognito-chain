@@ -364,6 +364,7 @@ func calculateRewardMultiset(
 
 func calculateReward(
 	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
+	curView *BeaconBestState,
 	numberOfActiveShards int,
 	beaconHeight uint64,
 	epoch uint64,
@@ -411,6 +412,8 @@ func calculateReward(
 			percentCustodianRewards,
 			percentForIncognitoDAO,
 			numberOfActiveShards,
+			curView.GetBeaconCommittee(),
+			curView.GetShardCommittee(),
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
@@ -482,6 +485,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForCustodian,
 			err = calculateReward(
 			splitRewardRuleProcessor,
+			curView,
 			curView.ActiveShards, blkHeight, epoch,
 			curView.GetBeaconRewardStateDB(),
 			isSplitRewardForCustodian, percentCustodianRewards,

@@ -883,7 +883,7 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	beaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
-	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
+	firstBeaconHeightOfEpoch := GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)

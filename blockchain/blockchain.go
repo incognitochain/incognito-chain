@@ -1029,7 +1029,7 @@ func (bc *BlockChain) GetRandomTimeInEpoch(epoch uint64) uint64 {
 	}
 }
 
-func (bc *BlockChain) GetFirstBeaconHeightInEpoch(epoch uint64) uint64 {
+func GetFirstBeaconHeightInEpoch(epoch uint64) uint64 {
 	params := config.Param()
 	if epoch < params.EpochParam.EpochV2BreakPoint {
 		return (epoch-1)*params.EpochParam.NumberOfBlockInEpoch + 1

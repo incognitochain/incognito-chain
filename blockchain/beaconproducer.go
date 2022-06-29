@@ -778,7 +778,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		enableFeature = append(enableFeature, feature)
 	}
 
-	if len(enableFeature) > 0 {
+	if len(enableFeature) > 0 && curView.BeaconHeight == GetFirstBeaconHeightInEpoch(curView.Epoch) {
 		//generate instruction for valid condition
 		inst := instruction.NewEnableFeatureInstructionWithValue(enableFeature)
 		instructions = append(instructions, inst.ToString())
