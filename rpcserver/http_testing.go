@@ -4,15 +4,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"reflect"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/patrickmn/go-cache"
-	"io/ioutil"
-	"log"
-	"reflect"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 
@@ -502,8 +503,10 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
 	}
 
-	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
-	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
+	sChain := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)]
+
+	shardBestState := sChain.GetBestState()
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(sChain.CalculateTimeSlot(shardBestState.BeaconHeight, time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
 	committee, _ := tempCommittee.ToBase58()
 
 	return map[string]interface{}{

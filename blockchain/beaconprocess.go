@@ -206,6 +206,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
+	bcChain := blockchain.BeaconChain
 	startTimeVerifyPreProcessingBeaconBlock := time.Now()
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
@@ -233,8 +234,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive beacon block with timestamp %+v greater than previous block timestamp %+v", beaconBlock.Header.Timestamp, previousBeaconBlock.Header.Timestamp))
 	}
 
-	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) && beaconBlock.GetVersion() != 3 {
-		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
+	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && bcChain.CalculateTimeSlot(beaconBlock.GetHeight(), beaconBlock.Header.ProposeTime) <= bcChain.CalculateTimeSlot(beaconBlock.GetHeight(), curView.BestBlock.GetProposeTime()) && beaconBlock.GetVersion() != 3 {
+		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", bcChain.CalculateTimeSlot(beaconBlock.GetHeight(), beaconBlock.Header.ProposeTime), bcChain.CalculateTimeSlot(beaconBlock.GetHeight(), curView.BestBlock.GetProposeTime())))
 	}
 
 	if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash, curView.CommitteeStateVersion()) {
@@ -385,8 +386,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *types.BeaconBlock, isVerifySig bool) error {
 	//verify producer via index
 	startTimeVerifyWithBestState := time.Now()
-
-	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.GetBeaconCommittee(), beaconBestState.MinBeaconCommitteeSize); err != nil {
+	bcChain := blockchain.BeaconChain
+	produceTimeSlot := bcChain.CalculateTimeSlot(beaconBlock.GetBeaconHeight(), beaconBlock.GetProduceTime())
+	proposeTimeSlot := bcChain.CalculateTimeSlot(beaconBlock.GetBeaconHeight(), beaconBlock.GetProposeTime())
+	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.GetBeaconCommittee(), beaconBestState.MinBeaconCommitteeSize, produceTimeSlot, proposeTimeSlot); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(beaconBlock, common.BlsConsensus); err != nil {
@@ -518,6 +521,20 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	// signal of random parameter from beacon block
 	// update BestShardHash, BestBlock, BestBlockHash
+	for idx, feature := range config.Param().BlockTimeFeatures {
+		if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
+			if triggerFeature == beaconBlock.GetBeaconHeight() {
+				blockchain.BeaconChain.UpdateArchorTime(triggerFeature-1, beaconBlock)
+				if idx == 1 {
+					shardHeights := map[byte]uint64{}
+					for sID, sState := range beaconBlock.Body.ShardState {
+						shardHeights[sID] = sState[len(sState)-1].Height
+					}
+					beaconBestState.RewardInfo.Minted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
+				}
+			}
+		}
+	}
 
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *beaconBlock.Hash()
@@ -769,7 +786,8 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
 	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION {
-		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
+		timeSlot := bc.BeaconChain.CalculateTimeSlot(curView.GetHeight(), shardState.ProposerTime)
+		// timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
@@ -930,7 +948,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 		Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
 	}
-	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
+	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB, newBestState)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}

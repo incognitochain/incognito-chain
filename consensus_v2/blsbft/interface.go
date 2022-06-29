@@ -1,6 +1,8 @@
 package blsbft
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -9,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
-	"time"
 )
 
 //Used interfaces
@@ -45,6 +46,7 @@ type Chain interface {
 	CurrentHeight() uint64
 	GetCommitteeSize() int
 	IsBeaconChain() bool
+	CalculateTimeSlot(beaconHeight uint64, curTime int64) int64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int

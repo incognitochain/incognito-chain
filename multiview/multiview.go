@@ -29,6 +29,10 @@ type View interface {
 	CompareCommitteeFromBlock(View) int
 }
 
+type Chain interface {
+	CalculateTimeSlot(beaconHeight uint64, curTime int64) int64
+}
+
 type MultiView interface {
 	ReplaceBlockIfImproveFinality(block types.BlockInterface) (bool, error)
 	IsInstantFinality() bool
@@ -54,6 +58,8 @@ type multiView struct {
 	finalView         View //view that must not be revert
 	expectedFinalView View //view at this time seen as final view (shardchain could revert from beacon view)
 	bestView          View // best view from final view
+
+	timeSlotCalculator Chain
 }
 
 func NewMultiView() *multiView {
@@ -254,8 +260,8 @@ func (s *multiView) updateViewState(newView View) {
 			if prev1View == nil || s.expectedFinalView.GetHeight() == prev1View.GetHeight() {
 				return
 			}
-			bestViewTimeSlot := common.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
-			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+			bestViewTimeSlot := s.timeSlotCalculator.CalculateTimeSlot(s.bestView.GetBlock().GetBeaconHeight(), s.bestView.GetBlock().GetProposeTime())
+			prev1TimeSlot := s.timeSlotCalculator.CalculateTimeSlot(prev1View.GetBlock().GetBeaconHeight(), prev1View.GetBlock().GetProposeTime())
 			if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 				s.expectedFinalView = prev1View
 			}

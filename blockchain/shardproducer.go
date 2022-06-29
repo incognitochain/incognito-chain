@@ -402,6 +402,14 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
 	st = time.Now()
 	txsToAdd := []metadata.Transaction{}
+	totalTxsReminder := curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
+	if totalTxsReminder < 0 {
+		totalTxsReminder = 0
+	} else {
+		if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
+			totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+		}
+	}
 	if !blockGenerator.chain.config.usingNewPool {
 		txToRemove := []metadata.Transaction{}
 		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
@@ -410,6 +418,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 			blockCreationLeftOver.Nanoseconds(),
 			bView.BeaconHeight,
 			curView,
+			totalTxsReminder,
 		)
 		if len(txsToAdd) == 0 {
 			Logger.log.Info("Creating empty block...")
@@ -423,6 +432,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 			maxSize,
 			blockCreationLeftOver*4,
 			blockCreationLeftOver,
+			totalTxsReminder,
 		)
 	}
 	if len(txsToAdd) > 0 {
@@ -785,6 +795,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	blockCreationTimeLeftOver int64,
 	beaconHeight uint64,
 	curView *ShardBestState,
+	maxTxs int64,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
@@ -836,11 +847,14 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 						continue
 					}
 					tempTx := tempTxDesc.Tx
-					totalFee += tempTx.GetTxFee()
 					tempSize := tempTx.GetTxActualSize()
 					if currentSize+tempSize >= common.MaxBlockSize {
 						break
 					}
+					if len(txsToAdd)+1 > int(maxTxs) {
+						return txsToAdd, txToRemove, totalFee
+					}
+					totalFee += tempTx.GetTxFee()
 					currentSize += tempSize
 					txsToAdd = append(txsToAdd, tempTx)
 				}

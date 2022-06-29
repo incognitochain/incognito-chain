@@ -3,10 +3,11 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -254,14 +255,14 @@ type ReProposeBlockInfo struct {
 	RootHash          common.Hash
 }
 
-func createReProposeHashSignature(privateKey []byte, block types.BlockInterface) (string, error) {
+func createReProposeHashSignature(chain Chain, privateKey []byte, block types.BlockInterface) (string, error) {
 
 	reProposeBlockInfo := newReProposeBlockInfo(
 		block.GetPrevHash(),
 		block.GetProducer(),
-		common.CalculateTimeSlot(block.GetProduceTime()),
+		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime()),
 		block.GetProposer(),
-		common.CalculateTimeSlot(block.GetProposeTime()),
+		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()),
 		block.GetAggregateRootHash(),
 	)
 
@@ -295,14 +296,14 @@ func verifyReProposeHashSignature(
 	return reProposeBlockInfo.VerifySignature(sig, publicKey)
 }
 
-func verifyReProposeHashSignatureFromBlock(sig string, block types.BlockInterface) (bool, error) {
+func verifyReProposeHashSignatureFromBlock(chain Chain, sig string, block types.BlockInterface) (bool, error) {
 	return verifyReProposeHashSignature(
 		sig,
 		block.GetPrevHash(),
 		block.GetProducer(),
-		common.CalculateTimeSlot(block.GetProduceTime()),
+		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime()),
 		block.GetProposer(),
-		common.CalculateTimeSlot(block.GetProposeTime()),
+		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()),
 		block.GetAggregateRootHash(),
 	)
 }

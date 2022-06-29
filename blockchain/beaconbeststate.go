@@ -29,6 +29,10 @@ import (
 const (
 	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
 	INSTANT_FINALITY_FEATURE      = "instantfinality"
+	BLOCKTIME_DEFAULT             = "blocktimedef"
+	BLOCKTIME_20                  = "blocktime20"
+	BLOCKTIME_10                  = "blocktime10"
+	EPOCHV2                       = "epochparamv2"
 )
 
 // BestState houses information about the current best block and other info
@@ -46,6 +50,11 @@ type BeaconRootHash struct {
 	FeatureStateDBRootHash   common.Hash
 	RewardStateDBRootHash    common.Hash
 	SlashStateDBRootHash     common.Hash
+}
+
+type RewardParam struct {
+	Cap    uint64
+	Minted uint64
 }
 
 type BeaconBestState struct {
@@ -70,6 +79,7 @@ type BeaconBestState struct {
 	NumberOfShardBlock               map[byte]uint        `json:"NumberOfShardBlock"`
 	TriggeredFeature                 map[string]uint64    `json:"TriggeredFeature"`
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
+	RewardInfo                       RewardParam          `json:"RewardInfo"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -1245,6 +1255,34 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	}
 
 	return nonSlashingCommittees
+}
+
+func (curView *BeaconBestState) GetBlockTimeFeature(blkHeight uint64) (string, int) {
+	triggerFeature := curView.TriggeredFeature
+	features := config.Param().BlockTimeFeatures
+	currentBlkTimeFeatureIdx := 0
+	for idx, f := range features {
+		if triggerHeight, ok := triggerFeature[f]; ok {
+			if (triggerHeight != 0) && (triggerHeight <= blkHeight) {
+				currentBlkTimeFeatureIdx = idx
+			}
+		}
+	}
+	return features[currentBlkTimeFeatureIdx], currentBlkTimeFeatureIdx
+}
+
+func (curView *BeaconBestState) GetBlockTimeInterval(blkHeight uint64) int64 {
+	feature, _ := curView.GetBlockTimeFeature(blkHeight)
+	blockTimeMap := config.Param().BlockTimeParam
+	return blockTimeMap[feature]
+}
+
+func (curView *BeaconBestState) GetBasicReward(blkHeight uint64) uint64 {
+	curFeature, _ := curView.GetBlockTimeFeature(blkHeight)
+	blockTimeMap := config.Param().BlockTimeParam
+	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+	curBlockTime := blockTimeMap[curFeature]
+	return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime)
 }
 
 func GetMaxCommitteeSize(currentMaxShardCommittee int, triggerFeature map[string]uint64, blkHeight uint64) int {

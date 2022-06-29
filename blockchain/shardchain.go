@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -35,6 +37,13 @@ type ShardChain struct {
 
 	TxPool      txpool.TxPool
 	TxsVerifier txpool.TxVerifier
+	archorTime  struct {
+		archorMap map[uint64]struct {
+			timeLock int64
+			timeSlot int64
+		}
+		heights []uint64
+	}
 
 	insertLock sync.Mutex
 }
@@ -48,7 +57,7 @@ func NewShardChain(
 	tp txpool.TxPool,
 	tv txpool.TxVerifier,
 ) *ShardChain {
-	return &ShardChain{
+	chain := &ShardChain{
 		shardID:     shardID,
 		multiView:   multiView,
 		BlockGen:    blockGen,
@@ -57,6 +66,8 @@ func NewShardChain(
 		TxPool:      tp,
 		TxsVerifier: tv,
 	}
+	chain.InitArchorTime()
+	return chain
 }
 
 func (chain *ShardChain) GetDatabase() incdb.Database {
@@ -247,9 +258,13 @@ func (chain *ShardChain) CreateNewBlock(
 		if err != nil {
 			return nil, err
 		}
-		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
-		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.ProposeTime)
+		prevShardBlk, ok := previousBlock.(*types.ShardBlock)
+		if !ok {
+			return nil, errors.New("Can not get shard block")
+		}
+		previousProposeTimeSlot := chain.CalculateTimeSlot(prevShardBlk.Header.BeaconHeight, prevShardBlk.GetProposeTime())
+		previousProduceTimeSlot := chain.CalculateTimeSlot(prevShardBlk.Header.BeaconHeight, prevShardBlk.GetProduceTime())
+		currentTimeSlot := chain.CalculateTimeSlot(newBlock.Header.BeaconHeight, newBlock.Header.ProposeTime)
 
 		// if previous block is finalized or same propose/produce timeslot
 		// and current block is produced/proposed next block time
@@ -289,10 +304,14 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 		if err != nil {
 			return nil, err
 		}
+		prevShardBlk, ok := previousBlock.(*types.ShardBlock)
+		if !ok {
+			return nil, errors.New("Can not get shard block")
+		}
 		if isValidRePropose {
 			if version >= types.INSTANT_FINALITY_VERSION {
-				previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-				previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
+				previousProposeTimeSlot := chain.CalculateTimeSlot(prevShardBlk.Header.BeaconHeight, previousBlock.GetProposeTime())
+				previousProduceTimeSlot := chain.CalculateTimeSlot(prevShardBlk.Header.BeaconHeight, previousBlock.GetProduceTime())
 				if previousBlock.GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}
@@ -630,6 +649,10 @@ func (chain *ShardChain) GetSigningCommittees(
 }
 
 func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
+	shardBlk, ok := block.(*types.ShardBlock)
+	if !ok {
+		return errors.New("Can not get shard block")
+	}
 	err := rawdb_consensus.StoreShardFinalityProof(
 		rawdb_consensus.GetConsensusDatabase(),
 		byte(chain.shardID),
@@ -639,9 +662,9 @@ func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finality
 		reProposeSig,
 		block.GetAggregateRootHash(),
 		block.GetProducer(),
-		common.CalculateTimeSlot(block.GetProduceTime()),
+		chain.CalculateTimeSlot(shardBlk.Header.BeaconHeight, block.GetProduceTime()),
 		block.GetProposer(),
-		common.CalculateTimeSlot(block.GetProposeTime()),
+		chain.CalculateTimeSlot(shardBlk.Header.BeaconHeight, block.GetProposeTime()),
 	)
 	if err != nil {
 		return err
@@ -663,4 +686,56 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 	}
 
 	return shardBlock.(*types.ShardBlock), m, nil
+}
+
+func (chain *ShardChain) CalculateTimeSlot(beaconHeight uint64, curTime int64) int64 {
+	curBlockTime := chain.Blockchain.GetBeaconBestState().GetBlockTimeInterval(beaconHeight)
+	archorTime := chain.archorTime
+	for h := len(chain.archorTime.heights) - 1; h >= 0; h-- {
+		if beaconHeight > archorTime.heights[h] {
+			timeLockInfo := archorTime.archorMap[archorTime.heights[h]]
+			return timeLockInfo.timeSlot + int64(math.Floor(float64((curTime-timeLockInfo.timeLock)/curBlockTime)))
+		}
+	}
+	return -1
+}
+
+func (chain *ShardChain) UpdateArchorTime(beaconHeight uint64, shardBlock *types.ShardBlock) {
+	timeSlot := chain.CalculateTimeSlot(beaconHeight, shardBlock.GetProduceTime())
+	archorTime := chain.archorTime
+	if _, ok := archorTime.archorMap[beaconHeight]; ok {
+		return
+	}
+	archorTime.heights = append(archorTime.heights, beaconHeight)
+	archorTime.archorMap[beaconHeight] = struct {
+		timeLock int64
+		timeSlot int64
+	}{
+		timeLock: shardBlock.GetProduceTime(),
+		timeSlot: timeSlot,
+	}
+}
+
+func (chain *ShardChain) InitArchorTime() {
+	chain.archorTime = struct {
+		archorMap map[uint64]struct {
+			timeLock int64
+			timeSlot int64
+		}
+		heights []uint64
+	}{
+		archorMap: map[uint64]struct {
+			timeLock int64
+			timeSlot int64
+		}{},
+		heights: []uint64{},
+	}
+	chain.archorTime.heights = []uint64{0}
+	chain.archorTime.archorMap[0] = struct {
+		timeLock int64
+		timeSlot int64
+	}{
+		timeLock: 0,
+		timeSlot: 0,
+	}
 }

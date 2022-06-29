@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -969,7 +970,8 @@ func (bc *BlockChain) GetEpochByHeight(beaconHeight uint64) uint64 {
 
 func (bc *BlockChain) GetEpochNextHeight(beaconHeight uint64) (uint64, bool) {
 	beaconHeight++
-	return bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
+	epoch, isFisrtHeight := bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
+	return epoch, isFisrtHeight
 }
 
 func (bc *BlockChain) getEpochAndIsFistHeightInEpoch(beaconHeight uint64) (uint64, bool) {
@@ -1264,4 +1266,25 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
+}
+
+func (blockchain *BlockChain) CalculateTimeSlot(beaconHeight uint64, prevTimeSlot, prevTimeInSeconds, timeInSeconds int64) int64 {
+	curBlockTime := blockchain.GetBeaconBestState().GetBlockTimeInterval(beaconHeight)
+	return prevTimeSlot + int64(math.Floor(float64((timeInSeconds-prevTimeInSeconds)/curBlockTime)))
+}
+
+func (bc *BlockChain) CalculateMintedPRVWithDefaultBlocktime(shardHeights map[byte]uint64) uint64 {
+	total := uint64(0)
+	blkPerYear := GetNumberBlkPerYear(BLOCKTIME_DEFAULT)
+	for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
+		years := shardHeights[sID] / blkPerYear
+		blksReminder := shardHeights[sID] % blkPerYear
+		basicReward := config.Param().BasicReward
+		for year := 1; year <= int(years); year++ {
+			reward := bc.getRewardAmountV2(basicReward, uint64(year))
+			total += reward * blkPerYear
+		}
+		total += blksReminder * bc.getRewardAmountV2(basicReward, uint64(years+1))
+	}
+	return total
 }

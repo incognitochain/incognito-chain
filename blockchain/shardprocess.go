@@ -309,6 +309,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestState,
 	shardBlock *types.ShardBlock, beaconBlocks []*types.BeaconBlock,
 	shardID byte, isPreSign bool, committees []incognitokey.CommitteePublicKey) error {
+	shChain := blockchain.ShardChain[shardID]
 	startTimeVerifyPreProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	if shardBlock.Header.ShardID != shardID {
@@ -353,8 +354,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive shardBlock has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, shardBlock.Header.Timestamp))
 	}
 
-	if shardBlock.GetVersion() >= types.MULTI_VIEW_VERSION && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(shardBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
-		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(shardBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
+	if shardBlock.GetVersion() >= types.MULTI_VIEW_VERSION && curView.BestBlock.GetProposeTime() > 0 && shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, shardBlock.Header.ProposeTime) <= shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, curView.BestBlock.GetProposeTime()) {
+		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, shardBlock.Header.ProposeTime), shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, curView.BestBlock.GetProposeTime())))
 	}
 
 	// Verify transaction root
@@ -689,9 +690,11 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	startTimeVerifyBestStateWithShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
-
+	shChain := blockchain.ShardChain[shardBestState.ShardID]
+	produceTimeSlot := shChain.CalculateTimeSlot(shardBlock.GetBeaconHeight(), shardBlock.GetProduceTime())
+	proposeTimeSlot := shChain.CalculateTimeSlot(shardBlock.GetBeaconHeight(), shardBlock.GetProposeTime())
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength()); err != nil {
+		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength(), produceTimeSlot, proposeTimeSlot); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -739,6 +742,16 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	var (
 		err error
 	)
+
+	for _, beaconBlk := range beaconBlocks {
+		for _, feature := range config.Param().BlockTimeFeatures {
+			if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
+				if triggerFeature == beaconBlk.GetBeaconHeight() {
+					blockchain.ShardChain[oldBestState.ShardID].UpdateArchorTime(triggerFeature-1, shardBlock)
+				}
+			}
+		}
+	}
 	startTimeUpdateShardBestState := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	shardBestState := NewShardBestState()
@@ -776,6 +789,15 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			temp++
 		}
 	}
+	maxTxsReminder := oldBestState.MaxTxsPerBlockRemainder - int64(len(shardBlock.Body.Transactions))
+	if maxTxsReminder > 0 {
+		if shardBestState.MaxTxsPerBlockRemainder+maxTxsReminder >= (1 << 20) {
+			shardBestState.MaxTxsPerBlockRemainder = (1 << 20)
+		} else {
+			shardBestState.MaxTxsPerBlockRemainder += maxTxsReminder
+		}
+	}
+
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 
 	//update trigger feature

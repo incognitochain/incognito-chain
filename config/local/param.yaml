@@ -130,6 +130,22 @@ auto_enable_feature:
   #     min_trigger: 15
   #     force_trigger: 1000000000
   #     require_percentage: 90
+  - blocktime20:
+      min_trigger: 10892003
+      force_trigger: 1000000000
+      require_percentage: 90 
+  - blocktime10:
+      min_trigger: 10892003
+      force_trigger: 1000000000
+      require_percentage: 90
+blocktime_param:
+  - "blocktimedef": 40
+  - "blocktime20": 20
+  - "blocktime10": 10   
+blocktime_features: ["blocktimedef", "blocktime20"]
+transactions_param:
+  - lowerbound: 15
+  - upperbound: 100 
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed

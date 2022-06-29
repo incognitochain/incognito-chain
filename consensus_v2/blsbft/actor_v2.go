@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"log"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -544,7 +545,8 @@ func (a *actorV2) run() error {
 					continue
 				}
 				a.currentTime = time.Now().Unix()
-				currentTimeSlot := common.CalculateTimeSlot(a.currentTime)
+				bestView := a.chain.GetBestView()
+				currentTimeSlot := a.chain.CalculateTimeSlot(bestView.GetBlock().GetBeaconHeight(), a.currentTime)
 
 				newTimeSlot := false
 				if a.currentTimeSlot != currentTimeSlot {
@@ -552,10 +554,9 @@ func (a *actorV2) run() error {
 				}
 
 				a.currentTimeSlot = currentTimeSlot
-				bestView := a.chain.GetBestView()
 
 				//set round for monitor
-				round := a.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				round := a.currentTimeSlot - a.chain.CalculateTimeSlot(bestView.GetBlock().GetBeaconHeight(), bestView.GetBlock().GetProposeTime())
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
 				signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
@@ -566,7 +567,7 @@ func (a *actorV2) run() error {
 
 				userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
-					common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
+					a.chain.CalculateTimeSlot(bestView.GetBlock().GetBeaconHeight(), bestView.GetBlock().GetProposeTime()),
 					proposerPk,
 					userKeySet,
 				)
@@ -576,10 +577,10 @@ func (a *actorV2) run() error {
 					a.logger.Info("======================================================")
 					a.logger.Info("")
 					if shouldListen {
-						a.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", a.chainKey, common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
+						a.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", a.chainKey, a.currentTimeSlot, bestView.GetHeight()+1, round)
 					}
 					if shouldPropose {
-						a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", a.chainKey, common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
+						a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", a.chainKey, a.currentTimeSlot, bestView.GetHeight()+1, round)
 					}
 				}
 
@@ -605,12 +606,12 @@ func (a *actorV2) run() error {
 							GetValidFinalityProof(proposeBlockInfo.block, a.currentTimeSlot)
 						a.logger.Infof("Timeslot %+v, height %+v | Attempt to re-propose block height %+v, hash %+v, produce timeslot %+v,"+
 							" is enough finality proof %+v, false reason %+v",
-							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1,
+							a.currentTimeSlot, bestView.GetHeight()+1,
 							proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
 							proposeBlockInfo.block.GetProduceTime(), isEnoughLemma2Proof, failReason)
 					} else {
 						a.logger.Infof("Timeslot %+v, height %+v | Attempt to create new block",
-							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1)
+							a.currentTimeSlot, bestView.GetHeight()+1)
 					}
 
 					if createdBlk, err := a.proposeBlock(
@@ -643,7 +644,7 @@ func (a *actorV2) run() error {
 							if err != nil {
 								a.logger.Error("Send BFT Propose Message Failed", err)
 							}
-							a.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), a.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.FullHashString())
+							a.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), a.currentTimeSlot, a.chain.CalculateTimeSlot(createdBlk.GetBeaconHeight(), createdBlk.GetProduceTime()), createdBlk.FullHashString())
 						}
 					}
 				}
@@ -1094,7 +1095,7 @@ func (a *actorV2) getCommitteeForNewBlock(
 			return signingCommittees, committees, err
 		}
 		_, proposerIndex = a.chain.GetProposerByTimeSlotFromCommitteeList(
-			common.CalculateTimeSlot(v.GetProposeTime()),
+			a.chain.CalculateTimeSlot(v.GetBeaconHeight(), v.GetProposeTime()),
 			committees,
 		)
 	}
@@ -1117,7 +1118,7 @@ func (a *actorV2) sendVote(
 		signingCommittees,
 		portalParamV4,
 	)
-	vote, err := a.ruleDirector.builder.VoteRule().CreateVote(env, block)
+	vote, err := a.ruleDirector.builder.VoteRule().CreateVote(a.chain, env, block)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -1267,7 +1268,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		// Log only
 		if !a.chain.IsBeaconChain() {
 			_, proposerIndex := a.chain.GetProposerByTimeSlotFromCommitteeList(
-				common.CalculateTimeSlot(block.GetProposeTime()),
+				a.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()),
 				committees,
 			)
 			subsetID := blockchain.GetSubsetID(proposerIndex)
@@ -1326,7 +1327,7 @@ func (a *actorV2) handleNewProposeMsg(
 	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", a.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()))
 
 	return nil
 }
@@ -1428,7 +1429,7 @@ func (a *actorV2) handleCleanMem() {
 
 	a.ruleDirector.builder.ProposeMessageRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
 	ByzantineDetectorObject.UpdateState(a.chain.GetFinalView().GetHeight(),
-		common.CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetProposeTime()))
+		a.chain.CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetBeaconHeight(), a.chain.GetFinalView().GetBlock().GetProposeTime()))
 
 }
 
@@ -1481,7 +1482,7 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	}
 
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
-	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+	blockProduceTimeSlot := a.chain.CalculateTimeSlot(proposeBlockInfo.block.GetBeaconHeight(), proposeBlockInfo.block.GetProduceTime())
 
 	isValid, err := a.ruleDirector.builder.ValidatorRule().ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
@@ -1503,7 +1504,7 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 
 func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error {
 
-	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+	blkCreateTimeSlot := a.chain.CalculateTimeSlot(proposeBlockInfo.block.GetBeaconHeight(), proposeBlockInfo.block.GetProduceTime())
 
 	//not connected
 	view := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())

@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"context"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-core/peer"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -37,7 +38,7 @@ type FeeEstimator interface {
 }
 
 type ConsensusEngine interface {
-	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
+	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int, produceTimeSlot int64, proposeTimeSlot int64) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
@@ -71,7 +72,7 @@ type Syncker interface {
 type TxsCrawler interface {
 	// RemoveTx remove tx from tx resource
 	RemoveTxs(txs []metadata.Transaction)
-	GetTxsTranferForNewBlock(sView interface{}, bcView interface{}, maxSize uint64, maxTime time.Duration) []metadata.Transaction
+	GetTxsTranferForNewBlock(sView interface{}, bcView interface{}, maxSize uint64, maxTime time.Duration, maxTxs int64) []metadata.Transaction
 	CheckValidatedTxs(txs []metadata.Transaction) (valid []metadata.Transaction, needValidate []metadata.Transaction)
 }
 
