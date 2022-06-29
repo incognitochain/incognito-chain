@@ -370,6 +370,9 @@ func TestA(t *testing.T) {
 		"0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa",
 		"0x001b3b4d0f3714ca98ba10f6042daebf0b1b7b6f",
 		"0x9440c3bB6Adb5F0D5b8A460d8a8c010690daC2E8",
+		"0x0000000000000000000000000000000000000000",
+		"0x0000000000000000000000000000000000000000",
+		"0x0000000000000000000000000000000000000000",
 	}
 
 	prefixs := []string{
@@ -386,6 +389,9 @@ func TestA(t *testing.T) {
 		"",
 		common.PLGPrefix,
 		common.FTMPrefix,
+		common.PLGPrefix,
+		common.FTMPrefix,
+		common.BSCPrefix,
 	}
 
 	for i := 0; i < len(prefixs); i++ {
