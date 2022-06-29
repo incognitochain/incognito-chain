@@ -126,6 +126,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		if err := p.Prune(); err != nil {
 			panic(err)
 		}
+		return nil
 	}
 
 	// Create db for mempool and use it

@@ -63,3 +63,4 @@ indexer_access_token: "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f552531
 allow_state_prune: true
 state_prune: false
 state_bloom_size: 2048
+enable_auto_prune: false

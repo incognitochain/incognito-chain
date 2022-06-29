@@ -45,10 +45,11 @@ var (
 	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
-	lastPrunedHeightPrefix    = []byte("l-p-h" + string(splitter))
-	lastPrunedKeyTriePrefix   = []byte("l-p-k" + string(splitter))
-	pruneStatusPrefix         = []byte("p-s" + string(splitter))
-	pendingPrunedNodesPrefix  = []byte("p-p-n" + string(splitter))
+	lastPrunedHeightPrefix    = []byte("l-p-h")
+	lastPrunedKeyTriePrefix   = []byte("l-p-k")
+	pruneStatusPrefix         = []byte("p-s")
+	pendingPrunedNodesPrefix  = []byte("p-p-n")
+	dataSizePrefix            = []byte("d-s")
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -436,28 +437,28 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 }
 
 // ============================= State prune =======================================
-func GetLastPrunedKeyTrieKey(shardID byte) []byte {
+func GetLastPrunedKeyTrieKey() []byte {
 	temp := make([]byte, 0, len(lastPrunedKeyTriePrefix))
 	temp = append(temp, lastPrunedKeyTriePrefix...)
-	return append(temp, shardID)
+	return append(temp)
 }
 
-func GetLastPrunedHeightKey(shardID byte) []byte {
+func GetLastPrunedHeightKey() []byte {
 	temp := make([]byte, 0, len(lastPrunedHeightPrefix))
 	temp = append(temp, lastPrunedHeightPrefix...)
-	return append(temp, shardID)
+	return append(temp)
 }
 
-func GetPruneStatusKey(shardID byte) []byte {
+func GetPruneStatusKey() []byte {
 	temp := make([]byte, 0, len(pruneStatusPrefix))
 	temp = append(temp, pruneStatusPrefix...)
-	return append(temp, shardID)
+	return append(temp)
 }
 
-func GetPendingPrunedNodesKey(shardID byte) []byte {
+func GetPendingPrunedNodesKey() []byte {
 	temp := make([]byte, 0, len(pendingPrunedNodesPrefix))
 	temp = append(temp, pendingPrunedNodesPrefix...)
-	return append(temp, shardID)
+	return append(temp)
 }
 
 func GetShardRootsHashPrefix(shardID byte) []byte {
@@ -466,6 +467,12 @@ func GetShardRootsHashPrefix(shardID byte) []byte {
 	key := append(temp, shardID)
 	key = append(key, splitter...)
 	return key
+}
+
+func GetDataSizeKey() []byte {
+	temp := make([]byte, 0, len(dataSizePrefix))
+	temp = append(temp, dataSizePrefix...)
+	return append(temp)
 }
 
 //

@@ -108,6 +108,7 @@ const (
 	StoreShardLastPrunedHeightError
 	StoreShardLastPrunedKeyTrieError
 	StoreShardPendingPrunedNodesError
+	StoreShardDataSizeError
 	StoreShardPruneStatusError
 )
 
@@ -206,6 +207,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreShardLastPrunedKeyTrieError:  {-7000, "Store shard last pruned key trie error"},
 	StoreShardPruneStatusError:        {-7001, "Store shard prune status error"},
 	StoreShardPendingPrunedNodesError: {-7002, "Store shard pending prune nodes error"},
+	StoreShardDataSizeError:           {-7002, "Store shard data size error"},
 }
 
 type RawdbError struct {

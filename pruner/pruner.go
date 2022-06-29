@@ -2,6 +2,9 @@ package pruner
 
 import (
 	"encoding/json"
+	"math/big"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
@@ -22,6 +25,7 @@ type Pruner struct {
 	updateStatusCh          chan UpdateStatus
 	TriggerCh               chan ExtendedConfig
 	insertLock              *sync.Mutex
+	wg                      *sync.WaitGroup
 	PubSubManager           *pubsub.PubSubManager
 	currentValidatorShardID int
 	stateBloom              *trie.StateBloom
@@ -36,13 +40,14 @@ func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Prun
 		TriggerCh:               make(chan ExtendedConfig, 1),
 		currentValidatorShardID: -2,
 		insertLock:              new(sync.Mutex),
+		wg:                      new(sync.WaitGroup),
 		addedViewsCache:         make(map[common.Hash]struct{}),
 	}
 }
 
 func (p *Pruner) ReadStatus() {
 	for i := 0; i < common.MaxShardNumber; i++ {
-		s, _ := rawdbv2.GetPruneStatus(p.db[i], byte(i)) //ignore error for case not store status yet
+		s, _ := rawdbv2.GetPruneStatus(p.db[i]) //ignore error for case not store status yet
 		status := s
 		if s == rawdbv2.ProcessingPruneByHashStatus {
 			status = rawdbv2.WaitingPruneByHashStatus
@@ -51,22 +56,44 @@ func (p *Pruner) ReadStatus() {
 			status = rawdbv2.WaitingPruneByHeightStatus
 		}
 		if s != status {
-			rawdbv2.StorePruneStatus(p.db[i], byte(i), status)
+			rawdbv2.StorePruneStatus(p.db[i], status)
 		}
 		p.statuses[byte(i)] = status
 	}
 }
 
 func (p *Pruner) Prune() error {
-	for i := 0; i < common.MaxShardNumber; i++ {
-		if err := p.prune(i, false); err != nil {
-			panic(err)
+	cpus := runtime.NumCPU()
+	ch := make(chan int, cpus-1)
+	stateBloomSize := config.Config().StateBloomSize / uint64(cpus)
+	stopCh := make(chan struct{})
+	var count int
+	var wg sync.WaitGroup
+	go func() {
+		for {
+			select {
+			case shardID := <-ch:
+				if err := p.prune(shardID, false, stateBloomSize); err != nil {
+					panic(err)
+				}
+				wg.Done()
+			case <-stopCh:
+				count++
+				if count == common.MaxShardNumber {
+					return
+				}
+			}
 		}
+	}()
+	for i := 0; i < common.MaxShardNumber; i++ {
+		wg.Add(1)
+		ch <- i
 	}
+	wg.Wait()
 	return nil
 }
 
-func (p *Pruner) prune(sID int, shouldPruneByHash bool) error {
+func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) error {
 	shardID := byte(sID)
 	db := p.db[int(shardID)]
 	Logger.log.Infof("[state-prune] Start state pruning for shard %v", sID)
@@ -77,7 +104,7 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool) error {
 	if err != nil {
 		panic(err)
 	}
-	p.stateBloom, err = trie.NewStateBloomWithSize(config.Config().StateBloomSize)
+	p.stateBloom, err = trie.NewStateBloomWithSize(stateBloomSize)
 	if err != nil {
 		panic(err)
 	}
@@ -111,7 +138,7 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool) error {
 	if err != nil {
 		return err
 	}
-	err = rawdbv2.StorePendingPrunedNodes(db, shardID, 0)
+	err = rawdbv2.StorePendingPrunedNodes(db, 0)
 	if err != nil {
 		return err
 	}
@@ -221,13 +248,13 @@ func (p *Pruner) traverseAndDeleteByHash(
 	helper TraverseHelper, listKeysShouldBeRemoved *[]map[common.Hash]struct{},
 ) (uint64, uint64, error) {
 	var nodes, storage, count uint64
-	lastPrunedKey, err := rawdbv2.GetLastPrunedKeyTrie(helper.db, helper.shardID)
+	lastPrunedKey, err := rawdbv2.GetLastPrunedKeyTrie(helper.db)
 	var start []byte
 	if len(lastPrunedKey) != 0 {
 		start = lastPrunedKey
 	}
 	Logger.log.Infof("[state-prune] begin pruning from key %v", lastPrunedKey)
-	nodes, _ = rawdbv2.GetPendingPrunedNodes(helper.db, helper.shardID) // not checking error avoid case not store pruned node yet
+	nodes, _ = rawdbv2.GetPendingPrunedNodes(helper.db) // not checking error avoid case not store pruned node yet
 	iter := helper.db.NewIteratorWithPrefixStart(rawdbv2.GetShardRootsHashPrefix(helper.shardID), start)
 	defer func() {
 		iter.Release()
@@ -237,6 +264,7 @@ func (p *Pruner) traverseAndDeleteByHash(
 	// retrieve all state tree by shard rooth hash prefix
 	// delete all nodes which are not in state bloom
 	for iter.Next() {
+		p.wg.Wait()
 		p.insertLock.Lock()
 		key := iter.Key()
 		rootHash := blockchain.ShardRootHash{}
@@ -276,17 +304,16 @@ func (p *Pruner) traverseAndDeleteByHeight(
 	helper TraverseHelper, listKeysShouldBeRemoved *[]map[common.Hash]struct{},
 ) (uint64, uint64, error) {
 	var nodes, storage uint64
+	var err error
 	// get last pruned height before
-	lastPrunedHeight, err := rawdbv2.GetLastPrunedHeight(helper.db, helper.shardID)
-	if err == nil {
-		return 0, 0, err
-	}
+	lastPrunedHeight, _ := rawdbv2.GetLastPrunedHeight(helper.db)
 	if lastPrunedHeight == 0 {
 		lastPrunedHeight = 1
 	} else {
 		lastPrunedHeight++
 	}
 	for height := lastPrunedHeight; height < helper.finalHeight; height++ {
+		p.wg.Wait()
 		p.insertLock.Lock()
 		helper.wg.Add(1)
 		helper.heightCh <- height
@@ -349,14 +376,14 @@ func (p *Pruner) removeNodes(
 	totalNodes += count
 
 	if shouldPruneByHash {
-		if err := rawdbv2.StoreLastPrunedKeyTrie(db, shardID, key); err != nil {
+		if err := rawdbv2.StoreLastPrunedKeyTrie(db, key); err != nil {
 			return 0, 0, err
 		}
-		if err := rawdbv2.StorePendingPrunedNodes(db, shardID, totalNodes); err != nil {
+		if err := rawdbv2.StorePendingPrunedNodes(db, totalNodes); err != nil {
 			return 0, 0, err
 		}
 	} else {
-		if err := rawdbv2.StoreLastPrunedHeight(db, shardID, height); err != nil {
+		if err := rawdbv2.StoreLastPrunedHeight(db, height); err != nil {
 			return 0, 0, err
 		}
 	}
@@ -374,6 +401,7 @@ func (p *Pruner) Start() {
 	if err != nil {
 		panic(err)
 	}
+	go p.watchStorageChange()
 
 	for {
 		select {
@@ -425,18 +453,18 @@ func (p *Pruner) Start() {
 
 func (p *Pruner) updateStatus(status UpdateStatus) error {
 	p.statuses[status.ShardID] = status.Status
-	err := rawdbv2.StorePruneStatus(p.db[int(status.ShardID)], byte(status.ShardID), status.Status)
+	err := rawdbv2.StorePruneStatus(p.db[int(status.ShardID)], status.Status)
 	if err != nil {
 		return err
 	}
 
 	if status.Status == rawdbv2.ProcessingPruneByHashStatus || status.Status == rawdbv2.ProcessingPruneByHeightStatus {
 		shouldPruneByHash := status.Status == rawdbv2.ProcessingPruneByHashStatus
-		if err := p.prune(int(status.ShardID), shouldPruneByHash); err != nil {
+		if err := p.prune(int(status.ShardID), shouldPruneByHash, config.Config().StateBloomSize); err != nil {
 			return err
 		}
 		p.statuses[status.ShardID] = rawdbv2.FinishPruneStatus
-		err := rawdbv2.StorePruneStatus(p.db[int(status.ShardID)], byte(status.ShardID), rawdbv2.FinishPruneStatus)
+		err := rawdbv2.StorePruneStatus(p.db[int(status.ShardID)], rawdbv2.FinishPruneStatus)
 		if err != nil {
 			return err
 		}
@@ -462,12 +490,14 @@ func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error 
 	status := p.statuses[shardBestState.ShardID]
 	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) {
 		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
+			p.wg.Add(1)
 			p.insertLock.Lock()
 			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
 			if err != nil {
 				panic(err)
 			}
 			p.insertLock.Unlock()
+			p.wg.Done()
 		}
 		if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
 			s := rawdbv2.ProcessingPruneByHeightStatus
@@ -484,6 +514,33 @@ func (p *Pruner) triggerUpdateStatus(status UpdateStatus) {
 	go func() {
 		p.updateStatusCh <- status
 	}()
+}
+
+func (p *Pruner) watchStorageChange() {
+	if config.Config().EnableAutoPrune {
+		for {
+			for i := 0; i < common.MaxShardNumber; i++ {
+				oldSize, _ := rawdbv2.GetDataSize(p.db[i]) //ignore error if active prune for the first time
+				newSize, err := common.DirSize(filepath.Join(config.Config().DataDir, config.Config().DatabaseDir))
+				if err != nil {
+					panic(err)
+				}
+				t1 := big.NewInt(0).Mul(big.NewInt(newSize), big.NewInt(10000))
+				t2 := big.NewInt(0).Mul(big.NewInt(oldSize), big.NewInt(12500))
+				if t1.Cmp(t2) >= 0 {
+					ec := ExtendedConfig{
+						Config:  Config{ShouldPruneByHash: false},
+						ShardID: byte(i),
+					}
+					p.TriggerCh <- ec
+					if err := rawdbv2.StoreDataSize(p.db[i], newSize); err != nil {
+						panic(err)
+					}
+				}
+			}
+			time.Sleep(time.Minute * 5)
+		}
+	}
 }
 
 func (p *Pruner) reset() {
