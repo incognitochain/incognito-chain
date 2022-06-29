@@ -980,9 +980,6 @@ func (a *actorV2) proposeBeaconBlock(
 ) (types.BlockInterface, error) {
 	var err error
 	if block == nil {
-		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-		defer cancel()
 		a.logger.Info("CreateNewBlock version", a.blockVersion)
 		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
 		if err != nil {

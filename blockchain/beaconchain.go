@@ -207,10 +207,11 @@ func (chain *BeaconChain) CreateNewBlock(
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
 	//wait a little bit, for shard
-	waitTime := common.TIMESLOT / 5
+	beaconBestView := chain.GetBestView().(*BeaconBestState)
+	waitTime := beaconBestView.GetBlockTimeInterval(beaconBestView.GetBeaconHeight()) / 5
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
-	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
+	newBlock, err := chain.Blockchain.NewBlockBeacon(beaconBestView, version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
 	}
