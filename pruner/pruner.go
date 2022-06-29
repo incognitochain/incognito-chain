@@ -142,6 +142,13 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) e
 	if err != nil {
 		return err
 	}
+	newSize, err := common.DirSize(filepath.Join(config.Config().DataDir, config.Config().DatabaseDir))
+	if err != nil {
+		panic(err)
+	}
+	if err := rawdbv2.StoreDataSize(p.db[sID], newSize); err != nil {
+		panic(err)
+	}
 	p.reset()
 	return nil
 }
@@ -533,9 +540,6 @@ func (p *Pruner) watchStorageChange() {
 						ShardID: byte(i),
 					}
 					p.TriggerCh <- ec
-					if err := rawdbv2.StoreDataSize(p.db[i], newSize); err != nil {
-						panic(err)
-					}
 				}
 			}
 			time.Sleep(time.Minute * 5)
