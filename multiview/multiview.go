@@ -329,7 +329,7 @@ func (s *multiView) findExpectFinalView(checkView View) View {
 			return currentViewPoint
 		}
 
-		if currentViewPoint.GetBlock().GetFinalityHeight() != 0 || currentViewPoint.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 { //version 1, finality height mean this block having repropose proof of missing TS, version 2: always finality
+		if currentViewPoint.GetBlock().GetFinalityHeight() != 0 { //version 1, finality height mean this block having repropose proof of missing TS
 			break
 		}
 		currentViewPoint = prev1View

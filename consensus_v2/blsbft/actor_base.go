@@ -47,7 +47,12 @@ func NewActorWithValue(
 	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION, types.BLOCK_PRODUCINGV3_VERSION, types.INSTANT_FINALITY_VERSION:
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 	case types.INSTANT_FINALITY_VERSION_V2:
-		res = NewActorV3WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
+		if chain.IsBeaconChain() {
+			res = NewActorV3WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
+		} else {
+			res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
+		}
+
 	default:
 		panic("Bft version is not valid")
 	}
