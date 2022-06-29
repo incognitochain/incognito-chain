@@ -314,6 +314,9 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 	}
 
 	if newBeaconBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
+		if shardBlksForBridgeAgg[newBeaconBlock.GetHeight()] == nil {
+			shardBlksForBridgeAgg[newBeaconBlock.GetHeight()] = map[byte][]*types.ShardBlock{}
+		}
 		for sid, shardStates := range newBeaconBlock.Body.ShardState {
 			shardBlocks := []*types.ShardBlock{}
 			for _, sState := range shardStates {

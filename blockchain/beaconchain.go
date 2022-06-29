@@ -255,7 +255,6 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 			previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
 			previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
 			if version >= types.INSTANT_FINALITY_VERSION {
-
 				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}

@@ -30,7 +30,7 @@ func (a *actorV3) maybeProposeBlock() error {
 	round := a.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 	monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
-	signingCommittees, _, proposerPk, _, err := a.getCommitteesAndCommitteeViewHash()
+	signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
 	if err != nil {
 		a.logger.Info(err)
 		return err
@@ -62,18 +62,11 @@ func (a *actorV3) maybeProposeBlock() error {
 		block = lockBlockHash.block
 	}
 
-	if block == nil {
+	if block == nil || block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		a.logger.Info("CreateNewBlock version", a.blockVersion)
-
-		_, committees, _, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
-		if err != nil {
-			a.logger.Info(err)
-			return err
-		}
-
 		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return NewConsensusError(BlockCreationError, err)
@@ -86,10 +79,11 @@ func (a *actorV3) maybeProposeBlock() error {
 		}
 	}
 
-	//this actor v3, finality height is always current height
+	//this actor v3, finality height is always current height, and committeefromblock is updated
 	switch block.(type) {
 	case *types.ShardBlock:
 		block.(*types.ShardBlock).Header.FinalityHeight = block.GetHeight()
+		block.(*types.ShardBlock).Header.CommitteeFromBlock = committeeViewHash
 	case *types.BeaconBlock:
 		block.(*types.BeaconBlock).Header.FinalityHeight = block.GetHeight()
 	}
