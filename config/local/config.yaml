@@ -64,3 +64,4 @@ allow_state_prune: true
 state_prune: false
 state_bloom_size: 2048
 enable_auto_prune: false
+force_prune: false

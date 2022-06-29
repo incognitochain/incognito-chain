@@ -121,6 +121,7 @@ type config struct {
 	StatePrune          bool   `mapstructure:"state_prune" long:"stateprune" description:"state pruning flag"`
 	StateBloomSize      uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
 	EnableAutoPrune     bool   `mapstructure:"enable_auto_prune" long:"enableautoprune" description:"enable auto prune"`
+	ForcePrune          bool   `mapstructure:"force_prune" long:"forceprune" description:"force nonde to prune"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses

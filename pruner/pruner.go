@@ -159,7 +159,7 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 	allViews := []*blockchain.ShardBestState{}
 	views, err := rawdbv2.GetShardBestState(db, shardID)
 	if err != nil {
-		Logger.log.Info("debug Cannot see shard best state")
+		Logger.log.Infof("debug Cannot see shard best state %v", err)
 		return 0, err
 	}
 	err = json.Unmarshal(views, &allViews)
@@ -482,14 +482,14 @@ func (p *Pruner) updateStatus(status UpdateStatus) error {
 
 func (p *Pruner) handleNewRole(newRole *pubsub.NodeRole) error {
 	if newRole.CID > common.BeaconChainID {
-		if newRole.Role == common.CommitteeRole {
+		if newRole.Role == common.CommitteeRole && !config.Config().ForcePrune {
 			switch p.statuses[byte(newRole.CID)] {
 			case rawdbv2.ProcessingPruneByHeightStatus, rawdbv2.WaitingPruneByHeightStatus, rawdbv2.ProcessingPruneByHashStatus, rawdbv2.WaitingPruneByHashStatus:
 				p.triggerUpdateStatus(UpdateStatus{ShardID: byte(newRole.CID), Status: rawdbv2.FinishPruneStatus})
 			}
 		}
-		p.currentValidatorShardID = newRole.CID
 	}
+	p.currentValidatorShardID = newRole.CID
 	return nil
 }
 
