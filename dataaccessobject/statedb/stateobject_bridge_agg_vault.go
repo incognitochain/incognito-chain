@@ -146,6 +146,106 @@ func (b *BridgeAggVaultState) SetIncTokenID(tokenID common.Hash) {
 	b.incTokenID = tokenID
 }
 
+func (b *BridgeAggVaultState) UpdateAmount(amount uint64, operator int) error {
+	tmpAmt := uint64(0)
+	switch operator {
+	case common.SubOperator:
+		{
+			tmpAmt = b.amount - amount
+			if tmpAmt > b.amount {
+				return errors.New("decrease vault amount out of range uint64")
+			}
+		}
+	case common.AddOperator:
+		{
+			tmpAmt := b.amount + amount
+			if tmpAmt < b.amount {
+				return errors.New("increase vault amount out of range uint64")
+			}
+		}
+	default:
+		return errors.New("invalid operator")
+	}
+
+	b.amount = tmpAmt
+	return nil
+}
+
+func (b *BridgeAggVaultState) UpdateLockedAmount(amount uint64, operator int) error {
+	tmpAmt := uint64(0)
+	switch operator {
+	case common.SubOperator:
+		{
+			tmpAmt = b.lockedAmount - amount
+			if tmpAmt > b.lockedAmount {
+				return errors.New("decrease vault locked amount out of range uint64")
+			}
+		}
+	case common.AddOperator:
+		{
+			tmpAmt := b.lockedAmount + amount
+			if tmpAmt < b.lockedAmount {
+				return errors.New("increase vault locked amount out of range uint64")
+			}
+		}
+	default:
+		return errors.New("invalid operator")
+	}
+
+	b.lockedAmount = tmpAmt
+	return nil
+}
+
+func (b *BridgeAggVaultState) UpdateWaitingUnshieldAmount(amount uint64, operator int) error {
+	tmpAmt := uint64(0)
+	switch operator {
+	case common.SubOperator:
+		{
+			tmpAmt = b.waitingUnshieldAmount - amount
+			if tmpAmt > b.waitingUnshieldAmount {
+				return errors.New("decrease vault waiting unshield amount out of range uint64")
+			}
+		}
+	case common.AddOperator:
+		{
+			tmpAmt := b.waitingUnshieldAmount + amount
+			if tmpAmt < b.waitingUnshieldAmount {
+				return errors.New("increase vault waiting unshield amount out of range uint64")
+			}
+		}
+	default:
+		return errors.New("invalid operator")
+	}
+
+	b.waitingUnshieldAmount = tmpAmt
+	return nil
+}
+
+func (b *BridgeAggVaultState) UpdateWaitingUnshieldFee(amount uint64, operator int) error {
+	tmpAmt := uint64(0)
+	switch operator {
+	case common.SubOperator:
+		{
+			tmpAmt = b.waitingUnshieldFee - amount
+			if tmpAmt > b.waitingUnshieldFee {
+				return errors.New("decrease vault waiting unshield fee out of range uint64")
+			}
+		}
+	case common.AddOperator:
+		{
+			tmpAmt := b.waitingUnshieldFee + amount
+			if tmpAmt < b.waitingUnshieldFee {
+				return errors.New("increase vault waiting unshield fee out of range uint64")
+			}
+		}
+	default:
+		return errors.New("invalid operator")
+	}
+
+	b.waitingUnshieldFee = tmpAmt
+	return nil
+}
+
 func (b *BridgeAggVaultState) Clone() *BridgeAggVaultState {
 	return &BridgeAggVaultState{
 		amount:                b.amount,
