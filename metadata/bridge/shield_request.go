@@ -29,7 +29,6 @@ type AcceptedInstShieldRequest struct {
 	Receiver       privacy.PaymentAddress      `json:"Receiver"`
 	UnifiedTokenID common.Hash                 `json:"UnifiedTokenID"`
 	TxReqID        common.Hash                 `json:"TxReqID"`
-	ShardID        byte                        `json:"ShardID"`
 	Data           []AcceptedShieldRequestData `json:"Data"`
 }
 
@@ -41,12 +40,6 @@ type AcceptedShieldRequestData struct {
 	NetworkID       uint8       `json:"NetworkID"`
 	IncTokenID      common.Hash `json:"IncTokenID"`
 }
-
-// type AcceptedShieldRewardData struct {
-// 	RewardAmount uint64      `json:"RewardAmount"`
-// 	NetworkID    uint        `json:"NetworkID"`
-// 	IncTokenID   common.Hash `json:"IncTokenID"`
-// }
 
 func NewShieldRequest() *ShieldRequest {
 	return &ShieldRequest{

@@ -76,7 +76,6 @@ func NewStateWithValue(
 	}
 }
 
-//TODO: 0xkraken
 func (s *State) Clone() *State {
 	res := NewState()
 	res.unifiedTokenVaults = s.CloneUnifiedTokenVaults()
@@ -86,9 +85,6 @@ func (s *State) Clone() *State {
 	}
 
 	// reset temporary state
-	// res.newWaitingUnshieldReqs = s.CloneNewWaitingUnshieldReqs()
-	// res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
-	// res.deletedWaitingUnshieldReqKeyHashes = append(res.deletedWaitingUnshieldReqKeyHashes, s.deletedWaitingUnshieldReqKeyHashes...)
 	res.newWaitingUnshieldReqs = map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq{}
 	res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
 

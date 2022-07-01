@@ -279,94 +279,7 @@ func ValidateDoubleShieldProof(
 	return true, uniqTx, nil
 }
 
-// func shieldEVM(
-// 	unifiedTokenID, incTokenID common.Hash, networkID uint, ac *metadataCommon.AccumulatedValues,
-// 	shardID byte, txReqID common.Hash,
-// 	vault *statedb.BridgeAggVaultState, stateDBs map[int]*statedb.StateDB, extraData []byte,
-// 	blockHash rCommon.Hash, txIndex uint,
-// ) (*statedb.BridgeAggVaultState, uint64, uint64, byte, []byte, []byte, string, *metadataCommon.AccumulatedValues, int, error) {
-// 	var txReceipt *types.Receipt
-// 	err := json.Unmarshal(extraData, &txReceipt)
-// 	if err != nil {
-// 		return nil, 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
-// 	}
-// 	var listTxUsed [][]byte
-// 	var contractAddress, prefix string
-// 	var isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error)
-
-// 	switch networkID {
-// 	case common.ETHNetworkID:
-// 		listTxUsed = ac.UniqETHTxsUsed
-// 		contractAddress = config.Param().EthContractAddressStr
-// 		prefix = utils.EmptyString
-// 		isTxHashIssued = statedb.IsETHTxHashIssued
-// 	case common.BSCNetworkID:
-// 		listTxUsed = ac.UniqBSCTxsUsed
-// 		contractAddress = config.Param().BscContractAddressStr
-// 		prefix = common.BSCPrefix
-// 		isTxHashIssued = statedb.IsBSCTxHashIssued
-// 	case common.PLGNetworkID:
-// 		listTxUsed = ac.UniqPLGTxsUsed
-// 		contractAddress = config.Param().PlgContractAddressStr
-// 		prefix = common.PLGPrefix
-// 		isTxHashIssued = statedb.IsPLGTxHashIssued
-// 	case common.FTMNetworkID:
-// 		listTxUsed = ac.UniqFTMTxsUsed
-// 		contractAddress = config.Param().FtmContractAddressStr
-// 		prefix = common.FTMPrefix
-// 		isTxHashIssued = statedb.IsFTMTxHashIssued
-// 	case common.DefaultNetworkID:
-// 		return nil, 0, 0, 0, nil, nil, "", ac, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
-// 	default:
-// 		return nil, 0, 0, 0, nil, nil, "", ac, NotFoundNetworkIDError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
-// 	}
-
-// 	amount, receivingShardID, paymentAddress, token, uniqTx, err := metadataBridge.ExtractIssueEVMDataFromReceipt(
-// 		txReceipt,
-// 		stateDBs[common.BeaconChainID], shardID, listTxUsed,
-// 		contractAddress, prefix, isTxHashIssued, txReceipt, blockHash, txIndex,
-// 	)
-// 	if err != nil {
-// 		return nil, 0, 0, 0, nil, nil, "", ac, FailToExtractDataError, NewBridgeAggErrorWithValue(FailToExtractDataError, err)
-// 	}
-// 	err = metadataBridge.VerifyTokenPair(stateDBs, ac, incTokenID, token)
-// 	if err != nil {
-// 		return nil, 0, 0, 0, nil, nil, "", ac, FailToVerifyTokenPairError, NewBridgeAggErrorWithValue(FailToVerifyTokenPairError, err)
-// 	}
-// 	decimal := vault.ExtDecimal()
-// 	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
-// 		if decimal > config.Param().BridgeAggParam.BaseDecimal {
-// 			decimal = config.Param().BridgeAggParam.BaseDecimal
-// 		}
-// 	}
-// 	tmpAmount, err := ConvertAmountByDecimal(*amount, decimal, true)
-// 	if err != nil {
-// 		return nil, 0, 0, 0, nil, nil, "", ac, OutOfRangeUni64Error, NewBridgeAggErrorWithValue(OutOfRangeUni64Error, err)
-// 	}
-// 	//tmpAmount is uint64 after this function
-
-// 	v, actualAmount, err := shield(vault, tmpAmount.Uint64())
-// 	if err != nil {
-// 		Logger.log.Warnf("Calculate shield amount error: %v tx %s", err, txReqID)
-// 		return nil, 0, 0, 0, nil, nil, "", ac, CalculateShieldAmountError, NewBridgeAggErrorWithValue(CalculateShieldAmountError, err)
-// 	}
-// 	reward := actualAmount - tmpAmount.Uint64()
-
-// 	switch networkID {
-// 	case common.ETHNetworkID:
-// 		ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqTx)
-// 	case common.BSCNetworkID:
-// 		ac.UniqBSCTxsUsed = append(ac.UniqBSCTxsUsed, uniqTx)
-// 	case common.PLGNetworkID:
-// 		ac.UniqPLGTxsUsed = append(ac.UniqPLGTxsUsed, uniqTx)
-// 	case common.FTMNetworkID:
-// 		ac.UniqFTMTxsUsed = append(ac.UniqFTMTxsUsed, uniqTx)
-// 	}
-// 	ac.DBridgeTokenPair[unifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
-// 	return v, actualAmount, reward, receivingShardID, token, uniqTx, paymentAddress, ac, 0, nil
-// }
-
-func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) {
+func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error) {
 	var burningMetaType int
 	switch networkID {
 	case common.ETHNetworkID:
@@ -400,84 +313,14 @@ func getBurningConfirmMetaType(networkID uint, isDepositToSC bool) (int, error) 
 
 }
 
-// func unshieldEVM(
-// 	data metadataBridge.UnshieldRequestData, stateDB *statedb.StateDB, vault *statedb.BridgeAggVaultState, txReqID common.Hash, isDepositToSC bool,
-// ) (*statedb.BridgeAggVaultState, []byte, *big.Int, uint64, uint64, int, int, error) {
-// 	var prefix string
-// 	var burningMetaType int
-
-// 	switch vault.NetworkID() {
-// 	case common.ETHNetworkID:
-// 		if isDepositToSC {
-// 			burningMetaType = metadataCommon.BurningConfirmForDepositToSCMetaV2
-// 		} else {
-// 			burningMetaType = metadataCommon.BurningConfirmMetaV2
-// 		}
-// 		prefix = utils.EmptyString
-// 	case common.BSCNetworkID:
-// 		if isDepositToSC {
-// 			burningMetaType = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
-// 		} else {
-// 			burningMetaType = metadataCommon.BurningBSCConfirmMeta
-// 		}
-// 		prefix = common.BSCPrefix
-// 	case common.PLGNetworkID:
-// 		if isDepositToSC {
-// 			burningMetaType = metadataCommon.BurningPLGConfirmForDepositToSCMeta
-// 		} else {
-// 			burningMetaType = metadataCommon.BurningPLGConfirmMeta
-// 		}
-// 		prefix = common.PLGPrefix
-// 	case common.FTMNetworkID:
-// 		if isDepositToSC {
-// 			burningMetaType = metadataCommon.BurningFantomConfirmForDepositToSCMeta
-// 		} else {
-// 			burningMetaType = metadataCommon.BurningFantomConfirmMeta
-// 		}
-// 		prefix = common.FTMPrefix
-// 	case common.DefaultNetworkID:
-// 		return nil, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
-// 	default:
-// 		return nil, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
-// 	}
-
-// 	// Convert to external tokenID
-// 	externalTokenID, err := metadataBridge.FindExternalTokenID(stateDB, data.IncTokenID, prefix, burningMetaType)
-// 	if err != nil {
-// 		return nil, nil, nil, 0, 0, burningMetaType, NotFoundTokenIDInNetworkError, NewBridgeAggErrorWithValue(NotFoundNetworkIDError, err)
-// 	}
-
-// 	v, actualAmount, err := unshield(vault, data.BurningAmount, data.MinExpectedAmount)
-// 	if err != nil {
-// 		Logger.log.Warnf("Calculate unshield amount error: %v tx %s", err, txReqID.String())
-// 		return nil, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(CalculateUnshieldAmountError, err)
-// 	}
-// 	fee := data.BurningAmount - actualAmount
-// 	decimal := vault.ExtDecimal()
-// 	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
-// 		if decimal > config.Param().BridgeAggParam.BaseDecimal {
-// 			decimal = config.Param().BridgeAggParam.BaseDecimal
-// 		}
-// 	}
-// 	unshieldAmount, err := ConvertAmountByDecimal(*big.NewInt(0).SetUint64(actualAmount), decimal, false)
-// 	if err != nil {
-// 		return nil, nil, nil, 0, 0, burningMetaType, OtherError, NewBridgeAggErrorWithValue(OtherError, err)
-// 	}
-// 	if unshieldAmount.Cmp(big.NewInt(0)) == 0 {
-// 		return nil, nil, nil, 0, 0, burningMetaType, CalculateUnshieldAmountError, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot received unshield amount equal to 0"))
-// 	}
-// 	return v, externalTokenID, unshieldAmount, actualAmount, fee, burningMetaType, 0, nil
-// }
-
 func buildAcceptedShieldContent(
 	shieldData []metadataBridge.AcceptedShieldRequestData,
-	paymentAddress privacy.PaymentAddress, unifiedTokenID, txReqID common.Hash, shardID byte,
+	paymentAddress privacy.PaymentAddress, unifiedTokenID, txReqID common.Hash,
 ) ([]byte, error) {
 	acceptedContent := metadataBridge.AcceptedInstShieldRequest{
 		Receiver:       paymentAddress,
 		UnifiedTokenID: unifiedTokenID,
 		TxReqID:        txReqID,
-		ShardID:        shardID,
 		Data:           shieldData,
 	}
 	return json.Marshal(acceptedContent)
@@ -496,48 +339,6 @@ func ConvertAmountByDecimal(amount *big.Int, decimal uint8, isToUnifiedDecimal b
 		res.Div(res, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(config.Param().BridgeAggParam.BaseDecimal)), nil))
 	}
 	return res, nil
-}
-
-func getBurningConfirmMeta(networkID int, isDepositToSC bool) (int, string, error) {
-	var burningMetaType int
-	var prefix string
-
-	switch networkID {
-	case common.ETHNetworkID:
-		if isDepositToSC {
-			burningMetaType = metadataCommon.BurningConfirmForDepositToSCMetaV2
-		} else {
-			burningMetaType = metadataCommon.BurningConfirmMetaV2
-		}
-		prefix = utils.EmptyString
-	case common.BSCNetworkID:
-		if isDepositToSC {
-			burningMetaType = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
-		} else {
-			burningMetaType = metadataCommon.BurningBSCConfirmMeta
-		}
-		prefix = common.BSCPrefix
-	case common.PLGNetworkID:
-		if isDepositToSC {
-			burningMetaType = metadataCommon.BurningPLGConfirmForDepositToSCMeta
-		} else {
-			burningMetaType = metadataCommon.BurningPLGConfirmMeta
-		}
-		prefix = common.PLGPrefix
-	case common.FTMNetworkID:
-		if isDepositToSC {
-			burningMetaType = metadataCommon.BurningFantomConfirmForDepositToSCMeta
-		} else {
-			burningMetaType = metadataCommon.BurningFantomConfirmMeta
-		}
-		prefix = common.FTMPrefix
-	case common.DefaultNetworkID:
-		return burningMetaType, prefix, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot get info from default networkID"))
-	default:
-		return burningMetaType, prefix, NewBridgeAggErrorWithValue(OtherError, errors.New("Cannot detect networkID"))
-	}
-
-	return burningMetaType, prefix, nil
 }
 
 func CalculateIncDecimal(decimal, baseDecimal uint8) uint8 {
@@ -604,19 +405,12 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 
 func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]byte, error) {
 	var res []byte
-	var prefix string
-	switch networkID {
-	case common.ETHNetworkID:
-		prefix = utils.EmptyString
-	case common.BSCNetworkID:
-		prefix = common.BSCPrefix
-	case common.PLGNetworkID:
-		prefix = common.PLGPrefix
-	case common.FTMNetworkID:
-		prefix = common.FTMPrefix
-	default:
-		return nil, fmt.Errorf("Invalid networkID %v", networkID)
+
+	prefix, err := getPrefixByNetworkID(networkID)
+	if err != nil {
+		return nil, err
 	}
+
 	networkType, err := metadataBridge.GetNetworkTypeByNetworkID(networkID)
 	if err != nil {
 		return nil, err
@@ -627,24 +421,6 @@ func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]b
 		res = append([]byte(prefix), tokenAddr.Bytes()...)
 	}
 	return res, nil
-}
-
-func updateRewardReserve(lastUpdatedRewardReserve, currentRewardReserve, newRewardReserve uint64) (uint64, uint64, error) {
-	if lastUpdatedRewardReserve == currentRewardReserve && lastUpdatedRewardReserve == newRewardReserve && newRewardReserve == 0 {
-		return 0, 0, nil
-	}
-	var resLastUpdatedRewardReserve uint64
-	tmp := big.NewInt(0).Sub(big.NewInt(0).SetUint64(lastUpdatedRewardReserve), big.NewInt(0).SetUint64(currentRewardReserve))
-	if tmp.Cmp(big.NewInt(0).SetUint64(newRewardReserve)) >= 0 {
-		return 0, 0, errors.New("deltaY is >= newRewardReserve")
-	}
-
-	resLastUpdatedRewardReserve = newRewardReserve
-	tmpRewardReserve := big.NewInt(0).Sub(big.NewInt(0).SetUint64(newRewardReserve), tmp)
-	if !tmpRewardReserve.IsUint64() {
-		return 0, 0, errors.New("Out of range uint64")
-	}
-	return resLastUpdatedRewardReserve, tmpRewardReserve.Uint64(), nil
 }
 
 func GetExternalTokenIDForUnifiedToken() []byte {
@@ -666,56 +442,6 @@ func getPrefixByNetworkID(networkID uint8) (string, error) {
 		return utils.EmptyString, errors.New("Invalid networkID")
 	}
 	return prefix, nil
-}
-
-func CalculateReceivedAmount(amount uint64, tokenID common.Hash, decimal uint8, networkID uint8, sDB *statedb.StateDB) (uint64, error) {
-	prefix, err := getPrefixByNetworkID(networkID)
-	if err != nil {
-		return 0, err
-	}
-	externalTokenID, err := GetExternalTokenIDByIncTokenID(tokenID, sDB)
-	if err != nil {
-		return 0, err
-	}
-
-	if !bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
-		if decimal > config.Param().BridgeAggParam.BaseDecimal {
-			decimal = config.Param().BridgeAggParam.BaseDecimal
-		}
-	}
-	unshieldAmount, err := ConvertAmountByDecimal(big.NewInt(0).SetUint64(amount), decimal, false)
-	if err != nil {
-		return 0, err
-	}
-	if unshieldAmount.Cmp(big.NewInt(0)) == 0 {
-		return 0, errors.New("Received amount is 0")
-	}
-	return unshieldAmount.Uint64(), nil
-}
-
-func CalculateMaxReceivedAmount(x, y uint64) (uint64, error) {
-	if x <= 1 {
-		return 0, nil
-	}
-	return x - 1, nil
-}
-
-func decreaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, error) {
-	temp := v.Amount() - amount
-	if temp > v.Amount() {
-		return nil, errors.New("decrease out of range uint64")
-	}
-	v.SetAmount(temp)
-	return v, nil
-}
-
-func increaseVaultAmount(v *statedb.BridgeAggVaultState, amount uint64) (*statedb.BridgeAggVaultState, error) {
-	temp := v.Amount() + amount
-	if temp < v.Amount() {
-		return nil, errors.New("increase out of range uint64")
-	}
-	v.SetAmount(temp)
-	return v, nil
 }
 
 func convertPTokenAmtToPUnifiedTokenAmt(extDec uint8, amount uint64) (uint64, error) {
@@ -799,29 +525,35 @@ func CalRewardForRefillVault(v *statedb.BridgeAggVaultState, shieldAmt uint64) (
 
 func updateVaultForRefill(v *statedb.BridgeAggVaultState, shieldAmt, reward uint64) (*statedb.BridgeAggVaultState, error) {
 	res := v.Clone()
-	// increase vault amount
-	newAmount := new(big.Int).Add(new(big.Int).SetUint64(v.Amount()), new(big.Int).SetUint64(shieldAmt))
-	if !newAmount.IsUint64() {
-		return v, errors.New("Out of range uint64")
+	err := res.UpdateAmount(shieldAmt, common.AddOperator)
+	if err != nil {
+		return v, err
 	}
-	res.SetAmount(newAmount.Uint64())
 
 	// decrease waiting unshield amount, waiting fee
 	if v.WaitingUnshieldAmount() > 0 {
 		// shieldAmt is maybe greater than WaitingUnshieldAmount in Vault
 		if v.WaitingUnshieldAmount() <= shieldAmt {
 			res.SetWaitingUnshieldAmount(0)
-			res.SetLockedAmount(v.LockedAmount() + v.WaitingUnshieldAmount())
+			err = res.UpdateLockedAmount(v.WaitingUnshieldAmount(), common.AddOperator)
+			if err != nil {
+				return v, err
+			}
 		} else {
-			res.SetWaitingUnshieldAmount(v.WaitingUnshieldAmount() - shieldAmt)
-			res.SetLockedAmount(v.LockedAmount() + shieldAmt)
+			err := res.UpdateWaitingUnshieldAmount(shieldAmt, common.SubOperator)
+			if err != nil {
+				return v, err
+			}
+			err = res.UpdateLockedAmount(shieldAmt, common.AddOperator)
+			if err != nil {
+				return v, err
+			}
 		}
 
-		// reward can't be greater than WaitingUnshieldFee in Vault
-		if v.WaitingUnshieldFee() < reward {
-			return v, fmt.Errorf("Invalid reward %v: can't be greater than WaitingUnshieldFee in Vault %v", reward, v.WaitingUnshieldFee())
+		err = res.UpdateWaitingUnshieldFee(reward, common.SubOperator)
+		if err != nil {
+			return v, err
 		}
-		res.SetWaitingUnshieldFee(v.WaitingUnshieldFee() - reward)
 	}
 
 	return res, nil
@@ -855,7 +587,11 @@ func checkVaultForWaitUnshieldReq(
 	return isEnoughVault, lockedVaults
 }
 
-func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint64, percentFeeWithDec uint64) (bool, uint64, error) {
+func CalUnshieldFeeByBurnAmount(
+	v *statedb.BridgeAggVaultState,
+	burningAmt uint64, percentFeeWithDec uint64,
+	lockedVaultAmts map[common.Hash]uint64,
+) (bool, uint64, map[common.Hash]uint64, error) {
 	isEnoughVault := true
 	shortageAmt := uint64(0)
 	fee := uint64(0)
@@ -867,6 +603,12 @@ func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint6
 		shortageAmt = burningAmt
 	} else {
 		remainAmt := v.Amount() - v.LockedAmount()
+		if remainAmt <= lockedVaultAmts[v.IncTokenID()] {
+			remainAmt = 0
+		} else {
+			remainAmt = remainAmt - lockedVaultAmts[v.IncTokenID()]
+		}
+
 		if remainAmt < burningAmt {
 			shortageAmt = burningAmt - remainAmt
 		}
@@ -877,11 +619,13 @@ func CalUnshieldFeeByBurnAmount(v *statedb.BridgeAggVaultState, burningAmt uint6
 		// calculate unshield fee by shortage amount
 		fee, err = CalUnshieldFeeByShortageBurnAmount(shortageAmt, percentFeeWithDec)
 		if err != nil {
-			return false, 0, fmt.Errorf("Error when calculating unshield fee %v", err)
+			return false, 0, nil, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}
 	}
 
-	return isEnoughVault, fee, nil
+	lockedVaultAmts[v.IncTokenID()] = lockedVaultAmts[v.IncTokenID()] + burningAmt - fee
+
+	return isEnoughVault, fee, lockedVaultAmts, nil
 }
 
 func CalUnshieldFeeByReceivedAmount(v *statedb.BridgeAggVaultState, receivedAmt uint64, percentFeeWithDec uint64) (bool, uint64, error) {
@@ -923,6 +667,10 @@ func checkVaultForNewUnshieldReq(
 	waitingUnshieldDatas := []statedb.WaitingUnshieldReqData{}
 	isEnoughVault := true
 
+	lockedVaultAmts := map[common.Hash]uint64{}
+	var isEnoughVaultTmp bool
+	fee := uint64(0)
+	var err error
 	for _, data := range unshieldDatas {
 		v := vaults[data.IncTokenID]
 		if v == nil {
@@ -930,7 +678,7 @@ func checkVaultForNewUnshieldReq(
 		}
 
 		// calculate unshield fee
-		isEnoughVaultTmp, fee, err := CalUnshieldFeeByBurnAmount(v, data.BurningAmount, percentFeeWithDec)
+		isEnoughVaultTmp, fee, lockedVaultAmts, err = CalUnshieldFeeByBurnAmount(v, data.BurningAmount, percentFeeWithDec, lockedVaultAmts)
 		if err != nil {
 			return false, nil, fmt.Errorf("Error when calculating unshield fee %v", err)
 		}
@@ -1033,7 +781,7 @@ func deleteWaitingUnshieldReq(state *State, waitingUnshieldReq *statedb.BridgeAg
 func updateStateForNewWaitingUnshieldReq(
 	vaults map[common.Hash]*statedb.BridgeAggVaultState,
 	waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq,
-) map[common.Hash]*statedb.BridgeAggVaultState {
+) (map[common.Hash]*statedb.BridgeAggVaultState, error) {
 	for _, data := range waitingUnshieldReq.GetData() {
 		v := vaults[data.IncTokenID]
 		receiveAmt := data.BurningAmount - data.Fee
@@ -1044,25 +792,37 @@ func updateStateForNewWaitingUnshieldReq(
 			matchUnshieldAmt = remainAmt
 		}
 
-		v.SetLockedAmount(v.LockedAmount() + matchUnshieldAmt)
-		v.SetWaitingUnshieldAmount(v.WaitingUnshieldAmount() + receiveAmt - matchUnshieldAmt)
-		v.SetWaitingUnshieldFee(v.WaitingUnshieldFee() + data.Fee)
+		err := v.UpdateLockedAmount(matchUnshieldAmt, common.AddOperator)
+		if err != nil {
+			return nil, err
+		}
+		err = v.UpdateWaitingUnshieldAmount(receiveAmt-matchUnshieldAmt, common.AddOperator)
+		if err != nil {
+			return nil, err
+		}
+		err = v.UpdateWaitingUnshieldFee(data.Fee, common.AddOperator)
+		if err != nil {
+			return nil, err
+		}
 
 		vaults[data.IncTokenID] = v
 	}
-	return vaults
+	return vaults, nil
 }
 
 func updateStateForNewMatchedUnshieldReq(
 	vaults map[common.Hash]*statedb.BridgeAggVaultState,
 	waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq,
-) map[common.Hash]*statedb.BridgeAggVaultState {
+) (map[common.Hash]*statedb.BridgeAggVaultState, error) {
 	for _, data := range waitingUnshieldReq.GetData() {
 		v := vaults[data.IncTokenID]
-		v.SetAmount(v.Amount() - data.BurningAmount)
+		err := v.UpdateAmount(data.BurningAmount, common.SubOperator)
+		if err != nil {
+			return nil, err
+		}
 		vaults[data.IncTokenID] = v
 	}
-	return vaults
+	return vaults, nil
 }
 
 func updateStateForMatchedWaitUnshieldReq(
@@ -1072,12 +832,15 @@ func updateStateForMatchedWaitUnshieldReq(
 	for _, data := range waitUnshieldReq.GetData() {
 		v := vaults[data.IncTokenID]
 		actualUnshieldAmt := data.BurningAmount - data.Fee
-		if v.Amount() < actualUnshieldAmt || v.LockedAmount() < actualUnshieldAmt {
-			return nil, fmt.Errorf("actualUnshieldAmt %v greater than vault amount %v or vault locked amount %v",
-				actualUnshieldAmt, v.Amount(), v.LockedAmount())
+
+		err := v.UpdateAmount(actualUnshieldAmt, common.SubOperator)
+		if err != nil {
+			return nil, err
 		}
-		v.SetAmount(v.Amount() - actualUnshieldAmt)
-		v.SetLockedAmount(v.LockedAmount() - actualUnshieldAmt)
+		err = v.UpdateLockedAmount(actualUnshieldAmt, common.SubOperator)
+		if err != nil {
+			return nil, err
+		}
 		vaults[data.IncTokenID] = v
 	}
 	return vaults, nil
@@ -1098,10 +861,15 @@ func updateStateForUnshield(
 	// add new unshield req to waiting list
 	case common.WaitingStatusStr:
 		{
+			// update vault state
+			updatedVaults, err := updateStateForNewWaitingUnshieldReq(vaults, waitingUnshieldReq)
+			if err != nil {
+				return state, err
+			}
+			state.unifiedTokenVaults[unifiedTokenID] = updatedVaults
+
 			// add to waiting list
 			state = addWaitingUnshieldReq(state, waitingUnshieldReq, unifiedTokenID)
-			// update vault state
-			state.unifiedTokenVaults[unifiedTokenID] = updateStateForNewWaitingUnshieldReq(vaults, waitingUnshieldReq)
 		}
 
 	// a unshield req in waiting list is filled
@@ -1122,7 +890,11 @@ func updateStateForUnshield(
 	// new unshield req is accepted with current state
 	case common.AcceptedStatusStr:
 		{
-			state.unifiedTokenVaults[unifiedTokenID] = updateStateForNewMatchedUnshieldReq(vaults, waitingUnshieldReq)
+			updatedVaults, err := updateStateForNewMatchedUnshieldReq(vaults, waitingUnshieldReq)
+			if err != nil {
+				return state, err
+			}
+			state.unifiedTokenVaults[unifiedTokenID] = updatedVaults
 		}
 	default:
 		{
