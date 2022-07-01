@@ -88,6 +88,7 @@ plg_param:
 ftm_param:
   host:
     - "https://rpcapi.fantom.network"
+    - "https://fantom-mainnet.public.blastapi.io"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
