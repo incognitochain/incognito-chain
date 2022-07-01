@@ -11,26 +11,29 @@ import (
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
+func (a *actorV3) maybeVoteMsg() {
+	for _, proposeBlockInfo := range a.receiveBlockByHash {
+		if a.shouldVote(proposeBlockInfo) {
+			a.sendVote(proposeBlockInfo, "vote")
+		}
+	}
+}
+
 /*
 send vote for propose block that
 - not yet vote
+- block valid
 - receive 2/3 prevote
 */
-func (a *actorV3) maybeVoteMsg() {
-	for _, proposeBlockInfo := range a.receiveBlockByHash {
-		if a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
-			!proposeBlockInfo.IsVoted {
-
-			if proposeBlockInfo.ValidPreVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
-				//set isVote = true (lock), so that, if at same block height next time, we dont vote for different block hash
-				proposeBlockInfo.IsVoted = true
-				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
-					return
-				}
-				a.sendVote(proposeBlockInfo, "vote")
-			}
+func (a *actorV3) shouldVote(proposeBlockInfo *ProposeBlockInfo) bool {
+	if a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
+		!proposeBlockInfo.IsVoted &&
+		proposeBlockInfo.IsValid {
+		if proposeBlockInfo.ValidPreVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
+			return true
 		}
 	}
+	return false
 }
 
 func (a *actorV3) handleVoteMsg(voteMsg BFTVote) error {

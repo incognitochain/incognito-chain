@@ -21,6 +21,23 @@ func CreateProposeBFTMessage(block types.BlockInterface, peerID string) (*BFTPro
 	return bftPropose, nil
 }
 
+func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInterface {
+	// get block that we already send vote message (blockhash that is lock for this height)
+	var block types.BlockInterface = nil
+	lockBlockHash := a.getLockBlockHash(proposeBlockHeight)
+	if lockBlockHash != nil {
+		block = lockBlockHash.block
+	} else { //or previous valid block
+		for _, v := range a.GetSortedReceiveBlockByHeight(proposeBlockHeight) {
+			if v.IsValid {
+				block = v.block
+				break
+			}
+		}
+	}
+	return block
+}
+
 //check if node should propose in this timeslot
 //if yes, then create and send propose block message
 func (a *actorV3) maybeProposeBlock() error {
@@ -45,22 +62,19 @@ func (a *actorV3) maybeProposeBlock() error {
 
 	if shouldListen {
 		a.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v\n", a.chainKey, common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
+		a.logger.Info("")
 	}
 	if !shouldPropose {
 		return nil
 	}
 
 	a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v\n", a.chainKey, common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
+	a.logger.Info("")
 	if err := a.AddCurrentTimeSlotProposeHistory(); err != nil {
 		a.logger.Errorf("add current time slot propose history")
 	}
 
-	// get block that we already send vote message (blockhash that is lock for this height)
-	var block types.BlockInterface = nil
-	lockBlockHash := a.getLockBlockHash(a.chain.GetBestViewHeight())
-	if lockBlockHash != nil {
-		block = lockBlockHash.block
-	}
+	block := a.getBlockForPropose(bestView.GetHeight() + 1)
 
 	if block == nil || block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
 		ctx := context.Background()

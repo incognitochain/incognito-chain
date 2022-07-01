@@ -49,6 +49,8 @@ type actorV3 struct {
 	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
 	blockVersion int
+
+	currentBestViewHeight uint64
 }
 
 func NewActorV3() *actorV3 {
@@ -70,7 +72,6 @@ func NewActorV3WithValue(
 		node,
 		logger,
 	)
-
 	a.run()
 
 	return a
@@ -720,12 +721,13 @@ func (a *actorV3) run() error {
 
 				a.currentTimeSlot = currentTimeSlot
 				bestView := a.chain.GetBestView()
+				a.currentBestViewHeight = bestView.GetHeight()
 
 				//set round for monitor
 				round := a.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
-				if newTimeSlot { //for logging
+				if newTimeSlot {
 					a.logger.Info("")
 					a.logger.Info("======================================================")
 					if ActorRuleBuilderContext.CreateRule == CREATE_RULE_NORMAL {
@@ -740,7 +742,7 @@ func (a *actorV3) run() error {
 					}
 					if proposeInfo.block != nil && common.CalculateTimeSlot(proposeInfo.block.GetProposeTime()) == a.currentTimeSlot {
 						//validate propose block for this time slot
-						err := a.validateBlock(a.chain.GetBestView().GetHeight(), proposeInfo)
+						err := a.validateBlock(proposeInfo)
 						if err != nil {
 							a.logger.Errorf("%v", err)
 						}
@@ -773,9 +775,9 @@ func (a *actorV3) run() error {
 
 //get lock block hash, which is blockhash that we had send vote message
 //so that, we will not prevote for other block
-func (a *actorV3) getLockBlockHash(bestViewHeight uint64) (info *ProposeBlockInfo) {
+func (a *actorV3) getLockBlockHash(proposeBlockHeight uint64) (info *ProposeBlockInfo) {
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
-		if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 && proposeBlockInfo.IsVoted {
+		if proposeBlockInfo.block.GetHeight() == proposeBlockHeight && proposeBlockInfo.IsVoted {
 			info = proposeBlockInfo
 			break
 		}
@@ -784,7 +786,7 @@ func (a *actorV3) getLockBlockHash(bestViewHeight uint64) (info *ProposeBlockInf
 }
 
 //job to validate propose block
-func (a *actorV3) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+func (a *actorV3) validateBlock(proposeBlockInfo *ProposeBlockInfo) error {
 	//not validate if already valid
 	if proposeBlockInfo.IsValid {
 		return nil
@@ -796,12 +798,12 @@ func (a *actorV3) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	}
 
 	//should be next block height
-	if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
+	if proposeBlockInfo.block.GetHeight() != a.currentBestViewHeight+1 {
 		return errors.New("Not expected height!")
 	}
 
 	//should be the same with lock block hash
-	lockProposeInfo := a.getLockBlockHash(bestViewHeight)
+	lockProposeInfo := a.getLockBlockHash(a.currentBestViewHeight + 1)
 	if lockProposeInfo != nil && lockProposeInfo.block.Hash().String() != proposeBlockInfo.block.Hash().String() {
 		return errors.New("Not expected locked blockhash!")
 	}

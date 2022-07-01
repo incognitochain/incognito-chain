@@ -7,24 +7,33 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
+func (a *actorV3) maybePreVoteMsg() {
+	for _, proposeBlockInfo := range a.receiveBlockByHash {
+		if a.shouldPrevote(proposeBlockInfo) {
+			a.sendVote(proposeBlockInfo, "prevote")
+			proposeBlockInfo.IsPreVoted = true
+		}
+	}
+}
+
 /*
 send prevote for propose block that
+- next height
 - not yet prevote
 - valid block
 - in current timeslot
 - not lock, or having same blockhash with lock blockhash
 */
-func (a *actorV3) maybePreVoteMsg() {
-	for _, proposeBlockInfo := range a.receiveBlockByHash {
-		lockBlockHash := a.getLockBlockHash(a.chain.GetBestViewHeight())
-		if proposeBlockInfo.IsValid &&
-			!proposeBlockInfo.IsPreVoted &&
-			a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
-			(lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
-			a.sendVote(proposeBlockInfo, "prevote")
-			proposeBlockInfo.IsPreVoted = true
-		}
+func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
+	lockBlockHash := a.getLockBlockHash(a.currentBestViewHeight + 1)
+	if proposeBlockInfo.block.GetHeight() == a.currentBestViewHeight+1 &&
+		proposeBlockInfo.IsValid &&
+		!proposeBlockInfo.IsPreVoted &&
+		a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
+		(lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
+		return true
 	}
+	return false
 }
 
 //VoteValidBlock this function should be use to vote for valid block only
@@ -44,6 +53,12 @@ func (a *actorV3) sendVote(
 					return NewConsensusError(UnExpectedError, err)
 				}
 			case "vote":
+				//set isVote = true (lock), so that, if at same block height next time, we dont pre vote for different block hash
+				proposeBlockInfo.IsVoted = true
+				if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
+					return NewConsensusError(UnExpectedError, err)
+				}
+				//send
 				err := a.createAndSendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0))
 				if err != nil {
 					a.logger.Error(err)
