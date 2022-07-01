@@ -672,12 +672,19 @@ func (a *actorV3) run() error {
 				close(a.destroyCh)
 				return
 			case proposeMsg := <-a.proposeMessageCh:
+				if ActorRuleBuilderContext.HandleProposeRule != HANDLE_PROPOSE_MESSAGE_NORMAL {
+					continue
+				}
 				err := a.handleProposeMsg(proposeMsg)
 				if err != nil {
 					a.logger.Error(err)
 					continue
 				}
+
 			case voteMsg := <-a.voteMessageCh:
+				if ActorRuleBuilderContext.HandleVoteRule != HANDLE_VOTE_MESSAGE_COLLECT {
+					continue
+				}
 				switch voteMsg.Phase {
 				case "prevote":
 					err := a.handlePreVoteMsg(voteMsg)
@@ -721,11 +728,16 @@ func (a *actorV3) run() error {
 				if newTimeSlot { //for logging
 					a.logger.Info("")
 					a.logger.Info("======================================================")
-					a.maybeProposeBlock()
+					if ActorRuleBuilderContext.CreateRule == CREATE_RULE_NORMAL {
+						a.maybeProposeBlock()
+					}
 				}
 
 				//validatingreceived data: propose, prevote, vote
 				for _, proposeInfo := range a.receiveBlockByHash {
+					if ActorRuleBuilderContext.ValidatorRule == VALIDATOR_NO_VALIDATE {
+						break
+					}
 					if proposeInfo.block != nil && common.CalculateTimeSlot(proposeInfo.block.GetProposeTime()) == a.currentTimeSlot {
 						//validate propose block for this time slot
 						err := a.validateBlock(a.chain.GetBestView().GetHeight(), proposeInfo)
@@ -740,14 +752,19 @@ func (a *actorV3) run() error {
 					}
 				}
 
-				//prevote for this timeslot
-				a.maybePreVoteMsg()
+				if ActorRuleBuilderContext.VoteRule == VOTE_RULE_VOTE {
+					//prevote for this timeslot
+					a.maybePreVoteMsg()
 
-				//vote for this timeslot
-				a.maybeVoteMsg()
+					//vote for this timeslot
+					a.maybeVoteMsg()
+				}
 
-				//commit for this timeslot
-				a.maybeCommit()
+				if ActorRuleBuilderContext.InsertRule == INSERT_AND_BROADCAST {
+					//commit for this timeslot
+					a.maybeCommit()
+				}
+
 			}
 		}
 	}()

@@ -30,7 +30,7 @@ type builderContext struct {
 	ValidatorRule     string
 }
 
-var ActorV2BuilderContext = &builderContext{
+var ActorRuleBuilderContext = &builderContext{
 	VoteRule:          VOTE_RULE_VOTE,
 	CreateRule:        CREATE_RULE_NORMAL,
 	HandleVoteRule:    HANDLE_VOTE_MESSAGE_COLLECT,
@@ -40,7 +40,7 @@ var ActorV2BuilderContext = &builderContext{
 }
 
 func SetBuilderContext(lemma2Height uint64) {
-	ActorV2BuilderContext.Lemma2Height = lemma2Height
+	ActorRuleBuilderContext.Lemma2Height = lemma2Height
 }
 
 type IActorV2RuleBuilder interface {

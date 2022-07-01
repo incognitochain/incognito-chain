@@ -403,32 +403,32 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	validatorRule := param["validator_rule"]
 
 	if voteRule != nil {
-		blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+		blsbft.ActorRuleBuilderContext.VoteRule = voteRule.(string)
 	}
 	if createRule != nil {
-		blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+		blsbft.ActorRuleBuilderContext.CreateRule = createRule.(string)
 	}
 	if handleVoteRule != nil {
-		blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+		blsbft.ActorRuleBuilderContext.HandleVoteRule = handleVoteRule.(string)
 	}
 	if handleProposeRule != nil {
-		blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
+		blsbft.ActorRuleBuilderContext.HandleProposeRule = handleProposeRule.(string)
 	}
 	if insertRule != nil {
-		blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+		blsbft.ActorRuleBuilderContext.InsertRule = insertRule.(string)
 	}
 	if validatorRule != nil {
-		blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+		blsbft.ActorRuleBuilderContext.ValidatorRule = validatorRule.(string)
 	}
 
 	return map[string]interface{}{
-		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
-		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
-		"handle_vote_rule":    blsbft.ActorV2BuilderContext.HandleVoteRule,
-		"handle_propose_rule": blsbft.ActorV2BuilderContext.HandleProposeRule,
-		"insert_rule":         blsbft.ActorV2BuilderContext.InsertRule,
-		"validator_rule":      blsbft.ActorV2BuilderContext.ValidatorRule,
-		"lemma2_height":       blsbft.ActorV2BuilderContext.Lemma2Height,
+		"vote_rule":           blsbft.ActorRuleBuilderContext.VoteRule,
+		"create_rule":         blsbft.ActorRuleBuilderContext.CreateRule,
+		"handle_vote_rule":    blsbft.ActorRuleBuilderContext.HandleVoteRule,
+		"handle_propose_rule": blsbft.ActorRuleBuilderContext.HandleProposeRule,
+		"insert_rule":         blsbft.ActorRuleBuilderContext.InsertRule,
+		"validator_rule":      blsbft.ActorRuleBuilderContext.ValidatorRule,
+		"lemma2_height":       blsbft.ActorRuleBuilderContext.Lemma2Height,
 	}, nil
 }
 
@@ -459,7 +459,7 @@ func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, 
 }
 
 func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return blsbft.ActorV2BuilderContext, nil
+	return blsbft.ActorRuleBuilderContext, nil
 }
 
 func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

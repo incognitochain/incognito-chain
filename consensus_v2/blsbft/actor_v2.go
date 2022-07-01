@@ -113,7 +113,7 @@ func newActorV2WithValue(
 	a.blockVersion = blockVersion
 	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	a.ruleDirector = NewActorV2RuleDirector()
-	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestView().GetBeaconHeight(), chain, logger)
+	a.ruleDirector.initRule(ActorRuleBuilderContext, a.chain.GetBestView().GetBeaconHeight(), chain, logger)
 	if err != nil {
 		panic(err) //must not error
 	}
@@ -522,7 +522,7 @@ func (a *actorV2) run() error {
 			}
 
 			a.ruleDirector.updateRule(
-				ActorV2BuilderContext,
+				ActorRuleBuilderContext,
 				a.ruleDirector.builder,
 				a.chain.GetBestView().GetBeaconHeight(),
 				a.chain,
