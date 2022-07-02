@@ -83,13 +83,12 @@ bsc_param:
 plg_param:
   host:
     - "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
-    - "https://polygon-rpc.com"
     - "https://rpc-mainnet.maticvigil.com"
     - "https://rpc-mainnet.matic.quiknode.pro"
 ftm_param:
   host:
     - "https://rpcapi.fantom.network"
-    - "https://rpc.ftm.tools"
+    - "https://fantom-mainnet.public.blastapi.io"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
@@ -114,7 +113,7 @@ auto_enable_feature:
   - instantfinality:
       min_trigger: 2076793
       force_trigger: 1e9
-      require_percentage: 90
+      require_percentage: 84
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
