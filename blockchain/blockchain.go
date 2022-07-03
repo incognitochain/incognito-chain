@@ -670,6 +670,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	}
 
 	blockchain.BeaconChain.multiView.Reset()
+	cnt := 0
 	for _, v := range allViews {
 		includePdexv3 := false
 		if v.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
@@ -678,6 +679,19 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if err := v.RestoreBeaconViewStateFromHash(blockchain, true, includePdexv3, true); err != nil {
 			return NewBlockChainError(BeaconError, err)
 		}
+		if cnt == 0 {
+			height := uint64(v.GetHeight()) - 1
+			v.BestBlock.Header.ProcessBridgeFromBlock = &height
+			v.BestBlockHash = *v.BestBlock.Hash()
+		} else {
+			curView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
+			if blockchain.shouldBeaconGenerateBridgeInstruction(blockchain.BeaconChain.GetBestView().(*BeaconBestState)) {
+				height := uint64(curView.GetHeight())
+				v.BestBlock.Header.ProcessBridgeFromBlock = &height
+				v.BestBlockHash = *v.BestBlock.Hash()
+			}
+		}
+		cnt++
 		if v.NumberOfFixedShardBlockValidator == 0 {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
