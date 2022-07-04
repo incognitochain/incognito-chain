@@ -549,6 +549,13 @@ func (header BeaconHeader) ToProtoBeaconHeader() (*proto.BeaconHeaderBytes, erro
 			}
 		}
 	}
+	if header.Version >= INSTANT_FINALITY_VERSION {
+		if header.ProcessBridgeFromBlock == nil {
+			res.ProcessBridgeFromBlock = 0
+		} else {
+			res.ProcessBridgeFromBlock = *header.ProcessBridgeFromBlock
+		}
+	}
 	res.Producer = int32(producerIdx)
 	res.Proposer = int32(proposerIdx)
 	res.ProposeTime = header.ProposeTime
@@ -606,5 +613,13 @@ func (header *BeaconHeader) FromProtoBeaconHeader(protoData *proto.BeaconHeaderB
 	header.Proposer = proposerPk
 	header.ProposeTime = protoData.ProposeTime
 	header.FinalityHeight = protoData.FinalityHeight
+	if header.Version >= INSTANT_FINALITY_VERSION {
+		if protoData.ProcessBridgeFromBlock == 0 {
+			header.ProcessBridgeFromBlock = nil
+		} else {
+			header.ProcessBridgeFromBlock = new(uint64)
+			*header.ProcessBridgeFromBlock = protoData.ProcessBridgeFromBlock
+		}
+	}
 	return nil
 }

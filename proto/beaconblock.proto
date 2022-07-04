@@ -42,6 +42,7 @@ message BeaconHeaderBytes {
     int32 Proposer = 18;
     sint64 ProposeTime = 19;
     uint64 FinalityHeight = 20;
+    uint64 ProcessBridgeFromBlock = 21;
 }
 
 message BeaconBlockBytes {
