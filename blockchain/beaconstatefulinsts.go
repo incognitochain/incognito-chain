@@ -417,6 +417,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if len(bridgeAggInsts) > 0 {
 		instructions = append(instructions, bridgeAggInsts...)
 	}
+	accumulatedValues = newAccumulatedValues
 
 	return instructions, nil
 }
