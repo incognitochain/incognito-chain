@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -157,6 +158,31 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		}
 	}
 	return nil
+}
+
+func (blockchain *BlockChain) InitMissingCounter() {
+	beaconViews := blockchain.BeaconChain.GetMultiView()
+	firstBeaconHeightOfEpoch := blockchain.GetFirstBeaconHeightInEpoch(beaconViews.GetBestView().GetBlock().GetCurrentEpoch())
+
+	ch, err := blockchain.config.Highway.RequestBeaconBlocksViaStream(context.Background(), "", firstBeaconHeightOfEpoch, beaconViews.GetBestView().GetHeight())
+	for {
+		select {
+		case blk := <-ch:
+			if blk != nil {
+				CacheInitBlock[blk.Hash().String()] = blk.(*types.BeaconBlock)
+			} else {
+				goto FINISH
+			}
+		}
+	}
+FINISH:
+	if beaconViews.GetBestView().(*BeaconBestState).missingSignatureCounter == nil {
+		block := beaconViews.GetBestView().(*BeaconBestState).BestBlock
+		err = beaconViews.GetBestView().(*BeaconBestState).initMissingSignatureCounter(blockchain, &block)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 // InitChainState attempts to load and initialize the chain state from the
@@ -725,17 +751,11 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
-	for _, beaconState := range allViews {
-		if beaconState.missingSignatureCounter == nil {
-			block := beaconState.BestBlock
-			err = beaconState.initMissingSignatureCounter(blockchain, &block)
-			if err != nil {
-				return err
-			}
-		}
-	}
+
 	return nil
 }
+
+var CacheInitBlock = map[string]*types.BeaconBlock{}
 
 /*
 Backup shard views

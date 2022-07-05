@@ -735,6 +735,8 @@ func (serverObj Server) Start() {
 	serverObj.waitGroup.Add(1)
 
 	go serverObj.highway.StartV2(serverObj.blockChain)
+	time.Sleep(time.Second * 10)
+	serverObj.blockChain.InitMissingCounter()
 
 	serverObj.netSync.Start()
 
@@ -774,6 +776,7 @@ func (serverObj Server) Start() {
 		go serverObj.Stop()
 		return
 	}
+
 	// go metrics.StartSystemMetrics()
 }
 

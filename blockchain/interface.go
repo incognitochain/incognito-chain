@@ -56,6 +56,7 @@ type Server interface {
 }
 
 type Highway interface {
+	RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan types.BlockInterface, err error)
 	BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
 	GetConnectionStatus() interface{}
 }

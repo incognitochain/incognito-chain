@@ -897,7 +897,7 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	beaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
 	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
-	tempBeaconBlock := beaconBlock
+	tempBeaconBlock := CacheInitBlock[beaconBlock.Hash().String()]
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
 
@@ -908,10 +908,11 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 		if tempBeaconHeight == 1 {
 			break
 		}
-		previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
-		if err != nil {
-			return err
-		}
+		previousBeaconBlock := CacheInitBlock[tempBeaconBlock.Header.PreviousBlockHash.String()]
+		//previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
+		//if err != nil {
+		//	return err
+		//}
 		tempBeaconBlock = previousBeaconBlock
 		tempBeaconHeight--
 	}
