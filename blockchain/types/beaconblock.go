@@ -157,6 +157,18 @@ func (sState ShardState) ToProtoShardState() (*proto.ShardStateBytes, error) {
 	} else {
 		res.ValidationData = []byte{}
 	}
+	if len(sState.PreviousValidationData) != 0 {
+		prevVData, err := consensustypes.DecodeValidationData(sState.PreviousValidationData)
+		if err != nil {
+			return nil, err
+		}
+		res.PreviousValidationData, err = prevVData.ToBytes()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		res.PreviousValidationData = []byte{}
+	}
 	res.Version = int32(sState.Version)
 	res.ProposerTime = sState.ProposerTime
 	return res, nil
@@ -182,6 +194,19 @@ func (sState *ShardState) FromProtoShardState(protoData *proto.ShardStateBytes) 
 		}
 	} else {
 		sState.ValidationData = ""
+	}
+	if len(protoData.PreviousValidationData) != 0 {
+		prevData := &consensustypes.ValidationData{}
+		err := prevData.FromBytes(protoData.PreviousValidationData)
+		if err != nil {
+			return err
+		}
+		sState.PreviousValidationData, err = consensustypes.EncodeValidationData(*prevData)
+		if err != nil {
+			return err
+		}
+	} else {
+		sState.PreviousValidationData = ""
 	}
 	sState.Version = int(protoData.Version)
 	sState.ProposerTime = protoData.ProposerTime

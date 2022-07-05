@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/blockstorage"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"path"
-	"sync"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
@@ -439,9 +440,8 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 			return nil
 		}
 	}
-
-	shardBlock, _, err := chain.Blockchain.GetShardBlockByHash(previousBlockHash)
-	if err != nil {
+	shardBlock, _, err := chain.Blockchain.GetShardBlockByHashWithShardID(previousBlockHash, byte(chain.shardID))
+	if (err != nil) || (shardBlock == nil) {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	}
 
@@ -478,8 +478,14 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 		return err
 	}
 	//rewrite to database
-	if err = rawdbv2.StoreShardBlock(chain.GetChainDatabase(), replaceBlockHash, shardBlock); err != nil {
-		return err
+	if !config.Config().EnableFFStorage {
+		if err = rawdbv2.StoreShardBlock(chain.GetChainDatabase(), replaceBlockHash, shardBlock); err != nil {
+			return err
+		}
+	} else {
+		if err := chain.blkManager.StoreBlockValidation(replaceBlockHash, newValidationData); err != nil {
+			return NewBlockChainError(ReplacePreviousValidationDataError, err)
+		}
 	}
 	//update multiview
 	view := chain.multiView.GetViewByHash(replaceBlockHash)

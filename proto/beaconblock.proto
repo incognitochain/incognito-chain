@@ -10,6 +10,7 @@ message ShardStateBytes {
     bytes CrossShard = 5;
     sint64 ProposerTime = 6;
     int32 Version = 7;
+    bytes PreviousValidationData = 8;
 }
 
 message ListShardStateBytes {

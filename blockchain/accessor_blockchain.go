@@ -188,12 +188,7 @@ func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height ui
 	if err != nil {
 		return nil, err
 	}
-	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
-	if err != nil {
-		return nil, err
-	}
-	shardBlock := types.NewShardBlock()
-	err = json.Unmarshal(data, shardBlock)
+	shardBlock, _, err := blockchain.GetShardBlockByHashWithShardID(*blkhash, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -249,10 +244,10 @@ func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, s
 	return shardBlock, shardBlock.Header.Height, nil
 }
 
-func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (bool, error) {
+func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (has bool, err error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
-		has, err := rawdbv2.HasShardBlock(blockchain.GetShardChainDatabase(shardID), hash)
+		has, err = blockchain.ShardChain[shardID].blkManager.CheckBlockByHash(&hash)
 		if err != nil {
 			return false, NewBlockChainError(GetShardBlockByHashError, err)
 		}
