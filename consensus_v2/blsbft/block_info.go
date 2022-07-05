@@ -14,20 +14,19 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	block             types.BlockInterface
-	ReceiveTime       time.Time
-	Committees        []incognitokey.CommitteePublicKey
-	SigningCommittees []incognitokey.CommitteePublicKey
-	UserKeySet        []signatureschemes2.MiningKey
-	Votes             map[string]*BFTVote //pk->BFTVote
-	PreVotes          map[string]*BFTVote //pk->BFTVote
-	IsValid           bool
-	HasNewPreVote     bool
-	HasNewVote        bool
-	IsVoted           bool
-	IsPreVoted        bool
-	IsCommitted       bool
-
+	block                   types.BlockInterface
+	ReceiveTime             time.Time
+	Committees              []incognitokey.CommitteePublicKey
+	SigningCommittees       []incognitokey.CommitteePublicKey
+	UserKeySet              []signatureschemes2.MiningKey
+	Votes                   map[string]*BFTVote //pk->BFTVote
+	PreVotes                map[string]*BFTVote //pk->BFTVote
+	IsValid                 bool
+	HasNewPreVote           bool
+	HasNewVote              bool
+	IsVoted                 bool
+	IsPreVoted              bool
+	IsCommitted             bool
 	ValidPreVotes           int
 	ErrPreVotes             int
 	ValidVotes              int
@@ -39,6 +38,7 @@ type ProposeBlockInfo struct {
 	ReProposeHashSignature  string
 	IsValidLemma2Proof      bool
 	FinalityProof           FinalityProof
+	ValidPOLC               bool
 }
 
 func NewProposeBlockInfo() *ProposeBlockInfo {
@@ -73,7 +73,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.ReProposeHashSignature = tempBeaconBlock.Alias.ReProposeHashSignature
 		p.IsValidLemma2Proof = tempBeaconBlock.Alias.IsValidLemma2Proof
 		p.FinalityProof = tempBeaconBlock.Alias.FinalityProof
-
+		p.ValidPOLC = tempBeaconBlock.Alias.ValidPOLC
 		return nil
 	} else {
 		tempShardBlock := struct {
@@ -101,6 +101,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.ReProposeHashSignature = tempShardBlock.Alias.ReProposeHashSignature
 		p.IsValidLemma2Proof = tempShardBlock.Alias.IsValidLemma2Proof
 		p.FinalityProof = tempShardBlock.Alias.FinalityProof
+		p.ValidPOLC = tempShardBlock.Alias.ValidPOLC
 		return nil
 	}
 }
@@ -131,6 +132,7 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				ReProposeHashSignature:  p.ReProposeHashSignature,
 				IsValidLemma2Proof:      p.IsValidLemma2Proof,
 				FinalityProof:           p.FinalityProof,
+				ValidPOLC:               p.ValidPOLC,
 			},
 		})
 		if err != nil {
@@ -160,6 +162,7 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				ReProposeHashSignature:  p.ReProposeHashSignature,
 				IsValidLemma2Proof:      p.IsValidLemma2Proof,
 				FinalityProof:           p.FinalityProof,
+				ValidPOLC:               p.ValidPOLC,
 			},
 		})
 		if err != nil {

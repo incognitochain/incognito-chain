@@ -778,8 +778,14 @@ func (a *actorV3) run() error {
 func (a *actorV3) getLockBlockHash(proposeBlockHeight uint64) (info *ProposeBlockInfo) {
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
 		if proposeBlockInfo.block.GetHeight() == proposeBlockHeight && proposeBlockInfo.IsVoted {
-			info = proposeBlockInfo
-			break
+			//get latest propose block info that has 2/3+ prevote => Proof of lock change
+			if info != nil {
+				if info.block.GetProposeTime() < proposeBlockInfo.block.GetProposeTime() {
+					info = proposeBlockInfo
+				}
+			} else {
+				info = proposeBlockInfo
+			}
 		}
 	}
 	return info

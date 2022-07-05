@@ -22,7 +22,7 @@ send prevote for propose block that
 - not yet prevote
 - valid block
 - in current timeslot
-- not lock, or having same blockhash with lock blockhash
+- not lock, or having same blockhash with lock blockhash or having POLC > lockTS (validPOLC)
 */
 func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
 	lockBlockHash := a.getLockBlockHash(a.currentBestViewHeight + 1)
@@ -30,7 +30,7 @@ func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
 		proposeBlockInfo.IsValid &&
 		!proposeBlockInfo.IsPreVoted &&
 		a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
-		(lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
+		(proposeBlockInfo.ValidPOLC || lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
 		return true
 	}
 	return false
@@ -105,8 +105,10 @@ func (a actorV3) CreatePreVote(
 	userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 	vote.Phase = "prevote"
 	vote.BlockHash = block.ProposeHash().String()
+	vote.Hash = block.Hash().String()
 	vote.Validator = userBLSPk
 	vote.ChainID = block.GetShardID()
+	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
 	err := vote.signVote(userKey)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)

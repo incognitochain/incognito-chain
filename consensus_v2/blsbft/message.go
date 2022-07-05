@@ -16,12 +16,19 @@ const (
 	MsgRequestBlk = "getblk"
 )
 
+type POLC struct {
+	Idx              []int
+	Sig              [][]byte
+	BlockProposeHash string
+	Timeslot         int64
+}
 type BFTPropose struct {
 	PeerID                 string
 	Block                  json.RawMessage
 	ReProposeHashSignature string
 	FinalityProof          FinalityProof
 	BestBlockConsensusData map[int]types.BlockConsensusData
+	POLC                   POLC
 }
 
 type BFTVote struct {
@@ -30,6 +37,7 @@ type BFTVote struct {
 	PrevBlockHash      string
 	BlockHeight        uint64
 	BlockHash          string //this is propose block hash
+	Hash               string //this is block hash
 	Validator          string
 	BLS                []byte
 	BRI                []byte
@@ -69,6 +77,9 @@ func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 		if s.Phase != "" {
 			data = append(data, []byte(s.Phase)...)
 		}
+		if s.Hash != "" {
+			data = append(data, []byte(s.Hash)...)
+		}
 		data = append(data, s.BlockHash...)
 		data = append(data, s.BLS...)
 		data = append(data, s.BRI...)
@@ -98,6 +109,9 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 	} else {
 		if s.Phase != "" {
 			data = append(data, []byte(s.Phase)...)
+		}
+		if s.Hash != "" {
+			data = append(data, []byte(s.Hash)...)
 		}
 		data = append(data, s.BlockHash...)
 		data = append(data, s.BLS...)

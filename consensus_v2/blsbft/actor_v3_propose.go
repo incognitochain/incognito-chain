@@ -113,12 +113,82 @@ func (a *actorV3) maybeProposeBlock() error {
 	if err != nil {
 		a.logger.Errorf("Add validation data for new block failed", err)
 	}
+
 	bftProposeMessage, err := CreateProposeBFTMessage(block, a.node.GetSelfPeerID().String())
+	if lockBlockHash := a.getLockBlockHash(block.GetHeight()); lockBlockHash != nil {
+		bftProposeMessage.POLC, err = buildPOLCFromPreVote(lockBlockHash)
+		if err != nil {
+			a.logger.Error("buildPOLCFromPreVote Failed", err)
+			return NewConsensusError(BlockCreationError, errors.New("buildPOLCFromPreVote fail"))
+		}
+		a.logger.Info("Build propose block message with POLC")
+	}
+
 	err = a.sendBFTProposeMsg(bftProposeMessage)
 	if err != nil {
 		a.logger.Error("Send BFT Propose Message Failed", err)
 	}
 	return nil
+}
+
+func buildPOLCFromPreVote(info *ProposeBlockInfo) (POLC, error) {
+	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(info.SigningCommittees, common.BlsConsensus)
+	if err != nil {
+		return POLC{}, err
+	}
+
+	idx := []int{}
+	sigs := [][]byte{}
+	for pk, vote := range info.PreVotes {
+		index := common.IndexOfStr(pk, committeeBLSString)
+		idx = append(idx, index)
+		sigs = append(sigs, vote.Confirmation)
+	}
+	res := POLC{
+		idx, sigs, info.block.ProposeHash().String(), common.CalculateTimeSlot(info.block.GetProposeTime()),
+	}
+
+	return res, nil
+}
+
+func (info *ProposeBlockInfo) verifyPOLCFromPreVote(polc POLC, lock *ProposeBlockInfo) bool {
+	if len(polc.Idx) == 0 {
+		return false
+	}
+
+	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(info.SigningCommittees, common.BlsConsensus)
+	if err != nil {
+		return false
+	}
+	for _, index := range polc.Idx {
+		vote := new(BFTVote)
+		vote.BlockHash = polc.BlockProposeHash
+		vote.Hash = info.block.Hash().String()
+		vote.Validator = committeeBLSString[index]
+		vote.ChainID = info.block.GetShardID()
+		vote.ProposeTimeSlot = polc.Timeslot
+		vote.Confirmation = polc.Sig[index]
+
+		dsaKey := info.SigningCommittees[index].MiningPubKey[common.BridgeConsensus]
+		if len(dsaKey) == 0 {
+
+			return false
+		}
+
+		err := vote.validateVoteOwner(dsaKey)
+		if err != nil {
+			return false
+		}
+	}
+	if len(polc.Idx) <= 2*len(info.SigningCommittees)/3 {
+		return false
+	}
+
+	if lock != nil && polc.Timeslot <= common.CalculateTimeSlot(lock.block.GetProposeTime()) {
+		return false
+	}
+
+	return true
 }
 
 //on receive propose message, store it into mem and db
@@ -175,6 +245,12 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 	proposeBlockInfo.Votes = votes
 	proposeBlockInfo.PreVotes = prevotes
+	// handle Proof-of-lock-change (POLC: 2/3+ prevote signature) -> help node to unlock outdated locking blockhash (locking TS < POLC TS)
+	if !proposeBlockInfo.verifyPOLCFromPreVote(proposeMsg.POLC, a.getLockBlockHash(block.GetHeight())) {
+		a.logger.Info("Current propose block message dont have valid POLC")
+	} else {
+		proposeBlockInfo.ValidPOLC = true
+	}
 
 	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
