@@ -160,6 +160,7 @@ func (blockchain *BlockChain) InitChainState() error {
 	// everything from scratch or upgrade certain buckets.
 	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewBeaconMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
+	blockchain.BeaconChain.multiView.SetTimeSlotCalculator(blockchain.BeaconChain)
 	blockchain.BeaconChain.multiView.RunCleanProcess()
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
@@ -216,6 +217,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		)
 		tp.UpdateTxVerifier(tv)
 		blockchain.ShardChain[shardID] = NewShardChain(int(shardID), multiview.NewShardMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
+		blockchain.ShardChain[shardID].multiView.SetTimeSlotCalculator(blockchain.ShardChain[shardID])
 		blockchain.ShardChain[shardID].multiView.RunCleanProcess()
 		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
 		if err != nil {

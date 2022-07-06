@@ -47,6 +47,7 @@ type MultiView interface {
 	Clone() MultiView
 	Reset()
 	AddView(v View) (int, error)
+	SetTimeSlotCalculator(chain Chain)
 }
 
 type multiView struct {
@@ -70,6 +71,10 @@ func NewMultiView() *multiView {
 	}
 
 	return s
+}
+
+func (s *multiView) SetTimeSlotCalculator(chain Chain) {
+	s.timeSlotCalculator = chain
 }
 
 func (s *multiView) RunCleanProcess() {

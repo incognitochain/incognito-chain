@@ -521,20 +521,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	// signal of random parameter from beacon block
 	// update BestShardHash, BestBlock, BestBlockHash
-	for idx, feature := range config.Param().BlockTimeFeatures {
-		if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
-			if triggerFeature == beaconBlock.GetBeaconHeight() {
-				blockchain.BeaconChain.UpdateArchorTime(triggerFeature-1, beaconBlock)
-				if idx == 1 {
-					shardHeights := map[byte]uint64{}
-					for sID, sState := range beaconBlock.Body.ShardState {
-						shardHeights[sID] = sState[len(sState)-1].Height
-					}
-					beaconBestState.RewardInfo.Minted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
-				}
-			}
-		}
-	}
 
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *beaconBlock.Hash()
@@ -593,6 +579,21 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
+				}
+			}
+		}
+	}
+
+	for idx, feature := range config.Param().BlockTimeFeatures {
+		if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
+			if triggerFeature == beaconBlock.GetBeaconHeight() {
+				blockchain.BeaconChain.UpdateArchorTime(triggerFeature-1, beaconBlock)
+				if idx == 1 {
+					shardHeights := map[byte]uint64{}
+					for sID, sState := range beaconBlock.Body.ShardState {
+						shardHeights[sID] = sState[len(sState)-1].Height
+					}
+					beaconBestState.RewardInfo.Minted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
 				}
 			}
 		}

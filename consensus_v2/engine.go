@@ -2,10 +2,11 @@ package consensus_v2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -316,6 +317,15 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 		triggerFeature = engine.config.Blockchain.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
+	}
+
+	if len(config.Param().BlockTimeFeatures) > 1 {
+		features := config.Param().BlockTimeFeatures
+		for idx := len(features) - 1; idx >= 1; idx++ {
+			if triggerFeature[features[idx]] <= chainHeight {
+				return types.REDUCE_BLOCKTIME_VERSION + (idx - 1)
+			}
+		}
 	}
 
 	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
