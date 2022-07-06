@@ -49,10 +49,19 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 }
 
 func (httpServer *HttpServer) getPruneState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	results := make(map[byte]byte)
+	type Temp struct {
+		Status       byte   `json:"Status"`
+		PrunedHeight uint64 `json:"PrunedHeight"`
+	}
+	results := make(map[byte]Temp)
 	for i := 0; i < common.MaxShardNumber; i++ {
 		status, _ := rawdbv2.GetPruneStatus(httpServer.GetShardChainDatabase(byte(i)))
-		results[byte(i)] = status
+		prunedHeight, _ := rawdbv2.GetLastPrunedHeight(httpServer.GetShardChainDatabase(byte(i)))
+		temp := Temp{
+			Status:       status,
+			PrunedHeight: prunedHeight,
+		}
+		results[byte(i)] = temp
 	}
 	return results, nil
 }
