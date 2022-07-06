@@ -151,8 +151,9 @@ func buildPOLCFromPreVote(info *ProposeBlockInfo) (POLC, error) {
 	return res, nil
 }
 
-func (info *ProposeBlockInfo) verifyPOLCFromPreVote(polc POLC, lock *ProposeBlockInfo) bool {
+func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock *ProposeBlockInfo) bool {
 	if len(polc.Idx) == 0 {
+		a.logger.Info("Empty polc")
 		return false
 	}
 
@@ -160,31 +161,34 @@ func (info *ProposeBlockInfo) verifyPOLCFromPreVote(polc POLC, lock *ProposeBloc
 	if err != nil {
 		return false
 	}
-	for _, index := range polc.Idx {
+	for i, index := range polc.Idx {
 		vote := new(BFTVote)
 		vote.BlockHash = polc.BlockProposeHash
 		vote.Hash = info.block.Hash().String()
 		vote.Validator = committeeBLSString[index]
 		vote.ChainID = info.block.GetShardID()
 		vote.ProposeTimeSlot = polc.Timeslot
-		vote.Confirmation = polc.Sig[index]
+		vote.Confirmation = polc.Sig[i]
 
 		dsaKey := info.SigningCommittees[index].MiningPubKey[common.BridgeConsensus]
 		if len(dsaKey) == 0 {
-
+			a.logger.Info("Verify dsa error 1")
 			return false
 		}
 
 		err := vote.validateVoteOwner(dsaKey)
 		if err != nil {
+			a.logger.Info("Verify dsa error 2")
 			return false
 		}
 	}
 	if len(polc.Idx) <= 2*len(info.SigningCommittees)/3 {
+		a.logger.Info("Not enough signing signature")
 		return false
 	}
 
 	if lock != nil && polc.Timeslot <= common.CalculateTimeSlot(lock.block.GetProposeTime()) {
+		a.logger.Info("Not a new POLC")
 		return false
 	}
 
@@ -245,8 +249,9 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	}
 	proposeBlockInfo.Votes = votes
 	proposeBlockInfo.PreVotes = prevotes
+
 	// handle Proof-of-lock-change (POLC: 2/3+ prevote signature) -> help node to unlock outdated locking blockhash (locking TS < POLC TS)
-	if !proposeBlockInfo.verifyPOLCFromPreVote(proposeMsg.POLC, a.getLockBlockHash(block.GetHeight())) {
+	if !a.verifyPOLCFromPreVote(proposeBlockInfo*ProposeBlockInfo, proposeMsg.POLC, a.getLockBlockHash(block.GetHeight())) {
 		a.logger.Info("Current propose block message dont have valid POLC")
 	} else {
 		proposeBlockInfo.ValidPOLC = true
