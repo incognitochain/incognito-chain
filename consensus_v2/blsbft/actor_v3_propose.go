@@ -251,7 +251,7 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	proposeBlockInfo.PreVotes = prevotes
 
 	// handle Proof-of-lock-change (POLC: 2/3+ prevote signature) -> help node to unlock outdated locking blockhash (locking TS < POLC TS)
-	if !a.verifyPOLCFromPreVote(proposeBlockInfo*ProposeBlockInfo, proposeMsg.POLC, a.getLockBlockHash(block.GetHeight())) {
+	if !a.verifyPOLCFromPreVote(proposeBlockInfo, proposeMsg.POLC, a.getLockBlockHash(block.GetHeight())) {
 		a.logger.Info("Current propose block message dont have valid POLC")
 	} else {
 		proposeBlockInfo.ValidPOLC = true
