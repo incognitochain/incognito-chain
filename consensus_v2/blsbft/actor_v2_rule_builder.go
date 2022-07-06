@@ -22,6 +22,7 @@ var (
 
 type builderContext struct {
 	Lemma2Height      uint64
+	PreVoteRule       string
 	VoteRule          string
 	CreateRule        string
 	HandleVoteRule    string
@@ -31,6 +32,7 @@ type builderContext struct {
 }
 
 var ActorRuleBuilderContext = &builderContext{
+	PreVoteRule:       VOTE_RULE_VOTE,
 	VoteRule:          VOTE_RULE_VOTE,
 	CreateRule:        CREATE_RULE_NORMAL,
 	HandleVoteRule:    HANDLE_VOTE_MESSAGE_COLLECT,

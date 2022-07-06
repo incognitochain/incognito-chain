@@ -740,6 +740,7 @@ func (a *actorV3) run() error {
 					if ActorRuleBuilderContext.ValidatorRule == VALIDATOR_NO_VALIDATE {
 						break
 					}
+
 					if proposeInfo.block != nil && common.CalculateTimeSlot(proposeInfo.block.GetProposeTime()) == a.currentTimeSlot {
 						//validate propose block for this time slot
 						err := a.validateBlock(proposeInfo)
@@ -754,10 +755,12 @@ func (a *actorV3) run() error {
 					}
 				}
 
-				if ActorRuleBuilderContext.VoteRule == VOTE_RULE_VOTE {
+				if ActorRuleBuilderContext.PreVoteRule == VOTE_RULE_VOTE {
 					//prevote for this timeslot
 					a.maybePreVoteMsg()
+				}
 
+				if ActorRuleBuilderContext.VoteRule == VOTE_RULE_VOTE {
 					//vote for this timeslot
 					a.maybeVoteMsg()
 				}

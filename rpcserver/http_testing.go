@@ -396,6 +396,7 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	}
 
 	voteRule := param["vote_rule"]
+	preVoteRule := param["prevote_rule"]
 	createRule := param["create_rule"]
 	handleVoteRule := param["handle_vote_rule"]
 	handleProposeRule := param["handle_propose_rule"]
@@ -404,6 +405,9 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 
 	if voteRule != nil {
 		blsbft.ActorRuleBuilderContext.VoteRule = voteRule.(string)
+	}
+	if preVoteRule != nil {
+		blsbft.ActorRuleBuilderContext.PreVoteRule = preVoteRule.(string)
 	}
 	if createRule != nil {
 		blsbft.ActorRuleBuilderContext.CreateRule = createRule.(string)
