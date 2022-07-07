@@ -573,6 +573,7 @@ func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalit
 
 func (chain *BeaconChain) CalculateTimeSlot(beaconHeight uint64, curTime int64) int64 {
 	curBlockTime := chain.Blockchain.GetBeaconBestState().GetBlockTimeInterval(beaconHeight)
+	curTime += curBlockTime / 2
 	archorTime := chain.archorTime
 	for h := len(chain.archorTime.heights) - 1; h >= 0; h-- {
 		if beaconHeight >= archorTime.heights[h] {
