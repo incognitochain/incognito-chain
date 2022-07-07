@@ -175,6 +175,8 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
 		case metadataCommon.BurnForCallRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID)
+		case metadataCommon.IssuingReshieldResponseMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.reshield(*inst, m.state, sDB, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return err

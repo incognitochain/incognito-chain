@@ -37,11 +37,21 @@ func (txBuilder TxBuilder) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildShieldUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
-	case metadataCommon.BurningUnifiedTokenRequestMeta, metadataCommon.BurnForCallRequestMeta:
+	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildUnshieldUnifiedTokenResponse(inst, producerPrivateKey, shardID, transactionStateDB)
+	case metadataCommon.BurnForCallRequestMeta:
+		if len(inst) != 4 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
+		}
+		tx, err = buildBurnForCallResponse(inst, producerPrivateKey, shardID, transactionStateDB)
+	case metadataCommon.IssuingReshieldResponseMeta:
+		if len(inst) != 4 {
+			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
+		}
+		tx, err = buildIssuingReshieldResponse(inst, producerPrivateKey, shardID, transactionStateDB)
 	}
 	return tx, err
 }
@@ -205,4 +215,98 @@ func buildShieldUnifiedTokenResponse(
 	}
 
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, makeMD)
+}
+
+func buildBurnForCallResponse(
+	content []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	var tx metadata.Transaction
+	var txReqID, tokenID common.Hash
+	var amount uint64
+	var otaReceiver privacy.OTAReceiver
+	inst := metadataCommon.NewInstruction()
+	if err := inst.FromStringSlice(content); err != nil {
+		return tx, err
+	}
+	if inst.ShardID != shardID {
+		return nil, nil
+	}
+	switch inst.Status {
+	case common.RejectedStatusStr:
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			return nil, err
+		}
+		txReqID = rejectContent.TxReqID
+		var rejectedUnshieldRequest metadataBridge.RejectedBurnForCallRequest
+		if err := json.Unmarshal(rejectContent.Data, &rejectedUnshieldRequest); err != nil {
+			return nil, err
+		}
+		amount = rejectedUnshieldRequest.Amount
+		tokenID = rejectedUnshieldRequest.BurnTokenID
+		otaReceiver = rejectedUnshieldRequest.Receiver
+	default:
+		return nil, nil
+	}
+	md := metadataBridge.NewBurnForCallResponseWithValue(inst.Status, txReqID)
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: nil, PublicKey: otaReceiver.PublicKey, TxRandom: &otaReceiver.TxRandom, TokenID: &tokenID, Info: []byte{}}
+
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
+		func(c privacy.Coin) metadataCommon.Metadata { return md },
+	)
+}
+
+func buildIssuingReshieldResponse(
+	content []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	inst := metadataCommon.NewInstruction()
+	if err := inst.FromStringSlice(content); err != nil {
+		return nil, err
+	}
+	if inst.ShardID != shardID {
+		return nil, nil
+	}
+	Logger.log.Info("[Decentralized bridge token redeposit issuance] Starting...")
+	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of Reshield accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	var issuingReshieldAcceptedInst metadataBridge.IssuingEVMAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingReshieldAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling EVM accepted issuance instruction: ", err)
+		return nil, nil
+	}
+
+	if shardID != issuingReshieldAcceptedInst.ShardID {
+		Logger.log.Warnf("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingReshieldAcceptedInst.ShardID)
+		return nil, nil
+	}
+	tokenID := issuingReshieldAcceptedInst.IncTokenID
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, fmt.Errorf("cannot issue prv in bridge")
+	}
+	issuingReshieldRes := metadataBridge.NewIssuingReshieldResponse(
+		issuingReshieldAcceptedInst.TxReqID,
+		issuingReshieldAcceptedInst.UniqTx,
+		issuingReshieldAcceptedInst.ExternalTokenID,
+		metadataCommon.IssuingReshieldResponseMeta,
+	)
+
+	var recv privacy.OTAReceiver
+	err = recv.FromString(issuingReshieldAcceptedInst.ReceiverAddrStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
+		return nil, nil
+	}
+	txParam := transaction.TxSalaryOutputParams{Amount: issuingReshieldAcceptedInst.IssuingAmount, ReceiverAddress: nil, PublicKey: recv.PublicKey, TxRandom: &recv.TxRandom, TokenID: &tokenID}
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadataCommon.Metadata { return issuingReshieldRes })
 }

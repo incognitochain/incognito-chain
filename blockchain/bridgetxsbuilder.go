@@ -121,7 +121,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	prefix string,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
 	isPRV bool,
-) ([][]string, []byte, error) {
+) ([][]string, [][]byte, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	issuingEVMBridgeReqAction, err := metadataBridge.ParseEVMIssuingInstContent(contentStr)
 	if err != nil {
@@ -145,68 +145,123 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		Proof:     md.ProofStrs,
 	}
 
-	// check double use shielding proof in current block and previous blocks
-	isValid, uniqTx, err := bridgeagg.ValidateDoubleShieldProof(&evmProof, listTxUsed, isTxHashIssued, stateDBs[common.BeaconChainID])
-	if err != nil {
-		Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
-		return [][]string{rejectedInst}, nil, nil
-	}
-	if !isValid {
-		Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
-		return [][]string{rejectedInst}, nil, nil
-	}
-
 	amt, addressStr, token, err := metadataBridge.ExtractIssueEVMDataFromReceipt(
 		issuingEVMBridgeReqAction.EVMReceipt,
 		contractAddress,
 		prefix,
 		"",
 	)
+	var tmpData *metadataBridge.DepositEventData
 	if err != nil {
 		Logger.log.Warnf(err.Error())
-		return [][]string{rejectedInst}, nil, nil
-	}
-
-	receivingShardID, err := metadataBridge.GetShardIDFromPaymentAddressStr(addressStr)
-	if err != nil {
-		Logger.log.Warnf(err.Error())
-		return [][]string{rejectedInst}, nil, nil
-	}
-
-	amount := uint64(0)
-	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
-		// convert amt from wei (10^18) to nano eth (10^9)
-		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-	} else { // ERC20 / BEP20
-		amount = amt.Uint64()
-	}
-	if !isPRV {
-		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
+	} else {
+		receivingShardID, err := metadataBridge.GetShardIDFromPaymentAddressStr(addressStr)
 		if err != nil {
 			Logger.log.Warnf(err.Error())
-			return [][]string{rejectedInst}, nil, nil
+		} else {
+			tmpData = &metadataBridge.DepositEventData{
+				Amount:          amt,
+				ReceiverStr:     addressStr,
+				ExternalTokenID: token,
+				IncTxID:         append(evmProof.BlockHash[:], []byte(strconv.Itoa(int(evmProof.TxIndex)))...),
+				ShardID:         receivingShardID,
+				IsOneTime:       false,
+			}
 		}
 	}
 
-	issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
-		ShardID:         receivingShardID,
-		IssuingAmount:   amount,
-		ReceiverAddrStr: addressStr,
-		IncTokenID:      md.IncTokenID,
-		TxReqID:         issuingEVMBridgeReqAction.TxReqID,
-		UniqTx:          uniqTx,
-		ExternalTokenID: token,
-	}
-	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
+	redepositDataLst, err := metadataBridge.ExtractRedepositEVMDataFromReceipt(issuingEVMBridgeReqAction.EVMReceipt, contractAddress, prefix)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
+		Logger.log.Warnf("[BridgeAgg] Extract Redeposit EVM events failed - %v", err)
+	}
+	if tmpData != nil {
+		redepositDataLst = append(redepositDataLst, *tmpData)
+	}
+
+	var result [][]string
+	var uniqTxs [][]byte
+	for _, d := range redepositDataLst {
+		// check double use shielding proof in current block and previous blocks
+		isValid, uniqTx, err := bridgeagg.ValidateDoubleShieldProof(d.IncTxID, listTxUsed, isTxHashIssued, stateDBs[common.BeaconChainID])
+		if err != nil || !isValid {
+			Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
+			continue
+		}
+		listTxUsed = append(listTxUsed, uniqTx)
+
+		if !isPRV {
+			err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, d.ExternalTokenID)
+			if err != nil {
+				Logger.log.Warnf(err.Error())
+				continue
+			}
+		}
+		var amount uint64
+		if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), d.ExternalTokenID) {
+			// convert amt from wei (10^18) to nano eth (10^9)
+			amount = big.NewInt(0).Div(d.Amount, big.NewInt(1000000000)).Uint64()
+		} else { // ERC20 / BEP20
+			amount = d.Amount.Uint64()
+		}
+
+		issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
+			ShardID:         d.ShardID,
+			IssuingAmount:   amount,
+			ReceiverAddrStr: d.ReceiverStr,
+			IncTokenID:      md.IncTokenID,
+			TxReqID:         issuingEVMBridgeReqAction.TxReqID,
+			UniqTx:          uniqTx,
+			ExternalTokenID: d.ExternalTokenID,
+		}
+		issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
+			continue
+		}
+		ac.DBridgeTokenPair[md.IncTokenID.String()] = d.ExternalTokenID
+		var currentInst []string
+		if d.IsOneTime {
+			var recv privacy.OTAReceiver
+			recv.FromString(d.ReceiverStr)
+			networkID, _ := bridgeagg.GetNetworkIDByPrefix(prefix)
+			c := metadataBridge.AcceptedReshieldRequest{
+				UnifiedTokenID: nil,
+				Receiver:       recv,
+				TxReqID:        issuingEVMBridgeReqAction.TxReqID,
+				ReshieldData: metadataBridge.AcceptedShieldRequestData{
+					ShieldAmount:    amount,
+					Reward:          0,
+					UniqTx:          d.IncTxID,
+					ExternalTokenID: d.ExternalTokenID,
+					NetworkID:       networkID,
+					IncTokenID:      md.IncTokenID,
+				},
+			}
+			contentBytes, _ := json.Marshal(c)
+			currentInst = metadataCommon.NewInstructionWithValue(
+				metadataCommon.IssuingReshieldResponseMeta,
+				common.AcceptedStatusStr,
+				d.ShardID,
+				base64.StdEncoding.EncodeToString(contentBytes),
+			).StringSlice()
+		} else {
+			currentInst = metadataCommon.NewInstructionWithValue(
+				metaType,
+				common.AcceptedStatusStr,
+				shardID,
+				base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes),
+			).StringSlice()
+		}
+		result = append(result, currentInst)
+		uniqTxs = append(uniqTxs, uniqTx)
+		Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
+	}
+
+	if len(result) == 0 {
 		return [][]string{rejectedInst}, nil, nil
 	}
-	ac.DBridgeTokenPair[md.IncTokenID.String()] = token
-	inst.Status = common.AcceptedStatusStr
-	inst.Content = base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes)
-	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
-	return [][]string{inst.StringSlice()}, uniqTx, nil
+
+	return result, uniqTxs, nil
 }
 
 func (blockGenerator *BlockGenerator) buildIssuanceTx(

@@ -256,14 +256,14 @@ func IsBridgeTxHashUsedInBlock(uniqTx []byte, uniqTxsUsed [][]byte) bool {
 }
 
 func ValidateDoubleShieldProof(
-	proof *metadataBridge.EVMProof,
+	uniqTx []byte,
 	listTxUsed [][]byte,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqTx []byte) (bool, error),
 	stateDB *statedb.StateDB,
 ) (bool, []byte, error) {
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
-	uniqTx := append(proof.BlockHash[:], []byte(strconv.Itoa(int(proof.TxIndex)))...)
+	// uniqTx := append(proof.BlockHash[:], []byte(strconv.Itoa(int(proof.TxIndex)))...)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
 		return false, uniqTx, fmt.Errorf("WARNING: tx %v already issued for the hash in current block: ", uniqTx)
@@ -442,6 +442,24 @@ func getPrefixByNetworkID(networkID uint8) (string, error) {
 		return utils.EmptyString, errors.New("Invalid networkID")
 	}
 	return prefix, nil
+}
+
+func GetNetworkIDByPrefix(prefix string) (uint8, error) {
+	var networkID uint8
+	switch prefix {
+	case utils.EmptyString:
+		networkID = common.ETHNetworkID
+	case common.BSCPrefix:
+		networkID = common.BSCNetworkID
+	case common.PLGPrefix:
+		networkID = common.PLGNetworkID
+	case common.FTMPrefix:
+		networkID = common.FTMNetworkID
+
+	default:
+		return 0, fmt.Errorf("Invalid prefix %s for networkID", prefix)
+	}
+	return networkID, nil
 }
 
 func convertPTokenAmtToPUnifiedTokenAmt(extDec uint8, amount uint64) (uint64, error) {
@@ -1039,13 +1057,13 @@ func DecodeBurnForCallConfirmInst(inst []string) ([]byte, error) {
 	buf.WriteByte(byte(network))
 	buf.Write(padExternalAddress(extToken))
 	buf.Write(padExternalAddress(extCallAddr))
-	buf.Write(amount.FillBytes(make([]byte, 32)))
+	buf.Write(common.AddPaddingBigInt(amount, 32))
 	buf.Write(txID[:])
 	buf.Write(padExternalAddress(recvToken))
 	buf.Write(padExternalAddress(withdrawAddr))
 	buf.Write(redepositAddr)
 	buf.Write(extCalldata)
-	buf.Write(bHeight.FillBytes(make([]byte, 32)))
+	buf.Write(common.AddPaddingBigInt(bHeight, 32))
 
 	return buf.Bytes(), nil
 }
@@ -1056,37 +1074,35 @@ func padExternalAddress(addr []byte) []byte {
 	return result
 }
 
-func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, beaconHeightForConfirmInst uint64) [][]string {
+func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
 	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
-	index := 0                                 // currently support 1 call per metadata request
-	var networkID uint8 = 1                    // TODO: other networks
-	data := waitingUnshieldReq.GetData()[0]
-	newTxReqID := common.HashH(append(waitingUnshieldReq.GetUnshieldID().Bytes(), common.IntToBytes(index)...))
-	rdRecvStr, _ := req.RedepositReceiver.String()
+	// index := 0                                 // currently support 1 call per metadata request
+	// var networkID uint8 = 1                    // TODO: other networks
+	newTxReqID := common.HashH(append(unshieldID.Bytes(), common.IntToBytes(index)...))
+	rdRecvStr, _ := req.Data[index].RedepositReceiver.String()
 	burningInst := []string{
 		strconv.Itoa(int(metadataCommon.BurnForCallConfirmMeta)),
 		strconv.Itoa(int(common.BridgeShardID)),
 		strconv.Itoa(int(networkID)),
-		hex.EncodeToString(data.ExternalTokenID),
-		req.ExternalCallAddress,
-		data.ExternalReceivedAmt.Text(16),
+		hex.EncodeToString(udata.ExternalTokenID),
+		req.Data[index].ExternalCallAddress,
+		udata.ExternalReceivedAmt.Text(16),
 		newTxReqID.String(),
-		req.ReceiveToken,
-		req.WithdrawAddress,
+		req.Data[index].ReceiveToken,
+		req.Data[index].WithdrawAddress,
 		rdRecvStr,
-		req.ExternalCalldata,
+		req.Data[index].ExternalCalldata,
 		beaconHeightBN.Text(16),
 	}
 	return [][]string{burningInst}
 }
 
 func buildRejectedBurnForCallReqInst(meta metadataBridge.BurnForCallRequest, shardID byte, txReqID common.Hash, errorType int) []string {
-	var totalBurnAmt uint64 = meta.BurningAmount
-	// TODO: use new md
-	rejectedUnshieldRequest := metadataBridge.RejectedUnshieldRequest{
-		UnifiedTokenID: meta.BurnTokenID,
-		Amount:         totalBurnAmt,
-		Receiver:       meta.RedepositReceiver,
+	totalBurnAmt, _ := meta.TotalBurningAmount() // error was handled in tx validation
+	rejectedUnshieldRequest := metadataBridge.RejectedBurnForCallRequest{
+		BurnTokenID: meta.BurnTokenID,
+		Amount:      totalBurnAmt,
+		Receiver:    meta.Data[0].RedepositReceiver, // Data has non-zero length after sanity check
 	}
 	rejectedContent, _ := json.Marshal(rejectedUnshieldRequest)
 	rejectContentStr, _ := metadataCommon.NewRejectContentWithValue(txReqID, ErrCodeMessage[errorType].Code, rejectedContent).String()

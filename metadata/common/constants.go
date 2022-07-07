@@ -214,8 +214,10 @@ const (
 	BurningUnifiedTokenResponseMeta                 = 346
 	BridgeAggAddTokenMeta                           = 347
 
-	BurnForCallConfirmMeta = 158
-	BurnForCallRequestMeta = 348
+	BurnForCallConfirmMeta      = 158
+	BurnForCallRequestMeta      = 348
+	BurnForCallResponseMeta     = 349
+	IssuingReshieldResponseMeta = 350
 )
 
 var minerCreatedMetaTypes = []int{
@@ -266,6 +268,8 @@ var minerCreatedMetaTypes = []int{
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 	IssuingUnifiedTokenResponseMeta,
 	BurningUnifiedTokenResponseMeta,
+	IssuingReshieldResponseMeta,
+	BurnForCallResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -385,5 +389,5 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 }
 
 const (
-	ExternalAddressLen        = 20
+	ExternalAddressLen = 20
 )

@@ -439,6 +439,160 @@ func (sp *stateProcessor) burnForCall(
 	sDB *statedb.StateDB,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) (*State, map[common.Hash]metadata.UpdatingInfo, error) {
-	
-	return state, updatingInfoByTokenID, nil
+	var txReqID common.Hash
+	var errorCode int
+
+	statusByte, err := getStatusByteFromStatuStr(inst.Status)
+	if err != nil {
+		Logger.log.Errorf("Can not get status byte from status string: %v", err)
+		return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(InvalidNetworkIDError, fmt.Errorf("Can not get status byte from status string: %v", err))
+	}
+
+	if inst.Status == common.RejectedStatusStr {
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			Logger.log.Errorf("Can not decode content rejected unshield instruction %v", err)
+			return state, updatingInfoByTokenID,
+				NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not decode content rejected unshield instruction - Error %v", err))
+		}
+		errorCode = rejectContent.ErrorCode
+		txReqID = rejectContent.TxReqID
+	} else {
+		return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("invalid burnForCall instruction status %s", inst.Status))
+	}
+
+	unshieldStatus := UnshieldStatus{
+		Status:    statusByte,
+		Data:      []UnshieldStatusData{},
+		ErrorCode: errorCode,
+	}
+	contentBytes, _ := json.Marshal(unshieldStatus)
+	return state, updatingInfoByTokenID, statedb.TrackBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggUnshieldStatusPrefix(),
+		txReqID.Bytes(),
+		contentBytes,
+	)
+}
+
+func (sp *stateProcessor) reshield(
+	inst metadataCommon.Instruction,
+	state *State,
+	sDB *statedb.StateDB,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (*State, map[common.Hash]metadata.UpdatingInfo, error) {
+	// TODO: update processing
+	var status byte
+	var txReqID common.Hash
+	var errorCode int
+	var shieldStatusData []ShieldStatusData
+	switch inst.Status {
+	case common.AcceptedStatusStr:
+		// decode instruction
+		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			Logger.log.Errorf("Can not decode content shield instruction %v", err)
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not decode content shield instruction - Error %v", err))
+		}
+		Logger.log.Info("Processing inst content:", string(contentBytes))
+
+		acceptedInst := metadataBridge.AcceptedInstShieldRequest{}
+		err = json.Unmarshal(contentBytes, &acceptedInst)
+		if err != nil {
+			Logger.log.Errorf("Can not unmarshal content shield instruction %v", err)
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
+		}
+		clonedVaults, err := state.CloneVaultsByUnifiedTokenID(acceptedInst.UnifiedTokenID)
+		if err != nil {
+			Logger.log.Errorf("Can not get vault by unifiedTokenID %v", err)
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(NotFoundUnifiedTokenIDError, fmt.Errorf("Can not get vault by unifiedTokenID %v", err))
+		}
+		totalShieldAmt := uint64(0)
+		totalReward := uint64(0)
+		for _, data := range acceptedInst.Data {
+			vault, ok := clonedVaults[data.IncTokenID] // check available before
+			if !ok {
+				Logger.log.Errorf("Can not found vault with unifiedTokenID %v and incTokenID %v", acceptedInst.UnifiedTokenID, data.IncTokenID)
+				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(InvalidPTokenIDError,
+					fmt.Errorf("Can not found vault with unifiedTokenID %v and incTokenID %v", acceptedInst.UnifiedTokenID, data.IncTokenID))
+			}
+
+			// update vault state
+			clonedVaults[data.IncTokenID], err = updateVaultForRefill(vault, data.ShieldAmount, data.Reward)
+			if err != nil {
+				Logger.log.Errorf("Can not update vault state for shield request - Error %v", err)
+				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessUpdateStateError, fmt.Errorf("Can not update vault state for shield request - Error %v", err))
+			}
+
+			// store UniqTx in TxHashIssued
+			insertEVMTxHashIssued := GetInsertTxHashIssuedFuncByNetworkID(data.NetworkID)
+			if insertEVMTxHashIssued == nil {
+				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(InvalidNetworkIDError,
+					fmt.Errorf("cannot find networkID %d", data.NetworkID))
+			}
+			err = insertEVMTxHashIssued(sDB, data.UniqTx)
+			if err != nil {
+				Logger.log.Warn("WARNING: an error occured while inserting EVM tx hash issued to leveldb: ", err)
+				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(StoreShieldExtTxError, err)
+			}
+
+			// new shielding data for storing status
+			statusData := ShieldStatusData{
+				Amount: data.ShieldAmount,
+				Reward: data.Reward,
+			}
+			shieldStatusData = append(shieldStatusData, statusData)
+			totalShieldAmt += data.ShieldAmount
+			totalReward += data.Reward
+		}
+		mintAmt := totalShieldAmt + totalReward
+		state.unifiedTokenVaults[acceptedInst.UnifiedTokenID] = clonedVaults
+		txReqID = acceptedInst.TxReqID
+		status = common.AcceptedStatusByte
+
+		// update bridge token info
+		updatingInfo, found := updatingInfoByTokenID[acceptedInst.UnifiedTokenID]
+		if found {
+			updatingInfo.CountUpAmt += mintAmt
+		} else {
+			updatingInfo = metadata.UpdatingInfo{
+				CountUpAmt:      mintAmt,
+				DeductAmt:       0,
+				TokenID:         acceptedInst.UnifiedTokenID,
+				ExternalTokenID: GetExternalTokenIDForUnifiedToken(),
+				IsCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[acceptedInst.UnifiedTokenID] = updatingInfo
+	case common.RejectedStatusStr:
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			Logger.log.Errorf("Can not decode content rejected shield instruction %v", err)
+			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not decode content rejected shield instruction - Error %v", err))
+		}
+		errorCode = rejectContent.ErrorCode
+		txReqID = rejectContent.TxReqID
+		status = common.RejectedStatusByte
+		// track bridge tx req status
+		err := statedb.TrackBridgeReqWithStatus(sDB, txReqID, common.BridgeRequestRejectedStatus)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occurred while tracking bridge request with rejected status to leveldb: ", err)
+		}
+	default:
+		return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(InvalidNetworkIDError, errors.New("Can not recognize status"))
+	}
+
+	// track shield req status
+	shieldStatus := ShieldStatus{
+		Status:    status,
+		ErrorCode: errorCode,
+		Data:      shieldStatusData,
+	}
+	contentBytes, _ := json.Marshal(shieldStatus)
+	return state, updatingInfoByTokenID, statedb.TrackBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggShieldStatusPrefix(),
+		txReqID.Bytes(),
+		contentBytes,
+	)
 }

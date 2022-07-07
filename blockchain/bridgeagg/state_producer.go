@@ -2,8 +2,11 @@ package bridgeagg
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -150,6 +154,7 @@ func (sp *stateProducer) shield(
 	clonedAC := ac.Clone()
 	acceptedShieldData := []metadataBridge.AcceptedShieldRequestData{}
 	var incAddrStr string
+	var acceptedReshieldInstructions [][]string
 	for i, shieldData := range meta.Data {
 		// check incTokenID
 		vault, ok := clonedVaults[shieldData.IncTokenID]
@@ -190,7 +195,8 @@ func (sp *stateProducer) shield(
 			}
 
 			// check double use shielding proof in current block and previous blocks
-			isValid, uniqTx, err := ValidateDoubleShieldProof(proofData, evmInfo.ListTxUsedInBlock, evmInfo.IsTxHashIssued, stateDBs[common.BeaconChainID])
+			uniqTx := append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
+			isValid, uniqTx, err := ValidateDoubleShieldProof(uniqTx, evmInfo.ListTxUsedInBlock, evmInfo.IsTxHashIssued, stateDBs[common.BeaconChainID])
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
 				rejectedInst := buildRejectedInst(
@@ -205,77 +211,120 @@ func (sp *stateProducer) shield(
 			}
 
 			// extract info from Receipt
-			extAmount, incAddr, extTokenID, err := metadataBridge.ExtractIssueEVMDataFromReceipt(
+			extAmount, incAddr, extTokenID, errShield := metadataBridge.ExtractIssueEVMDataFromReceipt(
 				txReceipt, evmInfo.ContractAddress, evmInfo.Prefix, incAddrStr,
 			)
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Can not extract data from Receipt - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ExtractDataFromReceiptError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
-			incAddrStr = incAddr
-
-			// verify token pair pTokenID - extTokenID
-			err = metadataBridge.VerifyTokenPair(stateDBs, ac, shieldData.IncTokenID, extTokenID)
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Invalid token pair pTokenID and extTokenID - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, InvalidTokenPairError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
-
-			// calculate shielding amount (in pDecimal)
-			extDecimal := vault.ExtDecimal()
-			if !bytes.Equal(append([]byte(evmInfo.Prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), extTokenID) {
-				if extDecimal > config.Param().BridgeAggParam.BaseDecimal {
-					extDecimal = config.Param().BridgeAggParam.BaseDecimal
+			redepositDataLst, errReshield := metadataBridge.ExtractRedepositEVMDataFromReceipt(txReceipt, evmInfo.ContractAddress, evmInfo.Prefix)
+			if errShield == nil {
+				incAddrStr = incAddr
+				key, _ := wallet.Base58CheckDeserialize(incAddr)
+				shardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
+				redepositDataLst = append(redepositDataLst, metadataBridge.DepositEventData{
+					Amount:          extAmount,
+					ReceiverStr:     incAddr,
+					ExternalTokenID: extTokenID,
+					IncTxID:         uniqTx,
+					ShardID:         shardID,
+					IsOneTime:       false,
+				})
+			} else {
+				Logger.log.Errorf("[BridgeAgg] Can not extract data from Receipt - Error %v", errShield)
+				if errReshield != nil {
+					Logger.log.Warnf("[BridgeAgg] Extract Redeposit EVM events failed - %v", errReshield)
+					rejectedInst := buildRejectedInst(
+						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ExtractDataFromReceiptError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
 				}
 			}
-			incAmount, err := ConvertAmountByDecimal(extAmount, extDecimal, true)
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Can not convert external amount to incognito amount - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, InvalidConvertAmountError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
 
-			// calculate shielding reward (in pDecimal)
-			reward, err := CalRewardForRefillVault(vault, incAmount.Uint64())
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Can not calcalate shielding reward - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, CalRewardError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
+			for _, d := range redepositDataLst {
+				// verify token pair pTokenID - extTokenID
+				err = metadataBridge.VerifyTokenPair(stateDBs, ac, shieldData.IncTokenID, d.ExternalTokenID)
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] Invalid token pair pTokenID and extTokenID - Error %v", err)
+					rejectedInst := buildRejectedInst(
+						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, InvalidTokenPairError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
+				}
 
-			// update state: list of shielding txs, vault state (waiting unshield amount, waiting reward)
-			evmInfo.ListTxUsedInBlock = append(evmInfo.ListTxUsedInBlock, uniqTx)
-			clonedAC, err := clonedAC.UpdateUniqTxsUsed(shieldData.NetworkID, evmInfo.ListTxUsedInBlock)
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Can not update accumulate values for shield request - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ProducerUpdateStateError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
+				// calculate shielding amount (in pDecimal)
+				extDecimal := vault.ExtDecimal()
+				if !bytes.Equal(append([]byte(evmInfo.Prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), d.ExternalTokenID) {
+					if extDecimal > config.Param().BridgeAggParam.BaseDecimal {
+						extDecimal = config.Param().BridgeAggParam.BaseDecimal
+					}
+				}
+				incAmount, err := ConvertAmountByDecimal(d.Amount, extDecimal, true)
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] Can not convert external amount to incognito amount - Error %v", err)
+					rejectedInst := buildRejectedInst(
+						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, InvalidConvertAmountError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
+				}
 
-			Logger.log.Infof("Cloned AC after update: %+v\n", clonedAC)
-			clonedVaults[shieldData.IncTokenID], err = updateVaultForRefill(vault, incAmount.Uint64(), reward)
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Can not update vault state for shield request - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ProducerUpdateStateError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
+				// calculate shielding reward (in pDecimal)
+				reward, err := CalRewardForRefillVault(vault, incAmount.Uint64())
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] Can not calcalate shielding reward - Error %v", err)
+					rejectedInst := buildRejectedInst(
+						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, CalRewardError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
+				}
 
-			acceptedShieldData = append(acceptedShieldData, metadataBridge.AcceptedShieldRequestData{
-				ShieldAmount:    incAmount.Uint64(),
-				Reward:          reward,
-				UniqTx:          uniqTx,
-				ExternalTokenID: extTokenID,
-				NetworkID:       shieldData.NetworkID,
-				IncTokenID:      shieldData.IncTokenID,
-			})
+				// update state: list of shielding txs, vault state (waiting unshield amount, waiting reward)
+				evmInfo.ListTxUsedInBlock = append(evmInfo.ListTxUsedInBlock, d.IncTxID)
+				clonedAC, err := clonedAC.UpdateUniqTxsUsed(shieldData.NetworkID, evmInfo.ListTxUsedInBlock)
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] Can not update accumulate values for shield request - Error %v", err)
+					rejectedInst := buildRejectedInst(
+						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ProducerUpdateStateError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
+				}
+
+				Logger.log.Infof("Cloned AC after update: %+v\n", clonedAC)
+				clonedVaults[shieldData.IncTokenID], err = updateVaultForRefill(vault, incAmount.Uint64(), reward)
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] Can not update vault state for shield request - Error %v", err)
+					rejectedInst := buildRejectedInst(
+						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ProducerUpdateStateError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
+				}
+
+				if d.IsOneTime {
+					var recv privacy.OTAReceiver
+					recv.FromString(d.ReceiverStr)
+					c := metadataBridge.AcceptedReshieldRequest{
+						UnifiedTokenID: &meta.UnifiedTokenID,
+						Receiver:       recv,
+						TxReqID:        action.TxReqID,
+						ReshieldData: metadataBridge.AcceptedShieldRequestData{
+							ShieldAmount:    incAmount.Uint64(),
+							Reward:          reward,
+							UniqTx:          d.IncTxID,
+							ExternalTokenID: d.ExternalTokenID,
+							NetworkID:       shieldData.NetworkID,
+							IncTokenID:      shieldData.IncTokenID,
+						},
+					}
+					contentBytes, _ := json.Marshal(c)
+					inst := metadataCommon.NewInstructionWithValue(
+						metadataCommon.IssuingReshieldResponseMeta,
+						common.AcceptedStatusStr,
+						d.ShardID,
+						base64.StdEncoding.EncodeToString(contentBytes),
+					)
+					acceptedReshieldInstructions = append(acceptedReshieldInstructions, inst.StringSlice())
+				} else {
+					acceptedShieldData = append(acceptedShieldData, metadataBridge.AcceptedShieldRequestData{
+						ShieldAmount:    incAmount.Uint64(),
+						Reward:          reward,
+						UniqTx:          d.IncTxID,
+						ExternalTokenID: d.ExternalTokenID,
+						NetworkID:       shieldData.NetworkID,
+						IncTokenID:      shieldData.IncTokenID,
+					})
+				}
+			}
 
 		default:
 			Logger.log.Errorf("[BridgeAgg] Network ID is not matched: %v", shieldData.NetworkID)
@@ -298,6 +347,7 @@ func (sp *stateProducer) shield(
 	}
 
 	resInst := buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, receivingShardID, [][]byte{content})
+	resInst = append(resInst, acceptedReshieldInstructions...)
 	// update vaults state
 	state.unifiedTokenVaults[meta.UnifiedTokenID] = clonedVaults
 	clonedAC.DBridgeTokenPair[meta.UnifiedTokenID.String()] = GetExternalTokenIDForUnifiedToken()
@@ -543,7 +593,7 @@ func (sp *stateProducer) burnForCall(
 	var burningConfirmInsts [][]string
 	clonedState := state.Clone()
 
-	useUnifiedToken := meta.BurnTokenID != meta.IncTokenID
+	useUnifiedToken := meta.BurnTokenID != meta.Data[0].IncTokenID
 	if useUnifiedToken {
 		// check UnifiedTokenID
 		vaults, err := clonedState.CloneVaultsByUnifiedTokenID(meta.BurnTokenID)
@@ -554,19 +604,20 @@ func (sp *stateProducer) burnForCall(
 			return [][]string{rejectedInst}, state, nil
 		}
 
+		var unshieldRequestDataForVault []metadataBridge.UnshieldRequestData
+		for _, d := range meta.Data {
+			unshieldRequestDataForVault = append(unshieldRequestDataForVault, metadataBridge.UnshieldRequestData{
+				IncTokenID:        d.IncTokenID,
+				BurningAmount:     d.BurningAmount,
+				MinExpectedAmount: d.BurningAmount,
+			})
+		}
+
 		// check vault balance
 		isEnoughVault, waitingUnshieldDatas, err := checkVaultForNewUnshieldReq(
-			vaults,
-			[]metadataBridge.UnshieldRequestData{
-				metadataBridge.UnshieldRequestData{
-					IncTokenID: meta.IncTokenID,
-					BurningAmount: meta.BurningAmount,
-					MinExpectedAmount: meta.MinExpectedAmount,
-				},
-			},
+			vaults, unshieldRequestDataForVault,
 			true, // use accept/reject flow without waiting
-			clonedState.param.PercentFeeWithDec(),
-			stateDB,
+			clonedState.param.PercentFeeWithDec(), stateDB,
 		)
 		if err != nil {
 			Logger.log.Errorf("[BridgeAgg] Error when checking for burnForCall: %v", err)
@@ -576,22 +627,32 @@ func (sp *stateProducer) burnForCall(
 		}
 
 		if isEnoughVault {
+			rejectedInst := buildRejectedBurnForCallReqInst(*meta, shardID, txReqID, ProducerUpdateStateError)
 			// create waitingUnshieldReq to update state
 			waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)
-			// build burning confirm insts
-			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, waitingUnshieldReq, beaconHeightForConfirmInst)
-			insts = append(insts, burningConfirmInsts...)
+
+			for i := range meta.Data {
+				netPrefix, err := getPrefixByNetworkID(meta.Data[i].ExternalNetworkID)
+				if err != nil || !bytes.HasPrefix(waitingUnshieldDatas[i].ExternalTokenID, []byte(netPrefix)) {
+					Logger.log.Errorf("[BridgeAgg] BurnForCall external network error - %d, %s, %v", meta.Data[i].ExternalNetworkID, meta.Data[i].IncTokenID, err)
+					return [][]string{rejectedInst}, state, nil
+				}
+				// build burning confirm insts
+				burningConfirmInsts = buildBurnForCallConfirmInsts(meta, waitingUnshieldReq.GetUnshieldID(), &waitingUnshieldDatas[i], meta.Data[i].ExternalNetworkID, i, beaconHeightForConfirmInst)
+				insts = append(insts, burningConfirmInsts...)
+			}
+			// use unshield state update functions
+			unshieldInst := buildUnshieldInst(meta.BurnTokenID, true, waitingUnshieldReq, common.AcceptedStatusStr, shardID)
+			insts = append(insts, unshieldInst)
 			clonedState, err = updateStateForUnshield(clonedState, meta.BurnTokenID, waitingUnshieldReq, common.AcceptedStatusStr)
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Error producing burnForCall: %v", err)
-				rejectedInst := buildRejectedBurnForCallReqInst(
-					*meta, shardID, txReqID, ProducerUpdateStateError)
 				return [][]string{rejectedInst}, state, nil
 			}
 		} else {
 			err = fmt.Errorf("not enough funds for burnForCall")
 			rejectedInst := buildRejectedBurnForCallReqInst(
-				*meta, shardID, txReqID, ProducerUpdateStateError)
+				*meta, shardID, txReqID, InsufficientFundsVaultError)
 			return [][]string{rejectedInst}, state, nil
 		}
 
@@ -600,6 +661,35 @@ func (sp *stateProducer) burnForCall(
 			rejectedInst := buildRejectedBurnForCallReqInst(
 				*meta, shardID, txReqID, ProducerUpdateStateError)
 			return [][]string{rejectedInst}, state, nil
+		}
+	} else {
+		rejectedInst := buildRejectedBurnForCallReqInst(*meta, shardID, txReqID, ProducerUpdateStateError)
+		for _, d := range meta.Data {
+			if d.IncTokenID != meta.BurnTokenID {
+				return [][]string{rejectedInst}, state, fmt.Errorf("non-unified burnTokenID mismatch")
+			}
+			netPrefix, err := getPrefixByNetworkID(d.ExternalNetworkID)
+			if err != nil {
+				return [][]string{rejectedInst}, state, err
+			}
+			// Convert to external tokenID
+			tokenID, err := metadataBridge.FindExternalTokenID(stateDB, d.IncTokenID, netPrefix)
+			if err != nil {
+				return [][]string{rejectedInst}, state, err
+			}
+
+			// Convert amount to big.Int to get bytes later
+			amount := big.NewInt(0).SetUint64(d.BurningAmount)
+			if bytes.Equal(tokenID, append([]byte(netPrefix), rCommon.HexToAddress(common.NativeToken).Bytes()...)) {
+				// Convert Gwei to Wei for Ether
+				amount = amount.Mul(amount, big.NewInt(1000000000))
+			}
+
+			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, txReqID, &statedb.WaitingUnshieldReqData{
+				ExternalTokenID:     tokenID,
+				ExternalReceivedAmt: amount,
+			}, d.ExternalNetworkID, 0, beaconHeightForConfirmInst)
+			insts = append(insts, burningConfirmInsts...)
 		}
 	}
 
