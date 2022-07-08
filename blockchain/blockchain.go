@@ -114,7 +114,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	} else {
 		blockchain.config.usingNewPool = true
 	}
-
+	types.BLOCKTIME_FEATURE_BY_VERSION = map[int]string{}
 	for idx, feature := range configpkg.Param().BlockTimeFeatures {
 		if idx >= 1 {
 			types.BLOCKTIME_FEATURE_BY_VERSION[types.REDUCE_BLOCKTIME_VERSION+(idx-1)] = feature

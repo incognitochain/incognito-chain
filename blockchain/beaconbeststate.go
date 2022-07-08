@@ -1257,18 +1257,23 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	return nonSlashingCommittees
 }
 
-func (curView *BeaconBestState) GetBlockTimeFeature(blkHeight uint64) (string, int) {
-	triggerFeature := curView.TriggeredFeature
-	features := config.Param().BlockTimeFeatures
+func getBlockTimeFeature(features []string, triggerMap map[string]uint64, blkHeight uint64) (string, int) {
 	currentBlkTimeFeatureIdx := 0
 	for idx, f := range features {
-		if triggerHeight, ok := triggerFeature[f]; ok {
+		if triggerHeight, ok := triggerMap[f]; ok {
 			if (triggerHeight != 0) && (triggerHeight <= blkHeight) {
 				currentBlkTimeFeatureIdx = idx
 			}
 		}
 	}
 	return features[currentBlkTimeFeatureIdx], currentBlkTimeFeatureIdx
+}
+
+func (curView *BeaconBestState) GetBlockTimeFeature(blkHeight uint64) (string, int) {
+	triggerFeature := curView.TriggeredFeature
+	features := config.Param().BlockTimeFeatures
+
+	return getBlockTimeFeature(features, triggerFeature, blkHeight)
 }
 
 func (curView *BeaconBestState) GetBlockTimeInterval(blkHeight uint64) int64 {
