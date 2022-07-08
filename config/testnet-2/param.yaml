@@ -134,6 +134,14 @@ auto_enable_feature:
       min_trigger: 4806400
       force_trigger: 1000000000
       require_percentage: 90
+  - unified_token_230620224:
+      min_trigger: 4831300 
+      force_trigger: 1000000000
+      require_percentage: 90   
+  - unified_token_230620225:
+      min_trigger: 4864700 
+      force_trigger: 1000000000
+      require_percentage: 90 
   - blocktime20:
       min_trigger: 10892003
       force_trigger: 1000000000

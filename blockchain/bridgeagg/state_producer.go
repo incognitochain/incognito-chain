@@ -458,12 +458,13 @@ func (sp *stateProducer) addToken(
 				Logger.log.Warnf("BridgeAggAddToken WARNING: Error in finding unifiedTokenID %s", unifiedTokenID.String())
 				return []string{}, state, ac, nil
 			}
-			if isExisted {
-				Logger.log.Warnf("BridgeAggAddToken WARNING: unifiedTokenID %s has existed", unifiedTokenID.String())
+			_, foundUnifiedToken := clonedUnifiedTokenInfos[unifiedTokenID]
+			if isExisted && !foundUnifiedToken {
+				Logger.log.Warnf("BridgeAggAddToken WARNING: unifiedTokenID %s has existed in privacy tokens", unifiedTokenID.String())
 				return []string{}, state, ac, nil
 			}
 			unifiedTokenIDs[unifiedTokenID.String()] = true
-			if _, found := clonedUnifiedTokenInfos[unifiedTokenID]; !found {
+			if !foundUnifiedToken {
 				clonedUnifiedTokenInfos[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
 			}
 			externalTokenIDIndex := make(map[string]bool)
