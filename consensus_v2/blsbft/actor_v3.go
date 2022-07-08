@@ -741,8 +741,9 @@ func (a *actorV3) run() error {
 						break
 					}
 
+					//get propose info at current timeslot
 					if proposeInfo.block != nil && common.CalculateTimeSlot(proposeInfo.block.GetProposeTime()) == a.currentTimeSlot {
-						//validate propose block for this time slot
+						//validate the propose block
 						err := a.validateBlock(proposeInfo)
 						if err != nil {
 							a.logger.Errorf("%v", err)
@@ -811,10 +812,12 @@ func (a *actorV3) validateBlock(proposeBlockInfo *ProposeBlockInfo) error {
 		return errors.New("Not expected height!")
 	}
 
-	//should be the same with lock block hash
-	lockProposeInfo := a.getLockBlockHash(a.currentBestViewHeight + 1)
-	if lockProposeInfo != nil && lockProposeInfo.block.Hash().String() != proposeBlockInfo.block.Hash().String() {
-		return errors.New("Not expected locked blockhash!")
+	//should be the same with lock block hash or has valid POLC (POLC R > lockR)
+	if !proposeBlockInfo.ValidPOLC {
+		lockProposeInfo := a.getLockBlockHash(a.currentBestViewHeight + 1)
+		if lockProposeInfo != nil && lockProposeInfo.block.Hash().String() != proposeBlockInfo.block.Hash().String() {
+			return errors.New("Not expected locked blockhash!")
+		}
 	}
 
 	proposeBlockInfo.LastValidateTime = time.Now()

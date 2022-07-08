@@ -145,7 +145,7 @@ func buildPOLCFromPreVote(info *ProposeBlockInfo) (POLC, error) {
 		sigs = append(sigs, vote.Confirmation)
 	}
 	res := POLC{
-		idx, sigs, info.block.ProposeHash().String(), common.CalculateTimeSlot(info.block.GetProposeTime()),
+		idx, sigs, info.block.ProposeHash().String(), info.block.Hash().String(), common.CalculateTimeSlot(info.block.GetProposeTime()),
 	}
 
 	return res, nil
@@ -154,6 +154,16 @@ func buildPOLCFromPreVote(info *ProposeBlockInfo) (POLC, error) {
 func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock *ProposeBlockInfo) bool {
 	if len(polc.Idx) == 0 {
 		a.logger.Info("Empty polc")
+		return false
+	}
+
+	if info.block.Hash().String() != polc.BlockHash {
+		a.logger.Info("Should repropose polc blockhash")
+		return false
+	}
+
+	if lock != nil && polc.Timeslot < common.CalculateTimeSlot(lock.block.GetProposeTime()) {
+		a.logger.Info("Not a new POLC")
 		return false
 	}
 
@@ -184,11 +194,6 @@ func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock 
 	}
 	if len(polc.Idx) <= 2*len(info.SigningCommittees)/3 {
 		a.logger.Info("Not enough signing signature")
-		return false
-	}
-
-	if lock != nil && polc.Timeslot <= common.CalculateTimeSlot(lock.block.GetProposeTime()) {
-		a.logger.Info("Not a new POLC")
 		return false
 	}
 

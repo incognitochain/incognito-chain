@@ -20,6 +20,7 @@ type POLC struct {
 	Idx              []int
 	Sig              [][]byte
 	BlockProposeHash string
+	BlockHash        string
 	Timeslot         int64
 }
 type BFTPropose struct {
