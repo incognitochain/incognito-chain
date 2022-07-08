@@ -74,7 +74,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
-			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash})
+			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash}, 100)
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]string
@@ -1679,6 +1679,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		100,
 	)
 
 	type fields struct {
@@ -2147,7 +2148,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
-			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash})
+			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash}, 100)
 
 	randomInstructionCommitteeChange := NewCommitteeChange()
 	randomInstructionCommitteeChange.NextEpochShardCandidateRemoved =
@@ -2858,7 +2859,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
 			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash,
-			key91: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash})
+			key91: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash}, 100)
 
 	type fields struct {
 		BeaconCommitteeStateV3 *BeaconCommitteeStateV3
@@ -4695,6 +4696,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		100,
 	)
 
 	type fields struct {
