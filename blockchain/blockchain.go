@@ -115,6 +115,12 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		blockchain.config.usingNewPool = true
 	}
 
+	for idx, feature := range configpkg.Param().BlockTimeFeatures {
+		if idx >= 1 {
+			types.BLOCKTIME_FEATURE_BY_VERSION[types.REDUCE_BLOCKTIME_VERSION+(idx-1)] = feature
+		}
+	}
+
 	//initialize feature statistic
 
 	if err := blockchain.InitChainState(); err != nil {

@@ -512,6 +512,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	error,
 ) {
 	startTimeUpdateBeaconBestState := time.Now()
+	prevBeaconBlock := curView.BestBlock
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
 		return nil, nil, nil, nil, err
@@ -584,19 +585,12 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 	}
 
-	for idx, feature := range config.Param().BlockTimeFeatures {
-		if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
-			if triggerFeature == beaconBlock.GetBeaconHeight() {
-				blockchain.BeaconChain.UpdateArchorTime(triggerFeature-1, beaconBlock)
-				if idx == 1 {
-					shardHeights := map[byte]uint64{}
-					for sID, sState := range beaconBlock.Body.ShardState {
-						shardHeights[sID] = sState[len(sState)-1].Height
-					}
-					beaconBestState.RewardInfo.Minted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
-				}
-			}
+	if (beaconBlock.Header.Version == types.REDUCE_BLOCKTIME_VERSION) && (prevBeaconBlock.Header.Version < types.REDUCE_BLOCKTIME_VERSION) {
+		shardHeights := map[byte]uint64{}
+		for sID, sState := range prevBeaconBlock.Body.ShardState {
+			shardHeights[sID] = sState[len(sState)-1].Height
 		}
+		beaconBestState.RewardInfo.Minted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
 	}
 
 	//update bridge process

@@ -20,21 +20,35 @@ import (
 )
 
 func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB, bestState *BeaconBestState) error {
-	_, featureIdx := bestState.GetBlockTimeFeature(beaconBlock.GetBeaconHeight())
+
+	shardsBlockVersions := map[int]map[uint64]int{}
+	for _, sID := range blockchain.GetShardIDs() {
+		shardsBlockVersions[sID] = map[uint64]int{}
+		sStates := beaconBlock.Body.ShardState[byte(sID)]
+		for _, sState := range sStates {
+			shardsBlockVersions[sID][sState.Height] = sState.Version
+		}
+	}
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
 			continue
 		}
+		version := beaconBlock.Header.Version
 		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_V3_ACTION {
 			acceptBlockRewardIns, err := instruction.ValidateAndImportAcceptBlockRewardV3InstructionFromString(inst)
 			if err != nil {
 				return err
 			}
-			rewardAmount, err := blockchain.GetRewardAmount(beaconBlock.GetBeaconHeight(), acceptBlockRewardIns.ShardBlockHeight())
+			if shardBlockVersions, ok := shardsBlockVersions[int(acceptBlockRewardIns.ShardID())]; ok {
+				if blkVersion, ok := shardBlockVersions[acceptBlockRewardIns.ShardBlockHeight()]; ok {
+					version = blkVersion
+				}
+			}
+			rewardAmount, err := blockchain.GetRewardAmount(version, acceptBlockRewardIns.ShardBlockHeight())
 			if err != nil {
 				return err
 			} else {
-				if featureIdx > 0 {
+				if beaconBlock.Header.Version >= types.REDUCE_BLOCKTIME_VERSION {
 					if bestState.RewardInfo.Minted+rewardAmount > bestState.RewardInfo.Cap {
 						rewardAmount = bestState.RewardInfo.Cap - bestState.RewardInfo.Minted
 					}
@@ -75,11 +89,16 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if acceptedBlkRewardInfo.TxsFee == nil {
 				acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
 			}
-			rewardAmount, err := blockchain.GetRewardAmount(beaconBlock.GetBeaconHeight(), acceptedBlkRewardInfo.ShardBlockHeight)
+			if shardBlockVersions, ok := shardsBlockVersions[int(acceptedBlkRewardInfo.ShardID)]; ok {
+				if blkVersion, ok := shardBlockVersions[acceptedBlkRewardInfo.ShardBlockHeight]; ok {
+					version = blkVersion
+				}
+			}
+			rewardAmount, err := blockchain.GetRewardAmount(version, acceptedBlkRewardInfo.ShardBlockHeight)
 			if err != nil {
 				return err
 			} else {
-				if featureIdx > 0 {
+				if beaconBlock.Header.Version >= types.REDUCE_BLOCKTIME_VERSION {
 					if bestState.RewardInfo.Minted+rewardAmount > bestState.RewardInfo.Cap {
 						rewardAmount = bestState.RewardInfo.Cap - bestState.RewardInfo.Minted
 					}
@@ -640,6 +659,16 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 	return salaryTx, nil
 }
 
+func (blockchain *BlockChain) GetBasicRewardByVersion(version int) (uint64, error) {
+	if curFeature, ok := types.BLOCKTIME_FEATURE_BY_VERSION[version]; ok {
+		blockTimeMap := config.Param().BlockTimeParam
+		defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+		curBlockTime := blockTimeMap[curFeature]
+		return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime), nil
+	}
+	return 0, errors.Errorf("Can not found blocktime param for block version %v", version)
+}
+
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	blockBeaconInterval := config.Param().BlockTime.MinBeaconBlockInterval.Seconds()
 	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
@@ -652,19 +681,15 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	return reward
 }
 
-func (blockchain *BlockChain) GetRewardAmount(beaconHeight, shardHeight uint64) (uint64, error) {
-	// blockchain.GetEpochByHeight(beaconHeight uint64)
-	bView := blockchain.GetBeaconBestState()
-	_, featureIdx := bView.GetBlockTimeFeature(beaconHeight)
-
-	if featureIdx == 0 {
+func (blockchain *BlockChain) GetRewardAmount(shardVersion int, shardHeight uint64) (uint64, error) {
+	if shardVersion < types.REDUCE_BLOCKTIME_VERSION {
 		return blockchain.getRewardAmount(shardHeight), nil
 	}
-	if bView == nil {
-		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", beaconHeight)
+	basicReward, err := blockchain.GetBasicRewardByVersion(shardVersion)
+	if err != nil {
+		return 0, err
 	}
-	basicReward := bView.GetBasicReward(beaconHeight)
-	yearOfBeaconHeight, err := blockchain.getYearOfBlockChain(beaconHeight)
+	yearOfBeaconHeight, err := blockchain.getYearOfBlockChain(shardHeight)
 	if err != nil {
 		return 0, err
 	}
