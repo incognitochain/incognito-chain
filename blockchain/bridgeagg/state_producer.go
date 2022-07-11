@@ -334,19 +334,22 @@ func (sp *stateProducer) shield(
 		}
 	}
 
-	// build accepted instruction
-	// incAddrStr was validated in func ExtractIssueEVMDataFromReceipt => don't catch error here
-	key, _ := wallet.Base58CheckDeserialize(incAddrStr)
-	receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
-	content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID)
-	if err != nil {
-		Logger.log.Errorf("[BridgeAgg] Can not build contents for shield instruction: %v", err)
-		rejectedInst := buildRejectedInst(
-			metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
-		return [][]string{rejectedInst}, state, ac, nil
+	var resInst [][]string
+	if len(acceptedShieldData) > 0 {
+	 	// build accepted instruction
+		// incAddrStr was validated in func ExtractIssueEVMDataFromReceipt => don't catch error here
+		key, _ := wallet.Base58CheckDeserialize(incAddrStr)
+		receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
+		content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID)
+		if err != nil {
+			Logger.log.Errorf("[BridgeAgg] Can not build contents for shield instruction: %v", err)
+			rejectedInst := buildRejectedInst(
+				metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
+			return [][]string{rejectedInst}, state, ac, nil
+		}
+		resInst = append(resInst, buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, receivingShardID, [][]byte{content})...)
 	}
 
-	resInst := buildAcceptedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, receivingShardID, [][]byte{content})
 	resInst = append(resInst, acceptedReshieldInstructions...)
 	// update vaults state
 	state.unifiedTokenVaults[meta.UnifiedTokenID] = clonedVaults
