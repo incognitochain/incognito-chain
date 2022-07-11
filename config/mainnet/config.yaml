@@ -60,3 +60,8 @@ use_coin_data:
   - true
 num_indexer_workers: 0
 indexer_access_token: ""
+allow_state_prune: true
+state_prune: false
+state_bloom_size: 2048
+enable_auto_prune: false
+force_prune: false
