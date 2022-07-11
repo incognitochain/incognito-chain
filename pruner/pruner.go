@@ -44,14 +44,17 @@ func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Prun
 		addedViewsCache:         make(map[common.Hash]struct{}),
 	}
 }
+
 func (p *Pruner) SetShardInsertLock(sid int, mutex *sync.Mutex) {
 	p.shardInsertLock[sid] = mutex
 }
+
 func (p *Pruner) LockInsertShardBlock(sid int) {
 	if p.shardInsertLock[sid] != nil {
 		p.shardInsertLock[sid].Lock()
 	}
 }
+
 func (p *Pruner) UnlockInsertShardBlock(sid int) {
 	if p.shardInsertLock[sid] != nil {
 		p.shardInsertLock[sid].Unlock()
@@ -159,7 +162,7 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) e
 	if err != nil {
 		panic(err)
 	}
-	if err := rawdbv2.StoreDataSize(p.db[sID], newSize); err != nil {
+	if err := rawdbv2.StoreDataSize(db, uint64(newSize)); err != nil {
 		panic(err)
 	}
 	p.reset()
@@ -284,8 +287,8 @@ func (p *Pruner) traverseAndDeleteByHash(
 	// retrieve all state tree by shard rooth hash prefix
 	// delete all nodes which are not in state bloom
 	for iter.Next() {
-		p.wg.Wait()
 		p.LockInsertShardBlock(int(helper.shardID))
+		p.wg.Wait()
 		key := iter.Key()
 		rootHash := blockchain.ShardRootHash{}
 		err := json.Unmarshal(iter.Value(), &rootHash)
@@ -544,7 +547,7 @@ func (p *Pruner) watchStorageChange() {
 					panic(err)
 				}
 				t1 := big.NewInt(0).Mul(big.NewInt(newSize), big.NewInt(10000))
-				t2 := big.NewInt(0).Mul(big.NewInt(oldSize), big.NewInt(12500))
+				t2 := big.NewInt(0).Mul(big.NewInt(0).SetUint64(oldSize), big.NewInt(12500))
 				if t1.Cmp(t2) >= 0 || config.Config().ForcePrune {
 					if p.statuses[byte(i)] != rawdbv2.ProcessingPruneByHashStatus && p.statuses[byte(i)] != rawdbv2.ProcessingPruneByHeightStatus {
 						ec := ExtendedConfig{
@@ -562,6 +565,7 @@ func (p *Pruner) watchStorageChange() {
 }
 
 func (p *Pruner) reset() {
+	p.wg.Wait()
 	p.stateBloom = nil
 	p.addedViewsCache = make(map[common.Hash]struct{})
 }
