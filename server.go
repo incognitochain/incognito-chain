@@ -349,6 +349,11 @@ func (serverObj *Server) NewServer(
 	//set bc obj for monitor
 	monitor.SetBlockChainObj(serverObj.blockChain)
 
+	//set shard insert lock for prunner
+	for sid := 0; sid < serverObj.GetActiveShardNumber(); sid++ {
+		serverObj.Pruner.SetShardInsertLock(sid, serverObj.blockChain.ShardChain[sid].GetInsertLock())
+	}
+
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
@@ -2154,4 +2159,7 @@ func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]b
 
 func (serverObj *Server) GetSelfPeerID() libp2p.ID {
 	return serverObj.highway.LocalHost.Host.ID()
+}
+func (serverObj *Server) InsertNewShardView(newView *blockchain.ShardBestState) {
+	serverObj.Pruner.InsertNewView(newView)
 }

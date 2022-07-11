@@ -60,6 +60,11 @@ func NewShardChain(
 	}
 }
 
+func (chain *ShardChain) GetInsertLock() *sync.Mutex {
+	insertLock := chain.insertLock
+	return &insertLock
+}
+
 func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }

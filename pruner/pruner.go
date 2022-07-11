@@ -24,7 +24,7 @@ type Pruner struct {
 	statuses                map[byte]byte
 	updateStatusCh          chan UpdateStatus
 	TriggerCh               chan ExtendedConfig
-	insertLock              *sync.Mutex
+	shardInsertLock         map[int]*sync.Mutex
 	wg                      *sync.WaitGroup
 	PubSubManager           *pubsub.PubSubManager
 	currentValidatorShardID int
@@ -38,10 +38,23 @@ func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Prun
 		statuses:                statuses,
 		updateStatusCh:          make(chan UpdateStatus),
 		TriggerCh:               make(chan ExtendedConfig, 1),
+		shardInsertLock:         make(map[int]*sync.Mutex),
 		currentValidatorShardID: -2,
-		insertLock:              new(sync.Mutex),
 		wg:                      new(sync.WaitGroup),
 		addedViewsCache:         make(map[common.Hash]struct{}),
+	}
+}
+func (p *Pruner) SetShardInsertLock(sid int, mutex *sync.Mutex) {
+	p.shardInsertLock[sid] = mutex
+}
+func (p *Pruner) LockInsertShardBlock(sid int) {
+	if p.shardInsertLock[sid] != nil {
+		p.shardInsertLock[sid].Lock()
+	}
+}
+func (p *Pruner) UnlockInsertShardBlock(sid int) {
+	if p.shardInsertLock[sid] != nil {
+		p.shardInsertLock[sid].Unlock()
 	}
 }
 
@@ -122,7 +135,7 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) e
 	listKeysShouldBeRemoved := &[]map[common.Hash]struct{}{}
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 1; i++ {
-		worker := NewWorker(stopCh, heightCh, rootHashCache, p.stateBloom, listKeysShouldBeRemoved, db, shardID, wg, p.insertLock)
+		worker := NewWorker(stopCh, heightCh, rootHashCache, p.stateBloom, listKeysShouldBeRemoved, db, shardID, wg)
 		go worker.start()
 		defer worker.stop()
 	}
@@ -272,7 +285,8 @@ func (p *Pruner) traverseAndDeleteByHash(
 	// delete all nodes which are not in state bloom
 	for iter.Next() {
 		p.wg.Wait()
-		p.insertLock.Lock()
+		p.LockInsertShardBlock(int(helper.shardID))
+		defer p.UnlockInsertShardBlock(int(helper.shardID))
 		key := iter.Key()
 		rootHash := blockchain.ShardRootHash{}
 		err := json.Unmarshal(iter.Value(), &rootHash)
@@ -292,7 +306,6 @@ func (p *Pruner) traverseAndDeleteByHash(
 		}
 		finalPrunedKey = []byte{}
 		count++
-		p.insertLock.Unlock()
 		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
 			return nodes, storage, nil
 		}
@@ -320,11 +333,16 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		lastPrunedHeight++
 	}
 	for height := lastPrunedHeight; height < helper.finalHeight; height++ {
-		p.wg.Wait()
-		p.insertLock.Lock()
+
+		p.LockInsertShardBlock(int(helper.shardID)) //lock insert shard block
+		defer p.UnlockInsertShardBlock(int(helper.shardID))
+
+		p.wg.Wait() //wait for all insert bloom task (in case we have new view)
+
 		helper.wg.Add(1)
 		helper.heightCh <- height
 		helper.wg.Wait()
+
 		nodes, storage, err = p.removeNodes(helper.db, helper.shardID, nil, height, listKeysShouldBeRemoved, nodes, storage, false)
 		if err != nil {
 			return 0, 0, err
@@ -332,7 +350,7 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		if height%10000 == 0 {
 			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, nodes, storage)
 		}
-		p.insertLock.Unlock()
+
 		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
 			return nodes, storage, nil
 		}
@@ -399,15 +417,22 @@ func (p *Pruner) removeNodes(
 	return totalNodes, totalStorage, nil
 }
 
+func (p *Pruner) InsertNewView(shardBestState *blockchain.ShardBestState) {
+	p.wg.Add(1)
+	go func() {
+		if err := p.handleNewView(shardBestState); err != nil {
+			panic(err)
+		}
+		p.wg.Done()
+	}()
+}
+
 func (p *Pruner) Start() {
 	_, nodeRoleCh, err := p.PubSubManager.RegisterNewSubscriber(pubsub.NodeRoleDetailTopic)
 	if err != nil {
 		panic(err)
 	}
-	_, newShardBestStateCh, err := p.PubSubManager.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
-	if err != nil {
-		panic(err)
-	}
+
 	go p.watchStorageChange()
 
 	for {
@@ -425,16 +450,6 @@ func (p *Pruner) Start() {
 				}
 			} else {
 				Logger.log.Errorf("Cannot parse node role %v", *nodeRole)
-			}
-		case newShardBestState := <-newShardBestStateCh:
-			shardBestState, ok := newShardBestState.Value.(*blockchain.ShardBestState)
-			if ok {
-				Logger.log.Infof("Receive new view %s at shard %v", shardBestState.BestBlockHash.String(), shardBestState.ShardID)
-				if err := p.handleNewView(shardBestState); err != nil {
-					panic(err)
-				}
-			} else {
-				Logger.log.Errorf("Cannot parse newShardBestState %v", newShardBestState)
 			}
 		case ec := <-p.TriggerCh:
 			status := rawdbv2.ProcessingPruneByHeightStatus
@@ -497,14 +512,11 @@ func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error 
 	status := p.statuses[shardBestState.ShardID]
 	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) || config.Config().ForcePrune {
 		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
-			p.wg.Add(1)
-			p.insertLock.Lock()
+			Logger.log.Infof("Process new view %s at shard %v", shardBestState.BestBlockHash.String(), shardBestState.ShardID)
 			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
 			if err != nil {
 				panic(err)
 			}
-			p.insertLock.Unlock()
-			p.wg.Done()
 		}
 		if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
 			s := rawdbv2.ProcessingPruneByHeightStatus
@@ -552,6 +564,5 @@ func (p *Pruner) watchStorageChange() {
 
 func (p *Pruner) reset() {
 	p.stateBloom = nil
-	p.insertLock = new(sync.Mutex)
 	p.addedViewsCache = make(map[common.Hash]struct{})
 }

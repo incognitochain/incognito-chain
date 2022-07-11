@@ -23,13 +23,11 @@ type Worker struct {
 	shardID                 byte
 	stateBloom              *trie.StateBloom
 	wg                      *sync.WaitGroup
-	insertLock              *sync.Mutex
 }
 
 func NewWorker(
 	stopCh chan interface{}, heightCh chan uint64, rootHashCache *lru.Cache, stateBloom *trie.StateBloom,
 	listKeysShouldBeRemoved *[]map[common.Hash]struct{}, db incdb.Database, shardID byte, wg *sync.WaitGroup,
-	insertLock *sync.Mutex,
 ) *Worker {
 	return &Worker{
 		stopCh:                  stopCh,
@@ -40,7 +38,6 @@ func NewWorker(
 		db:                      db,
 		shardID:                 shardID,
 		wg:                      wg,
-		insertLock:              insertLock,
 	}
 }
 
