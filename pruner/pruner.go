@@ -262,6 +262,7 @@ func (p *Pruner) traverseAndDelete(
 			return err
 		}
 	}
+	p.statuses[helper.shardID] = rawdbv2.FinishPruneStatus
 	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", nodes, storage)
 
 	return nil
@@ -287,6 +288,9 @@ func (p *Pruner) traverseAndDeleteByHash(
 	// retrieve all state tree by shard rooth hash prefix
 	// delete all nodes which are not in state bloom
 	for iter.Next() {
+		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
+			return nodes, storage, nil
+		}
 		p.LockInsertShardBlock(int(helper.shardID))
 		p.wg.Wait()
 		key := iter.Key()
@@ -309,9 +313,7 @@ func (p *Pruner) traverseAndDeleteByHash(
 		}
 		finalPrunedKey = []byte{}
 		count++
-		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
-			return nodes, storage, nil
-		}
+
 	}
 	if len(finalPrunedKey) != 0 {
 		nodes, storage, err = p.removeNodes(helper.db, helper.shardID, finalPrunedKey, 0, listKeysShouldBeRemoved, nodes, storage, true)
@@ -336,6 +338,9 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		lastPrunedHeight++
 	}
 	for height := lastPrunedHeight; height < helper.finalHeight; height++ {
+		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
+			return nodes, storage, nil
+		}
 		p.LockInsertShardBlock(int(helper.shardID)) //lock insert shard block
 
 		p.wg.Wait() //wait for all insert bloom task (in case we have new view)
@@ -351,10 +356,6 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		}
 		if height%10000 == 0 {
 			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, nodes, storage)
-		}
-
-		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
-			return nodes, storage, nil
 		}
 	}
 	return nodes, storage, nil
@@ -565,7 +566,6 @@ func (p *Pruner) watchStorageChange() {
 }
 
 func (p *Pruner) reset() {
-	p.wg.Wait()
 	p.stateBloom = nil
 	p.addedViewsCache = make(map[common.Hash]struct{})
 }
