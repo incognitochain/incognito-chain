@@ -286,7 +286,6 @@ func (p *Pruner) traverseAndDeleteByHash(
 	for iter.Next() {
 		p.wg.Wait()
 		p.LockInsertShardBlock(int(helper.shardID))
-		defer p.UnlockInsertShardBlock(int(helper.shardID))
 		key := iter.Key()
 		rootHash := blockchain.ShardRootHash{}
 		err := json.Unmarshal(iter.Value(), &rootHash)
@@ -298,6 +297,7 @@ func (p *Pruner) traverseAndDeleteByHash(
 		finalPrunedKey = key
 		helper.wg.Wait()
 		nodes, storage, err = p.removeNodes(helper.db, helper.shardID, key, 0, listKeysShouldBeRemoved, nodes, storage, true)
+		p.UnlockInsertShardBlock(int(helper.shardID))
 		if err != nil {
 			return 0, 0, err
 		}
@@ -333,9 +333,7 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		lastPrunedHeight++
 	}
 	for height := lastPrunedHeight; height < helper.finalHeight; height++ {
-
 		p.LockInsertShardBlock(int(helper.shardID)) //lock insert shard block
-		defer p.UnlockInsertShardBlock(int(helper.shardID))
 
 		p.wg.Wait() //wait for all insert bloom task (in case we have new view)
 
@@ -344,6 +342,7 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		helper.wg.Wait()
 
 		nodes, storage, err = p.removeNodes(helper.db, helper.shardID, nil, height, listKeysShouldBeRemoved, nodes, storage, false)
+		p.UnlockInsertShardBlock(int(helper.shardID))
 		if err != nil {
 			return 0, 0, err
 		}
