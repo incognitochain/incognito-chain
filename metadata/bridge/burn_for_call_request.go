@@ -168,13 +168,13 @@ func (response *BurnForCallResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
     beaconViewRetriever metadataCommon.BeaconViewRetriever,
 ) (bool, error) {
     idx := -1
-    metadataCommon.Logger.Log.Infof("Currently verifying ins: %v\n", response)
+    metadataCommon.Logger.Log.Infof("Verifying response: %v", response)
     for i, inst := range mintData.Insts {
         if len(inst) != 4 { // this is not bridgeagg instruction
             continue
         }
         instMetaType := inst[0]
-        if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.BurnForCallResponseMeta) {
+        if mintData.InstsUsed[i] > 0 || instMetaType != strconv.Itoa(metadataCommon.BurnForCallRequestMeta) {
             continue
         }
         tempInst := metadataCommon.NewInstruction()
@@ -237,8 +237,8 @@ func (response *BurnForCallResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
         break
     }
     if idx == -1 { // not found the issuance request tx for this response
-        metadataCommon.Logger.Log.Debugf("no bridgeagg unshield instruction tx %s", tx.Hash().String())
-        return false, fmt.Errorf(fmt.Sprintf("no bridgeagg unshield instruction tx %s", tx.Hash().String()))
+        metadataCommon.Logger.Log.Debugf("no bridgeagg burnForCall instruction tx %s", tx.Hash().String())
+        return false, fmt.Errorf(fmt.Sprintf("no bridgeagg burnForCall instruction tx %s", tx.Hash().String()))
     }
     mintData.InstsUsed[idx] = 1
     return true, nil

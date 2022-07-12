@@ -106,7 +106,9 @@ func (iRes IssuingReshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
         if !bytes.Equal(iRes.RequestedTxID[:], acceptedInst.TxReqID[:]) ||
             !bytes.Equal(iRes.UniqTx, acceptedInst.ReshieldData.UniqTx) ||
             !bytes.Equal(iRes.ExternalTokenID, acceptedInst.ReshieldData.ExternalTokenID) ||
-            strconv.Itoa(int(shardID)) != inst[2] {
+            strconv.Itoa(int(shardID)) != inst[1] {
+            b, _ := json.Marshal(iRes)
+            metadataCommon.Logger.Log.Warnf("WARNING - VALIDATION: response / instruction content mismatch: %v vs %s - skipping", inst, string(b))
             continue
         }
         expectedMintTokenID := acceptedInst.ReshieldData.IncTokenID

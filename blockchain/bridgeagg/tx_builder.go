@@ -278,35 +278,32 @@ func buildIssuingReshieldResponse(
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of Reshield accepted issuance instruction: ", err)
 		return nil, nil
 	}
-	var issuingReshieldAcceptedInst metadataBridge.IssuingEVMAcceptedInst
+	var issuingReshieldAcceptedInst metadataBridge.AcceptedReshieldRequest
 	err = json.Unmarshal(contentBytes, &issuingReshieldAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while unmarshaling EVM accepted issuance instruction: ", err)
 		return nil, nil
 	}
 
-	if shardID != issuingReshieldAcceptedInst.ShardID {
-		Logger.log.Warnf("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingReshieldAcceptedInst.ShardID)
-		return nil, nil
+	var tokenID common.Hash
+	if issuingReshieldAcceptedInst.UnifiedTokenID == nil {
+		tokenID = issuingReshieldAcceptedInst.ReshieldData.IncTokenID
+	} else {
+		tokenID = *issuingReshieldAcceptedInst.UnifiedTokenID
 	}
-	tokenID := issuingReshieldAcceptedInst.IncTokenID
 	if tokenID == common.PRVCoinID {
-		Logger.log.Errorf("cannot issue prv in bridge")
-		return nil, fmt.Errorf("cannot issue prv in bridge")
+		Logger.log.Errorf("cannot reshield prv via bridge")
+		return nil, fmt.Errorf("cannot reshield prv via bridge")
 	}
 	issuingReshieldRes := metadataBridge.NewIssuingReshieldResponse(
 		issuingReshieldAcceptedInst.TxReqID,
-		issuingReshieldAcceptedInst.UniqTx,
-		issuingReshieldAcceptedInst.ExternalTokenID,
+		issuingReshieldAcceptedInst.ReshieldData.UniqTx,
+		issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID,
 		metadataCommon.IssuingReshieldResponseMeta,
 	)
 
-	var recv privacy.OTAReceiver
-	err = recv.FromString(issuingReshieldAcceptedInst.ReceiverAddrStr)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while deserializing receiver address string: ", err)
-		return nil, nil
-	}
-	txParam := transaction.TxSalaryOutputParams{Amount: issuingReshieldAcceptedInst.IssuingAmount, ReceiverAddress: nil, PublicKey: recv.PublicKey, TxRandom: &recv.TxRandom, TokenID: &tokenID}
+	mintAmount := issuingReshieldAcceptedInst.ReshieldData.ShieldAmount + issuingReshieldAcceptedInst.ReshieldData.Reward // range exception was handled by producer
+	var recv privacy.OTAReceiver = issuingReshieldAcceptedInst.Receiver
+	txParam := transaction.TxSalaryOutputParams{Amount: mintAmount, ReceiverAddress: nil, PublicKey: recv.PublicKey, TxRandom: &recv.TxRandom, TokenID: &tokenID}
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadataCommon.Metadata { return issuingReshieldRes })
 }

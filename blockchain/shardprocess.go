@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -1475,8 +1476,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
 				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
-				metadata.IssuingPLGRequestMeta, metadataCommon.IssuingUnifiedTokenRequestMeta,
-				metadata.IssuingFantomRequestMeta, metadata.IssuingReshieldResponseMeta:
+				metadata.IssuingPLGRequestMeta,
+				metadata.IssuingFantomRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadataBridge.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {
@@ -1499,7 +1500,6 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 
 					Logger.log.Infof("store eth-isssued token %v succeeded\n", acceptedContent.IncTokenID.String())
 				}
-
 			case metadata.IssuingRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadata.ParseIssuingInstAcceptedContent(l[3])
@@ -1522,6 +1522,42 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					Logger.log.Infof("store issued token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
+			case metadata.IssuingReshieldResponseMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					inst := metadataCommon.NewInstruction()
+					if err := inst.FromStringSlice(l); err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+					if err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					var acceptedContent metadataBridge.AcceptedReshieldRequest
+					err = json.Unmarshal(contentBytes, &acceptedContent)
+					if err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					if acceptedContent.UnifiedTokenID != nil {
+						continue
+					}
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.ReshieldData.IncTokenID); existed {
+						Logger.log.Infof("eth-reshield token %v existed, skip storing this token", acceptedContent.ReshieldData.IncTokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, acceptedContent.ReshieldData.IncTokenID, "",
+						"", statedb.BridgeToken, true, acceptedContent.ReshieldData.ShieldAmount, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v", err)
+						return err
+					}
+
+					Logger.log.Infof("store eth-reshield token %v succeeded", acceptedContent.ReshieldData.IncTokenID.String())
 				}
 			}
 		}
