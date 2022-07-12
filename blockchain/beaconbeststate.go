@@ -52,11 +52,6 @@ type BeaconRootHash struct {
 	SlashStateDBRootHash     common.Hash
 }
 
-type RewardParam struct {
-	Cap    uint64
-	Minted uint64
-}
-
 type BeaconBestState struct {
 	BestBlockHash                    common.Hash          `json:"BestBlockHash"`         // The hash of the block.
 	PreviousBestBlockHash            common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
@@ -79,7 +74,7 @@ type BeaconBestState struct {
 	NumberOfShardBlock               map[byte]uint        `json:"NumberOfShardBlock"`
 	TriggeredFeature                 map[string]uint64    `json:"TriggeredFeature"`
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
-	RewardInfo                       RewardParam          `json:"RewardInfo"`
+	RewardMinted                     uint64               `json:"RewardMinted"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter

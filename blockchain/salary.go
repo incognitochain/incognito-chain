@@ -49,10 +49,10 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 				return err
 			} else {
 				if beaconBlock.Header.Version >= types.REDUCE_BLOCKTIME_VERSION {
-					if bestState.RewardInfo.Minted+rewardAmount > bestState.RewardInfo.Cap {
-						rewardAmount = bestState.RewardInfo.Cap - bestState.RewardInfo.Minted
+					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
+						rewardAmount = config.Param().MaxReward - bestState.RewardMinted
 					}
-					bestState.RewardInfo.Minted += rewardAmount
+					bestState.RewardMinted += rewardAmount
 				}
 			}
 
@@ -99,10 +99,10 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 				return err
 			} else {
 				if beaconBlock.Header.Version >= types.REDUCE_BLOCKTIME_VERSION {
-					if bestState.RewardInfo.Minted+rewardAmount > bestState.RewardInfo.Cap {
-						rewardAmount = bestState.RewardInfo.Cap - bestState.RewardInfo.Minted
+					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
+						rewardAmount = config.Param().MaxReward - bestState.RewardMinted
 					}
-					bestState.RewardInfo.Minted += rewardAmount
+					bestState.RewardMinted += rewardAmount
 				}
 			}
 			acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] += rewardAmount

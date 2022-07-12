@@ -590,7 +590,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		for sID, sState := range prevBeaconBlock.Body.ShardState {
 			shardHeights[sID] = sState[len(sState)-1].Height
 		}
-		beaconBestState.RewardInfo.Minted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
+		beaconBestState.RewardMinted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
 	}
 
 	//update bridge process

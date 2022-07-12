@@ -48,6 +48,7 @@ type param struct {
 	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
 	ActiveShards                     int                          `mapstructure:"active_shards"`
 	BasicReward                      uint64                       `mapstructure:"basic_reward"`
+	MaxReward                        uint64                       `mapstructure:"max_reward"`
 	EpochParam                       epochParam                   `mapstructure:"epoch_param"`
 	EthContractAddressStr            string                       `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`

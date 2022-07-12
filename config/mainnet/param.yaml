@@ -26,6 +26,7 @@ block_time:
 staking_amount_shard: 1750000000000
 active_shards: 8
 basic_reward: 1386666000
+max_reward: 95000000000000000
 epoch_param:
   number_of_block_in_epoch: 350
   number_of_block_in_epoch_v2: 1000000000000
