@@ -75,7 +75,7 @@ func (blockService BlockService) BridgeAggEstimateFeeByBurntAmount(unifiedTokenI
 		return nil, fmt.Errorf("Invalid tokenID %v", tokenID.String())
 	}
 
-	_, fee, err := bridgeagg.CalUnshieldFeeByBurnAmount(vault, burntAmount, state.Param().PercentFeeWithDec())
+	_, fee, _, err := bridgeagg.CalUnshieldFeeByBurnAmount(vault, burntAmount, state.Param().PercentFeeWithDec(), map[common.Hash]uint64{})
 	if err != nil {
 		return nil, NewRPCError(BridgeAggEstimateFeeByBurntAmountError, err)
 	}
