@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -59,6 +60,21 @@ func NewShieldRequestWithValue(
 			Type: metadataCommon.IssuingUnifiedTokenRequestMeta,
 		},
 	}
+}
+
+func ParseShieldReqInstAcceptedContent(instAcceptedContentStr string) (*AcceptedInstShieldRequest, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
+	if err != nil {
+		metadataCommon.Logger.Log.Errorf("BridgeAgg Can not decode accepted instruction for shielding %v\n", err)
+		return nil, fmt.Errorf("BridgeAgg Can not decode accepted instruction for shielding %v\n", err)
+	}
+	var shieldReqAcceptedInst AcceptedInstShieldRequest
+	err = json.Unmarshal(contentBytes, &shieldReqAcceptedInst)
+	if err != nil {
+		metadataCommon.Logger.Log.Errorf("BridgeAgg Can not unmarshal accepted instruction for shielding %v\n", err)
+		return nil, fmt.Errorf("BridgeAgg Can not unmarshal accepted instruction for shielding %v\n", err)
+	}
+	return &shieldReqAcceptedInst, nil
 }
 
 func (request *ShieldRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
