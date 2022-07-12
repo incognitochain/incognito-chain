@@ -142,8 +142,10 @@ auto_enable_feature:
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20": 20
-  - "blocktime10": 10   
-blocktime_features: ["blocktimedef", "blocktime20"]
+  - "blocktime10": 10
+feature_version:
+  - blocktime20: 9
+
 transactions_param:
   - lowerbound: 15
   - upperbound: 100 

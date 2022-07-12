@@ -75,7 +75,7 @@ type param struct {
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
 	BlockTimeParam                   map[string]int64             `mapstructure:"blocktime_param"`
-	BlockTimeFeatures                []string                     `mapstructure:"blocktime_features"`
+	FeatureVersion                   map[string]int64             `mapstructure:"feature_version"`
 	TransactionInBlockParam          TxsPerBlock                  `mapstructure:"transactions_param"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool

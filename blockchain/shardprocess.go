@@ -744,7 +744,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	)
 
 	for _, beaconBlk := range beaconBlocks {
-		for _, feature := range config.Param().BlockTimeFeatures {
+		for feature, _ := range config.Param().BlockTimeParam {
 			if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
 				if triggerFeature == beaconBlk.GetBeaconHeight() {
 					blockchain.ShardChain[oldBestState.ShardID].UpdateArchorTime(triggerFeature-1, shardBlock)

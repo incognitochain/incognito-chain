@@ -1266,8 +1266,10 @@ func getBlockTimeFeature(features []string, triggerMap map[string]uint64, blkHei
 
 func (curView *BeaconBestState) GetBlockTimeFeature(blkHeight uint64) (string, int) {
 	triggerFeature := curView.TriggeredFeature
-	features := config.Param().BlockTimeFeatures
-
+	features := []string{}
+	for f, _ := range config.Param().BlockTimeParam {
+		features = append(features, f)
+	}
 	return getBlockTimeFeature(features, triggerFeature, blkHeight)
 }
 

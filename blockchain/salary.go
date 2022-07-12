@@ -1,7 +1,9 @@
 package blockchain
 
 import (
+	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -20,7 +22,7 @@ import (
 )
 
 func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB, bestState *BeaconBestState) error {
-
+	//get shard block version that confirmed by this beacon block
 	shardsBlockVersions := map[int]map[uint64]int{}
 	for _, sID := range blockchain.GetShardIDs() {
 		shardsBlockVersions[sID] = map[uint64]int{}
@@ -29,6 +31,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			shardsBlockVersions[sID][sState.Height] = sState.Version
 		}
 	}
+
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
 			continue
@@ -48,7 +51,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if err != nil {
 				return err
 			} else {
-				if beaconBlock.Header.Version >= types.REDUCE_BLOCKTIME_VERSION {
+				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
 					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
 						rewardAmount = config.Param().MaxReward - bestState.RewardMinted
 					}
@@ -98,7 +101,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if err != nil {
 				return err
 			} else {
-				if beaconBlock.Header.Version >= types.REDUCE_BLOCKTIME_VERSION {
+				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
 					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
 						rewardAmount = config.Param().MaxReward - bestState.RewardMinted
 					}
@@ -659,14 +662,54 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 	return salaryTx, nil
 }
 
-func (blockchain *BlockChain) GetBasicRewardByVersion(version int) (uint64, error) {
-	if curFeature, ok := types.BLOCKTIME_FEATURE_BY_VERSION[version]; ok {
-		blockTimeMap := config.Param().BlockTimeParam
-		defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
-		curBlockTime := blockTimeMap[curFeature]
-		return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime), nil
+func (blockchain *BlockChain) GetBlockTimeByBlockVersion(blkVersion int) (int64, error) {
+	blockTimeMap := config.Param().BlockTimeParam
+	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+	blockVersionEnableFeature := map[string]int{}
+	sortBlockVersionEnableFeature := []string{}
+
+	//from TriggeredFeature in beacon beststate, we extract feature that related to adjusting block time
+	for feature, enableBlockHeight := range blockchain.BeaconChain.GetBestView().(*BeaconBestState).TriggeredFeature {
+		if _, ok := config.Param().BlockTimeParam[feature]; ok {
+			beaconBlock, err := blockchain.GetBeaconBlockByHeightV1(enableBlockHeight)
+			if err != nil {
+				return 0, fmt.Errorf("Cannot find beacon block %v", enableBlockHeight)
+			}
+			blockVersionEnableFeature[feature] = beaconBlock.GetVersion() //this is version before adjusting block time
+			sortBlockVersionEnableFeature = append(sortBlockVersionEnableFeature, feature)
+		}
 	}
-	return 0, errors.Errorf("Can not found blocktime param for block version %v", version)
+
+	//then sort by version
+	sort.Slice(sortBlockVersionEnableFeature, func(i, j int) bool {
+		if blockVersionEnableFeature[sortBlockVersionEnableFeature[i]] > blockVersionEnableFeature[sortBlockVersionEnableFeature[j]] {
+			return true
+		}
+		return false
+	})
+
+	//return the corresponding blocktime of blkVersion
+	for _, feature := range sortBlockVersionEnableFeature {
+		if blkVersion > blockVersionEnableFeature[feature] { //version must be greater than the version before adjusting
+			if t, ok := blockTimeMap[feature]; !ok {
+				return 0, fmt.Errorf("Cannot find block time param %v", feature)
+			} else {
+				return t, nil
+			}
+		}
+	}
+
+	return defaultBlockTime, nil
+}
+
+func (blockchain *BlockChain) GetBasicRewardByVersion(version int) (uint64, error) {
+	blockTimeMap := config.Param().BlockTimeParam
+	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+	curBlockTime, err := blockchain.GetBlockTimeByBlockVersion(version)
+	if err != nil {
+		return 0, err
+	}
+	return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime), nil
 }
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
@@ -682,7 +725,7 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 }
 
 func (blockchain *BlockChain) GetRewardAmount(shardVersion int, shardHeight uint64) (uint64, error) {
-	if shardVersion < types.REDUCE_BLOCKTIME_VERSION {
+	if shardVersion < types.ADJUST_BLOCKTIME_VERSION {
 		return blockchain.getRewardAmount(shardHeight), nil
 	}
 	basicReward, err := blockchain.GetBasicRewardByVersion(shardVersion)
@@ -714,7 +757,10 @@ func (blockchain *BlockChain) GetYearOfBlockChain(blockHeight uint64) (uint64, e
 		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", blockHeight)
 	}
 	triggerFeature := bView.TriggeredFeature
-	features := config.Param().BlockTimeFeatures
+	features := []string{}
+	for f, _ := range config.Param().BlockTimeParam {
+		features = append(features, f)
+	}
 	return getYearOfBlockChain(features, triggerFeature, blockHeight), nil
 }
 
@@ -751,7 +797,7 @@ func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
 func GetBlockTimeInterval(blkTimeFeature string) int64 {
 	blockTimeMap := config.Param().BlockTimeParam
 	if blkTime, ok := blockTimeMap[blkTimeFeature]; ok {
-		return blkTime
+		return int64(blkTime)
 	}
 	return int64(config.Param().BlockTime.MinBeaconBlockInterval.Seconds())
 
