@@ -1046,7 +1046,7 @@ func DecodeBurnForCallConfirmInst(inst []string) ([]byte, error) {
 	// check length of addresses
 	for _, a := range [][]byte{extToken, extCallAddr, recvToken, withdrawAddr} {
 		if len(a) != metadataCommon.ExternalAddressLen {
-			return nil, fmt.Errorf("instruction %v contains address with invalid length")
+			return nil, fmt.Errorf("instruction %v contains address with invalid length", len(a))
 		}
 	}
 

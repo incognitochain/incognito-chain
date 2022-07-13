@@ -221,7 +221,7 @@ func (blockchain *BlockChain) generateBridgeAggInstruction(
 					shardBlk.Body.Transactions, blockchain,
 					shardID, shardBlk.Header.Height, shardBlk.Header.BeaconHeight)
 				if err != nil {
-					BLogger.log.Errorf("Build bridge agg unshield instructions failed: %s", err.Error())
+					BLogger.log.Errorf("Build bridge agg unshield actions failed: %s", err.Error())
 					return nil, err
 				}
 				unshieldActions = append(unshieldActions,

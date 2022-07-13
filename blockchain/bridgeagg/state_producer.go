@@ -674,12 +674,14 @@ func (sp *stateProducer) burnForCall(
 			}
 			netPrefix, err := getPrefixByNetworkID(d.ExternalNetworkID)
 			if err != nil {
-				return [][]string{rejectedInst}, state, err
+				Logger.log.Errorf("[BridgeAgg] Error when updating state for non-unified burnForCall: %v", err)
+				return [][]string{rejectedInst}, state, nil
 			}
 			// Convert to external tokenID
 			tokenID, err := metadataBridge.FindExternalTokenID(stateDB, d.IncTokenID, netPrefix)
 			if err != nil {
-				return [][]string{rejectedInst}, state, err
+				Logger.log.Errorf("[BridgeAgg] Error when updating state for non-unified burnForCall: %v", err)
+				return [][]string{rejectedInst}, state, nil
 			}
 
 			// Convert amount to big.Int to get bytes later

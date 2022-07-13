@@ -1571,15 +1571,16 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
 						return err
 					}
+					shieldTokenID := acceptedContent.ReshieldData.IncTokenID
 					if acceptedContent.UnifiedTokenID != nil {
-						continue
+						shieldTokenID = *acceptedContent.UnifiedTokenID
 					}
-					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.ReshieldData.IncTokenID); existed {
-						Logger.log.Infof("eth-reshield token %v existed, skip storing this token", acceptedContent.ReshieldData.IncTokenID.String())
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, shieldTokenID); existed {
+						Logger.log.Infof("eth-reshield token %v existed, skip storing this token", shieldTokenID.String())
 						continue
 					}
 
-					err = statedb.StorePrivacyToken(stateDB, acceptedContent.ReshieldData.IncTokenID, "",
+					err = statedb.StorePrivacyToken(stateDB, shieldTokenID, "",
 						"", statedb.BridgeToken, true, acceptedContent.ReshieldData.ShieldAmount, []byte{}, acceptedContent.TxReqID,
 					)
 					if err != nil {
@@ -1587,7 +1588,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store eth-reshield token %v succeeded", acceptedContent.ReshieldData.IncTokenID.String())
+					Logger.log.Infof("store eth-reshield token %v succeeded", shieldTokenID.String())
 				}
 			}
 		}
