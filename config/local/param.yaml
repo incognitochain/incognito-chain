@@ -28,12 +28,12 @@ committee_size:
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
-  min_beacon_block_interval: 8s
-  max_beacon_block_creation: 5s
-  min_shard_block_interval: 8s
-  max_shard_block_creation: 5s
+  min_beacon_block_interval: 3s
+  max_beacon_block_creation: 2s
+  min_shard_block_interval: 3s
+  max_shard_block_creation: 2s
 staking_amount_shard: 1750000000000
-active_shards: 1
+active_shards: 2
 basic_reward: 400000000
 epoch_param:
   number_of_block_in_epoch: 50
@@ -41,7 +41,7 @@ epoch_param:
   epoch_v2_break_point: 1e9
   random_time: 25
   random_time_v2: 1e9
-eth_contract_address: "0xf90860014c7e13dE4A86B81c54dDE797820c72bE"
+eth_contract_address: "0xAF360540A7803C2C3EF2E89dFa86Da528b9162Ab"
 bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
 plg_contract_address: "0x141aa0C4c7d27f7B526a254202F979B60F056333"
 ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
@@ -81,7 +81,7 @@ portal_v3_height: 1e9
 tx_pool_version: 0
 geth_param:
   host: 
-    - "https://kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "http://127.0.0.1:8545"
 bsc_param:
   host: 
     - "https://data-seed-prebsc-1-s1.binance.org:8545"
