@@ -15,6 +15,7 @@ import (
 )
 
 type View interface {
+	CalculateTimeSlot(int64) int64
 	GetHash() *common.Hash
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64
@@ -27,10 +28,6 @@ type View interface {
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
 	CompareCommitteeFromBlock(View) int
-}
-
-type Chain interface {
-	CalculateTimeSlot(beaconHeight uint64, curTime int64) int64
 }
 
 type MultiView interface {
@@ -47,7 +44,6 @@ type MultiView interface {
 	Clone() MultiView
 	Reset()
 	AddView(v View) (int, error)
-	SetTimeSlotCalculator(chain Chain)
 }
 
 type multiView struct {
@@ -59,8 +55,6 @@ type multiView struct {
 	finalView         View //view that must not be revert
 	expectedFinalView View //view at this time seen as final view (shardchain could revert from beacon view)
 	bestView          View // best view from final view
-
-	timeSlotCalculator Chain
 }
 
 func NewMultiView() *multiView {
@@ -71,10 +65,6 @@ func NewMultiView() *multiView {
 	}
 
 	return s
-}
-
-func (s *multiView) SetTimeSlotCalculator(chain Chain) {
-	s.timeSlotCalculator = chain
 }
 
 func (s *multiView) RunCleanProcess() {
@@ -265,8 +255,8 @@ func (s *multiView) updateViewState(newView View) {
 			if prev1View == nil || s.expectedFinalView.GetHeight() == prev1View.GetHeight() {
 				return
 			}
-			bestViewTimeSlot := s.timeSlotCalculator.CalculateTimeSlot(s.bestView.GetBlock().GetBeaconHeight(), s.bestView.GetBlock().GetProposeTime())
-			prev1TimeSlot := s.timeSlotCalculator.CalculateTimeSlot(prev1View.GetBlock().GetBeaconHeight(), prev1View.GetBlock().GetProposeTime())
+			bestViewTimeSlot := s.bestView.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
+			prev1TimeSlot := s.bestView.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
 			if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 				s.expectedFinalView = prev1View
 			}

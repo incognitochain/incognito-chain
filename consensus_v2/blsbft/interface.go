@@ -46,7 +46,6 @@ type Chain interface {
 	CurrentHeight() uint64
 	GetCommitteeSize() int
 	IsBeaconChain() bool
-	CalculateTimeSlot(beaconHeight uint64, curTime int64) int64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
@@ -86,7 +85,6 @@ type Chain interface {
 	) []incognitokey.CommitteePublicKey
 	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
 	GetBlockByHash(hash common.Hash) (types.BlockInterface, error)
-	StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error
 }
 
 type CommitteeChainHandler interface {

@@ -141,13 +141,14 @@ func CreateVote(
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 
+	previousView := chain.GetViewByHash(block.GetPrevHash())
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
 	vote.BlockHash = block.ProposeHash().String()
 	vote.Validator = userBLSPk
-	vote.ProduceTimeSlot = chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime())
-	vote.ProposeTimeSlot = chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime())
+	vote.ProduceTimeSlot = previousView.CalculateTimeSlot(block.GetProduceTime())
+	vote.ProposeTimeSlot = previousView.CalculateTimeSlot(block.GetProposeTime())
 	vote.PrevBlockHash = block.GetPrevHash().String()
 	vote.BlockHeight = block.GetHeight()
 	vote.CommitteeFromBlock = block.CommitteeFromBlock()

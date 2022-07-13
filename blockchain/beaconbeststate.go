@@ -75,6 +75,8 @@ type BeaconBestState struct {
 	TriggeredFeature                 map[string]uint64    `json:"TriggeredFeature"`
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
 	RewardMinted                     uint64               `json:"RewardMinted"`
+	TSManager                        TSManager
+
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -102,6 +104,10 @@ type BeaconBestState struct {
 	portalStateV4          *portalprocessv4.CurrentPortalStateV4
 	bridgeAggManager       *bridgeagg.Manager
 	LastBlockProcessBridge uint64
+}
+
+func (beaconBestState *BeaconBestState) CalculateTimeSlot(t int64) int64 {
+	return beaconBestState.TSManager.calculateTimeslot(t)
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {

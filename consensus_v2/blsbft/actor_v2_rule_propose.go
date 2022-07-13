@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -196,8 +195,9 @@ func (p *ProposeRuleLemma2) isFirstBlockNextHeight(
 		return false
 	}
 
-	previousProposerTimeSlot := p.chain.CalculateTimeSlot(previousBlock.GetBeaconHeight(), previousBlock.GetProposeTime())
-	producerTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime())
+	previousView := p.chain.GetViewByHash(*previousBlock.Hash())
+	previousProposerTimeSlot := previousView.CalculateTimeSlot(previousBlock.GetProposeTime())
+	producerTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
 
 	if producerTimeSlot != previousProposerTimeSlot+1 {
 		return false
@@ -216,10 +216,10 @@ func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
 	committees []incognitokey.CommitteePublicKey,
 	numberOfFixedShardBlockValidator int,
 ) bool {
-
-	previousProposerTimeSlot := p.chain.CalculateTimeSlot(previousBlock.GetBeaconHeight(), previousBlock.GetProposeTime())
-	producerTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime())
-	proposerTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime())
+	previousView := p.chain.GetViewByHash(*previousBlock.Hash())
+	previousProposerTimeSlot := previousView.CalculateTimeSlot(previousBlock.GetProposeTime())
+	producerTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
+	proposerTimeSlot := previousView.CalculateTimeSlot(block.GetProposeTime())
 
 	//next propose time is also produce time
 	if producerTimeSlot != previousProposerTimeSlot+1 {
@@ -274,10 +274,12 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 	finalityProof := proposeMsg.FinalityProof
 
 	previousBlockHash := block.GetPrevHash()
+	previousView := p.chain.GetViewByHash(previousBlockHash)
 	producer := block.GetProducer()
 	rootHash := block.GetAggregateRootHash()
-	beginTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime())
-	currentTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime())
+
+	beginTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
+	currentTimeSlot := previousView.CalculateTimeSlot(block.GetProposeTime())
 
 	if int(currentTimeSlot-beginTimeSlot) != len(finalityProof.ReProposeHashSignature) {
 		p.logger.Infof("Failed to verify finality proof, expect number of proof %+v, but got %+v",
@@ -312,8 +314,9 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 	proof FinalityProof,
 ) error {
 	previousHash := block.GetPrevHash()
-	beginTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime())
-	currentTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime())
+	previousView := p.chain.GetViewByHash(previousHash)
+	beginTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
+	currentTimeSlot := previousView.CalculateTimeSlot(block.GetProposeTime())
 
 	if currentTimeSlot-beginTimeSlot > MAX_FINALITY_PROOF {
 		return nil
@@ -408,7 +411,8 @@ func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, cur
 	finalityProof := NewFinalityProof()
 
 	producerTime := block.GetProduceTime()
-	producerTimeTimeSlot := p.chain.CalculateTimeSlot(block.GetBeaconHeight(), producerTime)
+	previousView := p.chain.GetViewByHash(block.GetPrevHash())
+	producerTimeTimeSlot := previousView.CalculateTimeSlot(producerTime)
 
 	if currentTimeSlot-producerTimeTimeSlot > MAX_FINALITY_PROOF {
 		return finalityProof, false, fmt.Sprintf("exceed max finality proof, required %+v proofs", currentTimeSlot-producerTimeTimeSlot)

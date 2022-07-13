@@ -309,7 +309,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestState,
 	shardBlock *types.ShardBlock, beaconBlocks []*types.BeaconBlock,
 	shardID byte, isPreSign bool, committees []incognitokey.CommitteePublicKey) error {
-	shChain := blockchain.ShardChain[shardID]
 	startTimeVerifyPreProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	if shardBlock.Header.ShardID != shardID {
@@ -354,8 +353,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive shardBlock has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, shardBlock.Header.Timestamp))
 	}
 
-	if shardBlock.GetVersion() >= types.MULTI_VIEW_VERSION && curView.BestBlock.GetProposeTime() > 0 && shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, shardBlock.Header.ProposeTime) <= shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, curView.BestBlock.GetProposeTime()) {
-		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, shardBlock.Header.ProposeTime), shChain.CalculateTimeSlot(shardBlock.Header.BeaconHeight, curView.BestBlock.GetProposeTime())))
+	if shardBlock.GetVersion() >= types.MULTI_VIEW_VERSION && curView.BestBlock.GetProposeTime() > 0 && curView.CalculateTimeSlot(shardBlock.Header.ProposeTime) <= curView.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
+		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", curView.CalculateTimeSlot(shardBlock.Header.ProposeTime), curView.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
 	// Verify transaction root
@@ -690,9 +689,9 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	startTimeVerifyBestStateWithShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
-	shChain := blockchain.ShardChain[shardBestState.ShardID]
-	produceTimeSlot := shChain.CalculateTimeSlot(shardBlock.GetBeaconHeight(), shardBlock.GetProduceTime())
-	proposeTimeSlot := shChain.CalculateTimeSlot(shardBlock.GetBeaconHeight(), shardBlock.GetProposeTime())
+
+	produceTimeSlot := shardBestState.CalculateTimeSlot(shardBlock.GetProduceTime())
+	proposeTimeSlot := shardBestState.CalculateTimeSlot(shardBlock.GetProposeTime())
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
 		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength(), produceTimeSlot, proposeTimeSlot); err != nil {
 		return err
@@ -743,15 +742,6 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		err error
 	)
 
-	for _, beaconBlk := range beaconBlocks {
-		for feature, _ := range config.Param().BlockTimeParam {
-			if triggerFeature, ok := blockchain.GetBeaconBestState().TriggeredFeature[feature]; ok {
-				if triggerFeature == beaconBlk.GetBeaconHeight() {
-					blockchain.ShardChain[oldBestState.ShardID].UpdateArchorTime(triggerFeature-1, shardBlock)
-				}
-			}
-		}
-	}
 	startTimeUpdateShardBestState := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	shardBestState := NewShardBestState()
@@ -820,6 +810,16 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 					}
 
 				}
+			}
+		}
+	}
+
+	//checkpoint timeslot
+	for feature, _ := range config.Param().BlockTimeParam {
+		if triggerHeight, ok := shardBestState.TriggeredFeature[feature]; ok {
+			if triggerHeight == shardBlock.GetHeight() {
+				curTS := shardBestState.TSManager.calculateTimeslot(shardBlock.GetProposeTime())
+				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
 			}
 		}
 	}

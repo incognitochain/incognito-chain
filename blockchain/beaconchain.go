@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -47,7 +46,6 @@ func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blo
 		ChainName:           chainName,
 		committeesInfoCache: committeeInfoCache,
 	}
-	chain.InitArchorTime()
 	return chain
 }
 
@@ -225,9 +223,9 @@ func (chain *BeaconChain) CreateNewBlock(
 		if err != nil {
 			return nil, err
 		}
-		previousProposeTimeSlot := chain.CalculateTimeSlot(previousBlock.GetHeight(), previousBlock.GetProposeTime())
-		previousProduceTimeSlot := chain.CalculateTimeSlot(previousBlock.GetHeight(), previousBlock.GetProduceTime())
-		currentTimeSlot := chain.CalculateTimeSlot(newBlock.GetHeight(), newBlock.Header.Timestamp)
+		previousProposeTimeSlot := beaconBestView.CalculateTimeSlot(previousBlock.GetProposeTime())
+		previousProduceTimeSlot := beaconBestView.CalculateTimeSlot(previousBlock.GetProduceTime())
+		currentTimeSlot := beaconBestView.CalculateTimeSlot(newBlock.Header.Timestamp)
 
 		// if previous block is finality or same produce/propose
 		// and  block produced/proposed next block time
@@ -263,8 +261,9 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 		// if previous block is finality or same produce/propose
 		// and valid lemma2
 		if isValidRePropose {
-			previousProposeTimeSlot := chain.CalculateTimeSlot(previousBlock.GetHeight(), previousBlock.GetProposeTime())
-			previousProduceTimeSlot := chain.CalculateTimeSlot(previousBlock.GetHeight(), previousBlock.GetProduceTime())
+			bestView := chain.GetBestView()
+			previousProposeTimeSlot := bestView.CalculateTimeSlot(previousBlock.GetProposeTime())
+			previousProduceTimeSlot := bestView.CalculateTimeSlot(previousBlock.GetProduceTime())
 			if version >= types.INSTANT_FINALITY_VERSION {
 
 				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
@@ -569,57 +568,4 @@ func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 
 func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
 	return nil
-}
-
-func (chain *BeaconChain) CalculateTimeSlot(beaconHeight uint64, curTime int64) int64 {
-	curBlockTime := chain.Blockchain.GetBeaconBestState().GetBlockTimeInterval(beaconHeight)
-	curTime += curBlockTime / 2
-	archorTime := chain.archorTime
-	for h := len(chain.archorTime.heights) - 1; h >= 0; h-- {
-		if beaconHeight >= archorTime.heights[h] {
-			timeLockInfo := archorTime.archorMap[archorTime.heights[h]]
-			return timeLockInfo.timeSlot + int64(math.Floor(float64((curTime-timeLockInfo.timeLock)/curBlockTime)))
-		}
-	}
-	return -1
-}
-
-func (chain *BeaconChain) UpdateArchorTime(beaconHeight uint64, beaconBlock *types.BeaconBlock) {
-	timeSlot := chain.CalculateTimeSlot(beaconHeight, beaconBlock.GetProduceTime())
-	archorTime := chain.archorTime
-	if _, ok := archorTime.archorMap[beaconHeight]; ok {
-		return
-	}
-	archorTime.heights = append(archorTime.heights, beaconHeight)
-	archorTime.archorMap[beaconHeight] = struct {
-		timeLock int64
-		timeSlot int64
-	}{
-		timeLock: beaconBlock.GetProduceTime(),
-		timeSlot: timeSlot,
-	}
-}
-
-func (chain *BeaconChain) InitArchorTime() {
-	chain.archorTime = struct {
-		archorMap map[uint64]struct {
-			timeLock int64
-			timeSlot int64
-		}
-		heights []uint64
-	}{
-		archorMap: map[uint64]struct {
-			timeLock int64
-			timeSlot int64
-		}{},
-		heights: []uint64{},
-	}
-	chain.archorTime.heights = []uint64{0}
-	chain.archorTime.archorMap[0] = struct {
-		timeLock int64
-		timeSlot int64
-	}{
-		timeLock: 0,
-		timeSlot: 0,
-	}
 }

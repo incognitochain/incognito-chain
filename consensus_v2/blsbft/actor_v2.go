@@ -546,7 +546,7 @@ func (a *actorV2) run() error {
 				}
 				a.currentTime = time.Now().Unix()
 				bestView := a.chain.GetBestView()
-				currentTimeSlot := a.chain.CalculateTimeSlot(bestView.GetBlock().GetBeaconHeight(), a.currentTime)
+				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
 
 				newTimeSlot := false
 				if a.currentTimeSlot != currentTimeSlot {
@@ -556,7 +556,7 @@ func (a *actorV2) run() error {
 				a.currentTimeSlot = currentTimeSlot
 
 				//set round for monitor
-				round := a.currentTimeSlot - a.chain.CalculateTimeSlot(bestView.GetBlock().GetBeaconHeight(), bestView.GetBlock().GetProposeTime())
+				round := a.currentTimeSlot - bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
 				signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
@@ -567,7 +567,7 @@ func (a *actorV2) run() error {
 
 				userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
-					a.chain.CalculateTimeSlot(bestView.GetBlock().GetBeaconHeight(), bestView.GetBlock().GetProposeTime()),
+					bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
 					proposerPk,
 					userKeySet,
 				)
@@ -644,7 +644,7 @@ func (a *actorV2) run() error {
 							if err != nil {
 								a.logger.Error("Send BFT Propose Message Failed", err)
 							}
-							a.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), a.currentTimeSlot, a.chain.CalculateTimeSlot(createdBlk.GetBeaconHeight(), createdBlk.GetProduceTime()), createdBlk.FullHashString())
+							a.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), a.currentTimeSlot, bestView.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.FullHashString())
 						}
 					}
 				}
@@ -1085,6 +1085,7 @@ func (a *actorV2) getCommitteeForNewBlock(
 	if a.blockVersion == types.MULTI_VIEW_VERSION || a.chain.IsBeaconChain() {
 		committees = a.chain.GetBestView().GetCommittee()
 	} else {
+		previousView := a.chain.GetViewByHash(v.GetPrevHash())
 		committees, err = a.
 			committeeChain.
 			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(a.chainID))
@@ -1092,7 +1093,7 @@ func (a *actorV2) getCommitteeForNewBlock(
 			return signingCommittees, committees, err
 		}
 		_, proposerIndex = a.chain.GetProposerByTimeSlotFromCommitteeList(
-			a.chain.CalculateTimeSlot(v.GetBeaconHeight(), v.GetProposeTime()),
+			previousView.CalculateTimeSlot(v.GetProposeTime()),
 			committees,
 		)
 	}
@@ -1245,6 +1246,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
 		return err
 	}
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {
 		return errors.New("Receive block create from old view. Rejected!")
@@ -1265,7 +1267,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		// Log only
 		if !a.chain.IsBeaconChain() {
 			_, proposerIndex := a.chain.GetProposerByTimeSlotFromCommitteeList(
-				a.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()),
+				previousView.CalculateTimeSlot(block.GetProposeTime()),
 				committees,
 			)
 			subsetID := blockchain.GetSubsetID(proposerIndex)
@@ -1320,11 +1322,10 @@ func (a *actorV2) handleNewProposeMsg(
 			"error %+v", block.GetHeight(), block.ProposeHash().String(), err)
 		return err
 	}
-
 	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", a.chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()))
+	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", a.currentTimeSlot)
 
 	return nil
 }
@@ -1425,8 +1426,7 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	a.ruleDirector.builder.ProposeMessageRule().HandleCleanMem(a.chain.GetFinalView().GetHeight())
-	ByzantineDetectorObject.UpdateState(a.chain.GetFinalView().GetHeight(),
-		a.chain.CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetBeaconHeight(), a.chain.GetFinalView().GetBlock().GetProposeTime()))
+	ByzantineDetectorObject.UpdateState(a.chain.GetFinalView().GetHeight(), a.chain.GetBestView().CalculateTimeSlot(a.chain.GetFinalView().GetBlock().GetProposeTime()))
 
 }
 
@@ -1479,7 +1479,7 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	}
 
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
-	blockProduceTimeSlot := a.chain.CalculateTimeSlot(proposeBlockInfo.block.GetBeaconHeight(), proposeBlockInfo.block.GetProduceTime())
+	blockProduceTimeSlot := a.chain.GetBestView().CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
 	isValid, err := a.ruleDirector.builder.ValidatorRule().ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
@@ -1501,11 +1501,11 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 
 func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error {
 
-	blkCreateTimeSlot := a.chain.CalculateTimeSlot(proposeBlockInfo.block.GetBeaconHeight(), proposeBlockInfo.block.GetProduceTime())
-
 	//not connected
 	view := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
 	if view == nil {
+		previousView := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+		blkCreateTimeSlot := previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 		a.logger.Infof("previous view for this block %v height %v timeslot %v is null",
 			proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
 		return errors.New("View not connect")

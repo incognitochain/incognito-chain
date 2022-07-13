@@ -256,13 +256,13 @@ type ReProposeBlockInfo struct {
 }
 
 func createReProposeHashSignature(chain Chain, privateKey []byte, block types.BlockInterface) (string, error) {
-
+	previousView := chain.GetViewByHash(block.GetPrevHash())
 	reProposeBlockInfo := newReProposeBlockInfo(
 		block.GetPrevHash(),
 		block.GetProducer(),
-		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime()),
+		previousView.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
-		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()),
+		previousView.CalculateTimeSlot(block.GetProposeTime()),
 		block.GetAggregateRootHash(),
 	)
 
@@ -297,13 +297,14 @@ func verifyReProposeHashSignature(
 }
 
 func verifyReProposeHashSignatureFromBlock(chain Chain, sig string, block types.BlockInterface) (bool, error) {
+	previousView := chain.GetViewByHash(block.GetPrevHash())
 	return verifyReProposeHashSignature(
 		sig,
 		block.GetPrevHash(),
 		block.GetProducer(),
-		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProduceTime()),
+		previousView.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
-		chain.CalculateTimeSlot(block.GetBeaconHeight(), block.GetProposeTime()),
+		previousView.CalculateTimeSlot(block.GetProposeTime()),
 		block.GetAggregateRootHash(),
 	)
 }
