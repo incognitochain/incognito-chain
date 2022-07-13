@@ -210,13 +210,11 @@ func (p *Pruner) addNewViewToStateBloom(
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	stateDB, err := statedb.NewWithPrefixTrie(v.TransactionStateDBRootHash, dbAccessWarper)
 	if err != nil {
-		Logger.log.Warnf("Cannot find tx root hash %s error %v", v.TransactionStateDBRootHash.String(), err)
 		return err
 	}
 	//Retrieve all state tree for this state
 	_, p.stateBloom, err = stateDB.Retrieve(true, false, p.stateBloom)
 	if err != nil {
-		Logger.log.Warnf("retrieve error %v", err)
 		return err
 	}
 	p.addedViewsCache[v.BestBlockHash] = struct{}{}
@@ -544,6 +542,9 @@ func (p *Pruner) watchStorageChange() {
 	if config.Config().EnableAutoPrune {
 		for {
 			for i := 0; i < common.MaxShardNumber; i++ {
+				if p.statuses[byte(i)] == rawdbv2.ProcessingPruneByHashStatus || p.statuses[byte(i)] != rawdbv2.ProcessingPruneByHeightStatus {
+					continue
+				}
 				oldSize, _ := rawdbv2.GetDataSize(p.db[i]) //ignore error if active prune for the first time
 				newSize, err := common.DirSize(filepath.Join(config.Config().DataDir, config.Config().DatabaseDir))
 				if err != nil {
