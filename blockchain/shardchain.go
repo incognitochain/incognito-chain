@@ -254,9 +254,9 @@ func (chain *ShardChain) CreateNewBlock(
 		if !ok {
 			return nil, errors.New("Can not get shard block")
 		}
-		previousProposeTimeSlot := curView.TSManager.calculateTimeslot(prevShardBlk.GetProposeTime())
-		previousProduceTimeSlot := curView.TSManager.calculateTimeslot(prevShardBlk.GetProduceTime())
-		currentTimeSlot := curView.TSManager.calculateTimeslot(newBlock.Header.ProposeTime)
+		previousProposeTimeSlot := curView.CalculateTimeSlot(prevShardBlk.GetProposeTime())
+		previousProduceTimeSlot := curView.CalculateTimeSlot(prevShardBlk.GetProduceTime())
+		currentTimeSlot := curView.CalculateTimeSlot(newBlock.Header.ProposeTime)
 
 		// if previous block is finalized or same propose/produce timeslot
 		// and current block is produced/proposed next block time
@@ -299,8 +299,8 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 		if isValidRePropose {
 			if version >= types.INSTANT_FINALITY_VERSION {
 				curView := chain.GetBestView().(*ShardBestState)
-				previousProposeTimeSlot := curView.TSManager.calculateTimeslot(previousBlock.GetProposeTime())
-				previousProduceTimeSlot := curView.TSManager.calculateTimeslot(previousBlock.GetProduceTime())
+				previousProposeTimeSlot := curView.CalculateTimeSlot(previousBlock.GetProposeTime())
+				previousProduceTimeSlot := curView.CalculateTimeSlot(previousBlock.GetProduceTime())
 				if previousBlock.GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}

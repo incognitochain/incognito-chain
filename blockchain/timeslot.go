@@ -5,9 +5,10 @@ import (
 )
 
 type anchorTime struct {
-	StartTime     int64
-	StartTimeslot int64
-	Timeslot      int
+	PreviousEndTime int64
+	StartTime       int64
+	StartTimeslot   int64
+	Timeslot        int
 }
 
 type TSManager struct {
@@ -21,8 +22,8 @@ func (s *TSManager) getLatestAnchor() anchorTime {
 	return s.Anchors[len(s.Anchors)-1]
 }
 
-func (s *TSManager) updateNewAnchor(startTime int64, startTS int64, timeslot int) {
-	s.Anchors = append(s.Anchors, anchorTime{startTime, startTS, timeslot})
+func (s *TSManager) updateNewAnchor(previousEndTime int64, startTime int64, startTS int64, timeslot int) {
+	s.Anchors = append(s.Anchors, anchorTime{previousEndTime, startTime, startTS, timeslot})
 }
 
 func (s *TSManager) getCurrentTS() int64 {
@@ -34,12 +35,23 @@ func (s *TSManager) getCurrentTS() int64 {
 }
 
 func (s *TSManager) calculateTimeslot(t int64) int64 {
-	lastAnchor := s.getLatestAnchor()
-	if lastAnchor.Timeslot == 0 {
-		lastAnchor = anchorTime{
-			0, 0, int(config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]),
+	checkpoint := s.getLatestAnchor()
+	for i := len(s.Anchors) - 1; i >= 0; i-- {
+		if t >= s.Anchors[i].PreviousEndTime {
+			checkpoint = s.Anchors[i]
+			break
 		}
 	}
-	rangeTS := t - lastAnchor.StartTime
-	return lastAnchor.StartTimeslot + rangeTS/int64(lastAnchor.Timeslot)
+
+	if checkpoint.Timeslot == 0 {
+		checkpoint = anchorTime{
+			0, 0, 0, int(config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]),
+		}
+	}
+	rangeTS := int64(0)
+	if t > checkpoint.StartTime {
+		rangeTS = t - checkpoint.StartTime
+	}
+
+	return checkpoint.StartTimeslot + rangeTS/int64(checkpoint.Timeslot)
 }

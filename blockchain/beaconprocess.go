@@ -597,9 +597,9 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	for feature, _ := range config.Param().BlockTimeParam {
 		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == beaconBlock.GetHeight() {
-				curTS := beaconBestState.TSManager.calculateTimeslot(beaconBlock.GetProposeTime())
+				curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
 				//fmt.Println("updateNewAnchor xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", beaconBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
-				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
+				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]))
 			}
 		}
 	}

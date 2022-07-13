@@ -791,6 +791,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 
 	//update trigger feature
+	var beaconBlockContainTriggerFeature *types.BeaconBlock
 	for _, beaconBlock := range beaconBlocks {
 		for _, inst := range beaconBlock.Body.Instructions {
 			if inst[0] == instruction.ENABLE_FEATURE {
@@ -804,6 +805,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 				for _, feature := range enableFeatures.Features {
 					if common.IndexOfStr(feature, shardBestState.getUntriggerFeature()) != -1 {
 						shardBestState.TriggeredFeature[feature] = shardBlock.GetHeight()
+						beaconBlockContainTriggerFeature = beaconBlock
 					} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
 						Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 						return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
@@ -818,8 +820,16 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	for feature, _ := range config.Param().BlockTimeParam {
 		if triggerHeight, ok := shardBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == shardBlock.GetHeight() {
-				curTS := shardBestState.TSManager.calculateTimeslot(shardBlock.GetProposeTime())
-				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
+				curTS := shardBestState.CalculateTimeSlot(shardBlock.GetProposeTime())
+				//align shard timeslot to be middle of beacon timeslot
+				alignTime := beaconBlockContainTriggerFeature.GetProposeTime() + (config.Param().BlockTimeParam[feature] / 2)
+				for alignTime < shardBlock.GetProposeTime() {
+					alignTime += config.Param().BlockTimeParam[feature]
+				}
+				//endtime is current propose time
+				//starttime is new align time
+				Logger.log.Infof("Align shard timeslot: end in %v, start from %v", shardBlock.GetProposeTime(), alignTime)
+				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime(), alignTime, curTS, int(config.Param().BlockTimeParam[feature]))
 			}
 		}
 	}
