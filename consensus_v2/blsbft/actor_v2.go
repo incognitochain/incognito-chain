@@ -496,7 +496,6 @@ func (a *actorV2) run() error {
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
 		a.logger.Infof("init bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
-		time.Sleep(time.Duration(common.TIMESLOT-1) * time.Second)
 		for { //actor loop
 			if !a.isStarted { //sleep if this process is not start
 				time.Sleep(time.Second)

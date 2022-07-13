@@ -99,7 +99,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 	if (curBestView != nil) && (added == 1) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()
-			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
+			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * sBestView.GetCurrentTimeSlot())) {
 				return
 			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {

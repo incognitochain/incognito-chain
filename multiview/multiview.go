@@ -16,6 +16,7 @@ import (
 
 type View interface {
 	CalculateTimeSlot(int64) int64
+	GetCurrentTimeSlot() int64
 	GetHash() *common.Hash
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64

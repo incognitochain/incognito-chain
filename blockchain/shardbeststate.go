@@ -86,6 +86,10 @@ func (shardBestState *ShardBestState) CalculateTimeSlot(t int64) int64 {
 	return shardBestState.TSManager.calculateTimeslot(t)
 }
 
+func (shardBestState *ShardBestState) GetCurrentTimeSlot() int64 {
+	return shardBestState.TSManager.getCurrentTS()
+}
+
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
 	return shardBestState.consensusStateDB.Copy()
 }

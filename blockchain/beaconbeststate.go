@@ -109,6 +109,9 @@ type BeaconBestState struct {
 func (beaconBestState *BeaconBestState) CalculateTimeSlot(t int64) int64 {
 	return beaconBestState.TSManager.calculateTimeslot(t)
 }
+func (beaconBestState *BeaconBestState) GetCurrentTimeSlot() int64 {
+	return beaconBestState.TSManager.getCurrentTS()
+}
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
 	return beaconBestState.slashStateDB.Copy()

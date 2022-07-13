@@ -25,6 +25,14 @@ func (s *TSManager) updateNewAnchor(startTime int64, startTS int64, timeslot int
 	s.Anchors = append(s.Anchors, anchorTime{startTime, startTS, timeslot})
 }
 
+func (s *TSManager) getCurrentTS() int64 {
+	lastAnchor := s.getLatestAnchor()
+	if lastAnchor.Timeslot == 0 {
+		return config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]
+	}
+	return int64(lastAnchor.Timeslot)
+}
+
 func (s *TSManager) calculateTimeslot(t int64) int64 {
 	lastAnchor := s.getLatestAnchor()
 	if lastAnchor.Timeslot == 0 {
