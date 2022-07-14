@@ -214,20 +214,3 @@ func GetPendingPrunedNodes(db incdb.KeyValueReader) (uint64, error) {
 	}
 	return common.BytesToUint64(b)
 }
-
-func StoreDataSize(db incdb.KeyValueWriter, v uint64) error {
-	key := GetDataSizeKey()
-	if err := db.Put(key, common.Uint64ToBytes(v)); err != nil {
-		return NewRawdbError(StoreShardDataSizeError, err)
-	}
-	return nil
-}
-
-func GetDataSize(db incdb.KeyValueReader) (uint64, error) {
-	key := GetDataSizeKey()
-	b, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	return common.BytesToUint64(b)
-}
