@@ -416,7 +416,7 @@ func (sp *stateProcessor) addToken(inst []string, state *State, sDB *statedb.Sta
 			return state, NewBridgeAggErrorWithValue(StoreBridgeTokenError, err)
 		}
 		for tokenID, vault := range vaults {
-			externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, vault.NetworkID)
+			externalTokenID, err := GetExternalTokenIDByNetworkID(vault.ExternalTokenID, vault.NetworkID)
 			if err != nil {
 				Logger.log.Errorf("Can not get external token id %v", err)
 				return state, NewBridgeAggErrorWithValue(InvalidNetworkIDError, err)
