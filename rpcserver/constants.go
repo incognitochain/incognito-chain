@@ -304,9 +304,9 @@ const (
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
 	// bridgeagg method
-	bridgeaggModifyRewardReserve         = "bridgeaggModifyRewardReserve"
 	bridgeaggState                       = "bridgeaggGetState"
-	bridgeaggGetStatusModifyRewarReserve = "bridgeaggGetStatusModifyRewarReserve"
+	bridgeaggModifyParam                 = "bridgeaggModifyParam"
+	bridgeaggStatusModifyParam           = "bridgeaggStatusModifyParam"
 	bridgeaggConvert                     = "bridgeaggConvert"
 	bridgeaggStatusConvert               = "bridgeaggGetStatusConvert"
 	bridgeaggShield                      = "bridgeaggShield"
@@ -316,7 +316,7 @@ const (
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
 	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
-	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
+	bridgeaggGetBurnProof                = "bridgeaggGetBurnProof"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
@@ -530,20 +530,5 @@ var FeatureFlagWithMethodNames = map[string][]string{
 		getPortalConvertVaultTxStatus,
 		getPortalV4Params,
 		generatePortalShieldMultisigAddress,
-	},
-	common.BridgeAggFlag: {
-		bridgeaggModifyRewardReserve,
-		bridgeaggState,
-		bridgeaggGetStatusModifyRewarReserve,
-		bridgeaggConvert,
-		bridgeaggStatusConvert,
-		bridgeaggShield,
-		bridgeaggStatusShield,
-		bridgeaggUnshield,
-		bridgeaggStatusUnshield,
-		bridgeaggEstimateFeeByExpectedAmount,
-		bridgeaggEstimateFeeByBurntAmount,
-		bridgeaggEstimateReward,
-		bridgeaggGetBurntProof,
 	},
 }

@@ -72,7 +72,7 @@ type param struct {
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
-	BCHeightBreakPointCoinOrigin     uint64             `mapstructure:"bc_height_break_point_coin_origin"`
+	BCHeightBreakPointCoinOrigin     uint64 `mapstructure:"bc_height_break_point_coin_origin"`
 }
 
 type genesisParam struct {
@@ -354,7 +354,9 @@ func (ftmParam *ftmParam) GetFromEnv() {
 }
 
 type bridgeAggParam struct {
-	AdminAddress string `mapstructure:"admin_address"`
-	BaseDecimal  uint   `mapstructure:"base_decimal"`
-	MaxLenOfPath int    `mapstructure:"max_len_of_path"`
+	AdminAddress                 string `mapstructure:"admin_address"`
+	BaseDecimal                  uint8  `mapstructure:"base_decimal"`
+	MaxLenOfPath                 uint8  `mapstructure:"max_len_of_path"`
+	PercentFeeDecimal            uint64 `mapstructure:"percent_fee_decimal"`
+	DefaultPercentFeeWithDecimal uint64 `mapstructure:"default_percent_fee_with_decimal"`
 }

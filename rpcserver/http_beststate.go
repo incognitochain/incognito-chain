@@ -32,7 +32,7 @@ func (httpServer *HttpServer) handleGetBeaconViewByHash(params interface{}, clos
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block Hash format is invalid"))
 	}
-	bView, err := httpServer.blockService.BlockChain.GetBeaconViewStateDataFromBlockHash(*blockHash, true)
+	bView, err := httpServer.blockService.BlockChain.GetBeaconViewStateDataFromBlockHash(*blockHash, true, false, false)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetBeaconViewByBlockHashError, err)
 	}

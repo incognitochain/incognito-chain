@@ -2,13 +2,14 @@ package blockchain
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
-	"sync"
-	"time"
 )
 
 var DefaultFeatureStat *FeatureStat
@@ -44,7 +45,6 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 	if len(validatorFromUserKeys) == 0 {
 		return nil, nil
 	}
-
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 
@@ -94,9 +94,8 @@ func (bc *BlockChain) InitFeatureStat() {
 	//send message periodically
 	go func() {
 		for {
-			time.Sleep(5 * time.Minute)
-
 			bc.SendFeatureStat()
+			time.Sleep(10 * time.Second)
 		}
 	}()
 }

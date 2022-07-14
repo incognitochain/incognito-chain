@@ -67,7 +67,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		Logger.log.Infof("Finish restore pdexv3 state")
 	}
 	if includeBridgeAgg {
-		beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
+		beaconBestState.bridgeAggManager, err = bridgeagg.InitManager(beaconBestState.featureStateDB)
 	}
 	Logger.log.Infof("Finish restore beaconBestState")
 	return err
