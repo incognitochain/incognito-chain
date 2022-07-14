@@ -203,7 +203,6 @@ func CheckInterfacesIsEqual(expected interface{}, actual interface{}) error {
 }
 
 func TestA(t *testing.T) {
-
 	externalTokenIDs := []string{
 		"0x07de306FF27a2B630B1141956844eB1552B956B5",
 		"0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
