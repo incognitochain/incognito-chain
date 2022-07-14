@@ -542,7 +542,7 @@ func (p *Pruner) watchStorageChange() {
 	if config.Config().EnableAutoPrune {
 		for {
 			for i := 0; i < common.MaxShardNumber; i++ {
-				if p.statuses[byte(i)] == rawdbv2.ProcessingPruneByHashStatus || p.statuses[byte(i)] != rawdbv2.ProcessingPruneByHeightStatus {
+				if p.statuses[byte(i)] == rawdbv2.ProcessingPruneByHashStatus || p.statuses[byte(i)] == rawdbv2.ProcessingPruneByHeightStatus {
 					continue
 				}
 				oldSize, _ := rawdbv2.GetDataSize(p.db[i]) //ignore error if active prune for the first time
