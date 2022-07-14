@@ -121,5 +121,5 @@ bridge_agg_param:
   base_decimal: 9 # Use only one time DONOT edit this after deployed
   max_len_of_path: 3  # Only increase this param after deployed
   percent_fee_decimal: 1e6
-  default_percent_fee_with_decimal: 500 # 0.05% * 1e6
+  default_percent_fee_with_decimal: 750 # 0.075% * 1e6
 bc_height_break_point_coin_origin: 2087774

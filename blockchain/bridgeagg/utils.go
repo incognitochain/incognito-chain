@@ -366,7 +366,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 	if err != nil {
 		return err
 	}
-	externalTokenID, err := getExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
+	externalTokenID, err := GetExternalTokenIDByNetworkID(vault.ExternalTokenID, networkID)
 	if err != nil {
 		return err
 	}
@@ -403,7 +403,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 	return nil
 }
 
-func getExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]byte, error) {
+func GetExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]byte, error) {
 	var res []byte
 
 	prefix, err := getPrefixByNetworkID(networkID)
