@@ -243,6 +243,21 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 
+	//sRH, _ := blockchain.GetShardRootsHash(nil, 0, 4870819)
+	//fmt.Println("TransactionStateDBRootHash", sRH.TransactionStateDBRootHash.String())
+	//var dbAccessWarper = statedb.NewDatabaseAccessWarper(blockchain.GetShardChainDatabase(0))
+	//transactionStateDB, err := statedb.NewWithPrefixTrie(sRH.TransactionStateDBRootHash, dbAccessWarper)
+	//if err != nil {
+	//	fmt.Println("err xxx", err)
+	//	panic(1)
+	//}
+	//data, err := statedb.GetOTACoinByIndex(transactionStateDB, common.PRVCoinID, 166822, 0)
+	//
+	//fmt.Println("res", data, err)
+	//fmt.Println(transactionStateDB.Recheck())
+	//
+	//panic(2)
+
 	return nil
 }
 

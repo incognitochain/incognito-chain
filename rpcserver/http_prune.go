@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"sync"
 )
 
 func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -64,4 +64,23 @@ func (httpServer *HttpServer) getPruneState(params interface{}, closeChan <-chan
 		results[byte(i)] = temp
 	}
 	return results, nil
+}
+
+func (httpServer *HttpServer) checkPruneData(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	res := map[int]bool{}
+	wg := sync.WaitGroup{}
+	for i := 0; i < common.MaxShardNumber; i++ {
+		wg.Add(1)
+		go func(sid int) {
+			if err := httpServer.GetBlockchain().GetBestStateShard(byte(sid)).GetCopiedTransactionStateDB().Recheck(); err != nil {
+				res[sid] = false
+			} else {
+				res[sid] = true
+			}
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	fmt.Println("checkPruneData", res)
+	return res, nil
 }

@@ -406,8 +406,9 @@ var HttpHandler = map[string]httpHandler{
 	connectionStatus: (*HttpServer).handleGetConnectionStatus,
 
 	// prune
-	prune:         (*HttpServer).handlePrune,
-	getPruneState: (*HttpServer).getPruneState,
+	prune:          (*HttpServer).handlePrune,
+	getPruneState:  (*HttpServer).getPruneState,
+	checkPruneData: (*HttpServer).checkPruneData,
 }
 
 // Commands that are available to a limited user

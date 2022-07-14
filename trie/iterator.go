@@ -35,8 +35,14 @@ func (it *Iterator) Next(skipMiddleNode, descend, returnNotFoundChildNode bool) 
 			it.Key = it.nodeIt.Hash().Bytes()
 			return true
 		}
+		if it.nodeIt.Error() != nil {
+			it.Key = nil
+			it.Value = nil
+			it.Err = it.nodeIt.Error()
+		}
 		return false
 	}
+
 	for it.nodeIt.Next(true, returnNotFoundChildNode) {
 		if it.nodeIt.Leaf() {
 			it.Key = it.nodeIt.LeafKey()

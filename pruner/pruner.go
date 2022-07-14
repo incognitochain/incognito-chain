@@ -1,7 +1,10 @@
 package pruner
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"golang.org/x/sync/semaphore"
 	"math/big"
 	"path/filepath"
 	"runtime"
@@ -20,6 +23,7 @@ import (
 )
 
 type Pruner struct {
+	bestView                sync.Map
 	db                      map[int]incdb.Database
 	statuses                map[byte]byte
 	updateStatusCh          chan UpdateStatus
@@ -34,6 +38,7 @@ type Pruner struct {
 
 func NewPrunerWithValue(db map[int]incdb.Database, statuses map[byte]byte) *Pruner {
 	return &Pruner{
+		bestView:                sync.Map{},
 		db:                      db,
 		statuses:                statuses,
 		updateStatusCh:          make(chan UpdateStatus),
@@ -80,8 +85,13 @@ func (p *Pruner) ReadStatus() {
 
 func (p *Pruner) Prune() error {
 	cpus := runtime.NumCPU()
-	ch := make(chan int, cpus-1)
-	stateBloomSize := config.Config().StateBloomSize / uint64(cpus)
+	sem := semaphore.NewWeighted(int64(cpus / 2))
+	ch := make(chan int)
+	stateBloomSize := config.Config().StateBloomSize / uint64(common.MaxShardNumber)
+	if cpus/2 < common.MaxShardNumber {
+		stateBloomSize = config.Config().StateBloomSize / uint64(cpus/2)
+	}
+
 	stopCh := make(chan struct{})
 	var count int
 	var wg sync.WaitGroup
@@ -89,10 +99,15 @@ func (p *Pruner) Prune() error {
 		for {
 			select {
 			case shardID := <-ch:
-				if err := p.prune(shardID, false, stateBloomSize); err != nil {
-					panic(err)
-				}
-				wg.Done()
+				wg.Add(1)
+				go func() {
+					if err := p.prune(shardID, false, stateBloomSize); err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					wg.Done()
+					sem.Release(1)
+				}()
 			case <-stopCh:
 				count++
 				if count == common.MaxShardNumber {
@@ -102,7 +117,7 @@ func (p *Pruner) Prune() error {
 		}
 	}()
 	for i := 0; i < common.MaxShardNumber; i++ {
-		wg.Add(1)
+		sem.Acquire(context.Background(), 1)
 		ch <- i
 	}
 	wg.Wait()
@@ -188,6 +203,7 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 		if finalHeight == 0 || finalHeight > v.ShardHeight {
 			finalHeight = v.ShardHeight
 		}
+		p.bestView.Store(shardID, v)
 		err = p.addNewViewToStateBloom(v, db)
 		if err != nil {
 			return 0, err
@@ -244,6 +260,9 @@ func (p *Pruner) compact(db incdb.Database, count uint64) error {
 func (p *Pruner) traverseAndDelete(
 	helper TraverseHelper, listKeysShouldBeRemoved *[]map[common.Hash]struct{}, shouldPruneByHash bool,
 ) error {
+	if helper.finalHeight <= 1 {
+		return nil
+	}
 	var nodes, storage uint64
 	var err error
 	if shouldPruneByHash {
@@ -251,19 +270,35 @@ func (p *Pruner) traverseAndDelete(
 		if err != nil {
 			return err
 		}
-		Logger.log.Infof("[state-prune] Start compact totalNodes %v with size %v", nodes, storage)
+		Logger.log.Infof("[state-prune %v] Start compact totalNodes %v with size %v", helper.shardID, nodes, storage)
 		if err = p.compact(helper.db, nodes); err != nil {
 			return err
 		}
-		Logger.log.Infof("[state-prune] Finish compact totalNodes %v with size %v", nodes, storage)
+		Logger.log.Infof("[state-prune %v] Finish compact totalNodes %v with size %v", helper.shardID, nodes, storage)
+		sBestView, ok := p.bestView.Load(helper.shardID)
+		if !ok {
+			panic("Something wrong when get shard bestview")
+		}
+		if err := sBestView.(*blockchain.ShardBestState).GetCopiedTransactionStateDB().Recheck(); err != nil {
+			Logger.log.Infof("[state-prune %v] Shard %v Prune data error! %v", helper.shardID, helper.shardID, err)
+			panic(fmt.Sprintf("Prune data error! Shard %v Database corrupt!", helper.shardID))
+		}
 	} else {
 		nodes, storage, err = p.traverseAndDeleteByHeight(helper, listKeysShouldBeRemoved)
 		if err != nil {
 			return err
 		}
+		sBestView, ok := p.bestView.Load(helper.shardID)
+		if !ok {
+			panic("Something wrong when get shard bestview")
+		}
+		if err := sBestView.(*blockchain.ShardBestState).GetCopiedTransactionStateDB().Recheck(); err != nil {
+			Logger.log.Infof("[state-prune %v] Shard %v Prune data error! %v", helper.shardID, helper.shardID, err)
+			panic(fmt.Sprintf("Prune data error! Shard %v Database corrupt!", helper.shardID))
+		}
 	}
 	p.statuses[helper.shardID] = rawdbv2.FinishPruneStatus
-	Logger.log.Infof("[state-prune] Delete totalNodes %v with size %v", nodes, storage)
+	Logger.log.Infof("[state-prune %v] Delete totalNodes %v with size %v", helper.shardID, nodes, storage)
 
 	return nil
 }
@@ -355,7 +390,7 @@ func (p *Pruner) traverseAndDeleteByHeight(
 			return 0, 0, err
 		}
 		if height%10000 == 0 {
-			Logger.log.Infof("[state-prune] Finish prune for height %v delete totalNodes %v with storage %v", height, nodes, storage)
+			Logger.log.Infof("[state-prune %v] Finish prune for height %v delete totalNodes %v with storage %v", helper.shardID, height, nodes, storage)
 		}
 	}
 	return nodes, storage, nil
@@ -516,6 +551,7 @@ func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error 
 	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) || config.Config().ForcePrune {
 		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
 			Logger.log.Infof("Process new view %s at shard %v", shardBestState.BestBlockHash.String(), shardBestState.ShardID)
+			p.bestView.Store(shardBestState.ShardID, shardBestState)
 			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
 			if err != nil {
 				panic(err)
