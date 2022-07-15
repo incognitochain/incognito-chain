@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
