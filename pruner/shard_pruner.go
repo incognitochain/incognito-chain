@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
@@ -29,6 +30,7 @@ type ShardPruner struct {
 
 	//report
 	lastTriggerTime      time.Time
+	lastProcessingMode   string
 	status               int
 	lastError            string
 	lastProcessingHeight uint64
@@ -37,18 +39,14 @@ type ShardPruner struct {
 }
 
 func NewShardPruner(sid int, db incdb.Database) *ShardPruner {
-	//get last prune height
-	lastPrunedHeight, _ := rawdbv2.GetLastPrunedHeight(db)
-	if lastPrunedHeight == 0 {
-		lastPrunedHeight = 1
-	} else {
-		lastPrunedHeight++
-	}
 	//init object
 	sp := &ShardPruner{
-		shardID:              sid,
-		db:                   db,
-		lastProcessingHeight: lastPrunedHeight,
+		shardID: sid,
+		db:      db,
+	}
+	sp.restoreStatus()
+	if sp.lastProcessingHeight == 0 {
+		sp.lastProcessingHeight = 1
 	}
 	return sp
 }
@@ -62,13 +60,6 @@ func (s *ShardPruner) Stop() {
 }
 
 func (s *ShardPruner) InitBloomState() error {
-	//init bloom state
-	var err error
-	s.stateBloom, err = trie.NewStateBloomWithSize(s.bloomSize)
-	if err != nil {
-		return err
-	}
-
 	//restore best views and final view from database
 	allViews := []*blockchain.ShardBestState{}
 	views, err := rawdbv2.GetShardBestState(s.db, byte(s.shardID))
@@ -85,6 +76,8 @@ func (s *ShardPruner) InitBloomState() error {
 	if len(allViews) > 0 {
 		s.finalHeight = allViews[0].ShardHeight
 		s.bestView = allViews[len(allViews)-1]
+	} else {
+		return errors.New("Cannot retrieve all shard views")
 	}
 	for _, v := range allViews {
 		err = s.addViewToBloom(v)
@@ -96,50 +89,133 @@ func (s *ShardPruner) InitBloomState() error {
 	return nil
 }
 
-func (s *ShardPruner) PruneByHeight() error {
+func (s *ShardPruner) Prune(byHash bool) error {
 	s.lock.Lock()
-	if s.status != RUNNING {
+	if s.status != IDLE {
 		s.lock.Unlock()
-		return fmt.Errorf("Shard %v is pruning at height %v", s.shardID, s.lastProcessingHeight)
+		return fmt.Errorf("Shard %v is not ready! State: %v", s.shardID, s.status)
 	}
-	s.status = RUNNING
+	s.status = PRUNING
 	s.lock.Unlock()
 
 	s.lastTriggerTime = time.Now()
 
 	err := s.InitBloomState()
 	if err != nil {
-		s.lastError = err.Error()
-		s.status = ERROR
+		s.lastError = errors.Wrap(err, "init bloom state fail").Error()
 		return err
 	}
 
-	//prune height
-	for height := s.lastProcessingHeight; height < s.finalHeight; height++ {
-		if s.status != RUNNING {
-			return nil
-		}
-		s.LockInsertShardBlock() //lock insert shard block
-
-		s.wg.Wait() //wait for all insert bloom task (in case we have new view)
-
-		storage, node, err := s.pruneByHeight(height)
-		s.storage += storage
-		s.nodes += node
-		if err != nil {
-			s.lastError = err.Error()
-			s.status = ERROR
-			s.UnlockInsertShardBlock()
-			break
-		}
-
-		s.UnlockInsertShardBlock()
-		if height%10000 == 0 {
-			Logger.log.Infof("[state-prune %v] Finish prune for height %v delete totalNodes %v with storage %v", s.shardID, height, s.nodes, s.storage)
-		}
+	if byHash {
+		s.lastProcessingMode = "hash"
+		s.pruneByHash()
+	} else {
+		s.lastProcessingMode = "height"
+		s.PruneByHeight()
 	}
+	s.saveStatus()
+	s.status = CHECKING
 	s.stateBloom = nil
 	s.CheckDataIntegrity()
+	s.status = IDLE
+	return nil
+}
+
+func (s *ShardPruner) PruneByHeight() error {
+	//prune height
+	if s.finalHeight <= 1 {
+		s.lastError = ""
+		return nil
+	}
+	for height := s.lastProcessingHeight; height < s.finalHeight; height++ {
+		if s.status != PRUNING {
+			return nil
+		}
+		err := func() error {
+			s.LockInsertShardBlock() //lock insert shard block
+			defer s.UnlockInsertShardBlock()
+			s.wg.Wait() //wait for all insert bloom task (in case we have new view)
+
+			//recheck if there is error when handle new view
+			if s.status != PRUNING {
+				return nil
+			}
+
+			storage, node, err := pruneByHeight(s.db, s.shardID, s.stateBloom, height)
+			s.storage += storage
+			s.nodes += node
+			if err != nil {
+				return err
+			}
+
+			if height%1000 == 0 {
+				Logger.log.Infof("[state-prune %v] Finish prune for height %v delete totalNodes %v with storage %v", s.shardID, height, s.nodes, s.storage)
+				s.saveStatus()
+			}
+			return nil
+		}()
+
+		if err != nil {
+			s.lastError = errors.Wrap(err, "prune by height fail").Error()
+		} else {
+			s.lastError = ""
+		}
+	}
+	return nil
+}
+
+func (s *ShardPruner) pruneByHash() error {
+	iter := s.db.NewIteratorWithPrefixStart(rawdbv2.GetShardRootsHashPrefix(byte(s.shardID)), nil)
+	defer func() {
+		iter.Release()
+	}()
+	count := 0
+
+	// retrieve all state tree by shard rooth hash prefix
+	// delete all nodes which are not in state bloom
+	for iter.Next() {
+		if s.status != PRUNING {
+			return nil
+		}
+
+		err := func() error {
+			s.LockInsertShardBlock() //lock insert shard block
+			defer s.UnlockInsertShardBlock()
+			s.wg.Wait() //wait for all handle new view task (in case we have new view)
+
+			//recheck if there is error when handle new view
+			if s.status != PRUNING {
+				return nil
+			}
+
+			key := iter.Key()
+			rootHash := &blockchain.ShardRootHash{}
+			err := json.Unmarshal(iter.Value(), &rootHash)
+			if err != nil {
+				return err
+			}
+			storage, node, err := pruneTxStateDB(s.db, s.stateBloom, rootHash)
+			s.storage += storage
+			s.nodes += node
+			if err != nil {
+				return err
+			}
+
+			if count%1000 == 0 {
+				Logger.log.Infof("[state-prune] Finish prune for key %v totalKeys %v delete totalNodes %v with storage %v", key, count, s.nodes, s.storage)
+				s.saveStatus()
+			}
+			return nil
+		}()
+
+		if err != nil {
+			s.lastError = err.Error()
+			return err
+		} else {
+			s.lastError = ""
+		}
+
+	}
 	return nil
 }
 
@@ -152,7 +228,13 @@ func (s *ShardPruner) addViewToBloom(v *blockchain.ShardBestState) error {
 		return err
 	}
 	//Retrieve all state tree for this state
-	_, _, err = stateDB.Retrieve(true, false, s.stateBloom)
+	if s.stateBloom == nil {
+		s.stateBloom, _ = trie.NewStateBloomWithSize(s.bloomSize)
+		_, err = stateDB.Retrieve(true, false, s.stateBloom, true)
+	} else {
+		_, err = stateDB.Retrieve(true, false, s.stateBloom, false)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -189,17 +271,13 @@ func (s *ShardPruner) handleNewView(shardBestState *blockchain.ShardBestState) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		if s.status == RUNNING {
+		if s.status == PRUNING {
 			err := s.addViewToBloom(shardBestState)
 			if err != nil {
-				s.lastError = err.Error()
-				s.status = ERROR
+				s.lastError = errors.Wrap(err, "handle new view fail").Error()
+				s.status = IDLE
 				return
 			}
 		}
 	}()
-}
-
-func (s *ShardPruner) SetCommitteeRole(role string) {
-	s.role = role
 }

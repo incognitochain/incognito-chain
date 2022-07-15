@@ -110,7 +110,7 @@ type RpcServerConfig struct {
 	// IsMiningNode    bool   // flag mining node. True: mining, False: not mining
 	MiningKeys    string // encode of mining key
 	PubSubManager *pubsub.PubSubManager
-	Pruner        *pruner.Pruner
+	Pruner        *pruner.PrunerManager
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {

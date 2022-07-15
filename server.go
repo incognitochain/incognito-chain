@@ -83,7 +83,7 @@ type Server struct {
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
 	highway      *peerv2.ConnManager
-	Pruner       *pruner.Pruner
+	Pruner       *pruner.PrunerManager
 
 	cQuit     chan struct{}
 	cNewPeers chan *peer.Peer
@@ -202,7 +202,7 @@ func (serverObj *Server) NewServer(
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
-	p *pruner.Pruner,
+	p *pruner.PrunerManager,
 	interrupt <-chan struct{},
 ) error {
 	// Init data for Server
@@ -220,10 +220,6 @@ func (serverObj *Server) NewServer(
 	var err error
 	// init an pubsub manager
 	var pubsubManager = pubsub.NewPubSubManager()
-
-	// set value for pubsubManager of pruner object
-	p.PubSubManager = pubsubManager
-	serverObj.Pruner = p
 
 	cfg := config.Config()
 
@@ -350,9 +346,11 @@ func (serverObj *Server) NewServer(
 	monitor.SetBlockChainObj(serverObj.blockChain)
 
 	//set shard insert lock for prunner
+	serverObj.Pruner = p
 	for sid := 0; sid < serverObj.GetActiveShardNumber(); sid++ {
 		serverObj.Pruner.SetShardInsertLock(sid, serverObj.blockChain.ShardChain[sid].GetInsertLock())
 	}
+	go serverObj.Pruner.Start()
 
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
@@ -758,7 +756,6 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
-	go serverObj.Pruner.Start()
 
 	err := serverObj.consensusEngine.Start()
 	if err != nil {

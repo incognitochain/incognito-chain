@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"sync"
 )
 
 func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	if !config.Config().AllowStatePrune {
+	if !config.Config().AllowStatePruneByRPC {
 		return nil, rpcservice.NewRPCError(rpcservice.PruneError, errors.New("Node is not able to prune"))
 	}
 	arrayParams := common.InterfaceSlice(params)
@@ -36,11 +35,7 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 		if int(shardID) > config.Param().ActiveShards {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID is %v is invalid", shardID))
 		}
-		ec := pruner.ExtendedConfig{
-			Config:  pruner.Config{ShouldPruneByHash: c.ShouldPruneByHash},
-			ShardID: shardID,
-		}
-		httpServer.Pruner.TriggerCh <- ec
+		httpServer.Pruner.JobRquest[int(shardID)] = &pruner.Config{ShouldPruneByHash: c.ShouldPruneByHash}
 	}
 	type Result struct {
 		Message string `json:"Message"`
@@ -49,21 +44,8 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 }
 
 func (httpServer *HttpServer) getPruneState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	type Temp struct {
-		Status       byte   `json:"Status"`
-		PrunedHeight uint64 `json:"PrunedHeight"`
-	}
-	results := make(map[byte]Temp)
-	for i := 0; i < common.MaxShardNumber; i++ {
-		status, _ := rawdbv2.GetPruneStatus(httpServer.GetShardChainDatabase(byte(i)))
-		prunedHeight, _ := rawdbv2.GetLastPrunedHeight(httpServer.GetShardChainDatabase(byte(i)))
-		temp := Temp{
-			Status:       status,
-			PrunedHeight: prunedHeight,
-		}
-		results[byte(i)] = temp
-	}
-	return results, nil
+	report := httpServer.Pruner.Report()
+	return report, nil
 }
 
 func (httpServer *HttpServer) checkPruneData(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

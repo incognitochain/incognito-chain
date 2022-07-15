@@ -151,66 +151,19 @@ func GetShardRootsHash(db incdb.KeyValueReader, shardID byte, hash common.Hash) 
 	return db.Get(key)
 }
 
-func StoreLastPrunedHeight(db incdb.KeyValueWriter, v uint64) error {
-	key := GetLastPrunedHeightKey()
-	if err := db.Put(key, common.Uint64ToBytes(v)); err != nil {
-		return NewRawdbError(StoreShardLastPrunedHeightError, err)
-	}
-	return nil
-}
-
-func StoreLastPrunedKeyTrie(db incdb.KeyValueWriter, v []byte) error {
-	key := GetLastPrunedKeyTrieKey()
-	if err := db.Put(key, v); err != nil {
-		return NewRawdbError(StoreShardLastPrunedKeyTrieError, err)
-	}
-	return nil
-}
-
-func GetLastPrunedHeight(db incdb.KeyValueReader) (uint64, error) {
-	key := GetLastPrunedHeightKey()
-	b, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	return common.BytesToUint64(b)
-}
-
-func GetLastPrunedKeyTrie(db incdb.KeyValueReader) ([]byte, error) {
-	key := GetLastPrunedKeyTrieKey()
-	return db.Get(key)
-}
-
-func StorePruneStatus(db incdb.KeyValueWriter, v byte) error {
+func StorePruneStatus(db incdb.KeyValueWriter, v []byte) error {
 	key := GetPruneStatusKey()
-	if err := db.Put(key, []byte{v}); err != nil {
+	if err := db.Put(key, v); err != nil {
 		return NewRawdbError(StoreShardPruneStatusError, err)
 	}
 	return nil
 }
 
-func GetPruneStatus(db incdb.KeyValueReader) (byte, error) {
+func GetPruneStatus(db incdb.KeyValueReader) ([]byte, error) {
 	key := GetPruneStatusKey()
 	d, err := db.Get(key)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return d[0], nil
-}
-
-func StorePendingPrunedNodes(db incdb.KeyValueWriter, v uint64) error {
-	key := GetPendingPrunedNodesKey()
-	if err := db.Put(key, common.Uint64ToBytes(v)); err != nil {
-		return NewRawdbError(StoreShardPendingPrunedNodesError, err)
-	}
-	return nil
-}
-
-func GetPendingPrunedNodes(db incdb.KeyValueReader) (uint64, error) {
-	key := GetPendingPrunedNodesKey()
-	b, err := db.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	return common.BytesToUint64(b)
+	return d, nil
 }

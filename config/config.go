@@ -113,15 +113,14 @@ type config struct {
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 
 	// Optional : db to store coin by OTA key (for v2)
-	OutcoinDatabaseDir  string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
-	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
-	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
-	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
-	AllowStatePrune     bool   `mapstructure:"allow_state_prune" long:"allowstateprune" description:"allow state pruning flag"`
-	StatePrune          bool   `mapstructure:"state_prune" long:"stateprune" description:"state pruning flag"`
-	StateBloomSize      uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
-	EnableAutoPrune     bool   `mapstructure:"enable_auto_prune" long:"enableautoprune" description:"enable auto prune"`
-	ForcePrune          bool   `mapstructure:"force_prune" long:"forceprune" description:"force nonde to prune"`
+	OutcoinDatabaseDir   string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
+	NumIndexerWorkers    int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
+	IndexerAccessTokens  string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
+	UseOutcoinDatabase   []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
+	AllowStatePruneByRPC bool   `mapstructure:"allow_state_prune_by_rpc" long:"allowstateprunebyrpc" description:"allow state pruning flag"`
+	OfflinePrune         bool   `mapstructure:"offline_prune" long:"offlineprune" description:"offline pruning flag"`
+	StateBloomSize       uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
+	EnableAutoPrune      bool   `mapstructure:"enable_auto_prune" long:"enableautoprune" description:"enable auto prune"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses

@@ -10,20 +10,17 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
-func (s *ShardPruner) pruneByHeight(height uint64) (uint64, uint64, error) {
-	defer func() {
-		s.wg.Done()
-	}()
-	h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(s.db, byte(s.shardID), height)
+func pruneByHeight(db incdb.Database, shardID int, stateBloom *trie.StateBloom, height uint64) (uint64, uint64, error) {
+	h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(db, byte(shardID), height)
 	if err != nil {
 		return 0, 0, err
 	}
-	data, err := rawdbv2.GetShardRootsHash(s.db, byte(s.shardID), *h)
+	data, err := rawdbv2.GetShardRootsHash(db, byte(shardID), *h)
 	sRH := &blockchain.ShardRootHash{}
 	if err = json.Unmarshal(data, sRH); err != nil {
 		return 0, 0, err
 	}
-	return pruneTxStateDB(s.db, s.stateBloom, sRH)
+	return pruneTxStateDB(db, stateBloom, sRH)
 
 }
 
@@ -32,7 +29,7 @@ func pruneTxStateDB(db incdb.Database, stateBloom *trie.StateBloom, sRH *blockch
 	if err != nil {
 		return 0, 0, nil
 	}
-	keysShouldBeRemoved, _, err := sDB.Retrieve(false, true, stateBloom, false)
+	keysShouldBeRemoved, err := sDB.Retrieve(false, true, stateBloom, false)
 	if err != nil {
 		return 0, 0, err
 	}

@@ -48,7 +48,7 @@ type HttpServer struct {
 	synkerService     *rpcservice.SynkerService
 	pdexTxService     *rpcservice.PdexTxService
 
-	Pruner *pruner.Pruner
+	Pruner *pruner.PrunerManager
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {

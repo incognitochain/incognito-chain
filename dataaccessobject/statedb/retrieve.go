@@ -2,7 +2,6 @@ package statedb
 
 import (
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/trie"
 )
@@ -20,13 +19,13 @@ func (stateDB *StateDB) Recheck() error {
 			continue
 		}
 	}
-	fmt.Println("Total node check:", cnt)
+	//fmt.Println("Total node check:", cnt)
 	return it.Err
 }
 
 func (stateDB *StateDB) Retrieve(
-	shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom,
-) (map[common.Hash]struct{}, *trie.StateBloom, error) {
+	shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom, firstView bool,
+) (map[common.Hash]struct{}, error) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 
@@ -41,7 +40,7 @@ func (stateDB *StateDB) Retrieve(
 	for it.Next(false, descend, returnErr) {
 		cnt++
 		if cnt%100000 == 0 {
-			//fmt.Println(cnt)
+			fmt.Println(cnt)
 		}
 		descend = true
 		if len(it.Key) == 0 {
@@ -51,16 +50,26 @@ func (stateDB *StateDB) Retrieve(
 		h := common.Hash{}
 		err := h.SetBytes(key)
 		if err != nil {
-			return nil, stateBloom, err
+			return nil, err
 		}
-		if ok, err := stateBloom.Contain(key); err != nil {
-			return nil, stateBloom, err
-		} else if ok {
-			descend = false
-			continue
+
+		if !firstView { //do not check bloom with first view
+			if ok, err := stateBloom.Contain(key); err != nil {
+				return nil, err
+			} else if ok {
+				descend = false
+				continue
+			}
 		}
+
 		if shouldAddToStateBloom {
-			keysShouldBeAddedToStateBloom[h] = struct{}{}
+			if firstView { //if first view add to bloom immediately
+				if err := stateBloom.Put(h.Bytes(), nil); err != nil {
+					return nil, err
+				}
+			} else { //not first view, add to map, then add to statebloom after traverse all
+				keysShouldBeAddedToStateBloom[h] = struct{}{}
+			}
 		}
 		if shouldDelete {
 			keysShouldBeRemoved[h] = struct{}{}
@@ -70,13 +79,13 @@ func (stateDB *StateDB) Retrieve(
 		panic(it.Err)
 	}
 	if shouldAddToStateBloom {
-		fmt.Println("Total node retrieve:", cnt)
+		//fmt.Println("Total node retrieve:", cnt)
 		for k := range keysShouldBeAddedToStateBloom {
 			if err := stateBloom.Put(k.Bytes(), nil); err != nil {
-				return nil, stateBloom, err
+				return nil, err
 			}
 		}
 	}
 
-	return keysShouldBeRemoved, stateBloom, nil
+	return keysShouldBeRemoved, nil
 }

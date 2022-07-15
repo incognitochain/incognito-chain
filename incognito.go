@@ -119,13 +119,13 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
-	p := pruner.NewPrunerWithValue(db, make(map[byte]byte))
-	p.ReadStatus()
-	//check if prune flag is available
-	if config.Config().StatePrune {
-		if err := p.Prune(); err != nil {
-			panic(err)
-		}
+	p := pruner.NewPrunerManager(db)
+	if p == nil { //cannot init pruner
+		return nil
+	}
+	//check if offline prune flag is available
+	if config.Config().OfflinePrune {
+		p.OfflinePrune()
 		return nil
 	}
 

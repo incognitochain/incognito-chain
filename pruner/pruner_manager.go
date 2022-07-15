@@ -2,80 +2,79 @@ package pruner
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/peerv2"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"golang.org/x/sync/semaphore"
-	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
 )
 
-type PrunerManager struct {
-	ShardPruner   map[int]*ShardPruner
-	PubSubManager *pubsub.PubSubManager
-	consensus     peerv2.ConsensusData
+type Config struct {
+	ShouldPruneByHash bool `json:"ShouldPruneByHash"`
 }
 
-func NewPrunerManager() *PrunerManager {
+type PrunerManager struct {
+	ShardPruner map[int]*ShardPruner
+	JobRquest   map[int]*Config
+}
+
+func NewPrunerManager(db map[int]incdb.Database) *PrunerManager {
 	prunerManager := &PrunerManager{
 		ShardPruner: make(map[int]*ShardPruner),
+		JobRquest:   make(map[int]*Config),
+	}
+	for sid := 0; sid < common.MaxShardNumber; sid++ {
+		prunerManager.ShardPruner[sid] = NewShardPruner(sid, db[sid])
 	}
 
 	return prunerManager
 }
 
-const NUM_BLOCK_TRIGGER_PRUNE = 10
-
-func (s *PrunerManager) Init() error {
-	cfg := config.LoadConfig()
-	db, err := incdb.OpenMultipleDB("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
-	if err != nil {
-		return err
-	}
-	for sid := 0; sid < common.MaxShardNumber; sid++ {
-		s.ShardPruner[sid] = NewShardPruner(sid, db[sid])
-	}
-
-	go func() {
-		for {
-			for _, shardPruner := range s.ShardPruner {
-				//if shard pruner not run -> then check condition to trigger prune
-				if shardPruner.status != RUNNING {
-					latest := false
-					if shardPruner.bestView != nil && common.CalculateTimeSlot(shardPruner.bestView.BestBlock.GetProposeTime()) == common.CalculateTimeSlot(time.Now().Unix()) {
-						latest = true
+func (s *PrunerManager) Start() error {
+	for {
+		for sid, shardPruner := range s.ShardPruner {
+			//if shard pruner not run -> then check condition to trigger prune
+			if shardPruner.status == IDLE {
+				latest := false
+				if shardPruner.bestView != nil && common.CalculateTimeSlot(shardPruner.bestView.BestBlock.GetProposeTime()) == common.CalculateTimeSlot(time.Now().Unix()) {
+					latest = true
+				}
+				//if auto prune, sync latest block, and bestview block > last processing block
+				if config.Config().EnableAutoPrune && latest && shardPruner.bestView.ShardHeight > shardPruner.lastProcessingHeight+NUM_BLOCK_TRIGGER_PRUNE {
+					shardPruner.SetBloomSize(config.Config().StateBloomSize)
+					shardPruner.Prune(false)
+				} else if req, ok := s.JobRquest[sid]; ok { //request for this shard from RPC
+					shardPruner.SetBloomSize(config.Config().StateBloomSize)
+					if req.ShouldPruneByHash {
+						shardPruner.Prune(true)
+					} else {
+						shardPruner.Prune(false)
 					}
-					//if auto prune, latest block, and bestview block > last processing block
-					if config.Config().EnableAutoPrune && latest && shardPruner.bestView.ShardHeight > shardPruner.lastProcessingHeight+NUM_BLOCK_TRIGGER_PRUNE {
-						//if not committee or forceprunce => trigger prune
-						if shardPruner.role != common.CommitteeRole || config.Config().ForcePrune {
-							shardPruner.PruneByHeight()
-						}
-					}
+					s.JobRquest[sid] = nil //unmark request for this shard
 				}
 			}
-			time.Sleep(time.Second)
-			for sid, val := range s.consensus.GetOneValidatorForEachConsensusProcess() {
-				s.ShardPruner[sid].SetCommitteeRole(val.State.Role)
-			}
 		}
-	}()
-	return nil
+		time.Sleep(time.Second)
+	}
 }
 
+//run parallel based on available CPU
 func (s *PrunerManager) OfflinePrune() {
 	cpus := runtime.NumCPU()
-	sem := semaphore.NewWeighted(int64(cpus / 2))
-	ch := make(chan int)
-	stateBloomSize := config.Config().StateBloomSize / uint64(common.MaxShardNumber)
-	if cpus/2 < common.MaxShardNumber {
-		stateBloomSize = config.Config().StateBloomSize / uint64(cpus/2)
+	semNum := cpus / 2
+	if semNum > 2 {
+		semNum = 2
 	}
+	sem := semaphore.NewWeighted(int64(semNum))
+	ch := make(chan int)
+
+	stateBloomSize := config.Config().StateBloomSize / uint64(semNum*2)
+
 	stopCh := make(chan struct{})
 	var count int
 	var wg sync.WaitGroup
@@ -85,13 +84,19 @@ func (s *PrunerManager) OfflinePrune() {
 			case shardID := <-ch:
 				wg.Add(1)
 				go func() {
+					if _, ok := s.ShardPruner[shardID]; !ok {
+						fmt.Println("ShardPrunter is not ready")
+					}
 					s.ShardPruner[shardID].SetBloomSize(stateBloomSize)
-					if err := s.ShardPruner[shardID].PruneByHeight(); err != nil {
+					if err := s.ShardPruner[shardID].Prune(false); err != nil {
 						Logger.log.Error(err)
 						return
 					}
 					wg.Done()
 					sem.Release(1)
+					Logger.log.Infof("Shard %v finish prune", shardID)
+					b, _ := json.MarshalIndent(s.ShardPruner[shardID].Report(), "", "\t")
+					fmt.Println(string(b))
 				}()
 			case <-stopCh:
 				count++
@@ -108,13 +113,6 @@ func (s *PrunerManager) OfflinePrune() {
 	wg.Wait()
 }
 
-func (s *PrunerManager) Report() error {
-	for sid := 0; sid < common.MaxShardNumber; sid++ {
-		s.ShardPruner[sid].Report()
-	}
-	return nil
-}
-
 func (p *PrunerManager) SetShardInsertLock(sid int, mutex *sync.Mutex) {
 	p.ShardPruner[sid].shardInsertLock = mutex
 }
@@ -122,4 +120,11 @@ func (p *PrunerManager) SetShardInsertLock(sid int, mutex *sync.Mutex) {
 func (p *PrunerManager) InsertNewView(shardBestState *blockchain.ShardBestState) {
 	sid := shardBestState.ShardID
 	p.ShardPruner[int(sid)].handleNewView(shardBestState)
+}
+
+func (s *PrunerManager) Report() error {
+	for sid := 0; sid < common.MaxShardNumber; sid++ {
+		s.ShardPruner[sid].Report()
+	}
+	return nil
 }

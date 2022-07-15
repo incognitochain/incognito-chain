@@ -16,3 +16,11 @@ const (
 	// to avoid triggering range compaction because of small deletion.
 	rangeCompactionThreshold = 100000
 )
+
+const (
+	IDLE     = 0
+	PRUNING  = 1
+	CHECKING = 2
+)
+
+const NUM_BLOCK_TRIGGER_PRUNE = 10
