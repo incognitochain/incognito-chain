@@ -152,6 +152,7 @@ func (s *ShardPruner) PruneByHeight() error {
 				Logger.log.Infof("[state-prune %v] Finish prune for height %v delete totalNodes %v with storage %v", s.shardID, height, s.nodes, s.storage)
 				s.saveStatus()
 			}
+			s.lastProcessingHeight = height
 			return nil
 		}()
 
@@ -236,6 +237,7 @@ func (s *ShardPruner) addViewToBloom(v *blockchain.ShardBestState) error {
 	}
 
 	if err != nil {
+		panic(err)
 		return err
 	}
 	Logger.log.Infof("[state-prune %v] Finish retrieve view %s at height %v",

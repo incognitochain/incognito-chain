@@ -40,7 +40,7 @@ func (stateDB *StateDB) Retrieve(
 	for it.Next(false, descend, returnErr) {
 		cnt++
 		if cnt%100000 == 0 {
-			fmt.Println(cnt)
+			fmt.Println("Retrieve:", cnt)
 		}
 		descend = true
 		if len(it.Key) == 0 {
