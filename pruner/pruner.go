@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"runtime"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -192,17 +193,12 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 	}
 	//collect tree nodes want to keep, add them to state bloom
 
-	for i, v := range allViews {
+	for _, v := range allViews {
 		if finalHeight == 0 || finalHeight > v.ShardHeight {
 			finalHeight = v.ShardHeight
 		}
 		p.bestView.Store(shardID, v)
-		if i == 0 {
-			err = p.addNewViewToStateBloom(v, db, true)
-		} else {
-			err = p.addNewViewToStateBloom(v, db, false)
-		}
-
+		err = p.addNewViewToStateBloom(v, db)
 		if err != nil {
 			return 0, err
 		}
@@ -212,7 +208,7 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 }
 
 func (p *Pruner) addNewViewToStateBloom(
-	v *blockchain.ShardBestState, db incdb.Database, firstView bool,
+	v *blockchain.ShardBestState, db incdb.Database,
 ) error {
 	if _, found := p.addedViewsCache[v.BestBlockHash]; found {
 		return nil
@@ -227,7 +223,7 @@ func (p *Pruner) addNewViewToStateBloom(
 		return err
 	}
 	//Retrieve all state tree for this state
-	_, p.stateBloom[int(v.ShardID)], err = stateDB.Retrieve(true, false, p.stateBloom[int(v.ShardID)], firstView)
+	_, p.stateBloom[int(v.ShardID)], err = stateDB.Retrieve(true, false, p.stateBloom[int(v.ShardID)])
 	if err != nil {
 		return err
 	}
@@ -563,7 +559,7 @@ func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error 
 		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
 			Logger.log.Infof("Process new view %s at shard %v", shardBestState.BestBlockHash.String(), shardBestState.ShardID)
 			p.bestView.Store(shardBestState.ShardID, shardBestState)
-			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)], false)
+			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
 			if err != nil {
 				panic(err)
 			}
