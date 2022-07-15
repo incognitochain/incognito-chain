@@ -7,6 +7,12 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+const (
+	IDLE    = 0
+	RUNNING = 1
+	ERROR   = -1
+)
+
 type TraverseHelper struct {
 	db          incdb.Database
 	shardID     byte

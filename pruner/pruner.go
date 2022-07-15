@@ -1,14 +1,10 @@
 package pruner
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -81,47 +77,6 @@ func (p *Pruner) ReadStatus() {
 		}
 		p.statuses[byte(i)] = status
 	}
-}
-
-func (p *Pruner) Prune() error {
-	cpus := runtime.NumCPU()
-	sem := semaphore.NewWeighted(int64(cpus / 2))
-	ch := make(chan int)
-	stateBloomSize := config.Config().StateBloomSize / uint64(common.MaxShardNumber)
-	if cpus/2 < common.MaxShardNumber {
-		stateBloomSize = config.Config().StateBloomSize / uint64(cpus/2)
-	}
-
-	stopCh := make(chan struct{})
-	var count int
-	var wg sync.WaitGroup
-	go func() {
-		for {
-			select {
-			case shardID := <-ch:
-				wg.Add(1)
-				go func() {
-					if err := p.prune(shardID, false, stateBloomSize); err != nil {
-						Logger.log.Error(err)
-						return
-					}
-					wg.Done()
-					sem.Release(1)
-				}()
-			case <-stopCh:
-				count++
-				if count == common.MaxShardNumber {
-					return
-				}
-			}
-		}
-	}()
-	for i := 0; i < common.MaxShardNumber; i++ {
-		sem.Acquire(context.Background(), 1)
-		ch <- i
-	}
-	wg.Wait()
-	return nil
 }
 
 func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) error {

@@ -29,6 +29,7 @@ func (stateDB *StateDB) Retrieve(
 ) (map[common.Hash]struct{}, *trie.StateBloom, error) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
+
 	keysShouldBeRemoved := make(map[common.Hash]struct{})
 	keysShouldBeAddedToStateBloom := make(map[common.Hash]struct{})
 	cnt := 0
