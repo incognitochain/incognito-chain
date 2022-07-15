@@ -123,6 +123,7 @@ const (
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
 	ExternalBridgeTokenLength = 20
+	EVMAddressLength          = 40
 	UnifiedTokenPrefix        = "UT"
 )
 
@@ -196,8 +197,12 @@ const (
 const (
 	RejectedStatusStr  = "rejected"
 	AcceptedStatusStr  = "accepted"
+	WaitingStatusStr   = "waiting"
+	FilledStatusStr    = "filled"
 	RejectedStatusByte = byte(0)
 	AcceptedStatusByte = byte(1)
+	WaitingStatusByte  = byte(2)
+	FilledStatusByte   = byte(3)
 )
 
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
@@ -225,7 +230,6 @@ const (
 	PortalRelayingFlag = "PortalRelaying"
 	PortalV3Flag       = "PortalV3"
 	PortalV4Flag       = "PortalV4"
-	BridgeAggFlag      = "BridgeAgg"
 )
 const (
 	PortalVersion3 = 3
@@ -261,4 +265,9 @@ const (
 
 const (
 	EVMNetworkType = iota
+)
+
+const (
+	SubOperator = 0
+	AddOperator = 1
 )

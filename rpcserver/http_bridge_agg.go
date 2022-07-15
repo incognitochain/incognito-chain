@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -18,9 +18,29 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyRewardReserve(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetBridgeAggState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	}
+	result, err := httpServer.blockService.GetBridgeAggState(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBridgeAggStateError, err)
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyParamTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var res interface{}
-	data, err := httpServer.createBridgeAggModifyRewardReserveTransaction(params)
+	data, err := httpServer.createBridgeAggModifyParamTransaction(params)
 	if err != nil {
 		return nil, err
 	}
@@ -36,12 +56,12 @@ func (httpServer *HttpServer) handleCreateAndSendTxBridgeAggModifyRewardReserve(
 	return res, nil
 }
 
-func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
+func (httpServer *HttpServer) createBridgeAggModifyParamTransaction(
 	params interface{},
 ) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param at least %v but get %v", 5, len(arrayParams)))
 	}
 	privateKey, ok := arrayParams[0].(string)
 	if !ok {
@@ -64,29 +84,15 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		NewList map[common.Hash][]struct {
-			TokenID       common.Hash `json:"TokenID"`
-			RewardReserve uint64      `json:"RewardReserve"`
-			IsPaused      bool        `json:"IsPaused"`
-		} `json:"Vaults"`
+		NewPercentFeeWithDec uint64 `json:"NewPercentFeeWithDec"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
-	newList := make(map[common.Hash][]metadataBridge.Vault)
-	for k, v := range mdReader.NewList {
-		for _, value := range v {
-			newList[k] = append(newList[k], metadataBridge.Vault{
-				RewardReserve:                value.RewardReserve,
-				BridgeAggConvertedTokenState: *statedb.NewBridgeAggConvertedTokenStateWithValue(value.TokenID, 0),
-				IsPaused:                     value.IsPaused,
-			})
-		}
-	}
 
-	md := metadataBridge.NewModifyRewardReserveWithValue(newList)
+	md := metadataBridge.NewModifyBridgeAggParamReqWithValue(mdReader.NewPercentFeeWithDec)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -112,27 +118,7 @@ func (httpServer *HttpServer) createBridgeAggModifyRewardReserveTransaction(
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetBridgeAggState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
-	}
-	data, ok := arrayParams[0].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
-	}
-	beaconHeight, ok := data["BeaconHeight"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
-	}
-	result, err := httpServer.blockService.GetBridgeAggState(uint64(beaconHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetBridgeAggStateError, err)
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetBridgeAggModifyRewardReserveStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetBridgeAggModifyParamStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -149,13 +135,13 @@ func (httpServer *HttpServer) handleGetBridgeAggModifyRewardReserveStatus(params
 
 	data, err := statedb.GetBridgeAggStatus(
 		sDB,
-		statedb.BridgeAggRewardReserveModifyingStatusPrefix(),
+		statedb.BridgeAggModifyParamStatusPrefix(),
 		txID.Bytes(),
 	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var res json.RawMessage
+	var res bridgeagg.ModifyParamStatus
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -186,7 +172,7 @@ func (httpServer *HttpServer) handleGetBridgeAggConvertStatus(params interface{}
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var res json.RawMessage
+	var res bridgeagg.ConvertStatus
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -251,7 +237,7 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 	}
 
 	md := metadataBridge.NewConvertTokenToUnifiedTokenRequestWithValue(
-		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount, recv,
+		mdReader.TokenID, mdReader.UnifiedTokenID, mdReader.Amount, recv,
 	)
 	paramSelect.SetTokenID(mdReader.TokenID)
 	paramSelect.SetMetadata(md)
@@ -336,7 +322,14 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		metadataBridge.ShieldRequest
+		Data []struct {
+			BlockHash  string      `json:"BlockHash"`
+			TxIndex    *uint       `json:"TxIndex"`
+			Proof      []string    `json:"Proof"`
+			NetworkID  uint8       `json:"NetworkID"`
+			IncTokenID common.Hash `json:"IncTokenID"`
+		} `json:"Data"`
+		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
 	}{}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
@@ -352,10 +345,31 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
+	data := []metadataBridge.ShieldRequestData{}
+	for _, v := range mdReader.Data {
+		temp := metadataBridge.ShieldRequestData{
+			NetworkID:  v.NetworkID,
+			IncTokenID: v.IncTokenID,
+		}
+		type EVMProof struct {
+			BlockHash rCommon.Hash `json:"BlockHash"`
+			TxIndex   uint         `json:"TxIndex"`
+			Proof     []string     `json:"Proof"`
+		}
+		proof := EVMProof{
+			BlockHash: rCommon.HexToHash(v.BlockHash),
+			TxIndex:   *v.TxIndex,
+			Proof:     v.Proof,
+		}
+		proofData, err := json.Marshal(proof)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		temp.Proof = proofData
+		data = append(data, temp)
+	}
 
-	md := metadataBridge.NewShieldRequestWithValue(
-		mdReader.Data, mdReader.TokenID,
-	)
+	md := metadataBridge.NewShieldRequestWithValue(data, mdReader.UnifiedTokenID)
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -424,7 +438,7 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		metadataBridge.UnshieldRequest
-		Receivers map[string]uint64 `json:"Receivers,omitempty"`
+		TokenReceivers map[string]uint64 `json:"TokenReceivers,omitempty"`
 	}{}
 	// parse params & metadata
 	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -437,11 +451,11 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
 	}
 
-	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.TokenID, mdReader.Data, recv)
+	md := metadataBridge.NewUnshieldRequestWithValue(mdReader.UnifiedTokenID, mdReader.Data, recv, mdReader.IsDepositToSC)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	paramSelect.SetTokenID(mdReader.TokenID)
+	paramSelect.SetTokenID(mdReader.UnifiedTokenID)
 	paramSelect.SetMetadata(md)
 
 	// get burning address
@@ -491,8 +505,8 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 		}
 	}
 
-	if len(mdReader.Receivers) != 0 {
-		for k, v := range mdReader.Receivers {
+	if len(mdReader.TokenReceivers) != 0 {
+		for k, v := range mdReader.TokenReceivers {
 			key, err := wallet.Base58CheckDeserialize(k)
 			if err != nil {
 				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -547,46 +561,21 @@ func (httpServer *HttpServer) handleGetBridgeAggShieldStatus(params interface{},
 	}
 	sDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 
-	res := bridgeagg.ShieldStatus{}
-	prefixValues := [][]byte{
-		{},
-		{common.BoolToByte(false)},
-		{common.BoolToByte(true)},
+	data, err := statedb.GetBridgeAggStatus(
+		sDB,
+		statedb.BridgeAggShieldStatusPrefix(),
+		txID.Bytes(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			fmt.Errorf("Error get shield status %v", err))
 	}
-	for _, prefixValue := range prefixValues {
-		suffix := append(txID.Bytes(), prefixValue...)
-		data, err := statedb.GetBridgeAggStatus(
-			sDB,
-			statedb.BridgeAggShieldStatusPrefix(),
-			suffix,
-		)
-		if err != nil {
-			continue
-		}
-		status := bridgeagg.ShieldStatus{}
-		err = json.Unmarshal(data, &status)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-		}
-		res.Status = status.Status
-		if status.Status == common.RejectedStatusByte {
-			res.Data = nil
-			res.ErrorCode = status.ErrorCode
-		} else {
-			if len(res.Data) == 0 {
-				res.Data = make([]bridgeagg.ShieldStatusData, len(status.Data))
-			}
-			for i, v := range status.Data {
-				res.Data[i].Amount += v.Amount
-				res.Data[i].Reward += v.Reward
-			}
-
-		}
+	status := bridgeagg.ShieldStatus{}
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	if len(res.Data) == 0 && res.Status == 0 && res.ErrorCode == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not found status"))
-	}
-	return res, nil
+	return status, nil
 }
 
 func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -612,7 +601,7 @@ func (httpServer *HttpServer) handleGetBridgeAggUnshieldStatus(params interface{
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var res json.RawMessage
+	res := bridgeagg.UnshieldStatus{}
 	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -629,7 +618,7 @@ func (httpServer *HttpServer) handleEstimateFeeByBurntAmount(params interface{},
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
-		NetworkID      uint        `json:"NetworkID"`
+		TokenID        common.Hash `json:"TokenID"`
 		BurntAmount    uint64      `json:"BurntAmount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
@@ -640,7 +629,7 @@ func (httpServer *HttpServer) handleEstimateFeeByBurntAmount(params interface{},
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByBurntAmountError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateFeeByBurntAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.BurntAmount)
+	result, err := httpServer.blockService.BridgeAggEstimateFeeByBurntAmount(mdReader.UnifiedTokenID, mdReader.TokenID, mdReader.BurntAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByBurntAmountError, err)
 	}
@@ -656,7 +645,7 @@ func (httpServer *HttpServer) handleEstimateFeeByExpectedAmount(params interface
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
-		NetworkID      uint        `json:"NetworkID"`
+		TokenID        common.Hash `json:"TokenID"`
 		ExpectedAmount uint64      `json:"ExpectedAmount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
@@ -667,7 +656,7 @@ func (httpServer *HttpServer) handleEstimateFeeByExpectedAmount(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByExpectedAmountError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateFeeByExpectedAmount(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.ExpectedAmount)
+	result, err := httpServer.blockService.BridgeAggEstimateFeeByExpectedAmount(mdReader.UnifiedTokenID, mdReader.TokenID, mdReader.ExpectedAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateFeeByExpectedAmountError, err)
 	}
@@ -683,7 +672,7 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		UnifiedTokenID common.Hash `json:"UnifiedTokenID"`
-		NetworkID      uint        `json:"NetworkID"`
+		TokenID        common.Hash `json:"TokenID"`
 		Amount         uint64      `json:"Amount"`
 	}{}
 	rawMd, err := json.Marshal(arrayParams[0])
@@ -694,14 +683,14 @@ func (httpServer *HttpServer) handleBridgeAggEstimateReward(params interface{}, 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}
-	result, err := httpServer.blockService.BridgeAggEstimateReward(mdReader.UnifiedTokenID, mdReader.NetworkID, mdReader.Amount)
+	result, err := httpServer.blockService.BridgeAggEstimateReward(mdReader.UnifiedTokenID, mdReader.TokenID, mdReader.Amount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.BridgeAggEstimateRewardError, err)
 	}
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleBridgeAggGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// read txID
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -711,7 +700,6 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	Reader := &struct {
 		TxReqID   common.Hash `json:"TxReqID"`
 		DataIndex *int        `json:"DataIndex"`
-		NetworkID uint        `json:"NetworkID"`
 	}{}
 	rawData, err := json.Marshal(arrayParams[0])
 	if err != nil {
@@ -729,26 +717,5 @@ func (httpServer *HttpServer) handleBridgeAggGetBurntProof(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	var burningConfirmMeta0, burningConfirmMeta1 int
-	switch Reader.NetworkID {
-	case common.ETHNetworkID:
-		burningConfirmMeta0 = metadata.BurningConfirmForDepositToSCMetaV2
-		burningConfirmMeta1 = metadata.BurningConfirmMetaV2
-	case common.BSCNetworkID:
-		burningConfirmMeta0 = metadata.BurningPBSCConfirmForDepositToSCMeta
-		burningConfirmMeta1 = metadata.BurningBSCConfirmMeta
-	case common.PLGNetworkID:
-		burningConfirmMeta0 = metadata.BurningPLGConfirmForDepositToSCMeta
-		burningConfirmMeta1 = metadata.BurningPLGConfirmMeta
-	case common.FTMNetworkID:
-		burningConfirmMeta0 = metadata.BurningFantomConfirmForDepositToSCMeta
-		burningConfirmMeta1 = metadata.BurningFantomConfirmMeta
-	case common.DefaultNetworkID:
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid networkID"))
-	}
-	res, _ := retrieveBurnProof(burningConfirmMeta0, onBeacon, height, &txReqID, httpServer)
-	if res == nil {
-		return retrieveBurnProof(burningConfirmMeta1, onBeacon, height, &txReqID, httpServer)
-	}
-	return res, nil
+	return retrieveBurnProof(0, onBeacon, height, &txReqID, httpServer, false)
 }

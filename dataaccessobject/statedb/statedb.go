@@ -3005,7 +3005,7 @@ func (stateDB *StateDB) getBridgeAggStatusByKey(key common.Hash) (*BridgeAggStat
 	return NewBridgeAggStatusState(), false, nil
 }
 
-func (stateDB *StateDB) iterateWithBridgeAggUnifiedTokens(prefix []byte) ([]*BridgeAggUnifiedTokenState, error) {
+func (stateDB *StateDB) iterateBridgeAggUnifiedTokens(prefix []byte) ([]*BridgeAggUnifiedTokenState, error) {
 	res := []*BridgeAggUnifiedTokenState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
@@ -3023,24 +3023,6 @@ func (stateDB *StateDB) iterateWithBridgeAggUnifiedTokens(prefix []byte) ([]*Bri
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateWithBridgeAggConvertedTokens(prefix []byte) ([]*BridgeAggConvertedTokenState, error) {
-	res := []*BridgeAggConvertedTokenState{}
-	temp := stateDB.trie.NodeIterator(prefix)
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		convertedTokenState := NewBridgeAggConvertedTokenState()
-		err := json.Unmarshal(newValue, &convertedTokenState)
-		if err != nil {
-			return res, err
-		}
-		res = append(res, convertedTokenState)
-	}
-	return res, nil
-}
-
 func (stateDB *StateDB) getBridgeAggVault(key common.Hash) (*BridgeAggVaultState, bool, error) {
 	vaultObject, err := stateDB.getStateObject(BridgeAggVaultObjectType, key)
 	if err != nil {
@@ -3050,6 +3032,62 @@ func (stateDB *StateDB) getBridgeAggVault(key common.Hash) (*BridgeAggVaultState
 		return vaultObject.GetValue().(*BridgeAggVaultState), true, nil
 	}
 	return NewBridgeAggVaultState(), false, nil
+}
+
+func (stateDB *StateDB) iterateBridgeAggVaults(prefix []byte) (map[common.Hash]*BridgeAggVaultState, error) {
+	res := map[common.Hash]*BridgeAggVaultState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		vault := NewBridgeAggVaultState()
+		err := json.Unmarshal(newValue, &vault)
+		if err != nil {
+			return res, err
+		}
+		res[vault.incTokenID] = vault
+	}
+	return res, nil
+}
+
+// iterateBridgeAggWaitingUnshieldReqs returns list of waiting unshield reqs by prefix (unifiedTokenID)
+// and the list is sorted by beacon height ascending
+func (stateDB *StateDB) iterateBridgeAggWaitingUnshieldReqs(prefix []byte) ([]*BridgeAggWaitingUnshieldReq, error) {
+	res := []*BridgeAggWaitingUnshieldReq{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		req := NewBridgeAggWaitingUnshieldReqState()
+		err := json.Unmarshal(newValue, &req)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, req)
+	}
+
+	sort.SliceStable(res, func(i, j int) bool {
+		if res[i].beaconHeight == res[j].beaconHeight {
+			return res[i].unshieldID.String() < res[j].unshieldID.String()
+		}
+		return res[i].beaconHeight < res[j].beaconHeight
+	})
+	return res, nil
+}
+
+func (stateDB *StateDB) getBridgeAggParamByKey(key common.Hash) (*BridgeAggParamState, bool, error) {
+	bridgeAggParamState, err := stateDB.getStateObject(BridgeAggParamObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bridgeAggParamState != nil {
+		return bridgeAggParamState.GetValue().(*BridgeAggParamState), true, nil
+	}
+	return NewBridgeAggParamState(), false, nil
 }
 
 // ================================= Fantom bridge OBJECT =======================================

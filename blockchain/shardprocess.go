@@ -1003,7 +1003,7 @@ func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight uint64, beaconHash common.Hash, curView *ShardBestState) error {
 	if blockchain.config.usingNewPool {
-		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...))
+		bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, hasCommitteeRelatedTx(txs...), false, false)
 		if err != nil {
 			Logger.log.Errorf("Can not get beacon view state for new block err: %+v, get from beacon hash %v", err, beaconHash.String())
 			return err
@@ -1382,7 +1382,7 @@ func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 //storeTokenInitInstructions tries to store new tokens when they are initialized. There are 3 ways to init a token:
 //	1. InitTokenRequestMeta - for user-customized tokens
 //	2. IssuingRequestMeta - for centralized bridge tokens
-//	3. IssuingETHRequestMeta - for centralized bridge tokens
+//	3. IssuingETHRequestMeta - for decentralized bridge tokens
 func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock) error {
 	for _, block := range beaconBlocks {
 		instructions := block.Body.Instructions
@@ -1427,15 +1427,13 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
 				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
-				metadata.IssuingPLGRequestMeta, metadataCommon.IssuingUnifiedTokenRequestMeta,
-				metadata.IssuingFantomRequestMeta:
+				metadata.IssuingPLGRequestMeta, metadata.IssuingFantomRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadataBridge.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {
 						Logger.log.Errorf("ParseEVMIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
 						return err
 					}
-
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
 						Logger.log.Infof("eth-issued token %v existed, skip storing this token\n", acceptedContent.IncTokenID.String())
 						continue
@@ -1450,6 +1448,37 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					Logger.log.Infof("store eth-isssued token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
+			case metadataCommon.IssuingUnifiedTokenRequestMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					acceptedContent, err := metadataBridge.ParseShieldReqInstAcceptedContent(l[3])
+					if err != nil {
+						Logger.log.Errorf("ParseShieldReqInstAcceptedContent(%v) error: %v\n", l[3], err)
+						return err
+					}
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.UnifiedTokenID); existed {
+						Logger.log.Infof("issued token %v existed, skip storing this token\n", acceptedContent.UnifiedTokenID.String())
+						continue
+					}
+					mintAmt := uint64(0)
+					for _, data := range acceptedContent.Data {
+						mintAmt = mintAmt + data.ShieldAmount + data.Reward
+						if mintAmt < data.ShieldAmount+data.Reward {
+							Logger.log.Errorf("StorePrivacyToken out of range minted amount tokenID %v, txId %v",
+								acceptedContent.UnifiedTokenID, acceptedContent.TxReqID)
+							return fmt.Errorf("StorePrivacyToken out of range minted amount tokenID %v, txId %v",
+								acceptedContent.UnifiedTokenID, acceptedContent.TxReqID)
+						}
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, acceptedContent.UnifiedTokenID, "",
+						"", statedb.BridgeToken, true, mintAmt, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v\n", err)
+						return err
+					}
+					Logger.log.Infof("store unified-isssued token %v succeeded\n", acceptedContent.UnifiedTokenID.String())
 				}
 
 			case metadata.IssuingRequestMeta:

@@ -9,28 +9,59 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
+func InitManager(sDB *statedb.StateDB) (*Manager, error) {
+	state, err := InitStateFromDB(sDB)
+	if err != nil {
+		return nil, err
+	}
+	return NewManagerWithValue(state), nil
+}
+
 func InitStateFromDB(sDB *statedb.StateDB) (*State, error) {
+	// load list all unified tokens
 	unifiedTokenStates, err := statedb.GetBridgeAggUnifiedTokens(sDB)
 	if err != nil {
 		return nil, err
 	}
-	unifiedTokenInfos := make(map[common.Hash]map[uint]*Vault)
+
+	// load unified token infos
+	unifiedTokenInfos := make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState)
 	for _, unifiedTokenState := range unifiedTokenStates {
-		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[uint]*Vault)
-		convertTokens, err := statedb.GetBridgeAggConvertedTokens(sDB, unifiedTokenState.TokenID())
+		unifiedTokenInfos[unifiedTokenState.TokenID()] = make(map[common.Hash]*statedb.BridgeAggVaultState)
+		vaults, err := statedb.GetBridgeAggVaults(sDB, unifiedTokenState.TokenID())
 		if err != nil {
 			return nil, err
 		}
-		for _, convertToken := range convertTokens {
-			state, err := statedb.GetBridgeAggVault(sDB, unifiedTokenState.TokenID(), convertToken.TokenID())
-			if err != nil {
-				state = statedb.NewBridgeAggVaultState()
-			}
-			vault := NewVaultWithValue(*state, convertToken.TokenID())
-			unifiedTokenInfos[unifiedTokenState.TokenID()][convertToken.NetworkID()] = vault
+		for tokenID, vault := range vaults {
+			unifiedTokenInfos[unifiedTokenState.TokenID()][tokenID] = vault
 		}
 	}
-	return NewStateWithValue(unifiedTokenInfos), nil
+
+	// load waiting unshield reqs
+	waitingUnshieldReqs := make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq)
+	for _, unifiedTokenState := range unifiedTokenStates {
+		unifiedTokenID := unifiedTokenState.TokenID()
+		reqs, err := statedb.GetBridgeAggWaitingUnshieldReqs(sDB, unifiedTokenID)
+		if err != nil {
+			return nil, err
+		}
+		if len(reqs) > 0 {
+			waitingUnshieldReqs[unifiedTokenID] = reqs
+		}
+	}
+
+	// load param
+	param, err := statedb.GetBridgeAggParam(sDB)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewStateWithValue(
+		unifiedTokenInfos,
+		waitingUnshieldReqs,
+		param,
+		map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq{},
+		[]common.Hash{}), nil
 }
 
 func GetExternalTokenIDByIncTokenID(incTokenID common.Hash, sDB *statedb.StateDB) ([]byte, error) {
@@ -42,25 +73,6 @@ func GetExternalTokenIDByIncTokenID(incTokenID common.Hash, sDB *statedb.StateDB
 		return nil, errors.New("Not found externalTokenID")
 	}
 	return info.ExternalTokenID(), nil
-}
-
-func GetVaultByUnifiedTokenIDAndNetworkID(unifiedTokenID common.Hash, networkID uint, sDB *statedb.StateDB) (*Vault, error) {
-	convertTokens, err := statedb.GetBridgeAggConvertedTokens(sDB, unifiedTokenID)
-	if err != nil {
-		return nil, err
-	}
-	for _, convertToken := range convertTokens {
-		if convertToken.NetworkID() != networkID {
-			continue
-		}
-		state, err := statedb.GetBridgeAggVault(sDB, unifiedTokenID, convertToken.TokenID())
-		if err != nil {
-			return nil, err
-		}
-		state = statedb.NewBridgeAggVaultState()
-		return NewVaultWithValue(*state, convertToken.TokenID()), nil
-	}
-	return nil, errors.New("Not found vault")
 }
 
 func GetBridgeTokenIndex(sDB *statedb.StateDB) (map[common.Hash]*rawdbv2.BridgeTokenInfo, map[string]bool, error) {

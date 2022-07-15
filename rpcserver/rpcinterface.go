@@ -277,9 +277,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
 	// bridgeagg method
-	bridgeaggModifyRewardReserve:         (*HttpServer).handleCreateAndSendTxBridgeAggModifyRewardReserve,
 	bridgeaggState:                       (*HttpServer).handleGetBridgeAggState,
-	bridgeaggGetStatusModifyRewarReserve: (*HttpServer).handleGetBridgeAggModifyRewardReserveStatus,
+	bridgeaggModifyParam:                 (*HttpServer).handleCreateAndSendTxBridgeAggModifyParamTx,
+	bridgeaggStatusModifyParam:           (*HttpServer).handleGetBridgeAggModifyParamStatus,
 	bridgeaggConvert:                     (*HttpServer).handleBridgeAggConvert,
 	bridgeaggStatusConvert:               (*HttpServer).handleGetBridgeAggConvertStatus,
 	bridgeaggShield:                      (*HttpServer).handleBridgeAggShield,
@@ -289,7 +289,7 @@ var HttpHandler = map[string]httpHandler{
 	bridgeaggEstimateFeeByBurntAmount:    (*HttpServer).handleEstimateFeeByBurntAmount,
 	bridgeaggEstimateFeeByExpectedAmount: (*HttpServer).handleEstimateFeeByExpectedAmount,
 	bridgeaggEstimateReward:              (*HttpServer).handleBridgeAggEstimateReward,
-	bridgeaggGetBurntProof:               (*HttpServer).handleBridgeAggGetBurntProof,
+	bridgeaggGetBurnProof:                (*HttpServer).handleBridgeAggGetBurnProof,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
