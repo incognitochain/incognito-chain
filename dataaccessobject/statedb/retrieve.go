@@ -14,7 +14,7 @@ func (stateDB *StateDB) Recheck() error {
 	for it.Next(true, true, true) {
 		cnt++
 		if cnt%100000 == 0 {
-			fmt.Println(cnt)
+			//fmt.Println(cnt)
 		}
 		if len(it.Key) == 0 {
 			continue
@@ -40,7 +40,7 @@ func (stateDB *StateDB) Retrieve(
 	for it.Next(false, descend, returnErr) {
 		cnt++
 		if cnt%100000 == 0 {
-			fmt.Println(cnt)
+			//fmt.Println(cnt)
 		}
 		descend = true
 		if len(it.Key) == 0 {
