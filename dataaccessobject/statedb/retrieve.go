@@ -30,9 +30,17 @@ func (stateDB *StateDB) Retrieve(
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	keysShouldBeRemoved := make(map[common.Hash]struct{})
-
+	cnt := 0
 	descend := true
-	for it.Next(false, descend, false) {
+	returnErr := false
+	if shouldAddToStateBloom {
+		returnErr = true
+	}
+	for it.Next(false, descend, returnErr) {
+		cnt++
+		if cnt%100000 == 0 {
+			fmt.Println(cnt)
+		}
 		descend = true
 		if len(it.Key) == 0 {
 			continue
@@ -60,6 +68,9 @@ func (stateDB *StateDB) Retrieve(
 			keysShouldBeRemoved[h] = struct{}{}
 		}
 	}
-
+	if shouldAddToStateBloom && it.Err != nil {
+		fmt.Println(it.Err)
+		panic(1)
+	}
 	return keysShouldBeRemoved, stateBloom, nil
 }

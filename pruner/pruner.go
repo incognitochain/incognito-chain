@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sync/semaphore"
+	"os"
 	"runtime"
 	"sync"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -116,7 +116,7 @@ func (p *Pruner) Prune() error {
 			}
 		}
 	}()
-	for i := 0; i < common.MaxShardNumber; i++ {
+	for i := 0; i < 1; i++ {
 		sem.Acquire(context.Background(), 1)
 		ch <- i
 	}
@@ -135,10 +135,20 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) e
 	if err != nil {
 		panic(err)
 	}
-	p.stateBloom[sID], err = trie.NewStateBloomWithSize(stateBloomSize)
+
+	_, err = os.Stat("/data/shard0")
 	if err != nil {
-		panic(err)
+		p.stateBloom[sID], err = trie.NewStateBloomWithSize(stateBloomSize)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		p.stateBloom[sID], err = trie.NewStateBloomFromDisk("/data/shard0")
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	finalHeight, err := p.addDataToStateBloom(shardID, db)
 	if err != nil {
 		return err
@@ -146,6 +156,12 @@ func (p *Pruner) prune(sID int, shouldPruneByHash bool, stateBloomSize uint64) e
 	if finalHeight == 0 {
 		return nil
 	}
+
+	err = p.stateBloom[sID].Commit("/data/shard0", "/data/shard0_tmp")
+	if err != nil {
+		return err
+	}
+
 	stopCh := make(chan interface{})
 	heightCh := make(chan uint64)
 	rootHashCh := make(chan blockchain.ShardRootHash)
@@ -192,16 +208,18 @@ func (p *Pruner) addDataToStateBloom(shardID byte, db incdb.Database) (uint64, e
 		return 0, err
 	}
 	//collect tree nodes want to keep, add them to state bloom
-	for _, v := range allViews {
-		if finalHeight == 0 || finalHeight > v.ShardHeight {
-			finalHeight = v.ShardHeight
-		}
-		p.bestView.Store(shardID, v)
-		err = p.addNewViewToStateBloom(v, db)
-		if err != nil {
-			return 0, err
-		}
+	//for _, v := range allViews {
+	//	if finalHeight == 0 || finalHeight > v.ShardHeight {
+	//		finalHeight = v.ShardHeight
+	//	}
+	v := allViews[len(allViews)-1]
+	finalHeight = v.ShardHeight
+	p.bestView.Store(shardID, v)
+	err = p.addNewViewToStateBloom(v, db)
+	if err != nil {
+		return 0, err
 	}
+	//}
 
 	return finalHeight, nil
 }
@@ -374,6 +392,8 @@ func (p *Pruner) traverseAndDeleteByHeight(
 	} else {
 		lastPrunedHeight++
 	}
+
+	fmt.Println(lastPrunedHeight, helper.finalHeight)
 	for height := lastPrunedHeight; height < helper.finalHeight; height++ {
 		if p.statuses[helper.shardID] == rawdbv2.FinishPruneStatus {
 			return nodes, storage, nil
@@ -391,8 +411,13 @@ func (p *Pruner) traverseAndDeleteByHeight(
 		if err != nil {
 			return 0, 0, err
 		}
+		cnt := 0
 		if height%10000 == 0 {
 			Logger.log.Infof("[state-prune %v] Finish prune for height %v delete totalNodes %v with storage %v", helper.shardID, height, nodes, storage)
+			cnt++
+			if cnt == 10 {
+				break
+			}
 		}
 	}
 	return nodes, storage, nil

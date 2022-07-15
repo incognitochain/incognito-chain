@@ -84,6 +84,13 @@ func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.State
 	return shardBestState.consensusStateDB.Copy()
 }
 
+//for test only
+func (shardBestState *ShardBestState) SetTransactonDB(h common.Hash, txDB *statedb.StateDB) {
+	shardBestState.transactionStateDB = txDB
+	shardBestState.TransactionStateDBRootHash = h
+	return
+}
+
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
 	return shardBestState.transactionStateDB.Copy()
 }

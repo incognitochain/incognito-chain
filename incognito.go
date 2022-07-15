@@ -122,12 +122,12 @@ func mainMaster(serverChan chan<- *Server) error {
 	p := pruner.NewPrunerWithValue(db, make(map[byte]byte))
 	p.ReadStatus()
 	//check if prune flag is available
-	if config.Config().StatePrune {
-		if err := p.Prune(); err != nil {
-			panic(err)
-		}
-		return nil
+	//if config.Config().StatePrune {
+	if err := p.Prune(); err != nil {
+		panic(err)
 	}
+	return nil
+	//}
 
 	// Create db for mempool and use it
 	consensusDB, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, "consensus"))
