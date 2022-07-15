@@ -268,36 +268,23 @@ func (p *Pruner) traverseAndDelete(
 			return err
 		}
 		Logger.log.Infof("[state-prune %v] Finish compact totalNodes %v with size %v", helper.shardID, nodes, storage)
-		sBestView, ok := p.bestView.Load(helper.shardID)
-		if !ok {
-			panic("Something wrong when get shard bestview")
-		}
-		txDB, err := statedb.NewWithPrefixTrie(sBestView.(*blockchain.ShardBestState).TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(helper.db))
-		if err != nil {
-			panic(fmt.Sprintf("Something wrong when init txDB %v", helper.shardID))
-		}
-		if err := txDB.Recheck(); err != nil {
-			Logger.log.Infof("[state-prune %v] Shard %v Prune data error! %v", helper.shardID, helper.shardID, err)
-			panic(fmt.Sprintf("Prune data error! Shard %v Database corrupt!", helper.shardID))
-		}
 	} else {
 		nodes, storage, err = p.traverseAndDeleteByHeight(helper, listKeysShouldBeRemoved)
 		if err != nil {
 			return err
 		}
-		sBestView, ok := p.bestView.Load(helper.shardID)
-		if !ok {
-			panic(fmt.Sprintf("Something wrong when get shard bestview %v", helper.shardID))
-		}
-
-		txDB, err := statedb.NewWithPrefixTrie(sBestView.(*blockchain.ShardBestState).TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(helper.db))
-		if err != nil {
-			panic(fmt.Sprintf("Something wrong when init txDB %v", helper.shardID))
-		}
-		if err := txDB.Recheck(); err != nil {
-			Logger.log.Infof("[state-prune %v] Shard %v Prune data error! %v", helper.shardID, helper.shardID, err)
-			panic(fmt.Sprintf("Prune data error! Shard %v Database corrupt!", helper.shardID))
-		}
+	}
+	sBestView, ok := p.bestView.Load(helper.shardID)
+	if !ok {
+		panic("Something wrong when get shard bestview")
+	}
+	txDB, err := statedb.NewWithPrefixTrie(sBestView.(*blockchain.ShardBestState).TransactionStateDBRootHash, statedb.NewDatabaseAccessWarper(helper.db))
+	if err != nil {
+		panic(fmt.Sprintf("Something wrong when init txDB %v", helper.shardID))
+	}
+	if err := txDB.Recheck(); err != nil {
+		Logger.log.Infof("[state-prune %v] Shard %v Prune data error! %v", helper.shardID, helper.shardID, err)
+		panic(fmt.Sprintf("Prune data error! Shard %v Database corrupt!", helper.shardID))
 	}
 	p.statuses[helper.shardID] = rawdbv2.FinishPruneStatus
 	Logger.log.Infof("[state-prune %v] Delete totalNodes %v with size %v", helper.shardID, nodes, storage)
@@ -465,7 +452,6 @@ func (p *Pruner) InsertNewView(shardBestState *blockchain.ShardBestState) {
 		}
 		p.wg.Done()
 	}()
-	//TODO: if sync latest && (lastheight < shardbeststate - 1000) && auto prune || force prune => trigger prunning
 }
 
 func (p *Pruner) Start() {
@@ -548,22 +534,33 @@ func (p *Pruner) handleNewRole(newRole *pubsub.NodeRole) error {
 }
 
 func (p *Pruner) handleNewView(shardBestState *blockchain.ShardBestState) error {
-	status := p.statuses[shardBestState.ShardID]
+	shardID := shardBestState.ShardID
+	status := p.statuses[shardID]
 	if common.CalculateTimeSlot(time.Now().Unix()) == common.CalculateTimeSlot(shardBestState.BestBlock.GetProduceTime()) || config.Config().ForcePrune {
 		if status == rawdbv2.ProcessingPruneByHashStatus || status == rawdbv2.ProcessingPruneByHeightStatus {
-			Logger.log.Infof("Process new view %s at shard %v", shardBestState.BestBlockHash.String(), shardBestState.ShardID)
-			p.bestView.Store(shardBestState.ShardID, shardBestState)
-			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardBestState.ShardID)])
+			Logger.log.Infof("Process new view %s at shard %v", shardBestState.BestBlockHash.String(), shardID)
+			p.bestView.Store(shardID, shardBestState)
+			err := p.addNewViewToStateBloom(shardBestState, p.db[int(shardID)])
 			if err != nil {
 				panic(err)
 			}
-		}
-		if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
+		} else if status == rawdbv2.WaitingPruneByHashStatus || status == rawdbv2.WaitingPruneByHeightStatus {
 			s := rawdbv2.ProcessingPruneByHeightStatus
 			if status == rawdbv2.WaitingPruneByHashStatus {
 				s = rawdbv2.ProcessingPruneByHashStatus
 			}
-			p.triggerUpdateStatus(UpdateStatus{ShardID: shardBestState.ShardID, Status: s})
+			p.triggerUpdateStatus(UpdateStatus{ShardID: shardID, Status: s})
+		} else if (config.Config().EnableAutoPrune || config.Config().ForcePrune) && shardBestState.ShardHeight > 1000 {
+			lastPrunedHeight, _ := rawdbv2.GetLastPrunedHeight(p.db[int(shardID)])
+			if lastPrunedHeight <= shardBestState.ShardHeight-1000 {
+				if p.statuses[shardID] != rawdbv2.ProcessingPruneByHashStatus && p.statuses[shardID] != rawdbv2.ProcessingPruneByHeightStatus {
+					ec := ExtendedConfig{
+						Config:  Config{ShouldPruneByHash: false},
+						ShardID: shardID,
+					}
+					p.TriggerCh <- ec
+				}
+			}
 		}
 	}
 	return nil
