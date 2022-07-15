@@ -100,7 +100,7 @@ func (w *Worker) pruneTxStateDB(sRH *blockchain.ShardRootHash) error {
 	if err != nil {
 		return nil
 	}
-	keysShouldBeRemoved, _, err := sDB.Retrieve(false, true, w.stateBloom)
+	keysShouldBeRemoved, _, err := sDB.Retrieve(false, true, w.stateBloom, false)
 	if err != nil {
 		return err
 	}

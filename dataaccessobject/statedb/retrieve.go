@@ -25,14 +25,22 @@ func (stateDB *StateDB) Recheck() error {
 }
 
 func (stateDB *StateDB) Retrieve(
-	shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom,
+	shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom, forceDescend bool,
 ) (map[common.Hash]struct{}, *trie.StateBloom, error) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	keysShouldBeRemoved := make(map[common.Hash]struct{})
-
+	cnt := 0
 	descend := true
-	for it.Next(false, descend, false) {
+	returnErr := false
+	if shouldAddToStateBloom {
+		returnErr = true
+	}
+	for it.Next(false, descend, returnErr) {
+		cnt++
+		if cnt%100000 == 0 {
+			fmt.Println(cnt)
+		}
 		descend = true
 		if len(it.Key) == 0 {
 			continue
@@ -43,7 +51,8 @@ func (stateDB *StateDB) Retrieve(
 		if err != nil {
 			return nil, stateBloom, err
 		}
-		if shouldAddToStateBloom || shouldDelete {
+
+		if !forceDescend { //skip branch for fast bypass (add other view or delete a view); first view must descent all node
 			if ok, err := stateBloom.Contain(key); err != nil {
 				return nil, stateBloom, err
 			} else if ok {
@@ -59,6 +68,13 @@ func (stateDB *StateDB) Retrieve(
 		if shouldDelete {
 			keysShouldBeRemoved[h] = struct{}{}
 		}
+	}
+	if shouldAddToStateBloom && it.Err != nil {
+		fmt.Println(it.Err)
+		panic(1)
+	}
+	if shouldAddToStateBloom {
+		fmt.Println("Total node retrieve:", cnt)
 	}
 
 	return keysShouldBeRemoved, stateBloom, nil
