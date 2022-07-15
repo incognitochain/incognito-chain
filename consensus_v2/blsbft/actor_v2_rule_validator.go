@@ -212,10 +212,13 @@ func (c ConsensusValidatorLemma1) FilterValidProposeBlockInfo(bestViewHash commo
 	tryReVoteInsertedBlock := []*ProposeBlockInfo{}
 	invalidProposeBlock := []string{}
 
-	previousView := c.chain.GetViewByHash(bestViewHash)
 	//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
 	for h, proposeBlockInfo := range proposeBlockInfos {
 		if proposeBlockInfo.block == nil {
+			continue
+		}
+		previousView := c.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+		if previousView == nil {
 			continue
 		}
 
