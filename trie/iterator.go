@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"container/heap"
 	"errors"
-
+	"fmt"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -32,6 +32,12 @@ func (it *Iterator) Next(skipMiddleNode, descend, returnNotFoundChildNode bool) 
 	if !skipMiddleNode {
 		hasNext := it.nodeIt.Next(descend, returnNotFoundChildNode)
 		if hasNext {
+			if it.nodeIt.Leaf() {
+				//fmt.Println("data leaf", it.nodeIt.Hash().Bytes(), it.Value, it.nodeIt.LeafKey(), it.nodeIt.LeafBlob())
+				it.Key = it.nodeIt.LeafKey()
+				it.Value = it.nodeIt.LeafBlob()
+				return true
+			}
 			it.Key = it.nodeIt.Hash().Bytes()
 			return true
 		}
