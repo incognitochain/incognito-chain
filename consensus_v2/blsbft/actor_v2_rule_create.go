@@ -1,12 +1,10 @@
 package blsbft
 
 import (
-	"context"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type ICreateNewBlockRule interface {
@@ -39,10 +37,6 @@ func (n NormalCreateBlockRule) CreateBlock(
 	currentTime int64,
 	isRePropose bool,
 ) (types.BlockInterface, error) {
-
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-	defer cancel()
 
 	if !isRePropose {
 		newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
@@ -104,9 +98,6 @@ func (n OnlyCreateBlockRule) CreateBlock(
 	isRePropose bool,
 ) (types.BlockInterface, error) {
 
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-	defer cancel()
 
 	newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
 	if err != nil {

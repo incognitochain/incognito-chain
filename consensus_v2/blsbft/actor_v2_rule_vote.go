@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -24,7 +25,7 @@ func NewVoteMessageEnvironment(userKey *signatureschemes2.MiningKey, signingComm
 
 type IVoteRule interface {
 	ValidateVote(*ProposeBlockInfo) *ProposeBlockInfo
-	CreateVote(*VoteMessageEnvironment, types.BlockInterface) (*BFTVote, error)
+	CreateVote(Chain, *VoteMessageEnvironment, types.BlockInterface) (*BFTVote, error)
 }
 
 type VoteRule struct {
@@ -92,9 +93,9 @@ func (v VoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlock
 	return proposeBlockInfo
 }
 
-func (v VoteRule) CreateVote(env *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
+func (v VoteRule) CreateVote(chain Chain, env *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
 
-	vote, err := CreateVote(env.userKey, block, env.signingCommittees, env.portalParamV4)
+	vote, err := CreateVote(chain, env.userKey, block, env.signingCommittees, env.portalParamV4)
 	if err != nil {
 		v.logger.Error(err)
 		return nil, err
@@ -104,6 +105,7 @@ func (v VoteRule) CreateVote(env *VoteMessageEnvironment, block types.BlockInter
 }
 
 func CreateVote(
+	chain Chain,
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
@@ -139,13 +141,14 @@ func CreateVote(
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 
+	previousView := chain.GetViewByHash(block.GetPrevHash())
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
 	vote.BlockHash = block.ProposeHash().String()
 	vote.Validator = userBLSPk
-	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
-	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
+	vote.ProduceTimeSlot = previousView.CalculateTimeSlot(block.GetProduceTime())
+	vote.ProposeTimeSlot = previousView.CalculateTimeSlot(block.GetProposeTime())
 	vote.PrevBlockHash = block.GetPrevHash().String()
 	vote.BlockHeight = block.GetHeight()
 	vote.CommitteeFromBlock = block.CommitteeFromBlock()
@@ -216,7 +219,7 @@ func (v NoVoteRule) ValidateVote(proposeBlockInfo *ProposeBlockInfo) *ProposeBlo
 	return proposeBlockInfo
 }
 
-func (i NoVoteRule) CreateVote(environment *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
+func (i NoVoteRule) CreateVote(chain Chain, environment *VoteMessageEnvironment, block types.BlockInterface) (*BFTVote, error) {
 	i.logger.Criticalf("NO VOTE")
 	return nil, fmt.Errorf("No vote for block %+v, %+v", block.GetHeight(), block.Hash().String())
 }

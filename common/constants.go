@@ -255,3 +255,8 @@ const (
 const (
 	EVMNetworkType = iota
 )
+
+const (
+	SubOperator = 0
+	AddOperator = 1
+)

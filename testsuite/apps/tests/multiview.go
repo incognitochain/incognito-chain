@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 )
@@ -20,7 +20,7 @@ func printAllView(beaconChain *blockchain.BeaconChain) {
 		if v.GetHash().String() == finalView {
 			note = "(F)"
 		}
-		ts := common.CalculateTimeSlot(v.GetBlock().GetProposeTime())
+		ts := beaconChain.CalculateTimeSlot(v.GetBlock().GetBeaconHeight(), v.GetBlock().GetProposeTime())
 		fmt.Printf("%v:%v%v:%v -> %v\n", v.GetHeight(), v.GetHash().String(), note, ts, v.GetPreviousHash().String())
 	}
 	fmt.Printf("=============================\n")

@@ -48,6 +48,7 @@ type TxPool interface {
 		maxSize uint64,
 		maxTime time.Duration,
 		getTxsDuration time.Duration,
+		maxTxs int64,
 	) []metadata.Transaction
 	FilterWithNewView(
 		cView metadata.ChainRetriever,

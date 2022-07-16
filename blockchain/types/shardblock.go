@@ -525,6 +525,10 @@ func (block ShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
 
+func (block ShardBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
+}
+
 func (block ShardBlock) GetRound() int {
 	return block.Header.Round
 }
