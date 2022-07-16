@@ -40,12 +40,13 @@ func NewActorWithValue(
 	chainID, blockVersion int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
-	var res Actor
-	switch version {
-	case types.BFT_VERSION:
+	var res Actor = nil
+	if version == types.BFT_VERSION {
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION, types.BLOCK_PRODUCINGV3_VERSION, types.INSTANT_FINALITY_VERSION:
+	}
+	if version >= types.MULTI_VIEW_VERSION {
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
+<<<<<<< HEAD
 	case types.INSTANT_FINALITY_VERSION_V2:
 		if chain.IsBeaconChain() {
 			res = NewActorV3WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
@@ -55,6 +56,11 @@ func NewActorWithValue(
 
 	default:
 		panic("Bft version is not valid")
+=======
+	}
+	if res == nil {
+		panic("Version not recognized")
+>>>>>>> reduceblocktime
 	}
 	return res
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -48,7 +49,7 @@ func NewShardChain(
 	tp txpool.TxPool,
 	tv txpool.TxVerifier,
 ) *ShardChain {
-	return &ShardChain{
+	chain := &ShardChain{
 		shardID:     shardID,
 		multiView:   multiView,
 		BlockGen:    blockGen,
@@ -57,6 +58,7 @@ func NewShardChain(
 		TxPool:      tp,
 		TxsVerifier: tv,
 	}
+	return chain
 }
 
 func (chain *ShardChain) GetDatabase() incdb.Database {
@@ -97,7 +99,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 	if (curBestView != nil) && (added == 1) {
 		go func(chain *ShardChain, curBestView multiview.View) {
 			sBestView := chain.GetBestState()
-			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * common.TIMESLOT)) {
+			if (time.Now().Unix() - sBestView.GetBlockTime()) > (int64(15 * sBestView.GetCurrentTimeSlot())) {
 				return
 			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
@@ -228,8 +230,9 @@ func (chain *ShardChain) CreateNewBlock(
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
+	curView := chain.GetBestState()
 	newBlock, err := chain.Blockchain.NewBlockShard(
-		chain.GetBestState(),
+		curView,
 		version, proposer, round,
 		startTime, committees, committeeViewHash)
 	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
@@ -247,9 +250,13 @@ func (chain *ShardChain) CreateNewBlock(
 		if err != nil {
 			return nil, err
 		}
-		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
-		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.ProposeTime)
+		prevShardBlk, ok := previousBlock.(*types.ShardBlock)
+		if !ok {
+			return nil, errors.New("Can not get shard block")
+		}
+		previousProposeTimeSlot := curView.CalculateTimeSlot(prevShardBlk.GetProposeTime())
+		previousProduceTimeSlot := curView.CalculateTimeSlot(prevShardBlk.GetProduceTime())
+		currentTimeSlot := curView.CalculateTimeSlot(newBlock.Header.ProposeTime)
 
 		// if previous block is finalized or same propose/produce timeslot
 		// and current block is produced/proposed next block time
@@ -291,8 +298,9 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 		}
 		if isValidRePropose {
 			if version >= types.INSTANT_FINALITY_VERSION {
-				previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-				previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
+				curView := chain.GetBestView().(*ShardBestState)
+				previousProposeTimeSlot := curView.CalculateTimeSlot(previousBlock.GetProposeTime())
+				previousProduceTimeSlot := curView.CalculateTimeSlot(previousBlock.GetProduceTime())
 				if previousBlock.GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}
@@ -629,27 +637,6 @@ func (chain *ShardChain) GetSigningCommittees(
 	return res
 }
 
-func (chain *ShardChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
-	err := rawdb_consensus.StoreShardFinalityProof(
-		rawdb_consensus.GetConsensusDatabase(),
-		byte(chain.shardID),
-		*block.Hash(),
-		block.GetPrevHash(),
-		finalityProof,
-		reProposeSig,
-		block.GetAggregateRootHash(),
-		block.GetProducer(),
-		common.CalculateTimeSlot(block.GetProduceTime()),
-		block.GetProposer(),
-		common.CalculateTimeSlot(block.GetProposeTime()),
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, map[string]interface{}, error) {
 
 	shardBlock, err := chain.GetBlockByHash(hash)
@@ -664,3 +651,48 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 
 	return shardBlock.(*types.ShardBlock), m, nil
 }
+
+//
+//func (chain *ShardChain) CalculateTimeSlot(curTime int64) int64 {
+//	return chain.GetBestView().(*ShardBestState).TSManager.calculateTimeslot(curTime)
+//}
+
+//func (chain *ShardChain) UpdateArchorTime(beaconHeight uint64, shardBlock *types.ShardBlock) {
+//	timeSlot := chain.CalculateTimeSlot(beaconHeight, shardBlock.GetProduceTime())
+//	archorTime := chain.archorTime
+//	if _, ok := archorTime.archorMap[beaconHeight]; ok {
+//		return
+//	}
+//	archorTime.heights = append(archorTime.heights, beaconHeight)
+//	archorTime.archorMap[beaconHeight] = struct {
+//		timeLock int64
+//		timeSlot int64
+//	}{
+//		timeLock: shardBlock.GetProduceTime(),
+//		timeSlot: timeSlot,
+//	}
+//}
+
+//func (chain *ShardChain) InitArchorTime() {
+//	chain.archorTime = struct {
+//		archorMap map[uint64]struct {
+//			timeLock int64
+//			timeSlot int64
+//		}
+//		heights []uint64
+//	}{
+//		archorMap: map[uint64]struct {
+//			timeLock int64
+//			timeSlot int64
+//		}{},
+//		heights: []uint64{},
+//	}
+//	chain.archorTime.heights = []uint64{0}
+//	chain.archorTime.archorMap[0] = struct {
+//		timeLock int64
+//		timeSlot int64
+//	}{
+//		timeLock: 0,
+//		timeSlot: 0,
+//	}
+//}

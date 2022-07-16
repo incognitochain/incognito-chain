@@ -2,10 +2,11 @@ package consensus_v2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -218,7 +219,18 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 }
 
 func (engine *Engine) updateVersion(chainID int) {
-	engine.version[chainID] = engine.getBlockVersion(chainID)
+	newVersion := engine.getBlockVersion(chainID)
+	oldVersion := 0
+	if chainID == -1 {
+		oldVersion = engine.config.Blockchain.BeaconChain.GetBestView().GetBlock().GetVersion()
+	} else {
+		oldVersion = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBlock().GetVersion()
+	}
+
+	if newVersion < oldVersion {
+		panic("Init wrong verson ")
+	}
+	engine.version[chainID] = newVersion
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
@@ -321,10 +333,29 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		triggerFeature = engine.config.Blockchain.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
 	}
 
+<<<<<<< HEAD
 	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE_V2] != 0 {
 		return types.INSTANT_FINALITY_VERSION_V2
 	}
 
+=======
+	//get last trigger feature that change block version
+	latestFeature := ""
+	latestTriggerHeight := uint64(0)
+	for f, h := range triggerFeature {
+		if _, ok := config.Param().FeatureVersion[f]; ok {
+			if latestTriggerHeight < h {
+				latestTriggerHeight = h
+				latestFeature = f
+			}
+		}
+	}
+	if version, ok := config.Param().FeatureVersion[latestFeature]; ok {
+		return int(version)
+	}
+
+	//legacy flow
+>>>>>>> reduceblocktime
 	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
 		return types.INSTANT_FINALITY_VERSION
 	}

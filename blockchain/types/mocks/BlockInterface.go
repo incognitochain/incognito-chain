@@ -12,6 +12,14 @@ type BlockInterface struct {
 	mock.Mock
 }
 
+<<<<<<< HEAD
+=======
+func (_m *BlockInterface) GetBeaconHeight() uint64 {
+	//TODO implement me
+	panic("implement me")
+}
+
+>>>>>>> reduceblocktime
 func (_m *BlockInterface) ProposeHash() *common.Hash {
 	//TODO implement me
 	panic("implement me")

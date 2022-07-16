@@ -24,6 +24,21 @@ type Chain struct {
 	mock.Mock
 }
 
+func (_m *Chain) ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (_m *Chain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (_m *Chain) GetBlockConsensusData() map[int]types.BlockConsensusData {
+	//TODO implement me
+	panic("implement me")
+}
+
 // BestViewCommitteeFromBlock provides a mock function with given fields:
 func (_m *Chain) BestViewCommitteeFromBlock() common.Hash {
 	ret := _m.Called()
@@ -384,15 +399,15 @@ func (_m *Chain) GetMinBlkInterval() time.Duration {
 }
 
 // GetMultiView provides a mock function with given fields:
-func (_m *Chain) GetMultiView() *multiview.MultiView {
+func (_m *Chain) GetMultiView() multiview.MultiView {
 	ret := _m.Called()
 
-	var r0 *multiview.MultiView
-	if rf, ok := ret.Get(0).(func() *multiview.MultiView); ok {
+	var r0 multiview.MultiView
+	if rf, ok := ret.Get(0).(func() multiview.MultiView); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*multiview.MultiView)
+			r0 = ret.Get(0).(multiview.MultiView)
 		}
 	}
 
@@ -589,20 +604,6 @@ func (_m *Chain) IsReady() bool {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// ReplacePreviousValidationData provides a mock function with given fields: previousBlockHash, newValidationData
-func (_m *Chain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
-	ret := _m.Called(previousBlockHash, newValidationData)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, string) error); ok {
-		r0 = rf(previousBlockHash, newValidationData)
-	} else {
-		r0 = ret.Error(0)
 	}
 
 	return r0

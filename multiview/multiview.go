@@ -15,6 +15,8 @@ import (
 )
 
 type View interface {
+	CalculateTimeSlot(int64) int64
+	GetCurrentTimeSlot() int64
 	GetHash() *common.Hash
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64
@@ -254,8 +256,8 @@ func (s *multiView) updateViewState(newView View) {
 			if prev1View == nil || s.expectedFinalView.GetHeight() == prev1View.GetHeight() {
 				return
 			}
-			bestViewTimeSlot := common.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
-			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+			bestViewTimeSlot := s.bestView.CalculateTimeSlot(s.bestView.GetBlock().GetProposeTime())
+			prev1TimeSlot := s.bestView.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
 			if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 				s.expectedFinalView = prev1View
 			}
