@@ -98,16 +98,7 @@ func (n OnlyCreateBlockRule) CreateBlock(
 	isRePropose bool,
 ) (types.BlockInterface, error) {
 
-<<<<<<< HEAD
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-	defer cancel()
 
-=======
-	proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
-	proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
-	proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
->>>>>>> reduceblocktime
 	newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
 	if err != nil {
 		return nil, NewConsensusError(BlockCreationError, err)

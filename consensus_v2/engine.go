@@ -333,12 +333,6 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		triggerFeature = engine.config.Blockchain.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
 	}
 
-<<<<<<< HEAD
-	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE_V2] != 0 {
-		return types.INSTANT_FINALITY_VERSION_V2
-	}
-
-=======
 	//get last trigger feature that change block version
 	latestFeature := ""
 	latestTriggerHeight := uint64(0)
@@ -355,7 +349,6 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	}
 
 	//legacy flow
->>>>>>> reduceblocktime
 	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
 		return types.INSTANT_FINALITY_VERSION
 	}

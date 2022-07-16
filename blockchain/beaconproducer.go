@@ -521,16 +521,10 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	shardBlock *types.ShardBlock,
 	blockchain *BlockChain,
 ) []string {
-<<<<<<< HEAD
 	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height && shardBlock.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
-		subsetID := GetSubsetIDFromProposerTime(
-			shardBlock.GetProposeTime(),
-=======
-	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
 		timeSlot := curView.CalculateTimeSlot(shardBlock.GetProposeTime())
 		subsetID := GetSubsetIDFromProposerTimeV2(
 			timeSlot,
->>>>>>> reduceblocktime
 			curView.GetShardProposerLength(),
 		)
 		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(

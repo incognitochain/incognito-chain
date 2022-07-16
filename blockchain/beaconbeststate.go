@@ -29,14 +29,11 @@ import (
 const (
 	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
 	INSTANT_FINALITY_FEATURE      = "instantfinality"
-<<<<<<< HEAD
-	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
-=======
 	BLOCKTIME_DEFAULT             = "blocktimedef"
 	BLOCKTIME_20                  = "blocktime20"
 	BLOCKTIME_10                  = "blocktime10"
 	EPOCHV2                       = "epochparamv2"
->>>>>>> reduceblocktime
+	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
 )
 
 // BestState houses information about the current best block and other info

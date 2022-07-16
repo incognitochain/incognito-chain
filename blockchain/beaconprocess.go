@@ -791,15 +791,8 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-<<<<<<< HEAD
-
 	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION && shardState.Version < types.INSTANT_FINALITY_VERSION_V2 {
-		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
-=======
-	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION {
 		timeSlot := curView.CalculateTimeSlot(shardState.ProposerTime)
-		// timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
->>>>>>> reduceblocktime
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
