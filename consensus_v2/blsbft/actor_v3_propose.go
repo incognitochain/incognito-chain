@@ -10,6 +10,7 @@ import (
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"time"
 )
 
@@ -44,7 +45,7 @@ func (a *actorV3) maybeProposeBlock() error {
 	time1 := time.Now()
 	var err error
 	bestView := a.chain.GetBestView()
-	round := a.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+	round := a.currentTimeSlot - bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 	monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
 	signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
@@ -55,20 +56,20 @@ func (a *actorV3) maybeProposeBlock() error {
 	b58Str, _ := proposerPk.ToBase58()
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 	shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
-		common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
+		bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
 		proposerPk,
 		userKeySet,
 	)
 
 	if shouldListen {
-		a.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v\n", a.chainKey, common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
+		a.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v\n", a.chainKey, bestView.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
 		a.logger.Info("")
 	}
 	if !shouldPropose {
 		return nil
 	}
 
-	a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v\n", a.chainKey, common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
+	a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v\n", a.chainKey, bestView.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1, round)
 	a.logger.Info("")
 	if err := a.AddCurrentTimeSlotProposeHistory(); err != nil {
 		a.logger.Errorf("add current time slot propose history")
@@ -116,7 +117,7 @@ func (a *actorV3) maybeProposeBlock() error {
 
 	bftProposeMessage, err := CreateProposeBFTMessage(block, a.node.GetSelfPeerID().String())
 	if lockBlockHash := a.getLockBlockHash(block.GetHeight()); lockBlockHash != nil {
-		bftProposeMessage.POLC, err = buildPOLCFromPreVote(lockBlockHash)
+		bftProposeMessage.POLC, err = buildPOLCFromPreVote(bestView, lockBlockHash)
 		if err != nil {
 			a.logger.Error("buildPOLCFromPreVote Failed", err)
 			return NewConsensusError(BlockCreationError, errors.New("buildPOLCFromPreVote fail"))
@@ -131,7 +132,7 @@ func (a *actorV3) maybeProposeBlock() error {
 	return nil
 }
 
-func buildPOLCFromPreVote(info *ProposeBlockInfo) (POLC, error) {
+func buildPOLCFromPreVote(bestView multiview.View, info *ProposeBlockInfo) (POLC, error) {
 	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(info.SigningCommittees, common.BlsConsensus)
 	if err != nil {
 		return POLC{}, err
@@ -145,7 +146,7 @@ func buildPOLCFromPreVote(info *ProposeBlockInfo) (POLC, error) {
 		sigs = append(sigs, vote.Confirmation)
 	}
 	res := POLC{
-		idx, sigs, info.block.ProposeHash().String(), info.block.Hash().String(), common.CalculateTimeSlot(info.block.GetProposeTime()),
+		idx, sigs, info.block.ProposeHash().String(), info.block.Hash().String(), bestView.CalculateTimeSlot(info.block.GetProposeTime()),
 	}
 
 	return res, nil
@@ -162,7 +163,8 @@ func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock 
 		return false
 	}
 
-	if lock != nil && polc.Timeslot < common.CalculateTimeSlot(lock.block.GetProposeTime()) {
+	previousView := a.chain.GetViewByHash(lock.block.GetPrevHash())
+	if lock != nil && polc.Timeslot < previousView.CalculateTimeSlot(lock.block.GetProposeTime()) {
 		a.logger.Info("Not a new POLC")
 		return false
 	}
@@ -265,7 +267,8 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", previousView.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
 }

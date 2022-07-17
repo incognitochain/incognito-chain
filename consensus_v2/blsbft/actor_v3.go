@@ -506,8 +506,10 @@ func (a *actorV3) getCommitteeForNewBlock(
 		if err != nil {
 			return signingCommittees, committees, err
 		}
+
+		previousView := a.chain.GetViewByHash(v.GetPrevHash())
 		_, proposerIndex = a.chain.GetProposerByTimeSlotFromCommitteeList(
-			common.CalculateTimeSlot(v.GetProposeTime()),
+			previousView.CalculateTimeSlot(v.GetProposeTime()),
 			committees,
 		)
 	}
@@ -711,8 +713,9 @@ func (a *actorV3) run() error {
 				if !a.chain.IsReady() {
 					continue
 				}
+				bestView := a.chain.GetBestView()
 				a.currentTime = time.Now().Unix()
-				currentTimeSlot := common.CalculateTimeSlot(a.currentTime)
+				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
 
 				newTimeSlot := false
 				if a.currentTimeSlot != currentTimeSlot {
@@ -720,11 +723,11 @@ func (a *actorV3) run() error {
 				}
 
 				a.currentTimeSlot = currentTimeSlot
-				bestView := a.chain.GetBestView()
+
 				a.currentBestViewHeight = bestView.GetHeight()
 
 				//set round for monitor
-				round := a.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				round := a.currentTimeSlot - bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
 				if newTimeSlot {
@@ -742,7 +745,7 @@ func (a *actorV3) run() error {
 					}
 
 					//get propose info at current timeslot
-					if proposeInfo.block != nil && common.CalculateTimeSlot(proposeInfo.block.GetProposeTime()) == a.currentTimeSlot {
+					if proposeInfo.block != nil && bestView.CalculateTimeSlot(proposeInfo.block.GetProposeTime()) == a.currentTimeSlot {
 						//validate the propose block
 						err := a.validateBlock(proposeInfo)
 						if err != nil {

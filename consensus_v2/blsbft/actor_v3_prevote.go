@@ -18,7 +18,7 @@ func (a *actorV3) maybePreVoteMsg() {
 
 /*
 send prevote for propose block that
-- next height
+- link to best view (including next height)
 - not yet prevote
 - valid block
 - in current timeslot
@@ -26,10 +26,12 @@ send prevote for propose block that
 */
 func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
 	lockBlockHash := a.getLockBlockHash(a.currentBestViewHeight + 1)
-	if proposeBlockInfo.block.GetHeight() == a.currentBestViewHeight+1 &&
+	bestView := a.chain.GetBestView()
+
+	if proposeBlockInfo.block.GetPrevHash().String() == bestView.GetHash().String() &&
 		proposeBlockInfo.IsValid &&
 		!proposeBlockInfo.IsPreVoted &&
-		a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
+		a.currentTimeSlot == bestView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 		(proposeBlockInfo.ValidPOLC || lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
 		return true
 	}
@@ -101,6 +103,7 @@ func (a actorV3) CreatePreVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 ) (*BFTVote, error) {
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 	var vote = new(BFTVote)
 	userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 	vote.Phase = "prevote"
@@ -108,7 +111,7 @@ func (a actorV3) CreatePreVote(
 	vote.Hash = block.Hash().String()
 	vote.Validator = userBLSPk
 	vote.ChainID = block.GetShardID()
-	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
+	vote.ProposeTimeSlot = previousView.CalculateTimeSlot(block.GetProposeTime())
 	err := vote.signVote(userKey)
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)

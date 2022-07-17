@@ -46,10 +46,10 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 			continue
 		}
 
-		//// check if this time slot has been voted
-		//if a.votedTimeslot[c.chain.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
-		//	continue
-		//}
+		//must link to bestview, we expect all node having same block data having same bestview
+		if previousBlockHash.String() != c.chain.GetBestViewHash() {
+			continue
+		}
 
 		//special case: if we insert block too quick, before voting
 		//=> vote for this block (within TS,but block is inserted into bestview)

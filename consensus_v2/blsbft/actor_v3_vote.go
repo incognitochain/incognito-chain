@@ -26,7 +26,8 @@ send vote for propose block that
 - receive 2/3 prevote
 */
 func (a *actorV3) shouldVote(proposeBlockInfo *ProposeBlockInfo) bool {
-	if a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
+	previousView := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+	if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 		!proposeBlockInfo.IsVoted &&
 		proposeBlockInfo.IsValid {
 		if proposeBlockInfo.ValidPreVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
@@ -180,14 +181,16 @@ func (a actorV3) CreateVote(
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
+
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 	vote.Phase = "vote"
 	vote.BLS = blsSig
 	vote.BRI = bridgeSig
 	vote.PortalSigs = portalSigs
 	vote.BlockHash = block.ProposeHash().String()
 	vote.Validator = userBLSPk
-	vote.ProduceTimeSlot = common.CalculateTimeSlot(block.GetProduceTime())
-	vote.ProposeTimeSlot = common.CalculateTimeSlot(block.GetProposeTime())
+	vote.ProduceTimeSlot = previousView.CalculateTimeSlot(block.GetProduceTime())
+	vote.ProposeTimeSlot = previousView.CalculateTimeSlot(block.GetProposeTime())
 	vote.PrevBlockHash = block.GetPrevHash().String()
 	vote.BlockHeight = block.GetHeight()
 	vote.CommitteeFromBlock = block.CommitteeFromBlock()

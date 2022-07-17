@@ -1,7 +1,6 @@
 package blsbft
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -12,8 +11,10 @@ commit this propose block
 - receive 2/3 vote
 */
 func (a *actorV3) maybeCommit() {
+
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
-		if a.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
+		previousView := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+		if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 			!proposeBlockInfo.IsCommitted {
 			//has majority votes
 			if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
