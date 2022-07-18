@@ -271,6 +271,7 @@ func (s *ShardPruner) UnlockInsertShardBlock() {
 
 func (s *ShardPruner) handleNewView(shardBestState *blockchain.ShardBestState) {
 	s.wg.Add(1)
+	s.bestView = shardBestState
 	go func() {
 		defer s.wg.Done()
 		if s.status == PRUNING {

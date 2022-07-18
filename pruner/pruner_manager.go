@@ -88,10 +88,7 @@ func (s *PrunerManager) OfflinePrune() {
 						fmt.Println("ShardPrunter is not ready")
 					}
 					s.ShardPruner[shardID].SetBloomSize(stateBloomSize)
-					if err := s.ShardPruner[shardID].Prune(false); err != nil {
-						Logger.log.Error(err)
-						return
-					}
+					s.ShardPruner[shardID].Prune(false)
 					wg.Done()
 					sem.Release(1)
 					Logger.log.Infof("Shard %v finish prune", shardID)
