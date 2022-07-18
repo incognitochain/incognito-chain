@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"golang.org/x/sync/semaphore"
-	"runtime"
-	"sync"
-	"time"
 )
 
 type Config struct {
@@ -55,7 +56,8 @@ func (s *PrunerManager) Start() error {
 					} else {
 						shardPruner.Prune(false)
 					}
-					s.JobRquest[sid] = nil //unmark request for this shard
+					delete(s.JobRquest, sid)
+					//s.JobRquest[sid] = nil //unmark request for this shard
 				}
 			}
 		}
