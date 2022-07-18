@@ -19,8 +19,9 @@ const (
 
 const (
 	IDLE     = 0
-	PRUNING  = 1
-	CHECKING = 2
+	INIT     = 1
+	PRUNING  = 2
+	CHECKING = 3
 )
 
 const NUM_BLOCK_TRIGGER_PRUNE = 10
