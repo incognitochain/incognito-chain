@@ -604,11 +604,11 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			//	fmt.Println(committee.Name)
 			//}
 		}
-		for _, committeeID := range committeeIndex {
-			vote, _ := blsbft.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
-			vote.IsValid = 1
-			votes[vote.Validator] = vote
-		}
+		//for _, committeeID := range committeeIndex {
+		//vote, _ := blsbft.CreateVote(s.GetBlockchain().GetChain(block.GetShardID()), miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
+		//vote.IsValid = 1
+		//votes[vote.Validator] = vote
+		//}
 		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committeePubKey, common.BlsConsensus)
 		aggSig, brigSigs, validatorIdx, portalSigs, err := blsbft.CombineVotes(votes, committeeBLSString)
 

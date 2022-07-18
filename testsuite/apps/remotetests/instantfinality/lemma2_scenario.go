@@ -22,6 +22,7 @@ func GetChainCommittee(beaconNode remotetests.NodeClient) ChainCommittee {
 }
 
 func Lemma2ScenarioTest(nodeManager remotetests.NodeManager) {
+
 	chainCommittee := GetChainCommittee(nodeManager.BeaconNode[0])
 	finish := false
 

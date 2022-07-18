@@ -94,6 +94,8 @@ func (bc *BlockChain) InitFeatureStat() {
 	//send message periodically
 	go func() {
 		for {
+			time.Sleep(5 * time.Second)
+
 			bc.SendFeatureStat()
 			time.Sleep(10 * time.Second)
 		}

@@ -395,7 +395,12 @@ func (blockchain *BlockChain) calculateRewardMultiset(
 			)
 
 			Logger.log.Info("[dcs] env.MaxSubsetCommittees:", env.MaxSubsetCommittees)
+			fmt.Println("debugsalary v2: ", totalRewards[shardID][subsetID],
+				isSplitRewardForCustodian,
+				percentCustodianRewards,
+				percentForIncognitoDAO)
 			rewardForBeacon, rewardForShardSubset, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
+			fmt.Println("debugsalary v2:", rewardForBeacon, rewardForShardSubset, rewardForDAO, rewardForCustodian)
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
@@ -465,7 +470,12 @@ func (blockchain *BlockChain) calculateReward(
 			curView.GetBeaconCommittee(),
 			curView.GetShardCommittee(),
 		)
+		fmt.Println("debugsalary v1: ", totalRewards[id],
+			isSplitRewardForCustodian,
+			percentCustodianRewards,
+			percentForIncognitoDAO)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
+		fmt.Println("debugsalary v1:", rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
