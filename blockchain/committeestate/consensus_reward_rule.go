@@ -1,12 +1,16 @@
 package committeestate
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 func GetRewardSplitRule(blockVersion int) SplitRewardRuleProcessor {
-	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
+	if blockVersion >= types.INSTANT_FINALITY_VERSION_V2 {
+		return RewardSplitRuleV2{}
+	}
+	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		return RewardSplitRuleV3{}
 	}
 
