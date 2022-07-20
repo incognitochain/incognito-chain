@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/trie"
+	"runtime/debug"
 )
 
 func (stateDB *StateDB) Recheck() error {
+	fmt.Println("[prune] start recheck")
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	cnt := 0
@@ -19,13 +21,16 @@ func (stateDB *StateDB) Recheck() error {
 			continue
 		}
 	}
-	//fmt.Println("Total node check:", cnt)
+	fmt.Println("[prune] finish recheck")
 	return it.Err
 }
 
 func (stateDB *StateDB) Retrieve(
 	shouldAddToStateBloom bool, shouldDelete bool, stateBloom *trie.StateBloom, firstView bool,
 ) (map[common.Hash]struct{}, error) {
+	fmt.Println("[prune] start retrieve")
+	debug.SetGCPercent(50)
+	defer debug.SetGCPercent(90)
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 
@@ -87,5 +92,6 @@ func (stateDB *StateDB) Retrieve(
 		}
 	}
 
+	fmt.Println("[prune] finish retrieve")
 	return keysShouldBeRemoved, nil
 }
