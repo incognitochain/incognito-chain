@@ -3,14 +3,15 @@ package pruner
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/pkg/errors"
-	"sync"
-	"time"
 )
 
 type ShardPruner struct {
@@ -206,9 +207,10 @@ func (s *ShardPruner) pruneByHash() error {
 			}
 
 			if count%1000 == 0 {
-				Logger.log.Infof("[state-prune] Finish prune for key %v totalKeys %v delete totalNodes %v with storage %v", key, count, s.nodes, s.storage)
+				Logger.log.Infof("[state-prune %v] Finish prune for key %v totalKeys %v delete totalNodes %v with storage %v", s.shardID, key, count, s.nodes, s.storage)
 				s.saveStatus()
 			}
+			count++
 			return nil
 		}()
 
