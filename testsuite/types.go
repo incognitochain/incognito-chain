@@ -28,7 +28,7 @@ type Chain interface {
 	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
 	InsertBlock(block types.BlockInterface, shouldValidate bool) error
-	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
+	//ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
 	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC

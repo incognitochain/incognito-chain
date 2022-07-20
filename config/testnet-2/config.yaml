@@ -36,7 +36,7 @@ rpc_quirks: false #
 disable_rpc: false #
 disable_tls: true #
 proxy: "" #
-relay_shards: "all" #
+relay_shards: "" #
 enable_wallet: "false" #
 wallet_name: "wallet" #
 wallet_passphrase: "123456" #
@@ -60,3 +60,7 @@ use_coin_data:
   - true
 num_indexer_workers: 5
 indexer_access_token: "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
+allow_state_prune_by_rpc: false
+offline_prune: false
+state_bloom_size: 1048
+enable_auto_prune: true
