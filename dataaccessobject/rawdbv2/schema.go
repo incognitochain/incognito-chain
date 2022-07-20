@@ -45,11 +45,7 @@ var (
 	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
-	lastPrunedHeightPrefix    = []byte("l-p-h")
-	lastPrunedKeyTriePrefix   = []byte("l-p-k")
 	pruneStatusPrefix         = []byte("p-s")
-	pendingPrunedNodesPrefix  = []byte("p-p-n")
-	dataSizePrefix            = []byte("d-s")
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -437,27 +433,10 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 }
 
 // ============================= State prune =======================================
-func GetLastPrunedKeyTrieKey() []byte {
-	temp := make([]byte, 0, len(lastPrunedKeyTriePrefix))
-	temp = append(temp, lastPrunedKeyTriePrefix...)
-	return append(temp)
-}
-
-func GetLastPrunedHeightKey() []byte {
-	temp := make([]byte, 0, len(lastPrunedHeightPrefix))
-	temp = append(temp, lastPrunedHeightPrefix...)
-	return append(temp)
-}
 
 func GetPruneStatusKey() []byte {
 	temp := make([]byte, 0, len(pruneStatusPrefix))
 	temp = append(temp, pruneStatusPrefix...)
-	return append(temp)
-}
-
-func GetPendingPrunedNodesKey() []byte {
-	temp := make([]byte, 0, len(pendingPrunedNodesPrefix))
-	temp = append(temp, pendingPrunedNodesPrefix...)
 	return append(temp)
 }
 
@@ -468,11 +447,3 @@ func GetShardRootsHashPrefix(shardID byte) []byte {
 	key = append(key, splitter...)
 	return key
 }
-
-func GetDataSizeKey() []byte {
-	temp := make([]byte, 0, len(dataSizePrefix))
-	temp = append(temp, dataSizePrefix...)
-	return append(temp)
-}
-
-//
