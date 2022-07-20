@@ -62,5 +62,5 @@ num_indexer_workers: 0
 indexer_access_token: ""
 allow_state_prune_by_rpc: false
 offline_prune: false
-state_bloom_size: 2048
+state_bloom_size: 1048
 enable_auto_prune: false

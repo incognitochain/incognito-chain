@@ -95,8 +95,7 @@ func (s *ShardPruner) Prune(byHash bool) error {
 		s.lock.Unlock()
 		return fmt.Errorf("Shard %v is not ready! State: %v", s.shardID, s.status)
 	}
-	s.status = PRUNING
-	s.lock.Unlock()
+	s.status = INIT
 
 	s.lastTriggerTime = time.Now()
 
@@ -105,12 +104,16 @@ func (s *ShardPruner) Prune(byHash bool) error {
 		s.lastError = errors.Wrap(err, "init bloom state fail").Error()
 		return err
 	}
+	s.status = PRUNING
+	s.lock.Unlock()
 
 	if byHash {
 		s.lastProcessingMode = "hash"
+		Logger.log.Infof("[state-prune %v] Start prune by hash", s.shardID)
 		s.pruneByHash()
 	} else {
 		s.lastProcessingMode = "height"
+		Logger.log.Infof("[state-prune %v] Start prune by height", s.shardID)
 		s.PruneByHeight()
 	}
 	s.saveStatus()
@@ -273,6 +276,8 @@ func (s *ShardPruner) handleNewView(shardBestState *blockchain.ShardBestState) {
 	s.wg.Add(1)
 	s.bestView = shardBestState
 	go func() {
+		s.lock.Lock()
+		defer s.lock.Unlock()
 		defer s.wg.Done()
 		if s.status == PRUNING {
 			err := s.addViewToBloom(shardBestState)

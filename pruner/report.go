@@ -24,6 +24,8 @@ func (s *ShardPruner) Report() ShardPrunerReport {
 	switch s.status {
 	case IDLE:
 		res.Status = "IDLE"
+	case INIT:
+		res.Status = "INIT"
 	case PRUNING:
 		res.Status = "PRUNING"
 	case CHECKING:
