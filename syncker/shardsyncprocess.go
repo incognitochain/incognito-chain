@@ -82,7 +82,6 @@ func NewShardSyncProcess(
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		lastHeight := s.Chain.GetBestViewHeight()
-
 		for {
 			if s.isCommittee {
 				s.crossShardSyncProcess.start()

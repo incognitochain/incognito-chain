@@ -664,11 +664,11 @@ func (sim *NodeEngine) GetMultiview(chainID int) ([]account.Account, error) {
 type SimulationParam struct {
 }
 
-func InitChainParam(cfg Config, customParam func()) *NodeEngine {
+func InitChainParam(cfg Config, customParam func(), postInit func(*NodeEngine)) *NodeEngine {
 	node := NewStandaloneSimulation("sim", cfg)
 	customParam()
 	node.Init()
-
+	postInit(node)
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
 	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
 

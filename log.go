@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
+	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -90,6 +91,7 @@ var (
 	pdexLogger             = backendLog.Logger("Pdex log ", false)
 	bridgeAggLogger        = backendLog.Logger("BridgeAgg log ", false)
 	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
+	prunerLogger           = backendLog.Logger("Pruner log ", false)
 
 	portalLogger          = backendLog.Logger("Portal log ", false)
 	portalRelayingLogger  = backendLog.Logger("Portal relaying log ", false)
@@ -151,6 +153,7 @@ func init() {
 	committeestate.Logger.Init(committeeStateLogger)
 	pdex.Logger.Init(pdexLogger)
 	bridgeagg.Logger.Init(bridgeAggLogger)
+	pruner.Logger.Init(prunerLogger)
 
 	portal.Logger.Init(portalLogger)
 	portalrelaying.Logger.Init(portalRelayingLogger)
