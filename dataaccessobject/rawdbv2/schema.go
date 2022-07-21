@@ -45,7 +45,7 @@ var (
 	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
-
+	pruneStatusPrefix         = []byte("p-s")
 	PreimagePrefix = []byte("secure-key-") // PreimagePrefix + hash -> preimage
 )
 
@@ -311,6 +311,22 @@ func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash,
 	valueHash := common.HashH(valueToBeHashed)
 
 	return append(prefixHash, valueHash[:][:txBySerialNumberPrefixKeyLength]...)
+}
+
+// ============================= State prune =======================================
+
+func GetPruneStatusKey() []byte {
+	temp := make([]byte, 0, len(pruneStatusPrefix))
+	temp = append(temp, pruneStatusPrefix...)
+	return append(temp)
+}
+
+func GetShardRootsHashPrefix(shardID byte) []byte {
+	temp := make([]byte, 0, len(shardRootHashPrefix))
+	temp = append(temp, shardRootHashPrefix...)
+	key := append(temp, shardID)
+	key = append(key, splitter...)
+	return key
 }
 
 // preimageKey = PreimagePrefix + hash

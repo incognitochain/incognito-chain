@@ -307,9 +307,9 @@ const (
 	getPdexv3WithdrawalStakingRewardStatus         = "pdexv3_getWithdrawalStakingRewardStatus"
 
 	// bridgeagg method
-	bridgeaggModifyRewardReserve         = "bridgeaggModifyRewardReserve"
 	bridgeaggState                       = "bridgeaggGetState"
-	bridgeaggGetStatusModifyRewarReserve = "bridgeaggGetStatusModifyRewarReserve"
+	bridgeaggModifyParam                 = "bridgeaggModifyParam"
+	bridgeaggStatusModifyParam           = "bridgeaggStatusModifyParam"
 	bridgeaggConvert                     = "bridgeaggConvert"
 	bridgeaggStatusConvert               = "bridgeaggGetStatusConvert"
 	bridgeaggShield                      = "bridgeaggShield"
@@ -319,7 +319,7 @@ const (
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
 	bridgeaggEstimateReward              = "bridgeaggEstimateReward"
-	bridgeaggGetBurntProof               = "bridgeaggGetBurntProof"
+	bridgeaggGetBurnProof                = "bridgeaggGetBurnProof"
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
@@ -432,6 +432,11 @@ const (
 	unstake = "createunstaketransaction"
 
 	connectionStatus = "getconnectionstatus"
+
+	// prune
+	prune          = "pruneState"
+	getPruneState  = "getPruneState"
+	checkPruneData = "checkprunedata"
 )
 
 const (

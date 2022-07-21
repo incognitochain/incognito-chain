@@ -67,7 +67,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		Logger.log.Infof("Finish restore pdexv3 state")
 	}
 	if includeBridgeAgg {
-		beaconBestState.bridgeAggState, err = bridgeagg.InitStateFromDB(beaconBestState.featureStateDB)
+		beaconBestState.bridgeAggManager, err = bridgeagg.InitManager(beaconBestState.featureStateDB)
 	}
 	Logger.log.Infof("Finish restore beaconBestState")
 	return err
@@ -87,14 +87,11 @@ func (beaconBestState *BeaconBestState) IsValidNftID(db incdb.Database, pdexv3St
 		return state.Validator().IsValidNftID(nftID)
 	}
 	if !ok || state == nil {
-		Logger.log.Info("[pdex] db:", db)
 		var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-		Logger.log.Info("[pdex] dbAccessWarper:", dbAccessWarper)
 		sDB, err := statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
-		Logger.log.Info("[pdex] sDB:", sDB)
 		nftIDState, err := statedb.GetPdexv3NftID(sDB, nftID)
 		if err != nil || nftIDState == nil {
 			if nftIDState == nil && err != nil {

@@ -280,16 +280,19 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPdexv3PoolPairLmLockedShareObjectWithValue(db, hash, value)
 	case BridgePLGTxObjectType:
 		return newBridgePLGTxObjectWithValue(db, hash, value)
+	case BridgeFTMTxObjectType:
+		return newBridgeFTMTxObjectWithValue(db, hash, value)
 	case BridgeAggUnifiedTokenObjectType:
 		return newBridgeAggUnifiedTokenObjectWithValue(db, hash, value)
-	case BridgeAggConvertedTokenObjectType:
-		return newBridgeAggConvertedObjectWithValue(db, hash, value)
 	case BridgeAggStatusObjectType:
 		return newBridgeAggStatusObjectWithValue(db, hash, value)
 	case BridgeAggVaultObjectType:
 		return newBridgeAggVaultObjectWithValue(db, hash, value)
-	case BridgeFTMTxObjectType:
-		return newBridgeFTMTxObjectWithValue(db, hash, value)
+	case BridgeAggWaitingUnshieldReqObjectType:
+		return newBridgeAggWaitingUnshieldReqObjectWithValue(db, hash, value)
+	case BridgeAggParamObjectType:
+		return newBridgeAggParamObjectWithValue(db, hash, value)
+
 	default:
 		panic("state object type not exist")
 	}
@@ -431,16 +434,18 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPdexv3PoolPairLmLockedShareObject(db, hash)
 	case BridgePLGTxObjectType:
 		return newBridgePLGTxObject(db, hash)
-	case BridgeAggConvertedTokenObjectType:
-		return newBridgeAggConvertedObject(db, hash)
+	case BridgeFTMTxObjectType:
+		return newBridgeFTMTxObject(db, hash)
 	case BridgeAggUnifiedTokenObjectType:
 		return newBridgeAggUnifiedTokenObject(db, hash)
 	case BridgeAggStatusObjectType:
 		return newBridgeAggStatusObject(db, hash)
 	case BridgeAggVaultObjectType:
 		return newBridgeAggVaultObject(db, hash)
-	case BridgeFTMTxObjectType:
-		return newBridgeFTMTxObject(db, hash)
+	case BridgeAggWaitingUnshieldReqObjectType:
+		return newBridgeAggWaitingUnshieldReqObject(db, hash)
+	case BridgeAggParamObjectType:
+		return newBridgeAggParamObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

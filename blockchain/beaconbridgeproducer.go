@@ -133,7 +133,7 @@ func buildBurningConfirmInst(
 	shardID := byte(common.BridgeShardID)
 
 	// Convert to external tokenID
-	tokenID, err := metadataBridge.FindExternalTokenID(stateDB, md.TokenID, prefix, burningMetaType)
+	tokenID, err := metadataBridge.FindExternalTokenID(stateDB, md.TokenID, prefix)
 	if err != nil {
 		return nil, err
 	}

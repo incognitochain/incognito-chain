@@ -52,7 +52,7 @@
         ],
         "unified_tokens": {
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -60,9 +60,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -70,11 +70,11 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                    "NetworkID": 2
                 }
             },
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -82,9 +82,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -92,13 +92,13 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112"
+                    "NetworkID": 2
                 }
             }
         },
         "expected_unified_tokens": {
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 1000,
@@ -106,9 +106,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 2000,
@@ -116,11 +116,11 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                    "NetworkID": 2
                 }
             },
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 1000,
@@ -128,9 +128,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 2000,
@@ -138,7 +138,7 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112"
+                    "NetworkID": 2
                 }
             }
         },
@@ -223,7 +223,7 @@
         ],
         "unified_tokens": {
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -231,9 +231,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -241,11 +241,11 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                    "NetworkID": 2
                 }
             },
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -253,9 +253,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -263,13 +263,13 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112"
+                    "NetworkID": 2
                 }
             }
         },
         "expected_unified_tokens": {
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af570": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -277,9 +277,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5769"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -287,11 +287,11 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1111"
+                    "NetworkID": 2
                 }
             },
             "c8aefa6b347bb174116060da6171eb23476f444bb3ff1436e8940b27ed1af571": {
-                "1": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -299,9 +299,9 @@
                         "Decimal": 18,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a5768"
+                    "NetworkID": 1
                 },
-                "2": {
+                "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112": {
                     "State": {
                         "Reserve": 0,
                         "LastUpdatedRewardReserve": 0,
@@ -309,7 +309,7 @@
                         "Decimal": 6,
                         "IsPaused": false
                     },
-                    "TokenID": "375825bf838527610102c6943282642826901937679d8df5b5634d43d54a1112"
+                    "NetworkID": 2
                 }
             }
         },

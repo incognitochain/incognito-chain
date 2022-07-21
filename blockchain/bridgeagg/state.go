@@ -1,260 +1,230 @@
 package bridgeagg
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
-	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
 type State struct {
-	unifiedTokenInfos map[common.Hash]map[uint]*Vault // unifiedTokenID -> networkID -> vault
-	producer          stateProducer
-	processor         stateProcessor
+	// unifiedTokenVaults: list of punified tokens and list pTokens are unified in each punified token
+	// unifiedTokenID -> tokenID -> vault
+	unifiedTokenVaults map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState
+
+	// waitingUnshieldReqs: list of unshielding requests in the queue and it is sorted by beacon height ascending
+	// unifiedTokenID -> []waitingUnshieldReq
+	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
+
+	// bridge aggregator param
+	param *statedb.BridgeAggParamState
+
+	// temporary state
+	// only contains new waiting unshield reqs in processing beacon block
+	newWaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq
+	// only contains deteled (filled) waiting unshield reqs in processing beacon block
+	deletedWaitingUnshieldReqKeyHashes []common.Hash
 }
 
-func (s *State) UnifiedTokenInfos() map[common.Hash]map[uint]*Vault {
-	return s.unifiedTokenInfos
+// UnifiedTokenVaults read only function do not write to result of function
+func (s *State) UnifiedTokenVaults() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
+	return s.unifiedTokenVaults
+}
+
+// WaitingUnshieldReqs read only function do not write to result of function
+func (s *State) WaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
+	return s.waitingUnshieldReqs
+}
+
+func (s *State) DeletedWaitingUnshieldReqKeyHashes() []common.Hash {
+	return s.deletedWaitingUnshieldReqKeyHashes
+}
+
+func (s *State) NewWaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
+	return s.newWaitingUnshieldReqs
+}
+
+func (s *State) Param() *statedb.BridgeAggParamState {
+	return s.param
 }
 
 func NewState() *State {
 	return &State{
-		unifiedTokenInfos: make(map[common.Hash]map[uint]*Vault),
+		unifiedTokenVaults:                 make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState),
+		waitingUnshieldReqs:                make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
+		param:                              nil,
+		deletedWaitingUnshieldReqKeyHashes: []common.Hash{},
+		newWaitingUnshieldReqs:             make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq),
 	}
 }
 
-func NewStateWithValue(unifiedTokenInfos map[common.Hash]map[uint]*Vault) *State {
+func NewStateWithValue(
+	unifiedTokenInfos map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState,
+	waitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq,
+	param *statedb.BridgeAggParamState,
+	newWaitingUnshieldReqs map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq,
+	deletedWaitingUnshieldReqKeyHashes []common.Hash,
+) *State {
 	return &State{
-		unifiedTokenInfos: unifiedTokenInfos,
+		unifiedTokenVaults:                 unifiedTokenInfos,
+		waitingUnshieldReqs:                waitingUnshieldReqs,
+		param:                              param,
+		newWaitingUnshieldReqs:             newWaitingUnshieldReqs,
+		deletedWaitingUnshieldReqKeyHashes: deletedWaitingUnshieldReqKeyHashes,
 	}
 }
 
 func (s *State) Clone() *State {
 	res := NewState()
-	res.processor = stateProcessor{}
-	res.producer = stateProducer{}
-	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
-		for networkID, vault := range vaults {
-			res.unifiedTokenInfos[unifiedTokenID][networkID] = vault.Clone()
+	res.unifiedTokenVaults = s.CloneUnifiedTokenVaults()
+	res.waitingUnshieldReqs = s.CloneWaitingUnshieldReqs()
+	if s.param != nil {
+		res.param = s.param.Clone()
+	}
+
+	// reset temporary state
+	res.newWaitingUnshieldReqs = map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq{}
+	res.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
+
+	return res
+}
+
+func (s *State) GetDiff(preState *State) (*State, map[common.Hash]bool, error) {
+	if preState == nil {
+		return nil, nil, errors.New("preState is nil")
+	}
+
+	diffState := NewState()
+	newUnifiedTokens := map[common.Hash]bool{}
+
+	// get diff unifiedTokenVaults
+	for unifiedTokenID, vaults := range s.unifiedTokenVaults {
+		if preVaults, found := preState.unifiedTokenVaults[unifiedTokenID]; found {
+			for incTokenID, vault := range vaults {
+				isUpdate := true
+				if preVault, found := preVaults[incTokenID]; found {
+					isDiff, err := preVault.IsDiff(vault)
+					if err != nil {
+						return nil, nil, err
+					}
+					if !isDiff {
+						isUpdate = false
+					}
+				}
+				if !isUpdate {
+					continue
+				}
+
+				if diffState.unifiedTokenVaults[unifiedTokenID] == nil {
+					diffState.unifiedTokenVaults[unifiedTokenID] = map[common.Hash]*statedb.BridgeAggVaultState{}
+				}
+				diffState.unifiedTokenVaults[unifiedTokenID][incTokenID] = vault
+			}
+		} else {
+			// add new vaults
+			newUnifiedTokens[unifiedTokenID] = true
+			diffState.unifiedTokenVaults[unifiedTokenID] = vaults
+		}
+	}
+
+	// get diff param
+	if s.param != nil && s.param.IsDiff(preState.param) {
+		diffState.param = s.param
+	} else {
+		diffState.param = nil
+	}
+
+	// only store new waiting unshield req in block
+	// old waiting unshield reqs don't update state
+	diffState.newWaitingUnshieldReqs = s.newWaitingUnshieldReqs
+	diffState.deletedWaitingUnshieldReqKeyHashes = s.deletedWaitingUnshieldReqKeyHashes
+
+	return diffState, newUnifiedTokens, nil
+}
+
+func (s *State) CloneUnifiedTokenVaults() map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState {
+	res := make(map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState)
+	for unifiedTokenID, vaults := range s.unifiedTokenVaults {
+		res[unifiedTokenID] = make(map[common.Hash]*statedb.BridgeAggVaultState)
+		for tokenID, vault := range vaults {
+			res[unifiedTokenID][tokenID] = vault.Clone()
 		}
 	}
 	return res
 }
 
-func (s *State) BuildInstructions(env StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
-	res := [][]string{}
-	var err error
-	ac := env.AccumulatedValues()
-
-	for shardID, actions := range env.UnshieldActions() {
-		for _, action := range actions {
-			inst := [][]string{}
-			inst, s.unifiedTokenInfos, err = s.producer.unshield(action, s.unifiedTokenInfos, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
-			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToUnshieldError, err)
-			}
-			res = append(res, inst...)
+func (s *State) CloneWaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
+	res := make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq)
+	for unifiedTokenID, reqs := range s.waitingUnshieldReqs {
+		res[unifiedTokenID] = []*statedb.BridgeAggWaitingUnshieldReq{}
+		for _, req := range reqs {
+			res[unifiedTokenID] = append(res[unifiedTokenID], req.Clone())
 		}
 	}
-
-	for shardID, actions := range env.ShieldActions() {
-		for _, action := range actions {
-			insts := [][]string{}
-			insts, s.unifiedTokenInfos, ac, err = s.producer.shield(
-				action, s.unifiedTokenInfos, ac, byte(shardID), env.StateDBs(),
-			)
-			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToShieldError, err)
-			}
-
-			res = append(res, insts...)
-		}
-	}
-
-	for shardID, actions := range env.ConvertActions() {
-		for _, action := range actions {
-			insts := [][]string{}
-			insts, s.unifiedTokenInfos, err = s.producer.convert(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
-			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToConvertTokenError, err)
-			}
-			res = append(res, insts...)
-		}
-	}
-
-	for shardID, actions := range env.ModifyRewardReserveActions() {
-		for _, action := range actions {
-			inst := []string{}
-			inst, s.unifiedTokenInfos, err = s.producer.modifyRewardReserve(action, s.unifiedTokenInfos, env.StateDBs(), byte(shardID))
-			if err != nil {
-				return [][]string{}, nil, NewBridgeAggErrorWithValue(FailToBuildModifyRewardReserveError, err)
-			}
-			res = append(res, inst)
-		}
-	}
-
-	Logger.log.Info("bridgeagg instructions:", res)
-
-	return res, ac, nil
+	return res
 }
 
-func (s *State) Process(insts [][]string, sDB *statedb.StateDB) error {
-	for _, content := range insts {
-		if len(content) == 0 {
-			continue // Empty instruction
-		}
-		metaType, err := strconv.Atoi(content[0])
-		if err != nil {
-			continue // Not error, just not bridgeagg instructions
-		}
-		if !metadataBridge.IsBridgeAggMetaType(metaType) {
-			continue // Not error, just not bridgeagg instructions
-		}
-		if metaType == metadataCommon.BridgeAggAddTokenMeta {
-			s.unifiedTokenInfos, err = s.processor.addToken(content, s.unifiedTokenInfos, sDB)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-		if len(content) != 4 {
-			continue // Not error, just not bridgeagg instructions
-		}
-
-		inst := metadataCommon.NewInstruction()
-		if err := inst.FromStringSlice(content); err != nil {
-			return err
-		}
-
-		switch inst.MetaType {
-		case metadataCommon.BridgeAggModifyRewardReserveMeta:
-			s.unifiedTokenInfos, err = s.processor.modifyRewardReserve(*inst, s.unifiedTokenInfos, sDB)
-			if err != nil {
-				return err
-			}
-		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-			s.unifiedTokenInfos, err = s.processor.convert(*inst, s.unifiedTokenInfos, sDB)
-			if err != nil {
-				return err
-			}
-		case metadataCommon.IssuingUnifiedTokenRequestMeta:
-			s.unifiedTokenInfos, err = s.processor.shield(*inst, s.unifiedTokenInfos, sDB)
-			if err != nil {
-				return err
-			}
-		case metadataCommon.BurningUnifiedTokenRequestMeta:
-			s.unifiedTokenInfos, err = s.processor.unshield(*inst, s.unifiedTokenInfos, sDB)
-			if err != nil {
-				return err
-			}
+func (s *State) CloneNewWaitingUnshieldReqs() map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq {
+	res := make(map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq)
+	for unifiedTokenID, reqs := range s.newWaitingUnshieldReqs {
+		res[unifiedTokenID] = []*statedb.BridgeAggWaitingUnshieldReq{}
+		for _, req := range reqs {
+			res[unifiedTokenID] = append(res[unifiedTokenID], req.Clone())
 		}
 	}
-	return nil
+	return res
 }
 
-func (s *State) UpdateToDB(sDB *statedb.StateDB, stateChange *StateChange) error {
-	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		if stateChange.unifiedTokenID[unifiedTokenID] {
-			err := statedb.StoreBridgeAggUnifiedToken(
-				sDB,
-				unifiedTokenID,
-				statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
-			)
-			if err != nil {
-				return err
-			}
-		}
+func (s *State) CloneVaultsByUnifiedTokenID(unifiedTokenID common.Hash) (map[common.Hash]*statedb.BridgeAggVaultState, error) {
+	if vaults, found := s.unifiedTokenVaults[unifiedTokenID]; found {
+		res := make(map[common.Hash]*statedb.BridgeAggVaultState)
 		for networkID, vault := range vaults {
-			if stateChange.vaultChange[unifiedTokenID][networkID].IsChanged || stateChange.unifiedTokenID[unifiedTokenID] {
-				err := statedb.StoreBridgeAggConvertedToken(
-					sDB, unifiedTokenID, vault.tokenID,
-					statedb.NewBridgeAggConvertedTokenStateWithValue(vault.tokenID, networkID),
-				)
-				if err != nil {
-					return err
-				}
-			}
-			if (stateChange.vaultChange[unifiedTokenID][networkID].IsReserveChanged ||
-				stateChange.unifiedTokenID[unifiedTokenID]) && !vault.BridgeAggVaultState.IsEmpty() {
-				err := statedb.StoreBridgeAggVault(
-					sDB, unifiedTokenID, vault.tokenID,
-					&vault.BridgeAggVaultState,
-				)
-				if err != nil {
-					return err
-				}
-
-			}
+			res[networkID] = vault.Clone()
 		}
-	}
-	return nil
-}
-
-func (s *State) GetDiff(compareState *State) (*State, *StateChange, error) {
-	res := NewState()
-	stateChange := NewStateChange()
-	if compareState == nil {
-		return nil, nil, errors.New("compareState is nil")
-	}
-
-	for unifiedTokenID, vaults := range s.unifiedTokenInfos {
-		if compareVaults, found := compareState.unifiedTokenInfos[unifiedTokenID]; !found {
-			res.unifiedTokenInfos[unifiedTokenID] = vaults
-			stateChange.unifiedTokenID[unifiedTokenID] = true
-		} else {
-			for tokenID, vault := range vaults {
-				if res.unifiedTokenInfos[unifiedTokenID] == nil {
-					res.unifiedTokenInfos[unifiedTokenID] = make(map[uint]*Vault)
-				}
-				if compareVault, ok := compareVaults[tokenID]; !ok {
-					res.unifiedTokenInfos[unifiedTokenID][tokenID] = vault
-					if stateChange.vaultChange[unifiedTokenID] == nil {
-						stateChange.vaultChange[unifiedTokenID] = make(map[uint]VaultChange)
-					}
-					stateChange.vaultChange[unifiedTokenID][tokenID] = VaultChange{
-						IsChanged:        true,
-						IsReserveChanged: true,
-					}
-				} else {
-					temp, vaultChange, err := s.unifiedTokenInfos[unifiedTokenID][tokenID].GetDiff(compareVault)
-					if err != nil {
-						return nil, nil, err
-					}
-					if temp != nil {
-						res.unifiedTokenInfos[unifiedTokenID][tokenID] = temp
-						if stateChange.vaultChange[unifiedTokenID] == nil {
-							stateChange.vaultChange[unifiedTokenID] = make(map[uint]VaultChange)
-						}
-						stateChange.vaultChange[unifiedTokenID][tokenID] = *vaultChange
-					}
-				}
-			}
-		}
-	}
-	return res, stateChange, nil
-}
-
-func (s *State) ClearCache() {
-	s.processor.clearCache()
-}
-
-func (s *State) UnifiedTokenIDCached(txReqID common.Hash) (common.Hash, error) {
-	if res, found := s.processor.UnshieldTxsCache[txReqID]; found {
 		return res, nil
 	} else {
-		return common.Hash{}, fmt.Errorf("txID %s not found in cache", txReqID.String())
+		return nil, fmt.Errorf("Can't find unifiedTokenID %s", unifiedTokenID.String())
 	}
 }
 
-func (s *State) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues) ([][]string, *metadata.AccumulatedValues, error) {
-	res := [][]string{}
-	var err error
-	res, s.unifiedTokenInfos, ac, err = s.producer.addToken(s.unifiedTokenInfos, beaconHeight, sDBs, ac)
-	return res, ac, err
+func (s *State) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
+		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		Param                              *statedb.BridgeAggParamState                                 `json:"Param"`
+		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
+		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
+	}{
+		UnifiedTokenVaults:                 s.unifiedTokenVaults,
+		WaitingUnshieldReqs:                s.waitingUnshieldReqs,
+		Param:                              s.param,
+		NewWaitingUnshieldReqs:             s.newWaitingUnshieldReqs,
+		DeletedWaitingUnshieldReqKeyHashes: s.deletedWaitingUnshieldReqKeyHashes,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (s *State) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		UnifiedTokenVaults                 map[common.Hash]map[common.Hash]*statedb.BridgeAggVaultState `json:"UnifiedTokenVaults"`
+		WaitingUnshieldReqs                map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"WaitingUnshieldReqs"`
+		Param                              *statedb.BridgeAggParamState                                 `json:"Param"`
+		NewWaitingUnshieldReqs             map[common.Hash][]*statedb.BridgeAggWaitingUnshieldReq       `json:"NewWaitingUnshieldReqs"`
+		DeletedWaitingUnshieldReqKeyHashes []common.Hash                                                `json:"DeletedWaitingUnshieldReqKeyHashes"`
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	s.unifiedTokenVaults = temp.UnifiedTokenVaults
+	s.waitingUnshieldReqs = temp.WaitingUnshieldReqs
+	s.param = temp.Param
+	s.newWaitingUnshieldReqs = temp.NewWaitingUnshieldReqs
+	s.deletedWaitingUnshieldReqKeyHashes = temp.DeletedWaitingUnshieldReqKeyHashes
+	return nil
 }

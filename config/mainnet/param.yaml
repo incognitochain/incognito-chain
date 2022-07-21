@@ -82,13 +82,12 @@ bsc_param:
 plg_param:
   host:
     - "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
-    - "https://polygon-rpc.com"
     - "https://rpc-mainnet.maticvigil.com"
     - "https://rpc-mainnet.matic.quiknode.pro"
 ftm_param:
   host:
     - "https://rpcapi.fantom.network"
-    - "https://rpc.ftm.tools"
+    - "https://fantom-mainnet.public.blastapi.io"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
@@ -118,6 +117,16 @@ auto_enable_feature:
       min_trigger: 1892003
       force_trigger: 1000000000
       require_percentage: 85
+  - unified_token_20220714:
+      min_trigger: 2132900  
+      force_trigger: 1000000000
+      require_percentage: 80
+bridge_agg_param:
+  admin_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
+  base_decimal: 9 # Use only one time DONOT edit this after deployed
+  max_len_of_path: 3  # Only increase this param after deployed
+  percent_fee_decimal: 1e6
+  default_percent_fee_with_decimal: 750 # 0.075% * 1e6
 bc_height_break_point_coin_origin: 2087774
 flatfileparam:
   maxcachesize: 536870912 #500Mb

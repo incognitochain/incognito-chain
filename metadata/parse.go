@@ -260,17 +260,15 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.WithdrawalStakingRewardRequest{}
 	case metadataCommon.Pdexv3WithdrawStakingRewardResponseMeta:
 		md = &metadataPdexv3.WithdrawalStakingRewardResponse{}
+	case metadataCommon.BridgeAggModifyParamMeta:
+		md = &metadataBridge.ModifyBridgeAggParamReq{}
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 		md = &metadataBridge.ConvertTokenToUnifiedTokenRequest{}
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta:
 		md = &metadataBridge.ConvertTokenToUnifiedTokenResponse{}
-	case metadataCommon.BridgeAggModifyRewardReserveMeta:
-		md = &metadataBridge.ModifyRewardReserve{}
 	case metadataCommon.IssuingUnifiedTokenRequestMeta:
 		md = &metadataBridge.ShieldRequest{}
 	case metadataCommon.IssuingUnifiedTokenResponseMeta:
-		md = &metadataBridge.ShieldResponse{}
-	case metadataCommon.IssuingUnifiedRewardResponseMeta:
 		md = &metadataBridge.ShieldResponse{}
 	case metadataCommon.BurningUnifiedTokenRequestMeta:
 		md = &metadataBridge.UnshieldRequest{}

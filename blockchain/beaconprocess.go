@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -930,10 +931,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 
-	// update bridge aggreator state
-	// always process bridgeAggState before update other process for bridge instructions
-	newBestState.bridgeAggState.ClearCache()
-	err = newBestState.bridgeAggState.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	// execute, store bridge agg instructions
+	err = newBestState.bridgeAggManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
@@ -943,6 +942,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
+
 	// execute, store token init instructions
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 
@@ -1054,14 +1054,18 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 	}
 
-	if newBestState.bridgeAggState != nil {
-		diffState, stateChange, err := newBestState.bridgeAggState.GetDiff(curView.bridgeAggState)
+	if newBestState.bridgeAggManager != nil {
+		diffState, newVaults, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
+		fmt.Println("HHH : diffState", diffState)
 		if err != nil {
+			Logger.log.Errorf("Error get diff bridge agg: %v", err)
 			return err
 		}
 		if diffState != nil {
-			err = diffState.UpdateToDB(newBestState.featureStateDB, stateChange)
+			m := bridgeagg.NewManagerWithValue(diffState)
+			err = m.UpdateToDB(newBestState.featureStateDB, newVaults)
 			if err != nil {
+				Logger.log.Errorf("Error update to db: %v", err)
 				return err
 			}
 		}
@@ -1135,6 +1139,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
+	Logger.log.Infof("Finish store beacon block!!!")
 	blockchain.BeaconChain.multiView.AddView(newBestState)
 	//update multiview final view
 	for sid, bestShardHash := range newFinalView.(*BeaconBestState).BestShardHash {

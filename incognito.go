@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
+	"github.com/incognitochain/incognito-chain/pruner"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -87,6 +88,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	config.LoadParam()
+
 	portal.SetupParam()
 	//create genesis block
 	blockchain.CreateGenesisBlocks()
@@ -110,6 +112,17 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
+
+	p := pruner.NewPrunerManager(db)
+	if p == nil { //cannot init pruner
+		return nil
+	}
+	//check if offline prune flag is available
+	if config.Config().OfflinePrune {
+		p.OfflinePrune()
+		return nil
+	}
+
 	// Create db for mempool and use it
 	consensusDB, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, "consensus"))
 	if err != nil {
@@ -191,7 +204,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, dbmp, outcoinDb, cfg.NumIndexerWorkers, cfg.IndexerAccessTokens, version, btcChain, bnbChainState, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, outcoinDb, cfg.NumIndexerWorkers, cfg.IndexerAccessTokens, version, btcChain, bnbChainState, p, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)

@@ -3,9 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -95,7 +96,7 @@ type BeaconBestState struct {
 	pdeStates              map[uint]pdex.State
 	portalStateV3          *portalprocessv3.CurrentPortalState
 	portalStateV4          *portalprocessv4.CurrentPortalStateV4
-	bridgeAggState         *bridgeagg.State
+	bridgeAggManager       *bridgeagg.Manager
 	LastBlockProcessBridge uint64
 }
 
@@ -120,7 +121,7 @@ func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.Sta
 func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
-	beaconBestState.bridgeAggState = bridgeagg.NewState()
+	beaconBestState.bridgeAggManager = bridgeagg.NewManager()
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
@@ -492,8 +493,8 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	if target.portalStateV4 != nil {
 		beaconBestState.portalStateV4 = target.portalStateV4.Copy()
 	}
-	if beaconBestState.bridgeAggState != nil {
-		beaconBestState.bridgeAggState = target.bridgeAggState.Clone()
+	if beaconBestState.bridgeAggManager != nil {
+		beaconBestState.bridgeAggManager = target.bridgeAggManager.Clone()
 	}
 
 	return nil
@@ -614,8 +615,8 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 	return slashingPenalty
 }
 
-func (beaconBestState *BeaconBestState) BridgeAggState() *bridgeagg.State {
-	return beaconBestState.bridgeAggState
+func (beaconBestState *BeaconBestState) BridgeAggManager() *bridgeagg.Manager {
+	return beaconBestState.bridgeAggManager
 }
 
 func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {

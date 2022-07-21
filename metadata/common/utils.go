@@ -743,3 +743,47 @@ func IsPdexv3Tx(metadata Metadata) bool {
 	}
 	return false
 }
+
+// NOTE: append new bridge unshield metadata type
+func IsBridgeUnshieldMetaType(metadataType int) bool {
+	switch metadataType {
+	case ContractingRequestMeta:
+		return true
+	case BurningRequestMeta:
+		return true
+	case BurningRequestMetaV2:
+		return true
+	case BurningPBSCRequestMeta:
+		return true
+	case BurningPBSCForDepositToSCRequestMeta:
+		return true
+	case BurningForDepositToSCRequestMeta:
+		return true
+	case BurningForDepositToSCRequestMetaV2:
+		return true
+	case BurningPRVERC20RequestMeta:
+		return true
+	case BurningPRVBEP20RequestMeta:
+		return true
+	case BurningPLGRequestMeta:
+		return true
+	case BurningPLGForDepositToSCRequestMeta:
+		return true
+	case BurningFantomRequestMeta:
+		return true
+	case BurningFantomForDepositToSCRequestMeta:
+		return true
+	default:
+		return false
+	}
+}
+
+// NOTE: append new bridge agg unshield metadata type
+func IsBridgeAggUnshieldMetaType(metadataType int) bool {
+	switch metadataType {
+	case BurningUnifiedTokenRequestMeta:
+		return true
+	default:
+		return false
+	}
+}

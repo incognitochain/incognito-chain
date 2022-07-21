@@ -5,27 +5,44 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataMocks "github.com/incognitochain/incognito-chain/metadata/common/mocks"
 	"github.com/stretchr/testify/suite"
 )
 
+type UnshieldTestData struct {
+	TestData
+	Metadatas []*metadataBridge.UnshieldRequest `json:"metadatas"`
+}
+
+type UnshieldExpectedResult struct {
+	ExpectedResult
+	Statuses []UnshieldStatus `json:"statuses"`
+}
+
+type UnshieldActualResult struct {
+	ActualResult
+	Statuses []UnshieldStatus
+}
+
 type UnshieldTestCase struct {
-	TestCase
-	Metadatas        []*metadataBridge.UnshieldRequest `json:"metadatas"`
-	ExpectedStatuses []UnshieldStatus                  `json:"expected_statuses"`
-	ActualStatues    []UnshieldStatus
+	Data           UnshieldTestData       `json:"data"`
+	ExpectedResult UnshieldExpectedResult `json:"expected_result"`
 }
 
 type UnshieldTestSuite struct {
 	testCases map[string]*UnshieldTestCase
 	TestSuite
+	actualResults map[string]UnshieldActualResult
 }
 
 func (u *UnshieldTestSuite) SetupSuite() {
@@ -37,7 +54,7 @@ func (u *UnshieldTestSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	u.actualResults = make(map[string]ActualResult)
+	u.actualResults = make(map[string]UnshieldActualResult)
 }
 
 func (u *UnshieldTestSuite) SetupTest() {
@@ -56,9 +73,9 @@ func (u *UnshieldTestSuite) BeforeTest(suiteName, testName string) {
 	u.currentTestCaseName = testName
 	testCase := u.testCases[u.currentTestCaseName]
 	actions := []string{}
-	for i, v := range testCase.Metadatas {
+	for i, v := range testCase.Data.Metadatas {
 		tx := &metadataMocks.Transaction{}
-		tx.On("Hash").Return(&testCase.TxIDs[i])
+		tx.On("Hash").Return(&testCase.Data.TxIDs[i])
 		tmpActions, err := v.BuildReqActions(tx, nil, nil, nil, 0, 100)
 		if err != nil {
 			panic(err)
@@ -69,7 +86,7 @@ func (u *UnshieldTestSuite) BeforeTest(suiteName, testName string) {
 		}
 		actions = append(actions, reqActions...)
 	}
-	for tokenID, v := range testCase.BridgeTokensInfo {
+	for tokenID, v := range testCase.Data.BridgeTokensInfo {
 		err := statedb.UpdateBridgeTokenInfo(u.sDB, tokenID, v.ExternalTokenID(), false, v.Amount(), "+")
 		if err != nil {
 			panic(err)
@@ -84,23 +101,43 @@ func (u *UnshieldTestSuite) BeforeTest(suiteName, testName string) {
 		stateDBs: map[int]*statedb.StateDB{
 			common.BeaconChainID: u.sDB,
 		},
-		unshieldActions: [][]string{actions},
+		unshieldActions:   [][]string{actions},
+		accumulatedValues: testCase.Data.AccumulatedValues,
 	}
-	state := NewState()
-	state.unifiedTokenInfos = testCase.UnifiedTokens
-	producerState := state.Clone()
-	processorState := state.Clone()
-	processorState.ClearCache()
-	actualInstructions, _, err := producerState.BuildInstructions(env)
+	u.testCases[u.currentTestCaseName].Data.env = env
+}
+
+func (u *UnshieldTestSuite) test() {
+	testCase := u.testCases[u.currentTestCaseName]
+	assert := u.Assert()
+	producerState := testCase.Data.State.Clone()
+	producerManager := NewManagerWithValue(producerState)
+	processorState := testCase.Data.State.Clone()
+	processorManager := NewManagerWithValue(processorState)
+	actions := [][]string{}
+	for _, unshieldActions := range testCase.Data.env.unshieldActions {
+		for _, action := range unshieldActions {
+			temp := []string{strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta), action}
+			actions = append(actions, temp)
+		}
+	}
+	unshieldActions := BuildUnshieldActionForProducerFromInsts(actions, 0, 104)
+	actualInstructions, err := producerManager.BuildNewUnshieldInstructions(u.sDB, 10, unshieldActions)
 	assert.Nil(err, fmt.Sprintf("Error in build instructions %v", err))
-	err = processorState.Process(actualInstructions, u.sDB)
+	err = processorManager.Process(actualInstructions, u.sDB)
 	assert.Nil(err, fmt.Sprintf("Error in process instructions %v", err))
-	u.actualResults[testName] = ActualResult{
-		Instructions:   actualInstructions,
-		ProducerState:  producerState,
-		ProcessorState: processorState,
+
+	u.actualResults[u.currentTestCaseName] = UnshieldActualResult{
+		ActualResult: ActualResult{
+			Instructions:      actualInstructions,
+			ProducerState:     producerManager.state,
+			ProcessorState:    processorManager.state,
+			AccumulatedValues: testCase.Data.AccumulatedValues,
+		},
 	}
-	for _, txID := range testCase.TxIDs {
+
+	actualResult := u.actualResults[u.currentTestCaseName]
+	for _, txID := range testCase.Data.TxIDs {
 		data, err := statedb.GetBridgeAggStatus(
 			u.sDB,
 			statedb.BridgeAggUnshieldStatusPrefix(),
@@ -110,249 +147,108 @@ func (u *UnshieldTestSuite) BeforeTest(suiteName, testName string) {
 		var status UnshieldStatus
 		err = json.Unmarshal(data, &status)
 		assert.Nil(err, fmt.Sprintf("parse status error %v", err))
-		u.testCases[u.currentTestCaseName].ActualStatues = append(u.testCases[u.currentTestCaseName].ActualStatues, status)
+		actualResult.Statuses = append(actualResult.Statuses, status)
 	}
+	u.actualResults[u.currentTestCaseName] = actualResult
 }
 
-func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenDepositToSC() {
+func (u *UnshieldTestSuite) AfterTest(suiteName, testName string) {
+	assert := u.Assert()
+	_, err := u.sDB.Commit(false)
+	assert.NoError(err, fmt.Sprintf("Error in commit db %v", err))
+	bridgeTokenInfos := make(map[common.Hash]*rawdbv2.BridgeTokenInfo)
+	tokens, err := statedb.GetBridgeTokens(u.sDB)
+	assert.NoError(err, fmt.Sprintf("Error in get bridge tokens from db %v", err))
+	for _, token := range tokens {
+		bridgeTokenInfos[*token.TokenID] = token
+	}
+	expectedBridgeTokensInfo := u.testCases[u.currentTestCaseName].ExpectedResult.BridgeTokensInfo
+	assert.Equal(expectedBridgeTokensInfo, bridgeTokenInfos, fmt.Errorf("Expected bridgeTokenInfos %v but get %v", expectedBridgeTokensInfo, bridgeTokenInfos).Error())
+}
+
+func (u *UnshieldTestSuite) TestAcceptedEnoughVault() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		for _, md := range testCase.Metadatas {
-			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-			}
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-func (u *UnshieldTestSuite) TestAcceptedYEqualTo0NativeTokenWithdrawal() {
+func (u *UnshieldTestSuite) TestRejectedInvalidIncTokenID() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		for _, md := range testCase.Metadatas {
-			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-			}
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-}
-
-func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenDepositToSC() {
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		for _, md := range testCase.Metadatas {
-			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-			}
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-}
-
-func (u *UnshieldTestSuite) TestAcceptedYNotEqualTo0NativeTokenWithdrawal() {
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		for _, md := range testCase.Metadatas {
-			for index := range md.Data {
-				expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-			}
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-}
-
-func (u *UnshieldTestSuite) TestRejectedInvalidNetworkID() {
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (u *UnshieldTestSuite) TestRejectedInvalidTokenID() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (u *UnshieldTestSuite) TestRejectedNotEnoughExpectedAmount() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
-func (u *UnshieldTestSuite) TestRejectedNotEnoughVaultValue() {
+func (u *UnshieldTestSuite) TestAcceptedNotEnoughVault() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (u *UnshieldTestSuite) TestRejectedThenAccepted() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		if i == 0 {
-			continue
-		}
-		for index := range testCase.Metadatas[i].Data {
-			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
-}
-
-func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYEqualTo0() {
-	assert := u.Assert()
-	testCase := u.testCases[u.currentTestCaseName]
-	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		if i == 0 {
-			continue
-		}
-		for index := range testCase.Metadatas[i].Data {
-			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
 
 func (u *UnshieldTestSuite) TestRejected2UnshieldIndexes() {
+	u.test()
 	assert := u.Assert()
 	testCase := u.testCases[u.currentTestCaseName]
 	actualResult := u.actualResults[u.currentTestCaseName]
-	expectedState := NewState()
-	expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens
-	expectedStatuses := testCase.ExpectedStatuses
-	actualStatuses := testCase.ActualStatues
-	assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())
-	assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())
-	expectedState.ClearCache()
-	for i, v := range testCase.TxIDs {
-		if i == 0 {
-			continue
-		}
-		for index := range testCase.Metadatas[i].Data {
-			expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID
-		}
-	}
-	assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())
-	assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Instructions, actualResult.Instructions))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProducerState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.State, actualResult.ProcessorState))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.Statuses, actualResult.Statuses))
+	assert.Nil(CheckInterfacesIsEqual(testCase.ExpectedResult.AccumulatedValues, actualResult.AccumulatedValues))
 }
-
-/*func (u *UnshieldTestSuite) TestRejectedByDecimalSmallerThanBaseDecimalYNotEqualTo0() {*/
-/*assert := u.Assert()*/
-/*testCase := u.testCases[u.currentTestCaseName]*/
-/*actualResult := u.actualResults[u.currentTestCaseName]*/
-/*expectedState := NewState()*/
-/*expectedState.unifiedTokenInfos = testCase.ExpectedUnifiedTokens*/
-/*expectedStatuses := testCase.ExpectedStatuses*/
-/*actualStatuses := testCase.ActualStatues*/
-/*assert.Equal(testCase.ExpectedInstructions, actualResult.Instructions, fmt.Errorf("Expected instructions %v but get %v", actualResult.Instructions, testCase.ExpectedInstructions).Error())*/
-/*assert.Equal(expectedState, actualResult.ProducerState, fmt.Errorf("Expected producer state %v but get %v", expectedState, actualResult.ProducerState).Error())*/
-/*expectedState.ClearCache()*/
-/*for i, v := range testCase.TxIDs {*/
-/*if i == 0 {*/
-/*continue*/
-/*}*/
-/*for index := range testCase.Metadatas[i].Data {*/
-/*expectedState.processor.UnshieldTxsCache[common.HashH(append(v.Bytes(), common.IntToBytes(index)...))] = testCase.Metadatas[i].TokenID*/
-/*}*/
-/*}*/
-/*assert.Equal(expectedState, actualResult.ProcessorState, fmt.Errorf("Expected processor state %v but get %v", expectedState, actualResult.ProcessorState).Error())*/
-/*assert.Equal(actualStatuses, expectedStatuses, fmt.Errorf("Expected statuses %v but get %v", expectedStatuses, actualStatuses).Error())*/
-/*}*/
 
 func TestUnshieldTestSuite(t *testing.T) {
 	suite.Run(t, new(UnshieldTestSuite))

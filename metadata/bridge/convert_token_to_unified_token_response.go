@@ -17,8 +17,10 @@ import (
 
 type ConvertTokenToUnifiedTokenResponse struct {
 	metadataCommon.MetadataBase
-	Status  string      `json:"Status"`
-	TxReqID common.Hash `json:"TxReqID"`
+	ConvertAmount uint64      `json:"ConvertAmount"`
+	Reward        uint64      `json:"Reward"`
+	Status        string      `json:"Status"`
+	TxReqID       common.Hash `json:"TxReqID"`
 }
 
 func NewConvertTokenToUnifiedTokenResponse() *ConvertTokenToUnifiedTokenResponse {
@@ -30,14 +32,16 @@ func NewConvertTokenToUnifiedTokenResponse() *ConvertTokenToUnifiedTokenResponse
 }
 
 func NewBridgeAggConvertTokenToUnifiedTokenResponseWithValue(
-	status string, txReqID common.Hash,
+	status string, txReqID common.Hash, convertAmount uint64, reward uint64,
 ) *ConvertTokenToUnifiedTokenResponse {
 	return &ConvertTokenToUnifiedTokenResponse{
 		MetadataBase: metadataCommon.MetadataBase{
 			Type: metadataCommon.BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 		},
-		Status:  status,
-		TxReqID: txReqID,
+		ConvertAmount: convertAmount,
+		Reward:        reward,
+		Status:        status,
+		TxReqID:       txReqID,
 	}
 }
 
@@ -67,6 +71,9 @@ func (response *ConvertTokenToUnifiedTokenResponse) ValidateSanityData(
 ) (bool, bool, error) {
 	if response.Status != common.AcceptedStatusStr && response.Status != common.RejectedStatusStr {
 		return false, false, errors.New("Status is invalid")
+	}
+	if response.ConvertAmount == 0 {
+		return false, false, errors.New("Convert amount can not is zero")
 	}
 	return true, true, nil
 }
@@ -108,14 +115,16 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 		}
 		tempInst := metadataCommon.NewInstruction()
 		if err := tempInst.FromStringSlice(inst); err != nil {
-			return false, err
+			continue
 		}
 
-		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
 		var otaReceiver privacy.OTAReceiver
-		var receivingAmtFromInst uint64
-		var receivingTokenID common.Hash
+		var mintingAmtFromInst uint64
+		var convertAmtFromInst uint64
+		var rewardFromInst uint64
+		var mintedTokenID common.Hash
+		shardIDFromInst := tempInst.ShardID
 
 		switch tempInst.Status {
 		case common.RejectedStatusStr:
@@ -128,11 +137,10 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 				return false, err
 			}
 
-			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = rejectContent.TxReqID
 			otaReceiver = rejectedData.Receiver
-			receivingTokenID = rejectedData.TokenID
-			receivingAmtFromInst = rejectedData.Amount
+			mintedTokenID = rejectedData.TokenID
+			convertAmtFromInst = rejectedData.Amount
 		case common.AcceptedStatusStr:
 			contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
 			if err != nil {
@@ -143,14 +151,17 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 			if err != nil {
 				return false, err
 			}
-			shardIDFromInst = tempInst.ShardID
 			txReqIDFromInst = acceptedContent.TxReqID
 			otaReceiver = acceptedContent.Receiver
-			receivingTokenID = acceptedContent.UnifiedTokenID
-			receivingAmtFromInst = acceptedContent.MintAmount
+			mintedTokenID = acceptedContent.UnifiedTokenID
+			convertAmtFromInst = acceptedContent.ConvertPUnifiedAmount
+			rewardFromInst = acceptedContent.Reward
+
 		default:
 			return false, errors.New("Not find status")
 		}
+
+		mintingAmtFromInst = convertAmtFromInst + rewardFromInst
 
 		if response.TxReqID.String() != txReqIDFromInst.String() {
 			metadataCommon.Logger.Log.Infof("BUGLOG txReqID: %v, %v\n", response.TxReqID.String(), txReqIDFromInst.String())
@@ -160,6 +171,21 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 		if shardID != shardIDFromInst {
 			metadataCommon.Logger.Log.Infof("BUGLOG shardID: %v, %v\n", shardID, shardIDFromInst)
 			continue
+		}
+
+		if response.Status != tempInst.Status {
+			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while check response status: ")
+			return false, errors.New("Invalid convert response status")
+		}
+
+		if response.ConvertAmount != convertAmtFromInst {
+			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while check response convert amount: ")
+			return false, errors.New("Invalid convert amount response")
+		}
+
+		if response.Reward != rewardFromInst {
+			metadataCommon.Logger.Log.Error("ERROR - VALIDATION: an error occured while check response reward: ")
+			return false, errors.New("Invalid convert reward response")
 		}
 
 		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
@@ -179,20 +205,19 @@ func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGe
 			return false, errors.New("OTAReceiver public key is invalid")
 		}
 
-		if receivingAmtFromInst != paidAmount {
-			return false, fmt.Errorf("Amount is invalid receive %d paid %d", receivingAmtFromInst, paidAmount)
+		if mintingAmtFromInst != paidAmount {
+			return false, fmt.Errorf("Amount is invalid receive %d paid %d", mintingAmtFromInst, paidAmount)
 		}
 
 		if !bytes.Equal(txR[:], otaReceiver.TxRandom[:]) {
 			return false, fmt.Errorf("otaReceiver tx random is invalid")
 		}
 
-		if receivingTokenID.String() != coinID.String() {
-			return false, fmt.Errorf("Coin is invalid receive %s expect %s", receivingTokenID.String(), coinID.String())
+		if mintedTokenID.String() != coinID.String() {
+			return false, fmt.Errorf("Coin is invalid receive %s expect %s", mintedTokenID.String(), coinID.String())
 		}
 
 		idx = i
-		fmt.Println("BUGLOG Verify Metadata --- OK")
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response

@@ -4,22 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/blockstorage"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"path"
-	"sync"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
-
-	lru "github.com/hashicorp/golang-lru"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/txpool"
+	"path"
+	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -72,6 +70,11 @@ func NewShardChain(
 	}
 }
 
+func (chain *ShardChain) GetInsertLock() *sync.Mutex {
+	insertLock := chain.insertLock
+	return &insertLock
+}
+
 func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
@@ -115,7 +118,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
 				bcHash := sBestView.GetBeaconHash()
-				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true)
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, false, false)
 				if err != nil {
 					Logger.log.Errorf("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
 				} else {

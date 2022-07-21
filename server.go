@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	"github.com/incognitochain/incognito-chain/pruner"
 
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
@@ -82,6 +83,7 @@ type Server struct {
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
 	highway      *peerv2.ConnManager
+	Pruner       *pruner.PrunerManager
 
 	cQuit     chan struct{}
 	wg        *sync.WaitGroup
@@ -201,6 +203,7 @@ func (serverObj *Server) NewServer(
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
+	p *pruner.PrunerManager,
 	interrupt <-chan struct{},
 ) error {
 	// Init data for Server
@@ -348,6 +351,13 @@ func (serverObj *Server) NewServer(
 
 	//set bc obj for monitor
 	monitor.SetBlockChainObj(serverObj.blockChain)
+
+	//set shard insert lock for prunner
+	serverObj.Pruner = p
+	for sid := 0; sid < serverObj.GetActiveShardNumber(); sid++ {
+		serverObj.Pruner.SetShardInsertLock(sid, serverObj.blockChain.ShardChain[sid].GetInsertLock())
+	}
+	go serverObj.Pruner.Start()
 
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
@@ -546,6 +556,7 @@ func (serverObj *Server) NewServer(
 			ConsensusEngine: serverObj.consensusEngine,
 			MemCache:        serverObj.memCache,
 			Syncker:         serverObj.syncker,
+			Pruner:          p,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -2167,4 +2178,7 @@ func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]b
 
 func (serverObj *Server) GetSelfPeerID() libp2p.ID {
 	return serverObj.highway.LocalHost.Host.ID()
+}
+func (serverObj *Server) InsertNewShardView(newView *blockchain.ShardBestState) {
+	serverObj.Pruner.InsertNewView(newView)
 }

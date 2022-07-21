@@ -86,7 +86,7 @@ func collectStatefulActions(
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
 			metadataCommon.PortalV4ConvertVaultRequestMeta,
-			metadataCommon.BridgeAggModifyRewardReserveMeta,
+			metadataCommon.BridgeAggModifyParamMeta,
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta:
@@ -177,17 +177,17 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	sort.Ints(keys)
 
 	// bridge agg actions collector
-	unshieldActions := make([][]string, beaconBestState.ActiveShards)
+	// unshieldActions := make([][]string, beaconBestState.ActiveShards)
 	shieldActions := make([][]string, beaconBestState.ActiveShards)
 	convertActions := make([][]string, beaconBestState.ActiveShards)
-	modifyRewardReserveActions := make([][]string, beaconBestState.ActiveShards)
+	modifyParamActions := make([][]string, beaconBestState.ActiveShards)
 	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
 	if err != nil {
 		Logger.log.Error(err)
 		return utils.EmptyStringMatrix, err
 	}
 
-	newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues)
+	newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggManager.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues, beaconBestState.TriggeredFeature)
 	if err != nil {
 		return [][]string{}, err
 	}
@@ -342,14 +342,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
-			case metadataCommon.BridgeAggModifyRewardReserveMeta:
-				modifyRewardReserveActions[shardID] = append(modifyRewardReserveActions[shardID], contentStr)
+			case metadataCommon.BridgeAggModifyParamMeta:
+				modifyParamActions[shardID] = append(modifyParamActions[shardID], contentStr)
 			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
-			case metadataCommon.BurningUnifiedTokenRequestMeta:
-				unshieldActions[shardID] = append(unshieldActions[shardID], contentStr)
 			default:
 				continue
 			}
@@ -402,17 +400,17 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, portalInsts...)
 	}
 
+	// Bridge aggregator instructions (don't build unshield instructions here)
 	bridgeAggEnv := bridgeagg.
 		NewStateEnvBuilder().
 		BuildConvertActions(convertActions).
-		BuildModifyRewardReserveActions(modifyRewardReserveActions).
+		BuildModifyParamActions(modifyParamActions).
 		BuildShieldActions(shieldActions).
-		BuildUnshieldActions(unshieldActions).
 		BuildAccumulatedValues(accumulatedValues).
 		BuildBeaconHeight(beaconHeight).
 		BuildStateDBs(sDBs).
 		Build()
-	bridgeAggInsts, newAccumulatedValues, err := beaconBestState.bridgeAggState.BuildInstructions(bridgeAggEnv)
+	bridgeAggInsts, newAccumulatedValues, err := beaconBestState.bridgeAggManager.BuildInstructions(bridgeAggEnv)
 	if err != nil {
 		return instructions, err
 	}
