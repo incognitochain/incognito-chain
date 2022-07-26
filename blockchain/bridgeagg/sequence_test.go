@@ -161,7 +161,7 @@ func (s *SequenceTestSuite) TestSequence() {
 
 		newInsts := append(inst, unshieldInsts...)
 
-		err = managerProcess.Process(newInsts, s.sDB)
+		_, err = managerProcess.Process(newInsts, s.sDB)
 		s.Assert().Equal(nil, err, "Beacon process instructions error")
 
 		s.Assert().Equal(true, reflect.DeepEqual(managerProducer.state, s.ExpectedResult[i].BridgeAggState), "Different state producer")
