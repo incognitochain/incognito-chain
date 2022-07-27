@@ -137,12 +137,14 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
 	beaconBestState.bridgeAggManager = bridgeagg.NewManager()
+	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
 	beaconBestState.CurrentRandomNumber = -1
