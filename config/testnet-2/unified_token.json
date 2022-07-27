@@ -1,6 +1,5 @@
 {
-    "23062022": {},
-    "230620222": {
+    "20220727": {
         "3a526c0fa9abfc3e3e37becc52c5c10abbb7897b0534ad17018e766fc6133590": {
             "fdd928bc86c82bd2a7c54082a68332ebb5f2cde842b1c2e0fa430ededb6e369e": {
                 "external_decimal": 6,
@@ -11,6 +10,11 @@
                 "external_decimal": 18,
                 "external_token_id": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
                 "network_id": 2
+            },
+            "cd6dc64b6aac374de86b3376fc3765e5c129ae9b14a0abc30ee888b801dd5148": {
+                "external_decimal": 6,
+                "external_token_id": "0x3813e82e6f7098b9583FC0F33a962D02018B6803",
+                "network_id": 3
             }
         },
         "6fa448f24835b0c72e62004edf391679fdbc391a82e4edb3726d16251509a2d0": {
@@ -75,9 +79,7 @@
                 "external_token_id": "0x9440c3bB6Adb5F0D5b8A460d8a8c010690daC2E8",
                 "network_id": 4
             }
-        }
-    },
-    "230620223": {
+        },
         "f5d88e2e3c8f02d6dc1e01b54c90f673d730bef7d941aeec81ad1e1db690961f": {
             "dae027b21d8d57114da11209dce8eeb587d01adf59d4fc356a8be5eedc146859" : {
                 "external_decimal": 18,
@@ -98,22 +100,12 @@
                 "external_token_id": "0x0000000000000000000000000000000000000000",
                 "network_id": 2
             }
-        }
-    },
-    "230620224": {},
-    "230620225": {
+        },
         "ff4c73b8c92e6278b344d8ae2b3959f0b8c44ad7ca4dbc34c5ca2c678f07b6f2": {
             "a61df4d870c17a7dc62d7e4c16c6f4f847994403842aaaf21c994d1a0024b032": {
                 "external_decimal": 18,
                 "external_token_id": "0xed24fc36d5ee211ea25a80239fb8c4cfd80f12ee",
                 "network_id": 2
-            }
-        },
-        "3a526c0fa9abfc3e3e37becc52c5c10abbb7897b0534ad17018e766fc6133590": {
-            "cd6dc64b6aac374de86b3376fc3765e5c129ae9b14a0abc30ee888b801dd5148": {
-                "external_decimal": 6,
-                "external_token_id": "0x3813e82e6f7098b9583FC0F33a962D02018B6803",
-                "network_id": 3
             }
         }
     }

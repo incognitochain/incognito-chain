@@ -122,26 +122,10 @@ auto_enable_feature:
       min_trigger: 3965040
       force_trigger: 1000000000
       require_percentage: 90
-  - unified_token_23062022:
-      min_trigger: 4762600
+  - unified_token_20220727:
+      min_trigger: 4736680
       force_trigger: 1000000000
       require_percentage: 90
-  - unified_token_230620222:
-      min_trigger: 4763160
-      force_trigger: 1000000000
-      require_percentage: 90
-  - unified_token_230620223:
-      min_trigger: 4806400
-      force_trigger: 1000000000
-      require_percentage: 90
-  - unified_token_230620224:
-      min_trigger: 4831300 
-      force_trigger: 1000000000
-      require_percentage: 90   
-  - unified_token_230620225:
-      min_trigger: 4864700 
-      force_trigger: 1000000000
-      require_percentage: 90   
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
