@@ -13,6 +13,11 @@ type anchorTime struct {
 
 type TSManager struct {
 	Anchors []anchorTime
+	//below fields save the last enablefeature block for shard
+	//when we see update version in shardstate, these value help us retrieve checkpoint information
+	CurrentBlockVersion int
+	CurrentBlockTS      int64
+	CurrentProposeTime  int64
 }
 
 func (s *TSManager) getLatestAnchor() anchorTime {
@@ -24,6 +29,12 @@ func (s *TSManager) getLatestAnchor() anchorTime {
 
 func (s *TSManager) updateNewAnchor(previousEndTime int64, startTime int64, startTS int64, timeslot int) {
 	s.Anchors = append(s.Anchors, anchorTime{previousEndTime, startTime, startTS, timeslot})
+}
+
+func (s *TSManager) updateCurrentInfo(version int, currentTS int64, currentProposeTime int64) {
+	s.CurrentBlockVersion = version
+	s.CurrentBlockTS = currentTS
+	s.CurrentProposeTime = currentProposeTime
 }
 
 func (s *TSManager) getCurrentTS() int64 {

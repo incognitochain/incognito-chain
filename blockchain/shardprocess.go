@@ -817,10 +817,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 
 	//checkpoint timeslot
+	curTS := shardBestState.CalculateTimeSlot(shardBlock.GetProposeTime())
 	for feature, _ := range config.Param().BlockTimeParam {
 		if triggerHeight, ok := shardBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == shardBlock.GetHeight() {
-				curTS := shardBestState.CalculateTimeSlot(shardBlock.GetProposeTime())
 				//align shard timeslot to be middle of beacon timeslot
 				alignTime := beaconBlockContainTriggerFeature.GetProposeTime() + (config.Param().BlockTimeParam[feature] / 2)
 				for alignTime < shardBlock.GetProposeTime() {
@@ -833,6 +833,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			}
 		}
 	}
+	shardBestState.TSManager.updateCurrentInfo(shardBlock.GetVersion(), curTS, shardBlock.GetProposeTime())
 
 	//update committee
 	beaconInstructions, _, err := blockchain.
