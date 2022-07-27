@@ -594,6 +594,50 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	//checkpoint timeslot
+	curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
+	for feature, _ := range config.Param().BlockTimeParam {
+		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
+			if triggerHeight == beaconBlock.GetHeight() {
+				//fmt.Println("updateNewAnchor xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", beaconBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
+				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]))
+			}
+		}
+	}
+	beaconBestState.TSManager.updateCurrentInfo(beaconBlock.GetVersion(), curTS, beaconBlock.GetProposeTime())
+
+	//checkpoint timeslot for shard
+	for sid, shardstates := range beaconBlock.Body.ShardState {
+		if _, ok := beaconBestState.ShardTSManager[sid]; !ok {
+			beaconBestState.ShardTSManager[sid] = new(TSManager)
+		}
+		for _, shardstate := range shardstates {
+			tsManager := beaconBestState.ShardTSManager[sid]
+			if tsManager.CurrentBlockVersion != shardstate.Version {
+				for feature, blockTime := range config.Param().BlockTimeParam {
+					version := config.Param().FeatureVersion[feature]
+					if version == int64(shardstate.Version) {
+						lastTS := tsManager.CurrentBlockTS      // last shard block timeslot
+						endTime := tsManager.CurrentProposeTime //last shard block propose time
+						startTime := shardstate.ProposerTime - blockTime
+						for { //finding the minimum valid start time (incase, new version proposed block is in several round)
+							if startTime >= endTime+blockTime {
+								startTime = startTime - blockTime
+							} else {
+								break
+							}
+						}
+						if startTime < endTime {
+							Logger.log.Errorf("proposetime: %v, blocktime: %v, endtime: %v", shardstate.ProposerTime, blockTime, endTime)
+							panic("start time must be always >= endtime")
+						}
+						tsManager.updateNewAnchor(startTime, endTime, lastTS, int(blockTime))
+					}
+				}
+			}
+			tsManager.updateCurrentInfo(shardstate.Version, tsManager.calculateTimeslot(shardstate.ProposerTime), shardstate.ProposerTime)
+		}
+	}
+
 	for feature, _ := range config.Param().BlockTimeParam {
 		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == beaconBlock.GetHeight() {
@@ -792,7 +836,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
 	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION {
-		timeSlot := curView.CalculateTimeSlot(shardState.ProposerTime)
+		timeSlot := curView.ShardTSManager[shardID].calculateTimeslot(shardState.ProposerTime)
 		// timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,

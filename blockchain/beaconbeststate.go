@@ -76,6 +76,7 @@ type BeaconBestState struct {
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
 	RewardMinted                     uint64               `json:"RewardMinted"`
 	TSManager                        TSManager
+	ShardTSManager                   map[byte]*TSManager
 
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
