@@ -3,9 +3,10 @@ package common
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 /*
@@ -586,3 +587,9 @@ func TestCommonAppendSliceString(t *testing.T) {
 //		fmt.Printf("Hash string len: %v\n", len(hash.String()))
 //	}
 //}
+
+func TestA(t *testing.T) {
+	bytes := RandBytes(32)
+	hashStr := HashH(bytes).String()
+	fmt.Printf("hashStr: %v\n", hashStr)
+}

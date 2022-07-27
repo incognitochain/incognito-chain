@@ -26,7 +26,7 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash                  `json:"RequestedTxID"`
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState, block *types.BeaconBlock) error {
+func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState, block *types.BeaconBlock, bridgeAggUnshieldTxIDs map[string]bool) error {
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
@@ -59,16 +59,16 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 			updatingInfoByTokenID, err = blockchain.processContractingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, "")
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, "", bridgeAggUnshieldTxIDs)
 
 		case strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.BSCPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.BSCPrefix, bridgeAggUnshieldTxIDs)
 
 		case strconv.Itoa(metadata.BurningPLGConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.PLGPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.PLGPrefix, bridgeAggUnshieldTxIDs)
 
 		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix, bridgeAggUnshieldTxIDs)
 		}
 		if err != nil {
 			return err
@@ -254,9 +254,16 @@ func (blockchain *BlockChain) processBurningReq(
 	instruction []string,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 	prefix string,
+	bridgeAggUnshieldTxIDs map[string]bool,
 ) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) < 8 {
 		return updatingInfoByTokenID, nil // skip the instruction
+	}
+	txIDStr := instruction[5]
+	if bridgeAggUnshieldTxIDs[txIDStr] {
+		// confirm instruction from bridge agg => do nothing
+		Logger.log.Debugf("Skip process bridge agg confirm instruction in the bridge process flow %v", txIDStr)
+		return updatingInfoByTokenID, nil
 	}
 
 	externalTokenID, _, errExtToken := base58.Base58Check{}.Decode(instruction[2])

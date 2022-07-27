@@ -17,6 +17,10 @@ type Server struct {
 	TxPool     *mempool.TxPool
 }
 
+func (s *Server) InsertNewShardView(state *blockchain.ShardBestState) {
+	return
+}
+
 func (s *Server) PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error {
 	return nil
 }

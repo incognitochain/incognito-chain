@@ -26,6 +26,12 @@ testnet-2:
 mainnet:
 	INCOGNITO_NETWORK_KEY=$(MAINNET) ./$(BUILD_FILE_NAME)
 
+prune-mainnet:
+	INCOGNITO_NETWORK_KEY=$(MAINNET) ./$(BUILD_FILE_NAME) --stateprune
+
+prune-local:
+	INCOGNITO_NETWORK_KEY=$(LOCAL) ./$(BUILD_FILE_NAME) --stateprune
+
 test:
 	make build
 	go test ./.../pdexv3

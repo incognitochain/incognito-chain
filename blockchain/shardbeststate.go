@@ -4,10 +4,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -81,6 +82,13 @@ type ShardBestState struct {
 
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
 	return shardBestState.consensusStateDB.Copy()
+}
+
+//for test only
+func (shardBestState *ShardBestState) SetTransactonDB(h common.Hash, txDB *statedb.StateDB) {
+	shardBestState.transactionStateDB = txDB
+	shardBestState.TransactionStateDBRootHash = h
+	return
 }
 
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
@@ -160,7 +168,7 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
