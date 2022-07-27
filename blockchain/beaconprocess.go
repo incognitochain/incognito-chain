@@ -630,7 +630,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 							Logger.log.Errorf("proposetime: %v, blocktime: %v, endtime: %v", shardstate.ProposerTime, blockTime, endTime)
 							panic("start time must be always >= endtime")
 						}
-						tsManager.updateNewAnchor(startTime, endTime, lastTS, int(blockTime))
+						tsManager.updateNewAnchor(endTime, startTime, lastTS, int(blockTime))
 					}
 				}
 			}
