@@ -243,6 +243,9 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 
+	bu := NewBootStrapManager(blockchain)
+	bu.Start()
+	panic(1)
 	return nil
 }
 
