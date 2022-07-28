@@ -7,7 +7,11 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"io/ioutil"
+	"os"
 	"path"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -61,11 +65,75 @@ func (s *BootstrapManager) Start() {
 	}
 }
 
+const (
+	BeaconConsensus = 1
+	BeaconFeature   = 2
+	BeaconReward    = 3
+	BeaconSlash     = 4
+	ShardConsensus  = 5
+	ShardTransacton = 6
+	ShardFeature    = 7
+	ShardReward     = 8
+)
+
+type CheckpointInfo struct {
+	Hash   string
+	Height int64
+}
+
+func (s *BootstrapManager) getBackupReader(dbType int, cid int) (CheckpointInfo, *flatfile.FlatFileManager) {
+	dbLoc := ""
+	infoLoc := ""
+	switch dbType {
+	case BeaconConsensus:
+		dbLoc = path.Join(dbLoc, "beacon", "consensus")
+		infoLoc = path.Join(dbLoc, "beacon", "info")
+	case BeaconFeature:
+		dbLoc = path.Join(dbLoc, "beacon", "feature")
+		infoLoc = path.Join(dbLoc, "beacon", "info")
+	case BeaconReward:
+		dbLoc = path.Join(dbLoc, "beacon", "reward")
+		infoLoc = path.Join(dbLoc, "beacon", "info")
+	case BeaconSlash:
+		dbLoc = path.Join(dbLoc, "beacon", "slash")
+		infoLoc = path.Join(dbLoc, "beacon", "info")
+	case ShardConsensus:
+		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "consensus")
+		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
+	case ShardTransacton:
+		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "transaction")
+		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
+	case ShardFeature:
+		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "feature")
+		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
+	case ShardReward:
+		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "reward")
+		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
+	}
+	infoFD, _ := os.Open(infoLoc)
+	infoB, _ := ioutil.ReadAll(infoFD)
+	info := CheckpointInfo{}
+	if len(infoB) > 0 {
+		height := strings.Split(string(infoB), "-")[0]
+		hash := strings.Split(string(infoB), "-")[1]
+		info.Hash = hash
+		info.Height, _ = strconv.ParseInt(height, 10, 64)
+	} else {
+		return CheckpointInfo{}, nil
+	}
+
+	ff, _ := flatfile.NewFlatFile(dbLoc, 5000)
+	return info, ff
+}
+
 func (s *BootstrapManager) backupShard(name string, bestView *ShardBestState) {
 	consensusDB := bestView.GetCopiedConsensusStateDB()
 	txDB := bestView.GetCopiedTransactionStateDB()
 	featureDB := bestView.GetCopiedFeatureStateDB()
 	rewardDB := bestView.GetShardRewardStateDB()
+
+	fd, _ := os.OpenFile(path.Join(name, "beacon", "shard", fmt.Sprint(bestView.ShardID), "info"), os.O_RDWR, 0666)
+	fd.WriteString(fmt.Sprintf("%v-%v", bestView.ShardHeight, bestView.Hash().String()))
 
 	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "consensus"), 5000)
 	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "feature"), 5000)
@@ -87,7 +155,9 @@ func (s *BootstrapManager) backupBeacon(name string, bestView *BeaconBestState) 
 	featureDB := bestView.GetBeaconFeatureStateDB()
 	rewardDB := bestView.GetBeaconRewardStateDB()
 	slashDB := bestView.GetBeaconSlashStateDB()
-	fmt.Println(path.Join(name, "beacon", "consensus"))
+	fd, _ := os.OpenFile(path.Join(name, "beacon", "info"), os.O_RDWR, 0666)
+	fd.WriteString(fmt.Sprintf("%v-%v", bestView.BeaconHeight, bestView.Hash().String()))
+
 	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "consensus"), 5000)
 	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "feature"), 5000)
 	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "reward"), 5000)
