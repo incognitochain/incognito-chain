@@ -46,8 +46,8 @@ type BlockChain struct {
 	config      Config
 	cQuitSync   chan struct{}
 
-	IsTest bool
-
+	IsTest                      bool
+	BootstrapManager            *BootstrapManager
 	beaconViewCache             *lru.Cache
 	committeeByEpochCache       *lru.Cache
 	committeeByEpochProcessLock sync.Mutex

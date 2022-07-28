@@ -47,7 +47,6 @@ var HttpHandler = map[string]httpHandler{
 	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
 	//backup and preload
-	setBackup:       (*HttpServer).handleSetBackup,
 	getLatestBackup: (*HttpServer).handleGetLatestBackup,
 	// block
 	getBestBlock:                (*HttpServer).handleGetBestBlock,

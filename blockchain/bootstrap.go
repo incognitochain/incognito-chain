@@ -7,23 +7,25 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"io/ioutil"
 	"os"
 	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
 
-type bootstrapProcess struct {
+type checkpointInfo struct {
 	checkPointHeight uint64
+	checkpointHash   string
+}
+type BootstrapProcess struct {
+	checkpointName string
+	chainInfo      map[int]checkpointInfo
 }
 
 type BootstrapManager struct {
 	blockchain       *BlockChain
-	lastBootStrap    *bootstrapProcess
-	runningBootStrap *bootstrapProcess
+	lastBootStrap    *BootstrapProcess
+	runningBootStrap *BootstrapProcess
 }
 
 type StateDBData struct {
@@ -32,8 +34,14 @@ type StateDBData struct {
 }
 
 func NewBootStrapManager(bc *BlockChain) *BootstrapManager {
+	//TODO: read bootstrap dir and load lastBootstrap
 	return &BootstrapManager{bc, nil, nil}
 }
+
+func (s *BootstrapManager) GetLastestBootstrap() BootstrapProcess {
+	return *s.lastBootStrap
+}
+
 func (s *BootstrapManager) Start() {
 	shardBestView := map[int]*ShardBestState{}
 	beaconBestView := s.blockchain.GetBeaconBestState()
@@ -46,23 +54,23 @@ func (s *BootstrapManager) Start() {
 	}
 
 	//update current status
-	s.runningBootStrap = &bootstrapProcess{
-		beaconBestView.BeaconHeight,
+	bootstrapInfo := &BootstrapProcess{
+		checkpointName: checkPoint,
+		chainInfo:      make(map[int]checkpointInfo),
 	}
+	bootstrapInfo.chainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String()}
+	s.runningBootStrap = bootstrapInfo
 
 	//backup beacon then shard
-	fmt.Println("Backup beacon")
 	cfg := config.LoadConfig()
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		fmt.Println("Backup shard", i)
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
+		bootstrapInfo.chainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String()}
 	}
 
 	//update final status
-	s.lastBootStrap = &bootstrapProcess{
-		beaconBestView.BeaconHeight,
-	}
+	s.lastBootStrap = bootstrapInfo
 }
 
 const (
@@ -81,49 +89,29 @@ type CheckpointInfo struct {
 	Height int64
 }
 
-func (s *BootstrapManager) getBackupReader(dbType int, cid int) (CheckpointInfo, *flatfile.FlatFileManager) {
-	dbLoc := ""
-	infoLoc := ""
+func (s *BootstrapManager) GetBackupReader(checkpoint string, cid int, dbType int) *flatfile.FlatFileManager {
+	cfg := config.LoadConfig()
+	dbLoc := path.Join(cfg.DataDir, cfg.DatabaseDir, checkpoint)
 	switch dbType {
 	case BeaconConsensus:
 		dbLoc = path.Join(dbLoc, "beacon", "consensus")
-		infoLoc = path.Join(dbLoc, "beacon", "info")
 	case BeaconFeature:
 		dbLoc = path.Join(dbLoc, "beacon", "feature")
-		infoLoc = path.Join(dbLoc, "beacon", "info")
 	case BeaconReward:
 		dbLoc = path.Join(dbLoc, "beacon", "reward")
-		infoLoc = path.Join(dbLoc, "beacon", "info")
 	case BeaconSlash:
 		dbLoc = path.Join(dbLoc, "beacon", "slash")
-		infoLoc = path.Join(dbLoc, "beacon", "info")
 	case ShardConsensus:
 		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "consensus")
-		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
 	case ShardTransacton:
 		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "transaction")
-		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
 	case ShardFeature:
 		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "feature")
-		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
 	case ShardReward:
 		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "reward")
-		infoLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "info")
 	}
-	infoFD, _ := os.Open(infoLoc)
-	infoB, _ := ioutil.ReadAll(infoFD)
-	info := CheckpointInfo{}
-	if len(infoB) > 0 {
-		height := strings.Split(string(infoB), "-")[0]
-		hash := strings.Split(string(infoB), "-")[1]
-		info.Hash = hash
-		info.Height, _ = strconv.ParseInt(height, 10, 64)
-	} else {
-		return CheckpointInfo{}, nil
-	}
-
 	ff, _ := flatfile.NewFlatFile(dbLoc, 5000)
-	return info, ff
+	return ff
 }
 
 func (s *BootstrapManager) backupShard(name string, bestView *ShardBestState) {

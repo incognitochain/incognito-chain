@@ -60,15 +60,10 @@ func NewSynckerManager() *SynckerManager {
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
 
-	//check preload beacon
+	//check if bootstrap node is set, if yes then we should preload beacon database
 	preloadAddr := configpkg.Config().PreloadAddress
 	if preloadAddr != "" {
-		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
-			fmt.Println(err)
-			Logger.Infof("Preload beacon fail!")
-		} else {
-			config.Blockchain.RestoreBeaconViews()
-		}
+
 	}
 
 	if os.Getenv("FULLNODE") == "1" {
