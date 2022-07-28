@@ -273,7 +273,7 @@ func VerifyProofAndParseEVMReceipt(
 		nodeList.Put([]byte{}, proofBytes)
 	}
 	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(evmHeaderResult.Header.ReceiptHash, keybuf.Bytes(), proof)
+	val, err := trie.VerifyProof(evmHeaderResult.Header.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
 		metadataCommon.Logger.Log.Warn(errMsg)
