@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -68,6 +69,10 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		} else {
 			config.Blockchain.RestoreBeaconViews()
 		}
+	}
+
+	if os.Getenv("FULLNODE") == "1" {
+		synckerManager.config.Network.SetSyncMode("fullnode")
 	}
 
 	//init beacon sync process
@@ -256,11 +261,15 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 }
 
 //Get Crossshard Block for creating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte, limit map[byte][]uint64) map[byte][]interface{} {
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curView *blockchain.ShardBestState, limit map[byte][]uint64) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
+	toShard := curView.ShardID
+	lastRequestCrossShard := make(map[byte]uint64)
+	for index, key := range curView.BestCrossShard {
+		lastRequestCrossShard[index] = key
+	}
 
-	lastRequestCrossShard := synckerManager.config.Blockchain.ShardChain[int(toShard)].GetCrossShardState()
 	bc := synckerManager.config.Blockchain
 	beaconDB := bc.GetBeaconChainDatabase()
 	for i := 0; i < synckerManager.config.Blockchain.GetActiveShardNumber(); i++ {
@@ -352,8 +361,9 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 }
 
 //Get Crossshard Block for validating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
-	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(curView *blockchain.ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error) {
+	toShard := curView.ShardID
+	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(curView, list)
 
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
@@ -362,7 +372,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
 
-		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
+		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(curView, list)
 		//Logger.Info("get crosshshard block for shard producer", crossShardPoolLists)
 		missingBlocks = compareListsByHeight(crossShardPoolLists, list)
 
@@ -573,6 +583,10 @@ func (blk *TmpBlock) Hash() *common.Hash {
 
 func (blk *TmpBlock) GetPrevHash() common.Hash {
 	return blk.PreHash
+}
+
+func (blk *TmpBlock) FullHashString() string {
+	return blk.Hash().String()
 }
 
 func (blk *TmpBlock) GetShardID() int {

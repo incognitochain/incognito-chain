@@ -3,6 +3,7 @@ package blsmultisig
 import (
 	"bytes"
 	"errors"
+	"log"
 	"math/big"
 	"sync"
 
@@ -93,6 +94,8 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 	}
 	// }
 	if !bytes.Equal(lPair.Marshal(), rPair.Marshal()) {
+		log.Printf("Invalid Agg Signature \n lPair %+v \n rPair %+v \n", lPair.Marshal(), rPair.Marshal())
+		log.Printf("Sig %+v\n BlockHash %+v \n Valindex %+v \n Committee %+v \n", sig, data, signersIdx, committee)
 		return false, nil
 	}
 	// fmt.Printf("ConsLog %v %v %v %v %v %v %v\n", e1.Seconds(), e2.Seconds(), e3.Seconds(), e4.Seconds(), e5.Seconds(), e6.Seconds(), e7.Seconds())

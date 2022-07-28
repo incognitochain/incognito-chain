@@ -6,33 +6,34 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type ProposeMessageEnvironment struct {
-	block                      types.BlockInterface
-	previousBlock              types.BlockInterface
-	committees                 []incognitokey.CommitteePublicKey
-	signingCommittees          []incognitokey.CommitteePublicKey
-	userKeySet                 []signatureschemes2.MiningKey
-	producerPublicBLSMiningKey string
+	block                            types.BlockInterface
+	previousBlock                    types.BlockInterface
+	committees                       []incognitokey.CommitteePublicKey
+	signingCommittees                []incognitokey.CommitteePublicKey
+	userKeySet                       []signatureschemes2.MiningKey
+	NumberOfFixedShardBlockValidator int
+	proposerPublicBLSMiningKey       string
 }
 
-func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock types.BlockInterface, committees []incognitokey.CommitteePublicKey, signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey, producerPublicBLSMiningKey string) *ProposeMessageEnvironment {
-	return &ProposeMessageEnvironment{block: block, previousBlock: previousBlock, committees: committees, signingCommittees: signingCommittees, userKeySet: userKeySet, producerPublicBLSMiningKey: producerPublicBLSMiningKey}
+func NewProposeMessageEnvironment(block types.BlockInterface, previousBlock types.BlockInterface, committees []incognitokey.CommitteePublicKey, signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey, numberOfFixedShardBlockValidator int, proposerPublicBLSMiningKey string) *ProposeMessageEnvironment {
+	return &ProposeMessageEnvironment{block: block, previousBlock: previousBlock, committees: committees, signingCommittees: signingCommittees, userKeySet: userKeySet, NumberOfFixedShardBlockValidator: numberOfFixedShardBlockValidator, proposerPublicBLSMiningKey: proposerPublicBLSMiningKey}
 }
 
 type SendProposeBlockEnvironment struct {
-	finalityProof    *FinalityProof
-	isValidRePropose bool
-	userProposeKey   signatureschemes2.MiningKey
-	peerID           string
+	finalityProof          *FinalityProof
+	isValidRePropose       bool
+	userProposeKey         signatureschemes2.MiningKey
+	peerID                 string
+	bestBlockConsensusData map[int]types.BlockConsensusData
 }
 
-func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string) *SendProposeBlockEnvironment {
-	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID}
+func NewSendProposeBlockEnvironment(finalityProof *FinalityProof, isValidRePropose bool, userProposeKey signatureschemes2.MiningKey, peerID string, consensusData map[int]types.BlockConsensusData) *SendProposeBlockEnvironment {
+	return &SendProposeBlockEnvironment{finalityProof: finalityProof, isValidRePropose: isValidRePropose, userProposeKey: userProposeKey, peerID: peerID, bestBlockConsensusData: consensusData}
 }
 
 type IProposeMessageRule interface {
@@ -66,7 +67,7 @@ func (p ProposeRuleLemma1) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		Committees:              incognitokey.DeepCopy(env.committees),
 		SigningCommittees:       incognitokey.DeepCopy(env.signingCommittees),
 		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(env.userKeySet),
-		ProposerMiningKeyBase58: env.producerPublicBLSMiningKey,
+		ProposerMiningKeyBase58: env.proposerPublicBLSMiningKey,
 	}, nil
 }
 
@@ -102,7 +103,7 @@ func NewProposeRuleLemma2(logger common.Logger, nextBlockFinalityProof map[strin
 }
 
 func (p ProposeRuleLemma2) HandleCleanMem(finalView uint64) {
-	for temp, _ := range p.nextBlockFinalityProof {
+	for temp := range p.nextBlockFinalityProof {
 		hash := common.Hash{}.NewHashFromStr2(temp)
 		block, err := p.chain.GetBlockByHash(hash)
 		if err == nil {
@@ -118,21 +119,35 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 	var err error
 	var isReProposeFirstBlockNextHeight = false
 	var isFirstBlockNextHeight = false
+
 	isFirstBlockNextHeight = p.isFirstBlockNextHeight(env.previousBlock, env.block)
+
+	//if block next timeslot
 	if isFirstBlockNextHeight {
-		err := p.verifyLemma2FirstBlockNextHeight(proposeMsg, env.block)
+		isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, env.block)
 		if err != nil {
 			return nil, err
 		}
+		if !isValid {
+			p.logger.Error("Verify lemma2 first block next height error", err)
+			return nil, fmt.Errorf("Invalid FirstBlockNextHeight ReproposeHashSignature %+v, proposer %+v",
+				proposeMsg.ReProposeHashSignature, env.block.GetProposer())
+		}
 		isValidLemma2 = true
-	} else {
-		isReProposeFirstBlockNextHeight = p.isReProposeFromFirstBlockNextHeight(env.previousBlock, env.block, env.committees)
+	} else { //if not, check if it repropose the first
+		isReProposeFirstBlockNextHeight = p.isReProposeFromFirstBlockNextHeight(env.previousBlock, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 		if isReProposeFirstBlockNextHeight {
-			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees)
+			isValidLemma2, err = p.verifyLemma2ReProposeBlockNextHeight(proposeMsg, env.block, env.committees, env.NumberOfFixedShardBlockValidator)
 			if err != nil {
+				p.logger.Error("Verify lemma2 error", err)
 				return nil, err
 			}
 		}
+	}
+
+	if !isValidLemma2 && env.block.GetFinalityHeight() != 0 {
+		p.logger.Error("Finality Height is set, but lemma2 is error", err)
+		return nil, fmt.Errorf("Finality Height is set, but lemma2 is error")
 	}
 
 	proposeBlockInfo := newProposeBlockForProposeMsgLemma2(
@@ -141,13 +156,19 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		env.committees,
 		env.signingCommittees,
 		env.userKeySet,
-		env.producerPublicBLSMiningKey,
+		env.proposerPublicBLSMiningKey,
 		isValidLemma2,
 	)
+	//get vote for this propose block (case receive vote faster)
+	votes, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
+	if err != nil {
+		p.logger.Error("Cannot get vote by block hash for rebuild", err)
+		return nil, err
+	}
+	proposeBlockInfo.Votes = votes
 
 	p.logger.Infof("HandleBFTProposeMessage Lemma 2, receive Block height %+v, hash %+v, finality height %+v, isValidLemma2 %+v",
-		env.block.GetHeight(), env.block.Hash().String(), env.block.GetFinalityHeight(), isValidLemma2)
-
+		env.block.GetHeight(), env.block.FullHashString(), env.block.GetFinalityHeight(), isValidLemma2)
 	if isValidLemma2 {
 		if err := p.addFinalityProof(env.block, proposeMsg.ReProposeHashSignature, proposeMsg.FinalityProof); err != nil {
 			return nil, err
@@ -192,21 +213,24 @@ func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
 	previousBlock types.BlockInterface,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
+	numberOfFixedShardBlockValidator int,
 ) bool {
 
 	previousProposerTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
 	producerTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
 	proposerTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
 
+	//next propose time is also produce time
 	if producerTimeSlot != previousProposerTimeSlot+1 {
 		return false
 	}
 
+	//other check
 	if proposerTimeSlot <= producerTimeSlot {
 		return false
 	}
 
-	wantProposer, _ := GetProposerByTimeSlotFromCommitteeList(proposerTimeSlot, committees)
+	wantProposer, _ := GetProposerByTimeSlotFromCommitteeList(proposerTimeSlot, committees, numberOfFixedShardBlockValidator)
 	wantProposerBase58, _ := wantProposer.ToBase58()
 	if block.GetProposer() != wantProposerBase58 {
 		return false
@@ -215,34 +239,11 @@ func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
 	return true
 }
 
-func (p *ProposeRuleLemma2) verifyLemma2FirstBlockNextHeight(
-	proposeMsg *BFTPropose,
-	block types.BlockInterface,
-) error {
-
-	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
-	if err != nil {
-		return err
-	}
-	if !isValid {
-		return fmt.Errorf("Invalid FirstBlockNextHeight ReproposeHashSignature %+v, proposer %+v",
-			proposeMsg.ReProposeHashSignature, block.GetProposer())
-	}
-
-	finalityHeight := block.GetFinalityHeight()
-	previousBlockHeight := block.GetHeight() - 1
-	if finalityHeight != previousBlockHeight {
-		return fmt.Errorf("Invalid FirstBlockNextHeight FinalityHeight expect %+v, but got %+v",
-			previousBlockHeight, finalityHeight)
-	}
-
-	return nil
-}
-
 func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
+	numberOfFixedShardBlockVaildator int,
 ) (bool, error) {
 
 	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
@@ -254,23 +255,9 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 			proposeMsg.ReProposeHashSignature, block.GetProposer())
 	}
 
-	isValidProof, err := p.verifyFinalityProof(proposeMsg, block, committees)
+	isValidProof, err := p.verifyFinalityProof(proposeMsg, block, committees, numberOfFixedShardBlockVaildator)
 	if err != nil {
 		return false, err
-	}
-
-	finalityHeight := block.GetFinalityHeight()
-	if isValidProof {
-		previousBlockHeight := block.GetHeight() - 1
-		if finalityHeight != previousBlockHeight {
-			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
-				previousBlockHeight, finalityHeight)
-		}
-	} else {
-		if finalityHeight != 0 {
-			return false, fmt.Errorf("Invalid ReProposeBlockNextHeight FinalityHeight expect %+v, but got %+v",
-				0, finalityHeight)
-		}
 	}
 
 	return isValidProof, nil
@@ -280,6 +267,7 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 	proposeMsg *BFTPropose,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
+	numberOfFixedShardBlockValidator int,
 ) (bool, error) {
 
 	finalityProof := proposeMsg.FinalityProof
@@ -298,7 +286,7 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 
 	proposerBase58List := []string{}
 	for reProposeTimeSlot := beginTimeSlot; reProposeTimeSlot < currentTimeSlot; reProposeTimeSlot++ {
-		reProposer, _ := GetProposerByTimeSlotFromCommitteeList(reProposeTimeSlot, committees)
+		reProposer, _ := GetProposerByTimeSlotFromCommitteeList(reProposeTimeSlot, committees, numberOfFixedShardBlockValidator)
 		reProposerBase58, _ := reProposer.ToBase58()
 		proposerBase58List = append(proposerBase58List, reProposerBase58)
 	}
@@ -337,7 +325,7 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 
 	nextBlockFinalityProof[currentTimeSlot] = reProposeHashSignature
 	p.logger.Infof("Add Finality Proof | Block %+v, %+v, Current Block Sig for Timeslot: %+v",
-		block.GetHeight(), block.Hash().String(), currentTimeSlot)
+		block.GetHeight(), block.FullHashString(), currentTimeSlot)
 
 	index := 0
 	var err error
@@ -349,7 +337,7 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 				return err
 			}
 			p.logger.Infof("Add Finality Proof | Block %+v, %+v, Previous Proof for Timeslot: %+v",
-				block.GetHeight(), block.Hash().String(), timeSlot)
+				block.GetHeight(), block.FullHashString(), timeSlot)
 		}
 		index++
 	}
@@ -360,11 +348,11 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 }
 
 //ProposerByTimeSlot ...
-func GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
+func GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey, numberOfFixedShardBlockValidator int) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
 		ts,
 		committees,
-		GetProposerLength(),
+		numberOfFixedShardBlockValidator,
 	)
 	return proposer, proposerIndex
 }
@@ -379,10 +367,6 @@ func GetProposer(
 func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 	id := int(ts) % committeeLen
 	return id
-}
-
-func GetProposerLength() int {
-	return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 }
 
 func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
@@ -406,7 +390,7 @@ func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironm
 
 	bftPropose.Block = blockData
 	bftPropose.PeerID = env.peerID
-
+	bftPropose.BestBlockConsensusData = env.bestBlockConsensusData
 	return bftPropose, nil
 }
 

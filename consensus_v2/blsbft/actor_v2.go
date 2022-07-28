@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"log"
 	"reflect"
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -47,13 +48,9 @@ type actorV2 struct {
 	currentTime     int64
 	currentTimeSlot int64
 
-	proposeHistory       map[int64]struct{}
-	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //recentVotedBlockHeight -> blockInfo
-	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
-	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
-	// previous block hash -> a map of next block block time slot -> corresponding re-propose hash signature
-
-	nextBlockFinalityProof map[string]map[int64]string
+	proposeHistory     map[int64]struct{}
+	receiveBlockByHash map[string]*ProposeBlockInfo    //blockHash -> blockInfo
+	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
 	ruleDirector *ActorV2RuleDirector
 	blockVersion int
@@ -108,107 +105,32 @@ func newActorV2WithValue(
 	if err != nil {
 		panic(err) //must not error
 	}
-	a.receiveBlockByHeight, err = InitReceiveBlockByHeight(chainID)
-	if err != nil {
-		panic(err) //must not error
-	}
 	a.voteHistory, err = InitVoteHistory(chainID)
 	if err != nil {
 		panic(err) //must not error
 	}
-	a.nextBlockFinalityProof = make(map[string]map[int64]string)
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 	SetBuilderContext(config.Param().ConsensusParam.Lemma2Height)
 	a.ruleDirector = NewActorV2RuleDirector()
-	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestViewHeight(), chain, logger)
+	a.ruleDirector.initRule(ActorV2BuilderContext, a.chain.GetBestView().GetBeaconHeight(), chain, logger)
 	if err != nil {
 		panic(err) //must not error
 	}
 	return a
 }
 
-func InitReceiveBlockByHeight(chainID int) (map[uint64][]*ProposeBlockInfo, error) {
-
-	data, numberOfBlocks, err := rawdb_consensus.GetAllReceiveBlockByHeight(
-		rawdb_consensus.GetConsensusDatabase(),
-		chainID,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make(map[uint64][]*ProposeBlockInfo)
-
-	for k, v := range data {
-		numberOfBlock := numberOfBlocks[k]
-		proposeBlockInfos := []*ProposeBlockInfo{}
-		for i := 0; i < numberOfBlock; i++ {
-			if chainID == common.BeaconChainID {
-				proposeBlockInfos = append(proposeBlockInfos, &ProposeBlockInfo{
-					block: types.NewBeaconBlock(),
-				})
-			} else {
-				proposeBlockInfos = append(proposeBlockInfos, &ProposeBlockInfo{
-					block: types.NewShardBlock(),
-				})
-			}
-		}
-		err := json.Unmarshal(v, &proposeBlockInfos)
-		if err != nil {
-			return nil, err
-		}
-		res[k] = proposeBlockInfos
-	}
-
-	return res, nil
-}
-
-func (a *actorV2) AddReceiveBlockByHeight(blockHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
-
-	a.receiveBlockByHeight[blockHeight] = append(a.receiveBlockByHeight[blockHeight], proposeBlockInfo)
-
-	data, err := json.Marshal(a.receiveBlockByHeight[blockHeight])
-	if err != nil {
-		return err
-	}
-
-	if err := rawdb_consensus.StoreReceiveBlockByHeight(
-		rawdb_consensus.GetConsensusDatabase(),
-		a.chainID,
-		blockHeight,
-		len(a.receiveBlockByHeight[blockHeight]),
-		data,
-	); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (a *actorV2) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBlockInfo {
-	a.SortReceiveBlockByHeight(blockHeight)
-	return a.receiveBlockByHeight[blockHeight]
-}
-
-func (a *actorV2) SortReceiveBlockByHeight(blockHeight uint64) {
-	sort.Slice(a.receiveBlockByHeight[blockHeight], func(i, j int) bool {
-		return a.receiveBlockByHeight[blockHeight][i].block.GetProduceTime() < a.receiveBlockByHeight[blockHeight][j].block.GetProduceTime()
-	})
-}
-
-func (a *actorV2) CleanReceiveBlockByHeight(blockHeight uint64) error {
-
-	if err := rawdb_consensus.DeleteReceiveBlockByHeight(
-		rawdb_consensus.GetConsensusDatabase(),
-		a.chainID,
-		blockHeight,
-	); err != nil {
-		return err
+	tmp := []*ProposeBlockInfo{}
+	for _, proposeInfo := range a.receiveBlockByHash {
+		if proposeInfo.block.GetHeight() == blockHeight {
+			tmp = append(tmp, proposeInfo)
+		}
 	}
-	delete(a.receiveBlockByHeight, blockHeight)
-
-	return nil
+	sort.Slice(tmp, func(i, j int) bool {
+		return tmp[i].block.GetProduceTime() < tmp[j].block.GetProduceTime()
+	})
+	return tmp
 }
 
 func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
@@ -237,10 +159,31 @@ func InitReceiveBlockByHash(chainID int) (map[string]*ProposeBlockInfo, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		//restore votes by block hash
+		votes, err := GetVotesByBlockHashFromDB(proposeBlockInfo.block.ProposeHash().String())
+		if err != nil {
+			return nil, err
+		}
+
+		proposeBlockInfo.Votes = votes
 		res[k] = proposeBlockInfo
 	}
 
 	return res, nil
+}
+
+func AddVoteByBlockHashToDB(blockHash string, bftVote BFTVote) error {
+	data, err := json.Marshal(bftVote)
+	if err != nil {
+		return err
+	}
+
+	if err = rawdb_consensus.StoreVoteByBlockHash(rawdb_consensus.GetConsensusDatabase(), blockHash, bftVote.Validator, data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *ProposeBlockInfo) error {
@@ -260,8 +203,24 @@ func (a *actorV2) AddReceiveBlockByHash(blockHash string, proposeBlockInfo *Prop
 	); err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func GetVotesByBlockHashFromDB(proposeHash string) (map[string]*BFTVote, error) {
+	votes, err := rawdb_consensus.GetVotesByBlockHash(rawdb_consensus.GetConsensusDatabase(), proposeHash)
+	if err != nil {
+		return nil, err
+	}
+	res := map[string]*BFTVote{}
+	for validator, vData := range votes {
+		v := &BFTVote{}
+		err := json.Unmarshal(vData, v)
+		if err != nil {
+			continue
+		}
+		res[validator] = v
+	}
+	return res, nil
 }
 
 func (a *actorV2) GetReceiveBlockByHash(blockHash string) (*ProposeBlockInfo, bool) {
@@ -278,8 +237,12 @@ func (a *actorV2) CleanReceiveBlockByHash(blockHash string) error {
 	); err != nil {
 		return err
 	}
+
 	delete(a.receiveBlockByHash, blockHash)
 
+	if err := rawdb_consensus.DeleteVotesByHash(rawdb_consensus.GetConsensusDatabase(), blockHash); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -377,7 +340,7 @@ func InitProposeHistory(chainID int) (map[int64]struct{}, error) {
 
 	res := make(map[int64]struct{})
 
-	for k, _ := range data {
+	for k := range data {
 		res[k] = struct{}{}
 	}
 
@@ -532,7 +495,7 @@ func (a *actorV2) run() error {
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
 		a.logger.Infof("init bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
-
+		time.Sleep(time.Duration(common.TIMESLOT-1) * time.Second)
 		for { //actor loop
 			if !a.isStarted { //sleep if this process is not start
 				time.Sleep(time.Second)
@@ -548,7 +511,7 @@ func (a *actorV2) run() error {
 			a.ruleDirector.updateRule(
 				ActorV2BuilderContext,
 				a.ruleDirector.builder,
-				a.chain.GetBestView().GetHeight(),
+				a.chain.GetBestView().GetBeaconHeight(),
 				a.chain,
 				a.logger,
 			)
@@ -561,7 +524,7 @@ func (a *actorV2) run() error {
 			case proposeMsg := <-a.proposeMessageCh:
 				err := a.handleProposeMsg(proposeMsg)
 				if err != nil {
-					a.logger.Debug(err)
+					a.logger.Error(err)
 					continue
 				}
 
@@ -626,7 +589,6 @@ func (a *actorV2) run() error {
 					}
 					// Proposer Rule: check propose block connected to bestview (longest chain rule 1)
 					// and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
-
 					var proposeBlockInfo = NewProposeBlockInfo()
 					for _, v := range a.GetSortedReceiveBlockByHeight(bestView.GetHeight() + 1) {
 						if v.IsValid {
@@ -636,7 +598,7 @@ func (a *actorV2) run() error {
 					}
 
 					var finalityProof = NewFinalityProof()
-					var isEnoughLemma2Proof bool = false
+					var isEnoughLemma2Proof = false
 					var failReason = ""
 					if proposeBlockInfo.block != nil {
 						finalityProof, isEnoughLemma2Proof, failReason = a.ruleDirector.builder.ProposeMessageRule().
@@ -644,7 +606,7 @@ func (a *actorV2) run() error {
 						a.logger.Infof("Timeslot %+v, height %+v | Attempt to re-propose block height %+v, hash %+v, produce timeslot %+v,"+
 							" is enough finality proof %+v, false reason %+v",
 							common.CalculateTimeSlot(a.currentTime), bestView.GetHeight()+1,
-							proposeBlockInfo.block.GetHeight(), *proposeBlockInfo.block.Hash(),
+							proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.FullHashString(),
 							proposeBlockInfo.block.GetProduceTime(), isEnoughLemma2Proof, failReason)
 					} else {
 						a.logger.Infof("Timeslot %+v, height %+v | Attempt to create new block",
@@ -663,7 +625,7 @@ func (a *actorV2) run() error {
 					} else {
 						if isEnoughLemma2Proof {
 							a.logger.Infof("Get Finality Proof | New Block %+v, %+v, Finality Proof %+v",
-								createdBlk.GetHeight(), createdBlk.Hash().String(), finalityProof.ReProposeHashSignature)
+								createdBlk.GetHeight(), createdBlk.FullHashString(), finalityProof.ReProposeHashSignature)
 						}
 
 						env := NewSendProposeBlockEnvironment(
@@ -671,6 +633,7 @@ func (a *actorV2) run() error {
 							isEnoughLemma2Proof,
 							userProposeKey,
 							a.node.GetSelfPeerID().String(),
+							a.chain.GetBlockConsensusData(),
 						)
 						bftProposeMessage, err := a.ruleDirector.builder.ProposeMessageRule().CreateProposeBFTMessage(env, createdBlk)
 						if err != nil {
@@ -680,14 +643,14 @@ func (a *actorV2) run() error {
 							if err != nil {
 								a.logger.Error("Send BFT Propose Message Failed", err)
 							}
-							a.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), a.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
+							a.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), a.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.FullHashString())
 						}
 					}
 				}
 
 				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock(bestView.GetHeight(), v); err == nil {
+					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && !v.IsVoted {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -698,8 +661,8 @@ func (a *actorV2) run() error {
 				/*
 					Check for 2/3 vote to commit
 				*/
-				for k, v := range a.receiveBlockByHash {
-					a.processIfBlockGetEnoughVote(k, v)
+				for _, v := range a.receiveBlockByHash {
+					a.processIfBlockGetEnoughVote(v)
 				}
 			}
 		}
@@ -743,8 +706,7 @@ func (a *actorV2) getValidatorIndex(committees []incognitokey.CommitteePublicKey
 	return -1, nil
 }
 
-func (a *actorV2) processIfBlockGetEnoughVote(
-	blockHash string, proposeBlockInfo *ProposeBlockInfo,
+func (a *actorV2) processIfBlockGetEnoughVote(proposeBlockInfo *ProposeBlockInfo,
 ) {
 	//no vote
 	if proposeBlockInfo.HasNewVote == false {
@@ -755,7 +717,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	if proposeBlockInfo.block == nil {
 		return
 	}
-	a.logger.Infof("Process Block With enough votes, %+v, %+v", *proposeBlockInfo.block.Hash(), proposeBlockInfo.block.GetHeight())
+
 	//already in chain
 	bestView := a.chain.GetBestView()
 	view := a.chain.GetViewByHash(*proposeBlockInfo.block.Hash())
@@ -774,8 +736,9 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
 
 	if !proposeBlockInfo.IsCommitted {
+		a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees))
 		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
-			a.logger.Infof("Commit block %v , height: %v", blockHash, proposeBlockInfo.block.GetHeight())
+			a.logger.Infof("Commit block %v , height: %v", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.block.GetHeight())
 			var err error
 			if a.chain.IsBeaconChain() {
 				err = a.processWithEnoughVotesBeaconChain(proposeBlockInfo)
@@ -794,60 +757,56 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 func (a *actorV2) processWithEnoughVotesBeaconChain(
 	v *ProposeBlockInfo,
 ) error {
-	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.GetValidationField(), v.Votes)
+	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.ProposeHash(), v.block.GetValidationField(), v.Votes)
 	if err != nil {
-		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
+	v.block.(BlockValidation).AddValidationField(validationData)
 
 	if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 		return err
-	}
-
-	if err := a.CleanReceiveBlockByHash(v.block.GetPrevHash().String()); err != nil {
-		a.logger.Errorf("clean receive block by hash error %+v", err)
 	}
 
 	return nil
 }
 
 func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
-
-	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.GetValidationField(), v.Votes)
+	validationData, err := a.createBLSAggregatedSignatures(v.SigningCommittees, v.block.ProposeHash(), v.block.GetValidationField(), v.Votes)
 	if err != nil {
-		a.logger.Error(err)
 		return err
 	}
-	v.block.(blockValidation).AddValidationField(validationData)
 	isInsertWithPreviousData := false
-	// validate and previous block
-	if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(v.block.GetPrevHash().String()); ok &&
-		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
+	v.block.(BlockValidation).AddValidationField(validationData)
+	// validate and add previous block validation data
+	previousBlock, _ := a.chain.GetBlockByHash(v.block.GetPrevHash())
+	if previousBlock != nil {
+		if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
+			previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 
-		previousProposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(previousProposeBlockInfo)
+			previousProposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(previousProposeBlockInfo)
 
-		rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
-			previousProposeBlockInfo.SigningCommittees,
-			previousProposeBlockInfo.block.GetValidationField(),
-			previousProposeBlockInfo.Votes)
-		if err != nil {
-			a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
-		} else {
-			previousProposeBlockInfo.block.(blockValidation).AddValidationField(rawPreviousValidationData)
-			if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
-				return err
-			}
-			isInsertWithPreviousData = true
-			previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
-			a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
-				v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
-
-			if err := a.CleanReceiveBlockByHash(previousProposeBlockInfo.block.GetPrevHash().String()); err != nil {
-				a.logger.Errorf("clean receive block by hash error %+v", err)
+			rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
+				previousProposeBlockInfo.SigningCommittees,
+				previousProposeBlockInfo.block.ProposeHash(),
+				previousProposeBlockInfo.block.GetValidationField(),
+				previousProposeBlockInfo.Votes)
+			if err != nil {
+				a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+			} else {
+				previousProposeBlockInfo.block.(BlockValidation).AddValidationField(rawPreviousValidationData)
+				if err := a.ruleDirector.builder.InsertBlockRule().InsertWithPrevValidationData(v.block, rawPreviousValidationData); err != nil {
+					return err
+				}
+				isInsertWithPreviousData = true
+				previousValidationData, _ := consensustypes.DecodeValidationData(rawPreviousValidationData)
+				a.logger.Infof("Block %+v broadcast with previous block %+v, previous block number of signatures %+v",
+					v.block.GetHeight(), previousProposeBlockInfo.block.GetHeight(), len(previousValidationData.ValidatiorsIdx))
 			}
 		}
+	} else {
+		a.logger.Info("Cannot find block by hash", v.block.GetPrevHash().String())
 	}
+
 	if !isInsertWithPreviousData {
 		if err := a.ruleDirector.builder.InsertBlockRule().InsertBlock(v.block); err != nil {
 			return err
@@ -856,19 +815,20 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 	loggedCommittee, _ := incognitokey.CommitteeKeyListToString(v.SigningCommittees)
 	a.logger.Infof("Successfully Insert Block \n "+
 		"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+
-		"Committee %+v", a.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
+		"Committee %+v", a.chain, v.block.GetHeight(), v.block.FullHashString(), v.block.GetVersion(), loggedCommittee)
 
-	// @NOTICE: debug mode only, this data should only be used for debugging
-	if v.block.GetVersion() >= types.LEMMA2_VERSION {
-		if err := a.chain.StoreFinalityProof(v.block, v.FinalityProof, v.ReProposeHashSignature); err != nil {
-			a.logger.Errorf("Store Finality Proof error %+v", err)
-		}
-	}
+	//// @NOTICE: debug mode only, this data should only be used for debugging
+	//if v.block.GetVersion() >= types.LEMMA2_VERSION {
+	//	if err := a.chain.StoreFinalityProof(v.block, v.FinalityProof, v.ReProposeHashSignature); err != nil {
+	//		a.logger.Errorf("Store Finality Proof error %+v", err)
+	//	}
+	//}
 	return nil
 }
 
 func (a *actorV2) createBLSAggregatedSignatures(
 	committees []incognitokey.CommitteePublicKey,
+	blockHash *common.Hash,
 	tempValidationData string,
 	votes map[string]*BFTVote,
 ) (string, error) {
@@ -877,7 +837,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 		return "", err
 	}
 
-	aggSig, brigSigs, validatorIdx, portalSigs, err := a.combineVotes(votes, committeeBLSString)
+	aggSig, brigSigs, validatorIdx, portalSigs, err := CombineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
 	}
@@ -892,6 +852,34 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	valData.ValidatiorsIdx = validatorIdx
 	valData.PortalSig = portalSigs
 	validationData, _ := consensustypes.EncodeValidationData(*valData)
+
+	//post verify after combine vote
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committees {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
+	}
+
+	if err := validateBLSSig(blockHash, valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		blsPKList := []blsmultisig.PublicKey{}
+		for _, pk := range committees {
+			blsK := make([]byte, len(pk.MiningPubKey[common.BlsConsensus]))
+			copy(blsK, pk.MiningPubKey[common.BlsConsensus])
+			blsPKList = append(blsPKList, blsK)
+		}
+		for pk, vote := range votes {
+			log.Println(common.IndexOfStr(vote.Validator, committeeBLSString), vote.Validator, vote.BLS)
+			index := common.IndexOfStr(pk, committeeBLSString)
+			if index != -1 {
+				err := validateSingleBLSSig(blockHash, vote.BLS, index, blsPKList)
+				if err != nil {
+					a.logger.Errorf("Can not validate vote from validator %v, pk %v, blkHash from vote %v, blk hash %v ", index, pk, vote.BlockHash, blockHash.String())
+					vote.IsValid = -1
+				}
+			}
+		}
+		return "", errors.New("ValidateCommitteeSig from combine signature fail")
+	}
+
 	return validationData, err
 }
 
@@ -901,24 +889,32 @@ func (a *actorV2) voteValidBlock(
 ) error {
 	//if valid then vote
 	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(proposeBlockInfo.SigningCommittees, common.BlsConsensus)
+
 	for _, userKey := range proposeBlockInfo.UserKeySet {
 		pubKey := userKey.GetPublicKey()
 		// TODO: @dung.v review, persist consensus data no longer require this code
 		//// When node is not connect to highway (drop connection/startup), propose and vote a block will prevent voting for any other blocks having same height but larger timestamp (rule1)
 		//// In case number of validator is 22, we need to make 22 turn to propose the old smallest timestamp block
 		//// To prevent this, proposer will not vote unless receiving at least one vote (look at receive vote event)
-		//if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 {
-		//	continue
-		//}
+		if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 {
+			continue
+		}
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(a.GetConsensusName()), committeeBLSString) != -1 {
 			err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0))
 			if err != nil {
 				a.logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
 			} else {
-				proposeBlockInfo.IsVoted = true
+				if !proposeBlockInfo.IsVoted { //not update database if field is already set
+					proposeBlockInfo.IsVoted = true
+					if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
+						return err
+					}
+				}
+
 			}
 		}
+
 	}
 
 	return nil
@@ -960,7 +956,7 @@ func (a *actorV2) proposeBlock(
 	}
 
 	if block != nil {
-		a.logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
+		a.logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.FullHashString(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
 	} else {
 		a.logger.Infof("create block fail, time: %v", time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
@@ -986,7 +982,7 @@ func (a *actorV2) proposeBeaconBlock(
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
-		a.logger.Info("CreateNewBlock")
+		a.logger.Info("CreateNewBlock version", a.blockVersion)
 		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
@@ -1013,7 +1009,7 @@ func (a *actorV2) proposeShardBlock(
 	var newBlock types.BlockInterface
 	var committeesFromBeaconHash []incognitokey.CommitteePublicKey
 	if block != nil {
-		_, committeesFromBeaconHash, err = a.getCommitteeForBlock(block)
+		_, committeesFromBeaconHash, err = a.getCommitteeForNewBlock(block)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -1052,9 +1048,9 @@ func (a *actorV2) addValidationData(userMiningKey signatureschemes2.MiningKey, b
 		return block, NewConsensusError(UnExpectedError, err)
 	}
 	validationData.PortalSig = portalSigs
-	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.ProposeHash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
-	block.(blockValidation).AddValidationField(validationDataString)
+	block.(BlockValidation).AddValidationField(validationDataString)
 
 	return block, nil
 }
@@ -1081,7 +1077,7 @@ func (a *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candidate []b
 }
 
 // getCommitteeForBlock base on the block version to retrieve the right committee list
-func (a *actorV2) getCommitteeForBlock(
+func (a *actorV2) getCommitteeForNewBlock(
 	v types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	committees := []incognitokey.CommitteePublicKey{}
@@ -1136,7 +1132,7 @@ func (a *actorV2) sendVote(
 		a.logger.Errorf("add vote history error %+v", err)
 	}
 
-	a.logger.Info(a.chainKey, "sending vote...")
+	a.logger.Info(a.chainKey, "sending vote...", block.FullHashString())
 
 	go a.node.PushMessageToChain(msg, a.chain)
 
@@ -1204,30 +1200,70 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
 	if err != nil || blockInfo == nil {
-		a.logger.Debug(err)
 		return err
 	}
 
 	block := blockInfo.(types.BlockInterface)
 
-	blockHash := block.Hash().String()
-	producerCommitteePublicKey := incognitokey.CommitteePublicKey{}
-	producerCommitteePublicKey.FromBase58(block.GetProducer())
-	producerMiningKeyBase58 := producerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
-	signingCommittees, committees, err := a.getCommitteeForBlock(block)
+	blockHash := block.ProposeHash().String()
+
+	_, ok := a.GetReceiveBlockByHash(blockHash)
+	if ok {
+		return errors.New("Already receive block")
+	}
+
+	//update consensus data
+	if proposeMsg.BestBlockConsensusData != nil {
+		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
+			if sid == -1 {
+				if a.chain.IsBeaconChain() {
+					if err = a.chain.(*blockchain.BeaconChain).VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				} else {
+					if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				}
+
+			} else if sid >= 0 {
+				if a.chain.IsBeaconChain() {
+					if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				} else {
+					if err = a.chain.(*blockchain.ShardChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
+						a.logger.Error(err)
+					}
+				}
+
+			}
+		}
+	}
+
+	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
 	if err != nil {
-		a.logger.Error(err)
+		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
+		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
+		return err
+	}
+
+	if block.GetHeight() <= a.chain.GetBestViewHeight() {
+		return errors.New("Receive block create from old view. Rejected!")
+	}
+
+	proposerCommitteePublicKey := incognitokey.CommitteePublicKey{}
+	proposerCommitteePublicKey.FromBase58(block.GetProposer())
+	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
+	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
+	if err != nil {
 		return err
 	}
 	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
-	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
-	if err != nil {
-		a.logger.Error(err)
-		return err
-	}
+
 	if len(userKeySet) == 0 {
-		a.logger.Infof("HandleProposeMsg, Block Hash %+v, Block Height %+v, round %+v, NOT in round for voting",
-			*block.Hash(), block.GetHeight(), block.GetRound())
+		a.logger.Infof("HandleProposeMsg, Block Hash %+v,  Block Height %+v, round %+v, NOT in round for voting",
+			block.FullHashString(), block.GetHeight(), block.GetRound())
 		// Log only
 		if !a.chain.IsBeaconChain() {
 			_, proposerIndex := a.chain.GetProposerByTimeSlotFromCommitteeList(
@@ -1243,38 +1279,19 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		}
 	}
 
-	if proposeBlockInfo, ok := a.GetReceiveBlockByHash(blockHash); !ok {
-		err := a.handleNewProposeMsg(
-			proposeMsg,
-			block,
-			previousBlock,
-			committees,
-			signingCommittees,
-			userKeySet,
-			producerMiningKeyBase58,
-		)
-		if err != nil {
-			a.logger.Error(err)
-			return err
-		}
-	} else {
-		proposeBlockInfo.addBlockInfo(
-			block, committees, signingCommittees, userKeySet, proposeBlockInfo.ValidVotes, proposeBlockInfo.ErrVotes)
-		if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
-			a.logger.Errorf("add receive block by hash error %+v", err)
-		}
+	err = a.handleNewProposeMsg(
+		proposeMsg,
+		block,
+		previousBlock,
+		committees,
+		signingCommittees,
+		userKeySet,
+		proposerMiningKeyBase58,
+	)
+	if err != nil {
+		return err
 	}
 
-	if block.GetHeight() <= a.chain.GetBestViewHeight() {
-		a.logger.Debug("Receive block create from old view. Rejected!")
-		return errors.New("Receive block create from old view. Rejected!")
-	}
-
-	proposeView := a.chain.GetViewByHash(block.GetPrevHash())
-	if proposeView == nil {
-		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
-		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
-	}
 	return nil
 }
 
@@ -1285,32 +1302,31 @@ func (a *actorV2) handleNewProposeMsg(
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittees []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
-	producerPublicBLSMiningKey string,
+	proposerPublicBLSMiningKey string,
 ) error {
 
-	blockHash := block.Hash().String()
+	blockHash := block.ProposeHash().String()
 	env := NewProposeMessageEnvironment(
 		block,
 		previousBlock,
 		committees,
 		signingCommittees,
 		userKeySet,
-		producerPublicBLSMiningKey,
+		a.chain.GetBestView().GetProposerLength(),
+		proposerPublicBLSMiningKey,
 	)
-	proposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
+
+	newProposeBlockInfo, err := a.ruleDirector.builder.ProposeMessageRule().HandleBFTProposeMessage(env, &proposeMsg)
 	if err != nil {
 		a.logger.Errorf("Fail to HandleBFTProposeMessage, block %+v, %+v, "+
-			"error %+v", block.GetHeight(), block.Hash().String(), err)
+			"error %+v", block.GetHeight(), block.ProposeHash().String(), err)
 		return err
 	}
 
-	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
+	if err := a.AddReceiveBlockByHash(blockHash, newProposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	if err := a.AddReceiveBlockByHeight(block.GetHeight(), proposeBlockInfo); err != nil {
-		a.logger.Errorf("add receive block by height error %+v", err)
-	}
-	a.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
 }
@@ -1355,15 +1371,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if proposeBlockInfo.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err != nil {
-						err = a.voteValidBlock(proposeBlockInfo)
-						if err != nil {
-							a.logger.Debug(err)
-						}
-					} else {
-						a.logger.Debug(err)
-					}
-					if err == nil {
+					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
 							err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0)) // => send vote
@@ -1371,41 +1379,30 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 								a.logger.Error(err)
 							} else {
 								proposeBlockInfo.ProposerSendVote = true
-								proposeBlockInfo.IsVoted = true
+								if err := a.AddReceiveBlockByHash(proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo); err != nil {
+									return err
+								}
 							}
 						}
+					} else {
+						a.logger.Debug(err)
 					}
 				}
 			}
 		}
-		// record new votes
-		if err := a.AddReceiveBlockByHash(voteMsg.BlockHash, proposeBlockInfo); err != nil {
-			a.logger.Errorf("add receive block by hash error %+v", err)
-		}
-	} else {
-		proposeBlockInfo := newBlockInfoForVoteMsg(a.chainID)
-		proposeBlockInfo.Votes[voteMsg.Validator] = &voteMsg
-		if err := a.AddReceiveBlockByHash(voteMsg.BlockHash, proposeBlockInfo); err != nil {
-			a.logger.Errorf("add receive block by hash error %+v", err)
-		}
-		a.logger.Infof("Chain %v, Receive vote (%d) for block %v from validator %v", a.chainKey, len(a.receiveBlockByHash[voteMsg.BlockHash].Votes), voteMsg.BlockHash, voteMsg.Validator)
+
+	}
+
+	// record new votes for restore
+	if err := AddVoteByBlockHashToDB(voteMsg.BlockHash, voteMsg); err != nil {
+		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
 	return nil
 }
 
 func (a *actorV2) handleCleanMem() {
 
-	for h, _ := range a.receiveBlockByHeight {
-		if h <= a.chain.GetFinalView().GetHeight() {
-			err := a.CleanReceiveBlockByHeight(h)
-			if err != nil {
-				a.logger.Errorf("clean receive block by height error %+v", err)
-			}
-			//delete(a.bodyHashes, h)
-		}
-	}
-
-	for h, _ := range a.voteHistory {
+	for h := range a.voteHistory {
 		if h <= a.chain.GetFinalView().GetHeight() {
 			if err := a.CleanVoteHistory(h); err != nil {
 				a.logger.Errorf("clean vote history error %+v", err)
@@ -1414,15 +1411,14 @@ func (a *actorV2) handleCleanMem() {
 	}
 
 	for h, proposeBlk := range a.receiveBlockByHash {
-		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute {
-			//delete(a.votedTimeslot, proposeBlk.block.GetProposeTime())
+		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && (proposeBlk.block == nil || proposeBlk.block.GetHeight() <= a.chain.GetFinalView().GetHeight()) {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}
 		}
 	}
 
-	for timeSlot, _ := range a.proposeHistory {
+	for timeSlot := range a.proposeHistory {
 		if timeSlot < a.currentTimeSlot {
 			if err := a.CleanProposeHistory(timeSlot); err != nil {
 				a.logger.Errorf("clean propose history %+v", err)
@@ -1445,9 +1441,9 @@ func (a *actorV2) handleCleanMem() {
 func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	bestViewHeight := bestView.GetHeight()
-	bestViewHash := *bestView.GetHash()
+	bestViewProposeHash := *bestView.GetBlock().ProposeHash()
 	validProposeBlock, tryVoteInsertedBlocks, invalidProposeBlocks := a.ruleDirector.builder.ValidatorRule().FilterValidProposeBlockInfo(
-		bestViewHash,
+		bestViewProposeHash,
 		bestViewHeight,
 		a.chain.GetFinalView().GetHeight(),
 		a.currentTimeSlot,
@@ -1466,7 +1462,7 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 		if !tryVoteInsertedBlock.IsValid {
 			err := a.validateBlock(tryVoteInsertedBlock.block.GetHeight()-1, tryVoteInsertedBlock)
 			if err != nil {
-				a.logger.Errorf("Block %+v try vote inserted block but invalid", *tryVoteInsertedBlock.block.Hash())
+				a.logger.Errorf("Block %+v try vote inserted block but invalid", tryVoteInsertedBlock.block.FullHashString())
 				continue
 			}
 		}
@@ -1480,6 +1476,10 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
 
+	if proposeBlockInfo.IsValid {
+		return nil
+	}
+
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
@@ -1488,9 +1488,11 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 		return err
 	}
 
+	proposeBlockInfo.LastValidateTime = time.Now()
+
 	if !isValid {
 		a.logger.Debugf("can't vote for this block %v height %v timeslot %v",
-			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blockProduceTimeSlot)
+			proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo.block.GetHeight(), blockProduceTimeSlot)
 		return errors.New("can't vote for this block")
 	}
 
@@ -1507,14 +1509,14 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	view := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
 	if view == nil {
 		a.logger.Infof("previous view for this block %v height %v timeslot %v is null",
-			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
+			proposeBlockInfo.block.ProposeHash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
 		return errors.New("View not connect")
 	}
 
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	a.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
+	a.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.ProposeHash().String())
 	if err := a.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, proposeBlockInfo.Committees); err != nil {
 		a.logger.Error(err)
 		return err
@@ -1523,7 +1525,7 @@ func (a *actorV2) validatePreSignBlock(proposeBlockInfo *ProposeBlockInfo) error
 	return nil
 }
 
-func (a *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
+func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, portalSigs []*portalprocessv4.PortalSig, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {

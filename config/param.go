@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -26,44 +27,56 @@ func AbortParam() {
 	p = &param{}
 }
 
+type AutoEnableFeature struct {
+	MinTriggerBlockHeight int `mapstructure:"min_trigger"`
+	ForceBlockHeight      int `mapstructure:"force_trigger"`
+	RequiredPercentage    int `mapstructure:"require_percentage"`
+}
+
 //param for all variables in incognito node process
 type param struct {
-	Name                             string             `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
-	Net                              uint32             `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
-	GenesisParam                     *genesisParam      `mapstructure:"genesis_param" description:"genesis params"`
-	CommitteeSize                    committeeSize      `mapstructure:"committee_size"`
-	BlockTime                        blockTime          `mapstructure:"block_time"`
-	StakingAmountShard               uint64             `mapstructure:"staking_amount_shard"`
-	ActiveShards                     int                `mapstructure:"active_shards"`
-	BasicReward                      uint64             `mapstructure:"basic_reward"`
-	EpochParam                       epochParam         `mapstructure:"epoch_param"`
-	EthContractAddressStr            string             `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
-	BscContractAddressStr            string             `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
-	PlgContractAddressStr            string             `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
-	IncognitoDAOAddress              string             `mapstructure:"dao_address"`
-	CentralizedWebsitePaymentAddress string             `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
-	SwapCommitteeParam               swapCommitteeParam `mapstructure:"swap_committee_param"`
-	ConsensusParam                   consensusParam     `mapstructure:"consensus_param"`
-	BeaconHeightBreakPointBurnAddr   uint64             `mapstructure:"beacon_height_break_point_burn_addr"`
-	ReplaceStakingTxHeight           uint64             `mapstructure:"replace_staking_tx_height"`
-	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
-	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
-	BCHeightBreakPointPrivacyV2      uint64             `mapstructure:"bc_height_break_point_privacy_v2"`
-	CoinVersion2LowestHeight         uint64             `mapstructure:"coin_v2_lowest_height"`
-	EnableFeatureFlags               map[string]uint64  `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
-	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
-	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
-	BSCParam                         bscParam           `mapstructure:"bsc_param"`
-	PLGParam                         plgParam           `mapstructure:"plg_param"`
-	PDexParams                       pdexParam          `mapstructure:"pdex_param"`
-	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
+	Name                             string                       `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
+	Net                              uint32                       `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
+	GenesisParam                     *genesisParam                `mapstructure:"genesis_param" description:"genesis params"`
+	CommitteeSize                    committeeSize                `mapstructure:"committee_size"`
+	BlockTime                        blockTime                    `mapstructure:"block_time"`
+	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
+	ActiveShards                     int                          `mapstructure:"active_shards"`
+	BasicReward                      uint64                       `mapstructure:"basic_reward"`
+	EpochParam                       epochParam                   `mapstructure:"epoch_param"`
+	EthContractAddressStr            string                       `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
+	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
+	PlgContractAddressStr            string                       `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
+	FtmContractAddressStr            string                       `mapstructure:"ftm_contract_address" description:"smart contract of FTM for bridge"`
+	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
+	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
+	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`
+	ConsensusParam                   consensusParam               `mapstructure:"consensus_param"`
+	BeaconHeightBreakPointBurnAddr   uint64                       `mapstructure:"beacon_height_break_point_burn_addr"`
+	ReplaceStakingTxHeight           uint64                       `mapstructure:"replace_staking_tx_height"`
+	ETHRemoveBridgeSigEpoch          uint64                       `mapstructure:"eth_remove_bridge_sig_epoch"`
+	BCHeightBreakPointNewZKP         uint64                       `mapstructure:"bc_height_break_point_new_zkp"`
+	BCHeightBreakPointPrivacyV2      uint64                       `mapstructure:"bc_height_break_point_privacy_v2"`
+	CoinVersion2LowestHeight         uint64                       `mapstructure:"coin_v2_lowest_height"`
+	EnableFeatureFlags               map[string]uint64            `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
+	BCHeightBreakPointPortalV3       uint64                       `mapstructure:"portal_v3_height"`
+	TxPoolVersion                    int                          `mapstructure:"tx_pool_version"`
+	GethParam                        gethParam                    `mapstructure:"geth_param"`
+	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
+	PLGParam                         plgParam                     `mapstructure:"plg_param"`
+	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
+	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
+	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
+	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
+	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
 	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	BCHeightBreakPointCoinOrigin     uint64 `mapstructure:"bc_height_break_point_coin_origin"`
 }
 
 type genesisParam struct {
-	InitialIncognito                            []initialIncognito
+	InitialIncognito                            []InitialIncognito
 	FeePerTxKb                                  uint64 `mapstructure:"fee_per_tx_kb" description:"fee per tx calculate by kb"`
 	ConsensusAlgorithm                          string `mapstructure:"consensus_algorithm"`
 	BlockTimestamp                              string `mapstructure:"block_timestamp"`
@@ -156,7 +169,57 @@ func LoadParam() *param {
 	p.LoadKeyByNetwork(network)
 	common.TIMESLOT = p.ConsensusParam.Timeslot
 	common.MaxShardNumber = p.ActiveShards
+
+	if err := verifyParam(p); err != nil {
+		panic(err)
+	}
+
 	return p
+}
+
+func verifyParam(p *param) error {
+
+	if p.CommitteeSize.MaxShardCommitteeSize < p.CommitteeSize.MinShardCommitteeSize {
+		return fmt.Errorf("MaxCommitteeSize %+v < MinCommitteeSize %+v",
+			p.CommitteeSize.MaxShardCommitteeSize, p.CommitteeSize.MinShardCommitteeSize)
+	}
+
+	if p.CommitteeSize.MaxBeaconCommitteeSize < p.CommitteeSize.MinBeaconCommitteeSize {
+		return fmt.Errorf("MaxCommitteeSize %+v < MinCommitteeSize %+v",
+			p.CommitteeSize.MaxBeaconCommitteeSize, p.CommitteeSize.MinBeaconCommitteeSize)
+	}
+
+	if p.CommitteeSize.MinShardCommitteeSize < p.CommitteeSize.NumberOfFixedShardBlockValidator {
+		return fmt.Errorf("MinShardCommitteeSize %+v < NumberOfFixedShardBlockValidator %+v",
+			p.CommitteeSize.MinShardCommitteeSize, p.CommitteeSize.NumberOfFixedShardBlockValidator)
+	}
+
+	if p.CommitteeSize.MinShardCommitteeSize < 4 {
+		return fmt.Errorf("MinShardCommitteeSize %+v < %+v",
+			p.CommitteeSize.MinShardCommitteeSize, 4)
+	}
+
+	if p.CommitteeSize.MinBeaconCommitteeSize < 4 {
+		return fmt.Errorf("MinBeaconCommitteeSize %+v < %+v",
+			p.CommitteeSize.MinBeaconCommitteeSize, 4)
+	}
+
+	if p.CommitteeSize.InitShardCommitteeSize != p.CommitteeSize.ShardCommitteeSizeKeyListV2 {
+		return fmt.Errorf("InitShardCommitteeSize %+v < ShardCommitteeSizeKeyListV2 %+v",
+			p.CommitteeSize.InitShardCommitteeSize, p.CommitteeSize.ShardCommitteeSizeKeyListV2)
+	}
+
+	if p.CommitteeSize.InitBeaconCommitteeSize != p.CommitteeSize.BeaconCommitteeSizeKeyListV2 {
+		return fmt.Errorf("InitBeaconCommitteeSize %+v < BeaconCommitteeSizeKeyListV2 %+v",
+			p.CommitteeSize.InitBeaconCommitteeSize, p.CommitteeSize.BeaconCommitteeSizeKeyListV2)
+	}
+
+	if p.EpochParam.RandomTime >= p.EpochParam.NumberOfBlockInEpoch {
+		return fmt.Errorf("RandomTime %+v >= NumberOfBlockInEpoch %+v",
+			p.EpochParam.RandomTime, p.EpochParam.NumberOfBlockInEpoch)
+	}
+
+	return nil
 }
 
 //key1,key2 : default key of the network
@@ -244,7 +307,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 }
 
 type bscParam struct {
-	Host string `mapstructure:"host"`
+	Host []string `mapstructure:"host"`
 }
 
 type pdexParam struct {
@@ -266,16 +329,34 @@ type pdexParam struct {
 
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
-		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
+		bschParam.Host = []string{utils.GetEnv(BSCHostKey, utils.EmptyString)}
 	}
 }
 
 type plgParam struct {
-	Host string `mapstructure:"host"`
+	Host []string `mapstructure:"host"`
 }
 
 func (plgParam *plgParam) GetFromEnv() {
 	if utils.GetEnv(PLGHostKey, utils.EmptyString) != utils.EmptyString {
-		plgParam.Host = utils.GetEnv(PLGHostKey, utils.EmptyString)
+		plgParam.Host = []string{utils.GetEnv(PLGHostKey, utils.EmptyString)}
 	}
+}
+
+type ftmParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (ftmParam *ftmParam) GetFromEnv() {
+	if utils.GetEnv(FTMHostKey, utils.EmptyString) != utils.EmptyString {
+		ftmParam.Host = []string{utils.GetEnv(FTMHostKey, utils.EmptyString)}
+	}
+}
+
+type bridgeAggParam struct {
+	AdminAddress                 string `mapstructure:"admin_address"`
+	BaseDecimal                  uint8  `mapstructure:"base_decimal"`
+	MaxLenOfPath                 uint8  `mapstructure:"max_len_of_path"`
+	PercentFeeDecimal            uint64 `mapstructure:"percent_fee_decimal"`
+	DefaultPercentFeeWithDecimal uint64 `mapstructure:"default_percent_fee_with_decimal"`
 }

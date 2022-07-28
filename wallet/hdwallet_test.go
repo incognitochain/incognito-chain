@@ -3,12 +3,12 @@ package wallet
 import (
 	"bytes"
 	"fmt"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 /*
@@ -337,15 +337,8 @@ func TestPrivateKeyToPaymentAddress(t *testing.T) {
 		fmt.Printf("paymentAddStr: %v\n", paymentAddStr)
 		fmt.Printf("viewingKeyStr: %v\n", viewingKeyStr)
 		fmt.Printf("otaPrivateKey: %v\n", otaPrivateKey)
-
-		publickey, txRandom, _ := coin.NewOTAFromReceiver(KeyWallet.KeySet.PaymentAddress)
-		fmt.Printf("OTAPubKeyStr: %v\n", base58.Base58Check{}.Encode(publickey.ToBytesS(), common.ZeroByte))
-		fmt.Printf("TxRandomStr: %v\n", base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte))
-		fmt.Println("==============================================")
 	}
 }
-
-
 
 func TestNewCommitteeKeyFromIncognitoPrivateKey(t *testing.T) {
 	tests := []string{
@@ -368,7 +361,7 @@ func TestNewCommitteeKeyFromIncognitoPrivateKey(t *testing.T) {
 	fmt.Println(x.GetMiningKeyBase58(common.BlsConsensus))
 }
 
-func TestNewOldEncodeDecode(t *testing.T){
+func TestNewOldEncodeDecode(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		privateKey := common.RandBytes(common.PrivateKeySize)
 		keySet1 := new(incognitokey.KeySet)
@@ -378,8 +371,6 @@ func TestNewOldEncodeDecode(t *testing.T){
 		keySet2 := new(incognitokey.KeySet)
 		err = keySet2.InitFromPrivateKeyByte(privateKey)
 		assert.Equal(t, nil, err, "initKeySet 2 returns an error: %v\n", err)
-
-
 
 		//Short payment address with old checksum
 		shortWalletOld := new(KeyWallet)
@@ -392,16 +383,12 @@ func TestNewOldEncodeDecode(t *testing.T){
 		shortAddrOld := base58.Base58Check{}.Encode(encodedKey, 0x00)
 		assert.NotEqual(t, "", shortAddrOld, "cannot serialize old key v1")
 
-
-
 		//Short payment address with new checksum
 		shortWalletNew := new(KeyWallet)
 		shortWalletNew.KeySet = *keySet2
 		shortWalletNew.KeySet.PaymentAddress.OTAPublic = nil
 		shortAddrNew := shortWalletNew.Base58CheckSerialize(PaymentAddressType)
 		assert.NotEqual(t, "", shortAddrNew, "cannot serialize new key v1")
-
-
 
 		//Long payment address with new checksum
 		longWalletNew := new(KeyWallet)
@@ -410,7 +397,6 @@ func TestNewOldEncodeDecode(t *testing.T){
 		assert.NotEqual(t, "", longAddrNew, "cannot serialize new key v2")
 
 		fmt.Printf("Length of payment addresses: oldV1 = %v, newV1 = %v, newV2 = %v\n", len(shortAddrOld), len(shortAddrNew), len(longAddrNew))
-
 
 		isEqual, err := ComparePaymentAddresses(shortAddrOld, shortAddrNew)
 		assert.Equal(t, nil, err, "ComparePaymentAddresses 1 returns an error: %v\n", err)
@@ -474,7 +460,6 @@ func TestPaymentAddressCompare(t *testing.T) {
 		keyWallet2 := new(KeyWallet)
 		keyWallet2.KeySet = *keySet2
 
-
 		addrV1 := keyWallet1.Base58CheckSerialize(PaymentAddressType)
 		assert.NotEqual(t, "", addrV1, "cannot serialize key v1")
 
@@ -487,7 +472,7 @@ func TestPaymentAddressCompare(t *testing.T) {
 	}
 }
 
-func TestPaymetnAddressV1(t *testing.T){
+func TestPaymetnAddressV1(t *testing.T) {
 	initAddr := "12RqmK5woGNeBTy16ouYepSw4QEq28gsv2m81ebcPQ82GgS5S8PHEY37NU2aTacLRruFvjTqKCgffTeMDL83snTYz5zDp1MTLwjVhZS"
 
 	addrV1, err := GetPaymentAddressV1(initAddr, false)

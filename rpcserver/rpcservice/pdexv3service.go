@@ -309,54 +309,56 @@ func (blockService BlockService) GetPdexv3State(
 			}
 
 		case PoolPair:
-			res, err = getPdexv3PoolPair(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			res, err = getPdexv3PoolPair(beaconHeight, beaconTimeStamp, beaconFeatureStateDB, param.ID)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case PoolPairShares:
-			res, err = getPdexv3PoolPairShares(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			res, err = getPdexv3PoolPairShares(beaconHeight, beaconTimeStamp, beaconFeatureStateDB, param.ID)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case PoolPairOrders:
-			res, err = getPdexv3PoolPairOrders(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			res, err = getPdexv3PoolPairOrders(beaconHeight, beaconTimeStamp, beaconFeatureStateDB, param.ID)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case PoolPairOrderRewards:
-			res, err = getPdexv3PoolPairOrderReward(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID)
+			res, err = getPdexv3PoolPairOrderReward(beaconHeight, beaconTimeStamp, beaconFeatureStateDB, param.ID)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case Params:
-			res, err = getPdexv3Param(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			res, err = getPdexv3Param(beaconHeight, beaconTimeStamp, beaconFeatureStateDB)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case StakingPools:
-			res, err = getPdexv3StakingPools(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			res, err = getPdexv3StakingPools(beaconHeight, beaconTimeStamp, beaconFeatureStateDB)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case StakingPool:
 			res, err = getPdexv3StakingPool(
-				beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB, param.ID,
+				beaconHeight, beaconTimeStamp, beaconFeatureStateDB, param.ID,
 			)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
 
 		case NftIDs:
-			res, err = getPdexv3NftIDs(beaconHeight, beaconTimeStamp, param.Verbosity, beaconFeatureStateDB)
+			res, err = getPdexv3NftIDs(beaconHeight, beaconTimeStamp, beaconFeatureStateDB)
 			if err != nil {
 				return res, NewRPCError(GetPdexv3StateError, err)
 			}
+		case NftIDsCached:
+			return beaconBestView.PdeState(pdex.AmplifierVersion).Reader().NftIDs(), nil
 
 		case All:
 			res, err = getPdexv3State(beaconHeight, beaconTimeStamp, beaconFeatureStateDB)
@@ -539,7 +541,7 @@ func getPdexv3PoolPairs(
 }
 
 func getPdexv3Param(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB,
 ) (interface{}, error) {
 	param, err := pdex.InitParamFromDB(stateDB)
 	if err != nil {
@@ -553,7 +555,7 @@ func getPdexv3Param(
 }
 
 func getPdexv3StakingPools(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB,
 ) (interface{}, error) {
 	stakingPools, err := pdex.InitStakingPoolsFromDB(stateDB)
 	if err != nil {
@@ -567,7 +569,7 @@ func getPdexv3StakingPools(
 }
 
 func getPdexv3NftIDs(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB,
 ) (interface{}, error) {
 	nftIDs, err := pdex.InitNftIDsFromDB(stateDB)
 	if err != nil {
@@ -581,7 +583,7 @@ func getPdexv3NftIDs(
 }
 
 func getPdexv3StakingPool(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, stakingPoolID string,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB, stakingPoolID string,
 ) (interface{}, error) {
 	stakingPoolState, err := pdex.InitStakingPoolFromDB(stateDB, stakingPoolID)
 	if err != nil {
@@ -600,7 +602,7 @@ func getPdexv3StakingPool(
 }
 
 func getPdexv3PoolPair(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB, poolPairID string,
 ) (interface{}, error) {
 	poolPairState, err := pdex.InitPoolPair(stateDB, poolPairID)
 	if err != nil {
@@ -616,7 +618,7 @@ func getPdexv3PoolPair(
 }
 
 func getPdexv3PoolPairShares(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB, poolPairID string,
 ) (interface{}, error) {
 	shares, err := pdex.InitPoolPairShares(stateDB, poolPairID)
 	if err != nil {
@@ -625,7 +627,7 @@ func getPdexv3PoolPairShares(
 	temp := map[string]*pdex.PoolPairState{}
 	if len(shares) != 0 {
 		temp[poolPairID] = pdex.NewPoolPairStateWithValue(
-			rawdbv2.Pdexv3PoolPair{}, shares, pdex.Orderbook{}, nil, nil, nil, nil, nil)
+			rawdbv2.Pdexv3PoolPair{}, shares, pdex.Orderbook{}, nil, nil, nil, nil, nil, nil, nil)
 	}
 
 	res := &jsonresult.Pdexv3State{
@@ -636,7 +638,7 @@ func getPdexv3PoolPairShares(
 }
 
 func getPdexv3PoolPairOrders(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB, poolPairID string,
 ) (interface{}, error) {
 	orderBook, err := pdex.InitPoolPairOrders(stateDB, poolPairID)
 	if err != nil {
@@ -647,14 +649,14 @@ func getPdexv3PoolPairOrders(
 		BeaconTimeStamp: beaconTimeStamp,
 		PoolPairs: &map[string]*pdex.PoolPairState{
 			poolPairID: pdex.NewPoolPairStateWithValue(
-				rawdbv2.Pdexv3PoolPair{}, nil, *orderBook, nil, nil, nil, nil, nil),
+				rawdbv2.Pdexv3PoolPair{}, nil, *orderBook, nil, nil, nil, nil, nil, nil, nil),
 		},
 	}
 	return res, nil
 }
 
 func getPdexv3PoolPairOrderReward(
-	beaconHeight uint64, beaconTimeStamp int64, verbosity uint, stateDB *statedb.StateDB, poolPairID string,
+	beaconHeight uint64, beaconTimeStamp int64, stateDB *statedb.StateDB, poolPairID string,
 ) (interface{}, error) {
 	orderRewards, err := pdex.InitPoolPairOrderRewards(stateDB, poolPairID)
 	if err != nil {
@@ -665,7 +667,7 @@ func getPdexv3PoolPairOrderReward(
 		BeaconTimeStamp: beaconTimeStamp,
 		PoolPairs: &map[string]*pdex.PoolPairState{
 			poolPairID: pdex.NewPoolPairStateWithValue(
-				rawdbv2.Pdexv3PoolPair{}, nil, pdex.Orderbook{}, nil, nil, nil, nil, orderRewards),
+				rawdbv2.Pdexv3PoolPair{}, nil, pdex.Orderbook{}, nil, nil, nil, nil, nil, orderRewards, nil),
 		},
 	}
 	return res, nil

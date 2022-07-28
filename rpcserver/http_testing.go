@@ -1,11 +1,16 @@
 package rpcserver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/patrickmn/go-cache"
 	"io/ioutil"
+	"log"
 	"reflect"
 	"time"
 
@@ -69,6 +74,52 @@ func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, close
 	/*}*/
 
 	return arr, nil
+}
+
+func (httpServer *HttpServer) handleGetAutoEnableFeatureConfig(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return config.Param().AutoEnableFeature, nil
+}
+
+func (httpServer *HttpServer) handleSetAutoEnableFeatureConfig(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Config().Network() == config.MainnetNetwork {
+		return nil, nil
+	}
+	arrayParams := common.InterfaceSlice(params)
+	jsonStr := arrayParams[0].(string)
+
+	v := map[string]config.AutoEnableFeature{}
+	err := json.Unmarshal([]byte(jsonStr), &v)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	config.Param().AutoEnableFeature = v
+	httpServer.GetBlockchain().SendFeatureStat()
+	return nil, nil
+}
+
+func (httpServer *HttpServer) handleSendFinishSync(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	miningKeyStr := arrayParams[0].(string)
+	cpk := arrayParams[1].(string)
+	sid := arrayParams[2].(float64)
+	miningKey, err := consensus_v2.GetMiningKeyFromPrivateSeed(miningKeyStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	signature, err := miningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	finishedSyncSignatures = append(finishedSyncSignatures, signature)
+	finishedSyncValidators = append(finishedSyncValidators, cpk)
+
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, byte(sid))
+	if err := httpServer.config.Server.PushMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	return nil, nil
 }
 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -167,6 +218,11 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
 		substituteValidatorStr[shardID] = tempV
 	}
+	syncingValidatorsStr := make(map[int][]string)
+	for shardID, v := range syncingValidators {
+		tempV, _ := incognitokey.CommitteeKeyListToString(v)
+		syncingValidatorsStr[int(shardID)] = tempV
+	}
 	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
 	tempStakingTx := make(map[string]string)
@@ -189,7 +245,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
-		"syncing":          syncingValidators,
+		"syncing":          syncingValidatorsStr,
 	}, nil
 }
 
@@ -346,12 +402,25 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	insertRule := param["insert_rule"]
 	validatorRule := param["validator_rule"]
 
-	blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
-	blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
-	blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
-	blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
-	blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
-	blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	if voteRule != nil {
+		blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+	}
+	if createRule != nil {
+		blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+	}
+	if handleVoteRule != nil {
+		blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	}
+	if handleProposeRule != nil {
+		blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
+	}
+	if insertRule != nil {
+		blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+	}
+	if validatorRule != nil {
+		blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	}
+
 	return map[string]interface{}{
 		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
 		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
@@ -365,6 +434,11 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 
 func (httpServer *HttpServer) handleGetByzantineDetectorInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo(), nil
+}
+
+func (httpServer *HttpServer) handleGetByzantineBlackList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	res := blsbft.ByzantineDetectorObject.GetByzantineDetectorInfo()
+	return res["BlackList"], nil
 }
 
 func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -410,15 +484,10 @@ func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	receiveBlockByHeight, err := blsbft.InitReceiveBlockByHeight(chainID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
 	return map[string]interface{}{
-		"voteHistory":          voteHistory,
-		"proposeHistory":       proposeHistory,
-		"receiveBlockByHash":   receiveBlockByHash,
-		"receiveBlockByHeight": receiveBlockByHeight,
+		"voteHistory":        voteHistory,
+		"proposeHistory":     proposeHistory,
+		"receiveBlockByHash": receiveBlockByHash,
 	}, nil
 }
 
@@ -434,7 +503,7 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 	}
 
 	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
-	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee())
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
 	committee, _ := tempCommittee.ToBase58()
 
 	return map[string]interface{}{
@@ -893,3 +962,61 @@ func (httpServer *HttpServer) handleConvertPaymentAddress(params interface{}, cl
 // 	}
 // 	return result, nil
 // }
+
+func (httpServer *HttpServer) handleResetCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	n := int(arrayParams[0].(float64))
+	switch n {
+	case 1:
+		incognitokey.GetMiningKeyBase58Cache, _ = lru.New(2000)
+		log.Println("reset GetMiningKeyBase58Cache")
+	case 2:
+		incognitokey.ToBase58Cache, _ = lru.New(2000)
+		log.Println("reset ToBase58Cache")
+	case 3:
+		blsmultisig.Cacher = cache.New(4*time.Hour, 4*time.Hour)
+		log.Println("reset blsmultisig.Cacher")
+	default:
+	}
+	return "ok", nil
+}
+
+func (httpServer *HttpServer) handleTestValidate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	log.Println(arrayParams)
+	aggSigHash, err := base64.StdEncoding.DecodeString(arrayParams[0].(string))
+	if err != nil {
+		return "Cannot decode aggsig", nil
+	}
+
+	blkHash := common.Hash{}.NewHashFromStr2(arrayParams[1].(string))
+	valIdx := make([]int, len(arrayParams[2].([]interface{})))
+	for id, x := range arrayParams[2].([]interface{}) {
+		valIdx[id] = int(x.(float64))
+	}
+	committeeFromBlockHash := common.Hash{}.NewHashFromStr2(arrayParams[3].(string))
+	chainID := int(arrayParams[4].(float64))
+	proposerIndex := int(arrayParams[5].(float64))
+	blockVersion := int(arrayParams[6].(float64))
+	var committee []incognitokey.CommitteePublicKey
+	if chainID == -1 {
+		committee = httpServer.GetBlockchain().BeaconChain.GetCommittee()
+	} else {
+		committee, _ = httpServer.GetBlockchain().GetShardCommitteeFromBeaconHash(committeeFromBlockHash, byte(chainID))
+		committee = httpServer.GetBlockchain().ShardChain[chainID].GetSigningCommittees(proposerIndex, committee, blockVersion)
+	}
+
+	committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committee {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
+	}
+
+	log.Printf("Sig %+v\n BlockHash %+v \n Valindex %+v \n Committee %+v \n", aggSigHash, blkHash.GetBytes(), valIdx, committeeBLSKeys)
+
+	if ok, err := blsmultisig.Verify(aggSigHash, blkHash.GetBytes(), valIdx, committeeBLSKeys); !ok {
+		return fmt.Sprintf("Invalid Signature: aggSig %+v blkHash: %+v, valIdx %+v, committeeStr %+v %+v", aggSigHash, blkHash.String(), valIdx, committeeStr, err), nil
+	}
+
+	return "ok", nil
+}

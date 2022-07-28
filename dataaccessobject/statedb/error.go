@@ -37,11 +37,12 @@ const (
 	ErrInvalidBridgeBSCTxStateType            = "invalid bridge bsc tx state type"
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
-	//A
+	ErrInvalidBridgeFTMTxStateType            = "invalid bridge fantom tx state type"
+	// A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
 	ErrInvalidWaitingPortingRequestType    = "invalid waiting porting request type"
-	//B
+	// B
 	ErrInvalidPortalStatusStateType              = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType           = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType     = "invalid portal waiting redeem request type"
@@ -69,15 +70,25 @@ const (
 	ErrInvalidPdexv3StakingPoolStateType               = "invalid pdex v3 staking pool state type"
 	ErrInvalidPdexv3StakerStateType                    = "invalid pdex v3 staker state type"
 	ErrInvalidPdexv3PoolPairLpFeePerShareStateType     = "invalid pdex v3 pool pair lp fee per share state type"
+	ErrInvalidPdexv3PoolPairLmRewardPerShareStateType  = "invalid pdex v3 pool pair lm reward per share state type"
 	ErrInvalidPdexv3PoolPairProtocolFeeStateType       = "invalid pdex v3 pool pair protocol fee state type"
 	ErrInvalidPdexv3PoolPairStakingPoolFeeStateType    = "invalid pdex v3 pool pair staking pool fee state type"
 	ErrInvalidPdexv3ShareTradingFeeStateType           = "invalid pdex v3 share trading fee state type"
 	ErrInvalidPdexv3LastLPFeesPerShareStateType        = "invalid pdex v3 share last lp fees per share state type"
+	ErrInvalidPdexv3LastLmRewardPerShareStateType      = "invalid pdex v3 share last lm reward per share state type"
 	ErrInvalidPdexv3StakingPoolRewardPerShareStateType = "invalid pdex v3 staking pool reward per share state type"
 	ErrInvalidPdexv3StakerRewardStateType              = "invalid pdex v3 staker reward state type"
 	ErrInvalidPdexv3StakerLastRewardPerShareStateType  = "invalid pdex v3 staker last reward per share state type"
 	ErrInvalidPdexv3PoolPairMakingVolumeStateType      = "invalid pdex v3 pool pair making voulme state type"
 	ErrInvalidPdexv3PoolPairOrderRewardStateType       = "invalid pdex v3 pool pair order reward state type"
+	ErrInvalidPdexv3PoolPairLmLockedShareStateType     = "invalid pdex v3 pool pair lm locked share state type"
+	// bridge agg
+	ErrInvalidBridgeAggStatusStateType         = "invalid bridge agg status state type"
+	ErrInvalidBridgeAggUnifiedTokenStateType   = "invalid bridge agg unified token state type"
+	ErrInvalidBridgeAggConvertedTokenStateType = "invalid bridge agg converted token state type"
+	ErrInvalidBridgeAggVaultStateType          = "invalid bridge agg vault state type"
+	ErrInvalidBridgeAggWaitingUnshieldReqType  = "invalid bridge agg waiting unshield request state type"
+	ErrInvalidBridgeAggParamStateType          = "invalid bridge agg param state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -139,6 +150,7 @@ const (
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
 	StoreSyncingValidatorsError
+	SaveStopAutoStakerInfoError
 
 	DeleteBeaconCommitteeError
 	DeleteOneShardCommitteeError
@@ -170,7 +182,7 @@ const (
 	StoreBurningConfirmError
 	GetBurningConfirmError
 
-	//portal
+	// portal
 	StoreCustodianStateError
 	StoreWaitingRedeemRequestError
 	StorePortalRewardError
@@ -285,6 +297,14 @@ const (
 	// Polygon bridge
 	BridgeInsertPLGTxHashIssuedError
 	IsPLGTxHashIssuedError
+
+	// Fantom bridge
+	BridgeInsertFTMTxHashIssuedError
+	IsFTMTxHashIssuedError
+
+	// Bridge Agg
+	GetBridgeAggStatusError
+	StoreBridgeAggStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -342,6 +362,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
 	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
+	SaveStopAutoStakerInfoError:            {-3016, "Store Stop Autostake Info Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},
@@ -460,6 +481,14 @@ var ErrCodeMessage = map[int]struct {
 	// polygon bridge
 	BridgeInsertPLGTxHashIssuedError: {-15104, "Bridge Insert PLG Tx Hash Issued Error"},
 	IsPLGTxHashIssuedError:           {-15105, "Is Polygon Tx Hash Issued Error"},
+
+	// fantom bridge
+	BridgeInsertFTMTxHashIssuedError: {-15106, "Bridge Insert Fantom Tx Hash Issued Error"},
+	IsFTMTxHashIssuedError:           {-15107, "Is Fantom Tx Hash Issued Error"},
+
+	// bridge agg
+	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},
+	StoreBridgeAggStatusError: {-15109, "Store bridge agg status Error"},
 }
 
 type StatedbError struct {

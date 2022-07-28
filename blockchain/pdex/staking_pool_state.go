@@ -116,19 +116,15 @@ func (s *StakingPoolState) getDiff(
 		}
 		for nftID, staker := range s.stakers {
 			stakerChange := v2utils.NewStakerChange()
-			stakerChange = staker.getDiff(stakingPoolID, nftID, nil, stakerChange)
+			stakerChange = staker.getDiff(nil, stakerChange)
 			stakingPoolChange.Stakers[nftID] = stakerChange
 		}
 	} else {
-		for tokenID, value := range s.rewardsPerShare {
-			if m, ok := compareStakingPoolState.rewardsPerShare[tokenID]; !ok || !reflect.DeepEqual(m, value) {
-				newStakingPoolChange.RewardsPerShare[tokenID.String()] = true
-			}
-		}
+		newStakingPoolChange.RewardsPerShare = v2utils.DifMapHashBigInt(s.rewardsPerShare).GetDiff(v2utils.DifMapHashBigInt(compareStakingPoolState.rewardsPerShare))
 		for nftID, staker := range s.stakers {
 			if m, ok := compareStakingPoolState.stakers[nftID]; !ok || !reflect.DeepEqual(m, staker) {
 				stakerChange := v2utils.NewStakerChange()
-				stakerChange = staker.getDiff(stakingPoolID, nftID, m, stakerChange)
+				stakerChange = staker.getDiff(m, stakerChange)
 				stakingPoolChange.Stakers[nftID] = stakerChange
 			}
 		}
@@ -276,42 +272,60 @@ func (s *StakingPoolState) updateToDB(
 			}
 		}
 	}
-	for nftID, staker := range s.stakers {
-		stakerChange, found := stakingPoolChange.Stakers[nftID]
-		if !found || stakerChange == nil {
-			continue
-		}
-		nftHash, err := common.Hash{}.NewHashFromStr(nftID)
-		if err != nil {
-			return err
-		}
+
+	for nftID, stakerChange := range stakingPoolChange.Stakers {
 		if stakerChange.IsChanged {
-			err := statedb.StorePdexv3Staker(env.StateDB(), stakingPoolID, nftID,
-				statedb.NewPdexv3StakerStateWithValue(*nftHash, staker.liquidity),
-			)
+			nftHash, err := common.Hash{}.NewHashFromStr(nftID)
 			if err != nil {
 				return err
 			}
-		}
-		for tokenID, value := range staker.lastRewardsPerShare {
-			if stakerChange.LastRewardsPerShare[tokenID.String()] {
-				err := statedb.StorePdexv3StakerLastRewardPerShare(
-					env.StateDB(), stakingPoolID, nftID,
-					statedb.NewPdexv3StakerLastRewardPerShareStateWithValue(tokenID, value),
-				)
+			if staker, found := s.stakers[nftID]; found {
+				if stakerChange.IsChanged {
+					err := statedb.StorePdexv3Staker(env.StateDB(), stakingPoolID, nftID,
+						statedb.NewPdexv3StakerStateWithValue(*nftHash, staker.liquidity),
+					)
+					if err != nil {
+						return err
+					}
+				}
+				for tokenID, value := range staker.lastRewardsPerShare {
+					if stakerChange.LastRewardsPerShare[tokenID.String()] {
+						err := statedb.StorePdexv3StakerLastRewardPerShare(
+							env.StateDB(), stakingPoolID, nftID,
+							statedb.NewPdexv3StakerLastRewardPerShareStateWithValue(tokenID, value),
+						)
+						if err != nil {
+							return err
+						}
+					}
+				}
+				for tokenID, value := range staker.rewards {
+					if stakerChange.Rewards[tokenID.String()] {
+						err := statedb.StorePdexv3StakerReward(
+							env.StateDB(), stakingPoolID, nftID,
+							statedb.NewPdexv3StakerRewardStateWithValue(tokenID, value),
+						)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				err = statedb.DeletePdexv3Staker(env.StateDB(), stakingPoolID, *nftHash)
 				if err != nil {
 					return err
 				}
-			}
-		}
-		for tokenID, value := range staker.rewards {
-			if stakerChange.Rewards[tokenID.String()] {
-				err := statedb.StorePdexv3StakerReward(
-					env.StateDB(), stakingPoolID, nftID,
-					statedb.NewPdexv3StakerRewardStateWithValue(tokenID, value),
-				)
-				if err != nil {
-					return err
+				for tokenID, _ := range staker.lastRewardsPerShare {
+					err = statedb.DeletePdexv3StakerLastRewardPerShare(env.StateDB(), stakingPoolID, nftID, tokenID.String())
+					if err != nil {
+						return err
+					}
+				}
+				for tokenID, _ := range staker.rewards {
+					err = statedb.DeletePdexv3StakerReward(env.StateDB(), stakingPoolID, nftID, tokenID.String())
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

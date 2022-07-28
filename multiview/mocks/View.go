@@ -167,3 +167,17 @@ func (_m *View) GetProposerByTimeSlot(ts int64, version int) (incognitokey.Commi
 
 	return r0, r1
 }
+
+// GetProposerLength provides a mock function with given fields:
+func (_m *View) GetProposerLength() int {
+	ret := _m.Called()
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}

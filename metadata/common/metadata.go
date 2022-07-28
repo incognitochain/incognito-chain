@@ -1,19 +1,23 @@
 package common
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 // Interface for all types of metadata in tx
@@ -91,6 +95,8 @@ type ChainRetriever interface {
 	CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool
 	GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64
 	GetFinalBeaconHeight() uint64
+	GetPdexv3Cached(common.Hash) interface{}
+	GetBeaconChainDatabase() incdb.Database
 }
 
 type BeaconViewRetriever interface {
@@ -106,12 +112,13 @@ type BeaconViewRetriever interface {
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
-	IsValidNftID(string) error
-	IsValidPoolPairID(string) error
-	IsValidMintNftRequireAmount(uint64) error
-	IsValidPdexv3StakingPool(string) error
-	IsValidPdexv3UnstakingAmount(string, string, uint64) error
-	IsValidPdexv3ShareAmount(string, string, uint64) error
+	IsValidNftID(incdb.Database, interface{}, string) error
+	IsValidPoolPairID(incdb.Database, interface{}, string) error
+	IsValidMintNftRequireAmount(incdb.Database, interface{}, uint64) error
+	IsValidPdexv3StakingPool(incdb.Database, interface{}, string) error
+	IsValidPdexv3UnstakingAmount(incdb.Database, interface{}, string, string, uint64) error
+	IsValidPdexv3ShareAmount(incdb.Database, interface{}, string, string, uint64) error
+	BlockHash() common.Hash
 }
 
 type ShardViewRetriever interface {
@@ -349,120 +356,133 @@ func ConvertPrivacyTokenToNativeToken(
 	)
 }
 
-func IsPDETx(metadata Metadata) bool {
-	if metadata != nil {
-		return IsPDEType(metadata.GetType())
-	}
-	return false
+type Action struct {
+	Meta      Metadata    `json:"Meta"`
+	TxReqID   common.Hash `json:"TxReqID"`
+	ExtraData [][]byte    `json:"ExtraData,omitempty"`
 }
 
-func IsPDEType(metadataType int) bool {
-	switch metadataType {
-	case PDEContributionMeta:
-		return true
-	case PDETradeRequestMeta:
-		return true
-	case PDETradeResponseMeta:
-		return true
-	case PDEWithdrawalRequestMeta:
-		return true
-	case PDEWithdrawalResponseMeta:
-		return true
-	case PDEContributionResponseMeta:
-		return true
-	case PDEPRVRequiredContributionRequestMeta:
-		return true
-	case PDECrossPoolTradeRequestMeta:
-		return true
-	case PDECrossPoolTradeResponseMeta:
-		return true
-	case PDEFeeWithdrawalRequestMeta:
-		return true
-	case PDEFeeWithdrawalResponseMeta:
-		return true
-	case PDETradingFeesDistributionMeta:
-		return true
-	default:
-		return false
+func NewAction() *Action {
+	return &Action{}
+}
+
+func NewActionWithValue(
+	meta Metadata, txReqID common.Hash, extraData [][]byte,
+) *Action {
+	return &Action{
+		Meta:      meta,
+		TxReqID:   txReqID,
+		ExtraData: extraData,
 	}
 }
 
-func ShouldIncludeBeaconViewByPdexv3Tx(metadata Metadata) bool {
-	if metadata != nil {
-		if metadata.GetType() == Pdexv3MintPDEXGenesisMeta {
-			return false
-		}
-		return IsPdexv3Type(metadata.GetType())
+func (a *Action) FromString(source string) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(source)
+	if err != nil {
+		return err
 	}
-	return false
+	err = json.Unmarshal(contentBytes, &a)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func IsPdexv3Tx(metadata Metadata) bool {
-	if metadata != nil {
-		return IsPdexv3Type(metadata.GetType())
+func (a *Action) StringSlice(metaType int) ([]string, error) {
+	contentBytes, err := json.Marshal(a)
+	if err != nil {
+		return []string{}, err
 	}
-	return false
+	contentStr := base64.StdEncoding.EncodeToString(contentBytes)
+	action := []string{strconv.Itoa(metaType), contentStr}
+	return action, nil
 }
 
-func IsPdexv3Type(metadataType int) bool {
-	switch metadataType {
-	case Pdexv3ModifyParamsMeta:
-		return true
-	case Pdexv3UserMintNftRequestMeta:
-		return true
-	case Pdexv3UserMintNftResponseMeta:
-		return true
-	case Pdexv3MintNftRequestMeta:
-		return true
-	case Pdexv3MintNftResponseMeta:
-		return true
-	case Pdexv3AddLiquidityRequestMeta:
-		return true
-	case Pdexv3AddLiquidityResponseMeta:
-		return true
-	case Pdexv3TradeRequestMeta:
-		return true
-	case Pdexv3TradeResponseMeta:
-		return true
-	case Pdexv3AddOrderRequestMeta:
-		return true
-	case Pdexv3AddOrderResponseMeta:
-		return true
-	case Pdexv3WithdrawOrderRequestMeta:
-		return true
-	case Pdexv3WithdrawOrderResponseMeta:
-		return true
-	case Pdexv3WithdrawLiquidityRequestMeta:
-		return true
-	case Pdexv3WithdrawLiquidityResponseMeta:
-		return true
-	case Pdexv3WithdrawLPFeeRequestMeta:
-		return true
-	case Pdexv3WithdrawLPFeeResponseMeta:
-		return true
-	case Pdexv3WithdrawProtocolFeeRequestMeta:
-		return true
-	case Pdexv3WithdrawProtocolFeeResponseMeta:
-		return true
-	case Pdexv3MintPDEXGenesisMeta:
-		return true
-	case Pdexv3MintBlockRewardMeta:
-		return true
-	case Pdexv3StakingRequestMeta:
-		return true
-	case Pdexv3StakingResponseMeta:
-		return true
-	case Pdexv3UnstakingRequestMeta:
-		return true
-	case Pdexv3UnstakingResponseMeta:
-		return true
-	case Pdexv3DistributeStakingRewardMeta:
-		return true
-	case Pdexv3WithdrawStakingRewardRequestMeta:
-		return true
-	case Pdexv3WithdrawStakingRewardResponseMeta:
-		return true
-	default:
-		return false
+type Instruction struct {
+	MetaType int    `json:"MetaType"`
+	Status   string `json:"Status"`
+	ShardID  byte   `json:"ShardID"`
+	Content  string `json:"Content,omitempty"`
+}
+
+func NewInstruction() *Instruction {
+	return &Instruction{}
+}
+
+func NewInstructionWithValue(
+	metaType int, status string, shardID byte, content string,
+) *Instruction {
+	return &Instruction{
+		MetaType: metaType,
+		Status:   status,
+		ShardID:  shardID,
+		Content:  content,
 	}
+}
+
+func (i *Instruction) StringSlice() []string {
+	return []string{
+		strconv.Itoa(i.MetaType),
+		strconv.Itoa(int(i.ShardID)),
+		i.Status,
+		i.Content,
+	}
+}
+
+func (i *Instruction) FromStringSlice(source []string) error {
+	if len(source) != 4 {
+		return fmt.Errorf("Expect length of instructions is %d but get %d", 4, len(source))
+	}
+	metaType, err := strconv.Atoi(source[0])
+	if err != nil {
+		return err
+	}
+	i.MetaType = metaType
+	shardID, err := strconv.Atoi(source[1])
+	if err != nil {
+		return err
+	}
+	i.ShardID = byte(shardID)
+	i.Status = source[2]
+	i.Content = source[3]
+	return nil
+}
+
+func (i *Instruction) StringSliceWithRejectContent(rejectContent *RejectContent) ([]string, error) {
+	str, err := rejectContent.String()
+	i.Content = str
+	i.Status = common.RejectedStatusStr
+	return i.StringSlice(), err
+}
+
+type RejectContent struct {
+	TxReqID   common.Hash `json:"TxReqID"`
+	ErrorCode int         `json:"ErrorCode,omitempty"`
+	Data      []byte      `json:"Data,omitempty"`
+}
+
+func NewRejectContent() *RejectContent { return &RejectContent{} }
+
+func NewRejectContentWithValue(txReqID common.Hash, errorCode int, data []byte) *RejectContent {
+	return &RejectContent{TxReqID: txReqID, ErrorCode: errorCode, Data: data}
+}
+
+func (r *RejectContent) String() (string, error) {
+	contentBytes, err := json.Marshal(r)
+	if err != nil {
+		return utils.EmptyString, err
+	}
+	return base64.StdEncoding.EncodeToString(contentBytes), nil
+}
+
+func (r *RejectContent) FromString(source string) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(source)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(contentBytes, &r)
+	if err != nil {
+		return err
+	}
+	return nil
 }

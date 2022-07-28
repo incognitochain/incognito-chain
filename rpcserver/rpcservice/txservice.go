@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,6 +89,7 @@ func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID by
 	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
+// HasSerialNumbers checks if a list of serial numbers have been spent. The serial number list can either be base58- or base64-encoded.
 func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
 	if int(shardID) >= common.MaxShardNumber {
 		return nil, fmt.Errorf("shardID %v is out of range [0 - %v]", shardID, common.MaxShardNumber-1)
@@ -96,11 +98,14 @@ func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []int
 	for _, item := range serialNumbersStr {
 		itemStr, okParam := item.(string)
 		if !okParam {
-			return nil, fmt.Errorf("Invalid serial number param, %+v", item)
+			return nil, fmt.Errorf("invalid serial number param, %+v", item)
 		}
 		serialNumber, _, err := base58.Base58Check{}.Decode(itemStr)
 		if err != nil {
-			return nil, fmt.Errorf("Decode serial number failed, %+v", itemStr)
+			serialNumber, err = base64.StdEncoding.DecodeString(itemStr)
+			if err != nil {
+				return nil, fmt.Errorf("decode serial number failed, %+v", itemStr)
+			}
 		}
 		transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardID)
@@ -705,7 +710,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
 				}
 			}
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), false, false)
 			if err == nil {
 				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 				tx.SetValidationEnv(valEnv)
@@ -2031,7 +2036,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 				}
 			}
 
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), metadata.ShouldIncludeBeaconViewByPdexv3Tx(tx.GetMetadata()))
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), false, false)
 			valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 			tx.SetValidationEnv(valEnv)
 			valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
@@ -2522,17 +2527,20 @@ func (txService TxService) DecryptOutputCoinByKey(outCoins []coin.Coin, keyset *
 }
 
 func (TxService TxService) GenerateOTAFromPaymentAddress(paymentAddressStr string) (string, string, error) {
-	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
+	keySet, shardID, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
 	if err != nil {
 		Logger.log.Errorf("GenerateOTAFromPaymentAddress Cannot get keyset from payment address. Error: %+v", err)
 		return "", "", err
 	}
-	publickey, txRandom, err := coin.NewOTAFromReceiver(keySet.PaymentAddress)
+	p := privacy.NewCoinParams().From(&privacy.PaymentInfo{
+		PaymentAddress: keySet.PaymentAddress,
+	}, int(shardID), privacy.CoinPrivacyTypeMint)
+	c, err := privacy.NewCoinFromPaymentInfo(p)
 	if err != nil {
 		Logger.log.Errorf("GenerateOTAFromPaymentAddress Cannot generate OTA Coin from keyset. Error: %+v", err)
 		return "", "", err
 	}
-	return base58.Base58Check{}.Encode(publickey.ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte), nil
+	return base58.Base58Check{}.Encode(c.GetPublicKey().ToBytesS(), common.ZeroByte), base58.Base58Check{}.Encode(c.GetTxRandom().Bytes(), common.ZeroByte), nil
 }
 
 func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (transaction.TransactionToken, *RPCError) {

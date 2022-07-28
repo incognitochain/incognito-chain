@@ -39,17 +39,17 @@ func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	dataStr := common.EmptyString
 	errJSON := json.Unmarshal(data, &dataStr)
 	if errJSON != nil {
-		Logger.Log.Errorf("PaymentProofV2 unmarshalling dataStr error: %v\n", errJSON)
+		Logger.Log.Errorf("PaymentProofV2 unmarshalling dataStr error: %v", errJSON)
 		return errJSON
 	}
 	temp, err := base64.StdEncoding.DecodeString(dataStr)
 	if err != nil {
-		Logger.Log.Errorf("PaymentProofV2 decoding string dataStr error: %v\n", err)
+		Logger.Log.Errorf("PaymentProofV2 decoding string dataStr error: %v", err)
 		return err
 	}
 	errSetBytes := proof.SetBytes(temp)
 	if errSetBytes != nil {
-		Logger.Log.Errorf("PaymentProofV2 setBytes error: %v\n", errSetBytes)
+		Logger.Log.Errorf("PaymentProofV2 setBytes error: %v", errSetBytes)
 		return errSetBytes
 	}
 	return nil
@@ -154,7 +154,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, errors.New("Proof bytes = 0"))
 	}
 	if proofBytes[0] != proof.GetVersion() {
-		Logger.Log.Errorf("proof bytes version is incorrect: %v != %v\n", proofBytes[0], proof.GetVersion())
+		Logger.Log.Errorf("proof bytes version is incorrect: %v != %v", proofBytes[0], proof.GetVersion())
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Proof bytes version is not correct"))
 	}
 	if proof == nil {
@@ -164,7 +164,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 	offset := 1
 
 	if offset >= len(proofBytes) {
-		Logger.Log.Errorf("out of range input coin: %v >= %v\n", offset, len(proofBytes))
+		Logger.Log.Errorf("out of range input coin: %v >= %v", offset, len(proofBytes))
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 	}
 	lenInputCoinsArray := int(proofBytes[offset])
@@ -172,25 +172,25 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 	proof.inputCoins = make([]*coin.PlainCoinV1, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofBytes) {
-			Logger.Log.Errorf("out of range input coin: %v >= %v\n", offset, len(proofBytes))
+			Logger.Log.Errorf("out of range input coin: %v >= %v", offset, len(proofBytes))
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		lenInputCoin := int(proofBytes[offset])
 		offset++
 
 		if offset+lenInputCoin > len(proofBytes) {
-			Logger.Log.Errorf("out of range input coin: %v + %v >= %v\n", offset, lenInputCoin, len(proofBytes))
+			Logger.Log.Errorf("out of range input coin: %v + %v >= %v", offset, lenInputCoin, len(proofBytes))
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		coinBytes := proofBytes[offset : offset+lenInputCoin]
 		pc, err := coin.NewPlainCoinFromByte(coinBytes)
 		if err != nil {
-			Logger.Log.Errorf("input coin newPlainCoin error: %v\n", err)
+			Logger.Log.Errorf("input coin newPlainCoin error: %v", err)
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		var ok bool
 		if proof.inputCoins[i], ok = pc.(*coin.PlainCoinV1); !ok {
-			Logger.Log.Error("cannot assert type of PlainCoin to PlainCoinV1\n")
+			Logger.Log.Error("cannot assert type of PlainCoin to PlainCoinV1")
 			err := errors.New("Cannot assert type of PlainCoin to PlainCoinV1")
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
@@ -198,7 +198,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 	}
 
 	if offset >= len(proofBytes) {
-		Logger.Log.Errorf("out of range output coin: %v >= %v\n", offset, len(proofBytes))
+		Logger.Log.Errorf("out of range output coin: %v >= %v", offset, len(proofBytes))
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 	}
 	lenOutputCoinsArray := int(proofBytes[offset])
@@ -208,14 +208,14 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 		proof.outputCoins[i] = new(coin.CoinV2)
 		// try get 1-byte for len
 		if offset >= len(proofBytes) {
-			Logger.Log.Errorf("out of range output coin: %v >= %v\n", offset, len(proofBytes))
+			Logger.Log.Errorf("out of range output coin: %v >= %v", offset, len(proofBytes))
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
 		lenOutputCoin := int(proofBytes[offset])
 		offset++
 
 		if offset+lenOutputCoin > len(proofBytes) {
-			Logger.Log.Errorf("out of range output coin: %v + %v >= %v\n", offset, lenOutputCoin, len(proofBytes))
+			Logger.Log.Errorf("out of range output coin: %v + %v >= %v", offset, lenOutputCoin, len(proofBytes))
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
 		err := proof.outputCoins[i].SetBytes(proofBytes[offset : offset+lenOutputCoin])
@@ -233,7 +233,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 			}
 			err1 := proof.outputCoins[i].SetBytes(proofBytes[offset : offset+lenOutputCoin])
 			if err1 != nil {
-				Logger.Log.Errorf("output coin setbytes error: %v\n", err1)
+				Logger.Log.Errorf("output coin setbytes error: %v", err1)
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err1)
 			}
 		}
@@ -435,7 +435,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 	}
 	tmpSum := sumOutput + fee
 	if tmpSum < sumOutput || tmpSum < fee {
-		return false, fmt.Errorf("Overflown sumOutput+fee: output value = %v, fee = %v, sum = %v\n", sumOutput, fee, tmpSum)
+		return false, fmt.Errorf("Overflown sumOutput+fee: output value = %v, fee = %v, sum = %v", sumOutput, fee, tmpSum)
 	}
 	if sumInput != tmpSum {
 		return false, errors.New("ConversionProof input should be equal to fee + sum output")

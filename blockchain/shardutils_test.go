@@ -310,7 +310,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight, tt.args.beaconHeight)
+			gotInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight, tt.args.beaconHeight, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateShardInstructionsFromTransactionAndInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return

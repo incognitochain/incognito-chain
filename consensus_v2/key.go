@@ -172,7 +172,7 @@ func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, commi
 	return blsbft.ValidateCommitteeSig(block, committees)
 }
 
-func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
+func GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
 	privateSeed, err := LoadUserKeyFromIncPrivateKey(privateKey)
 	if err != nil {
 		return "", err

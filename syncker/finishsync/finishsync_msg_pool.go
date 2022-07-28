@@ -1,12 +1,11 @@
 package finishsync
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"sync"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 var (
@@ -18,6 +17,7 @@ var (
 // FinishSyncMsgPool could maintain different data in different beacon nodes
 type FinishSyncMsgPool struct {
 	FinishedSyncValidators map[byte]map[string]bool `json:"FinishedSyncValidators"`
+	ReceiveTime            map[string]uint64        //beacon block height that receive the msg
 	mu                     *sync.RWMutex
 }
 
@@ -28,6 +28,7 @@ func NewFinishSyncMsgPool() FinishSyncMsgPool {
 	}
 	return FinishSyncMsgPool{
 		FinishedSyncValidators: finishedSyncValidators,
+		ReceiveTime:            make(map[string]uint64),
 		mu:                     &sync.RWMutex{},
 	}
 }
@@ -39,6 +40,7 @@ func NewDefaultFinishSyncMsgPool() {
 	}
 	DefaultFinishSyncMsgPool = &FinishSyncMsgPool{
 		FinishedSyncValidators: finishedSyncValidators,
+		ReceiveTime:            make(map[string]uint64),
 		mu:                     &sync.RWMutex{},
 	}
 }
@@ -57,7 +59,7 @@ func (f *FinishSyncMsgPool) Clone() FinishSyncMsgPool {
 
 	res := NewFinishSyncMsgPool()
 	for i, validatorList := range f.FinishedSyncValidators {
-		for k, _ := range validatorList {
+		for k := range validatorList {
 			res.FinishedSyncValidators[i][k] = true
 		}
 	}
@@ -72,7 +74,7 @@ func (f *FinishSyncMsgPool) GetFinishedSyncValidators() map[byte][]string {
 
 	res := make(map[byte][]string)
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
-		for k, _ := range finishedSyncValidators {
+		for k := range finishedSyncValidators {
 			res[shardID] = append(res[shardID], k)
 		}
 	}
@@ -86,6 +88,7 @@ func (f *FinishSyncMsgPool) AddFinishedSyncValidators(
 	newFinishedSyncValidators []string,
 	syncPool []string,
 	shardID byte,
+	beaconHeight uint64,
 ) {
 
 	f.mu.Lock()
@@ -97,6 +100,7 @@ func (f *FinishSyncMsgPool) AddFinishedSyncValidators(
 		if f.FinishedSyncValidators[shardID][v] {
 			continue
 		}
+
 		finishedValidatorsToAdd[v] = true
 	}
 
@@ -108,6 +112,7 @@ func (f *FinishSyncMsgPool) AddFinishedSyncValidators(
 		}
 		if finishedValidatorsToAdd[v] {
 			f.FinishedSyncValidators[shardID][v] = true
+			f.ReceiveTime[v] = beaconHeight
 			count++
 		}
 	}
@@ -117,7 +122,7 @@ func (f *FinishSyncMsgPool) Validators(shardID byte) []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	res := []string{}
-	for k, _ := range f.FinishedSyncValidators[shardID] {
+	for k := range f.FinishedSyncValidators[shardID] {
 		res = append(res, k)
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -133,15 +138,16 @@ func (f *FinishSyncMsgPool) RemoveValidators(validators []string, shardID byte) 
 	defer f.mu.Unlock()
 	for _, v := range validators {
 		delete(f.FinishedSyncValidators[shardID], v)
+		delete(f.ReceiveTime, v)
 	}
 }
 
 //Instructions ....
-func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string) []*instruction.FinishSyncInstruction {
+func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string, currentBeaconHeight uint64) []*instruction.FinishSyncInstruction {
 
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-
+	//fmt.Println("debug 1", allSyncPool, currentBeaconHeight, f.FinishedSyncValidators, f.ReceiveTime)
 	res := []*instruction.FinishSyncInstruction{}
 	keys := []int{}
 	for i := 0; i < len(f.FinishedSyncValidators); i++ {
@@ -161,7 +167,10 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string) []*instr
 
 		for _, validator := range syncPool {
 			has := finishSyncMsgValidators[validator]
-			if has {
+			receiveTime := f.ReceiveTime[validator]
+			//receive msg should be from 1 epoch ago (prevent random number control)
+			//fmt.Println("debug 2", validator, has, receiveTime, currentBeaconHeight-config.Param().EpochParam.NumberOfBlockInEpoch)
+			if has && receiveTime < currentBeaconHeight-config.Param().EpochParam.NumberOfBlockInEpoch {
 				committeePublicKeys = append(committeePublicKeys, validator)
 			}
 		}
@@ -176,33 +185,28 @@ func (f *FinishSyncMsgPool) Instructions(allSyncPool map[byte][]string) []*instr
 }
 
 func (f *FinishSyncMsgPool) Clean(allSyncPoolValidators map[byte][]string) {
-
-	for {
-		f.mu.Lock()
-		f.clean(allSyncPoolValidators)
-		f.mu.Unlock()
-		time.Sleep(5 * time.Minute)
-	}
-
+	f.clean(allSyncPoolValidators)
 }
 
 func (f *FinishSyncMsgPool) clean(allSyncPoolValidators map[byte][]string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	for shardID, finishedSyncValidators := range f.FinishedSyncValidators {
 		Logger.Infof("Finish Sync Msg Pool, ShardID %+v, Length %+v", shardID, len(finishedSyncValidators))
-		syncPoolValidators, ok := allSyncPoolValidators[shardID]
-		if !ok {
-			f.FinishedSyncValidators[shardID] = make(map[string]bool)
-		}
-		for finishSyncMsg, _ := range finishedSyncValidators {
+		syncPoolValidators, _ := allSyncPoolValidators[shardID]
+		for validator := range finishedSyncValidators {
 			has := false
 			for _, syncPoolValidator := range syncPoolValidators {
-				if syncPoolValidator == finishSyncMsg {
+				if syncPoolValidator == validator {
 					has = true
 					break
 				}
 			}
 			if !has {
-				delete(f.FinishedSyncValidators[shardID], finishSyncMsg)
+				//fmt.Println("debug detete", validator)
+				//Logger.Info(errors.New("debug detete"))
+				delete(f.FinishedSyncValidators[shardID], validator)
+				delete(f.ReceiveTime, validator)
 			}
 		}
 	}

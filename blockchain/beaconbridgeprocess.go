@@ -13,17 +13,19 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
 // NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
 type BurningReqAction struct {
-	Meta          metadata.BurningRequest `json:"meta"`
-	RequestedTxID *common.Hash            `json:"RequestedTxID"`
+	Meta          metadataBridge.BurningRequest `json:"meta"`
+	RequestedTxID *common.Hash                  `json:"RequestedTxID"`
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.StateDB, block *types.BeaconBlock) error {
+func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState, block *types.BeaconBlock) error {
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
@@ -32,35 +34,40 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.IssuingETHRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertETHTxHashIssued, false)
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertETHTxHashIssued, false)
 
 		case strconv.Itoa(metadata.IssuingBSCRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertBSCTxHashIssued, false)
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertBSCTxHashIssued, false)
 
 		case strconv.Itoa(metadata.IssuingPRVERC20RequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
 		case strconv.Itoa(metadata.IssuingPRVBEP20RequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertPRVEVMTxHashIssued, true)
 
 		case strconv.Itoa(metadata.IssuingPLGRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertPLGTxHashIssued, false)
+
+		case strconv.Itoa(metadata.IssuingFantomRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertFTMTxHashIssued, false)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.ContractingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processContractingReq(bridgeStateDB, inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processContractingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, "")
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, "")
 
 		case strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.BSCPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.BSCPrefix)
 
 		case strconv.Itoa(metadata.BurningPLGConfirmMeta), strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.PLGPrefix)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.PLGPrefix)
 
+		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix)
 		}
 		if err != nil {
 			return err
@@ -78,7 +85,7 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 			updatingType = "-"
 		}
 		err := statedb.UpdateBridgeTokenInfo(
-			bridgeStateDB,
+			curView.featureStateDB,
 			updatingInfo.TokenID,
 			updatingInfo.ExternalTokenID,
 			updatingInfo.IsCentralized,
@@ -92,7 +99,7 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo, insertEVMTxHashIssued func(*statedb.StateDB, []byte) error, isPRV bool) (map[common.Hash]metadata.UpdatingInfo, error) {
+func (blockchain *BlockChain) processIssuingBridgeReq(curView *BeaconBestState, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo, insertEVMTxHashIssued func(*statedb.StateDB, []byte) error, isPRV bool) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -102,7 +109,7 @@ func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.Sta
 			Logger.log.Warn("WARNING: an error occurred while building tx request id in bytes from string: ", err)
 			return updatingInfoByTokenID, nil
 		}
-		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
+		err = statedb.TrackBridgeReqWithStatus(curView.featureStateDB, *txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
 			Logger.log.Warn("WARNING: an error occurred while tracking bridge request with rejected status to leveldb: ", err)
 		}
@@ -113,13 +120,14 @@ func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.Sta
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
-	var issuingEVMAcceptedInst metadata.IssuingEVMAcceptedInst
+	var issuingEVMAcceptedInst metadataBridge.IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
-	err = insertEVMTxHashIssued(bridgeStateDB, issuingEVMAcceptedInst.UniqTx)
+
+	err = insertEVMTxHashIssued(curView.featureStateDB, issuingEVMAcceptedInst.UniqTx)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while inserting EVM tx hash issued to leveldb: ", err)
 		return updatingInfoByTokenID, nil
@@ -241,7 +249,7 @@ func (blockchain *BlockChain) processContractingReq(
 }
 
 func (blockchain *BlockChain) processBurningReq(
-	bridgeStateDB *statedb.StateDB,
+	curView *BeaconBestState,
 	instruction []string,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 	prefix string,
@@ -259,16 +267,17 @@ func (blockchain *BlockChain) processBurningReq(
 	}
 	amt := big.NewInt(0).SetBytes(amountBytes)
 	amount := uint64(0)
+
+	incTokenID := &common.Hash{}
+	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
+
 	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else {
 		amount = amt.Uint64()
 	}
 
-	incTokenID := &common.Hash{}
-	incTokenID, _ = (*incTokenID).NewHash(incTokenIDBytes)
-
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bridgeStateDB, *incTokenID, false)
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(curView.featureStateDB, *incTokenID, false)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while checking whether token (%s) existed in decentralized bridge token list: %+v", incTokenID.String(), err)
 		return updatingInfoByTokenID, nil
@@ -302,6 +311,7 @@ func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, inst
 		for _, meta := range metas {
 			if inst[0] == meta {
 				found = true
+				break
 			}
 		}
 
@@ -329,7 +339,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta ||
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
-			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta {
+			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
+			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.IssuingUnifiedTokenRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
@@ -338,9 +349,15 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		}
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
-			metaType == metadata.IssuingPLGResponseMeta {
-			meta := tx.GetMetadata().(*metadata.IssuingEVMResponse)
-			reqTxID = meta.RequestedTxID
+			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta ||
+			metaType == metadataCommon.IssuingUnifiedTokenResponseMeta {
+			if metaType == metadataCommon.IssuingUnifiedTokenResponseMeta {
+				meta := tx.GetMetadata().(*metadataBridge.ShieldResponse)
+				reqTxID = meta.RequestedTxID
+			} else {
+				meta := tx.GetMetadata().(*metadataBridge.IssuingEVMResponse)
+				reqTxID = meta.RequestedTxID
+			}
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {
 				return err

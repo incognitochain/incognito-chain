@@ -1,10 +1,14 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -76,10 +80,19 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		proposer,
 	)
 
+	if version >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(copiedCurView) {
+			processBridgeFromBlock := copiedCurView.LastBlockProcessBridge + 1
+			newBeaconBlock.Header.ProcessBridgeFromBlock = &processBridgeFromBlock
+		}
+	}
+
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
+
+	//dequeueInst := copiedCurView.generateOutdatedDequeueInstruction()
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
@@ -93,6 +106,9 @@ func (blockchain *BlockChain) NewBlockBeacon(
 
 	finishSyncInstructions := copiedCurView.generateFinishSyncInstruction()
 	instructions = addFinishInstruction(instructions, finishSyncInstructions)
+
+	enableFeatureInstructions, _ := copiedCurView.generateEnableFeatureInstructions()
+	instructions = append(instructions, enableFeatureInstructions...)
 
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
@@ -138,8 +154,99 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		hashes.AutoStakeHash,
 		hashes.ShardSyncValidatorsHash,
 	)
-
 	return newBeaconBlock, nil
+}
+
+//beacon should only generate bridge (unshield) instruction when curView is finality (generate instructions from checkpoint to curView)
+func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState) bool {
+	if curView.GetBlock().Hash().IsEqual(blockchain.BeaconChain.GetFinalView().GetBlock().Hash()) {
+		return true
+	}
+	return false
+}
+
+func (blockchain *BlockChain) generateBridgeInstruction(
+	curView *BeaconBestState,
+	currentShardStateBlock map[byte][]*types.ShardBlock,
+	newBeaconBlock *types.BeaconBlock,
+) ([][]string, error) {
+	keys := []int{}
+	bridgeInstructions := [][]string{}
+	for shardID := range currentShardStateBlock {
+		keys = append(keys, int(shardID))
+	}
+	sort.Ints(keys)
+
+	for _, v := range keys {
+		shardID := byte(v)
+		for _, shardBlock := range currentShardStateBlock[shardID] {
+			actions, err := CreateShardBridgeUnshieldActionsFromTxs(shardBlock.Body.Transactions, blockchain,
+				shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
+			if err != nil {
+				BLogger.log.Errorf("Build bridge unshield instructions failed: %s", err.Error())
+				return nil, err
+			}
+
+			// build bridge unshield instructions
+			bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
+				curView.GetBeaconFeatureStateDB(),
+				shardID,
+				actions,
+				newBeaconBlock.GetHeight(),
+			)
+			if err != nil {
+				BLogger.log.Errorf("Build bridge unshield confirm instructions failed: %s", err.Error())
+				return nil, err
+			}
+			bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
+		}
+	}
+
+	return bridgeInstructions, nil
+}
+
+// generateBridgeAggInstruction creates bridge agg unshield instructions for finalized unshield reqs
+func (blockchain *BlockChain) generateBridgeAggInstruction(
+	curView *BeaconBestState,
+	currentShardStateBlockForBridgeAgg map[uint64]map[byte][]*types.ShardBlock,
+	newBeaconBlock *types.BeaconBlock,
+) ([][]string, error) {
+	bridgeAggInstructions := [][]string{}
+	unshieldActions := []bridgeagg.UnshieldActionForProducer{}
+
+	for beaconHeight, shardBlkMaps := range currentShardStateBlockForBridgeAgg {
+		for shardID, shardBlks := range shardBlkMaps {
+			for _, shardBlk := range shardBlks {
+				actions, err := CreateShardBridgeAggUnshieldActionsFromTxs(
+					shardBlk.Body.Transactions, blockchain,
+					shardID, shardBlk.Header.Height, shardBlk.Header.BeaconHeight)
+				if err != nil {
+					BLogger.log.Errorf("Build bridge agg unshield instructions failed: %s", err.Error())
+					return nil, err
+				}
+				unshieldActions = append(unshieldActions,
+					bridgeagg.BuildUnshieldActionForProducerFromInsts(actions, shardID, beaconHeight)...)
+			}
+		}
+	}
+
+	// sort unshieldActions by beaconHeight ascending and TxID ascending
+	sort.SliceStable(unshieldActions, func(i, j int) bool {
+		if unshieldActions[i].BeaconHeight == unshieldActions[j].BeaconHeight {
+			return unshieldActions[i].TxReqID.String() < unshieldActions[j].TxReqID.String()
+		}
+		return unshieldActions[i].BeaconHeight < unshieldActions[j].BeaconHeight
+	})
+
+	// build bridge aggregator unshield instructions
+	newInsts, err := curView.bridgeAggManager.BuildNewUnshieldInstructions(curView.GetBeaconFeatureStateDB(), newBeaconBlock.GetHeight(), unshieldActions)
+	if err != nil {
+		BLogger.log.Errorf("Build bridge agg unshield instructions failed: %s", err.Error())
+		return nil, err
+	}
+	bridgeAggInstructions = append(bridgeAggInstructions, newInsts...)
+
+	return bridgeAggInstructions, nil
 }
 
 // GenerateBeaconBlockBody generate beacon instructions and shard states
@@ -150,6 +257,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	allShardBlocks map[byte][]*types.ShardBlock,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
+	bridgeAggInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
 	shardStates := make(map[byte][]types.ShardState)
@@ -159,9 +267,9 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	validUnstakePublicKeys := make(map[string]bool)
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
+	pdexReward := uint64(0)
 
 	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
-
 		featureStateDB := curView.GetBeaconFeatureStateDB()
 		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
 		if err != nil {
@@ -180,12 +288,21 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
 
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
+		isSplitRewardForPdex := curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
+
+		pdexRewardPercent := uint(0)
+		if isSplitRewardForPdex {
+			pdexRewardPercent = curView.pdeStates[pdex.AmplifierVersion].Reader().Params().DAOContributingPercent
+		}
+
+		rewardByEpochInstruction, rewardForCustodianByEpoch, pdexReward, err = blockchain.buildRewardInstructionByEpoch(
 			curView,
 			newBeaconBlock.Header.Height,
 			curView.Epoch,
 			isSplitRewardForCustodian,
 			percentCustodianRewards,
+			isSplitRewardForPdex,
+			pdexRewardPercent,
 			newBeaconBlock.Header.Version,
 		)
 		if err != nil {
@@ -205,15 +322,15 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	sort.Ints(keys)
 	//Shard block is a map ShardId -> array of shard block
 
-	allPdexv3Txs := make(map[byte][]metadata.Transaction)
+	allPdexTxs := make(map[uint]map[byte][]metadata.Transaction)
 
 	for _, v := range keys {
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
 		for _, shardBlock := range shardBlocks {
 			shardState, newShardInstruction, newDuplicateKeyStakeInstruction,
-				bridgeInstruction, acceptedRewardInstruction, statefulActions,
-				pdexv3Txs, err := blockchain.GetShardStateFromBlock(
+				acceptedRewardInstruction, statefulActions,
+				pdexTxs, err := blockchain.GetShardStateFromBlock(
 				curView, curView.BeaconHeight+1, shardBlock, shardID, validUnstakePublicKeys, validStakePublicKeys)
 			if err != nil {
 				return [][]string{}, shardStates, err
@@ -221,7 +338,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			duplicateKeyStakeInstructions.add(newDuplicateKeyStakeInstruction)
 			shardInstruction.add(newShardInstruction)
-			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
 			// group stateful actions by shardID
 			for _, v := range newShardInstruction.stakeInstructions {
@@ -233,7 +349,22 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			} else {
 				statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
 			}
-			allPdexv3Txs[shardID] = append(allPdexv3Txs[shardID], pdexv3Txs...)
+			for version, txs := range pdexTxs {
+				if allPdexTxs[version] == nil {
+					allPdexTxs[version] = make(map[byte][]metadata.Transaction)
+				}
+				allPdexTxs[version][shardID] = append(allPdexTxs[version][shardID], txs...)
+			}
+		}
+	}
+
+	// remove duplicate PreValidation data in ShardState
+	for _, ss := range shardStates {
+		for i := len(ss) - 1; i > 0; i-- {
+			if i == 0 {
+				break
+			}
+			ss[i].PreviousValidationData = ""
 		}
 	}
 
@@ -246,16 +377,51 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		rewardForCustodianByEpoch,
 		portalParams,
 		shardStates,
-		allPdexv3Txs,
+		allPdexTxs,
+		pdexReward,
 	)
-
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// build bridge unshielding instruction
+	retrievedShardBlockForBridge := allShardBlocks
+	retrievedShardBlockForBridgeAgg := map[uint64]map[byte][]*types.ShardBlock{
+		newBeaconBlock.Header.Height: allShardBlocks,
+	}
+
+	if newBeaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
+			//get data from checkpoint to final view
+			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
+			retrievedShardBlockForBridge, retrievedShardBlockForBridgeAgg, err = blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
+			if err != nil {
+				return nil, nil, NewBlockChainError(BuildBridgeError, err)
+			}
+		}
+	}
+	Logger.log.Infof("[Bridge Debug] retrievedShardBlockForBridge %+v", retrievedShardBlockForBridge)
+	Logger.log.Infof("[Bridge Debug] retrievedShardBlockForBridgeAgg %+v", retrievedShardBlockForBridgeAgg)
+
+	bridgeInstructions, err = blockchain.generateBridgeInstruction(curView, retrievedShardBlockForBridge, newBeaconBlock)
+	Logger.log.Info("[Bridge Debug] Generate bridge unshield instruction", len(bridgeInstructions))
+	if err != nil {
+		return nil, nil, NewBlockChainError(BuildBridgeError, err)
+	}
+	bridgeAggInstructions, err = blockchain.generateBridgeAggInstruction(curView, retrievedShardBlockForBridgeAgg, newBeaconBlock)
+	Logger.log.Info("[Bridge Debug] Generate bridge agg unshield instruction", len(bridgeAggInstructions))
+	if err != nil {
+		return nil, nil, NewBlockChainError(BuildBridgeAggError, err)
+	}
+
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
+	bridgeInstructions = append(bridgeInstructions, bridgeAggInstructions...)
 	shardInstruction.compose()
 
+	//outdatedPendingValidator := map[int][]int{}
+	//if dequeueInst != nil && len(dequeueInst.DequeueList) > 0 {
+	//	outdatedPendingValidator = dequeueInst.DequeueList
+	//}
 	instructions, err := curView.GenerateInstruction(
 		newBeaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedRewardInstructions,
@@ -292,16 +458,26 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	validUnstakePublicKeys map[string]bool,
 	validStakePublicKeys []string,
 ) (map[byte]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
-	[][]string, []string, [][]string, []metadata.Transaction, error) {
+	[]string, [][]string, map[uint][]metadata.Transaction, error) {
 	//Variable Declaration
 	shardStates := make(map[byte]types.ShardState)
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
-	bridgeInstructions := [][]string{}
 
 	acceptedRewardInstruction := curView.getAcceptBlockRewardInstruction(shardID, shardBlock, blockchain)
+
+	prevShardBlockValidatorIndex := ""
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
+		}
+		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+	}
+
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
+		prevShardBlockValidatorIndex,
 		shardBlock.Header.CommitteeFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),
@@ -309,8 +485,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.ProposeTime,
 		shardBlock.Header.Version,
 	)
-	instructions, pdexv3Txs, err := CreateShardInstructionsFromTransactionAndInstruction(
-		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
+	instructions, pdexTxs, err := CreateShardInstructionsFromTransactionAndInstruction(
+		shardBlock.Body.Transactions, blockchain,
+		shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight, true,
+	)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
@@ -328,32 +509,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardInstruction = curView.processUnstakeInstructionFromShardBlock(
 		shardInstruction, allCommitteeValidatorCandidate, shardID, validUnstakePublicKeys)
 
-	// Create bridge instruction
-	if len(instructions) > 0 || shardBlock.Header.Height%10 == 0 {
-		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, instructions)
-	}
-	bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
-		curView.GetBeaconFeatureStateDB(),
-		shardID,
-		instructions,
-		newBeaconHeight,
-	)
-	if err != nil {
-		BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())
-	}
-	// Pick instruction with shard committee's pubkeys to save to beacon block
-	confirmInsts := pickBridgeSwapConfirmInst(instructions)
-	if len(confirmInsts) > 0 {
-		bridgeInstructionForBlock = append(bridgeInstructionForBlock, confirmInsts...)
-		BLogger.log.Infof("Beacon block %d found bridge swap confirm stopAutoStakeInstruction in shard block %d: %s", newBeaconHeight, shardBlock.Header.Height, confirmInsts)
-	}
-	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
-
 	// Collect stateful actions
 	statefulActions := collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
-	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstruction, statefulActions, pdexv3Txs, nil
+	return shardStates, shardInstruction, duplicateKeyStakeInstruction, acceptedRewardInstruction, statefulActions, pdexTxs, nil
 }
 
 func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
@@ -364,7 +524,7 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
 		subsetID := GetSubsetIDFromProposerTime(
 			shardBlock.GetProposeTime(),
-			GetProposerLength(),
+			curView.GetShardProposerLength(),
 		)
 		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
@@ -475,6 +635,15 @@ func (curView *BeaconBestState) GenerateInstruction(
 			}
 		}
 	} else {
+		//swap outdated pending validator to syncing pool at last height of epoch
+		//if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
+		//	if len(outdatedPendingValidator) > 0 {
+		//		dequeueInst := instruction.NewDequeueInstructionWithValue(instruction.OUTDATED_DEQUEUE_REASON, outdatedPendingValidator)
+		//		instructions = append(instructions, dequeueInst.ToString())
+		//	}
+		//}
+
+		//swap validator in committee to pending validator
 		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment()
@@ -513,9 +682,148 @@ func addFinishInstruction(
 	return instructions
 }
 
-func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
+////generate dequeue instruction , to push node into sync pool
+//func (curView *BeaconBestState) generateOutdatedDequeueInstruction() *instruction.DequeueInstruction {
+//
+//	expectedContainFeature := []string{}
+//	unTriggerFeatures := curView.getUntriggerFeature()
+//
+//	for _, feature := range unTriggerFeatures {
+//		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
+//		if !ok {
+//			continue
+//		}
+//		//check timing condition
+//		if uint64(autoEnableFeatureInfo.ForceBlockHeight) > curView.BeaconHeight {
+//			continue
+//		}
+//
+//		expectedContainFeature = append(expectedContainFeature, feature)
+//	}
+//
+//	//loop all shard pending validators, check if the validator code is latest or not
+//	outdatedValidatorIndex := map[int][]int{} // shardID -> idnex
+//	for cid := 0; cid < curView.ActiveShards; cid++ {
+//		pendingList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardPendingValidator(byte(cid)))
+//		committeeList, err := incognitokey.CommitteeKeyListToString(curView.GetAShardCommittee(byte(cid)))
+//		if err != nil {
+//			Logger.log.Infof("Get Committee from shard %v error %v", cid, err)
+//			return nil
+//		}
+//		for validatorIndex, cpk := range pendingList {
+//			if DefaultFeatureStat.containExpectedFeature(cpk, expectedContainFeature) == false {
+//				outdatedValidatorIndex[cid] = append(outdatedValidatorIndex[cid], validatorIndex)
+//			}
+//		}
+//		if len(outdatedValidatorIndex[cid]) >= int((float64(len(pendingList)+len(committeeList)))*DEQUEUE_THRESHOLD_PERCENT) {
+//			Logger.log.Infof("Chain %v cannot generate dequeue, not enough updated node, outdate %v , validator: %v", cid, len(outdatedValidatorIndex[cid]), (len(pendingList) + len(committeeList)))
+//			delete(outdatedValidatorIndex, cid)
+//		}
+//	}
+//
+//	return instruction.NewDequeueInstructionWithValue(instruction.OUTDATED_DEQUEUE_REASON, outdatedValidatorIndex)
+//}
 
-	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(curView.GetSyncingValidatorsString())
+func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string, []string) {
+	instructions := [][]string{}
+	enableFeature := []string{}
+	// get valid untrigger feature
+	unTriggerFeatures := curView.getUntriggerFeature(false)
+
+	for _, feature := range unTriggerFeatures {
+		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
+		if !ok {
+			continue
+		}
+		if uint64(autoEnableFeatureInfo.MinTriggerBlockHeight) > curView.BeaconHeight {
+			continue
+		}
+
+		// check proposer threshold
+		invalidCondition := false
+		featureStatReport := DefaultFeatureStat.Report(curView)
+		if featureStatReport.CommitteeStat[feature] == nil {
+			continue
+		}
+		beaconProposerSize := len(curView.GetCommittee())
+		//if number of beacon proposer update < 95%, not generate inst
+		if featureStatReport.CommitteeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*95/100)) {
+			continue
+		}
+
+		//if number of each shard committee update < 95%, not generate inst
+		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
+			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
+			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*95/100)) {
+				invalidCondition = true
+				break
+			}
+		}
+
+		if invalidCondition {
+			continue
+		}
+
+		//check validator threshold
+		if featureStatReport.ValidatorStat[feature] != nil {
+			for chainID, size := range featureStatReport.ValidatorSize {
+				if featureStatReport.ValidatorStat[feature][chainID] < uint64(math.Ceil(float64(size*autoEnableFeatureInfo.RequiredPercentage)/100)) {
+					invalidCondition = true
+					break
+				}
+			}
+		}
+		if invalidCondition {
+			continue
+		}
+		enableFeature = append(enableFeature, feature)
+	}
+
+	if len(enableFeature) > 0 {
+		//generate instruction for valid condition
+		inst := instruction.NewEnableFeatureInstructionWithValue(enableFeature)
+		instructions = append(instructions, inst.ToString())
+	}
+	return instructions, enableFeature
+}
+
+func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
+	swapOffset := uint64(curView.MaxShardCommitteeSize / 8)
+	halfPendingCycleEpoch := math.Ceil(float64(len(curView.GetShardPendingValidator()[sid])) / float64(2*swapOffset))
+	return uint64(halfPendingCycleEpoch)
+}
+
+func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
+	//get validators in sync pool that contain latest code
+	syncVal := make(map[byte][]string)
+	for shardID, validators := range curView.beaconCommitteeState.GetSyncingValidators() {
+		validValidator := []incognitokey.CommitteePublicKey{}
+		for _, v := range validators {
+			validatorStr, _ := v.ToBase58()
+			if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
+				fmt.Println("add ", validatorStr, "to valid Sync val")
+				validValidator = append(validValidator, v)
+			}
+		}
+		syncVal[shardID], _ = incognitokey.CommitteeKeyListToString(validValidator)
+	}
+
+	//get valid waiting validator
+	validWaitingValidator := map[byte][]string{}
+	for sid, validators := range syncVal {
+		halfPendingCycleEpoch := curView.halfPendingCycleEpoch(sid)
+		for _, validator := range validators {
+			info, exists, err := curView.GetStakerInfo(validator)
+			if !exists || err != nil {
+				panic("Error when generateFinishSyncInstruction. This must not occur!")
+			}
+			if curView.BeaconHeight >= info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch {
+				validWaitingValidator[sid] = append(validWaitingValidator[sid], validator)
+			}
+		}
+	}
+
+	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(validWaitingValidator, curView.BeaconHeight)
 	instructions := [][]string{}
 
 	for _, finishSyncInstruction := range finishSyncInstructions {
@@ -527,20 +835,68 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	return instructions
 }
 
-func (curView *BeaconBestState) filterFinishSyncInstruction(instructions [][]string) ([][]string, [][]string) {
+func filterEnableFeatureInstruction(instructions [][]string) [][]string {
+	enableFeatureInstructions := [][]string{}
+	for _, v := range instructions {
+		if v[0] == instruction.ENABLE_FEATURE {
+			enableFeatureInstructions = append(enableFeatureInstructions, v)
+		}
+	}
+	return enableFeatureInstructions
+}
 
-	res := [][]string{}
+//func filterDequeueInstruction(instructions [][]string, reason string) (*instruction.DequeueInstruction, error) {
+//	for _, v := range instructions {
+//		if v[0] == instruction.DEQUEUE && v[1] == reason {
+//			return instruction.ValidateAndImportDequeueInstructionFromString(v)
+//		}
+//	}
+//	return nil, nil
+//}
+
+func (curView *BeaconBestState) filterAndVerifyFinishSyncInstruction(instructions [][]string) ([][]string, error) {
+
 	finishSyncInstructions := [][]string{}
 
+	syncValidators := curView.GetSyncingValidatorsString()
 	for _, v := range instructions {
 		if v[0] == instruction.FINISH_SYNC_ACTION {
+			inst, err := instruction.ValidateAndImportFinishSyncInstructionFromString(v)
+			if err != nil {
+				return nil, err
+			}
 			finishSyncInstructions = append(finishSyncInstructions, v)
-		} else {
-			res = append(res, v)
+
+			//verify staker have valid waiting time
+			for _, validator := range inst.PublicKeys {
+				info, exists, err := curView.GetStakerInfo(validator)
+				if !exists || err != nil {
+					fmt.Println("finishSyncInstructions", v[2])
+					panic("Error when generateFinishSyncInstruction. This must not occur!")
+				}
+
+				//loop sync pool, check if validator is exist and having valid waiting time
+				exist := false
+				for sid, vals := range syncValidators {
+					if common.IndexOfStr(validator, vals) != -1 {
+						halfPendingCycleEpoch := curView.halfPendingCycleEpoch(sid)
+						if curView.BeaconHeight < info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch {
+							return nil, fmt.Errorf("Not valid waiting time for syncing validator, current beacon %v, expect valid height %v", curView.BeaconHeight, info.BeaconConfirmHeight()+halfPendingCycleEpoch*config.Param().EpochParam.NumberOfBlockInEpoch)
+						} else {
+							exist = true
+						}
+					}
+				}
+
+				//cannot find validator in sync pool
+				if !exist {
+					return nil, fmt.Errorf("Cannot find validator %v in syncing pool", validator)
+				}
+			}
 		}
 	}
 
-	return res, finishSyncInstructions
+	return finishSyncInstructions, nil
 }
 
 func createBeaconSwapActionForKeyListV2(

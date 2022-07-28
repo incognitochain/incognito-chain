@@ -33,6 +33,7 @@ func (sp *stateProducerV2) addLiquidity(
 	poolPairs map[string]*PoolPairState,
 	waitingContributions map[string]rawdbv2.Pdexv3Contribution,
 	nftIDs map[string]uint64,
+	params *Params,
 ) (
 	[][]string, map[string]*PoolPairState, map[string]rawdbv2.Pdexv3Contribution, error,
 ) {
@@ -105,8 +106,9 @@ func (sp *stateProducerV2) addLiquidity(
 				shareAmount := big.NewInt(0).Sqrt(tempAmt).Uint64()
 				err = newPoolPair.addShare(
 					*nftHash,
-					shareAmount, beaconHeight,
-					waitingContribution.TxReqID().String(),
+					shareAmount,
+					beaconHeight,
+					0,
 				)
 				if err != nil {
 					token0ContributionState := *statedb.NewPdexv3ContributionStateWithValue(
@@ -194,10 +196,15 @@ func (sp *stateProducerV2) addLiquidity(
 			res = append(res, insts...)
 			continue
 		}
+		lmLockedBlocks := uint64(0)
+		if _, exists := params.PDEXRewardPoolPairsShare[poolPairID]; exists {
+			lmLockedBlocks = params.MiningRewardPendingBlocks
+		}
 		err = poolPair.addShare(
 			*nftHash,
-			shareAmount, beaconHeight,
-			waitingContribution.TxReqID().String(),
+			shareAmount,
+			beaconHeight,
+			lmLockedBlocks,
 		)
 		if err != nil {
 			insts, err1 := v2utils.BuildRefundAddLiquidityInstructions(
@@ -305,6 +312,7 @@ func (sp *stateProducerV2) mintReward(
 	mintingAmount uint64,
 	params *Params,
 	pairs map[string]*PoolPairState,
+	isLiquidityMining bool,
 ) ([][]string, map[string]*PoolPairState, error) {
 	instructions := [][]string{}
 
@@ -343,13 +351,64 @@ func (sp *stateProducerV2) mintReward(
 			continue
 		}
 
-		pair.lpFeesPerShare = v2utils.NewTradingPairWithValue(
-			&pair.state,
-		).AddLPFee(
-			tokenID, pairReward, BaseLPFeesPerShare,
-			pair.lpFeesPerShare)
+		orderRewardBPS := params.OrderLiquidityMiningBPS[pairID]
+		lpRewardAmt := new(big.Int).Set(pairReward)
 
-		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, pairReward.Uint64(), tokenID)...)
+		if isLiquidityMining && orderRewardBPS > 0 && pair.makingVolume != nil {
+			orderRewardAmt := new(big.Int).Mul(pairReward, new(big.Int).SetUint64(uint64(orderRewardBPS)))
+			orderRewardAmt.Div(orderRewardAmt, new(big.Int).SetUint64(uint64(BPS)))
+
+			makingVolumeToken0 := pair.makingVolume[pair.state.Token0ID()]
+			if makingVolumeToken0 != nil && makingVolumeToken0.volume != nil && len(makingVolumeToken0.volume) != 0 {
+				orderRewards := v2.SplitOrderRewardLiquidityMining(
+					makingVolumeToken0.volume,
+					orderRewardAmt, tokenID,
+				)
+
+				for nftID, reward := range orderRewards {
+					if _, ok := pair.orderRewards[nftID]; !ok {
+						pair.orderRewards[nftID] = NewOrderReward()
+					}
+					pair.orderRewards[nftID].AddReward(tokenID, reward)
+				}
+				lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
+
+				delete(pair.makingVolume, pair.state.Token0ID())
+
+				instructions = append(instructions, v2utils.BuildDistributeMiningOrderRewardInsts(
+					pairID, pair.state.Token0ID(), orderRewardAmt.Uint64(), tokenID,
+				)...)
+			}
+			makingVolumeToken1 := pair.makingVolume[pair.state.Token1ID()]
+			if makingVolumeToken1 != nil && makingVolumeToken1.volume != nil && len(makingVolumeToken1.volume) != 0 {
+				orderRewards := v2.SplitOrderRewardLiquidityMining(
+					makingVolumeToken1.volume,
+					orderRewardAmt, tokenID,
+				)
+
+				for nftID, reward := range orderRewards {
+					if _, ok := pair.orderRewards[nftID]; !ok {
+						pair.orderRewards[nftID] = NewOrderReward()
+					}
+					pair.orderRewards[nftID].AddReward(tokenID, reward)
+				}
+				lpRewardAmt.Sub(lpRewardAmt, orderRewardAmt)
+
+				delete(pair.makingVolume, pair.state.Token1ID())
+
+				instructions = append(instructions, v2utils.BuildDistributeMiningOrderRewardInsts(
+					pairID, pair.state.Token1ID(), orderRewardAmt.Uint64(), tokenID,
+				)...)
+			}
+		}
+
+		pair.lmRewardsPerShare = v2utils.NewTradingPairWithValue(
+			&pair.state,
+		).AddLMRewards(
+			tokenID, lpRewardAmt, BaseLPFeesPerShare,
+			pair.lmRewardsPerShare)
+
+		instructions = append(instructions, v2utils.BuildMintBlockRewardInst(pairID, lpRewardAmt.Uint64(), tokenID)...)
 	}
 
 	return instructions, pairs, nil
@@ -444,14 +503,15 @@ func (sp *stateProducerV2) trade(
 		}
 
 		orderRewardsChanges := []map[string]map[common.Hash]uint64{}
-		acceptedTradeMd, orderRewardsChanges, err = v2.TrackFee(
+		orderMakingChanges := []map[common.Hash]map[string]*big.Int{}
+		acceptedTradeMd, orderRewardsChanges, orderMakingChanges, err = v2.TrackFee(
 			currentTrade.TradingFee, feeInPRVMap[tx.Hash().String()], currentTrade.TokenToSell, BaseLPFeesPerShare, BPS,
 			currentTrade.TradePath, reserves, lpFeesPerShares, protocolFees, stakingPoolFees,
 			tradeDirections, orderbookList,
 			poolFees, feeRateBPS,
 			acceptedTradeMd,
 			params.TradingProtocolFeePercent, params.TradingStakingPoolRewardPercent, params.StakingRewardTokens,
-			params.OrderMiningRewardRatioBPS,
+			params.DefaultOrderTradingRewardRatioBPS, params.OrderTradingRewardRatioBPS,
 		)
 		if err != nil {
 			Logger.log.Warnf("Error handling fee distribution: %v", err)
@@ -464,6 +524,9 @@ func (sp *stateProducerV2) trade(
 			changedPair := pairs[pairID]
 			changedPair.state = *reserves[index]
 			addOrderReward(changedPair.orderRewards, orderRewardsChanges[index])
+			if _, ok := params.PDEXRewardPoolPairsShare[pairID]; ok && params.DAOContributingPercent > 0 {
+				addMakingVolume(changedPair.makingVolume, orderMakingChanges[index])
+			}
 			changedPair.lpFeesPerShare = lpFeesPerShares[index]
 			changedPair.protocolFees = protocolFees[index]
 			changedPair.stakingPoolFees = stakingPoolFees[index]
@@ -715,15 +778,26 @@ TransactionLoop:
 					// apply orderbook changes for withdraw consistency in the same block
 					pairs[currentOrderReq.PoolPairID] = pair
 
+					// To store the keys in slice in sorted order
+					keys := make([]common.Hash, len(withdrawResults))
+					i := 0
+					for key := range withdrawResults {
+						keys[i] = key
+						i++
+					}
+					sort.SliceStable(keys, func(i, j int) bool {
+						return keys[i].String() < keys[j].String()
+					})
+
 					// "accepted" metadata
-					for tokenID, withdrawAmount := range withdrawResults {
+					for _, key := range keys {
 						acceptedAction := instruction.NewAction(
 							&metadataPdexv3.AcceptedWithdrawOrder{
 								PoolPairID: currentOrderReq.PoolPairID,
 								OrderID:    currentOrderReq.OrderID,
-								Receiver:   currentOrderReq.Receiver[tokenID],
-								TokenID:    tokenID,
-								Amount:     withdrawAmount,
+								Receiver:   currentOrderReq.Receiver[key],
+								TokenID:    key,
+								Amount:     withdrawResults[key],
 							},
 							*tx.Hash(),
 							byte(tx.GetValidationEnv().ShardID()),
@@ -752,7 +826,9 @@ func (sp *stateProducerV2) withdrawAllMatchedOrders(
 ) ([][]string, map[string]*PoolPairState, error) {
 	result := [][]string{}
 	numberTxsPerShard := make(map[byte]uint)
-	for pairID, pair := range pairs {
+	pairIDs := getSortedPoolPairIDs(pairs)
+	for _, pairID := range pairIDs {
+		pair := pairs[pairID] // no need to check found sorted from poolPairs list before
 		for _, ord := range pair.orderbook.orders {
 			temp := &v2utils.MatchingOrder{ord}
 			// check if this order can be matched any further
@@ -868,7 +944,7 @@ func (sp *stateProducerV2) withdrawLPFee(
 		share, isExistedShare := poolPair.shares[metaData.NftID.String()]
 		if isExistedShare {
 			// compute amount of received LP reward
-			lpReward, err = poolPair.RecomputeLPFee(metaData.NftID)
+			lpReward, err = poolPair.RecomputeLPRewards(metaData.NftID)
 			if err != nil {
 				return instructions, pairs, fmt.Errorf("Could not track LP reward: %v\n", err)
 			}
@@ -920,10 +996,11 @@ func (sp *stateProducerV2) withdrawLPFee(
 		if isExistedShare {
 			share.tradingFees = resetKeyValueToZero(share.tradingFees)
 			share.lastLPFeesPerShare = poolPair.LpFeesPerShare()
+			share.lastLmRewardsPerShare = poolPair.LmRewardsPerShare()
 		}
 
 		if isExistedOrderReward {
-			order.uncollectedRewards = resetKeyValueToZero(order.uncollectedRewards)
+			delete(poolPair.orderRewards, metaData.NftID.String())
 		}
 
 		instructions = append(instructions, acceptedInst...)
@@ -999,7 +1076,7 @@ func (sp *stateProducerV2) withdrawProtocolFee(
 
 func (sp *stateProducerV2) withdrawLiquidity(
 	txs []metadata.Transaction, poolPairs map[string]*PoolPairState, nftIDs map[string]uint64,
-	beaconHeight uint64,
+	lmLockedBlocks uint64,
 ) (
 	[][]string,
 	map[string]*PoolPairState,
@@ -1046,7 +1123,7 @@ func (sp *stateProducerV2) withdrawLiquidity(
 		}
 		poolPair := rootPoolPair.Clone()
 		token0Amount, token1Amount, shareAmount, err := poolPair.deductShare(
-			metaData.NftID(), metaData.ShareAmount(), beaconHeight,
+			metaData.NftID(), metaData.ShareAmount(),
 		)
 		if err != nil {
 			Logger.log.Warnf("tx %v deductShare err %v", tx.Hash().String(), err)

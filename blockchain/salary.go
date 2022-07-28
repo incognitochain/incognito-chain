@@ -1,8 +1,10 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/transaction"
+	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -429,8 +431,10 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	blkHeight, epoch uint64,
 	isSplitRewardForCustodian bool,
 	percentCustodianRewards uint64,
+	isSplitRewardForPdex bool,
+	pdexRewardPercent uint,
 	blockVersion int,
-) ([][]string, map[common.Hash]uint64, error) {
+) ([][]string, map[common.Hash]uint64, uint64, error) {
 
 	//Declare variables
 	var resInst [][]string
@@ -446,8 +450,9 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForShardSubset := make([][]map[common.Hash]uint64, beaconBestView.ActiveShards)
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
+	rewardForPdex := uint64(0)
 
-	if blockVersion == types.BLOCK_PRODUCINGV3_VERSION {
+	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
@@ -466,7 +471,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 
 		instRewardForShards, err = blockchain.buildInstructionRewardForShardsV3(epoch, totalRewardForShardSubset)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, rewardForPdex, err
 		}
 
 	} else {
@@ -484,26 +489,36 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 
 		instRewardForShards, err = blockchain.buildInstructionRewardForShards(epoch, totalRewardForShard)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, rewardForPdex, err
 		}
 	}
 
 	if len(totalRewardForBeacon) > 0 {
 		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, rewardForPdex, err
 		}
 	}
 
 	if len(totalRewardForIncDAO) > 0 {
+		prvReward := totalRewardForIncDAO[common.PRVCoinID]
+		if prvReward > 0 && isSplitRewardForPdex {
+			temp := new(big.Int).Mul(new(big.Int).SetUint64(prvReward), new(big.Int).SetUint64(uint64(pdexRewardPercent)))
+			temp = temp.Div(temp, big.NewInt(100))
+			if !temp.IsUint64() {
+				return nil, nil, rewardForPdex, errors.New("Reward for Pdex is not uint64")
+			}
+			rewardForPdex = temp.Uint64()
+			totalRewardForIncDAO[common.PRVCoinID] = prvReward - rewardForPdex
+		}
 		instRewardForIncDAO, err = blockchain.buildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, rewardForPdex, err
 		}
 	}
 
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
-	return resInst, totalRewardForCustodian, nil
+	return resInst, totalRewardForCustodian, rewardForPdex, nil
 }
 
 //buildInstRewardForBeacons create reward instruction for beacons

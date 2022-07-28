@@ -980,3 +980,49 @@ func addOrderReward(
 	}
 	return base
 }
+
+func addMakingVolume(
+	base map[common.Hash]*MakingVolume, additional map[common.Hash]map[string]*big.Int,
+) map[common.Hash]*MakingVolume {
+	for tokenID, volume := range additional {
+		for nftID, amt := range volume {
+			if _, ok := base[tokenID]; !ok {
+				base[tokenID] = NewMakingVolume()
+			}
+
+			base[tokenID].AddVolume(nftID, amt)
+		}
+	}
+	return base
+}
+
+func GetPdexInstructions(instructions [][]string) map[uint][][]string {
+	res := make(map[uint][][]string)
+	for _, v := range instructions {
+		if len(v) == 0 {
+			continue
+		}
+		metaType, _ := strconv.Atoi(v[0])
+		if metadata.IsPDEType(metaType) {
+			res[BasicVersion] = append(res[BasicVersion], v)
+		}
+		if metadata.IsPdexv3Type(metaType) {
+			res[AmplifierVersion] = append(res[AmplifierVersion], v)
+		}
+	}
+	return res
+}
+
+func getSortedPoolPairIDs(poolPairs map[string]*PoolPairState) []string {
+	// To store the keys in slice in sorted order
+	keys := make([]string, len(poolPairs))
+	i := 0
+	for poolPairID := range poolPairs {
+		keys[i] = poolPairID
+		i++
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
+}

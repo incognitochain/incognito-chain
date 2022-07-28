@@ -104,6 +104,9 @@ var HttpHandler = map[string]httpHandler{
 	unlockMempool:              (*HttpServer).handleUnlockMempool,
 	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	sendFinishSync:             (*HttpServer).handleSendFinishSync,
+	setAutoEnableFeatureConfig: (*HttpServer).handleSetAutoEnableFeatureConfig,
+	getAutoEnableFeatureConfig: (*HttpServer).handleGetAutoEnableFeatureConfig,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
@@ -115,9 +118,12 @@ var HttpHandler = map[string]httpHandler{
 	setConsensusRule:           (*HttpServer).handleSetConsensusRule,
 	getConsensusRule:           (*HttpServer).handleGetConsensusRule,
 	getByzantineDetectorInfo:   (*HttpServer).handleGetByzantineDetectorInfo,
+	getByzantineBlackList:      (*HttpServer).handleGetByzantineBlackList,
 	removeByzantineDetector:    (*HttpServer).handleRemoveByzantineDetector,
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
+	resetCache:                 (*HttpServer).handleResetCache,
+	handleTestValidate:         (*HttpServer).handleTestValidate,
 	//=================================
 
 	// Beststate
@@ -186,6 +192,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPRVBEP20Request:   (*HttpServer).handleCreateAndSendBurningPRVBEP20Request,
 	createAndSendTxWithIssuingPLGReq:      (*HttpServer).handleCreateAndSendTxWithIssuingPLGReq,
 	createAndSendBurningPLGRequest:        (*HttpServer).handleCreateAndSendBurningPLGRequest,
+	createAndSendTxWithIssuingFTMReq:      (*HttpServer).handleCreateAndSendTxWithIssuingFTMReq,
+	createAndSendBurningFTMRequest:        (*HttpServer).handleCreateAndSendBurningFTMRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -197,6 +205,7 @@ var HttpHandler = map[string]httpHandler{
 	getPRVERC20BurnProof:     (*HttpServer).handleGetPRVERC20BurnProof,
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
+	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -266,6 +275,20 @@ var HttpHandler = map[string]httpHandler{
 	getPdexv3EstimatedStakingPoolReward:            (*HttpServer).handleGetPdexv3EstimatedStakingPoolReward,
 	createAndSendTxWithPdexv3WithdrawStakingReward: (*HttpServer).handleCreateAndSendTxWithPdexv3WithdrawStakingReward,
 	getPdexv3WithdrawalStakingRewardStatus:         (*HttpServer).handleGetPdexv3WithdrawalStakingRewardStatus,
+	// bridgeagg method
+	bridgeaggState:                       (*HttpServer).handleGetBridgeAggState,
+	bridgeaggModifyParam:                 (*HttpServer).handleCreateAndSendTxBridgeAggModifyParamTx,
+	bridgeaggStatusModifyParam:           (*HttpServer).handleGetBridgeAggModifyParamStatus,
+	bridgeaggConvert:                     (*HttpServer).handleBridgeAggConvert,
+	bridgeaggStatusConvert:               (*HttpServer).handleGetBridgeAggConvertStatus,
+	bridgeaggShield:                      (*HttpServer).handleBridgeAggShield,
+	bridgeaggStatusShield:                (*HttpServer).handleGetBridgeAggShieldStatus,
+	bridgeaggUnshield:                    (*HttpServer).handleBridgeAggUnshield,
+	bridgeaggStatusUnshield:              (*HttpServer).handleGetBridgeAggUnshieldStatus,
+	bridgeaggEstimateFeeByBurntAmount:    (*HttpServer).handleEstimateFeeByBurntAmount,
+	bridgeaggEstimateFeeByExpectedAmount: (*HttpServer).handleEstimateFeeByExpectedAmount,
+	bridgeaggEstimateReward:              (*HttpServer).handleBridgeAggEstimateReward,
+	bridgeaggGetBurnProof:                (*HttpServer).handleBridgeAggGetBurnProof,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
@@ -335,6 +358,11 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
 	getBurnPLGProofForDepositToSC:                 (*HttpServer).handleGetBurnPLGProofForDepositToSC,
 	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
+	createAndSendBurningFTMForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
+	getBurnFTMProofForDepositToSC:                 (*HttpServer).handleGetBurnFTMProofForDepositToSC,
+
+	//feature stat
+	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,
 
 	//new pool info
 	getSyncStats:          (*HttpServer).hanldeGetSyncStats,
@@ -343,7 +371,7 @@ var HttpHandler = map[string]httpHandler{
 	getCrossShardPoolInfo: (*HttpServer).hanldeGetCrossShardPoolInfo,
 	getAllView:            (*HttpServer).hanldeGetAllView,
 	getAllViewDetail:      (*HttpServer).hanldeGetAllViewDetail,
-
+	isInstantFinality:     (*HttpServer).hanldeIsInstantFinality,
 	// feature reward
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 

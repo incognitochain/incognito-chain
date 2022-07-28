@@ -35,6 +35,7 @@ epoch_param:
 eth_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 bsc_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 plg_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
+ftm_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 prv_erc20_contract_address: "0xB64fde8f199F073F41c132B9eC7aD5b61De0B1B7"
 prv_bep20_contract_address: "0xB64fde8f199F073F41c132B9eC7aD5b61De0B1B7"
 dao_address: "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" # community fund
@@ -50,9 +51,9 @@ consensus_param:
   assign_rule_v3_height: 1410217
   enable_slashing_height_v2: 1498517
   staking_flow_v3_height: 1519263
-  force_not_use_burned_coins: 1806062
-  lemma2_height: 1806062
-  block_producing_v3_height: 1000000000000
+  force_not_use_burned_coins: 1816555
+  lemma2_height: 1816555
+  block_producing_v3_height: 1846560
   byzantine_detector_height: 1000000000000
   timeslot: 40
   epoch_break_point_swap_new_key:
@@ -69,10 +70,24 @@ enable_feature_flags:
   - PortalV4: 4079
 portal_v3_height: 10000000
 tx_pool_version: 0
+geth_param:
+  host:
+    - "https://eth-fullnode.incognito.org"
 bsc_param:
-  host: "https://bsc-dataseed.binance.org"
+  host:
+    - "https://bsc-dataseed.binance.org"
+    - "https://bsc-dataseed1.defibit.io"
+    - "https://bsc-dataseed1.ninicoin.io"
+    - "https://bsc-dataseed2.defibit.io"
 plg_param:
-  host: "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+  host:
+    - "https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+    - "https://rpc-mainnet.maticvigil.com"
+    - "https://rpc-mainnet.matic.quiknode.pro"
+ftm_param:
+  host:
+    - "https://rpcapi.fantom.network"
+    - "https://fantom-mainnet.public.blastapi.io"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
@@ -88,3 +103,23 @@ pdex_param:
     auto_withdraw_order_limit_amount: 30
     min_prv_reserve_trading_rate: 10000000000000
 is_enable_bpv3_stats: false
+auto_enable_feature:
+  - instantfinality:
+      min_trigger: 2076793
+      force_trigger: 1e9
+      require_percentage: 84
+  - maxcommitteesize48:
+      min_trigger: 1892003
+      force_trigger: 1000000000
+      require_percentage: 85
+  - unified_token_20220714:
+      min_trigger: 2132900  
+      force_trigger: 1000000000
+      require_percentage: 80
+bridge_agg_param:
+  admin_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
+  base_decimal: 9 # Use only one time DONOT edit this after deployed
+  max_len_of_path: 3  # Only increase this param after deployed
+  percent_fee_decimal: 1e6
+  default_percent_fee_with_decimal: 750 # 0.075% * 1e6
+bc_height_break_point_coin_origin: 2087774

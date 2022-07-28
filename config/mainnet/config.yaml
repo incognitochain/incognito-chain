@@ -12,7 +12,7 @@ max_peers: 1000 #
 max_out_peers: 1000 #
 max_in_peers: 1000 #
 discover_peers: true #
-discover_peers_address: "51.83.237.29:9330" #
+discover_peers_address: "mainnet-bootnode.incognito.org:9330" #
 max_peers_same_shard: 300 #
 max_pmax_peers_other_shard: 600 #
 max_peers_other: 300 #
@@ -55,10 +55,6 @@ accelerator: false #
 p2p_private_key: "" #
 force_backup: false #
 is_full_validation: false
-geth_param:
-  host: "https://eth-fullnode.incognito.org"
-  protocol: ""
-  port: ""
 coin_data_pre: "__coins__"
 use_coin_data:
   - true

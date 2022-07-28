@@ -1,0 +1,1161 @@
+{
+    "TestAccepted": {
+        "name": "Accepted",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 1,
+                            "IncTokenID": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1"
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 2,
+                            "IncTokenID": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2"
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "Amount": 0,
+                            "LockedAmount": 0,
+                            "WaitingUnshieldAmount": 0,
+                            "WaitingUnshieldFee": 0,
+                            "ExtDecimal": 18,
+                            "NetworkID": 4,
+                            "IncTokenID": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474"
+                        }
+                    }
+                },
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [
+                ["347", "eyJOZXdMaXN0VG9rZW5zIjp7ImMzYWY4M2FkMmU3YjllMDQwYTczYTJiOTMzNGY5YTk2NjRjZDEyNjY0NjJmNzViNmJhODRmMzYxMzljZGYzYzYiOnsiYTc2ZDc1N2Q4ZDM4NzA2MDVkMDEyZDY4Y2QyZjA3NjcyMmVkOGUxOWRmYzVlMjliMTJjMDdhMjRhY2QwMjZjMSI6eyJFeHRlcm5hbERlY2ltYWwiOjE4LCJFeHRlcm5hbFRva2VuSUQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJOZXR3b3JrSUQiOjF9LCJlNTAzMmMwODNmMGRhNjdjYTE0MTMzMWI2MDA1ZTRhMzc0MGM1MDIxOGYxNTFhNWU4MjllOWQwMzIyN2UzM2UyIjp7IkV4dGVybmFsRGVjaW1hbCI6MTgsIkV4dGVybmFsVG9rZW5JRCI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsIk5ldHdvcmtJRCI6Mn19LCJlYmMxYzFiNTgxOWFhNTY0NzE5MmFlZmQ3MjllZjE4Y2Q4ODk0ZDIyNjU2ZThhZGQ2NzhjMGFlZjkzZTQwNGQ0Ijp7IjZlZWQ2OTFjYjE0ZDExMDY2ZjkzOTYzMGZmNjQ3ZjVmMWM4NDNhOGY5NjRkOWE0ZDI5NWZhOWNkMTExMWM0NzQiOnsiRXh0ZXJuYWxEZWNpbWFsIjoxOCwiRXh0ZXJuYWxUb2tlbklEIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiTmV0d29ya0lEIjo0fX19fQ=="]
+            ],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": [85, 84],
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": [85, 84]
+                },
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {
+                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                    "tokenId": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1",
+                    "amount": 0,
+                    "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "tokenId": "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4",
+                    "amount": 0,
+                    "externalTokenId": [85, 84]
+                },
+                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                    "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
+                    "amount": 0,
+                    "externalTokenId": [66, 83, 67, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                },
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "tokenId": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6",
+                    "amount": 0,
+                    "externalTokenId": [85, 84]
+                },
+                "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                    "tokenId": "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474",
+                    "amount": 0,
+                    "externalTokenId": [70, 84, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                }
+            }
+        }
+    },
+    "TestRejectedInvalidBeaconHeight": {
+        "name": "Rejected Invalid beacon height",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 8
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedAvailableTokenIDByBridgeTokenIDCheck": {
+        "name": "Rejected available token id by bridge token id check",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {
+                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                    "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
+                    "amount": 0,
+                    "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+                }
+            },
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {
+                "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                    "tokenId": "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2",
+                    "amount": 0,
+                    "externalTokenId": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+                }
+            }
+        }
+    },
+    "TestRejectedAvailableTokenIDByPrivacyTokenIDCheck": {
+        "name": "Rejected available token id by privacy token id check",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {
+                "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                    "token_id": "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1"
+                }
+            }
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedDuplicateUnifiedTokenIDAndTokenID": {
+        "name": "Rejected duplicate unified token id and token id",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedDecimalBy0": {
+        "name": "Rejected decimal by 0",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 0,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedEmptyTokenIDStr": {
+        "name": "Rejected empty token id",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedEmptyTokenID": {
+        "name": "Rejected empty token id",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "0000000000000000000000000000000000000000000000000000000000000000": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedNullUnifiedTokenID": {
+        "name": "Rejected empty unified token id",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+            "202205021100": {
+                "": {
+                    "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 1
+                    },
+                    "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 2
+                    }
+                },
+                "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                    "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                        "external_decimal": 18,
+                        "external_token_id": "0x0000000000000000000000000000000000000000",
+                        "network_id": 4
+                    }
+                }
+            }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedEmptyUnifiedTokenID": {
+        "name": "Rejected empty unified token id",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "0000000000000000000000000000000000000000000000000000000000000000": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedUnifiedTokenIDAvailableInPrivacyTokenList": {
+        "name": "Rejected unified tokenid has been available in privacy token list",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "token_id": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6"
+                }
+            }
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedNotFoundNetworkID": {
+        "name": "Rejected unified tokenid has been available in privacy token list",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 5
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedEmptyExternalTokenID": {
+        "name": "Rejected unified tokenid has been available in privacy token list",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {
+                "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                    "token_id": "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6"
+                }
+            }
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    },
+    "TestRejectedDuplicateExternalTokenID": {
+        "name": "Rejected duplicate externalTokenID",
+        "data": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "bridge_tokens_info": {},
+            "accumulated_values": {
+                "UniqETHTxsUsed": [],
+                "UniqBSCTxsUsed": [],
+                "UniqPLGTxsUsed": [],
+                "UniqPRVEVMTxsUsed": [],
+                "UniqFTMTxsUsed": [],
+                "DBridgeTokenPair": {},
+                "CBridgeTokens": [],
+                "InitTokens": []
+            },
+            "configed_unified_tokens": {
+                "202205021100": {
+                    "c3af83ad2e7b9e040a73a2b9334f9a9664cd1266462f75b6ba84f36139cdf3c6": {
+                        "a76d757d8d3870605d012d68cd2f076722ed8e19dfc5e29b12c07a24acd026c1": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 1
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e2": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        },
+                        "e5032c083f0da67ca141331b6005e4a3740c50218f151a5e829e9d03227e33e3": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 2
+                        }
+                    },
+                    "ebc1c1b5819aa5647192aefd729ef18cd8894d22656e8add678c0aef93e404d4": {
+                        "6eed691cb14d11066f939630ff647f5f1c843a8f964d9a4d295fa9cd1111c474": {
+                            "external_decimal": 18,
+                            "external_token_id": "0x0000000000000000000000000000000000000000",
+                            "network_id": 4
+                        }
+                    }
+                }
+            },
+            "beacon_height": 10,
+            "triggered_feature": {
+                "unified_token_202205021100": 9
+            },
+            "privacy_tokens": {}
+        },
+        "expected_result": {
+            "state": {
+                "UnifiedTokenVaults": {},
+                "WaitingUnshieldReqs": {},
+                "NewWaitingUnshieldReqs": {},
+                "DeletedWaitingUnshieldReqKeyHashes": [],
+                "Param": {
+                    "PercentFeeWithDec": 100
+                }
+            },
+            "instructions": [],
+            "accumulated_values": {
+                "UniqETHTxsUsed":    [],
+		        "UniqBSCTxsUsed":    [],
+		        "UniqPLGTxsUsed":    [],
+		        "UniqPRVEVMTxsUsed": [],
+		        "UniqFTMTxsUsed":    [],
+		        "DBridgeTokenPair":  {},
+		        "CBridgeTokens":     [],
+		        "InitTokens":        []
+            },
+            "bridge_tokens_info": {}
+        }
+    }
+}

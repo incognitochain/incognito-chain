@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -27,7 +28,7 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	if onBeacon {
 		confirmMeta = metadata.BurningConfirmMetaV2
 	}
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetBSCBurnProof returns a proof of a tx burning pBSC
@@ -40,7 +41,7 @@ func (httpServer *HttpServer) handleGetBSCBurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	confirmMeta := metadata.BurningBSCConfirmMeta
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetPRVERC20BurnProof returns a proof of a tx burning prv erc20
@@ -53,7 +54,7 @@ func (httpServer *HttpServer) handleGetPRVERC20BurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	confirmMeta := metadata.BurningPRVERC20ConfirmMeta
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetPRVBEP20BurnProof returns a proof of a tx burning prv bep20
@@ -66,7 +67,7 @@ func (httpServer *HttpServer) handleGetPRVBEP20BurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	confirmMeta := metadata.BurningPRVBEP20ConfirmMeta
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetBurnProofForDepositToSC returns a proof of a tx burning pETH to deposit to SC
@@ -82,7 +83,7 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	if onBeacon {
 		confirmMeta = metadata.BurningConfirmForDepositToSCMetaV2
 	}
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetBurnPBSCProofForDepositToSC returns a proof of a tx burning pBSC to deposit to SC
@@ -98,7 +99,7 @@ func (httpServer *HttpServer) handleGetBurnPBSCProofForDepositToSC(
 	if onBeacon {
 		confirmMeta = metadata.BurningPBSCConfirmForDepositToSCMeta
 	}
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetPLGBurnProof returns a proof of a tx burning pPLG ( polygon )
@@ -111,7 +112,7 @@ func (httpServer *HttpServer) handleGetPLGBurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	confirmMeta := metadata.BurningPLGConfirmMeta
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 // handleGetBurnPLGProofForDepositToSC returns a proof of a tx burning pPLG to deposit to SC
@@ -124,7 +125,33 @@ func (httpServer *HttpServer) handleGetBurnPLGProofForDepositToSC(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	confirmMeta := metadata.BurningPLGConfirmForDepositToSCMeta
-	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
+// handleGetFTMBurnProof returns a proof of a tx burning pFTM ( Fantom )
+func (httpServer *HttpServer) handleGetFTMBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningFantomConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
+// handleGetBurnFTMProofForDepositToSC returns a proof of a tx burning pFTM to deposit to SC
+func (httpServer *HttpServer) handleGetBurnFTMProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningFantomConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
@@ -156,11 +183,12 @@ func retrieveBurnProof(
 	height uint64,
 	txID *common.Hash,
 	httpServer *HttpServer,
+	shouldValidateBurningMetaType bool,
 ) (interface{}, *rpcservice.RPCError) {
 	if !onBeacon {
-		return getBurnProofByHeight(confirmMeta, httpServer, height, txID)
+		return getBurnProofByHeight(confirmMeta, httpServer, height, txID, shouldValidateBurningMetaType)
 	}
-	return getBurnProofByHeightV2(confirmMeta, httpServer, height, txID)
+	return getBurnProofByHeightV2(confirmMeta, httpServer, height, txID, shouldValidateBurningMetaType)
 }
 
 func getBurnProofByHeightV2(
@@ -168,6 +196,7 @@ func getBurnProofByHeightV2(
 	httpServer *HttpServer,
 	height uint64,
 	txID *common.Hash,
+	shouldValidateBurningMetaType bool,
 ) (interface{}, *rpcservice.RPCError) {
 	// Get beacon block
 	beaconBlock, err := getSingleBeaconBlockByHeight(httpServer.GetBlockchain(), height)
@@ -176,9 +205,9 @@ func getBurnProofByHeightV2(
 	}
 
 	// Get proof of instruction on beacon
-	inst, instID := findBurnConfirmInst(burningMetaType, beaconBlock.Body.Instructions, txID)
+	inst, instID := findBurnConfirmInst(burningMetaType, beaconBlock.Body.Instructions, txID, shouldValidateBurningMetaType)
 	if instID == -1 {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find inst %s in beacon block %d", txID.String(), height))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("cannot find tx %s in beacon block %d", txID.String(), height))
 	}
 
 	beaconInstProof, err := getBurnProofOnBeacon(inst, []*types.BeaconBlock{beaconBlock}, httpServer.config.ConsensusEngine)
@@ -196,6 +225,7 @@ func getBurnProofByHeight(
 	httpServer *HttpServer,
 	height uint64,
 	txID *common.Hash,
+	shouldValidateBurningMetaType bool,
 ) (interface{}, *rpcservice.RPCError) {
 
 	// Get bridge block and corresponding beacon blocks
@@ -204,7 +234,7 @@ func getBurnProofByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBurnProofOnBridge(burningMetaType, txID, bridgeBlock, httpServer.config.ConsensusEngine)
+	bridgeInstProof, err := getBurnProofOnBridge(burningMetaType, txID, bridgeBlock, httpServer.config.ConsensusEngine, shouldValidateBurningMetaType)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -231,9 +261,10 @@ func getBurnProofOnBridge(
 	txID *common.Hash,
 	bridgeBlock *types.ShardBlock,
 	ce ConsensusEngine,
+	shouldValidateBurningMetaType bool,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
-	_, instID := findBurnConfirmInst(burningMetaType, insts, txID)
+	_, instID := findBurnConfirmInst(burningMetaType, insts, txID, shouldValidateBurningMetaType)
 	if instID < 0 {
 		return nil, fmt.Errorf("cannot find burning instruction in bridge block")
 	}
@@ -288,11 +319,23 @@ func findBurnConfirmInst(
 	burningMetaType int,
 	insts [][]string,
 	txID *common.Hash,
+	shouldValidateBurningMetaType bool,
 ) ([]string, int) {
 	instType := strconv.Itoa(burningMetaType)
 	for i, inst := range insts {
-		if inst[0] != instType || len(inst) < 5 {
-			continue
+		if shouldValidateBurningMetaType {
+			if inst[0] != instType || len(inst) < 5 {
+				continue
+			}
+		} else {
+			metaType, err := strconv.Atoi(inst[0])
+			if err != nil {
+				Logger.log.Warnf("Cannot find burning confirm instruction err %v", err)
+				continue
+			}
+			if !metadataBridge.IsBurningConfirmMetaType(metaType) {
+				continue
+			}
 		}
 
 		h, err := common.Hash{}.NewHashFromStr(inst[5])

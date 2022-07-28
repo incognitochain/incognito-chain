@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -47,6 +48,7 @@ func collectStatefulActions(
 			metadata.IssuingPRVERC20RequestMeta,
 			metadata.IssuingPRVBEP20RequestMeta,
 			metadata.IssuingPLGRequestMeta,
+			metadata.IssuingFantomRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -83,7 +85,11 @@ func collectStatefulActions(
 			metadataCommon.PortalV4UnshieldingRequestMeta,
 			metadataCommon.PortalV4FeeReplacementRequestMeta,
 			metadataCommon.PortalV4SubmitConfirmedTxMeta,
-			metadataCommon.PortalV4ConvertVaultRequestMeta:
+			metadataCommon.PortalV4ConvertVaultRequestMeta,
+			metadataCommon.BridgeAggModifyParamMeta,
+			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
+			metadataCommon.IssuingUnifiedTokenRequestMeta,
+			metadataCommon.BurningUnifiedTokenRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -101,7 +107,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams,
 	shardStates map[byte][]types.ShardState,
-	allPdexv3Txs map[byte][]metadata.Transaction,
+	allPdexTxs map[uint]map[byte][]metadata.Transaction,
+	pdexReward uint64,
 ) ([][]string, error) {
 	// transfrom beacon height for pdex process
 	pdeVersions := []int{}
@@ -111,7 +118,19 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	sort.Ints(pdeVersions)
 
 	for _, version := range pdeVersions {
-		beaconBestState.pdeStates[uint(version)].TransformKeyWithNewBeaconHeight(beaconHeight - 1)
+		if version == pdex.BasicVersion {
+			hasTx := false
+			for _, v := range allPdexTxs[uint(version)] {
+				if len(v) != 0 {
+					hasTx = true
+					break
+				}
+			}
+			if !hasTx {
+				continue
+			}
+			beaconBestState.pdeStates[uint(version)].TransformKeyWithNewBeaconHeight(beaconHeight - 1)
+		}
 	}
 
 	pm := portal.NewPortalManager()
@@ -156,6 +175,27 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	sort.Ints(keys)
+
+	// bridge agg actions collector
+	// unshieldActions := make([][]string, beaconBestState.ActiveShards)
+	shieldActions := make([][]string, beaconBestState.ActiveShards)
+	convertActions := make([][]string, beaconBestState.ActiveShards)
+	modifyParamActions := make([][]string, beaconBestState.ActiveShards)
+	sDBs, err := blockchain.getStateDBsForVerifyTokenID(beaconBestState)
+	if err != nil {
+		Logger.log.Error(err)
+		return utils.EmptyStringMatrix, err
+	}
+
+	newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggManager.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues, beaconBestState.TriggeredFeature)
+	if err != nil {
+		return [][]string{}, err
+	}
+	if len(newInsts) > 0 {
+		instructions = append(instructions, newInsts...)
+		accumulatedValues = newAccumulatedValues
+	}
+
 	for _, value := range keys {
 		shardID := byte(value)
 		actions := statefulActionsByShardID[shardID]
@@ -190,8 +230,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingETHRequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -208,8 +247,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingBSCRequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -226,8 +264,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingPRVERC20RequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -244,8 +281,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingPRVBEP20RequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -262,8 +298,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingPLGRequestMeta:
 				var uniqTx []byte
 				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
-					beaconBestState,
-					featureStateDB,
+					sDBs,
 					contentStr,
 					shardID,
 					metaType,
@@ -276,6 +311,23 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqPLGTxsUsed = append(accumulatedValues.UniqPLGTxsUsed, uniqTx)
+				}
+			case metadata.IssuingFantomRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqFTMTxsUsed,
+					config.Param().FtmContractAddressStr,
+					common.FTMPrefix,
+					statedb.IsFTMTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:
@@ -290,6 +342,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
+			case metadataCommon.BridgeAggModifyParamMeta:
+				modifyParamActions[shardID] = append(modifyParamActions[shardID], contentStr)
+			case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
+				convertActions[shardID] = append(convertActions[shardID], contentStr)
+			case metadataCommon.IssuingUnifiedTokenRequestMeta:
+				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
 			default:
 				continue
 			}
@@ -308,15 +366,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildCrossPoolTradeActions(pdeCrossPoolTradeActions).
 		BuildWithdrawalActions(pdeWithdrawalActions).
 		BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
-		BuildListTxs(allPdexv3Txs).
+		BuildListTxs(allPdexTxs[pdex.AmplifierVersion]).
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
+		BuildReward(pdexReward).
 		Build()
 
 	for _, version := range pdeVersions {
 		pdeInstructions, err := beaconBestState.pdeStates[uint(version)].BuildInstructions(pdeStateEnv)
 		if err != nil {
-			Logger.log.Error(err)
 			return utils.EmptyStringMatrix, err
 		}
 		instructions = append(instructions, pdeInstructions...)
@@ -341,6 +399,25 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if len(portalInsts) > 0 {
 		instructions = append(instructions, portalInsts...)
 	}
+
+	// Bridge aggregator instructions (don't build unshield instructions here)
+	bridgeAggEnv := bridgeagg.
+		NewStateEnvBuilder().
+		BuildConvertActions(convertActions).
+		BuildModifyParamActions(modifyParamActions).
+		BuildShieldActions(shieldActions).
+		BuildAccumulatedValues(accumulatedValues).
+		BuildBeaconHeight(beaconHeight).
+		BuildStateDBs(sDBs).
+		Build()
+	bridgeAggInsts, newAccumulatedValues, err := beaconBestState.bridgeAggManager.BuildInstructions(bridgeAggEnv)
+	if err != nil {
+		return instructions, err
+	}
+	if len(bridgeAggInsts) > 0 {
+		instructions = append(instructions, bridgeAggInsts...)
+	}
+	accumulatedValues = newAccumulatedValues
 
 	return instructions, nil
 }

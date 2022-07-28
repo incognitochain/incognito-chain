@@ -47,6 +47,7 @@ var (
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeBSCTxPrefix                  = []byte("bri-bsc-tx-")
 	bridgePLGTxPrefix                  = []byte("bri-plg-tx-")
+	bridgeFTMTxPrefix                  = []byte("bri-ftm-tx-")
 	bridgePRVEVMPrefix                 = []byte("bri-prv-evm-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
@@ -79,15 +80,30 @@ var (
 	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-status-")
 	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-status-")
 	pdexv3PoolPairLpFeePerSharePrefix       = []byte("pdexv3-poolpair-lpfeepershare-")
+	pdexv3PoolPairLmRewardPerSharePrefix    = []byte("pdexv3-poolpair-lmewardpershare-")
 	pdexv3PoolPairProtocolFeePrefix         = []byte("pdexv3-poolpair-protocolfee-")
 	pdexv3PoolPairStakingPoolFeePrefix      = []byte("pdexv3-poolpair-stakingpoolfee-")
 	pdexv3ShareTradingFeePrefix             = []byte("pdexv3-share-tradingfee-")
 	pdexv3ShareLastLpFeesPerSharePrefix     = []byte("pdexv3-share-lastlpfeespershare-")
+	pdexv3ShareLastLmRewardPerSharePrefix   = []byte("pdexv3-share-lastlmrewardspershare-")
 	pdexv3StakingPoolRewardPerSharePrefix   = []byte("pdexv3-stakingpool-rewardpershare-")
 	pdexv3StakerRewardPrefix                = []byte("pdexv3-staker-reward-")
 	pdexv3StakerLastRewardPerSharePrefix    = []byte("pdexv3-staker-lastrewardpershare-")
 	pdexv3PoolPairMakingVolumePrefix        = []byte("pdexv3-poolpair-makingvolume-")
 	pdexv3PoolPairOrderRewardPrefix         = []byte("pdexv3-poolpair-orderreward-")
+	pdexv3PoolPairLmLockedSharePrefix       = []byte("pdexv3-poolpair-lmlockedshare-")
+
+	// bridge agg
+	bridgeAggStatusPrefix            = []byte("bridgeagg-status-")
+	bridgeAggModifyParamStatusPrefix = []byte("bridgeagg-modifyparamstatus-")
+	bridgeAggConvertStatusPrefix     = []byte("bridgeagg-convertstatus-")
+	bridgeAggShieldStatusPrefix      = []byte("bridgeagg-shieldStatus-")
+	bridgeAggUnshieldStatusPrefix    = []byte("bridgeagg-unshieldStatus-")
+	bridgeAggUnifiedTokenprefix      = []byte("bridgeagg-unifiedtoken-")
+	bridgeAggConvertedTokenPrefix    = []byte("bridgeagg-convertedtoken-")
+	bridgeAggVaultPrefix             = []byte("bridgeagg-vault-")
+	bridgeAggWaitUnshieldReqPrefix   = []byte("bridgeagg-waitUnshield-")
+	bridgeAggParamPrefix             = []byte("bridgeagg-param-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -343,6 +359,11 @@ func GetBridgePRVEVMPrefix() []byte {
 
 func GetBridgePLGTxPrefix() []byte {
 	h := common.HashH(bridgePLGTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeFTMTxPrefix() []byte {
+	h := common.HashH(bridgeFTMTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -687,6 +708,16 @@ func GetPdexv3PoolPairLpFeePerSharesPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
+func GetPdexv3PoolPairLmRewardPerSharesPrefix() []byte {
+	hash := common.HashH(pdexv3PoolPairLmRewardPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3PoolPairLmLockedSharePrefix() []byte {
+	hash := common.HashH(pdexv3PoolPairLmLockedSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
 func GetPdexv3PoolPairProtocolFeesPrefix() []byte {
 	hash := common.HashH(pdexv3PoolPairProtocolFeePrefix)
 	return hash[:prefixHashKeyLength]
@@ -704,6 +735,11 @@ func GetPdexv3ShareTradingFeesPrefix() []byte {
 
 func GetPdexv3ShareLastLpFeePerSharesPrefix() []byte {
 	hash := common.HashH(pdexv3ShareLastLpFeesPerSharePrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3ShareLastLmRewardPerSharesPrefix() []byte {
+	hash := common.HashH(pdexv3ShareLastLmRewardPerSharePrefix)
 	return hash[:prefixHashKeyLength]
 }
 
@@ -809,6 +845,52 @@ func PortalUnshielFeeReplacementBatchStatusPrefix() []byte {
 
 func PortalSubmitConfirmedTxStatusPrefix() []byte {
 	return portalUnshielSubmitConfirmedTxStatusPrefix
+}
+
+func GetBridgeAggStatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(bridgeAggStatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func BridgeAggModifyParamStatusPrefix() []byte {
+	return bridgeAggModifyParamStatusPrefix
+}
+
+func BridgeAggConvertStatusPrefix() []byte {
+	return bridgeAggConvertStatusPrefix
+}
+
+func BridgeAggShieldStatusPrefix() []byte {
+	return bridgeAggShieldStatusPrefix
+}
+
+func BridgeAggUnshieldStatusPrefix() []byte {
+	return bridgeAggUnshieldStatusPrefix
+}
+
+func GetBridgeAggUnifiedTokenPrefix() []byte {
+	hash := common.HashH(bridgeAggUnifiedTokenprefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggConvertedTokenPrefix() []byte {
+	hash := common.HashH(bridgeAggConvertedTokenPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggVaultPrefix() []byte {
+	hash := common.HashH(bridgeAggVaultPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID []byte) []byte {
+	h := common.HashH(append(bridgeAggWaitUnshieldReqPrefix, unifiedTokenID...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeAggParamPrefix() []byte {
+	h := common.HashH(bridgeAggParamPrefix)
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

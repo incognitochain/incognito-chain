@@ -215,6 +215,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		1,
 	)
 
 	type fields struct {

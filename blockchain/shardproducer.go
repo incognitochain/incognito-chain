@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -22,6 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -83,8 +85,30 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconProcessHeight               uint64
 		err                               error
 	)
-
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
+	//check if expected final view is not confirmed by beacon for too far
+	beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
+	if beaconFinalView.BestShardHeight[shardID]+100 < blockchain.ShardChain[shardID].multiView.GetExpectedFinalView().GetHeight() {
+		return nil, fmt.Errorf("Shard %v | Wait for beacon shardstate %v, the unconfirmed view %v is too far away",
+			shardID, beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
+	}
+
+	//check if bestview is on the same branch with beacon shardstate
+	blockByView, _ := blockchain.GetShardBlockByView(curView, beaconFinalView.BestShardHeight[shardID], shardID)
+	if blockByView == nil {
+		return nil, fmt.Errorf("Shard %v | Cannot get block by height: %v from view %v",
+			shardID, beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
+	}
+	if blockByView.GetHeight() != 1 && blockByView.Hash().String() != beaconFinalView.BestShardHash[shardID].String() {
+		//update view
+		if err := blockchain.ShardChain[shardID].multiView.FinalizeView(beaconFinalView.BestShardHash[shardID]); err != nil {
+			//request missing view
+			blockchain.config.Server.RequestMissingViewViaStream("", [][]byte{beaconFinalView.BestShardHash[shardID].Bytes()}, int(shardID), blockchain.ShardChain[shardID].GetChainName())
+		}
+		return nil, fmt.Errorf("Shard %v | Create block from view that is not on same branch with beacon shardstate, expect view %v height %v, got %v",
+			shardID, beaconFinalView.BestShardHash[shardID].String(), beaconFinalView.BestShardHeight[shardID], curView.BestBlock.Hash().String())
+	}
+
 	// Clone best state value into new variable
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
@@ -117,7 +141,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			time.Sleep(time.Duration(common.TIMESLOT / 4))
+			waitTime := common.TIMESLOT / 5
+			time.Sleep(time.Duration(waitTime) * time.Second)
 			beaconProcessHeight = getBeaconFinalHeightForProcess()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")
@@ -189,7 +214,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconProcessHeight)
+	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardBestState, beaconProcessHeight)
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
@@ -226,7 +251,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
 			beaconInstructions,
 			curView.ShardID,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			shardBestState.NumberOfFixedShardBlockValidator,
 			shardBestState.ShardHeight+1,
 		)
 
@@ -297,7 +322,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
+	txInstructions, _, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight, false)
 	if err != nil {
 		return nil, err
 	}
@@ -369,11 +394,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		return nil, err
 	}
 	bView := &BeaconBestState{}
-	includePdexv3Tx := false
-	if curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
-		includePdexv3Tx = true
-	}
-	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, includePdexv3Tx)
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
 
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
@@ -481,6 +502,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingPLGResponseMeta, false)
 				}
+			case metadata.IssuingFantomRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
+				}
+
 			// portal
 			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
 				if len(inst) >= 4 && inst[2] == portalcommonv3.PortalRequestRejectedChainStatus {
@@ -573,6 +599,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						curView.GetCopiedTransactionStateDB(),
 						beaconBlock.Header.Height,
 					)
+				} else if metadataBridge.IsBridgeAggMetaType(metaType) {
+					newTx, err = bridgeagg.TxBuilder{}.Build(
+						metaType, inst, producerPrivateKey, shardID, curView.GetCopiedTransactionStateDB(),
+					)
 				}
 			}
 			if err != nil {
@@ -631,7 +661,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
 
-			numberOfFixedShardBlockValidators := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
+			numberOfFixedShardBlockValidators := view.NumberOfFixedShardBlockValidator
 
 			maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 			var minShardCommitteeSize int
@@ -716,11 +746,12 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 //	  - Process valid block to extract:
 //	   + Cross output coin
 //	   + Cross Normal Token
-func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
+func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
+	toShard := curView.ShardID
 	var allCrossShardBlock = make([][]*types.CrossShardBlock, config.Param().ActiveShards)
-	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard, nil) {
+	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(curView, nil) {
 		heightList := make([]uint64, len(v))
 		for i, b := range v {
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*types.CrossShardBlock))
@@ -947,7 +978,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
 	bc *BlockChain, shardID byte,
 	shardHeight, beaconHeight uint64,
-) (instructions [][]string, pdexv3Txs []metadata.Transaction, err error) {
+	shouldCollectPdexTxs bool,
+) (instructions [][]string, pdexTxs map[uint][]metadata.Transaction, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -955,20 +987,30 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeShardAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	unstaking := []string{}
+	if shouldCollectPdexTxs {
+		pdexTxs = make(map[uint][]metadata.Transaction)
+	}
 
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
 			if beaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight && metadata.IsPdexv3Tx(metadataValue) {
-				pdexv3Txs = append(pdexv3Txs, tx)
+				if shouldCollectPdexTxs {
+					pdexTxs[pdex.AmplifierVersion] = append(pdexTxs[pdex.AmplifierVersion], tx)
+				}
 			} else {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-				if err == nil {
-					instructions = append(instructions, actionPairs...)
-				} else {
+				if err != nil {
 					Logger.log.Errorf("Build Request Action Error %+v", err)
+					return nil, nil, fmt.Errorf("Build Request Action Error %+v", err)
 				}
+				if shouldCollectPdexTxs {
+					if metadata.IsPDETx(metadataValue) {
+						pdexTxs[pdex.BasicVersion] = append(pdexTxs[pdex.BasicVersion], tx)
+					}
+				}
+				instructions = append(instructions, actionPairs...)
 			}
 		}
 		switch tx.GetMetadataType() {
@@ -1047,5 +1089,55 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
 	}
-	return instructions, pdexv3Txs, nil
+	return instructions, pdexTxs, nil
+}
+
+// CreateShardBridgeUnshieldActionsFromTxs create bridge unshield insts from transactions in shard block
+func CreateShardBridgeUnshieldActionsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeActions := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Unshield Error %+v", err)
+			}
+			bridgeActions = append(bridgeActions, actionPairs...)
+		}
+	}
+	return bridgeActions, nil
+}
+
+// CreateShardBridgeAggUnshieldActionsFromTxs create bridge agg unshield insts from transactions in shard block
+func CreateShardBridgeAggUnshieldActionsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeAggActions := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeAggUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Agg Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Agg Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Agg Unshield Error %+v", err)
+			}
+			bridgeAggActions = append(bridgeAggActions, actionPairs...)
+		}
+	}
+	return bridgeAggActions, nil
 }

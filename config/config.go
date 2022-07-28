@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jessevdk/go-flags"
 	"github.com/spf13/viper"
@@ -112,11 +113,10 @@ type config struct {
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 
 	// Optional : db to store coin by OTA key (for v2)
-	OutcoinDatabaseDir  string    `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
-	NumIndexerWorkers   int64     `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
-	IndexerAccessTokens string    `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
-	UseOutcoinDatabase  []bool    `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
-	GethParam           gethParam `mapstructure:"geth_param"`
+	OutcoinDatabaseDir  string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
+	NumIndexerWorkers   int64  `mapstructure:"num_indexer_workers" long:"numindexerworkers" description:"Number of workers for caching output coins"`
+	IndexerAccessTokens string `mapstructure:"indexer_access_token" long:"indexeraccesstoken" description:"The access token for caching output coins"`
+	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -398,23 +398,25 @@ func (c *config) loadConfig() {
 
 	parser := flags.NewParser(c, flags.IgnoreUnknown)
 	parser.Parse()
-	c.GethParam.GetFromEnv()
 }
 
 type gethParam struct {
-	Host     string `mapstructure:"host"`
-	Protocol string `mapstructure:"protocol"`
-	Port     string `mapstructure:"port"`
+	Host []string `mapstructure:"host"`
 }
 
 func (gethPram *gethParam) GetFromEnv() {
+	var host, protocol, port string
 	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
+		host = utils.GetEnv(GethHostKey, utils.EmptyString)
 	}
 	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
+		protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
 	}
 	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
-		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
+		port = utils.GetEnv(GethPortKey, utils.EmptyString)
+	}
+
+	if host != utils.EmptyString || protocol != utils.EmptyString || port != utils.EmptyString {
+		gethPram.Host = []string{rpccaller.BuildRPCServerAddress(protocol, host, port)}
 	}
 }

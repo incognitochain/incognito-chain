@@ -110,6 +110,31 @@ func IsPRVEVMTxHashIssued(stateDB *StateDB, uniquePRVEVMTx []byte) (bool, error)
 	return true, nil
 }
 
+func InsertFTMTxHashIssued(stateDB *StateDB, uniqueFTMTx []byte) error {
+	key := GenerateBridgeFTMTxObjectKey(uniqueFTMTx)
+	value := NewBridgeFTMTxStateWithValue(uniqueFTMTx)
+	err := stateDB.SetStateObject(BridgeFTMTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertFTMTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsFTMTxHashIssued(stateDB *StateDB, uniqueFTMTx []byte) (bool, error) {
+	key := GenerateBridgeFTMTxObjectKey(uniqueFTMTx)
+	ftmTxState, has, err := stateDB.getBridgeFTMTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsFTMTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(ftmTxState.UniqueFTMTx(), uniqueFTMTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {
@@ -142,6 +167,10 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 		panic("same key wrong value")
 	}
 	return has, nil
+}
+
+func GetBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
+	return getBridgeTokenByType(stateDB, incTokenID, isCentralized)
 }
 
 func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
@@ -293,4 +322,17 @@ func IsBridgeToken(stateDB *StateDB, tokenID common.Hash) (
 		return IsBridgeTokenExistedByType(stateDB, tokenID, false)
 	}
 	return isBridgeTokens, err
+}
+
+func GetBridgeTokens(stateDB *StateDB) ([]*rawdbv2.BridgeTokenInfo, error) {
+	cBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(true)
+	dBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
+	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
+	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
+	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
+		tokenID := bridgeTokenInfoState.IncTokenID()
+		tempBridgeTokenInfo := rawdbv2.NewBridgeTokenInfo(&tokenID, bridgeTokenInfoState.Amount(), bridgeTokenInfoState.ExternalTokenID(), bridgeTokenInfoState.Network(), bridgeTokenInfoState.IsCentralized())
+		bridgeTokenInfos = append(bridgeTokenInfos, tempBridgeTokenInfo)
+	}
+	return bridgeTokenInfos, nil
 }

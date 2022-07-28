@@ -3,7 +3,6 @@ package blsbft
 import (
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -18,7 +17,7 @@ type vote struct {
 	Confirmation []byte
 }
 
-type blockValidation interface {
+type BlockValidation interface {
 	types.BlockInterface
 	AddValidationField(validationData string)
 }
@@ -38,7 +37,7 @@ func ValidateProducerSigV1(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(block.ProposeHash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -58,7 +57,7 @@ func ValidateProducerSigV2(block types.BlockInterface) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//start := time.Now()
-	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+	if err := validateSingleBriSig(block.ProposeHash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	//end := time.Now().Sub(start)
@@ -96,7 +95,7 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
 	}
 
-	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+	if err := validateBLSSig(block.ProposeHash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil

@@ -74,6 +74,10 @@ func TestProduceAcceptedTrade(t *testing.T) {
 	}
 }
 
+func (o *OrderList) NftIDs() map[string]string {
+	return nil
+}
+
 type OrderList []MatchingOrder
 
 // replica of PoolPairState.NextOrder()

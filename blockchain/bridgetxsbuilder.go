@@ -8,11 +8,14 @@ import (
 	"math/big"
 	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
-	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -27,20 +30,6 @@ func buildInstruction(metaType int, shardID byte, instStatus string, contentStr 
 		instStatus,
 		contentStr,
 	}
-}
-
-func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(addressStr)
-	if err != nil {
-		return byte(0), err
-	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return byte(0), errors.New("Payment address' public key must not be empty")
-	}
-	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
-	return shardID, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForContractingReq(
@@ -122,8 +111,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 }
 
 func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
-	beaconBestState *BeaconBestState,
-	stateDB *statedb.StateDB,
+	stateDBs map[int]*statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -135,8 +123,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	isPRV bool,
 ) ([][]string, []byte, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
-	instructions := [][]string{}
-	issuingEVMBridgeReqAction, err := metadata.ParseEVMIssuingInstContent(contentStr)
+	issuingEVMBridgeReqAction, err := metadataBridge.ParseEVMIssuingInstContent(contentStr)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
 		return nil, nil, nil
@@ -144,89 +131,48 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	md := issuingEVMBridgeReqAction.Meta
 	Logger.log.Infof("[Decentralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingEVMBridgeReqAction.TxReqID.String(), md.IncTokenID.String())
 
-	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingEVMBridgeReqAction.TxReqID.String())
+	inst := metadataCommon.NewInstructionWithValue(
+		metaType,
+		common.RejectedStatusStr,
+		shardID,
+		issuingEVMBridgeReqAction.TxReqID.String(),
+	)
+	rejectedInst := inst.StringSlice()
 
-	txReceipt := issuingEVMBridgeReqAction.EVMReceipt
-	if txReceipt == nil {
-		Logger.log.Warn("WARNING: bridge tx receipt is null.")
-		return append(instructions, rejectedInst), nil, nil
+	evmProof := metadataBridge.EVMProof{
+		BlockHash: md.BlockHash,
+		TxIndex:   md.TxIndex,
+		Proof:     md.ProofStrs,
 	}
 
-	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
-	// so must build unique eth tx as combination of block hash and tx index.
-	uniqTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
-	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
-	if isUsedInBlock {
-		Logger.log.Warn("WARNING: already issued for the hash in current block: ", uniqTx)
-		return append(instructions, rejectedInst), nil, nil
-	}
-	isIssued, err := isTxHashIssued(stateDB, uniqTx)
+	// check double use shielding proof in current block and previous blocks
+	isValid, uniqTx, err := bridgeagg.ValidateDoubleShieldProof(&evmProof, listTxUsed, isTxHashIssued, stateDBs[common.BeaconChainID])
 	if err != nil {
-		Logger.log.Warn("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
-		return append(instructions, rejectedInst), nil, nil
+		Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
+		return [][]string{rejectedInst}, nil, nil
 	}
-	if isIssued {
-		Logger.log.Warn("WARNING: already issued for the hash in previous blocks: ", uniqTx)
-		return append(instructions, rejectedInst), nil, nil
+	if !isValid {
+		Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
+		return [][]string{rejectedInst}, nil, nil
 	}
 
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(txReceipt, contractAddress)
+	amt, addressStr, token, err := metadataBridge.ExtractIssueEVMDataFromReceipt(
+		issuingEVMBridgeReqAction.EVMReceipt,
+		contractAddress,
+		prefix,
+		"",
+	)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while parsing log map from receipt: ", err)
-		return append(instructions, rejectedInst), nil, nil
-	}
-	if logMap == nil {
-		Logger.log.Warn("WARNING: could not find log map out from receipt")
-		return append(instructions, rejectedInst), nil, nil
+		Logger.log.Warnf(err.Error())
+		return [][]string{rejectedInst}, nil, nil
 	}
 
-	logMapBytes, _ := json.Marshal(logMap)
-	Logger.log.Warn("INFO: eth logMap json - ", string(logMapBytes))
-
-	// the token might be ETH/ERC20 BNB/BEP20
-	tokenAddr, ok := logMap["token"].(rCommon.Address)
-	if !ok {
-		Logger.log.Warn("WARNING: could not parse evm token id from log map.")
-		return append(instructions, rejectedInst), nil, nil
-	}
-	token := append([]byte(prefix), tokenAddr.Bytes()...)
-	// handle case not native token.
-	if !isPRV {
-		canProcess, err := ac.CanProcessTokenPair(token, md.IncTokenID)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)
-			return append(instructions, rejectedInst), nil, nil
-		}
-		if !canProcess {
-			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
-			return append(instructions, rejectedInst), nil, nil
-		}
-		privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
-		if err != nil {
-			Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
-			return append(instructions, rejectedInst), nil, nil
-		}
-		isValid, err := statedb.CanProcessTokenPair(stateDB, token, md.IncTokenID, privacyTokenExisted)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
-			return append(instructions, rejectedInst), nil, nil
-		}
-		if !isValid {
-			Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
-			return append(instructions, rejectedInst), nil, nil
-		}
+	receivingShardID, err := metadataBridge.GetShardIDFromPaymentAddressStr(addressStr)
+	if err != nil {
+		Logger.log.Warnf(err.Error())
+		return [][]string{rejectedInst}, nil, nil
 	}
 
-	addressStr, ok := logMap["incognitoAddress"].(string)
-	if !ok {
-		Logger.log.Warn("WARNING: could not parse incognito address from bridge log map.")
-		return append(instructions, rejectedInst), nil, nil
-	}
-	amt, ok := logMap["amount"].(*big.Int)
-	if !ok {
-		Logger.log.Warn("WARNING: could not parse amount from bridge log map.")
-		return append(instructions, rejectedInst), nil, nil
-	}
 	amount := uint64(0)
 	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
 		// convert amt from wei (10^18) to nano eth (10^9)
@@ -234,14 +180,15 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	} else { // ERC20 / BEP20
 		amount = amt.Uint64()
 	}
-
-	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while getting shard id from payment address: ", err)
-		return append(instructions, rejectedInst), nil, nil
+	if !isPRV {
+		err := metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
+		if err != nil {
+			Logger.log.Warnf(err.Error())
+			return [][]string{rejectedInst}, nil, nil
+		}
 	}
 
-	issuingAcceptedInst := metadata.IssuingEVMAcceptedInst{
+	issuingAcceptedInst := metadataBridge.IssuingEVMAcceptedInst{
 		ShardID:         receivingShardID,
 		IssuingAmount:   amount,
 		ReceiverAddrStr: addressStr,
@@ -253,13 +200,13 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
-		return append(instructions, rejectedInst), nil, nil
+		return [][]string{rejectedInst}, nil, nil
 	}
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = token
-
-	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes))
+	inst.Status = common.AcceptedStatusStr
+	inst.Content = base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes)
 	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
-	return append(instructions, acceptedInst), uniqTx, nil
+	return [][]string{inst.StringSlice()}, uniqTx, nil
 }
 
 func (blockGenerator *BlockGenerator) buildIssuanceTx(
@@ -327,7 +274,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of EVM accepted issuance instruction: ", err)
 		return nil, nil
 	}
-	var issuingEVMAcceptedInst metadata.IssuingEVMAcceptedInst
+	var issuingEVMAcceptedInst metadataBridge.IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while unmarshaling EVM accepted issuance instruction: ", err)
@@ -348,7 +295,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 		PaymentAddress: key.KeySet.PaymentAddress,
 	}
 
-	issuingEVMRes := metadata.NewIssuingEVMResponse(
+	issuingEVMRes := metadataBridge.NewIssuingEVMResponse(
 		issuingEVMAcceptedInst.TxReqID,
 		issuingEVMAcceptedInst.UniqTx,
 		issuingEVMAcceptedInst.ExternalTokenID,
@@ -369,4 +316,24 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 
 	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
+}
+
+func (blockchain *BlockChain) getStateDBsForVerifyTokenID(curView *BeaconBestState) (map[int]*statedb.StateDB, error) {
+	res := make(map[int]*statedb.StateDB)
+	res[common.BeaconChainID] = curView.featureStateDB
+
+	for shardID, shardHash := range curView.BestShardHash {
+		db := blockchain.GetShardChainDatabase(shardID)
+		shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, shardHash)
+		if err != nil {
+			return res, err
+		}
+		stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(db))
+		if err != nil {
+			return res, err
+		}
+		res[int(shardID)] = stateDB
+	}
+	return res, nil
 }

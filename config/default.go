@@ -61,9 +61,9 @@ var MainnetParam = &param{
 		AssignRuleV3Height:        1410217,
 		EnableSlashingHeightV2:    1498517,
 		StakingFlowV3Height:       1519263,
-		NotUseBurnedCoins:         1e9,
-		BlockProducingV3Height:    1e9,
-		Lemma2Height:              1e9,
+		NotUseBurnedCoins:         1816555,
+		BlockProducingV3Height:    1846560,
+		Lemma2Height:              1816555,
 		ByzantineDetectorHeight:   1e9,
 		Timeslot:                  40,
 		EpochBreakPointSwapNewKey: []uint64{1917},
@@ -77,10 +77,17 @@ var MainnetParam = &param{
 		"PortalV3":       0,
 		"PortalV4":       4079,
 	},
+	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 10000000,
 	TxPoolVersion:              0,
+	GethParam: gethParam{
+		Host: []string{"https://eth-fullnode.incognito.org"},
+	},
 	BSCParam: bscParam{
-		Host: "https://bsc-dataseed.binance.org",
+		Host: []string{"https://bsc-dataseed.binance.org"},
+	},
+	PLGParam: plgParam{
+		Host: []string{"https://polygon-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"},
 	},
 	IsBackup: false,
 }
@@ -157,10 +164,11 @@ var Testnet1Param = &param{
 		"PortalV3":       0,
 		"PortalV4":       1,
 	},
+	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -238,10 +246,11 @@ var Tesnet2Param = &param{
 		"PortalV3":       0,
 		"PortalV4":       30225,
 	},
+	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -322,7 +331,7 @@ var LocalParam = &param{
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -403,7 +412,7 @@ var LocalDCSParam = &param{
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              0,
 	BSCParam: bscParam{
-		Host: "https://data-seed-prebsc-2-s1.binance.org:8545",
+		Host: []string{"https://data-seed-prebsc-2-s1.binance.org:8545"},
 	},
 	IsBackup: false,
 }
@@ -415,14 +424,17 @@ func (p *param) LoadKeyByNetwork(network string) {
 		p.LoadKey(MainnetKeylist, Mainnetv2Keylist) //if there is keylist file in config folder, this default keylist will be not used
 		initTx.load(MainnetInitTx)                  //if there is init_tx file in config folder, this default init_tx  will be not used
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+		LoadUnifiedToken(mainnetUnifiedToken)
 	case "testnet-1":
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet1InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+		LoadUnifiedToken(testnet1UnifiedToken)
 	case "testnet-2", "local":
 		p.LoadKey(Testnet2Keylist, Testnet2v2Keylist)
 		initTx.load(Testnet2InitTx)
 		p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+		LoadUnifiedToken(localUnifiedToken)
 	case "local-dcs":
 		p.LoadKey(LocalDCSKeyList, LocalDCSV2Keylist)
 		initTx.load(LocalDCSInitTx)

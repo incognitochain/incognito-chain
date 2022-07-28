@@ -18,8 +18,8 @@ func GetConsensusDatabase() incdb.Database {
 var splitter = []byte("-[-]-")
 var shardFinalityProofPrefix = []byte("s-fp" + string(splitter))
 var blacklistPrefix = []byte("bd-bl" + string(splitter))
+var voteByBlockHashPrefix = []byte("v-bh" + string(splitter))
 var proposeHistoryPrefix = []byte("p-h" + string(splitter))
-var receiveBlockByHeightPrefix = []byte("rb-height" + string(splitter))
 var receiveBlockByHashPrefix = []byte("rb-hash" + string(splitter))
 var voteHistoryPrefix = []byte("v-h" + string(splitter))
 
@@ -51,6 +51,14 @@ func GetByzantineBlackListKey(validator string) []byte {
 	return key
 }
 
+func GetVoteByBlockHashPrefixKey(hash string) []byte {
+	temp := make([]byte, len(voteByBlockHashPrefix))
+	copy(temp, voteByBlockHashPrefix)
+	key := append(temp, []byte(hash)...)
+	key = append(key, splitter...)
+	return key
+}
+
 func GetProposeHistoryPrefix(chainID int) []byte {
 	temp := make([]byte, len(proposeHistoryPrefix))
 	copy(temp, proposeHistoryPrefix)
@@ -62,20 +70,6 @@ func GetProposeHistoryPrefix(chainID int) []byte {
 func GetProposeHistoryKey(chainID int, timeSlot uint64) []byte {
 	temp := GetProposeHistoryPrefix(chainID)
 	key := append(temp, common.Uint64ToBytes(timeSlot)...)
-	return key
-}
-
-func GetReceiveBlockByHeightPrefix(chainID int) []byte {
-	temp := make([]byte, len(receiveBlockByHeightPrefix))
-	copy(temp, receiveBlockByHeightPrefix)
-	key := append(temp, common.Int32ToBytes(int32(chainID))...)
-	key = append(key, splitter...)
-	return key
-}
-
-func GetReceiveBlockByHeightKey(chainID int, height uint64) []byte {
-	temp := GetReceiveBlockByHeightPrefix(chainID)
-	key := append(temp, common.Uint64ToBytes(height)...)
 	return key
 }
 

@@ -94,6 +94,7 @@ func NewShardSyncProcess(
 			case f := <-s.actionCh:
 				f()
 			case shardPeerState := <-s.shardPeerStateCh:
+				Logger.Debugf("Got new shard peerstate, last height %v", shardPeerState.Shards[byte(s.shardID)].Height)
 				for sid, peerShardState := range shardPeerState.Shards {
 					if int(sid) == s.shardID {
 						s.shardPeerState[shardPeerState.SenderID] = ShardPeerState{
@@ -156,7 +157,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		if insertCnt > 0 {
 			s.insertShardBlockFromPool()
 		} else {
-			time.AfterFunc(time.Second*2, s.insertShardBlockFromPool)
+			time.AfterFunc(time.Millisecond*500, s.insertShardBlockFromPool)
 		}
 	}()
 
@@ -169,16 +170,13 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			}
 			//if already insert and error, last time insert is < 10s then we skip
 			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
-			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+			if ok && time.Since(insertTime.(time.Time)).Seconds() < (float64(common.TIMESLOT)/4) {
 				continue
 			}
 
-			//fullnode delay 1 block (make sure insert final block)
-			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
-				if len(preBlk) == 0 {
-					continue
-				}
+			linkView := s.Chain.GetViewByHash(viewHash)
+			if linkView == nil {
+				continue
 			}
 
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
@@ -196,10 +194,12 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 				if err != nil {
 					continue
 				}
-				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), previousValidationData)
+
+				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), previousValidationData)
 				if err1 != nil {
 					Logger.Error("Replace Previous Validation Data Fail", block.GetPrevHash(), previousValidationData, err)
 				}
+				Logger.Infof("Insert from pool shard %v , %v, %v", block.GetShardID(), block.GetHeight(), block.FullHashString())
 			}
 			s.shardPool.RemoveBlock(block)
 		}
@@ -233,7 +233,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 	validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
-		s.consensus.GetSyncingValidators(), byte(s.shardID))
+		s.consensus.GetValidators(), byte(s.shardID))
 	finishedSyncValidators := []string{}
 	finishedSyncSignatures := [][]byte{}
 	for i, v := range validatorFromUserKeys {
@@ -263,8 +263,8 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
 			convertedTimeslot := time.Duration(common.TIMESLOT) * time.Second
 			now := time.Now().Unix()
-			ceiling := now + 5*convertedTimeslot.Milliseconds()
-			floor := now - 5*convertedTimeslot.Milliseconds()
+			ceiling := now + int64(5*convertedTimeslot.Seconds())
+			floor := now - int64(5*convertedTimeslot.Seconds())
 			if floor <= shardView.BestBlock.Header.Timestamp &&
 				shardView.BestBlock.Header.Timestamp <= ceiling {
 				s.trySendFinishSyncMessage()
@@ -361,10 +361,10 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d shard %d block(from %d to %d) elaspse %f \n", successBlk, s.shardID, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk == 0 {
 							return
 						}
+						fmt.Printf("Syncker Insert shard %d : %d block(from %d to %d) elaspse %f \n", s.shardID, successBlk, blockBuffer[0].GetHeight(), blockBuffer[successBlk-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk < len(blockBuffer) {
 							blockBuffer = blockBuffer[successBlk:]
 						} else {
