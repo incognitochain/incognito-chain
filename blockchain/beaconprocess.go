@@ -180,8 +180,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 
-	if beaconBlock.GetProposeTime() >= int64(time.Now().Second()-20) {
-		if beaconBlock.GetHeight()%10 == 0 {
+	if beaconBlock.GetProposeTime() >= int64(time.Now().Unix()-20) {
+		if beaconBlock.GetHeight()%3 == 0 {
 			go blockchain.BackupManager.Start()
 		}
 	}

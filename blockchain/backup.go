@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,8 +15,13 @@ import (
 )
 
 type checkpointInfo struct {
-	Height uint64
-	Hash   string
+	Height                     uint64
+	Hash                       string
+	ConsensusStateDBRootHash   common.Hash
+	TransactionStateDBRootHash common.Hash
+	FeatureStateDBRootHash     common.Hash
+	RewardStateDBRootHash      common.Hash
+	SlashStateDBRootHash       common.Hash
 }
 type BackupProcess struct {
 	CheckpointName string
@@ -30,7 +36,7 @@ type BackupManager struct {
 
 type StateDBData struct {
 	K []byte
-	v []byte
+	V []byte
 }
 
 func NewBackupManager(bc *BlockChain) *BackupManager {
@@ -58,7 +64,7 @@ func (s *BackupManager) Start() {
 		CheckpointName: checkPoint,
 		ChainInfo:      make(map[int]checkpointInfo),
 	}
-	bootstrapInfo.ChainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String()}
+	bootstrapInfo.ChainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String(), beaconBestView.ConsensusStateDBRootHash, common.Hash{}, beaconBestView.FeatureStateDBRootHash, beaconBestView.RewardStateDBRootHash, common.Hash{}}
 	s.runningBootStrap = bootstrapInfo
 
 	//backup beacon then shard
@@ -66,7 +72,7 @@ func (s *BackupManager) Start() {
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
-		bootstrapInfo.ChainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String()}
+		bootstrapInfo.ChainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String(), shardBestView[i].ConsensusStateDBRootHash, shardBestView[i].TransactionStateDBRootHash, shardBestView[i].FeatureStateDBRootHash, shardBestView[i].RewardStateDBRootHash, shardBestView[i].SlashStateDBRootHash}
 	}
 
 	//update final status
@@ -111,6 +117,7 @@ func (s *BackupManager) GetBackupReader(checkpoint string, cid int, dbType int) 
 	case ShardReward:
 		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "reward")
 	}
+	fmt.Println("GetBackupReader", dbLoc)
 	ff, _ := flatfile.NewFlatFile(dbLoc, 5000)
 	return ff
 }
@@ -167,27 +174,31 @@ func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *s
 	it := stateDB.GetIterator()
 	batchData := []StateDBData{}
 	totalLen := 0
+	if stateDB == nil {
+		return
+	}
 	for it.Next(false, true, true) {
+		diskvalue, err := stateDB.Database().TrieDB().DiskDB().Get(it.Key)
+		if err != nil {
+			continue
+		}
+		fmt.Println(it.Key, len(diskvalue))
 		key := make([]byte, len(it.Key))
-		value := make([]byte, len(it.Value))
 		copy(key, it.Key)
-		copy(value, it.Value)
-		data := StateDBData{key, value}
+		data := StateDBData{key, diskvalue}
 		batchData = append(batchData, data)
 		if len(batchData) == 1000 {
 			totalLen += 1000
-
 			buf := new(bytes.Buffer)
 			enc := gob.NewEncoder(buf)
 			err := enc.Encode(batchData)
 			if err != nil {
 				panic(err)
 			}
-			x, err := ff.Append(buf.Bytes())
+			_, err = ff.Append(buf.Bytes())
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println("write to batch", totalLen, len(buf.Bytes()), x)
 			batchData = []StateDBData{}
 		}
 	}
@@ -195,6 +206,9 @@ func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *s
 		buf := new(bytes.Buffer)
 		enc := gob.NewEncoder(buf)
 		enc.Encode(batchData)
-		ff.Append(buf.Bytes())
+		_, err := ff.Append(buf.Bytes())
+		if err != nil {
+			panic(err)
+		}
 	}
 }

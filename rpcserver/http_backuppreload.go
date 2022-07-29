@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -16,7 +17,7 @@ func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeCha
 
 func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params interface{}) {
 	paramArray, ok := params.([]interface{})
-	if !ok || len(paramArray) != 5 {
+	if !ok || len(paramArray) != 4 {
 		return
 	}
 
@@ -36,6 +37,14 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 		data := <-ch
 		if len(data) == 0 {
 			break
+		}
+
+		var dataLen = make([]byte, 8)
+		binary.LittleEndian.PutUint64(dataLen, uint64(len(data)))
+
+		_, err = conn.Write(dataLen)
+		if err != nil {
+			return
 		}
 		_, err = conn.Write(data)
 		if err != nil {

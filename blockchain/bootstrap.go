@@ -2,11 +2,15 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -83,9 +87,26 @@ func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, off
 		return err
 	}
 	defer resp.Body.Close()
+	for {
+		b := make([]byte, 8)
+		n, err := resp.Body.Read(b)
+		if err != nil && err.Error() != "EOF" {
+			return err
+		}
+		if n == 0 {
+			return nil
+		}
+		var dataLen uint64
+		fmt.Println("reading len data", dataLen)
 
-	//TODO: stream body and then parse
-	return nil
+		err = binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &dataLen)
+		if err != nil || n == 0 {
+			return err
+		}
+		dataByte := make([]byte, dataLen)
+		resp.Body.Read(dataByte)
+		f(dataByte)
+	}
 }
 
 func (r *remoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int) (res interface{}, err error) {
@@ -213,19 +234,66 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		batch.Write()
 	})
 
-	//TODO: retrieve beacon stateDB
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 0, 0, func(data []byte) {
-		fmt.Println("data 0", data)
+	//retrieve beacon stateDB
+	flushDB := func(data []byte) {
+		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
+		buf := bytes.NewBuffer(data)
+		dec := gob.NewDecoder(buf)
+		m := []StateDBData{}
+		if err := dec.Decode(&m); err != nil {
+			panic(err)
+		}
+		for _, stateData := range m {
+			fmt.Printf("%v - %v\n", stateData.K, len(stateData.V))
+			err := batch.Put(stateData.K, stateData.V)
+			if err != nil {
+				panic(err)
+			}
+
+		}
+		err := batch.Write()
+		if err != nil {
+			panic(err)
+		}
+		time.Sleep(time.Second)
+	}
+
+	recheckDB := func(roothash common.Hash) {
+		txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(s.blockchain.GetBeaconChainDatabase()))
+		if err != nil {
+			panic(fmt.Sprintf("Something wrong when init txDB"))
+		}
+		if err := txDB.Recheck(); err != nil {
+			fmt.Println(err)
+			fmt.Println("Recheck roothash fail!", roothash.String())
+			panic("recheck fail!")
+		}
+	}
+
+	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconConsensus, 0, func(data []byte) {
+		fmt.Println("data 0", len(data))
+		flushDB(data)
+		fmt.Println("recheck ", latestBackup.ChainInfo[-1].ConsensusStateDBRootHash)
+		recheckDB(latestBackup.ChainInfo[-1].ConsensusStateDBRootHash)
 	})
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 1, 0, func(data []byte) {
-		fmt.Println("data 1", data)
-	})
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 2, 0, func(data []byte) {
-		fmt.Println("data 2", data)
-	})
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 3, 0, func(data []byte) {
-		fmt.Println("data 3", data)
-	})
+
+	//rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconReward, 0, func(data []byte) {
+	//	fmt.Println("data 1", len(data))
+	//	flushDB(data)
+	//	recheckDB(latestBackup.ChainInfo[-1].RewardStateDBRootHash)
+	//})
+	//
+	//rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconFeature, 0, func(data []byte) {
+	//	fmt.Println("data 2", len(data))
+	//	flushDB(data)
+	//	recheckDB(latestBackup.ChainInfo[-1].FeatureStateDBRootHash)
+	//})
+	//
+	//rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconSlash, 0, func(data []byte) {
+	//	fmt.Println("data 3", len(data))
+	//	flushDB(data)
+	//	recheckDB(latestBackup.ChainInfo[-1].SlashStateDBRootHash)
+	//})
 	time.Sleep(time.Minute)
 
 	//TODO: post processing

@@ -283,6 +283,7 @@ func (f *FlatFileManager) checkFileSize() (uint64, error) {
 }
 
 func (f *FlatFileManager) Append(data []byte) (uint64, error) {
+	fmt.Println("debug write", len(data))
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
