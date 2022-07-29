@@ -97,14 +97,20 @@ func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, off
 			return nil
 		}
 		var dataLen uint64
-		fmt.Println("reading len data", dataLen)
 
 		err = binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &dataLen)
 		if err != nil || n == 0 {
 			return err
 		}
 		dataByte := make([]byte, dataLen)
-		resp.Body.Read(dataByte)
+		dataRead := uint64(0)
+		for {
+			n, _ := resp.Body.Read(dataByte[dataRead:])
+			dataRead += uint64(n)
+			if dataRead == dataLen {
+				break
+			}
+		}
 		f(dataByte)
 	}
 }
