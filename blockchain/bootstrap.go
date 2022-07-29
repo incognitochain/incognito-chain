@@ -2,198 +2,232 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"os"
-	"path"
-	"sync"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"io/ioutil"
+	"net/http"
 	"time"
 )
 
-type checkpointInfo struct {
-	checkPointHeight uint64
-	checkpointHash   string
+type remoteRPCClient struct {
+	Endpoint string
 }
-type BootstrapProcess struct {
-	checkpointName string
-	chainInfo      map[int]checkpointInfo
+type ErrMsg struct {
+	Code       int
+	Message    string
+	StackTrace string
+}
+
+func (r *remoteRPCClient) sendRequest(requestBody []byte) ([]byte, error) {
+	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+func (r *remoteRPCClient) GetLatestBackup() (res BackupProcess, err error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getlatestbackup",
+		"params":  []interface{}{},
+		"id":      1,
+	})
+	if err != nil {
+		return res, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, err
+	}
+
+	resp := struct {
+		Result BackupProcess
+		Error  *ErrMsg
+	}{}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, err
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, nil
+
+}
+
+func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbootstrapstatedb",
+		"params":  []interface{}{checkpoint, cid, dbType, offset},
+		"id":      1,
+	})
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	//TODO: stream body and then parse
+	return nil
+}
+
+func (r *remoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int) (res interface{}, err error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getblocksfromheight",
+		"params":  []interface{}{shardID, from, num},
+		"id":      1,
+	})
+	if err != nil {
+		return res, err
+	}
+	body, err := r.sendRequest(requestBody)
+
+	if err != nil {
+		return res, err
+	}
+
+	if shardID == -1 {
+		resp := struct {
+			Result []types.BeaconBlock
+			Error  *ErrMsg
+		}{}
+		err = json.Unmarshal(body, &resp)
+		if resp.Error != nil && resp.Error.StackTrace != "" {
+			return res, errors.New(resp.Error.StackTrace)
+		}
+		if err != nil {
+			return res, err
+		}
+		return resp.Result, nil
+	} else {
+		resp := struct {
+			Result []types.ShardBlock
+			Error  *ErrMsg
+		}{}
+		err = json.Unmarshal(body, &resp)
+		if resp.Error != nil && resp.Error.StackTrace != "" {
+			return res, errors.New(resp.Error.StackTrace)
+		}
+		if err != nil {
+			return res, err
+		}
+		return resp.Result, nil
+	}
+}
+
+func (s *remoteRPCClient) OnBeaconBlock(fromBlk uint64, toBlock uint64, f func(block types.BeaconBlock)) {
+	beaconCh := make(chan types.BeaconBlock, 500)
+	go func() {
+		for {
+			data, err := s.GetBlocksFromHeight(-1, uint64(fromBlk), 50)
+			if err != nil || len(data.([]types.BeaconBlock)) == 0 {
+				fmt.Println(err)
+				time.Sleep(time.Minute)
+				continue
+			}
+			for _, blk := range data.([]types.BeaconBlock) {
+				beaconCh <- blk
+				fromBlk = blk.GetHeight() + 1
+				if blk.GetHeight() == toBlock {
+					return
+				}
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case blk := <-beaconCh:
+				f(blk)
+				if blk.GetHeight() == toBlock {
+					return
+				}
+			}
+		}
+	}()
 }
 
 type BootstrapManager struct {
-	blockchain       *BlockChain
-	lastBootStrap    *BootstrapProcess
-	runningBootStrap *BootstrapProcess
+	hosts      []string
+	blockchain *BlockChain
 }
 
-type StateDBData struct {
-	K []byte
-	v []byte
+func NewBootstrapManager(hosts []string, bc *BlockChain) *BootstrapManager {
+	return &BootstrapManager{hosts, bc}
 }
 
-func NewBootStrapManager(bc *BlockChain) *BootstrapManager {
-	//TODO: read bootstrap dir and load lastBootstrap
-	return &BootstrapManager{bc, nil, nil}
-}
-
-func (s *BootstrapManager) GetLastestBootstrap() BootstrapProcess {
-	return *s.lastBootStrap
-}
-
-func (s *BootstrapManager) Start() {
-	shardBestView := map[int]*ShardBestState{}
-	beaconBestView := s.blockchain.GetBeaconBestState()
-	checkPoint := time.Now().Format(time.RFC3339)
-	defer func() {
-		s.runningBootStrap = nil
-	}()
-	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		shardBestView[i] = s.blockchain.GetBestStateShard(byte(i))
+func (s *BootstrapManager) BootstrapBeacon() {
+	host := s.hosts[0]
+	rpcClient := remoteRPCClient{host}
+	latestBackup, _ := rpcClient.GetLatestBackup()
+	fmt.Println("latestBackup", latestBackup)
+	if latestBackup.CheckpointName == "" {
+		return
 	}
 
-	//update current status
-	bootstrapInfo := &BootstrapProcess{
-		checkpointName: checkPoint,
-		chainInfo:      make(map[int]checkpointInfo),
-	}
-	bootstrapInfo.chainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String()}
-	s.runningBootStrap = bootstrapInfo
+	//retrieve beacon block -> backup height
+	lastCrossShardState := map[byte]map[byte]uint64{}
+	rpcClient.OnBeaconBlock(2, latestBackup.ChainInfo[-1].Height, func(beaconBlock types.BeaconBlock) {
+		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
 
-	//backup beacon then shard
-	cfg := config.LoadConfig()
-	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
-	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
-		bootstrapInfo.chainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String()}
-	}
-
-	//update final status
-	s.lastBootStrap = bootstrapInfo
-}
-
-const (
-	BeaconConsensus = 1
-	BeaconFeature   = 2
-	BeaconReward    = 3
-	BeaconSlash     = 4
-	ShardConsensus  = 5
-	ShardTransacton = 6
-	ShardFeature    = 7
-	ShardReward     = 8
-)
-
-type CheckpointInfo struct {
-	Hash   string
-	Height int64
-}
-
-func (s *BootstrapManager) GetBackupReader(checkpoint string, cid int, dbType int) *flatfile.FlatFileManager {
-	cfg := config.LoadConfig()
-	dbLoc := path.Join(cfg.DataDir, cfg.DatabaseDir, checkpoint)
-	switch dbType {
-	case BeaconConsensus:
-		dbLoc = path.Join(dbLoc, "beacon", "consensus")
-	case BeaconFeature:
-		dbLoc = path.Join(dbLoc, "beacon", "feature")
-	case BeaconReward:
-		dbLoc = path.Join(dbLoc, "beacon", "reward")
-	case BeaconSlash:
-		dbLoc = path.Join(dbLoc, "beacon", "slash")
-	case ShardConsensus:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "consensus")
-	case ShardTransacton:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "transaction")
-	case ShardFeature:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "feature")
-	case ShardReward:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "reward")
-	}
-	ff, _ := flatfile.NewFlatFile(dbLoc, 5000)
-	return ff
-}
-
-func (s *BootstrapManager) backupShard(name string, bestView *ShardBestState) {
-	consensusDB := bestView.GetCopiedConsensusStateDB()
-	txDB := bestView.GetCopiedTransactionStateDB()
-	featureDB := bestView.GetCopiedFeatureStateDB()
-	rewardDB := bestView.GetShardRewardStateDB()
-
-	fd, _ := os.OpenFile(path.Join(name, "beacon", "shard", fmt.Sprint(bestView.ShardID), "info"), os.O_RDWR, 0666)
-	fd.WriteString(fmt.Sprintf("%v-%v", bestView.ShardHeight, bestView.Hash().String()))
-
-	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "consensus"), 5000)
-	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "feature"), 5000)
-	txFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "tx"), 5000)
-	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "reward"), 5000)
-
-	wg := sync.WaitGroup{}
-	wg.Add(4)
-
-	go backupStateDB(consensusDB, consensusFF, &wg)
-	go backupStateDB(featureDB, featureFF, &wg)
-	go backupStateDB(txDB, txFF, &wg)
-	go backupStateDB(rewardDB, rewardFF, &wg)
-	wg.Wait()
-}
-
-func (s *BootstrapManager) backupBeacon(name string, bestView *BeaconBestState) {
-	consensusDB := bestView.GetBeaconConsensusStateDB()
-	featureDB := bestView.GetBeaconFeatureStateDB()
-	rewardDB := bestView.GetBeaconRewardStateDB()
-	slashDB := bestView.GetBeaconSlashStateDB()
-	fd, _ := os.OpenFile(path.Join(name, "beacon", "info"), os.O_RDWR, 0666)
-	fd.WriteString(fmt.Sprintf("%v-%v", bestView.BeaconHeight, bestView.Hash().String()))
-
-	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "consensus"), 5000)
-	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "feature"), 5000)
-	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "reward"), 5000)
-	slashFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "slash"), 5000)
-
-	wg := sync.WaitGroup{}
-	wg.Add(4)
-
-	go backupStateDB(consensusDB, consensusFF, &wg)
-	go backupStateDB(featureDB, featureFF, &wg)
-	go backupStateDB(rewardDB, rewardFF, &wg)
-	go backupStateDB(slashDB, slashFF, &wg)
-	wg.Wait()
-}
-
-func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *sync.WaitGroup) {
-	defer wg.Done()
-	it := stateDB.GetIterator()
-	batchData := []StateDBData{}
-	totalLen := 0
-	for it.Next(false, true, true) {
-		key := make([]byte, len(it.Key))
-		value := make([]byte, len(it.Value))
-		copy(key, it.Key)
-		copy(value, it.Value)
-		data := StateDBData{key, value}
-		batchData = append(batchData, data)
-		if len(batchData) == 1000 {
-			totalLen += 1000
-
-			buf := new(bytes.Buffer)
-			enc := gob.NewEncoder(buf)
-			err := enc.Encode(batchData)
-			if err != nil {
-				panic(err)
-			}
-			x, err := ff.Append(buf.Bytes())
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println("write to batch", totalLen, len(buf.Bytes()), x)
-			batchData = []StateDBData{}
+		blockHash := beaconBlock.Hash()
+		if err := rawdbv2.StoreBeaconBlockByHash(batch, *blockHash, beaconBlock); err != nil {
+			panic(err)
 		}
-	}
-	if len(batchData) > 0 {
-		buf := new(bytes.Buffer)
-		enc := gob.NewEncoder(buf)
-		enc.Encode(batchData)
-		ff.Append(buf.Bytes())
-	}
+
+		for shardID, shardStates := range beaconBlock.Body.ShardState {
+			for _, shardState := range shardStates {
+				err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+
+		if err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, beaconBlock.GetHeight(), *beaconBlock.Hash()); err != nil {
+			panic(err)
+		}
+
+		if err := processBeaconForConfirmmingCrossShard(s.blockchain, &beaconBlock, lastCrossShardState); err != nil {
+			panic(err)
+		}
+		batch.Write()
+	})
+
+	//TODO: retrieve beacon stateDB
+	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 0, 0, func(data []byte) {
+		fmt.Println("data 0", data)
+	})
+	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 1, 0, func(data []byte) {
+		fmt.Println("data 1", data)
+	})
+	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 2, 0, func(data []byte) {
+		fmt.Println("data 2", data)
+	})
+	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, 3, 0, func(data []byte) {
+		fmt.Println("data 3", data)
+	})
+	time.Sleep(time.Minute)
+
+	//TODO: post processing
+	panic(1)
 }

@@ -180,6 +180,12 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 
+	if beaconBlock.GetProposeTime() >= int64(time.Now().Second()-20) {
+		if beaconBlock.GetHeight()%10 == 0 {
+			go blockchain.BackupManager.Start()
+		}
+	}
+
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways

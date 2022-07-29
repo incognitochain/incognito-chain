@@ -47,7 +47,7 @@ type BlockChain struct {
 	cQuitSync   chan struct{}
 
 	IsTest                      bool
-	BootstrapManager            *BootstrapManager
+	BackupManager               *BackupManager
 	beaconViewCache             *lru.Cache
 	committeeByEpochCache       *lru.Cache
 	committeeByEpochProcessLock sync.Mutex
@@ -104,7 +104,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(10)
 	blockchain.committeeByEpochCache, _ = lru.New(100)
-
+	blockchain.BackupManager = NewBackupManager(blockchain)
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -191,8 +191,6 @@ func (blockchain *BlockChain) InitChainState() error {
 		}
 	}()
 
-	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
-	//panic(beaconHash.String())
 	wl, err := blockchain.GetWhiteList()
 	if err != nil {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
@@ -243,9 +241,6 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 
-	bu := NewBootStrapManager(blockchain)
-	bu.Start()
-	panic(1)
 	return nil
 }
 

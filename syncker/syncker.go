@@ -59,13 +59,19 @@ func NewSynckerManager() *SynckerManager {
 
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
+	synckerManager.Blockchain = config.Blockchain
 
+	preloadBeacon := func() {
+		bootstrap := blockchain.NewBootstrapManager([]string{"http://127.0.0.1:20000"}, synckerManager.Blockchain)
+		bootstrap.BootstrapBeacon()
+	}
 	//check if bootstrap node is set, if yes then we should preload beacon database
 	preloadAddr := configpkg.Config().PreloadAddress
 	if preloadAddr != "" {
+		//TODO: preload beacon
 
 	}
-
+	preloadBeacon()
 	if os.Getenv("FULLNODE") == "1" {
 		synckerManager.config.Network.SetSyncMode("fullnode")
 	}
@@ -87,7 +93,6 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
 	}
-	synckerManager.Blockchain = config.Blockchain
 
 	//watch commitee change
 	go synckerManager.manageSyncProcess()

@@ -1,13 +1,17 @@
 package rpcserver
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"net"
 )
 
-func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeChan <-chan struct{}) (blockchain.BootstrapProcess, *rpcservice.RPCError) {
-	return httpServer.GetBlockchain().BootstrapManager.GetLastestBootstrap(), nil
+func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	latest := httpServer.GetBlockchain().BackupManager.GetLastestBootstrap()
+	b, _ := json.Marshal(latest)
+	fmt.Println("GetLastestBootstrap", b)
+	return latest, nil
 }
 
 func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params interface{}) {
@@ -21,7 +25,7 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 	dbType, ok := paramArray[2].(float64)
 	offset, ok := paramArray[3].(float64)
 
-	ff := httpServer.GetBlockchain().BootstrapManager.GetBackupReader(checkpoint, int(chainID), int(dbType))
+	ff := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID), int(dbType))
 	ch, _, _ := ff.ReadRecently(uint64(offset))
 
 	_, err := conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
