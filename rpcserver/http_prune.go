@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/pruner"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"sync"
 )
 
 func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -32,7 +33,7 @@ func (httpServer *HttpServer) handlePrune(params interface{}, closeChan <-chan s
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	for shardID, c := range t.Config {
-		if int(shardID) > config.Param().ActiveShards {
+		if int(shardID) >= common.MaxShardNumber {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID is %v is invalid", shardID))
 		}
 		httpServer.Pruner.JobRquest[int(shardID)] = &pruner.Config{ShouldPruneByHash: c.ShouldPruneByHash}

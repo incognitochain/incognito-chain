@@ -64,3 +64,4 @@ allow_state_prune_by_rpc: true
 offline_prune: false
 state_bloom_size: 1048
 enable_auto_prune: false
+num_block_trigger_prune: 100000
