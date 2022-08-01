@@ -3,11 +3,13 @@ package blockchain
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"io/ioutil"
 	"os"
 	"path"
 	"sync"
@@ -40,8 +42,13 @@ type StateDBData struct {
 }
 
 func NewBackupManager(bc *BlockChain) *BackupManager {
-	//TODO: read bootstrap dir and load lastBootstrap
-	return &BackupManager{bc, nil, nil}
+	//read bootstrap dir and load lastBootstrap
+	cfg := config.LoadConfig()
+	fd, _ := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
+	jsonStr, _ := ioutil.ReadAll(fd)
+	lastBackup := &BackupProcess{}
+	json.Unmarshal(jsonStr, &lastBackup)
+	return &BackupManager{bc, lastBackup, nil}
 }
 
 func (s *BackupManager) GetLastestBootstrap() BackupProcess {
@@ -77,6 +84,11 @@ func (s *BackupManager) Start() {
 
 	//update final status
 	s.lastBootStrap = bootstrapInfo
+	fd, _ := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDWR, 0666)
+	jsonStr, _ := json.Marshal(bootstrapInfo)
+	fd.Write(jsonStr)
+	fd.Close()
+
 	fmt.Println("update lastBootStrap", bootstrapInfo)
 }
 
@@ -128,9 +140,6 @@ func (s *BackupManager) backupShard(name string, bestView *ShardBestState) {
 	featureDB := bestView.GetCopiedFeatureStateDB()
 	rewardDB := bestView.GetShardRewardStateDB()
 
-	fd, _ := os.OpenFile(path.Join(name, "beacon", "shard", fmt.Sprint(bestView.ShardID), "info"), os.O_RDWR, 0666)
-	fd.WriteString(fmt.Sprintf("%v-%v", bestView.ShardHeight, bestView.Hash().String()))
-
 	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "consensus"), 5000)
 	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "feature"), 5000)
 	txFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "tx"), 5000)
@@ -151,8 +160,6 @@ func (s *BackupManager) backupBeacon(name string, bestView *BeaconBestState) {
 	featureDB := bestView.GetBeaconFeatureStateDB()
 	rewardDB := bestView.GetBeaconRewardStateDB()
 	slashDB := bestView.GetBeaconSlashStateDB()
-	fd, _ := os.OpenFile(path.Join(name, "beacon", "info"), os.O_RDWR, 0666)
-	fd.WriteString(fmt.Sprintf("%v-%v", bestView.BeaconHeight, bestView.Hash().String()))
 
 	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "consensus"), 5000)
 	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "feature"), 5000)
