@@ -46,7 +46,7 @@ func (s *PrunerManager) Start() error {
 					latest = true
 				}
 				//if auto prune, sync latest block, and bestview block > last processing block
-				if config.Config().EnableAutoPrune && latest && shardPruner.bestView.ShardHeight > shardPruner.lastProcessingHeight+NUM_BLOCK_TRIGGER_PRUNE {
+				if config.Config().EnableAutoPrune && latest && shardPruner.bestView.ShardHeight > shardPruner.lastProcessingHeight+config.Config().NumBlockTriggerPrune {
 					shardPruner.SetBloomSize(config.Config().StateBloomSize)
 					shardPruner.Prune(false)
 				} else if req, ok := s.JobRquest[sid]; ok { //request for this shard from RPC

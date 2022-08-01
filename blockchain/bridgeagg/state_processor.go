@@ -297,7 +297,8 @@ func (sp *stateProcessor) unshield(
 	state *State,
 	sDB *statedb.StateDB,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
-) (*State, map[common.Hash]metadata.UpdatingInfo, error) {
+	bridgeAggUnshieldTxIDs map[string]bool,
+) (*State, map[common.Hash]metadata.UpdatingInfo, map[string]bool, error) {
 	var txReqID common.Hash
 	var errorCode int
 	var unshieldStatusData []UnshieldStatusData
@@ -305,14 +306,14 @@ func (sp *stateProcessor) unshield(
 	statusByte, err := getStatusByteFromStatuStr(inst.Status)
 	if err != nil {
 		Logger.log.Errorf("Can not get status byte from status string: %v", err)
-		return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(InvalidNetworkIDError, fmt.Errorf("Can not get status byte from status string: %v", err))
+		return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, NewBridgeAggErrorWithValue(InvalidNetworkIDError, fmt.Errorf("Can not get status byte from status string: %v", err))
 	}
 
 	if inst.Status == common.RejectedStatusStr {
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			Logger.log.Errorf("Can not decode content rejected unshield instruction %v", err)
-			return state, updatingInfoByTokenID,
+			return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs,
 				NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not decode content rejected unshield instruction - Error %v", err))
 		}
 		errorCode = rejectContent.ErrorCode
@@ -321,7 +322,7 @@ func (sp *stateProcessor) unshield(
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
 			Logger.log.Errorf("Can not decode content unshield instruction %v", err)
-			return state, updatingInfoByTokenID,
+			return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs,
 				NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not decode content unshield instruction - Error %v", err))
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
@@ -329,7 +330,7 @@ func (sp *stateProcessor) unshield(
 		err = json.Unmarshal(contentBytes, &acceptedUnshieldReqInst)
 		if err != nil {
 			Logger.log.Errorf("Can not unmarshal unshield instruction: %v", err)
-			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content unshield instruction - Error %v", err))
+			return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, NewBridgeAggErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content unshield instruction - Error %v", err))
 		}
 
 		txReqID = acceptedUnshieldReqInst.WaitingUnshieldReq.GetUnshieldID()
@@ -341,7 +342,7 @@ func (sp *stateProcessor) unshield(
 		state, err := updateStateForUnshield(state, unifiedTokenID, waitingUnshieldReq, statusStr)
 		if err != nil {
 			Logger.log.Errorf("Update bridge agg state error: %v", err)
-			return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessUpdateStateError, err)
+			return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, NewBridgeAggErrorWithValue(ProcessUpdateStateError, err)
 		}
 
 		// track unshield status
@@ -357,10 +358,10 @@ func (sp *stateProcessor) unshield(
 			bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(sDB, unifiedTokenID, false)
 			if err != nil {
 				Logger.log.Errorf("Check bridge token existed error: %v", err)
-				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(CheckBridgeTokenExistedError, err)
+				return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, NewBridgeAggErrorWithValue(CheckBridgeTokenExistedError, err)
 			}
 			if !bridgeTokenExisted {
-				return state, updatingInfoByTokenID,
+				return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs,
 					NewBridgeAggErrorWithValue(NotFoundUnifiedTokenIDError, fmt.Errorf("Not found bridge token %s", unifiedTokenID.String()))
 			}
 			var totalBurnAmt uint64
@@ -382,6 +383,14 @@ func (sp *stateProcessor) unshield(
 			}
 			updatingInfoByTokenID[unifiedTokenID] = updatingInfo
 		}
+
+		// add TxIDs into bridgeAggUnshieldTxIDs
+		if statusStr == common.AcceptedStatusStr || statusStr == common.FilledStatusStr {
+			for index, _ := range waitingUnshieldReq.GetData() {
+				newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
+				bridgeAggUnshieldTxIDs[newTxReqID.String()] = true
+			}
+		}
 	}
 
 	unshieldStatus := UnshieldStatus{
@@ -390,7 +399,7 @@ func (sp *stateProcessor) unshield(
 		ErrorCode: errorCode,
 	}
 	contentBytes, _ := json.Marshal(unshieldStatus)
-	return state, updatingInfoByTokenID, statedb.TrackBridgeAggStatus(
+	return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, statedb.TrackBridgeAggStatus(
 		sDB,
 		statedb.BridgeAggUnshieldStatusPrefix(),
 		txReqID.Bytes(),
