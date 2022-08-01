@@ -150,3 +150,20 @@ func GetShardRootsHash(db incdb.KeyValueReader, shardID byte, hash common.Hash) 
 	key := GetShardRootsHashKey(shardID, hash)
 	return db.Get(key)
 }
+
+func StorePruneStatus(db incdb.KeyValueWriter, v []byte) error {
+	key := GetPruneStatusKey()
+	if err := db.Put(key, v); err != nil {
+		return NewRawdbError(StoreShardPruneStatusError, err)
+	}
+	return nil
+}
+
+func GetPruneStatus(db incdb.KeyValueReader) ([]byte, error) {
+	key := GetPruneStatusKey()
+	d, err := db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
+}

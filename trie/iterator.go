@@ -28,8 +28,28 @@ func NewIterator(it NodeIterator) *Iterator {
 }
 
 // Next moves the iterator forward one key-value entry.
-func (it *Iterator) Next() bool {
-	for it.nodeIt.Next(true) {
+func (it *Iterator) Next(skipMiddleNode, descend, returnNotFoundChildNode bool) bool {
+	if !skipMiddleNode {
+		hasNext := it.nodeIt.Next(descend, returnNotFoundChildNode)
+		if hasNext {
+			if it.nodeIt.Leaf() {
+				//fmt.Println("data leaf", it.nodeIt.Hash().Bytes(), it.Value, it.nodeIt.LeafKey(), it.nodeIt.LeafBlob())
+				it.Key = it.nodeIt.LeafKey()
+				it.Value = it.nodeIt.LeafBlob()
+				return true
+			}
+			it.Key = it.nodeIt.Hash().Bytes()
+			return true
+		}
+		if it.nodeIt.Error() != nil {
+			it.Key = nil
+			it.Value = nil
+			it.Err = it.nodeIt.Error()
+		}
+		return false
+	}
+
+	for it.nodeIt.Next(true, returnNotFoundChildNode) {
 		if it.nodeIt.Leaf() {
 			it.Key = it.nodeIt.LeafKey()
 			it.Value = it.nodeIt.LeafBlob()
@@ -52,7 +72,7 @@ func (it *Iterator) Prove() [][]byte {
 type NodeIterator interface {
 	// Next moves the iterator to the next node. If the parameter is false, any child
 	// nodes will be skipped.
-	Next(bool) bool
+	Next(bool, bool) bool
 
 	// Error returns the error status of the iterator.
 	Error() error
@@ -126,7 +146,7 @@ func newNodeIterator(trie *Trie, start []byte) NodeIterator {
 	key := keybytesToHex(start)
 	key = key[:len(key)-1]
 	it := &nodeIterator{trie: trie, prefix: key}
-	it.err = it.seek(start)
+	it.err = it.seek(start, true)
 	return it
 }
 
@@ -207,17 +227,17 @@ func (it *nodeIterator) Error() error {
 // further nodes. In case of an internal error this method returns false and
 // sets the Error field to the encountered failure. If `descend` is false,
 // skips iterating over any subnodes of the current node.
-func (it *nodeIterator) Next(descend bool) bool {
+func (it *nodeIterator) Next(descend, returnNotFoundChildNode bool) bool {
 	if it.err == errIteratorEnd {
 		return false
 	}
 	if seek, ok := it.err.(seekError); ok {
-		if it.err = it.seek(seek.key); it.err != nil {
+		if it.err = it.seek(seek.key, returnNotFoundChildNode); it.err != nil {
 			return false
 		}
 	}
 	// Otherwise step forward with the iterator and report any errors.
-	state, parentIndex, path, err := it.peek(descend)
+	state, parentIndex, path, err := it.peek(descend, returnNotFoundChildNode)
 	it.err = err
 	if it.err != nil {
 		return false
@@ -230,13 +250,13 @@ func (it *nodeIterator) Next(descend bool) bool {
 	return true
 }
 
-func (it *nodeIterator) seek(prefix []byte) error {
+func (it *nodeIterator) seek(prefix []byte, returnNotFoundChildNode bool) error {
 	// The path we're looking for is the hex encoded key without terminator.
 	key := keybytesToHex(prefix)
 	key = key[:len(key)-1]
 	// Move forward until we're just before the closest match to key.
 	for {
-		state, parentIndex, path, err := it.peek(bytes.HasPrefix(key, it.path))
+		state, parentIndex, path, err := it.peek(bytes.HasPrefix(key, it.path), returnNotFoundChildNode)
 		if err == errIteratorEnd {
 			return errIteratorEnd
 		} else if err != nil {
@@ -249,7 +269,7 @@ func (it *nodeIterator) seek(prefix []byte) error {
 }
 
 // peek creates the next state of the iterator.
-func (it *nodeIterator) peek(descend bool) (*nodeIteratorState, *int, []byte, error) {
+func (it *nodeIterator) peek(descend, returnNotFoundChildNode bool) (*nodeIteratorState, *int, []byte, error) {
 	if len(it.stack) == 0 {
 		// Initialize the iterator if we've just started.
 		root := it.trie.Hash()
@@ -275,7 +295,11 @@ func (it *nodeIterator) peek(descend bool) (*nodeIteratorState, *int, []byte, er
 		state, path, ok := it.nextChild(parent, ancestor)
 		if ok {
 			if err := state.resolve(it.trie, path); err != nil {
-				return parent, &parent.index, path, err
+				if returnNotFoundChildNode {
+					return parent, &parent.index, path, err
+				}
+				parent.index++
+				continue
 			}
 			return state, &parent.index, path, nil
 		}
@@ -377,7 +401,7 @@ type differenceIterator struct {
 // are not in a. Returns the iterator, and a pointer to an integer recording the number
 // of nodes seen.
 func NewDifferenceIterator(a, b NodeIterator) (NodeIterator, *int) {
-	a.Next(true)
+	a.Next(true, true)
 	it := &differenceIterator{
 		a: a,
 		b: b,
@@ -413,11 +437,11 @@ func (it *differenceIterator) Path() []byte {
 	return it.b.Path()
 }
 
-func (it *differenceIterator) Next(bool) bool {
+func (it *differenceIterator) Next(bool, bool) bool {
 	// Invariants:
 	// - We always advance at least one element in b.
 	// - At the start of this function, a's path is lexically greater than b's.
-	if !it.b.Next(true) {
+	if !it.b.Next(true, true) {
 		return false
 	}
 	it.count++
@@ -431,7 +455,7 @@ func (it *differenceIterator) Next(bool) bool {
 		switch compareNodes(it.a, it.b) {
 		case -1:
 			// b jumped past a; advance a
-			if !it.a.Next(true) {
+			if !it.a.Next(true, true) {
 				it.eof = true
 				return true
 			}
@@ -442,11 +466,11 @@ func (it *differenceIterator) Next(bool) bool {
 		case 0:
 			// a and b are identical; skip this whole subtree if the nodes have hashes
 			hasHash := it.a.Hash() == common.Hash{}
-			if !it.b.Next(hasHash) {
+			if !it.b.Next(hasHash, true) {
 				return false
 			}
 			it.count++
-			if !it.a.Next(hasHash) {
+			if !it.a.Next(hasHash, true) {
 				it.eof = true
 				return true
 			}
@@ -534,7 +558,7 @@ func (it *unionIterator) Path() []byte {
 // In the case that descend=false - eg, we're asked to ignore all subnodes of the
 // current node - we also advance any iterators in the heap that have the current
 // path as a prefix.
-func (it *unionIterator) Next(descend bool) bool {
+func (it *unionIterator) Next(descend, _ bool) bool {
 	if len(*it.items) == 0 {
 		return false
 	}
@@ -547,13 +571,13 @@ func (it *unionIterator) Next(descend bool) bool {
 	for len(*it.items) > 0 && ((!descend && bytes.HasPrefix((*it.items)[0].Path(), least.Path())) || compareNodes(least, (*it.items)[0]) == 0) {
 		skipped := heap.Pop(it.items).(NodeIterator)
 		// Skip the whole subtree if the nodes have hashes; otherwise just skip this node
-		if skipped.Next(skipped.Hash() == common.Hash{}) {
+		if skipped.Next(skipped.Hash() == common.Hash{}, true) {
 			it.count++
 			// If there are more elements, push the iterator back on the heap
 			heap.Push(it.items, skipped)
 		}
 	}
-	if least.Next(descend) {
+	if least.Next(descend, true) {
 		it.count++
 		heap.Push(it.items, least)
 	}

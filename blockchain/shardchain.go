@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb_consensus"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -57,6 +58,11 @@ func NewShardChain(
 		TxPool:      tp,
 		TxsVerifier: tv,
 	}
+}
+
+func (chain *ShardChain) GetInsertLock() *sync.Mutex {
+	insertLock := chain.insertLock
+	return &insertLock
 }
 
 func (chain *ShardChain) GetDatabase() incdb.Database {

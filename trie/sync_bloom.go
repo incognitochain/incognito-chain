@@ -3,12 +3,13 @@ package trie
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"math"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/steakknife/bloomfilter"
