@@ -1115,6 +1115,26 @@ func buildRejectedBurnForCallReqInst(meta metadataBridge.BurnForCallRequest, sha
 	return rejectedInst.StringSlice()
 }
 
+func buildAcceptedBurnForCallReqInst(unifiedTokenID *common.Hash, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, status string, shardID byte) []string {
+	var tid common.Hash
+	if unifiedTokenID != nil {
+		tid = *unifiedTokenID
+	}
+	acceptedUnshieldInst := metadataBridge.AcceptedUnshieldRequestInst{
+		UnifiedTokenID:     tid,
+		IsDepositToSC:      true,
+		WaitingUnshieldReq: waitingUnshieldReq,
+	}
+	acceptedUnshieldInstBytes, _ := json.Marshal(acceptedUnshieldInst)
+	inst := metadataCommon.NewInstructionWithValue(
+		metadataCommon.BurnForCallRequestMeta,
+		status,
+		shardID,
+		base64.StdEncoding.EncodeToString(acceptedUnshieldInstBytes),
+	)
+	return inst.StringSlice()
+}
+
 func GetTxIDFromBurningConfirmInst(inst []string) (*common.Hash, error) {
 	var txhStr string
 	switch inst[0] {
