@@ -16,6 +16,7 @@ const (
 	BSCHostKey          = "BSC_HOST"
 	PLGHostKey          = "PLG_HOST"
 	FTMHostKey          = "FTM_HOST"
+	NEARHostKey         = "NEAR_HOST"
 )
 
 // default config

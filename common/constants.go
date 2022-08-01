@@ -125,6 +125,7 @@ const (
 	ExternalBridgeTokenLength = 20
 	EVMAddressLength          = 40
 	UnifiedTokenPrefix        = "UT"
+	NEARPrefix                = "NAR"
 )
 
 // Bridge, PDE & Portal statuses for RPCs

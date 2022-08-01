@@ -212,10 +212,18 @@ const (
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 
-	BurnForCallRequestMeta = metadataCommon.BurnForCallRequestMeta
-	BurnForCallResponseMeta = metadataCommon.BurnForCallResponseMeta
-	BurnForCallConfirmMeta = metadataCommon.BurnForCallConfirmMeta
+	BurnForCallRequestMeta      = metadataCommon.BurnForCallRequestMeta
+	BurnForCallResponseMeta     = metadataCommon.BurnForCallResponseMeta
+	BurnForCallConfirmMeta      = metadataCommon.BurnForCallConfirmMeta
 	IssuingReshieldResponseMeta = metadataCommon.IssuingReshieldResponseMeta
+
+	IssuingNearRequestMeta  = metadataCommon.IssuingNearRequestMeta
+	IssuingNearResponseMeta = metadataCommon.IssuingNearResponseMeta
+	BurningNearRequestMeta  = metadataCommon.BurningNearRequestMeta
+	BurningNearConfirmMeta  = metadataCommon.BurningNearConfirmMeta
+
+	BurningNearForDepositToSCRequestMeta = metadataCommon.BurningNearForDepositToSCRequestMeta
+	BurningNearConfirmForDepositToSCMeta = metadataCommon.BurningNearConfirmForDepositToSCMeta
 )
 
 // export error codes

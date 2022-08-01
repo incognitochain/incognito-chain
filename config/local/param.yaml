@@ -45,6 +45,7 @@ eth_contract_address: "0xf90860014c7e13dE4A86B81c54dDE797820c72bE"
 bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
 plg_contract_address: "0x141aa0C4c7d27f7B526a254202F979B60F056333"
 ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
+near_contract_address: "0baceab06e95c52314f6792b2f5e6fd4ce5b583aeb63572f6a75bc56d820de66"
 prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
 prv_bep20_contract_address: "0x0C61C7F99DeE0270a5934F1520d109dc44A51d6c"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -96,6 +97,10 @@ plg_param:
 ftm_param:
   host: 
     - "https://rpc.testnet.fantom.network"
+near_param:
+  host:
+    - "https://archival-rpc.testnet.near.org"
+    - "https://rpc.testnet.near.org"
 pdex_param:
   pdex_v3_break_point_height: 11
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"

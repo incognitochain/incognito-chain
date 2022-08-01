@@ -1019,6 +1019,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningFantomConfirmMeta),
 		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurnForCallConfirmMeta),
+		strconv.Itoa(metadata.BurningNearConfirmMeta),
+		strconv.Itoa(metadata.BurningNearConfirmForDepositToSCMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)

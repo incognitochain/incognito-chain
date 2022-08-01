@@ -217,6 +217,8 @@ const (
 	createAndSendTxWithIssuingPLGReq      = "createandsendtxwithissuingplgreq"
 	createAndSendTxWithIssuingFTMReq      = "createandsendtxwithissuingftmreq"
 	createAndSendBurningFTMRequest        = "createandsendburningftmrequest"
+	createAndSendTxWithIssuingNearReq     = "createandsendtxwithissuingnearreq"
+	createAndSendBurningNearRequest       = "createandsendburningnearrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -229,6 +231,7 @@ const (
 	getPRVBEP20BurnProof     = "getprvbep20burnproof"
 	getPLGBurnProof          = "getplgburnproof"
 	getFTMBurnProof          = "getftmburnproof"
+	getNearBurnProof         = "getnearburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
@@ -312,7 +315,7 @@ const (
 	bridgeaggShield                      = "bridgeaggShield"
 	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
 	bridgeaggUnshield                    = "bridgeaggUnshield"
-	bridgeaggBurnForCall 				 = "bridgeaggBurnForCall"
+	bridgeaggBurnForCall                 = "bridgeaggBurnForCall"
 	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
@@ -389,7 +392,9 @@ const (
 	getBurnPLGProofForDepositToSC                 = "getburnplgprooffordeposittosc"
 	createAndSendBurningPLGForDepositToSCRequest  = "createandsendburningplgfordeposittoscrequest"
 	createAndSendBurningFTMForDepositToSCRequest  = "createandsendburningftmfordeposittoscrequest"
+	createAndSendBurningNearForDepositToSCRequest = "createandsendburningnearfordeposittoscrequest"
 	getBurnFTMProofForDepositToSC                 = "getburnftmprooffordeposittosc"
+	getBurnNearProofForDepositToSC                = "getburnnearprooffordeposittosc"
 
 	getFeatureStats       = "getfeaturestats"
 	getSyncStats          = "getsyncstats"

@@ -194,6 +194,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPLGRequest:        (*HttpServer).handleCreateAndSendBurningPLGRequest,
 	createAndSendTxWithIssuingFTMReq:      (*HttpServer).handleCreateAndSendTxWithIssuingFTMReq,
 	createAndSendBurningFTMRequest:        (*HttpServer).handleCreateAndSendBurningFTMRequest,
+	createAndSendTxWithIssuingNearReq:     (*HttpServer).handleCreateAndSendTxWithIssuingNearReq,
+	createAndSendBurningNearRequest:       (*HttpServer).handleCreateAndSendBurningNearRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -206,6 +208,7 @@ var HttpHandler = map[string]httpHandler{
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
 	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
+	getNearBurnProof:         (*HttpServer).handleGetNearBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -361,6 +364,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
 	createAndSendBurningFTMForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
 	getBurnFTMProofForDepositToSC:                 (*HttpServer).handleGetBurnFTMProofForDepositToSC,
+	createAndSendBurningNearForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningNearForDepositToSCRequest,
+	getBurnNearProofForDepositToSC:                (*HttpServer).handleGetBurnNearProofForDepositToSC,
 
 	//feature stat
 	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,

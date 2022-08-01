@@ -110,6 +110,9 @@ const (
 	BridgeAggVaultObjectType              = 74
 	BridgeAggWaitingUnshieldReqObjectType = 75
 	BridgeAggParamObjectType              = 76
+
+	// Near bridge
+	BridgeNEARTxObjectType = 77
 )
 
 // Prefix length

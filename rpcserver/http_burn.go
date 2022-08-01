@@ -155,6 +155,32 @@ func (httpServer *HttpServer) handleGetBurnFTMProofForDepositToSC(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
+// handleGetNearBurnProof returns a proof of a tx burning pNEAR
+func (httpServer *HttpServer) handleGetNearBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningNearConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
+// handleGetBurnFTMProofForDepositToSC returns a proof of a tx burning pFTM to deposit to SC
+func (httpServer *HttpServer) handleGetBurnNearProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningNearConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {

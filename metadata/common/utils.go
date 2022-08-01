@@ -80,6 +80,7 @@ func buildMetaInfo() {
 		IssuingPRVBEP20ResponseMeta,
 		IssuingPLGResponseMeta,
 		IssuingFantomResponseMeta,
+		IssuingNearResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 
@@ -378,6 +379,7 @@ func buildMetaInfo() {
 		IssuingPRVBEP20ResponseMeta,
 		IssuingPLGResponseMeta,
 		IssuingFantomResponseMeta,
+		IssuingNearResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,
