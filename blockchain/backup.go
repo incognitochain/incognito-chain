@@ -55,7 +55,17 @@ func (s *BackupManager) GetLastestBootstrap() BackupProcess {
 	return *s.lastBootStrap
 }
 
-func (s *BackupManager) Start() {
+const BackupInterval = 20
+
+func (s *BackupManager) Backup(backupHeight uint64) {
+	//backup condition period
+	if backupHeight < BackupInterval {
+		return
+	}
+	if s.lastBootStrap.ChainInfo != nil && s.lastBootStrap.ChainInfo[-1].Height+BackupInterval > backupHeight {
+		return
+	}
+
 	shardBestView := map[int]*ShardBestState{}
 	beaconBestView := s.blockchain.GetBeaconBestState()
 	checkPoint := time.Now().Format(time.RFC3339)

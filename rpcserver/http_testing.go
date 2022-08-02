@@ -249,6 +249,19 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	}, nil
 }
 
+func (httpServer *HttpServer) handleGetShardCommitteeFromBeaconHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+	hash, err := common.Hash{}.NewHashFromStr(tempHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	committees, err := httpServer.GetBlockchain().GetShardCommitteeFromBeaconHash(*hash, byte(shardID))
+	return committees, nil
+
+}
+
 func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardID := uint64(arrayParams[0].(float64))

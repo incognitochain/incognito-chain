@@ -503,17 +503,29 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 
 //CommitteesByShardID ...
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	var committees []incognitokey.CommitteePublicKey
+	if cache, ok := CommitteeFromBlockBootStrapCache[shardID]; ok {
+		tempCommittees, ok := cache.Get(hash.String())
+		if ok {
+			return tempCommittees.([]incognitokey.CommitteePublicKey), nil
+		}
+	}
+
+	if _, ok := CommitteeFromBlockCache[shardID]; !ok {
+		CommitteeFromBlockCache[shardID], _ = lru.New(100)
+	}
+	cache := CommitteeFromBlockCache[shardID]
+
+	committees := []incognitokey.CommitteePublicKey{}
 	var err error
-	res, has := chain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
-	if !has {
+	tempCommittees, ok := cache.Get(hash.String())
+	if !ok {
 		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
 		if err != nil {
 			return committees, err
 		}
-		chain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
+		cache.Add(hash.String(), committees)
 	} else {
-		committees = res.([]incognitokey.CommitteePublicKey)
+		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
 	return committees, nil
 }

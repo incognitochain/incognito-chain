@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"time"
@@ -415,7 +416,11 @@ func InitShardCommitteeState(
 		return shardCommitteeState
 	}
 	if shardHeight != 1 {
-		committees, err = bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
+		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(block.Header.CommitteeFromBlock, shardID)
+		if err != nil {
+			log.Println("err", shardID, block.Header.CommitteeFromBlock.String())
+			panic(err)
+		}
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
@@ -516,7 +521,7 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		committees = shardBestState.GetCommittee()
 	} else {
 		committeeFromBlock = shardBestState.BestBlock.CommitteeFromBlock()
-		committees, err = bc.getShardCommitteeFromBeaconHash(committeeFromBlock, shardBestState.ShardID)
+		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(committeeFromBlock, shardBestState.ShardID)
 		if err != nil {
 			return err
 		}
@@ -661,14 +666,14 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	case types.BFT_VERSION:
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION:
-		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
 		signingCommittees := incognitokey.DeepCopy(committees)
 		return committees, signingCommittees, nil
 	case types.BLOCK_PRODUCINGV3_VERSION, types.INSTANT_FINALITY_VERSION:
-		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}

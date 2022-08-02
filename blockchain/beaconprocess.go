@@ -180,10 +180,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 
-	if beaconBlock.GetProposeTime() >= int64(time.Now().Unix()-20) {
-		if beaconBlock.GetHeight()%3 == 0 {
-			go blockchain.BackupManager.Start()
-		}
+	//backup if finalized block is created recently and satisfy interval period
+	if beaconBlock.GetProposeTime() >= int64(time.Now().Unix()-20) && beaconBlock.GetFinalityHeight() == beaconBlock.GetHeight() {
+		go blockchain.BackupManager.Backup(beaconBlock.GetHeight())
 	}
 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
@@ -725,12 +724,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	return nil
 }
 
+var CommitteeFromBlockCache = map[byte]*lru.Cache{}
+
 func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardStates map[byte][]types.ShardState) error {
 	for shardID, shardStates := range allShardStates {
-		cache, err := lru.New(1000)
-		if err != nil {
-			return err
-		}
 		for _, shardState := range shardStates {
 			// skip genesis block
 			if shardState.Height == 1 {
@@ -742,7 +739,7 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 					return err
 				}
 			} else {
-				err := curView.countMissingSignatureV2(cache, bc, shardID, shardState)
+				err := curView.countMissingSignatureV2(bc, shardID, shardState)
 				if err != nil {
 					return err
 				}
@@ -753,7 +750,6 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 }
 
 func (curView *BeaconBestState) countMissingSignatureV2(
-	cache *lru.Cache,
 	bc *BlockChain,
 	shardID byte,
 	shardState types.ShardState,
@@ -762,18 +758,11 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	if beaconHashForCommittee.IsZeroValue() {
 		return nil
 	}
-	committees := []incognitokey.CommitteePublicKey{}
-	var err error
-	tempCommittees, ok := cache.Get(beaconHashForCommittee)
-	if !ok {
-		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID)
-		if err != nil {
-			return err
-		}
-		cache.Add(beaconHashForCommittee, committees)
-	} else {
-		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
+	committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID)
+	if err != nil {
+		return err
 	}
+
 	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION {
 		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
 		_, proposerIndex := GetProposer(
