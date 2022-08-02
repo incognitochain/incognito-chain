@@ -450,6 +450,15 @@ func VerifyWasmShieldTxId(
 		if err != nil {
 			continue
 		}
+		// verify block not forked
+		blockByHeight, err := rpcClient.BlockDetails(ctx, block.BlockID(uint(minedBlock.Header.Height)))
+		if err != nil {
+			continue
+		}
+		if blockByHeight.Header.Hash.String() != txStatus.TransactionOutcome.BlockHash.String() {
+			return "", "", 0, "", errors.New("Transaction is in forked chain")
+		}
+
 		latestBlock, err := rpcClient.BlockDetails(ctx, block.FinalityFinal())
 		if err != nil {
 			continue
