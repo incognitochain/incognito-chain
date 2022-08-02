@@ -43,19 +43,15 @@ func NewActorWithValue(
 	var res Actor = nil
 	if version == types.BFT_VERSION {
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	}
-	if version >= types.INSTANT_FINALITY_VERSION_V2 {
+	} else if version >= types.INSTANT_FINALITY_VERSION_V2 {
 		if chain.IsBeaconChain() {
 			res = NewActorV3WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 		} else {
 			res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 		}
-	}
-	if version >= types.MULTI_VIEW_VERSION {
+	} else if version >= types.MULTI_VIEW_VERSION {
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
-
-	}
-	if res == nil {
+	} else if res == nil {
 		panic("Version not recognized")
 	}
 	return res
