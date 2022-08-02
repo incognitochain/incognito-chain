@@ -71,7 +71,9 @@ func (s *BackupManager) Start() {
 		CheckpointName: checkPoint,
 		ChainInfo:      make(map[int]checkpointInfo),
 	}
-	bootstrapInfo.ChainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String(), beaconBestView.ConsensusStateDBRootHash, common.Hash{}, beaconBestView.FeatureStateDBRootHash, beaconBestView.RewardStateDBRootHash, common.Hash{}}
+	bootstrapInfo.ChainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String(),
+		beaconBestView.ConsensusStateDBRootHash, common.Hash{},
+		beaconBestView.FeatureStateDBRootHash, beaconBestView.RewardStateDBRootHash, common.Hash{}}
 	s.runningBootStrap = bootstrapInfo
 
 	//backup beacon then shard
@@ -79,7 +81,9 @@ func (s *BackupManager) Start() {
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
-		bootstrapInfo.ChainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String(), shardBestView[i].ConsensusStateDBRootHash, shardBestView[i].TransactionStateDBRootHash, shardBestView[i].FeatureStateDBRootHash, shardBestView[i].RewardStateDBRootHash, shardBestView[i].SlashStateDBRootHash}
+		bootstrapInfo.ChainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String(),
+			shardBestView[i].ConsensusStateDBRootHash, shardBestView[i].TransactionStateDBRootHash,
+			shardBestView[i].FeatureStateDBRootHash, shardBestView[i].RewardStateDBRootHash, shardBestView[i].SlashStateDBRootHash}
 	}
 
 	//update final status
@@ -121,13 +125,13 @@ func (s *BackupManager) GetBackupReader(checkpoint string, cid int, dbType int) 
 	case BeaconSlash:
 		dbLoc = path.Join(dbLoc, "beacon", "slash")
 	case ShardConsensus:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "consensus")
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "consensus")
 	case ShardTransacton:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "transaction")
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "transaction")
 	case ShardFeature:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "feature")
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "feature")
 	case ShardReward:
-		dbLoc = path.Join(dbLoc, "shard", fmt.Sprint(cid), "reward")
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "reward")
 	}
 	fmt.Println("GetBackupReader", dbLoc)
 	ff, _ := flatfile.NewFlatFile(dbLoc, 5000)
@@ -140,10 +144,10 @@ func (s *BackupManager) backupShard(name string, bestView *ShardBestState) {
 	featureDB := bestView.GetCopiedFeatureStateDB()
 	rewardDB := bestView.GetShardRewardStateDB()
 
-	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "consensus"), 5000)
-	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "feature"), 5000)
-	txFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "tx"), 5000)
-	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, "shard", fmt.Sprint(bestView.ShardID), "reward"), 5000)
+	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "consensus"), 5000)
+	featureFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "feature"), 5000)
+	txFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "tx"), 5000)
+	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "reward"), 5000)
 
 	wg := sync.WaitGroup{}
 	wg.Add(4)
@@ -189,7 +193,7 @@ func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *s
 		if err != nil {
 			continue
 		}
-		fmt.Println(it.Key, len(diskvalue))
+		//fmt.Println(it.Key, len(diskvalue))
 		key := make([]byte, len(it.Key))
 		copy(key, it.Key)
 		data := StateDBData{key, diskvalue}

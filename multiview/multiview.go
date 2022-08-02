@@ -99,6 +99,9 @@ func (s *multiView) Clone() MultiView {
 func (s *multiView) Reset() {
 	s.viewByHash = make(map[common.Hash]View)
 	s.viewByPrevHash = make(map[common.Hash][]View)
+	s.expectedFinalView = nil
+	s.bestView = nil
+	s.finalView = nil
 }
 
 func (s *multiView) ClearBranch() {
