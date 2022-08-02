@@ -336,7 +336,7 @@ func (sp *stateProducer) shield(
 
 	var resInst [][]string
 	if len(acceptedShieldData) > 0 {
-	 	// build accepted instruction
+		// build accepted instruction
 		// incAddrStr was validated in func ExtractIssueEVMDataFromReceipt => don't catch error here
 		key, _ := wallet.Base58CheckDeserialize(incAddrStr)
 		receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
@@ -598,10 +598,10 @@ func (sp *stateProducer) burnForCall(
 	clonedState := state.Clone()
 
 	useUnifiedToken := meta.BurnTokenID != meta.Data[0].IncTokenID
+	vaults, errVault := clonedState.CloneVaultsByUnifiedTokenID(meta.BurnTokenID)
+	unifiedVaultExists := errVault == nil
 	if useUnifiedToken {
-		// check UnifiedTokenID
-		vaults, err := clonedState.CloneVaultsByUnifiedTokenID(meta.BurnTokenID)
-		if err != nil {
+		if !unifiedVaultExists {
 			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.BurnTokenID)
 			rejectedInst := buildRejectedBurnForCallReqInst(
 				*meta, shardID, txReqID, NotFoundUnifiedTokenIDError)
@@ -646,7 +646,7 @@ func (sp *stateProducer) burnForCall(
 				insts = append(insts, burningConfirmInsts...)
 			}
 			// use unshield state update functions
-			unshieldInst := buildUnshieldInst(meta.BurnTokenID, true, waitingUnshieldReq, common.AcceptedStatusStr, shardID)
+			unshieldInst := buildAcceptedBurnForCallReqInst(&meta.BurnTokenID, waitingUnshieldReq, common.AcceptedStatusStr, shardID)
 			insts = append(insts, unshieldInst)
 			clonedState, err = updateStateForUnshield(clonedState, meta.BurnTokenID, waitingUnshieldReq, common.AcceptedStatusStr)
 			if err != nil {
@@ -654,20 +654,16 @@ func (sp *stateProducer) burnForCall(
 				return [][]string{rejectedInst}, state, nil
 			}
 		} else {
-			err = fmt.Errorf("not enough funds for burnForCall")
 			rejectedInst := buildRejectedBurnForCallReqInst(
 				*meta, shardID, txReqID, InsufficientFundsVaultError)
 			return [][]string{rejectedInst}, state, nil
 		}
-
-		if err != nil {
-			Logger.log.Errorf("[BridgeAgg] Error when updating state for burnForCall: %v", err)
-			rejectedInst := buildRejectedBurnForCallReqInst(
-				*meta, shardID, txReqID, ProducerUpdateStateError)
-			return [][]string{rejectedInst}, state, nil
-		}
 	} else {
 		rejectedInst := buildRejectedBurnForCallReqInst(*meta, shardID, txReqID, ProducerUpdateStateError)
+		if unifiedVaultExists {
+			return [][]string{rejectedInst}, state, fmt.Errorf("expect non-unified burnTokenID, got %v", meta.BurnTokenID)
+		}
+		var waitingUnshieldDatas []statedb.WaitingUnshieldReqData
 		for _, d := range meta.Data {
 			if d.IncTokenID != meta.BurnTokenID {
 				return [][]string{rejectedInst}, state, fmt.Errorf("non-unified burnTokenID mismatch")
@@ -691,12 +687,20 @@ func (sp *stateProducer) burnForCall(
 				amount = amount.Mul(amount, big.NewInt(1000000000))
 			}
 
-			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, txReqID, &statedb.WaitingUnshieldReqData{
-				ExternalTokenID:     tokenID,
-				ExternalReceivedAmt: amount,
-			}, d.ExternalNetworkID, 0, beaconHeightForConfirmInst)
+			wdata := statedb.WaitingUnshieldReqData{
+				ExternalTokenID:        tokenID,
+				ExternalReceivedAmt:    amount,
+				IncTokenID:             d.IncTokenID,
+				BurningAmount:          d.BurningAmount,
+				BurningConfirmMetaType: metadataCommon.BurnForCallConfirmMeta,
+			}
+			waitingUnshieldDatas = append(waitingUnshieldDatas, wdata)
+			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, txReqID, &wdata, d.ExternalNetworkID, 0, beaconHeightForConfirmInst)
 			insts = append(insts, burningConfirmInsts...)
 		}
+		waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)
+		unshieldInst := buildAcceptedBurnForCallReqInst(nil, waitingUnshieldReq, common.AcceptedStatusStr, shardID)
+		insts = append(insts, unshieldInst)
 	}
 
 	return insts, clonedState, nil

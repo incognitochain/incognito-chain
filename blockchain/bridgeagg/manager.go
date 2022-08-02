@@ -175,7 +175,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bo
 		case metadataCommon.BridgeAggModifyParamMeta:
 			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
 		case metadataCommon.BurnForCallRequestMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID)
+			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
 		case metadataCommon.IssuingReshieldResponseMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.reshield(*inst, m.state, sDB, updatingInfoByTokenID)
 		}
