@@ -26,7 +26,13 @@ send vote for propose block that
 - receive 2/3 prevote
 */
 func (a *actorV3) shouldVote(proposeBlockInfo *ProposeBlockInfo) bool {
+	if proposeBlockInfo.block == nil {
+		return false
+	}
 	previousView := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+	if previousView == nil {
+		return false
+	}
 	if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 		!proposeBlockInfo.IsVoted &&
 		proposeBlockInfo.IsValid {
