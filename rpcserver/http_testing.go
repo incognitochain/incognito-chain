@@ -404,25 +404,25 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	insertRule := param["insert_rule"]
 	validatorRule := param["validator_rule"]
 
-	if voteRule != nil {
+	if voteRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.VoteRule = voteRule.(string)
 	}
-	if preVoteRule != nil {
+	if preVoteRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.PreVoteRule = preVoteRule.(string)
 	}
-	if createRule != nil {
+	if createRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.CreateRule = createRule.(string)
 	}
-	if handleVoteRule != nil {
+	if handleVoteRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.HandleVoteRule = handleVoteRule.(string)
 	}
-	if handleProposeRule != nil {
+	if handleProposeRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.HandleProposeRule = handleProposeRule.(string)
 	}
-	if insertRule != nil {
+	if insertRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.InsertRule = insertRule.(string)
 	}
-	if validatorRule != nil {
+	if validatorRule != nil && voteRule.(string) != "" {
 		blsbft.ActorRuleBuilderContext.ValidatorRule = validatorRule.(string)
 	}
 
