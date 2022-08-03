@@ -60,8 +60,7 @@ func (iRes IssuingReshieldResponse) ValidateSanityData(chainRetriever metadataCo
 }
 
 func (iRes IssuingReshieldResponse) ValidateMetadataByItself() bool {
-    // The validation just need to check at tx level, so returning true here
-    return true
+    return iRes.Type == metadataCommon.IssuingReshieldResponseMeta
 }
 
 func (iRes IssuingReshieldResponse) Hash() *common.Hash {
@@ -129,6 +128,11 @@ func (iRes IssuingReshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
         pk := cv2.GetPublicKey().ToBytesS()
         txR := cv2.GetTxRandom()
         if !bytes.Equal(otaReceiver.PublicKey.ToBytesS(), pk[:]) || !bytes.Equal(txR[:], otaReceiver.TxRandom[:]) {
+            metadataCommon.Logger.Log.Warnf("WARNING - VALIDATION: reshield PublicKey or TxRandom mismatch")
+            continue
+        }
+        if cv2.GetValue() != acceptedInst.ReshieldData.ShieldAmount {
+            metadataCommon.Logger.Log.Warnf("WARNING - VALIDATION: reshield amount mismatch - %d vs %d", cv2.GetValue(), acceptedInst.ReshieldData.ShieldAmount)
             continue
         }
         idx = i

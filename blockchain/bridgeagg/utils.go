@@ -1076,8 +1076,6 @@ func padExternalAddress(addr []byte) []byte {
 
 func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
 	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
-	// index := 0                                 // currently support 1 call per metadata request
-	// var networkID uint8 = 1                    // TODO: other networks
 	newTxReqID := common.HashH(append(unshieldID.Bytes(), common.IntToBytes(index)...))
 	rdRecvStr, _ := req.Data[index].RedepositReceiver.String()
 	burningInst := []string{

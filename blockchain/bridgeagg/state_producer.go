@@ -194,22 +194,6 @@ func (sp *stateProducer) shield(
 				return [][]string{rejectedInst}, state, ac, nil
 			}
 
-			// check double use shielding proof in current block and previous blocks
-			uniqTx := append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
-			isValid, uniqTx, err := ValidateDoubleShieldProof(uniqTx, evmInfo.ListTxUsedInBlock, evmInfo.IsTxHashIssued, stateDBs[common.BeaconChainID])
-			if err != nil {
-				Logger.log.Errorf("[BridgeAgg] Can not validate double shielding proof - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ValidateDoubleShieldProofError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
-			if !isValid {
-				Logger.log.Errorf("[BridgeAgg] Shielding proof was submited - Error %v", err)
-				rejectedInst := buildRejectedInst(
-					metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ShieldProofIsSubmittedError, []byte{})
-				return [][]string{rejectedInst}, state, ac, nil
-			}
-
 			// extract info from Receipt
 			extAmount, incAddr, extTokenID, errShield := metadataBridge.ExtractIssueEVMDataFromReceipt(
 				txReceipt, evmInfo.ContractAddress, evmInfo.Prefix, incAddrStr,
@@ -219,6 +203,7 @@ func (sp *stateProducer) shield(
 				incAddrStr = incAddr
 				key, _ := wallet.Base58CheckDeserialize(incAddr)
 				shardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
+				uniqTx := append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
 				redepositDataLst = append(redepositDataLst, metadataBridge.DepositEventData{
 					Amount:          extAmount,
 					ReceiverStr:     incAddr,
@@ -237,14 +222,24 @@ func (sp *stateProducer) shield(
 				}
 			}
 
+			var validShieldProof bool = false
 			for _, d := range redepositDataLst {
+				vault, _ := clonedVaults[shieldData.IncTokenID]
+				// check double use shielding proof in current block and previous blocks
+				isValid, _, err := ValidateDoubleShieldProof(d.IncTxID, evmInfo.ListTxUsedInBlock, evmInfo.IsTxHashIssued, stateDBs[common.BeaconChainID])
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] Cannot validate double shielding proof - Error %v", err)
+					continue
+				}
+				if !isValid {
+					Logger.log.Errorf("[BridgeAgg] Shielding proof was submitted - Error %v", err)
+					continue
+				}
 				// verify token pair pTokenID - extTokenID
 				err = metadataBridge.VerifyTokenPair(stateDBs, ac, shieldData.IncTokenID, d.ExternalTokenID)
 				if err != nil {
 					Logger.log.Errorf("[BridgeAgg] Invalid token pair pTokenID and extTokenID - Error %v", err)
-					rejectedInst := buildRejectedInst(
-						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, InvalidTokenPairError, []byte{})
-					return [][]string{rejectedInst}, state, ac, nil
+					continue
 				}
 
 				// calculate shielding amount (in pDecimal)
@@ -256,39 +251,32 @@ func (sp *stateProducer) shield(
 				}
 				incAmount, err := ConvertAmountByDecimal(d.Amount, extDecimal, true)
 				if err != nil {
-					Logger.log.Errorf("[BridgeAgg] Can not convert external amount to incognito amount - Error %v", err)
-					rejectedInst := buildRejectedInst(
-						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, InvalidConvertAmountError, []byte{})
-					return [][]string{rejectedInst}, state, ac, nil
+					Logger.log.Errorf("[BridgeAgg] Cannot convert external amount to incognito amount - Error %v", err)
+					continue
 				}
 
 				// calculate shielding reward (in pDecimal)
 				reward, err := CalRewardForRefillVault(vault, incAmount.Uint64())
 				if err != nil {
-					Logger.log.Errorf("[BridgeAgg] Can not calcalate shielding reward - Error %v", err)
-					rejectedInst := buildRejectedInst(
-						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, CalRewardError, []byte{})
-					return [][]string{rejectedInst}, state, ac, nil
+					Logger.log.Errorf("[BridgeAgg] Cannot calculate shielding reward - Error %v", err)
+					continue
 				}
 
 				// update state: list of shielding txs, vault state (waiting unshield amount, waiting reward)
 				evmInfo.ListTxUsedInBlock = append(evmInfo.ListTxUsedInBlock, d.IncTxID)
 				clonedAC, err := clonedAC.UpdateUniqTxsUsed(shieldData.NetworkID, evmInfo.ListTxUsedInBlock)
 				if err != nil {
-					Logger.log.Errorf("[BridgeAgg] Can not update accumulate values for shield request - Error %v", err)
-					rejectedInst := buildRejectedInst(
-						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ProducerUpdateStateError, []byte{})
-					return [][]string{rejectedInst}, state, ac, nil
+					Logger.log.Errorf("[BridgeAgg] Cannot update accumulate values for shield request - Error %v", err)
+					continue
 				}
 
 				Logger.log.Infof("Cloned AC after update: %+v\n", clonedAC)
 				clonedVaults[shieldData.IncTokenID], err = updateVaultForRefill(vault, incAmount.Uint64(), reward)
 				if err != nil {
-					Logger.log.Errorf("[BridgeAgg] Can not update vault state for shield request - Error %v", err)
-					rejectedInst := buildRejectedInst(
-						metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, ProducerUpdateStateError, []byte{})
-					return [][]string{rejectedInst}, state, ac, nil
+					Logger.log.Errorf("[BridgeAgg] Cannot update vault state for shield request - Error %v", err)
+					continue
 				}
+				validShieldProof = true
 
 				if d.IsOneTime {
 					var recv privacy.OTAReceiver
@@ -324,6 +312,11 @@ func (sp *stateProducer) shield(
 						IncTokenID:      shieldData.IncTokenID,
 					})
 				}
+				if !validShieldProof {
+					Logger.log.Errorf("[BridgeAgg] no valid shield event found in proof")
+					rejectedInst := buildRejectedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NoValidShieldEventError, []byte{})
+					return [][]string{rejectedInst}, state, ac, nil
+				}
 			}
 
 		default:
@@ -342,7 +335,7 @@ func (sp *stateProducer) shield(
 		receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
 		content, err := buildAcceptedShieldContent(acceptedShieldData, key.KeySet.PaymentAddress, meta.UnifiedTokenID, action.TxReqID)
 		if err != nil {
-			Logger.log.Errorf("[BridgeAgg] Can not build contents for shield instruction: %v", err)
+			Logger.log.Errorf("[BridgeAgg] Cannot build contents for shield instruction: %v", err)
 			rejectedInst := buildRejectedInst(
 				metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, OtherError, []byte{})
 			return [][]string{rejectedInst}, state, ac, nil
