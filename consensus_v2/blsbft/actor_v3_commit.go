@@ -13,7 +13,13 @@ commit this propose block
 func (a *actorV3) maybeCommit() {
 
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
+		if proposeBlockInfo.block == nil {
+			continue
+		}
 		previousView := a.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+		if previousView == nil {
+			continue
+		}
 		if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 			!proposeBlockInfo.IsCommitted {
 			//has majority votes
