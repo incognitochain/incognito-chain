@@ -5,10 +5,11 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"io/ioutil"
 	"os"
 	"path"
@@ -16,15 +17,17 @@ import (
 	"time"
 )
 
-type BackupProcess struct {
-	CheckpointName string
-	ViewInfo       map[int]multiview.View
+type BackupProcessInfo struct {
+	CheckpointName  string
+	BeaconView      *BeaconBestState
+	ShardView       map[int]*ShardBestState
+	MinBeaconHeight uint64
 }
 
 type BackupManager struct {
 	blockchain       *BlockChain
-	lastBootStrap    *BackupProcess
-	runningBootStrap *BackupProcess
+	lastBootStrap    *BackupProcessInfo
+	runningBootStrap *BackupProcessInfo
 }
 
 type StateDBData struct {
@@ -35,14 +38,25 @@ type StateDBData struct {
 func NewBackupManager(bc *BlockChain) *BackupManager {
 	//read bootstrap dir and load lastBootstrap
 	cfg := config.LoadConfig()
-	fd, _ := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
-	jsonStr, _ := ioutil.ReadAll(fd)
-	lastBackup := &BackupProcess{}
-	json.Unmarshal(jsonStr, &lastBackup)
+	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
+	if err != nil {
+		return &BackupManager{bc, nil, nil}
+	}
+	jsonStr, err := ioutil.ReadAll(fd)
+	fmt.Println(string(jsonStr))
+	if err != nil {
+		panic(err)
+	}
+	lastBackup := &BackupProcessInfo{}
+	err = json.Unmarshal(jsonStr, lastBackup)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(lastBackup)
 	return &BackupManager{bc, lastBackup, nil}
 }
 
-func (s *BackupManager) GetLastestBootstrap() BackupProcess {
+func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
 	return *s.lastBootStrap
 }
 
@@ -53,26 +67,31 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	if backupHeight < BackupInterval {
 		return
 	}
-	if s.lastBootStrap.ViewInfo != nil && s.lastBootStrap.ViewInfo[-1].GetHeight()+BackupInterval > backupHeight {
+	if s.lastBootStrap.BeaconView != nil && s.lastBootStrap.BeaconView.GetHeight()+BackupInterval > backupHeight {
 		return
 	}
 
 	shardBestView := map[int]*ShardBestState{}
-	beaconBestView := s.blockchain.GetBeaconBestState()
+	beaconBestView := NewBeaconBestState()
+	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
+	beaconBestView.BestBlock = types.BeaconBlock{}
+
 	checkPoint := time.Now().Format(time.RFC3339)
 	defer func() {
 		s.runningBootStrap = nil
 	}()
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		shardBestView[i] = s.blockchain.GetBestStateShard(byte(i))
+		shardBestView[i] = NewShardBestState()
+		shardBestView[i].cloneShardBestStateFrom(s.blockchain.GetBestStateShard(byte(i)))
+		shardBestView[i].BestBlock = nil
 	}
 
 	//update current status
-	bootstrapInfo := &BackupProcess{
+	bootstrapInfo := &BackupProcessInfo{
 		CheckpointName: checkPoint,
-		ViewInfo:       make(map[int]multiview.View),
+		BeaconView:     beaconBestView,
+		ShardView:      map[int]*ShardBestState{},
 	}
-	bootstrapInfo.ViewInfo[-1] = beaconBestView
 	s.runningBootStrap = bootstrapInfo
 
 	//backup beacon then shard
@@ -80,15 +99,32 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
-		bootstrapInfo.ViewInfo[i] = shardBestView[i]
+		bootstrapInfo.ShardView[i] = shardBestView[i]
 	}
 
 	//update final status
 	s.lastBootStrap = bootstrapInfo
-	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDWR, 0666)
+	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
 	}
+
+	//get smallest beacon height of committeefromblock
+	bootstrapInfo.MinBeaconHeight = 1e9
+	for _, view := range bootstrapInfo.ShardView {
+		beaconHash := view.BestBlock.CommitteeFromBlock()
+		if beaconHash.IsEqual(&common.Hash{}) {
+			continue
+		}
+		blk, _, err := s.blockchain.GetBeaconBlockByHash(beaconHash)
+		if err != nil {
+			panic(err)
+		}
+		if bootstrapInfo.MinBeaconHeight > blk.GetHeight() {
+			bootstrapInfo.MinBeaconHeight = blk.GetHeight()
+		}
+	}
+
 	jsonStr, err := json.Marshal(bootstrapInfo)
 	if err != nil {
 		panic(err)
