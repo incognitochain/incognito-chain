@@ -13,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -320,11 +319,10 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		}
 	}
 
-	beaconView := NewBeaconBestState()
-	beaconView.CloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
+	bestView := latestBackup.ViewInfo[-1].(*BeaconBestState)
 	wg.Add(5)
 
-	rpcClient.OnBeaconBlock(2, latestBackup.ChainInfo[-1].Height, func(beaconBlock types.BeaconBlock) {
+	rpcClient.OnBeaconBlock(2, bestView.BeaconHeight, func(beaconBlock types.BeaconBlock) {
 		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
 
 		blockHash := beaconBlock.Hash()
@@ -350,82 +348,9 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		}
 		batch.Write()
 
-		beaconView.BeaconHeight = beaconBlock.GetHeight()
-		beaconView.BestBlock = beaconBlock
-		beaconView.BestBlockHash = *beaconBlock.Hash()
-		//update trigger feature
-		for _, instr := range beaconBlock.Body.Instructions {
-			if instr[0] == instruction.ENABLE_FEATURE {
-				enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(instr)
-				if err != nil {
-					panic(err)
-				}
-				if beaconView.TriggeredFeature == nil {
-					beaconView.TriggeredFeature = make(map[string]uint64)
-				}
-				for _, feature := range enableFeatures.Features {
-					beaconView.TriggeredFeature[feature] = beaconBlock.GetHeight()
-				}
-
-			}
-		}
-
-		//update bestshardhash, bestshardheight
-		for sid, shardstate := range beaconBlock.Body.ShardState {
-			beaconView.BestShardHash[sid] = shardstate[len(shardstate)-1].Hash
-			beaconView.BestShardHeight[sid] = shardstate[len(shardstate)-1].Height
-		}
-		//update lastcrossshardstate
-		beaconView.LastCrossShardState = lastCrossShardState
-
-		//update random number
-		if s.blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.GetHeight()) {
-			beaconView.IsGetRandomNumber = false
-		} else if s.blockchain.IsEqualToRandomTime(beaconBlock.GetHeight()) {
-			beaconView.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
-		}
-
-		for _, instr := range beaconBlock.Body.Instructions {
-			if instr[0] == instruction.RANDOM_ACTION {
-				randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(instr)
-				if err != nil {
-					panic(err)
-				}
-				beaconView.CurrentRandomNumber = randomInstruction.RandomNumber()
-				beaconView.IsGetRandomNumber = true
-			}
-		}
-		//update number of shard block
-		for shardID, shardStates := range beaconBlock.Body.ShardState {
-			beaconView.NumberOfShardBlock[shardID] = beaconView.NumberOfShardBlock[shardID] + uint(len(shardStates))
-		}
-		if s.blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.GetHeight()) {
-			beaconView.NumberOfShardBlock = make(map[byte]uint)
-			for i := 0; i < beaconView.ActiveShards; i++ {
-				shardID := byte(i)
-				beaconView.NumberOfShardBlock[shardID] = 0
-			}
-		}
-
-		// update max committee size
-		newMaxCommitteeSize := GetMaxCommitteeSize(beaconView.MaxShardCommitteeSize, beaconView.TriggeredFeature, beaconBlock.Header.Height)
-		if newMaxCommitteeSize != beaconView.MaxShardCommitteeSize {
-			beaconView.MaxShardCommitteeSize = newMaxCommitteeSize
-		}
-		beaconView.tryUpgradeConsensusRule()
-
-		//update LastBlockProcessBridge
-		if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-			if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
-				beaconView.LastBlockProcessBridge = beaconBlock.GetHeight() - 1
-			}
-		} else {
-			beaconView.LastBlockProcessBridge = beaconBlock.GetHeight()
-		}
-
-		if beaconBlock.GetHeight() == latestBackup.ChainInfo[-1].Height {
+		if beaconBlock.GetHeight() == bestView.GetBeaconHeight() {
 			//get all required committeefromblock (for rebuild missing signature counter)
-			firstBeaconHeightOfEpoch := s.blockchain.GetFirstBeaconHeightInEpoch(beaconView.Epoch)
+			firstBeaconHeightOfEpoch := s.blockchain.GetFirstBeaconHeightInEpoch(beaconBlock.GetCurrentEpoch())
 
 			tempBeaconBlock := &beaconBlock
 			tempBeaconHeight := beaconBlock.Header.Height
@@ -466,14 +391,13 @@ func (s *BootstrapManager) BootstrapBeacon() {
 					CommitteeFromBlockBootStrapCache[sid].Add(hash.String(), res)
 				}
 			}
-
 			wg.Done()
 		}
 	})
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconConsensus, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(latestBackup.ChainInfo[-1].ConsensusStateDBRootHash)
+			recheckDB(bestView.ConsensusStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -482,7 +406,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconReward, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(latestBackup.ChainInfo[-1].ConsensusStateDBRootHash)
+			recheckDB(bestView.ConsensusStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -491,7 +415,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconFeature, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(latestBackup.ChainInfo[-1].ConsensusStateDBRootHash)
+			recheckDB(bestView.ConsensusStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -500,7 +424,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconSlash, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(latestBackup.ChainInfo[-1].ConsensusStateDBRootHash)
+			recheckDB(bestView.ConsensusStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -508,12 +432,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	})
 	wg.Wait()
 
-	beaconView.ConsensusStateDBRootHash = latestBackup.ChainInfo[-1].ConsensusStateDBRootHash
-	beaconView.FeatureStateDBRootHash = latestBackup.ChainInfo[-1].FeatureStateDBRootHash
-	beaconView.RewardStateDBRootHash = latestBackup.ChainInfo[-1].RewardStateDBRootHash
-	beaconView.SlashStateDBRootHash = latestBackup.ChainInfo[-1].SlashStateDBRootHash
-
-	allViews := []*BeaconBestState{beaconView}
+	allViews := []*BeaconBestState{bestView}
 	b, _ := json.Marshal(allViews)
 	rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
 	s.blockchain.RestoreBeaconViews()
@@ -530,15 +449,11 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	wg := sync.WaitGroup{}
 	wg.Add(5)
 	//retrieve beacon block -> backup height
-	bestView := NewShardBestStateWithShardID(byte(sid))
-	bestView.cloneShardBestStateFrom(s.blockchain.GetBestStateShard(byte(sid)))
+	bestView := latestBackup.ViewInfo[sid]
 
-	rpcClient.OnShardBlock(sid, 2, latestBackup.ChainInfo[sid].Height, func(shardBlock types.ShardBlock) {
+	rpcClient.OnShardBlock(sid, 2, bestView.GetHeight(), func(shardBlock types.ShardBlock) {
 		batch := s.blockchain.GetShardChainDatabase(byte(sid)).NewBatch()
 
-		for sid, crossTx := range shardBlock.Body.CrossTransactions {
-			bestView.BestCrossShard[sid] = crossTx[len(crossTx)-1].BlockHeight
-		}
 		for index, tx := range shardBlock.Body.Transactions {
 			if err := rawdbv2.StoreTransactionIndex(batch, *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
 				panic(err)
@@ -554,18 +469,6 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		}
 
 		batch.Write()
-		if shardBlock.GetHeight() == latestBackup.ChainInfo[sid].Height {
-			bestView.BestBlockHash = *shardBlock.Hash()
-			bestView.BestBeaconHash = shardBlock.Header.BeaconHash
-			bestView.BeaconHeight = shardBlock.Header.BeaconHeight
-			bestView.Epoch = shardBlock.GetCurrentEpoch()
-			bestView.ShardHeight = shardBlock.GetHeight()
-			bestView.NumTxns = uint64(len(shardBlock.Body.Transactions))
-			bestView.TotalTxns += uint64(len(shardBlock.Body.Transactions))
-			bestView.BestBlock = &shardBlock
-			wg.Done()
-		}
-		//fmt.Println("save block", shardBlock.GetHeight())
 	})
 
 	//retrieve beacon stateDB
@@ -595,7 +498,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	recheckDB := func(sid int, roothash common.Hash) {
 		txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(s.blockchain.GetShardChainDatabase(byte(sid))))
 		if err != nil {
-			fmt.Println(bestView.ConsensusStateDBRootHash.String())
+			fmt.Println(bestView.(*ShardBestState).ConsensusStateDBRootHash.String())
 			fmt.Println("check", roothash.String(), err)
 			panic(fmt.Sprintf("Something wrong when init txDB"))
 		}
@@ -608,7 +511,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardConsensus, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(sid, latestBackup.ChainInfo[sid].ConsensusStateDBRootHash)
+			recheckDB(sid, latestBackup.ViewInfo[sid].(*ShardBestState).ConsensusStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -616,7 +519,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	})
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardTransacton, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(sid, latestBackup.ChainInfo[sid].TransactionStateDBRootHash)
+			recheckDB(sid, latestBackup.ViewInfo[sid].(*ShardBestState).TransactionStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -625,7 +528,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardReward, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(sid, latestBackup.ChainInfo[sid].RewardStateDBRootHash)
+			recheckDB(sid, latestBackup.ViewInfo[sid].(*ShardBestState).RewardStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -634,7 +537,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardFeature, 0, func(data []byte) {
 		if len(data) == 0 {
-			recheckDB(sid, latestBackup.ChainInfo[sid].FeatureStateDBRootHash)
+			recheckDB(sid, latestBackup.ViewInfo[sid].(*ShardBestState).FeatureStateDBRootHash)
 			wg.Done()
 			return
 		}
@@ -643,12 +546,8 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 
 	//post processing
 	wg.Wait()
-	bestView.ConsensusStateDBRootHash = latestBackup.ChainInfo[sid].ConsensusStateDBRootHash
-	bestView.TransactionStateDBRootHash = latestBackup.ChainInfo[sid].TransactionStateDBRootHash
-	bestView.RewardStateDBRootHash = latestBackup.ChainInfo[sid].RewardStateDBRootHash
-	bestView.FeatureStateDBRootHash = latestBackup.ChainInfo[sid].FeatureStateDBRootHash
 	allViews := []*ShardBestState{}
-	allViews = append(allViews, bestView)
+	allViews = append(allViews, bestView.(*ShardBestState))
 	if err := rawdbv2.StoreShardBestState(s.blockchain.GetShardChainDatabase(byte(sid)), byte(sid), allViews); err != nil {
 		panic(err)
 	}

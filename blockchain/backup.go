@@ -5,10 +5,10 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"io/ioutil"
 	"os"
 	"path"
@@ -16,18 +16,9 @@ import (
 	"time"
 )
 
-type checkpointInfo struct {
-	Height                     uint64
-	Hash                       string
-	ConsensusStateDBRootHash   common.Hash
-	TransactionStateDBRootHash common.Hash
-	FeatureStateDBRootHash     common.Hash
-	RewardStateDBRootHash      common.Hash
-	SlashStateDBRootHash       common.Hash
-}
 type BackupProcess struct {
 	CheckpointName string
-	ChainInfo      map[int]checkpointInfo
+	ViewInfo       map[int]multiview.View
 }
 
 type BackupManager struct {
@@ -62,7 +53,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	if backupHeight < BackupInterval {
 		return
 	}
-	if s.lastBootStrap.ChainInfo != nil && s.lastBootStrap.ChainInfo[-1].Height+BackupInterval > backupHeight {
+	if s.lastBootStrap.ViewInfo != nil && s.lastBootStrap.ViewInfo[-1].GetHeight()+BackupInterval > backupHeight {
 		return
 	}
 
@@ -79,11 +70,9 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	//update current status
 	bootstrapInfo := &BackupProcess{
 		CheckpointName: checkPoint,
-		ChainInfo:      make(map[int]checkpointInfo),
+		ViewInfo:       make(map[int]multiview.View),
 	}
-	bootstrapInfo.ChainInfo[-1] = checkpointInfo{beaconBestView.GetHeight(), beaconBestView.BestBlock.Hash().String(),
-		beaconBestView.ConsensusStateDBRootHash, common.Hash{},
-		beaconBestView.FeatureStateDBRootHash, beaconBestView.RewardStateDBRootHash, common.Hash{}}
+	bootstrapInfo.ViewInfo[-1] = beaconBestView
 	s.runningBootStrap = bootstrapInfo
 
 	//backup beacon then shard
@@ -91,19 +80,23 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
-		bootstrapInfo.ChainInfo[i] = checkpointInfo{shardBestView[i].GetHeight(), shardBestView[i].BestBlock.Hash().String(),
-			shardBestView[i].ConsensusStateDBRootHash, shardBestView[i].TransactionStateDBRootHash,
-			shardBestView[i].FeatureStateDBRootHash, shardBestView[i].RewardStateDBRootHash, shardBestView[i].SlashStateDBRootHash}
+		bootstrapInfo.ViewInfo[i] = shardBestView[i]
 	}
 
 	//update final status
 	s.lastBootStrap = bootstrapInfo
-	fd, _ := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDWR, 0666)
-	jsonStr, _ := json.Marshal(bootstrapInfo)
-	fd.Write(jsonStr)
+	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
+	jsonStr, err := json.Marshal(bootstrapInfo)
+	if err != nil {
+		panic(err)
+	}
+	n, _ := fd.Write(jsonStr)
+	fmt.Println("update lastBootStrap", n)
 	fd.Close()
 
-	fmt.Println("update lastBootStrap", bootstrapInfo)
 }
 
 const (
