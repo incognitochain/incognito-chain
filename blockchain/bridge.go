@@ -173,7 +173,8 @@ func decodeNearBurningConfirmInst(inst []string) ([]byte, error) {
 	metaType := byte(m)
 	shardID := byte(s)
 	tokenID, _, errToken := base58.Base58Check{}.Decode(inst[2])
-	tokenIDPadding := toBytes64BigEndian(tokenID)
+	// prefix 3 bytes + max id 64 bytes
+	tokenIDPadding := toBytes67BigEndian(tokenID)
 	tokenIDLen := byte(len(tokenID))
 	remoteAddr := []byte(inst[3])
 	remoteAddrLen := byte(len(remoteAddr))
@@ -225,6 +226,13 @@ func toBytes32BigEndian(b []byte) []byte {
 func toBytes64BigEndian(b []byte) []byte {
 	a := [64]byte{}
 	copy(a[64-len(b):], b)
+	return a[:]
+}
+
+// toBytes67BigEndian
+func toBytes67BigEndian(b []byte) []byte {
+	a := [67]byte{}
+	copy(a[67-len(b):], b)
 	return a[:]
 }
 

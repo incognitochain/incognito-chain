@@ -381,6 +381,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
 	strconv.Itoa(BurnForCallConfirmMeta),
+	strconv.Itoa(BurningNearConfirmMeta),
+	strconv.Itoa(BurningNearConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{
