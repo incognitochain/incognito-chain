@@ -362,7 +362,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 			bestView.BestBlock = beaconBlock
 			for sid, committeeFromBlockHash := range committeeFromBlock {
 				if cache, ok := CommitteeFromBlockCache[sid]; !ok || cache == nil {
-					CommitteeFromBlockBootStrapCache[sid], _ = lru.New(5)
+					CommitteeFromBlockBootStrapCache[sid], _ = lru.New(10)
 				}
 				for hash, _ := range committeeFromBlockHash {
 					//stream committee from block and set to cache
@@ -417,8 +417,16 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	allViews := []*BeaconBestState{bestView}
 	b, _ := json.Marshal(allViews)
-	rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
-	s.blockchain.RestoreBeaconViews()
+	err := rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	err = s.blockchain.RestoreBeaconViews()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
 }
 
 func (s *BootstrapManager) BootstrapShard(sid int) {
