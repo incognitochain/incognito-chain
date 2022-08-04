@@ -775,6 +775,8 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 		return true
 	case BurningFantomForDepositToSCRequestMeta:
 		return true
+	case BurningNearRequestMeta:
+		return true
 	default:
 		return false
 	}

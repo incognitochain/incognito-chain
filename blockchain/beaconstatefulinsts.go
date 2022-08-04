@@ -341,6 +341,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					accumulatedValues,
 					accumulatedValues.UniqNEARTxsUsed,
 					config.Param().NearContractAddressStr,
+					common.NEARPrefix,
 					statedb.IsNEARTxHashIssued,
 				)
 				if uniqTx != nil {

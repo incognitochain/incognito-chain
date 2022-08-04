@@ -311,7 +311,7 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 		return nil, err
 	}
 
-	if prefix == common.NEARPrefix {
+	if prefix != common.NEARPrefix {
 		if len(tokenID) < common.ExternalBridgeTokenLength {
 			return nil, errors.New("invalid external token id")
 		}

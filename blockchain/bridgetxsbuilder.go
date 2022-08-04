@@ -273,6 +273,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingWasmBridgeReq(
 	ac *metadata.AccumulatedValues,
 	listTxUsed [][]byte,
 	contractAddress string,
+	prefix string,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
 ) ([][]string, []byte, error) {
 	Logger.log.Info("[Decentralized Wasm bridge token issuance] Starting...")
@@ -301,7 +302,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingWasmBridgeReq(
 		stateDBs[common.BeaconChainID], listTxUsed, isTxHashIssued,
 		md.TxHash,
 		issuingWasmBridgeReqAction.IncognitoAddr)
-	token := []byte(issuingWasmBridgeReqAction.TokenId)
+	token := append([]byte(prefix), []byte(issuingWasmBridgeReqAction.TokenId)...)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occurred while decode wasm token id: ", err)
 		return nil, nil, nil
