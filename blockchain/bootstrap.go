@@ -282,7 +282,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	if latestBackup.CheckpointName == "" {
 		return
 	}
-	lastCrossShardState := map[byte]map[byte]uint64{}
+
 	wg := sync.WaitGroup{}
 
 	//retrieve beacon stateDB
@@ -306,7 +306,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		if err != nil {
 			panic(err)
 		}
-		time.Sleep(time.Second)
+		//time.Sleep(time.Second)
 	}
 
 	recheckDB := func(roothash common.Hash) {
@@ -347,9 +347,6 @@ func (s *BootstrapManager) BootstrapBeacon() {
 			panic(err)
 		}
 
-		if err := processBeaconForConfirmmingCrossShard(s.blockchain, &beaconBlock, lastCrossShardState); err != nil {
-			panic(err)
-		}
 		batch.Write()
 
 		for sid, shardStates := range beaconBlock.Body.ShardState {
