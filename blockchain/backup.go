@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
@@ -37,10 +38,21 @@ type StateDBData struct {
 func NewBackupManager(bc *BlockChain) *BackupManager {
 	//read bootstrap dir and load lastBootstrap
 	cfg := config.LoadConfig()
-	fd, _ := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
-	jsonStr, _ := ioutil.ReadAll(fd)
+	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
+	if err != nil {
+		return &BackupManager{bc, nil, nil}
+	}
+	jsonStr, err := ioutil.ReadAll(fd)
+	fmt.Println(string(jsonStr))
+	if err != nil {
+		panic(err)
+	}
 	lastBackup := &BackupProcessInfo{}
-	json.Unmarshal(jsonStr, &lastBackup)
+	err = json.Unmarshal(jsonStr, lastBackup)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(lastBackup)
 	return &BackupManager{bc, lastBackup, nil}
 }
 
@@ -60,13 +72,18 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}
 
 	shardBestView := map[int]*ShardBestState{}
-	beaconBestView := s.blockchain.GetBeaconBestState()
+	beaconBestView := NewBeaconBestState()
+	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
+	beaconBestView.BestBlock = types.BeaconBlock{}
+
 	checkPoint := time.Now().Format(time.RFC3339)
 	defer func() {
 		s.runningBootStrap = nil
 	}()
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		shardBestView[i] = s.blockchain.GetBestStateShard(byte(i))
+		shardBestView[i] = NewShardBestState()
+		shardBestView[i].cloneShardBestStateFrom(s.blockchain.GetBestStateShard(byte(i)))
+		shardBestView[i].BestBlock = nil
 	}
 
 	//update current status

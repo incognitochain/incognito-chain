@@ -359,6 +359,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		}
 
 		if beaconBlock.GetHeight() == bestView.GetBeaconHeight() {
+			bestView.BestBlock = beaconBlock
 			for sid, committeeFromBlockHash := range committeeFromBlock {
 				if cache, ok := CommitteeFromBlockCache[sid]; !ok || cache == nil {
 					CommitteeFromBlockBootStrapCache[sid], _ = lru.New(5)
@@ -453,6 +454,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		batch.Write()
 
 		if shardBlock.GetHeight() == bestView.ShardHeight {
+			bestView.BestBlock = &shardBlock
 			wg.Done()
 		}
 	})
