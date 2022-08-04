@@ -54,10 +54,14 @@ func open(dbPath string) (incdb.Database, error) {
 	handles := 256
 	cache := 8
 	lvdb, err := leveldb.OpenFile(dbPath, &opt.Options{
-		OpenFilesCacheCapacity: handles,
-		BlockCacheCapacity:     cache / 2 * opt.MiB,
-		WriteBuffer:            cache / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
+		CompactionTableSize:           10 * opt.MiB,
+		CompactionTableSizeMultiplier: 1.0,
+		CompactionTotalSize:           10 * opt.MiB,
+		CompactionTotalSizeMultiplier: 1.0,
+		OpenFilesCacheCapacity:        handles,
+		BlockCacheCapacity:            cache / 2 * opt.MiB,
+		WriteBuffer:                   cache / 4 * opt.MiB, // Two of these are used internally
+		Filter:                        filter.NewBloomFilter(10),
 	})
 	if _, corrupted := err.(*lvdbErrors.ErrCorrupted); corrupted {
 		lvdb, err = leveldb.RecoverFile(dbPath, nil)

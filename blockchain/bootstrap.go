@@ -123,6 +123,7 @@ func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, off
 		return err
 	}
 	defer resp.Body.Close()
+	totaldataByte := 0
 	for {
 		b := make([]byte, 8)
 		n, err := resp.Body.Read(b)
@@ -148,6 +149,8 @@ func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, off
 				break
 			}
 		}
+		totaldataByte += len(dataByte)
+		fmt.Println("totaldataByte", dbType, totaldataByte)
 		f(dataByte)
 	}
 }
@@ -287,6 +290,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	//retrieve beacon stateDB
 	flushDB := func(data []byte) {
+		t1 := time.Now()
 		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
 		buf := bytes.NewBuffer(data)
 		dec := gob.NewDecoder(buf)
@@ -294,6 +298,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		if err := dec.Decode(&m); err != nil {
 			panic(err)
 		}
+		t2 := time.Since(t1).Seconds()
 		for _, stateData := range m {
 			//fmt.Printf("%v - %v\n", stateData.K, len(stateData.V))
 			err := batch.Put(stateData.K, stateData.V)
@@ -303,9 +308,11 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 		}
 		err := batch.Write()
+		t3 := time.Since(t1).Seconds() - t2
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println("flush time", t2, t3)
 		//time.Sleep(time.Second)
 	}
 
@@ -325,6 +332,9 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	wg.Add(5)
 
 	committeeFromBlock := map[byte]map[common.Hash]bool{}
+	if latestBackup.MinBeaconHeight >= bestView.BeaconHeight {
+		latestBackup.MinBeaconHeight = 2100159
+	}
 	fmt.Println("stream from ", latestBackup.MinBeaconHeight, bestView.BeaconHeight)
 	rpcClient.OnBeaconBlock(latestBackup.MinBeaconHeight, bestView.BeaconHeight, func(beaconBlock types.BeaconBlock) {
 		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
@@ -418,7 +428,10 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	allViews := []*BeaconBestState{bestView}
 	b, _ := json.Marshal(allViews)
 	rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
-	s.blockchain.RestoreBeaconViews()
+	err := s.blockchain.RestoreBeaconViews()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *BootstrapManager) BootstrapShard(sid int) {

@@ -62,7 +62,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.Blockchain = config.Blockchain
 
 	preloadBeacon := func() {
-		bootstrap := blockchain.NewBootstrapManager([]string{"http://127.0.0.1:20000"}, synckerManager.Blockchain)
+		bootstrap := blockchain.NewBootstrapManager([]string{"http://51.178.74.7:38934"}, synckerManager.Blockchain)
 		bootstrap.BootstrapBeacon()
 	}
 	//check if bootstrap node is set, if yes then we should preload beacon database

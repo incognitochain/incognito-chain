@@ -125,6 +125,8 @@ func (s *ShardSyncProcess) start() {
 	if s.status == RUNNING_SYNC {
 		return
 	}
+	bootstrap := blockchain.NewBootstrapManager([]string{"http://127.0.0.1:20000"}, s.blockchain)
+	bootstrap.BootstrapShard(s.shardID)
 	s.status = RUNNING_SYNC
 }
 
