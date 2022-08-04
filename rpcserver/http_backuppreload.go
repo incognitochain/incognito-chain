@@ -27,7 +27,7 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 	offset, ok := paramArray[3].(float64)
 
 	ff := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID), int(dbType))
-	ch, _, _ := ff.ReadRecently(uint64(offset))
+	ch, _, _ := ff.ReadFromIndex(uint64(offset))
 
 	_, err := conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
 	if err != nil {

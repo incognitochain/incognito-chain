@@ -26,7 +26,7 @@ type FlatFile interface {
 	Read(index uint64) ([]byte, error)
 
 	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently(index uint64) (chan []byte, chan uint64, func())
+	ReadFromIndex(index uint64) (chan []byte, chan uint64, func())
 
 	//truncate flat file system
 	Truncate(lastIndex uint64) error
@@ -169,7 +169,7 @@ func (f FlatFileManager) Read(index uint64) ([]byte, error) {
 	return rawB, nil
 }
 
-func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, func()) {
+func (f FlatFileManager) ReadFromIndex(index uint64) (chan []byte, chan uint64, func()) {
 	c := make(chan []byte)
 	e := make(chan uint64)
 	closed := false
@@ -185,18 +185,27 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, f
 		fromFile := index / f.fileSizeLimit
 		offset := index % f.fileSizeLimit
 
-		for i := int64(fromFile); i >= 0; i-- {
-			readInfo, err := f.PasreFile(uint64(i))
+		for i := int64(fromFile); i <= int64(f.currentFile); i++ {
+			//find parse info in cache first
+			var readInfo map[uint64]ReadInfo
+			var err error
+			v, ok := f.parseCache.Get(fromFile)
+			if ok {
+				if int(offset) < len(v.(map[uint64]ReadInfo)) {
+					readInfo = v.(map[uint64]ReadInfo)
+				} else { //if find item index is greater than len of cache <- could be new item, parse again
+					readInfo, err = f.PasreFile(fromFile)
+				}
+			} else { //no cache, parse
+				readInfo, err = f.PasreFile(fromFile)
+			}
+
 			if err != nil {
 				e <- 1
 				cancel()
 			}
-			if offset > uint64(len(readInfo)-1) {
-				e <- 1
-				cancel()
-			}
 
-			for j := int64(offset); j >= 0; j-- {
+			for j := int(offset); j <= len(readInfo); j++ {
 				rawB := make([]byte, readInfo[uint64(j)].size)
 				readInfo[uint64(j)].fd.ReadAt(rawB, readInfo[uint64(j)].offset)
 
@@ -209,7 +218,6 @@ func (f FlatFileManager) ReadRecently(index uint64) (chan []byte, chan uint64, f
 						time.Sleep(time.Millisecond * 10)
 						goto LOOP
 					}
-
 				} else {
 					return
 				}
