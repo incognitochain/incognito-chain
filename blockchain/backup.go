@@ -112,6 +112,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	if err != nil {
 		panic(err)
 	}
+	fd.Truncate(0)
 	n, _ := fd.Write(jsonStr)
 	fmt.Println("update lastBootStrap", n)
 	fd.Close()
