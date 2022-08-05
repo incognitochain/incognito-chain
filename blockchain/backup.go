@@ -83,7 +83,6 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		shardBestView[i] = NewShardBestState()
 		shardBestView[i].cloneShardBestStateFrom(s.blockchain.GetBestStateShard(byte(i)))
-		shardBestView[i].BestBlock = nil
 	}
 
 	//update current status
@@ -102,17 +101,11 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		bootstrapInfo.ShardView[i] = shardBestView[i]
 	}
 
-	//update final status
-	s.lastBootStrap = bootstrapInfo
-	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
-	if err != nil {
-		panic(err)
-	}
-
 	//get smallest beacon height of committeefromblock
 	bootstrapInfo.MinBeaconHeight = 1e9
 	for _, view := range bootstrapInfo.ShardView {
 		beaconHash := view.BestBlock.CommitteeFromBlock()
+		view.BestBlock = nil
 		if beaconHash.IsEqual(&common.Hash{}) {
 			continue
 		}
@@ -123,6 +116,14 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		if bootstrapInfo.MinBeaconHeight > blk.GetHeight() {
 			bootstrapInfo.MinBeaconHeight = blk.GetHeight()
 		}
+	}
+
+	//update final status
+	s.lastBootStrap = bootstrapInfo
+
+	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
 	}
 
 	jsonStr, err := json.Marshal(bootstrapInfo)
