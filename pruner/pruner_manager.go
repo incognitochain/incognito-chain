@@ -121,9 +121,10 @@ func (p *PrunerManager) InsertNewView(shardBestState *blockchain.ShardBestState)
 	p.ShardPruner[int(sid)].handleNewView(shardBestState)
 }
 
-func (s *PrunerManager) Report() error {
+func (s *PrunerManager) Report() map[int]ShardPrunerReport {
+	res := map[int]ShardPrunerReport{}
 	for sid := 0; sid < common.MaxShardNumber; sid++ {
-		s.ShardPruner[sid].Report()
+		res[sid] = s.ShardPruner[sid].Report()
 	}
-	return nil
+	return res
 }
