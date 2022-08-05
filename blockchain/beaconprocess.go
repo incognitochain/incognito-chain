@@ -1003,13 +1003,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	// execute, store bridge agg instructions
-	err = newBestState.bridgeAggManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	// NOTE: bridgeAggUnshieldTxIDs used to store unshield TxIDs from bridge agg confirm instructions
+	// don't need to process these TxIDs in processBridgeInstructions
+	// MUST process bridge agg instructions before processing bridge instructions
+	bridgeAggUnshieldTxIDs, err := newBestState.bridgeAggManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 
 	// execute, store
-	err = blockchain.processBridgeInstructions(newBestState, beaconBlock)
+	err = blockchain.processBridgeInstructions(newBestState, beaconBlock, bridgeAggUnshieldTxIDs)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}

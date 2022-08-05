@@ -130,7 +130,7 @@ func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconH
 	return res, nil
 }
 
-func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
+func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bool, error) {
 	// init bridge agg param if it's nil
 	if m.state.param == nil {
 		m.InitBridgeAggParamDefault()
@@ -138,6 +138,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 
 	// process insts
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
+	bridgeAggUnshieldTxIDs := map[string]bool{}
 	for _, content := range insts {
 		if len(content) == 0 {
 			continue // Empty instruction
@@ -152,7 +153,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		if metaType == metadataCommon.BridgeAggAddTokenMeta {
 			m.state, err = m.processor.addToken(content, m.state, sDB)
 			if err != nil {
-				return err
+				return bridgeAggUnshieldTxIDs, err
 			}
 			continue
 		}
@@ -162,7 +163,7 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 
 		inst := metadataCommon.NewInstruction()
 		if err := inst.FromStringSlice(content); err != nil {
-			return err
+			return bridgeAggUnshieldTxIDs, err
 		}
 
 		switch inst.MetaType {
@@ -171,12 +172,12 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.BurningUnifiedTokenRequestMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID)
+			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
 		case metadataCommon.BridgeAggModifyParamMeta:
 			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
 		}
 		if err != nil {
-			return err
+			return bridgeAggUnshieldTxIDs, err
 		}
 	}
 
@@ -200,10 +201,10 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 			updatingType,
 		)
 		if err != nil {
-			return err
+			return bridgeAggUnshieldTxIDs, err
 		}
 	}
-	return nil
+	return bridgeAggUnshieldTxIDs, nil
 }
 
 func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {

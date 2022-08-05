@@ -94,6 +94,13 @@ func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.State
 	return shardBestState.consensusStateDB.Copy()
 }
 
+//for test only
+func (shardBestState *ShardBestState) SetTransactonDB(h common.Hash, txDB *statedb.StateDB) {
+	shardBestState.transactionStateDB = txDB
+	shardBestState.TransactionStateDBRootHash = h
+	return
+}
+
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
 	return shardBestState.transactionStateDB.Copy()
 }
@@ -173,7 +180,7 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)

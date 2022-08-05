@@ -33,7 +33,7 @@ block_time:
   min_shard_block_interval: 40s
   max_shard_block_creation: 20s
 staking_amount_shard: 1750000000000
-active_shards: 1
+active_shards: 2
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:
