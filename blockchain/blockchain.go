@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -1265,11 +1264,6 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
-}
-
-func (blockchain *BlockChain) CalculateTimeSlot(beaconHeight uint64, prevTimeSlot, prevTimeInSeconds, timeInSeconds int64) int64 {
-	curBlockTime := blockchain.GetBeaconBestState().GetBlockTimeInterval(beaconHeight)
-	return prevTimeSlot + int64(math.Floor(float64((timeInSeconds-prevTimeInSeconds)/curBlockTime)))
 }
 
 func (bc *BlockChain) CalculateMintedPRVWithDefaultBlocktime(shardHeights map[byte]uint64) uint64 {

@@ -26,15 +26,7 @@ type BeaconChain struct {
 	ChainName           string
 	Ready               bool //when has peerstate
 	committeesInfoCache *lru.Cache
-	archorTime          struct {
-		archorMap map[uint64]struct {
-			timeLock int64
-			timeSlot int64
-		}
-		heights []uint64
-	}
-
-	insertLock sync.Mutex
+	insertLock          sync.Mutex
 }
 
 func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {

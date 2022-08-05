@@ -53,7 +53,11 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			} else {
 				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
 					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
-						rewardAmount = config.Param().MaxReward - bestState.RewardMinted
+						if config.Param().MaxReward > bestState.RewardMinted {
+							rewardAmount = config.Param().MaxReward - bestState.RewardMinted
+						} else {
+							rewardAmount = 0
+						}
 					}
 					bestState.RewardMinted += rewardAmount
 				}
@@ -103,7 +107,11 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			} else {
 				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
 					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
-						rewardAmount = config.Param().MaxReward - bestState.RewardMinted
+						if config.Param().MaxReward > bestState.RewardMinted {
+							rewardAmount = config.Param().MaxReward - bestState.RewardMinted
+						} else {
+							rewardAmount = 0
+						}
 					}
 					bestState.RewardMinted += rewardAmount
 				}

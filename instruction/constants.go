@@ -21,7 +21,6 @@ const (
 	DEQUEUE                        = "dequeue"
 	OUTDATED_DEQUEUE_REASON        = "outdated"
 	ACCEPT_BLOCK_REWARD_V3_ACTION  = "acceptblockrewardv3"
-	ACCEPT_BLOCK_REWARD_V4_ACTION  = "acceptblockrewardv4"
 	SHARD_RECEIVE_REWARD_V3_ACTION = "shardreceiverewardv3"
 
 	SHARD_RECEIVE_REWARD_V1_ACTION = 43
