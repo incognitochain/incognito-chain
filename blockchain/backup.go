@@ -67,7 +67,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	if backupHeight < BackupInterval {
 		return
 	}
-	if s.lastBootStrap.BeaconView != nil && s.lastBootStrap.BeaconView.GetHeight()+BackupInterval > backupHeight {
+	if s.lastBootStrap != nil && s.lastBootStrap.BeaconView != nil && s.lastBootStrap.BeaconView.GetHeight()+BackupInterval > backupHeight {
 		return
 	}
 
