@@ -658,6 +658,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				v.NumberOfShardBlock[shardID] = 0
 			}
 		}
+		if v.ShardTSManager == nil {
+			v.ShardTSManager = make(map[byte]*TSManager)
+		}
 		for i := 0; i < blockchain.GetActiveShardNumber(); i++ {
 			if v.ShardTSManager[byte(i)] == nil {
 				v.ShardTSManager[byte(i)] = new(TSManager)
