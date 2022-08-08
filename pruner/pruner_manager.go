@@ -42,7 +42,7 @@ func (s *PrunerManager) Start() error {
 			//if shard pruner not run -> then check condition to trigger prune
 			if shardPruner.status == IDLE {
 				latest := false
-				if shardPruner.bestView != nil && common.CalculateTimeSlot(shardPruner.bestView.BestBlock.GetProposeTime()) == common.CalculateTimeSlot(time.Now().Unix()) {
+				if shardPruner.bestView != nil && shardPruner.bestView.CalculateTimeSlot(shardPruner.bestView.BestBlock.GetProposeTime()) == shardPruner.bestView.CalculateTimeSlot(time.Now().Unix()) {
 					latest = true
 				}
 				//if auto prune, sync latest block, and bestview block > last processing block

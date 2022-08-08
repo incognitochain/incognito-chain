@@ -1,7 +1,9 @@
 package blockchain
 
 import (
+	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -19,17 +21,49 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB) error {
+func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB, bestState *BeaconBestState) error {
+	//get shard block version that confirmed by this beacon block
+	shardsBlockVersions := map[int]map[uint64]int{}
+	for _, sID := range blockchain.GetShardIDs() {
+		shardsBlockVersions[sID] = map[uint64]int{}
+		sStates := beaconBlock.Body.ShardState[byte(sID)]
+		for _, sState := range sStates {
+			shardsBlockVersions[sID][sState.Height] = sState.Version
+		}
+	}
+
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
 			continue
 		}
+		version := beaconBlock.Header.Version
 		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_V3_ACTION {
 			acceptBlockRewardIns, err := instruction.ValidateAndImportAcceptBlockRewardV3InstructionFromString(inst)
 			if err != nil {
 				return err
 			}
-			acceptBlockRewardIns.TxsFee()[common.PRVCoinID] += blockchain.getRewardAmount(acceptBlockRewardIns.ShardBlockHeight())
+			if shardBlockVersions, ok := shardsBlockVersions[int(acceptBlockRewardIns.ShardID())]; ok {
+				if blkVersion, ok := shardBlockVersions[acceptBlockRewardIns.ShardBlockHeight()]; ok {
+					version = blkVersion
+				}
+			}
+			rewardAmount, err := blockchain.GetRewardAmount(version, acceptBlockRewardIns.ShardBlockHeight())
+			if err != nil {
+				return err
+			} else {
+				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
+					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
+						if config.Param().MaxReward > bestState.RewardMinted {
+							rewardAmount = config.Param().MaxReward - bestState.RewardMinted
+						} else {
+							rewardAmount = 0
+						}
+					}
+					bestState.RewardMinted += rewardAmount
+				}
+			}
+
+			acceptBlockRewardIns.TxsFee()[common.PRVCoinID] += rewardAmount
 
 			for key, value := range acceptBlockRewardIns.TxsFee() {
 				if value != 0 {
@@ -62,7 +96,27 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if acceptedBlkRewardInfo.TxsFee == nil {
 				acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
 			}
-			acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] += blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			if shardBlockVersions, ok := shardsBlockVersions[int(acceptedBlkRewardInfo.ShardID)]; ok {
+				if blkVersion, ok := shardBlockVersions[acceptedBlkRewardInfo.ShardBlockHeight]; ok {
+					version = blkVersion
+				}
+			}
+			rewardAmount, err := blockchain.GetRewardAmount(version, acceptedBlkRewardInfo.ShardBlockHeight)
+			if err != nil {
+				return err
+			} else {
+				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
+					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
+						if config.Param().MaxReward > bestState.RewardMinted {
+							rewardAmount = config.Param().MaxReward - bestState.RewardMinted
+						} else {
+							rewardAmount = 0
+						}
+					}
+					bestState.RewardMinted += rewardAmount
+				}
+			}
+			acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] += rewardAmount
 
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
@@ -286,7 +340,7 @@ func (blockchain *BlockChain) addShardCommitteeRewardSlashingVersion(
 	return nil
 }
 
-func calculateRewardMultiset(
+func (blockchain *BlockChain) calculateRewardMultiset(
 	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
 	curView *BeaconBestState,
 	maxBeaconBlockCreation uint64,
@@ -301,14 +355,16 @@ func calculateRewardMultiset(
 	map[common.Hash]uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForRewardMultiset(curView.rewardStateDB, epoch)
-	blocksPerYear := getNoBlkPerYear(maxBeaconBlockCreation)
-	percentForIncognitoDAO := getPercentForIncognitoDAO(beaconHeight, blocksPerYear)
+	currentBeaconYear, err := blockchain.GetYearOfBlockChain(beaconHeight)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
 	totalRewardForShardSubset := make([][]map[common.Hash]uint64, curView.ActiveShards)
 	totalRewards := make([][]map[common.Hash]uint64, curView.ActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
 	totalRewardForCustodian := map[common.Hash]uint64{}
-	var err error
 
 	for shardID := 0; shardID < curView.ActiveShards; shardID++ {
 		totalRewardForShardSubset[shardID] = make([]map[common.Hash]uint64, maxSubsetsCommittee)
@@ -362,8 +418,9 @@ func calculateRewardMultiset(
 	return totalRewardForBeacon, totalRewardForShardSubset, totalRewardForIncDAO, totalRewardForCustodian, nil
 }
 
-func calculateReward(
+func (blockchain *BlockChain) calculateReward(
 	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
+	curView *BeaconBestState,
 	numberOfActiveShards int,
 	beaconHeight uint64,
 	epoch uint64,
@@ -376,14 +433,16 @@ func calculateReward(
 	map[common.Hash]uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
-	blkPerYear := getNoBlkPerYear(uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()))
-	percentForIncognitoDAO := getPercentForIncognitoDAO(beaconHeight, blkPerYear)
+	currentBeaconYear, err := blockchain.GetYearOfBlockChain(beaconHeight)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
 	totalRewardForCustodian := map[common.Hash]uint64{}
-	var err error
 
 	for id := 0; id < numberOfActiveShards; id++ {
 		if totalRewards[id] == nil {
@@ -411,6 +470,8 @@ func calculateReward(
 			percentCustodianRewards,
 			percentForIncognitoDAO,
 			numberOfActiveShards,
+			curView.GetBeaconCommittee(),
+			curView.GetShardCommittee(),
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
@@ -452,13 +513,13 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 	rewardForPdex := uint64(0)
 
-	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
-			err = calculateRewardMultiset(
+			err = blockchain.calculateRewardMultiset(
 			splitRewardRuleProcessor,
 			curView,
 			uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()),
@@ -480,8 +541,9 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
-			err = calculateReward(
+			err = blockchain.calculateReward(
 			splitRewardRuleProcessor,
+			curView,
 			curView.ActiveShards, blkHeight, epoch,
 			curView.GetBeaconRewardStateDB(),
 			isSplitRewardForCustodian, percentCustodianRewards,
@@ -612,6 +674,56 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 	return salaryTx, nil
 }
 
+func (blockchain *BlockChain) GetBlockTimeByBlockVersion(blkVersion int) (int64, error) {
+	blockTimeMap := config.Param().BlockTimeParam
+	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+	blockVersionEnableFeature := map[string]int{}
+	sortBlockVersionEnableFeature := []string{}
+
+	//from TriggeredFeature in beacon beststate, we extract feature that related to adjusting block time
+	for feature, enableBlockHeight := range blockchain.BeaconChain.GetBestView().(*BeaconBestState).TriggeredFeature {
+		if _, ok := config.Param().BlockTimeParam[feature]; ok {
+			beaconBlock, err := blockchain.GetBeaconBlockByHeightV1(enableBlockHeight)
+			if err != nil {
+				return 0, fmt.Errorf("Cannot find beacon block %v", enableBlockHeight)
+			}
+			blockVersionEnableFeature[feature] = beaconBlock.GetVersion() //this is version before adjusting block time
+			sortBlockVersionEnableFeature = append(sortBlockVersionEnableFeature, feature)
+		}
+	}
+
+	//then sort by version
+	sort.Slice(sortBlockVersionEnableFeature, func(i, j int) bool {
+		if blockVersionEnableFeature[sortBlockVersionEnableFeature[i]] > blockVersionEnableFeature[sortBlockVersionEnableFeature[j]] {
+			return true
+		}
+		return false
+	})
+
+	//return the corresponding blocktime of blkVersion
+	for _, feature := range sortBlockVersionEnableFeature {
+		if blkVersion > blockVersionEnableFeature[feature] { //version must be greater than the version before adjusting
+			if t, ok := blockTimeMap[feature]; !ok {
+				return 0, fmt.Errorf("Cannot find block time param %v", feature)
+			} else {
+				return t, nil
+			}
+		}
+	}
+
+	return defaultBlockTime, nil
+}
+
+func (blockchain *BlockChain) GetBasicRewardByVersion(version int) (uint64, error) {
+	blockTimeMap := config.Param().BlockTimeParam
+	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+	curBlockTime, err := blockchain.GetBlockTimeByBlockVersion(version)
+	if err != nil {
+		return 0, err
+	}
+	return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime), nil
+}
+
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	blockBeaconInterval := config.Param().BlockTime.MinBeaconBlockInterval.Seconds()
 	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
@@ -624,12 +736,99 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	return reward
 }
 
+func (blockchain *BlockChain) GetRewardAmount(shardVersion int, shardHeight uint64) (uint64, error) {
+	if shardVersion < types.ADJUST_BLOCKTIME_VERSION {
+		return blockchain.getRewardAmount(shardHeight), nil
+	}
+	basicReward, err := blockchain.GetBasicRewardByVersion(shardVersion)
+	if err != nil {
+		return 0, err
+	}
+	yearOfBeaconHeight, err := blockchain.GetYearOfBlockChain(shardHeight)
+	if err != nil {
+		return 0, err
+	}
+	return blockchain.getRewardAmountV2(basicReward, yearOfBeaconHeight), nil
+
+}
+
+func (blockchain *BlockChain) getRewardAmountV2(basicReward, year uint64) uint64 {
+	n := year
+	reward := basicReward
+	for ; n > 0; n-- {
+		reward *= 91
+		reward /= 100
+	}
+	return reward
+}
+
+func (blockchain *BlockChain) GetYearOfBlockChain(blockHeight uint64) (uint64, error) {
+
+	bView := blockchain.GetBeaconBestState()
+	if bView == nil {
+		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", blockHeight)
+	}
+	triggerFeature := bView.TriggeredFeature
+	features := []string{}
+	for f, _ := range config.Param().BlockTimeParam {
+		features = append(features, f)
+	}
+	return getYearOfBlockChain(features, triggerFeature, blockHeight), nil
+}
+
+func getYearOfBlockChain(features []string, triggerMap map[string]uint64, blkHeight uint64) uint64 {
+	_, currentBlkTimeFeatureIdx := getBlockTimeFeature(features, triggerMap, blkHeight)
+	years := uint64(0)
+	blksOfPrevFeature := uint64(0)
+	prevBeaconHeight := uint64(0)
+	for idx := 0; idx < currentBlkTimeFeatureIdx; idx++ {
+		lastBeaconHeight := blkHeight
+		if idx+1 <= currentBlkTimeFeatureIdx {
+			lastBeaconHeight = triggerMap[features[idx+1]]
+		}
+		blksPerYear := GetNumberBlkPerYear(features[idx])
+		if blksOfPrevFeature != 0 {
+			blksOfPrevFeature = convertTotalBlks(features[idx-1], features[idx], blksOfPrevFeature)
+		}
+		years += (lastBeaconHeight - prevBeaconHeight + blksOfPrevFeature) / blksPerYear
+		blksOfPrevFeature = (lastBeaconHeight - prevBeaconHeight + blksOfPrevFeature) % blksPerYear
+	}
+	return years
+}
+
+func convertTotalBlks(fromFeature, toFeature string, totalBlks uint64) uint64 {
+	blkPerYearA := GetNumberBlkPerYear(fromFeature)
+	blkPerYearB := GetNumberBlkPerYear(toFeature)
+	return totalBlks * blkPerYearA / blkPerYearB
+}
+
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
 	return (365.25 * 24 * 60 * 60) / blockCreationTimeSeconds
 }
 
+func GetBlockTimeInterval(blkTimeFeature string) int64 {
+	blockTimeMap := config.Param().BlockTimeParam
+	if blkTime, ok := blockTimeMap[blkTimeFeature]; ok {
+		return int64(blkTime)
+	}
+	return int64(config.Param().BlockTime.MinBeaconBlockInterval.Seconds())
+
+}
+
+func GetNumberBlkPerYear(blkTimeFeature string) uint64 {
+	return getNoBlkPerYear(uint64(GetBlockTimeInterval(blkTimeFeature)))
+}
+
 func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
 	year := (blockHeight - 1) / blkPerYear
+	if year > (UpperBoundPercentForIncDAO - LowerBoundPercentForIncDAO) {
+		return LowerBoundPercentForIncDAO
+	} else {
+		return UpperBoundPercentForIncDAO - int(year)
+	}
+}
+
+func getPercentForIncognitoDAOV2(year uint64) int {
 	if year > (UpperBoundPercentForIncDAO - LowerBoundPercentForIncDAO) {
 		return LowerBoundPercentForIncDAO
 	} else {

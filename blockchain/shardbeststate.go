@@ -60,10 +60,12 @@ type ShardBestState struct {
 
 	TriggeredFeature map[string]uint64 `json:"TriggeredFeature"`
 	// Number of blocks produced by producers in epoch
-	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
-	BlockInterval          time.Duration
-	BlockMaxCreateTime     time.Duration
-	MetricBlockHeight      uint64
+	NumOfBlocksByProducers  map[string]uint64 `json:"NumOfBlocksByProducers"`
+	BlockInterval           time.Duration
+	BlockMaxCreateTime      time.Duration
+	MetricBlockHeight       uint64
+	MaxTxsPerBlockRemainder int64
+	TSManager               TSManager
 
 	//================================ StateDB Method
 	// block height => root hash
@@ -78,6 +80,14 @@ type ShardBestState struct {
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
 	shardCommitteeState        committeestate.ShardCommitteeState
+}
+
+func (shardBestState *ShardBestState) CalculateTimeSlot(t int64) int64 {
+	return shardBestState.TSManager.calculateTimeslot(t)
+}
+
+func (shardBestState *ShardBestState) GetCurrentTimeSlot() int64 {
+	return shardBestState.TSManager.getCurrentTS()
 }
 
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
@@ -132,7 +142,9 @@ func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
 }
 
 func NewShardBestState() *ShardBestState {
-	return &ShardBestState{}
+	return &ShardBestState{
+		MaxTxsPerBlockRemainder: int64(config.Param().TransactionInBlockParam.Lower),
+	}
 }
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
@@ -657,22 +669,25 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	}
-	switch shardBlock.Header.Version {
-	case types.BFT_VERSION:
+
+	if shardBlock.Header.Version == types.BFT_VERSION {
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
-	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION:
+	}
+	if shardBlock.Header.Version >= types.MULTI_VIEW_VERSION && shardBlock.Header.Version <= types.LEMMA2_VERSION || shardBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
 		signingCommittees := incognitokey.DeepCopy(committees)
 		return committees, signingCommittees, nil
-	case types.BLOCK_PRODUCINGV3_VERSION, types.INSTANT_FINALITY_VERSION:
+	}
+	if shardBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION && shardBlock.Header.Version <= types.INSTANT_FINALITY_VERSION {
 		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
-		timeSlot := common.CalculateTimeSlot(shardBlock.Header.ProposeTime)
+		timeSlot := shardBestState.CalculateTimeSlot(shardBlock.Header.ProposeTime)
+		// timeSlot := common.CalculateTimeSlot(shardBlock.Header.ProposeTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
@@ -682,10 +697,8 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 			committees,
 			proposerIndex)
 		return committees, signingCommitteeV3, nil
-	default:
-		panic("shardBestState.CommitteeState is not a valid version")
 	}
-	return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
+	panic("shardBestState.CommitteeState is not a valid version")
 }
 
 func GetProposer(
@@ -700,9 +713,16 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 	return id
 }
 
-//GetSubsetIDFromProposerTime for block producing v3 only
-func GetSubsetIDFromProposerTime(proposerTime int64, validators int) int {
-	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), validators)
+// //GetSubsetIDFromProposerTime for block producing v3 only
+// func GetSubsetIDFromProposerTime(proposerTime int64, validators int) int {
+// 	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), validators)
+// 	subsetID := GetSubsetID(proposerIndex)
+// 	return subsetID
+// }
+
+//TODO
+func GetSubsetIDFromProposerTimeV2(proposerTimeSlot int64, validators int) int {
+	proposerIndex := GetProposerByTimeSlot(proposerTimeSlot, validators)
 	subsetID := GetSubsetID(proposerIndex)
 	return subsetID
 }

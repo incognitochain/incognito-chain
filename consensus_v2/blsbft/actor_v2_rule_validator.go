@@ -46,10 +46,10 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 			continue
 		}
 
-		//// check if this time slot has been voted
-		//if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
-		//	continue
-		//}
+		//must link to bestview, we expect all node having same block data having same bestview
+		if previousBlockHash.String() != c.chain.GetBestViewHash() {
+			continue
+		}
 
 		//special case: if we insert block too quick, before voting
 		//=> vote for this block (within TS,but block is inserted into bestview)
@@ -67,7 +67,7 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 		}
 
 		// check if propose block in within TS
-		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != currentTimeSlot {
+		if previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != currentTimeSlot {
 			continue
 		}
 
@@ -77,7 +77,7 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 		}
 
 		// check if producer time > proposer time
-		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > currentTimeSlot {
+		if previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > currentTimeSlot {
 			continue
 		}
 
@@ -89,8 +89,8 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 			}
 
 			if previousView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
-				previousProposeTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
-				previousProduceTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
+				previousProposeTimeSlot := previousView.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
+				previousProduceTimeSlot := previousView.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
 				if previousView.GetBlock().GetFinalityHeight() == 0 && previousProposeTimeSlot != previousProduceTimeSlot {
 					c.logger.Errorf("Reject block %+v as previous block finality height not set (%+v) or produce/propose not the same (%+v)", proposeBlockInfo.block.FullHashString(), previousView.GetBlock().GetFinalityHeight(), previousProposeTimeSlot, previousProduceTimeSlot)
 					continue
@@ -100,8 +100,8 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 
 		if proposeBlockInfo.block.GetFinalityHeight() == 0 {
 			if previousView.GetBlock().GetVersion() >= types.INSTANT_FINALITY_VERSION {
-				previousProposeTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
-				previousProduceTimeSlot := common.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
+				previousProposeTimeSlot := previousView.CalculateTimeSlot(previousView.GetBlock().GetProposeTime())
+				previousProduceTimeSlot := previousView.CalculateTimeSlot(previousView.GetBlock().GetProduceTime())
 				if proposeBlockInfo.IsValidLemma2Proof && (previousView.GetBlock().GetFinalityHeight() != 0 || previousProposeTimeSlot == previousProduceTimeSlot) {
 					c.logger.Errorf("Reject block %+v as this block should set finality height", proposeBlockInfo.block.FullHashString())
 					continue
@@ -156,19 +156,21 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 		return true
 	}
 
-	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
-	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
+	previousView := c.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+
+	blockProduceTimeSlot := previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+	lastBlockProduceTimeSlot := previousView.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
 	if blockProduceTimeSlot < lastBlockProduceTimeSlot {
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
 		c.logger.Infof("Block %+v is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
 			proposeBlockInfo.block.FullHashString(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		return true
 	} else if blockProduceTimeSlot == lastBlockProduceTimeSlot &&
-		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
+		previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > previousView.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
 		c.logger.Infof("Block %+v is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
 			proposeBlockInfo.block.FullHashString(),
-			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
-			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
+			previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+			previousView.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {
@@ -187,8 +189,8 @@ func (c ConsensusValidatorLemma2) ValidateConsensusRules(lastVotedBlock types.Bl
 		proposeBlockInfo.block.GetHeight(),
 		blockProduceTimeSlot,
 		lastBlockProduceTimeSlot,
-		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
-		common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
+		previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+		previousView.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
 		proposeBlockInfo.block.CommitteeFromBlock().String() == lastVotedBlock.CommitteeFromBlock().String(),
 	)
 
@@ -209,14 +211,19 @@ func (c ConsensusValidatorLemma1) FilterValidProposeBlockInfo(bestViewHash commo
 	validProposeBlock := []*ProposeBlockInfo{}
 	tryReVoteInsertedBlock := []*ProposeBlockInfo{}
 	invalidProposeBlock := []string{}
+
 	//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
 	for h, proposeBlockInfo := range proposeBlockInfos {
 		if proposeBlockInfo.block == nil {
 			continue
 		}
+		previousView := c.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+		if previousView == nil {
+			continue
+		}
 
 		//// check if this time slot has been voted
-		//if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
+		//if a.votedTimeslot[c.chain.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
 		//	continue
 		//}
 
@@ -236,7 +243,7 @@ func (c ConsensusValidatorLemma1) FilterValidProposeBlockInfo(bestViewHash commo
 		}
 
 		// check if propose block in within TS
-		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != currentTimeSlot {
+		if previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != currentTimeSlot {
 			continue
 		}
 
@@ -246,7 +253,7 @@ func (c ConsensusValidatorLemma1) FilterValidProposeBlockInfo(bestViewHash commo
 		}
 
 		// check if producer time > proposer time
-		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > currentTimeSlot {
+		if previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > currentTimeSlot {
 			continue
 		}
 
@@ -297,20 +304,21 @@ func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.Bl
 		return true
 	}
 
-	blockProduceTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
-	lastBlockProduceTimeSlot := common.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
+	previousView := c.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+	blockProduceTimeSlot := previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+	lastBlockProduceTimeSlot := previousView.CalculateTimeSlot(lastVotedBlock.GetProduceTime())
 
-	if blockProduceTimeSlot < common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) {
+	if blockProduceTimeSlot < previousView.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) {
 		c.logger.Infof("Block %+v is valid with rule 1, Block Produce Time %+v, < Last Block Produce Time %+v",
 			proposeBlockInfo.block.FullHashString(), blockProduceTimeSlot, lastBlockProduceTimeSlot)
 		// blockProduceTimeSlot is smaller than voted block => vote for this block
 		return true
-	} else if blockProduceTimeSlot == common.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) &&
-		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
+	} else if blockProduceTimeSlot == previousView.CalculateTimeSlot(lastVotedBlock.GetProduceTime()) &&
+		previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > previousView.CalculateTimeSlot(lastVotedBlock.GetProposeTime()) {
 		c.logger.Infof("Block %+v is valid with rule 2, Block Propose Time %+v, < Last Block Propose Time %+v",
 			proposeBlockInfo.block.FullHashString(),
-			common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
-			common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
+			previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+			previousView.CalculateTimeSlot(lastVotedBlock.GetProposeTime()))
 		// block is old block (same round), but new proposer(larger timeslot) => vote again
 		return true
 	} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlock.CommitteeFromBlock().String() {
@@ -329,8 +337,8 @@ func (c ConsensusValidatorLemma1) ValidateConsensusRules(lastVotedBlock types.Bl
 		proposeBlockInfo.block.GetHeight(),
 		blockProduceTimeSlot,
 		lastBlockProduceTimeSlot,
-		common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
-		common.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
+		previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()),
+		previousView.CalculateTimeSlot(lastVotedBlock.GetProposeTime()),
 		proposeBlockInfo.block.CommitteeFromBlock().String() == lastVotedBlock.CommitteeFromBlock().String(),
 	)
 

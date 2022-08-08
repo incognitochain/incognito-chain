@@ -29,6 +29,11 @@ import (
 const (
 	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
 	INSTANT_FINALITY_FEATURE      = "instantfinality"
+	BLOCKTIME_DEFAULT             = "blocktimedef"
+	BLOCKTIME_20                  = "blocktime20"
+	BLOCKTIME_10                  = "blocktime10"
+	EPOCHV2                       = "epochparamv2"
+	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
 )
 
 // BestState houses information about the current best block and other info
@@ -70,6 +75,10 @@ type BeaconBestState struct {
 	NumberOfShardBlock               map[byte]uint        `json:"NumberOfShardBlock"`
 	TriggeredFeature                 map[string]uint64    `json:"TriggeredFeature"`
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
+	RewardMinted                     uint64               `json:"RewardMinted"`
+	TSManager                        TSManager
+	ShardTSManager                   map[byte]*TSManager
+
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -99,6 +108,13 @@ type BeaconBestState struct {
 	LastBlockProcessBridge uint64
 }
 
+func (beaconBestState *BeaconBestState) CalculateTimeSlot(t int64) int64 {
+	return beaconBestState.TSManager.calculateTimeslot(t)
+}
+func (beaconBestState *BeaconBestState) GetCurrentTimeSlot() int64 {
+	return beaconBestState.TSManager.getCurrentTS()
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
 	return beaconBestState.slashStateDB.Copy()
 }
@@ -121,12 +137,14 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
 	beaconBestState.bridgeAggManager = bridgeagg.NewManager()
+	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
 	beaconBestState.CurrentRandomNumber = -1
@@ -882,7 +900,7 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	beaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
-	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
+	firstBeaconHeightOfEpoch := GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
@@ -1170,7 +1188,7 @@ func (b *BeaconBestState) CalculateExpectedTotalBlock(blockVersion int) map[byte
 	subsetNumberOfShardBlock := make(map[byte]uint)
 
 	for shardID, numberOfBlock := range b.NumberOfShardBlock {
-		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock / 2
 		} else {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock
@@ -1245,6 +1263,41 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	}
 
 	return nonSlashingCommittees
+}
+
+func getBlockTimeFeature(features []string, triggerMap map[string]uint64, blkHeight uint64) (string, int) {
+	currentBlkTimeFeatureIdx := 0
+	for idx, f := range features {
+		if triggerHeight, ok := triggerMap[f]; ok {
+			if (triggerHeight != 0) && (triggerHeight <= blkHeight) {
+				currentBlkTimeFeatureIdx = idx
+			}
+		}
+	}
+	return features[currentBlkTimeFeatureIdx], currentBlkTimeFeatureIdx
+}
+
+func (curView *BeaconBestState) GetBlockTimeFeature(blkHeight uint64) (string, int) {
+	triggerFeature := curView.TriggeredFeature
+	features := []string{}
+	for f, _ := range config.Param().BlockTimeParam {
+		features = append(features, f)
+	}
+	return getBlockTimeFeature(features, triggerFeature, blkHeight)
+}
+
+func (curView *BeaconBestState) GetBlockTimeInterval(blkHeight uint64) int64 {
+	feature, _ := curView.GetBlockTimeFeature(blkHeight)
+	blockTimeMap := config.Param().BlockTimeParam
+	return blockTimeMap[feature]
+}
+
+func (curView *BeaconBestState) GetBasicReward(blkHeight uint64) uint64 {
+	curFeature, _ := curView.GetBlockTimeFeature(blkHeight)
+	blockTimeMap := config.Param().BlockTimeParam
+	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
+	curBlockTime := blockTimeMap[curFeature]
+	return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime)
 }
 
 func GetMaxCommitteeSize(currentMaxShardCommittee int, triggerFeature map[string]uint64, blkHeight uint64) int {
