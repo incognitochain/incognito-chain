@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"sync"
@@ -43,7 +44,6 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 		return &BackupManager{bc, nil, nil}
 	}
 	jsonStr, err := ioutil.ReadAll(fd)
-	fmt.Println(string(jsonStr))
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(lastBackup)
+	log.Println(string(jsonStr))
 	return &BackupManager{bc, lastBackup, nil}
 }
 
@@ -60,7 +60,7 @@ func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
 	return *s.lastBootStrap
 }
 
-const BackupInterval = 20
+const BackupInterval = 350 * 6 * 3 // days
 
 func (s *BackupManager) Backup(backupHeight uint64) {
 	//backup condition period
@@ -70,32 +70,41 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	if s.lastBootStrap != nil && s.lastBootStrap.BeaconView != nil && s.lastBootStrap.BeaconView.GetHeight()+BackupInterval > backupHeight {
 		return
 	}
+	bestState := s.blockchain.GetBeaconBestState()
+	for sid, shardChain := range s.blockchain.ShardChain {
+		if bestState.BestShardHeight[byte(sid)] > shardChain.GetFinalViewHeight() {
+			log.Println("Not backup as shard not sync up")
+			return
+		}
+	}
 
 	shardBestView := map[int]*ShardBestState{}
 	beaconBestView := NewBeaconBestState()
 	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
-	beaconBestView.BestBlock = types.BeaconBlock{}
 
-	checkPoint := time.Now().Format(time.RFC3339)
-	defer func() {
-		s.runningBootStrap = nil
-	}()
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		shardBestView[i] = NewShardBestState()
-		shardBestView[i].cloneShardBestStateFrom(s.blockchain.GetBestStateShard(byte(i)))
+		shardBestView[i].cloneShardBestStateFrom(s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState))
 	}
 
 	//update current status
+	checkPoint := time.Now().Format(time.RFC3339)
 	bootstrapInfo := &BackupProcessInfo{
 		CheckpointName: checkPoint,
 		BeaconView:     beaconBestView,
 		ShardView:      map[int]*ShardBestState{},
 	}
 	s.runningBootStrap = bootstrapInfo
+	defer func() {
+		s.runningBootStrap = nil
+	}()
 
 	//backup beacon then shard
 	cfg := config.LoadConfig()
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
+	beaconBestView.BestBlock = types.BeaconBlock{}
+
+	//backup shard
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
 		bootstrapInfo.ShardView[i] = shardBestView[i]
@@ -120,7 +129,6 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 
 	//update final status
 	s.lastBootStrap = bootstrapInfo
-
 	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)

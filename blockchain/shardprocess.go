@@ -1350,24 +1350,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	//TODO: @hy check this txDB only use  to verify incoming tx
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
-	if !config.Config().ForceBackup {
-		return nil
-	}
-
-	backupPoint := false
-	for _, beaconBlock := range beaconBlocks {
-		if blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetHeight() + 1) {
-			backupPoint = true
-		}
-	}
-
-	if backupPoint {
-		err := blockchain.GetShardChainDatabase(newShardState.ShardID).Backup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		if err != nil {
-			blockchain.GetShardChainDatabase(newShardState.ShardID).RemoveBackup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		}
-	}
-
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil

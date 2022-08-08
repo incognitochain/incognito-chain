@@ -108,8 +108,8 @@ type config struct {
 	Libp2pPrivateKey string `mapstructure:"p2p_private_key" long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
 
 	//backup
-	PreloadAddress   string `mapstructure:"preload_address" yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
-	ForceBackup      bool   `mapstructure:"force_backup" long:"forcebackup" description:"Force node to backup"`
+	BootstrapAddress string `mapstructure:"bootstrap_address" yaml:"bootstrap_address" long:"bootstrapaddress" description:"Endpoint of fullnodes to download backup database"`
+	Backup           bool   `mapstructure:"backup" long:"backup" description:"backup mode"`
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 
 	// Optional : db to store coin by OTA key (for v2)

@@ -66,12 +66,11 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		bootstrap.BootstrapBeacon()
 	}
 	//check if bootstrap node is set, if yes then we should preload beacon database
-	preloadAddr := configpkg.Config().PreloadAddress
+	preloadAddr := configpkg.Config().BootstrapAddress
 	if preloadAddr != "" {
-		//TODO: preload beacon
-
+		preloadBeacon()
 	}
-	preloadBeacon()
+
 	if os.Getenv("FULLNODE") == "1" {
 		synckerManager.config.Network.SetSyncMode("fullnode")
 	}
@@ -132,7 +131,6 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
 	}
 
-	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
 	if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
@@ -167,17 +165,6 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 			}
 
 			if _, ok := wantedShard[byte(sid)]; ok {
-				//check preload shard
-				if preloadAddr != "" {
-					if syncProc.status != RUNNING_SYNC { //run only when start
-						if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
-							fmt.Println(err)
-							Logger.Infof("Preload shard %v fail!", sid)
-						} else {
-							synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
-						}
-					}
-				}
 				syncProc.start()
 			} else {
 				syncProc.stop()

@@ -656,6 +656,12 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				v.NumberOfShardBlock[shardID] = 0
 			}
 		}
+
+		for i := 0; i < blockchain.GetActiveShardNumber(); i++ {
+			if v.ShardTSManager[byte(i)] == nil {
+				v.ShardTSManager[byte(i)] = new(TSManager)
+			}
+		}
 		//check config
 		for feature, height := range v.TriggeredFeature {
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {

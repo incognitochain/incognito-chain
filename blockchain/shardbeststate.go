@@ -679,7 +679,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	}
 	if shardBlock.Header.Version >= types.MULTI_VIEW_VERSION && shardBlock.Header.Version <= types.LEMMA2_VERSION || shardBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
-		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.GetShardCommitteeFromBeaconHash(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
@@ -687,7 +687,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		return committees, signingCommittees, nil
 	}
 	if shardBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION && shardBlock.Header.Version <= types.INSTANT_FINALITY_VERSION {
-		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.GetShardCommitteeFromBeaconHash(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}

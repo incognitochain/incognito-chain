@@ -181,7 +181,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 
 	//backup if finalized block is created recently and satisfy interval period
-	if beaconBlock.GetProposeTime() >= int64(time.Now().Unix()-20) && beaconBlock.GetFinalityHeight() == beaconBlock.GetHeight() {
+	if config.Config().Backup && beaconBlock.GetProposeTime() >= int64(time.Now().Unix()-20) && beaconBlock.GetFinalityHeight() == beaconBlock.GetHeight() {
 		go blockchain.BackupManager.Backup(beaconBlock.GetHeight())
 	}
 
@@ -1271,25 +1271,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
-
-	if !config.Config().ForceBackup {
-		return nil
-	}
-
-	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
-		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-
-	}
 	return nil
 }
 
