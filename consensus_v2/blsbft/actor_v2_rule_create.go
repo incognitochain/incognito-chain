@@ -1,12 +1,10 @@
 package blsbft
 
 import (
-	"context"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type ICreateNewBlockRule interface {
@@ -40,38 +38,36 @@ func (n NormalCreateBlockRule) CreateBlock(
 	isRePropose bool,
 ) (types.BlockInterface, error) {
 
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-	defer cancel()
-
 	if !isRePropose {
-		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
-		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
-		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
 		newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
-		n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.FullHashString(),
-			proposerKeySetIndex, proposerKeySetSubsetID)
-
+		if blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
+			proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
+			proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
+			proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
+			n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
+				"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.FullHashString(),
+				proposerKeySetIndex, proposerKeySetSubsetID)
+		}
 		return newBlock, nil
 	} else {
-		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
-		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
-		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
-		producerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{block.GetProducer()})
-		producerKeySet := producerCommitteePK[0].GetMiningKeyBase58(consensusName)
-		producerKeySetIndex, producerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, producerKeySet, consensusName)
-
-		n.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v | "+
-			"Producer Index %+v, Producer SubsetID %+v | "+
-			"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.FullHashString(),
-			producerKeySetIndex, producerKeySetSubsetID, proposerKeySetIndex, proposerKeySetSubsetID)
 		newBlock, err := n.chain.CreateNewBlockFromOldBlock(block, b58Str, currentTime, isValidRePropose)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
+		}
+		if blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
+			proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
+			proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
+			proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
+			producerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{block.GetProducer()})
+			producerKeySet := producerCommitteePK[0].GetMiningKeyBase58(consensusName)
+			producerKeySetIndex, producerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, producerKeySet, consensusName)
+			n.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v | "+
+				"Producer Index %+v, Producer SubsetID %+v | "+
+				"Proposer Index %+v, Proposer SubsetID %+v ", block.GetHeight(), block.FullHashString(),
+				producerKeySetIndex, producerKeySetSubsetID, proposerKeySetIndex, proposerKeySetSubsetID)
 		}
 		return newBlock, nil
 	}
@@ -102,21 +98,19 @@ func (n OnlyCreateBlockRule) CreateBlock(
 	isRePropose bool,
 ) (types.BlockInterface, error) {
 
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
-	defer cancel()
 
-	proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
-	proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
-	proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
 	newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
 	if err != nil {
 		return nil, NewConsensusError(BlockCreationError, err)
 	}
-	n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
-		"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.FullHashString(),
-		proposerKeySetIndex, proposerKeySetSubsetID)
-
+	if blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
+		proposerCommitteePK, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{b58Str})
+		proposerKeySet := proposerCommitteePK[0].GetMiningKeyBase58(consensusName)
+		proposerKeySetIndex, proposerKeySetSubsetID := blockchain.GetSubsetIDByKey(committees, proposerKeySet, consensusName)
+		n.logger.Infof("CreateNewBlock, Block Height %+v, Block Hash %+v | "+
+			"Producer Index %+v, Producer SubsetID %+v", newBlock.GetHeight(), newBlock.FullHashString(),
+			proposerKeySetIndex, proposerKeySetSubsetID)
+	}
 	return newBlock, nil
 }
 

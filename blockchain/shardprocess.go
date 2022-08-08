@@ -354,8 +354,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive shardBlock has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, shardBlock.Header.Timestamp))
 	}
 
-	if shardBlock.GetVersion() >= types.MULTI_VIEW_VERSION && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(shardBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
-		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(shardBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
+	if shardBlock.GetVersion() >= types.MULTI_VIEW_VERSION && curView.BestBlock.GetProposeTime() > 0 && curView.CalculateTimeSlot(shardBlock.Header.ProposeTime) <= curView.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
+		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", curView.CalculateTimeSlot(shardBlock.Header.ProposeTime), curView.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
 	// Verify transaction root
@@ -691,8 +691,10 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
 
+	produceTimeSlot := shardBestState.CalculateTimeSlot(shardBlock.GetProduceTime())
+	proposeTimeSlot := shardBestState.CalculateTimeSlot(shardBlock.GetProposeTime())
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength()); err != nil {
+		shardBestState.ShardProposerIdx, committees, shardBestState.GetProposerLength(), produceTimeSlot, proposeTimeSlot); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -740,6 +742,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	var (
 		err error
 	)
+
 	startTimeUpdateShardBestState := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	shardBestState := NewShardBestState()
@@ -777,9 +780,19 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			temp++
 		}
 	}
+	maxTxsReminder := oldBestState.MaxTxsPerBlockRemainder - int64(len(shardBlock.Body.Transactions))
+	if maxTxsReminder > 0 {
+		if shardBestState.MaxTxsPerBlockRemainder+maxTxsReminder >= (1 << 20) {
+			shardBestState.MaxTxsPerBlockRemainder = (1 << 20)
+		} else {
+			shardBestState.MaxTxsPerBlockRemainder += maxTxsReminder
+		}
+	}
+
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 
 	//update trigger feature
+	var beaconBlockContainTriggerFeature *types.BeaconBlock
 	for _, beaconBlock := range beaconBlocks {
 		for _, inst := range beaconBlock.Body.Instructions {
 			if inst[0] == instruction.ENABLE_FEATURE {
@@ -793,6 +806,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 				for _, feature := range enableFeatures.Features {
 					if common.IndexOfStr(feature, shardBestState.getUntriggerFeature()) != -1 {
 						shardBestState.TriggeredFeature[feature] = shardBlock.GetHeight()
+						beaconBlockContainTriggerFeature = beaconBlock
 					} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
 						Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 						return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
@@ -802,6 +816,25 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			}
 		}
 	}
+
+	//checkpoint timeslot
+	curTS := shardBestState.CalculateTimeSlot(shardBlock.GetProposeTime())
+	for feature, _ := range config.Param().BlockTimeParam {
+		if triggerHeight, ok := shardBestState.TriggeredFeature[feature]; ok {
+			if triggerHeight == shardBlock.GetHeight() {
+				//align shard timeslot to be middle of beacon timeslot
+				alignTime := beaconBlockContainTriggerFeature.GetProposeTime() + (config.Param().BlockTimeParam[feature] / 2)
+				for alignTime < shardBlock.GetProposeTime() {
+					alignTime += config.Param().BlockTimeParam[feature]
+				}
+				//endtime is current propose time
+				//starttime is new align time
+				Logger.log.Infof("Align shard timeslot: end in %v, start from %v", shardBlock.GetProposeTime(), alignTime)
+				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime(), alignTime, curTS, int(config.Param().BlockTimeParam[feature]))
+			}
+		}
+	}
+	shardBestState.TSManager.updateCurrentInfo(shardBlock.GetVersion(), curTS, shardBlock.GetProposeTime())
 
 	//update committee
 	beaconInstructions, _, err := blockchain.
