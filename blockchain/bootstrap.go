@@ -451,7 +451,8 @@ func (s *BootstrapManager) BootstrapBeacon() {
 }
 
 func (s *BootstrapManager) BootstrapShard(sid int) {
-	host := s.hosts[0]
+	randServer := mathrand.Intn(len(s.hosts))
+	host := fmt.Sprintf("http://%v", s.hosts[randServer])
 	rpcClient := remoteRPCClient{host}
 	latestBackup, _ := rpcClient.GetLatestBackup()
 	fmt.Println("latestBackup", latestBackup)
@@ -470,9 +471,9 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	bestView := latestBackup.ShardView[sid]
 
 	Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
-	Logger.log.Infof("Stream block shard %v from %v", sid, latestBackup.MinBeaconHeight)
+	Logger.log.Infof("Stream block shard %v from %v to %v", sid, s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+1, bestView.ShardHeight)
 
-	rpcClient.OnShardBlock(sid, 2, bestView.GetHeight(), func(shardBlock types.ShardBlock) {
+	rpcClient.OnShardBlock(sid, s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+1, bestView.ShardHeight, func(shardBlock types.ShardBlock) {
 		batch := s.blockchain.GetShardChainDatabase(byte(sid)).NewBatch()
 
 		for index, tx := range shardBlock.Body.Transactions {

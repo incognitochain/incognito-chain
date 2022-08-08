@@ -11,6 +11,7 @@ import (
 )
 
 const RUNNING_SYNC = "running_sync"
+const BOOTSTRAP_SYNC = "bootstrap_sync"
 const STOP_SYNC = "stop_sync"
 
 func isNil(v interface{}) bool {

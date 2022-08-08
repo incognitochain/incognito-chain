@@ -124,20 +124,24 @@ func NewShardSyncProcess(
 }
 
 func (s *ShardSyncProcess) start() {
-	if s.status == RUNNING_SYNC {
+	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC {
 		return
 	}
+	s.status = BOOTSTRAP_SYNC
 	bootstrapAddrs := config.Config().BootstrapAddress
 	if bootstrapAddrs != "" {
 		bootstrapServers := strings.Split(bootstrapAddrs, ",")
 		bootstrap := blockchain.NewBootstrapManager(bootstrapServers, s.blockchain)
 		bootstrap.BootstrapShard(s.shardID)
 	}
-	panic(1)
 	s.status = RUNNING_SYNC
+
 }
 
 func (s *ShardSyncProcess) stop() {
+	if s.status == BOOTSTRAP_SYNC {
+		return
+	}
 	s.status = STOP_SYNC
 	s.crossShardSyncProcess.stop()
 }
