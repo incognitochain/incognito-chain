@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -363,6 +364,14 @@ func (s *stateV1) GetDiff(compareState State, stateChange *v2utils.StateChange) 
 	compareStateV1, ok := compareState.(*stateV1)
 	if !ok {
 		return nil, stateChange, errors.New("compareState is not stateV1")
+	}
+
+	//transform the height in pdeState to be the same as in compareStateV1 (support look up key)
+	for key, _ := range compareStateV1.waitingContributions {
+		keySplit := strings.Split(key, "-")
+		height, _ := math.ParseUint64(keySplit[1])
+		s.TransformKeyWithNewBeaconHeight(height)
+		break
 	}
 
 	for k, v := range s.waitingContributions {

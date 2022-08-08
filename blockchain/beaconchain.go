@@ -26,19 +26,19 @@ type BeaconChain struct {
 	ChainName           string
 	Ready               bool //when has peerstate
 	committeesInfoCache *lru.Cache
-
-	insertLock sync.Mutex
+	insertLock          sync.Mutex
 }
 
 func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
 	committeeInfoCache, _ := lru.New(100)
-	return &BeaconChain{
+	chain := &BeaconChain{
 		multiView:           multiView,
 		BlockGen:            blockGen,
 		Blockchain:          blockchain,
 		ChainName:           chainName,
 		committeesInfoCache: committeeInfoCache,
 	}
+	return chain
 }
 
 func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
@@ -197,10 +197,13 @@ func (chain *BeaconChain) CreateNewBlock(
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
 	//wait a little bit, for shard
-	waitTime := common.TIMESLOT / 5
-	time.Sleep(time.Duration(waitTime) * time.Second)
+	beaconBestView := chain.GetBestView().(*BeaconBestState)
+	if version < types.ADJUST_BLOCKTIME_VERSION {
+		waitTime := beaconBestView.GetBlockTimeInterval(beaconBestView.GetBeaconHeight()) / 5
+		time.Sleep(time.Duration(waitTime) * time.Second)
+	}
 
-	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
+	newBlock, err := chain.Blockchain.NewBlockBeacon(beaconBestView, version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
 	}
@@ -214,9 +217,9 @@ func (chain *BeaconChain) CreateNewBlock(
 		if err != nil {
 			return nil, err
 		}
-		previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-		previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
-		currentTimeSlot := common.CalculateTimeSlot(newBlock.Header.Timestamp)
+		previousProposeTimeSlot := beaconBestView.CalculateTimeSlot(previousBlock.GetProposeTime())
+		previousProduceTimeSlot := beaconBestView.CalculateTimeSlot(previousBlock.GetProduceTime())
+		currentTimeSlot := beaconBestView.CalculateTimeSlot(newBlock.Header.Timestamp)
 
 		// if previous block is finality or same produce/propose
 		// and  block produced/proposed next block time
@@ -252,10 +255,10 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfa
 		// if previous block is finality or same produce/propose
 		// and valid lemma2
 		if isValidRePropose {
-			previousProposeTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-			previousProduceTimeSlot := common.CalculateTimeSlot(previousBlock.GetProduceTime())
+			bestView := chain.GetBestView()
+			previousProposeTimeSlot := bestView.CalculateTimeSlot(previousBlock.GetProposeTime())
+			previousProduceTimeSlot := bestView.CalculateTimeSlot(previousBlock.GetProduceTime())
 			if version >= types.INSTANT_FINALITY_VERSION {
-
 				if previousBlock.GetFinalityHeight() != 0 || previousProduceTimeSlot == previousProposeTimeSlot {
 					newBlock.Header.FinalityHeight = newBlock.Header.Height
 				}
@@ -365,8 +368,10 @@ func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common
 	panic("this function is not supported on beacon chain")
 }
 
-func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
-	panic("this function is not supported on beacon chain")
+func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, s string) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
+
+	return chain.InsertBlock(block, true)
 }
 func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")

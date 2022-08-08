@@ -157,6 +157,9 @@ func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
 
 //contain all trigger & untrigger feature
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
+	stat.lock.RLock()
+	defer stat.lock.RUnlock()
+
 	nodeFeatures := stat.nodes[cpk].Features
 	//get feature that beacon is checking for trigger
 	unTriggerFeatures := curView.getUntriggerFeature(false)
