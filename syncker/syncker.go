@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,14 +62,12 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
 	synckerManager.Blockchain = config.Blockchain
 
-	preloadBeacon := func() {
-		bootstrap := blockchain.NewBootstrapManager([]string{"http://127.0.0.1:20000"}, synckerManager.Blockchain)
-		bootstrap.BootstrapBeacon()
-	}
 	//check if bootstrap node is set, if yes then we should preload beacon database
-	preloadAddr := configpkg.Config().BootstrapAddress
-	if preloadAddr != "" {
-		preloadBeacon()
+	bootstrapAddrs := configpkg.Config().BootstrapAddress
+	if bootstrapAddrs != "" {
+		bootstrapServers := strings.Split(bootstrapAddrs, ",")
+		bootstrap := blockchain.NewBootstrapManager(bootstrapServers, synckerManager.Blockchain)
+		bootstrap.BootstrapBeacon()
 	}
 
 	if os.Getenv("FULLNODE") == "1" {

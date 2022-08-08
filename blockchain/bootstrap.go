@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"io/ioutil"
 	"log"
+	mathrand "math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -275,11 +276,20 @@ func NewBootstrapManager(hosts []string, bc *BlockChain) *BootstrapManager {
 var CommitteeFromBlockBootStrapCache = map[byte]*lru.Cache{}
 
 func (s *BootstrapManager) BootstrapBeacon() {
-	host := s.hosts[0]
+	randServer := mathrand.Intn(len(s.hosts))
+	host := fmt.Sprintf("http://%v", s.hosts[randServer])
 	rpcClient := remoteRPCClient{host}
 	latestBackup, _ := rpcClient.GetLatestBackup()
-	fmt.Println("latestBackup", latestBackup)
+
+	log.Println("host", host)
+	tmp, _ := json.Marshal(latestBackup)
+	log.Println("latestBackup", tmp)
+
 	if latestBackup.CheckpointName == "" {
+		return
+	}
+	//only backup if back 500k block
+	if latestBackup.BeaconView.BeaconHeight < s.blockchain.GetBeaconBestState().BeaconHeight+500*1000 {
 		return
 	}
 
