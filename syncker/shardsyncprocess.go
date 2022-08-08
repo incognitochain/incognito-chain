@@ -3,7 +3,9 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,6 +127,13 @@ func (s *ShardSyncProcess) start() {
 	if s.status == RUNNING_SYNC {
 		return
 	}
+	bootstrapAddrs := config.Config().BootstrapAddress
+	if bootstrapAddrs != "" {
+		bootstrapServers := strings.Split(bootstrapAddrs, ",")
+		bootstrap := blockchain.NewBootstrapManager(bootstrapServers, s.blockchain)
+		bootstrap.BootstrapShard(s.shardID)
+	}
+	panic(1)
 	s.status = RUNNING_SYNC
 }
 

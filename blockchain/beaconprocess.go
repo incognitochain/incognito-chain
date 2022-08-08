@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
@@ -790,8 +789,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	return nil
 }
-
-var CommitteeFromBlockCache = map[byte]*lru.Cache{}
 
 func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardStates map[byte][]types.ShardState) error {
 	for shardID, shardStates := range allShardStates {

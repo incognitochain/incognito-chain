@@ -273,8 +273,6 @@ func NewBootstrapManager(hosts []string, bc *BlockChain) *BootstrapManager {
 	return &BootstrapManager{hosts, bc}
 }
 
-var CommitteeFromBlockBootStrapCache = map[byte]*lru.Cache{}
-
 func (s *BootstrapManager) BootstrapBeacon() {
 	randServer := mathrand.Intn(len(s.hosts))
 	host := fmt.Sprintf("http://%v", s.hosts[randServer])
@@ -283,7 +281,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	log.Println("host", host)
 	tmp, _ := json.Marshal(latestBackup)
-	log.Println("latestBackup", tmp)
+	log.Println("latestBackup", string(tmp))
 
 	if latestBackup.CheckpointName == "" {
 		return
@@ -335,7 +333,9 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	wg.Add(5)
 
 	committeeFromBlock := map[byte]map[common.Hash]bool{}
-	fmt.Println("stream from ", latestBackup.MinBeaconHeight, bestView.BeaconHeight)
+	Logger.log.Info("Start bootstrap beacon from host", host)
+	Logger.log.Infof("Stream block beacon from %v", latestBackup.MinBeaconHeight)
+
 	rpcClient.OnBeaconBlock(latestBackup.MinBeaconHeight, bestView.BeaconHeight, func(beaconBlock types.BeaconBlock) {
 		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
 
@@ -371,13 +371,17 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		if beaconBlock.GetHeight() == bestView.GetBeaconHeight() {
 			bestView.BestBlock = beaconBlock
 			for sid, committeeFromBlockHash := range committeeFromBlock {
-				if cache, ok := CommitteeFromBlockCache[sid]; !ok || cache == nil {
+				if cache, ok := CommitteeFromBlockBootStrapCache[sid]; !ok || cache == nil {
 					CommitteeFromBlockBootStrapCache[sid], _ = lru.New(10)
 				}
 				for hash, _ := range committeeFromBlockHash {
 					//stream committee from block and set to cache
 					log.Println("stream", sid, hash.String())
 					res, err := rpcClient.GetShardCommitteeByBeaconHash(int(sid), hash)
+					if err != nil {
+						panic(err)
+					}
+					err = rawdbv2.StoreCacheCommitteeFromBlock(s.blockchain.GetBeaconChainDatabase(), hash, int(sid), res)
 					if err != nil {
 						panic(err)
 					}
@@ -388,6 +392,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		}
 	})
 
+	Logger.log.Info("Stream beacon consensus state ...")
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconConsensus, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(bestView.ConsensusStateDBRootHash)
@@ -397,6 +402,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		flushDB(data)
 	})
 
+	Logger.log.Info("Stream beacon reward state ...")
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconReward, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(bestView.ConsensusStateDBRootHash)
@@ -406,6 +412,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		flushDB(data)
 	})
 
+	Logger.log.Info("Stream beacon feature state ...")
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconFeature, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(bestView.ConsensusStateDBRootHash)
@@ -415,6 +422,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		flushDB(data)
 	})
 
+	Logger.log.Info("Stream beacon slashing state ...")
 	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconSlash, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(bestView.ConsensusStateDBRootHash)
@@ -424,6 +432,8 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		flushDB(data)
 	})
 	wg.Wait()
+
+	Logger.log.Info("Finish sync ... post processing ...")
 
 	allViews := []*BeaconBestState{bestView}
 	b, _ := json.Marshal(allViews)
@@ -437,6 +447,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		fmt.Println(err)
 		panic(err)
 	}
+	Logger.log.Info("Bootstrap beacon finish!")
 }
 
 func (s *BootstrapManager) BootstrapShard(sid int) {
@@ -447,10 +458,19 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	if latestBackup.CheckpointName == "" {
 		return
 	}
+
+	//only backup if back 500k block
+	if latestBackup.ShardView[sid].ShardHeight < s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+500*1000 {
+		return
+	}
+
 	wg := sync.WaitGroup{}
 	wg.Add(5)
 	//retrieve beacon block -> backup height
 	bestView := latestBackup.ShardView[sid]
+
+	Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
+	Logger.log.Infof("Stream block shard %v from %v", sid, latestBackup.MinBeaconHeight)
 
 	rpcClient.OnShardBlock(sid, 2, bestView.GetHeight(), func(shardBlock types.ShardBlock) {
 		batch := s.blockchain.GetShardChainDatabase(byte(sid)).NewBatch()
@@ -514,7 +534,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 			panic("recheck fail!")
 		}
 	}
-
+	Logger.log.Infof("Stream shard %v consensus state ...", sid)
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardConsensus, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(sid, bestView.ConsensusStateDBRootHash)
@@ -523,6 +543,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		}
 		flushDB(sid, data)
 	})
+	Logger.log.Infof("Stream shard %v transaction state ...", sid)
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardTransacton, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(sid, bestView.TransactionStateDBRootHash)
@@ -531,7 +552,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		}
 		flushDB(sid, data)
 	})
-
+	Logger.log.Infof("Stream shard %v reward state ...", sid)
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardReward, 0, func(data []byte) {
 		if len(data) == 0 {
 			recheckDB(sid, bestView.RewardStateDBRootHash)
@@ -540,6 +561,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		}
 		flushDB(sid, data)
 	})
+	Logger.log.Infof("Stream shard %v feature state ...", sid)
 
 	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardFeature, 0, func(data []byte) {
 		if len(data) == 0 {
@@ -549,7 +571,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		}
 		flushDB(sid, data)
 	})
-
+	Logger.log.Info("Finish sync ... post processing ...")
 	//post processing
 	wg.Wait()
 	allViews := []*ShardBestState{}
@@ -558,5 +580,6 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		panic(err)
 	}
 	//s.blockchain.
-	s.blockchain.RestoreShardViews(0)
+	s.blockchain.RestoreShardViews(byte(sid))
+	Logger.log.Infof("Bootstrap shard %v finish!", sid)
 }

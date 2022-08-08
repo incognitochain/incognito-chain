@@ -46,6 +46,8 @@ var (
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
 	pruneStatusPrefix         = []byte("p-s")
+
+	cacheCommitteeFromBlockPrefix = []byte("c-c-f-b" + string(splitter))
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -147,6 +149,14 @@ func GetBeaconViewsKey() []byte {
 	temp := make([]byte, 0, len(beaconViewsPrefix))
 	temp = append(temp, beaconViewsPrefix...)
 	return temp
+}
+
+func GetCacheCommitteeFromBlockKey(hash common.Hash, cid int) []byte {
+	temp := make([]byte, 0, len(cacheCommitteeFromBlockPrefix))
+	temp = append(temp, cacheCommitteeFromBlockPrefix...)
+	temp = append(temp, hash[:]...)
+	buf := common.Int32ToBytes(int32(cid))
+	return append(temp, buf...)
 }
 
 // ============================= Transaction =======================================

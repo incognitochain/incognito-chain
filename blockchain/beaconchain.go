@@ -507,6 +507,8 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 }
 
 //CommitteesByShardID ...
+var CommitteeFromBlockCache = map[byte]*lru.Cache{}
+
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
 	if cache, ok := CommitteeFromBlockBootStrapCache[shardID]; ok {
 		tempCommittees, ok := cache.Get(hash.String())
