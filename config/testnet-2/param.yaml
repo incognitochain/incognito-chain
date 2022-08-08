@@ -119,6 +119,10 @@ auto_enable_feature:
       min_trigger: 4617622
       force_trigger: 1e9
       require_percentage: 90
+  - instantfinalityv2:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 3965040
       force_trigger: 1000000000
@@ -152,10 +156,11 @@ auto_enable_feature:
       force_trigger: 1000000000
       require_percentage: 90
 blocktime_param:
-  - "blocktimedef": 40
+  - "blocktimedef": 10
   - "blocktime20": 20
-  - "blocktime10": 10   
-blocktime_features: ["blocktimedef", "blocktime20"]
+  - "blocktime40": 40
+feature_version:
+  - instantfinalityv2: 9
 transactions_param:
   lowerbound: 15
   upperbound: 100 
