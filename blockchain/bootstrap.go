@@ -475,7 +475,9 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 
 	rpcClient.OnShardBlock(sid, s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+1, bestView.ShardHeight, func(shardBlock types.ShardBlock) {
 		batch := s.blockchain.GetShardChainDatabase(byte(sid)).NewBatch()
-
+		if shardBlock.GetHeight()%1000 == 0 {
+			log.Println("shard", sid, "save block ", shardBlock.GetHeight())
+		}
 		for index, tx := range shardBlock.Body.Transactions {
 			if err := rawdbv2.StoreTransactionIndex(batch, *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
 				panic(err)
@@ -519,13 +521,11 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		if err != nil {
 			panic(err)
 		}
-		time.Sleep(time.Second)
 	}
 
 	recheckDB := func(sid int, roothash common.Hash) {
 		txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(s.blockchain.GetShardChainDatabase(byte(sid))))
 		if err != nil {
-			fmt.Println(bestView.ConsensusStateDBRootHash.String())
 			fmt.Println("check", roothash.String(), err)
 			panic(fmt.Sprintf("Something wrong when init txDB"))
 		}

@@ -189,23 +189,26 @@ func (f FlatFileManager) ReadFromIndex(index uint64) (chan []byte, chan uint64, 
 			//find parse info in cache first
 			var readInfo map[uint64]ReadInfo
 			var err error
-			v, ok := f.parseCache.Get(fromFile)
+			v, ok := f.parseCache.Get(i)
 			if ok {
 				if int(offset) < len(v.(map[uint64]ReadInfo)) {
 					readInfo = v.(map[uint64]ReadInfo)
 				} else { //if find item index is greater than len of cache <- could be new item, parse again
-					readInfo, err = f.PasreFile(fromFile)
+					readInfo, err = f.PasreFile(uint64(i))
 				}
 			} else { //no cache, parse
-				readInfo, err = f.PasreFile(fromFile)
+				readInfo, err = f.PasreFile(uint64(i))
 			}
 
 			if err != nil {
 				e <- 1
 				cancel()
 			}
-
-			for j := int(offset); j <= len(readInfo); j++ {
+			startIndex := uint64(0)
+			if i == int64(fromFile) {
+				startIndex = offset
+			}
+			for j := int(startIndex); j < len(readInfo); j++ {
 				rawB := make([]byte, readInfo[uint64(j)].size)
 				readInfo[uint64(j)].fd.ReadAt(rawB, readInfo[uint64(j)].offset)
 
@@ -291,7 +294,7 @@ func (f *FlatFileManager) checkFileSize() (uint64, error) {
 }
 
 func (f *FlatFileManager) Append(data []byte) (uint64, error) {
-	fmt.Println("debug write", len(data))
+	//fmt.Println("debug write", len(data))
 	f.lock.Lock()
 	defer f.lock.Unlock()
 

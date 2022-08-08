@@ -78,6 +78,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		}
 	}
 
+	cfg := config.LoadConfig()
 	shardBestView := map[int]*ShardBestState{}
 	beaconBestView := NewBeaconBestState()
 	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
@@ -100,7 +101,6 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}()
 
 	//backup beacon then shard
-	cfg := config.LoadConfig()
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	beaconBestView.BestBlock = types.BeaconBlock{}
 
@@ -126,8 +126,10 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 			bootstrapInfo.MinBeaconHeight = blk.GetHeight()
 		}
 	}
+	bootstrapInfo.MinBeaconHeight-- //for get previous block
 
 	//update final status
+
 	s.lastBootStrap = bootstrapInfo
 	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
@@ -176,7 +178,7 @@ func (s *BackupManager) GetBackupReader(checkpoint string, cid int, dbType int) 
 	case ShardConsensus:
 		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "consensus")
 	case ShardTransacton:
-		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "transaction")
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "tx")
 	case ShardFeature:
 		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "feature")
 	case ShardReward:
@@ -237,12 +239,14 @@ func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *s
 	if stateDB == nil {
 		return
 	}
+	cnt := 0
 	for it.Next(false, true, true) {
 		diskvalue, err := stateDB.Database().TrieDB().DiskDB().Get(it.Key)
 		if err != nil {
 			continue
 		}
-		//fmt.Println(it.Key, len(diskvalue))
+		cnt++
+		//fmt.Println(cnt, it.Key, len(diskvalue))
 		key := make([]byte, len(it.Key))
 		copy(key, it.Key)
 		data := StateDBData{key, diskvalue}
@@ -270,5 +274,8 @@ func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *s
 		if err != nil {
 			panic(err)
 		}
+	}
+	if it.Err != nil {
+		fmt.Println(it.Err)
 	}
 }
