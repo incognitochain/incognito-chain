@@ -38,7 +38,7 @@ type StateDBData struct {
 
 func NewBackupManager(bc *BlockChain) *BackupManager {
 	//read bootstrap dir and load lastBootstrap
-	cfg := config.LoadConfig()
+	cfg := config.Config()
 	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
 	if err != nil {
 		return &BackupManager{bc, nil, nil}
@@ -78,7 +78,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		}
 	}
 
-	cfg := config.LoadConfig()
+	cfg := config.Config()
 	shardBestView := map[int]*ShardBestState{}
 	beaconBestView := NewBeaconBestState()
 	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
@@ -164,7 +164,7 @@ type CheckpointInfo struct {
 }
 
 func (s *BackupManager) GetBackupReader(checkpoint string, cid int, dbType int) *flatfile.FlatFileManager {
-	cfg := config.LoadConfig()
+	cfg := config.Config()
 	dbLoc := path.Join(cfg.DataDir, cfg.DatabaseDir, checkpoint)
 	switch dbType {
 	case BeaconConsensus:

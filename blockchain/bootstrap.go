@@ -121,6 +121,7 @@ func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, off
 	}
 	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
+		panic(err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -128,6 +129,7 @@ func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, off
 		b := make([]byte, 8)
 		n, err := resp.Body.Read(b)
 		if err != nil && err.Error() != "EOF" {
+			panic(err)
 			return err
 		}
 		if n == 0 {
@@ -526,11 +528,11 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	recheckDB := func(sid int, roothash common.Hash) {
 		txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(s.blockchain.GetShardChainDatabase(byte(sid))))
 		if err != nil {
-			fmt.Println("check", roothash.String(), err)
+			fmt.Println("check", sid, roothash.String(), err)
 			panic(fmt.Sprintf("Something wrong when init txDB"))
 		}
 		if err := txDB.Recheck(); err != nil {
-			fmt.Println(err)
+			fmt.Println(sid, err)
 			fmt.Println("Recheck roothash fail!", roothash.String())
 			panic("recheck fail!")
 		}
@@ -542,6 +544,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 			wg.Done()
 			return
 		}
+		fmt.Println("sid", sid, len(data))
 		flushDB(sid, data)
 	})
 	Logger.log.Infof("Stream shard %v transaction state ...", sid)

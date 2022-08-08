@@ -636,6 +636,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	}
 
 	blockchain.BeaconChain.multiView.Reset()
+	newMultiview := multiview.NewBeaconMultiView()
+
 	for _, v := range allViews {
 		includePdexv3 := false
 		if v.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
@@ -678,10 +680,12 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 
 		// finish reproduce
-		if _, err := blockchain.BeaconChain.multiView.AddView(v); err != nil {
+		if _, err := newMultiview.AddView(v); err != nil {
 			panic("Restart beacon views fail")
 		}
 	}
+	blockchain.BeaconChain.multiView = newMultiview
+
 	for _, beaconState := range allViews {
 		if beaconState.missingSignatureCounter == nil {
 			block := beaconState.BestBlock
@@ -722,8 +726,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		return err
 	}
 	// fmt.Println("debug RestoreShardViews", len(allViews))
-	blockchain.ShardChain[shardID].multiView.Reset()
-
+	newMultiView := multiview.NewShardMultiView()
 	for _, v := range allViews {
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
@@ -757,11 +760,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if v.NumberOfFixedShardBlockValidator == 0 {
 			v.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		}
-		if _, err := blockchain.ShardChain[shardID].multiView.AddView(v); err != nil {
+		if _, err := newMultiView.AddView(v); err != nil {
 			panic("Restart shard views fail")
 		}
 		Logger.log.Info("Restore shard ", shardID, v.GetHeight(), v.GetHash().String())
 	}
+	blockchain.ShardChain[shardID].multiView = newMultiView
 	return nil
 }
 
