@@ -3,6 +3,7 @@ package blockchain
 import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"log"
 )
 
 var CommitteeFromBlockBootStrapCache = map[byte]*lru.Cache{}
@@ -17,6 +18,7 @@ func (s *BlockChain) RestoreCommitteeFromBlockCache() {
 			CommitteeFromBlockBootStrapCache[byte(sid)], _ = lru.New(10)
 		}
 		for hash, cpks := range data {
+			log.Println("restore", sid, hash.String(), len(cpks))
 			CommitteeFromBlockBootStrapCache[byte(sid)].Add(hash.String(), cpks)
 		}
 	}
