@@ -99,7 +99,6 @@ func (r *remoteRPCClient) GetLatestBackup() (res BackupProcessInfo, err error) {
 
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
-		panic(err)
 		return res, err
 	}
 	if resp.Error != nil && resp.Error.StackTrace != "" {

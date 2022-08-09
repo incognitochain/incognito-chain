@@ -29,6 +29,7 @@ type BackupManager struct {
 	blockchain       *BlockChain
 	lastBootStrap    *BackupProcessInfo
 	runningBootStrap *BackupProcessInfo
+	lock             *sync.Mutex
 }
 
 type StateDBData struct {
@@ -41,7 +42,7 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 	cfg := config.Config()
 	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
 	if err != nil {
-		return &BackupManager{bc, nil, nil}
+		return &BackupManager{bc, nil, nil, new(sync.Mutex)}
 	}
 	jsonStr, err := ioutil.ReadAll(fd)
 	if err != nil {
@@ -53,7 +54,7 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 		panic(err)
 	}
 	log.Println(string(jsonStr))
-	return &BackupManager{bc, lastBackup, nil}
+	return &BackupManager{bc, lastBackup, nil, new(sync.Mutex)}
 }
 
 func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
@@ -63,6 +64,18 @@ func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
 const BackupInterval = 350 * 6 * 3 // days
 
 func (s *BackupManager) Backup(backupHeight uint64) {
+	s.lock.Lock()
+	if s.runningBootStrap != nil {
+		s.lock.Unlock()
+		return
+	}
+
+	s.runningBootStrap = &BackupProcessInfo{}
+	s.lock.Unlock()
+	defer func() {
+		s.runningBootStrap = nil
+	}()
+
 	//backup condition period
 	if backupHeight < BackupInterval {
 		return
@@ -96,10 +109,12 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}()
 
 	//backup beacon then shard
+	log.Println("backup beacon")
 	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
 	beaconBestView.BestBlock = types.BeaconBlock{}
 
 	//backup shard
+	log.Println("backup shard")
 	shardBestView := map[int]*ShardBestState{}
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 	WAITING:
