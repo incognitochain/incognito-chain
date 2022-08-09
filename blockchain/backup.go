@@ -79,14 +79,9 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}
 
 	cfg := config.Config()
-	shardBestView := map[int]*ShardBestState{}
+
 	beaconBestView := NewBeaconBestState()
 	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
-
-	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		shardBestView[i] = NewShardBestState()
-		shardBestView[i].cloneShardBestStateFrom(s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState))
-	}
 
 	//update current status
 	checkPoint := time.Now().Format(time.RFC3339)
@@ -105,6 +100,18 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	beaconBestView.BestBlock = types.BeaconBlock{}
 
 	//backup shard
+	shardBestView := map[int]*ShardBestState{}
+	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
+	WAITING:
+		finalView := s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState)
+		if finalView.BeaconHeight <= beaconBestView.BeaconHeight {
+			Logger.log.Infof("Waiting for confirm more beacon blocks ... shard confirm beacon: %v, beacon: %v", finalView.BeaconHeight, beaconBestView.BeaconHeight)
+			time.Sleep(time.Minute)
+			goto WAITING
+		}
+		shardBestView[i] = NewShardBestState()
+		shardBestView[i].cloneShardBestStateFrom(s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState))
+	}
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
 		bootstrapInfo.ShardView[i] = shardBestView[i]
