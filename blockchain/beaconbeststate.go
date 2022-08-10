@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -1265,39 +1266,30 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	return nonSlashingCommittees
 }
 
-func getBlockTimeFeature(features []string, triggerMap map[string]uint64, blkHeight uint64) (string, int) {
-	currentBlkTimeFeatureIdx := 0
-	for idx, f := range features {
-		if triggerHeight, ok := triggerMap[f]; ok {
-			if (triggerHeight != 0) && (triggerHeight <= blkHeight) {
-				currentBlkTimeFeatureIdx = idx
+func GetAllBlockTimeFeatureByHeight(triggerMap map[string]uint64, blkHeight uint64) []string {
+	//get sorted blk time feature by enable time ( trigger time <= blkHeight)
+	sortedBlkTimeFeature := []string{}
+	for f, _ := range triggerMap {
+		for blkTimeFeature, triggerHeight := range config.Param().BlockTimeParam {
+			if f == blkTimeFeature {
+				if blkHeight <= uint64(triggerHeight) {
+					sortedBlkTimeFeature = append(sortedBlkTimeFeature, f)
+				}
+
 			}
 		}
 	}
-	return features[currentBlkTimeFeatureIdx], currentBlkTimeFeatureIdx
-}
+	sort.Slice(sortedBlkTimeFeature, func(i, j int) bool {
+		if triggerMap[sortedBlkTimeFeature[i]] < triggerMap[sortedBlkTimeFeature[j]] {
+			return true
+		} else {
+			return false
+		}
+	})
+	//insert first default time
+	sortedBlkTimeFeature = append([]string{BLOCKTIME_DEFAULT}, sortedBlkTimeFeature...)
 
-func (curView *BeaconBestState) GetBlockTimeFeature(blkHeight uint64) (string, int) {
-	triggerFeature := curView.TriggeredFeature
-	features := []string{}
-	for f, _ := range config.Param().BlockTimeParam {
-		features = append(features, f)
-	}
-	return getBlockTimeFeature(features, triggerFeature, blkHeight)
-}
-
-func (curView *BeaconBestState) GetBlockTimeInterval(blkHeight uint64) int64 {
-	feature, _ := curView.GetBlockTimeFeature(blkHeight)
-	blockTimeMap := config.Param().BlockTimeParam
-	return blockTimeMap[feature]
-}
-
-func (curView *BeaconBestState) GetBasicReward(blkHeight uint64) uint64 {
-	curFeature, _ := curView.GetBlockTimeFeature(blkHeight)
-	blockTimeMap := config.Param().BlockTimeParam
-	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
-	curBlockTime := blockTimeMap[curFeature]
-	return config.Param().BasicReward * uint64(curBlockTime) / uint64(defaultBlockTime)
+	return sortedBlkTimeFeature
 }
 
 func GetMaxCommitteeSize(currentMaxShardCommittee int, triggerFeature map[string]uint64, blkHeight uint64) int {

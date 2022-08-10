@@ -763,32 +763,28 @@ func (blockchain *BlockChain) getRewardAmountV2(basicReward, year uint64) uint64
 }
 
 func (blockchain *BlockChain) GetYearOfBlockChain(blockHeight uint64) (uint64, error) {
-
 	bView := blockchain.GetBeaconBestState()
 	if bView == nil {
 		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", blockHeight)
 	}
 	triggerFeature := bView.TriggeredFeature
-	features := []string{}
-	for f, _ := range config.Param().BlockTimeParam {
-		features = append(features, f)
-	}
-	return getYearOfBlockChain(features, triggerFeature, blockHeight), nil
+	return getYearOfBlockChain(triggerFeature, blockHeight), nil
 }
 
-func getYearOfBlockChain(features []string, triggerMap map[string]uint64, blkHeight uint64) uint64 {
-	_, currentBlkTimeFeatureIdx := getBlockTimeFeature(features, triggerMap, blkHeight)
+func getYearOfBlockChain(triggerMap map[string]uint64, blkHeight uint64) uint64 {
+	blkTimeEnableFeatures := GetAllBlockTimeFeatureByHeight(triggerMap, blkHeight)
 	years := uint64(0)
 	blksOfPrevFeature := uint64(0)
 	prevBeaconHeight := uint64(0)
+	currentBlkTimeFeatureIdx := len(blkTimeEnableFeatures) - 1
 	for idx := 0; idx < currentBlkTimeFeatureIdx; idx++ {
 		lastBeaconHeight := blkHeight
 		if idx+1 <= currentBlkTimeFeatureIdx {
-			lastBeaconHeight = triggerMap[features[idx+1]]
+			lastBeaconHeight = triggerMap[blkTimeEnableFeatures[idx+1]]
 		}
-		blksPerYear := GetNumberBlkPerYear(features[idx])
+		blksPerYear := GetNumberBlkPerYear(blkTimeEnableFeatures[idx])
 		if blksOfPrevFeature != 0 {
-			blksOfPrevFeature = convertTotalBlks(features[idx-1], features[idx], blksOfPrevFeature)
+			blksOfPrevFeature = convertTotalBlks(blkTimeEnableFeatures[idx-1], blkTimeEnableFeatures[idx], blksOfPrevFeature)
 		}
 		years += (lastBeaconHeight - prevBeaconHeight + blksOfPrevFeature) / blksPerYear
 		blksOfPrevFeature = (lastBeaconHeight - prevBeaconHeight + blksOfPrevFeature) % blksPerYear
