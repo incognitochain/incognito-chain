@@ -122,6 +122,8 @@ const (
 	BSCPrefix                 = "BSC"
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
+	AURORAPrefix              = "AUR"
+	AVAXPrefix                = "AVX"
 	ExternalBridgeTokenLength = 20
 	EVMAddressLength          = 40
 	UnifiedTokenPrefix        = "UT"
@@ -250,6 +252,8 @@ const (
 	BSCNetworkID
 	PLGNetworkID
 	FTMNetworkID
+	AURORANetworkID
+	AVAXNetworkID
 )
 
 const (

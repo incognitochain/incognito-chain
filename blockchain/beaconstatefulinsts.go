@@ -49,6 +49,8 @@ func collectStatefulActions(
 			metadata.IssuingPRVBEP20RequestMeta,
 			metadata.IssuingPLGRequestMeta,
 			metadata.IssuingFantomRequestMeta,
+			metadata.IssuingAuroraRequestMeta,
+			metadata.IssuingAvaxRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -328,6 +330,42 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTx != nil {
 					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTx)
+				}
+
+			case metadata.IssuingAuroraRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqAURORATxsUsed,
+					config.Param().AuroraContractAddressStr,
+					common.AURORAPrefix,
+					statedb.IsAURORATxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqAURORATxsUsed = append(accumulatedValues.UniqAURORATxsUsed, uniqTx)
+				}
+
+			case metadata.IssuingAvaxRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqAVAXTxsUsed,
+					config.Param().AvaxContractAddressStr,
+					common.AVAXPrefix,
+					statedb.IsAVAXTxHashIssued,
+					false,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqAVAXTxsUsed = append(accumulatedValues.UniqAVAXTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:

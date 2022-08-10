@@ -211,6 +211,16 @@ const (
 
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
+
+	IssuingAuroraRequestMeta  = metadataCommon.IssuingAuroraRequestMeta
+	IssuingAuroraResponseMeta = metadataCommon.IssuingAuroraResponseMeta
+	BurningAuroraRequestMeta  = metadataCommon.BurningAuroraRequestMeta
+	BurningAuroraConfirmMeta  = metadataCommon.BurningAuroraConfirmMeta
+
+	IssuingAvaxRequestMeta  = metadataCommon.IssuingAvaxRequestMeta
+	IssuingAvaxResponseMeta = metadataCommon.IssuingAvaxResponseMeta
+	BurningAvaxRequestMeta  = metadataCommon.BurningAvaxRequestMeta
+	BurningAvaxConfirmMeta  = metadataCommon.BurningAvaxConfirmMeta
 )
 
 // export error codes

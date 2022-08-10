@@ -21,7 +21,7 @@ func Param() *param {
 	return p
 }
 
-//AbortParam use for unit test only
+// AbortParam use for unit test only
 // DO NOT use this function for development process
 func AbortParam() {
 	p = &param{}
@@ -38,7 +38,7 @@ type TxsPerBlock struct {
 	Upper int `mapstructure:"upperbound"`
 }
 
-//param for all variables in incognito node process
+// param for all variables in incognito node process
 type param struct {
 	Name                             string                       `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
 	Net                              uint32                       `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
@@ -54,6 +54,8 @@ type param struct {
 	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
 	PlgContractAddressStr            string                       `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
 	FtmContractAddressStr            string                       `mapstructure:"ftm_contract_address" description:"smart contract of FTM for bridge"`
+	AuroraContractAddressStr         string                       `mapstructure:"aurora_contract_address" description:"smart contract of AUR for bridge"`
+	AvaxContractAddressStr           string                       `mapstructure:"avax_contract_address" description:"smart contract of AVX for bridge"`
 	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`
@@ -71,6 +73,8 @@ type param struct {
 	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
 	PLGParam                         plgParam                     `mapstructure:"plg_param"`
 	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
+	AURORAParam                      auroraParam                  `mapstructure:"aurora_param"`
+	AVAXParam                        avaxParam                    `mapstructure:"avax_param"`
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
@@ -231,7 +235,7 @@ func verifyParam(p *param) error {
 	return nil
 }
 
-//key1,key2 : default key of the network
+// key1,key2 : default key of the network
 func (p *param) LoadKey(key1 []byte, key2 []byte) {
 	network := c.Network()
 	configPath := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
@@ -359,6 +363,26 @@ type ftmParam struct {
 func (ftmParam *ftmParam) GetFromEnv() {
 	if utils.GetEnv(FTMHostKey, utils.EmptyString) != utils.EmptyString {
 		ftmParam.Host = []string{utils.GetEnv(FTMHostKey, utils.EmptyString)}
+	}
+}
+
+type auroraParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (auroraParam *auroraParam) GetFromEnv() {
+	if utils.GetEnv(AURORAHostKey, utils.EmptyString) != utils.EmptyString {
+		auroraParam.Host = []string{utils.GetEnv(AURORAHostKey, utils.EmptyString)}
+	}
+}
+
+type avaxParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (avaxParam *avaxParam) GetFromEnv() {
+	if utils.GetEnv(AVAXHostKey, utils.EmptyString) != utils.EmptyString {
+		avaxParam.Host = []string{utils.GetEnv(AVAXHostKey, utils.EmptyString)}
 	}
 }
 

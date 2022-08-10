@@ -213,6 +213,18 @@ const (
 	BurningUnifiedTokenRequestMeta                  = 345
 	BurningUnifiedTokenResponseMeta                 = 346
 	BridgeAggAddTokenMeta                           = 347
+
+	// incognito mode for Aurora
+	IssuingAuroraRequestMeta  = 350
+	IssuingAuroraResponseMeta = 351
+	BurningAuroraRequestMeta  = 352
+	BurningAuroraConfirmMeta  = 157
+
+	// incognito mode for Avalanche
+	IssuingAvaxRequestMeta  = 353
+	IssuingAvaxResponseMeta = 353
+	BurningAvaxRequestMeta  = 355
+	BurningAvaxConfirmMeta  = 158
 )
 
 var minerCreatedMetaTypes = []int{
