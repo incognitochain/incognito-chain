@@ -467,11 +467,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	prevShardBlockValidatorIndex := ""
 	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		prevShardBlock, err := blockchain.ShardChain[shardID].GetBlockByHash(shardBlock.GetPrevHash())
 		if err != nil {
 			return nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
 		}
-		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+		prevShardBlockValidatorIndex = prevShardBlock.(*types.ShardBlock).ValidationData
 	}
 
 	//Get Shard State from Block

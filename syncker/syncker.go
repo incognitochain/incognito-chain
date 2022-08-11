@@ -2,7 +2,6 @@ package syncker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -17,8 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -257,7 +254,6 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 	}
 
 	bc := synckerManager.config.Blockchain
-	beaconDB := bc.GetBeaconChainDatabase()
 	for i := 0; i < synckerManager.config.Blockchain.GetActiveShardNumber(); i++ {
 		for {
 			if i == int(toShard) {
@@ -281,19 +277,13 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 			Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
-			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
+			blk, _, err := synckerManager.Blockchain.BeaconChain.BlockStorage.GetBlock(*beaconHash)
 			if err != nil {
 				Logger.Errorf("Get beacon block by hash %v failed\n", beaconHash.String())
 				break
 			}
 
-			beaconBlock := new(types.BeaconBlock)
-			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
-			if err != nil {
-				Logger.Errorf("Cannot unmarshal beaconBlock %v at syncker\n", beaconBlock.GetHeight()-1)
-				return nil
-			}
-
+			beaconBlock := blk.(*types.BeaconBlock)
 			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 
 			Logger.Infof("beaconFinalView: %v\n", beaconFinalView.Hash().String())
