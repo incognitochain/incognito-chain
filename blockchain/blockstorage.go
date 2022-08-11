@@ -1,12 +1,15 @@
 package blockchain
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"io/ioutil"
 )
 
 type BlockStorage struct {
@@ -52,21 +55,42 @@ func (s *BlockStorage) GetBlock(blkHash common.Hash) (types.BlockInterface, int,
 }
 func (s *BlockStorage) encode(blk types.BlockInterface) []byte {
 	b, _ := json.Marshal(blk)
-	return b
+	//zip
+	var bb bytes.Buffer
+	gz := gzip.NewWriter(&bb)
+	if _, err := gz.Write(b); err != nil {
+		panic(err)
+	}
+	if err := gz.Close(); err != nil {
+		panic(err)
+	}
+
+	return bb.Bytes()
 }
 
 func (s *BlockStorage) decode(data []byte) (types.BlockInterface, error) {
+	//unzip
+	reader := bytes.NewReader([]byte(data))
+	gzreader, e1 := gzip.NewReader(reader)
+	if e1 != nil {
+		panic(e1)
+	}
+	rawData, e2 := ioutil.ReadAll(gzreader)
+	if e2 != nil {
+		panic(e2)
+	}
+
 	switch s.cid {
 	case -1:
 		beaconBlock := types.NewBeaconBlock()
-		err := json.Unmarshal(data, beaconBlock)
+		err := json.Unmarshal(rawData, beaconBlock)
 		if err != nil {
 			return nil, err
 		}
 		return beaconBlock, nil
 	default:
 		shardBlock := types.NewShardBlock()
-		err := json.Unmarshal(data, shardBlock)
+		err := json.Unmarshal(rawData, shardBlock)
 		if err != nil {
 			return nil, err
 		}
@@ -76,6 +100,7 @@ func (s *BlockStorage) decode(data []byte) (types.BlockInterface, error) {
 
 func (s *BlockStorage) storeBlockUsingFF(blk types.BlockInterface, useProtobuf bool) error {
 	dataByte := s.encode(blk)
+
 	ffIndex, err := s.flatfile.Append(dataByte)
 	if err != nil {
 		return err
