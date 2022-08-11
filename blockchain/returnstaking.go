@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -298,7 +297,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 				}
 				for i, v := range returnStakingIns.GetPublicKey() {
 					txHash := returnStakingIns.StakingTxHashes[i]
-					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
+					blockHash, index, err := blockchain.ShardChain[shardID].BlockStorage.GetTXIndex(txHash)
 					if err != nil {
 						Logger.log.Debugf("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
