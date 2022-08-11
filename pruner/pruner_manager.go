@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
 	"runtime"
 	"sync"
 	"time"
@@ -30,7 +31,7 @@ func NewPrunerManager(db map[int]incdb.Database) *PrunerManager {
 		JobRquest:   make(map[int]*Config),
 	}
 	for sid := 0; sid < common.MaxShardNumber; sid++ {
-		prunerManager.ShardPruner[sid] = NewShardPruner(sid, db[sid])
+		prunerManager.ShardPruner[sid] = NewShardPruner(sid, db[sid], nil)
 	}
 
 	return prunerManager
@@ -76,6 +77,7 @@ func (s *PrunerManager) OfflinePrune() {
 	ch := make(chan int)
 
 	stateBloomSize := config.Config().StateBloomSize / uint64(semNum*2)
+	cfg := config.Config()
 
 	stopCh := make(chan struct{})
 	var count int
@@ -86,6 +88,9 @@ func (s *PrunerManager) OfflinePrune() {
 			case shardID := <-ch:
 				wg.Add(1)
 				go func() {
+					ffPath := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage")
+					s.ShardPruner[shardID].blockStorage = blockchain.NewBlockStorage(s.ShardPruner[shardID].db, ffPath, shardID, false, false)
+
 					if _, ok := s.ShardPruner[shardID]; !ok {
 						fmt.Println("ShardPrunter is not ready")
 					}
@@ -114,6 +119,9 @@ func (s *PrunerManager) OfflinePrune() {
 
 func (p *PrunerManager) SetShardInsertLock(sid int, mutex *sync.Mutex) {
 	p.ShardPruner[sid].shardInsertLock = mutex
+}
+func (p *PrunerManager) SetShardBlockStorage(sid int, blockStorage *blockchain.BlockStorage) {
+	p.ShardPruner[sid].blockStorage = blockStorage
 }
 
 func (p *PrunerManager) InsertNewView(shardBestState *blockchain.ShardBestState) {

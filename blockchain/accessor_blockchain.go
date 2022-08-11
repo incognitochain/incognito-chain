@@ -140,7 +140,7 @@ func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView mult
 
 	// => check if <= final block, using rawdb
 	if height <= finalView.GetHeight() { //note there is chance that == final view, but block is not stored (store in progress)
-		return rawdbv2.GetFinalizedShardBlockHashByIndex(blockchain.GetShardChainDatabase(bestView.(*ShardBestState).ShardID), bestView.(*ShardBestState).ShardID, height)
+		return blockchain.ShardChain[bestView.(*ShardBestState).ShardID].BlockStorage.GetFinalizedShardBlock(bestView.(*ShardBestState).ShardID, height)
 	}
 
 	// => if > finalblock, we use best view to trace back the correct height
@@ -171,7 +171,7 @@ func (blockchain *BlockChain) GetShardBlockHashByView(view multiview.View, heigh
 		return &blkhash, nil
 	}
 
-	return rawdbv2.GetFinalizedShardBlockHashByIndex(blockchain.GetShardChainDatabase(view.(*ShardBestState).ShardID), view.(*ShardBestState).ShardID, height)
+	return blockchain.ShardChain[view.(*ShardBestState).ShardID].BlockStorage.GetFinalizedShardBlock(view.(*ShardBestState).ShardID, height)
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*types.ShardBlock, error) {

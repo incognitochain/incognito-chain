@@ -806,12 +806,11 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 		panic("Something wrong when retrieve mapStakingTx")
 	}
 
-	sdb := blockchain.GetShardChainDatabase(byte(shardID))
 	shardStakingTx := map[string]string{}
 	for _, stakingtx := range mapStakingTx {
 		if stakingtx != common.HashH([]byte{0}).String() {
 			stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingtx)
-			blockHash, txindex, err := rawdbv2.GetTransactionByHash(sdb, *stakingTxHash)
+			blockHash, txindex, err := blockchain.ShardChain[shardID].BlockStorage.GetTXIndex(*stakingTxHash)
 			if err != nil { //no transaction in this node
 				continue
 			}

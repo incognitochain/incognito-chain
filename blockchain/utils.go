@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -16,10 +15,7 @@ func (blockchain *BlockChain) GetTransactionsByHashesWithShardID(
 	res := []metadata.Transaction{}
 	blocks := make(map[string]*types.ShardBlock)
 	for _, hash := range hashes {
-		blockHash, index, err := rawdbv2.GetTransactionByHash(
-			blockchain.GetShardChainDatabase(shardID),
-			hash,
-		)
+		blockHash, index, err := blockchain.ShardChain[shardID].BlockStorage.GetTXIndex(hash)
 		if err != nil {
 			return nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", hash))
 		}

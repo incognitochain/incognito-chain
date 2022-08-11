@@ -252,7 +252,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID().String())
 						return nil, nil, err
 					}
-					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), stakerInfo.TxStakingID())
+					blockHash, index, err := blockchain.ShardChain[shardID].BlockStorage.GetTXIndex(stakerInfo.TxStakingID())
 					if err != nil {
 						continue
 					}

@@ -478,17 +478,15 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		if shardBlock.GetHeight()%1000 == 0 {
 			log.Println("shard", sid, "save block ", shardBlock.GetHeight())
 		}
-		for index, tx := range shardBlock.Body.Transactions {
-			if err := rawdbv2.StoreTransactionIndex(batch, *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
-				panic(err)
-			}
+		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreTXIndex(&shardBlock); err != nil {
+			panic(err)
 		}
 
 		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreBlock(&shardBlock); err != nil {
 			panic(err)
 		}
 
-		if err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batch, byte(sid), shardBlock.GetHeight(), *shardBlock.Hash()); err != nil {
+		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreFinalizedShardBlock(byte(sid), shardBlock.GetHeight(), *shardBlock.Hash()); err != nil {
 			panic(err)
 		}
 

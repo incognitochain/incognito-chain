@@ -64,6 +64,7 @@ func NewShardChain(
 		TxPool:       tp,
 		TxsVerifier:  tv,
 	}
+
 	return chain
 }
 
