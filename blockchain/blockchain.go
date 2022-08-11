@@ -180,7 +180,8 @@ func (blockchain *BlockChain) InitChainState() error {
 		//check ffstorage exist
 		cfg := config.Config()
 		_, err := os.Stat(path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon", "blockstorage", "0"))
-		if err != nil {
+		if err == nil {
+			Logger.log.Info("Using FFStorage")
 			blockchain.BeaconChain.BlockStorage.useFF = true
 		}
 		//if restore fail, return err
@@ -239,7 +240,8 @@ func (blockchain *BlockChain) InitChainState() error {
 			//check ffstorage exist
 			cfg := config.Config()
 			_, err := os.Stat(path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage", "0"))
-			if err != nil {
+			if err == nil {
+				Logger.log.Info("Using FFStorage")
 				blockchain.ShardChain[shardID].BlockStorage.useFF = true
 			}
 			//if restore fail, return err
