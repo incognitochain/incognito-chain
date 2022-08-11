@@ -217,6 +217,8 @@ const (
 	createAndSendTxWithIssuingPLGReq      = "createandsendtxwithissuingplgreq"
 	createAndSendTxWithIssuingFTMReq      = "createandsendtxwithissuingftmreq"
 	createAndSendBurningFTMRequest        = "createandsendburningftmrequest"
+	createAndSendTxWithIssuingAURORAReq   = "createandsendtxwithissuingaurorareq"
+	createAndSendTxWithIssuingAVAXReq     = "createandsendtxwithissuingavaxreq"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"

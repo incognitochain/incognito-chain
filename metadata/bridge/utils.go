@@ -315,6 +315,8 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	isBSCNetwork := false
 	isPLGNetwork := false
 	isFTMNetwork := false
+	isAURORANetwork := false
+	isAVAXNetwork := false
 
 	if metadataType == metadataCommon.IssuingETHRequestMeta || metadataType == metadataCommon.IssuingPRVERC20RequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.ETHNetworkID) {
 		isETHNetwork = true
@@ -327,6 +329,14 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	}
 	if metadataType == metadataCommon.IssuingFantomRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.FTMNetworkID) {
 		isFTMNetwork = true
+	}
+
+	if metadataType == metadataCommon.IssuingAuroraRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.AURORANetworkID) {
+		isAURORANetwork = true
+	}
+
+	if metadataType == metadataCommon.IssuingAvaxRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.AVAXNetworkID) {
+		isAVAXNetwork = true
 	}
 
 	if isBSCNetwork {
@@ -361,6 +371,24 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 
 		minConfirmationBlocks = metadataCommon.FantomConfirmationBlocks
 		networkPrefix = common.FTMPrefix
+		checkEVMHardFork = true
+
+	} else if isAURORANetwork {
+		evmParam := config.Param().AURORAParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		minConfirmationBlocks = metadataCommon.AuroraConfirmationBlocks
+		networkPrefix = common.AURORAPrefix
+		checkEVMHardFork = true
+
+	} else if isAVAXNetwork {
+		evmParam := config.Param().AVAXParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		minConfirmationBlocks = metadataCommon.AvaxConfirmationBlocks
+		networkPrefix = common.AVAXPrefix
 		checkEVMHardFork = true
 
 	} else {
@@ -407,7 +435,13 @@ func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{
 
 func GetNetworkTypeByNetworkID(networkID uint8) (uint, error) {
 	switch networkID {
-	case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+	case
+		common.ETHNetworkID,
+		common.BSCNetworkID,
+		common.PLGNetworkID,
+		common.FTMNetworkID,
+		common.AURORANetworkID,
+		common.AVAXNetworkID:
 		return common.EVMNetworkType, nil
 	default:
 		return 0, errors.New("Not found networkID")

@@ -82,6 +82,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.IssuingEVMRequest{}
 	case IssuingFantomResponseMeta:
 		md = &metadataBridge.IssuingEVMResponse{}
+	case IssuingAuroraRequestMeta:
+		md = &metadataBridge.IssuingEVMRequest{}
+	case IssuingAuroraResponseMeta:
+		md = &metadataBridge.IssuingEVMResponse{}
+	case IssuingAvaxRequestMeta:
+		md = &metadataBridge.IssuingEVMRequest{}
+	case IssuingAvaxResponseMeta:
+		md = &metadataBridge.IssuingEVMResponse{}
 	case BurningFantomRequestMeta:
 		md = &metadataBridge.BurningRequest{}
 	case BurningFantomForDepositToSCRequestMeta:

@@ -222,7 +222,7 @@ const (
 
 	// incognito mode for Avalanche
 	IssuingAvaxRequestMeta  = 353
-	IssuingAvaxResponseMeta = 353
+	IssuingAvaxResponseMeta = 354
 	BurningAvaxRequestMeta  = 355
 	BurningAvaxConfirmMeta  = 158
 )
@@ -297,6 +297,8 @@ const (
 	EVMConfirmationBlocks    = 15
 	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
+	AuroraConfirmationBlocks = 5
+	AvaxConfirmationBlocks   = 15
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
