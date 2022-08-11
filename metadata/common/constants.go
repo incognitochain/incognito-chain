@@ -377,6 +377,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningAuroraConfirmMeta),
+	strconv.Itoa(BurningAvaxConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{

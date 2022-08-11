@@ -306,6 +306,10 @@ func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error
 		} else {
 			burningMetaType = metadata.BurningFantomConfirmMeta
 		}
+	case common.AURORANetworkID:
+		burningMetaType = metadata.BurningAuroraConfirmMeta
+	case common.AVAXNetworkID:
+		burningMetaType = metadata.BurningAvaxConfirmMeta
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
 	}
