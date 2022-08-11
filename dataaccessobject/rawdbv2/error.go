@@ -110,6 +110,9 @@ const (
 	//cache committee from block hash
 	StoreCommmitteeFromBlockCacheError
 	GetCommmitteeFromBlockCacheError
+
+	StoreFFIndexError
+	GetFFIndexError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -206,6 +209,8 @@ var ErrCodeMessage = map[int]struct {
 	StoreShardPruneStatusError:         {-7001, "Store shard prune status error"},
 	StoreCommmitteeFromBlockCacheError: {-7002, "Store shard prune status error"},
 	GetCommmitteeFromBlockCacheError:   {-7003, "Get shard prune status error"},
+	StoreFFIndexError:                  {-7004, "Store FF Index error"},
+	GetFFIndexError:                    {-7005, "Get FF Index error"},
 }
 
 type RawdbError struct {
