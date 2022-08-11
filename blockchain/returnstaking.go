@@ -23,7 +23,7 @@ import (
 type returnStakingInfo struct {
 	SwapoutPubKey string
 	FunderAddress privacy.PaymentAddress
-	SharedRandom []byte
+	SharedRandom  []byte
 	StakingTx     metadata.Transaction
 	StakingAmount uint64
 }
@@ -120,7 +120,6 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 		}
 	}
 
-
 	mReturnStakingInfoWanted, _, err := blockchain.getReturnStakingInfoFromBeaconInstructions(
 		curView,
 		beaconBlocks,
@@ -166,27 +165,27 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 	)
 
 	txParam := transaction.TxSalaryOutputParams{
-		Amount: info.StakingAmount,
+		Amount:          info.StakingAmount,
 		ReceiverAddress: &info.FunderAddress,
-		TokenID: &common.PRVCoinID,
-		Type: common.TxReturnStakingType,
+		TokenID:         &common.PRVCoinID,
+		Type:            common.TxReturnStakingType,
 	}
 
-	makeMD := func (c privacy.Coin) metadata.Metadata{
-		if c!=nil && c.GetSharedRandom()!=nil{
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
 			returnStakingMeta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
 		return returnStakingMeta
 	}
 	returnStakingTx, err := txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
-	if err!= nil {
+	if err != nil {
 		return nil, 0, errors.Errorf("cannot init return staking tx. Error %v", err)
 	}
 	// returnStakingTx.SetType()
 	return returnStakingTx, info.StakingAmount, nil
 }
 
-func (blockchain *BlockChain)  getReturnStakingInfoFromBeaconInstructions(
+func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	curView *ShardBestState,
 	beaconBlocks []*types.BeaconBlock,
 	shardID byte,
@@ -257,11 +256,12 @@ func (blockchain *BlockChain)  getReturnStakingInfoFromBeaconInstructions(
 					if err != nil {
 						continue
 					}
-					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
-					if err != nil || shardBlock == nil {
-						Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+					blk, err := blockchain.ShardChain[shardID].GetBlockByHash(blockHash)
+					if err != nil || blk == nil {
+						Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", index)
 						continue
 					}
+					shardBlock := blk.(*types.ShardBlock)
 					txData := shardBlock.Body.Transactions[index]
 					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
 					if !ok {

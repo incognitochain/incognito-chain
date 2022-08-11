@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"path"
 )
 
 type BlockStorage struct {
@@ -19,11 +17,8 @@ type BlockStorage struct {
 	useProtobuf bool
 }
 
-func NewBlockStorage(db incdb.Database, cid int, useFF, useProtoBuf bool) *BlockStorage {
-	cfg := config.Config()
-	p := path.Join(cfg.DataDir, cfg.DatabaseDir, "blockstorage")
-	ff, _ := flatfile.NewFlatFile(p, 5000)
-
+func NewBlockStorage(db incdb.Database, ffPath string, cid int, useFF, useProtoBuf bool) *BlockStorage {
+	ff, _ := flatfile.NewFlatFile(ffPath, 5000)
 	return &BlockStorage{
 		db, ff, cid, useFF, useProtoBuf,
 	}
@@ -37,13 +32,23 @@ func (s *BlockStorage) StoreBlock(blk types.BlockInterface) error {
 	}
 }
 
+func (s *BlockStorage) IsExisted(blkHash common.Hash) bool {
+	if s.useFF {
+		if _, err := rawdbv2.GetFlatFileIndexByBlockHash(s.keyValueDB, blkHash); err != nil {
+			return false
+		}
+		return true
+	} else {
+		return s.checkBlockExistUsingDB(blkHash)
+	}
+}
+
 func (s *BlockStorage) GetBlock(blkHash common.Hash) (types.BlockInterface, int, error) {
 	if s.useFF {
 		return s.getBlockUsingFF(blkHash, s.useProtobuf)
 	} else {
 		return s.getBlockUsingDB(blkHash)
 	}
-
 }
 func (s *BlockStorage) encode(blk types.BlockInterface) []byte {
 	b, _ := json.Marshal(blk)
@@ -133,5 +138,16 @@ func (s *BlockStorage) getBlockUsingDB(blkHash common.Hash) (types.BlockInterfac
 			return nil, 0, err
 		}
 		return shardBlock, len(shardBlockBytes), err
+	}
+}
+
+func (s *BlockStorage) checkBlockExistUsingDB(blkHash common.Hash) bool {
+	switch s.cid {
+	case -1:
+		exist, _ := rawdbv2.HasBeaconBlock(s.keyValueDB, blkHash)
+		return exist
+	default:
+		exist, _ := rawdbv2.HasShardBlock(s.keyValueDB, blkHash)
+		return exist
 	}
 }

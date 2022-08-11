@@ -117,16 +117,11 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	if blockchain.IsTest {
 		return &types.BeaconBlock{}, 2, nil
 	}
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), beaconBlockHash)
+	blk, size, err := blockchain.BeaconChain.BlockStorage.GetBlock(beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
-	beaconBlock := types.NewBeaconBlock()
-	err = json.Unmarshal(beaconBlockBytes, beaconBlock)
-	if err != nil {
-		return nil, 0, err
-	}
-	return beaconBlock, uint64(len(beaconBlockBytes)), nil
+	return blk.(*types.BeaconBlock), uint64(size), nil
 }
 
 //SHARD
@@ -152,7 +147,7 @@ func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView mult
 	blkhash = *bestView.GetPreviousHash()
 	blkheight = blkheight - 1
 	for height < blkheight {
-		shardBlock, _, err := blockchain.GetShardBlockByHash(blkhash)
+		shardBlock, err := blockchain.ShardChain[bestView.(*ShardBestState).ShardID].GetBlockByHash(blkhash)
 		if err != nil {
 			return nil, err
 		}
@@ -187,15 +182,11 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	if err != nil {
 		return nil, err
 	}
-	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
+	blk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlock(*blkhash)
 	if err != nil {
 		return nil, err
 	}
-	shardBlock := types.NewShardBlock()
-	err = json.Unmarshal(data, shardBlock)
-	if err != nil {
-		return nil, err
-	}
+	shardBlock := blk.(*types.ShardBlock)
 	shardBlockMap[*shardBlock.Hash()] = shardBlock
 	return shardBlockMap, err
 }
@@ -205,16 +196,11 @@ func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height ui
 	if err != nil {
 		return nil, err
 	}
-	data, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), *blkhash)
-	if err != nil {
+	blk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlock(*blkhash)
+	if err != nil { //no transaction in this node
 		return nil, err
 	}
-	shardBlock := types.NewShardBlock()
-	err = json.Unmarshal(data, shardBlock)
-	if err != nil {
-		return nil, err
-	}
-	return shardBlock, err
+	return blk.(*types.ShardBlock), err
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*types.ShardBlock, error) {
@@ -240,43 +226,19 @@ func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byt
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
-	shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
+	blk, size, err := blockchain.ShardChain[shardID].BlockStorage.GetBlock(hash)
 	if err != nil {
 		return nil, 0, err
 	}
-	shardBlock := types.NewShardBlock()
-	err = json.Unmarshal(shardBlockBytes, shardBlock)
-	if err != nil {
-		return nil, 0, NewBlockChainError(GetShardBlockByHashError, err)
-	}
-	return shardBlock, shardBlock.Header.Height, nil
-}
-
-func (blockchain *BlockChain) HasShardBlockByHash(hash common.Hash) (bool, error) {
-	for _, i := range blockchain.GetShardIDs() {
-		shardID := byte(i)
-		has, err := rawdbv2.HasShardBlock(blockchain.GetShardChainDatabase(shardID), hash)
-		if err != nil {
-			return false, NewBlockChainError(GetShardBlockByHashError, err)
-		}
-		if has {
-			return true, nil
-		}
-	}
-	return false, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
+	return blk.(*types.ShardBlock), uint64(size), nil
 }
 
 func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.ShardBlock, uint64, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
-		shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)
-		if err == nil {
-			shardBlock := types.NewShardBlock()
-			err = json.Unmarshal(shardBlockBytes, shardBlock)
-			if err != nil {
-				return nil, 0, NewBlockChainError(GetShardBlockByHashError, err)
-			}
-			return shardBlock, shardBlock.Header.Height, nil
+		blk, size, _ := blockchain.ShardChain[shardID].BlockStorage.GetBlock(hash)
+		if size != 0 {
+			return blk.(*types.ShardBlock), uint64(size), nil
 		}
 	}
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
@@ -301,11 +263,11 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 		for sid, shardStates := range beaconBlk.Body.ShardState {
 			shardBlocks := []*types.ShardBlock{}
 			for _, sState := range shardStates {
-				shardBlk, _, _ := blockchain.GetShardBlockByHash(sState.Hash)
+				shardBlk, _ := blockchain.ShardChain[sid].GetBlockByHash(sState.Hash)
 				if shardBlk == nil {
 					return nil, nil, NewBlockChainError(rawdbv2.GetShardBlockByHashError, fmt.Errorf("Cannot find shard block %v", sState.Hash))
 				}
-				shardBlocks = append(shardBlocks, shardBlk)
+				shardBlocks = append(shardBlocks, shardBlk.(*types.ShardBlock))
 			}
 			shardBlksForBridge[sid] = append(shardBlocks, shardBlksForBridge[sid]...)
 			shardBlksForBridgeAgg[beaconHeight][sid] = shardBlocks
@@ -320,11 +282,11 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 		for sid, shardStates := range blockShardStates {
 			shardBlocks := []*types.ShardBlock{}
 			for _, sState := range shardStates {
-				shardBlk, _, _ := blockchain.GetShardBlockByHash(sState.Hash)
+				shardBlk, _ := blockchain.ShardChain[sid].GetBlockByHash(sState.Hash)
 				if shardBlk == nil {
 					return nil, nil, NewBlockChainError(rawdbv2.GetShardBlockByHashError, fmt.Errorf("Cannot find shard block %v", sState.Hash))
 				}
-				shardBlocks = append(shardBlocks, shardBlk)
+				shardBlocks = append(shardBlocks, shardBlk.(*types.ShardBlock))
 			}
 			shardBlksForBridge[sid] = append(shardBlksForBridge[sid], shardBlocks...)
 			shardBlksForBridgeAgg[newBeaconBlock.GetHeight()][sid] = shardBlocks

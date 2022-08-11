@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -47,13 +48,13 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 					cResult <- RpcSubResult{Error: err}
 					return
 				}
-				block, _, err := wsServer.config.BlockChain.GetShardBlockByHash(shardBestState.BestBlockHash)
+				block, err := wsServer.config.BlockChain.ShardChain[shardID].GetBlockByHash(shardBestState.BestBlockHash)
 				if err != nil || block == nil {
 					err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 					cResult <- RpcSubResult{Error: err}
 					return
 				}
-				shardBestState.BestBlock = block
+				shardBestState.BestBlock = block.(*types.ShardBlock)
 				shardBestStateResult := jsonresult.NewGetShardBestState(shardBestState)
 				cResult <- RpcSubResult{Result: shardBestStateResult, Error: nil}
 			}

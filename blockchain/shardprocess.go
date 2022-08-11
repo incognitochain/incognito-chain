@@ -335,16 +335,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
-	previousShardBlockData, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), previousBlockHash)
+	preBlk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlock(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(FetchPreviousBlockError, err)
 	}
+	previousShardBlock := preBlk.(*types.ShardBlock)
 
-	previousShardBlock := types.ShardBlock{}
-	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonShardBlockError, err)
-	}
 	// Verify shardBlock height with parent shardBlock
 	if previousShardBlock.Header.Height+1 != shardBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive shardBlock height %+v but get %+v", previousShardBlock.Header.Height+1, shardBlock.Header.Height))
@@ -1288,7 +1284,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
+	if err := blockchain.ShardChain[shardID].BlockStorage.StoreBlock(shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 

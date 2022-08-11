@@ -190,16 +190,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
 
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
+	blk, _, err := blockchain.BeaconChain.BlockStorage.GetBlock(*beaconHash)
 	if err != nil {
 		return nil, err
 	}
-
-	beaconBlock := types.BeaconBlock{}
-	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
-	if err != nil {
-		return nil, err
-	}
+	beaconBlock := blk.(*types.BeaconBlock)
 
 	epoch := beaconBlock.Header.Epoch
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconProcessHeight, shardBestState.BeaconHeight)

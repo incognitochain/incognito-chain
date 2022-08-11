@@ -214,16 +214,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	startTimeVerifyPreProcessingBeaconBlock := time.Now()
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
-	parentBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), previousBlockHash)
+	preBlk, _, err := blockchain.BeaconChain.BlockStorage.GetBlock(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
+	previousBeaconBlock := preBlk.(*types.BeaconBlock)
 
-	previousBeaconBlock := types.NewBeaconBlock()
-	err = json.Unmarshal(parentBlockBytes, previousBeaconBlock)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed to unmarshall parent block of block height %+v", beaconBlock.Header.Height))
-	}
 	// Verify block height with parent block
 	if previousBeaconBlock.Header.Height+1 != beaconBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive beacon block height %+v but get %+v", previousBeaconBlock.Header.Height+1, beaconBlock.Header.Height))
@@ -861,11 +857,11 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 		return nil
 	}
 
-	shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
+	blk, err := bc.ShardChain[shardID].GetBlockByHash(shardState.Hash)
 	if err != nil {
 		return nil
 	}
-
+	shardBlock := blk.(*types.ShardBlock)
 	committees, err := getOneShardCommitteeFromShardDB(bc.GetShardChainDatabase(shardID), shardID, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		return nil
@@ -1197,7 +1193,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
+	if err := blockchain.BeaconChain.BlockStorage.StoreBlock(beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 

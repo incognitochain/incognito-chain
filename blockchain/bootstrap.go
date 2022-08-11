@@ -341,8 +341,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	rpcClient.OnBeaconBlock(latestBackup.MinBeaconHeight, bestView.BeaconHeight, func(beaconBlock types.BeaconBlock) {
 		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
 
-		blockHash := beaconBlock.Hash()
-		if err := rawdbv2.StoreBeaconBlockByHash(batch, *blockHash, beaconBlock); err != nil {
+		if err := s.blockchain.BeaconChain.BlockStorage.StoreBlock(&beaconBlock); err != nil {
 			panic(err)
 		}
 
@@ -486,7 +485,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 			}
 		}
 
-		if err := rawdbv2.StoreShardBlock(batch, *shardBlock.Hash(), shardBlock); err != nil {
+		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreBlock(&shardBlock); err != nil {
 			panic(err)
 		}
 
