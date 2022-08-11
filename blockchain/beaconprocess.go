@@ -585,7 +585,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 	}
 
-	if (beaconBlock.Header.Version == types.ADJUST_BLOCKTIME_VERSION) && (prevBeaconBlock.Header.Version < types.ADJUST_BLOCKTIME_VERSION) {
+	if (beaconBlock.Header.Version == types.INSTANT_FINALITY_VERSION_V2) && (prevBeaconBlock.Header.Version < types.INSTANT_FINALITY_VERSION_V2) {
 		shardHeights := map[byte]uint64{}
 		for sID, sState := range prevBeaconBlock.Body.ShardState {
 			shardHeights[sID] = sState[len(sState)-1].Height

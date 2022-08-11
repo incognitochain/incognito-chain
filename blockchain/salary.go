@@ -51,7 +51,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if err != nil {
 				return err
 			} else {
-				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
+				if beaconBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
 					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
 						if config.Param().MaxReward > bestState.RewardMinted {
 							rewardAmount = config.Param().MaxReward - bestState.RewardMinted
@@ -105,7 +105,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if err != nil {
 				return err
 			} else {
-				if beaconBlock.Header.Version >= types.ADJUST_BLOCKTIME_VERSION {
+				if beaconBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
 					if bestState.RewardMinted+rewardAmount > config.Param().MaxReward {
 						if config.Param().MaxReward > bestState.RewardMinted {
 							rewardAmount = config.Param().MaxReward - bestState.RewardMinted
@@ -789,10 +789,9 @@ func getYearOfBlockChain(triggerMap map[string]uint64, blkHeight uint64) uint64 
 	years := uint64(0)
 	blksOfPrevFeature := uint64(0)
 	prevBeaconHeight := uint64(0)
-	currentBlkTimeFeatureIdx := len(blkTimeEnableFeatures) - 1
-	for idx := 0; idx < currentBlkTimeFeatureIdx; idx++ {
+	for idx := 0; idx < len(blkTimeEnableFeatures); idx++ {
 		lastBeaconHeight := blkHeight
-		if idx+1 <= currentBlkTimeFeatureIdx {
+		if idx < len(blkTimeEnableFeatures)-1 {
 			lastBeaconHeight = triggerMap[blkTimeEnableFeatures[idx+1]]
 		}
 		blksPerYear := GetNumberBlkPerYear(blkTimeEnableFeatures[idx])
