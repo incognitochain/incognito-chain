@@ -62,6 +62,16 @@ func GetEVMInfoByNetworkID(networkID uint8, ac *metadataCommon.AccumulatedValues
 		res.ContractAddress = config.Param().FtmContractAddressStr
 		res.Prefix = common.FTMPrefix
 		res.IsTxHashIssued = statedb.IsFTMTxHashIssued
+	case common.AURORANetworkID:
+		res.ListTxUsedInBlock = ac.UniqAURORATxsUsed
+		res.ContractAddress = config.Param().AuroraContractAddressStr
+		res.Prefix = common.AURORAPrefix
+		res.IsTxHashIssued = statedb.IsAURORATxHashIssued
+	case common.AVAXNetworkID:
+		res.ListTxUsedInBlock = ac.UniqAVAXTxsUsed
+		res.ContractAddress = config.Param().AvaxContractAddressStr
+		res.Prefix = common.AVAXPrefix
+		res.IsTxHashIssued = statedb.IsAVAXTxHashIssued
 	default:
 		return nil, errors.New("Invalid networkID")
 	}
