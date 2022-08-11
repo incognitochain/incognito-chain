@@ -179,8 +179,8 @@ func (blockchain *BlockChain) InitChainState() error {
 	} else {
 		//check ffstorage exist
 		cfg := config.Config()
-		_, err := os.Stat(path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon", "blockstorage", "0"))
-		if err == nil {
+		stat, err := os.Stat(path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon", "blockstorage", "0"))
+		if err == nil && stat.Size() > 0 {
 			Logger.log.Info("Using FFStorage")
 			blockchain.BeaconChain.BlockStorage.useFF = true
 		}
@@ -239,8 +239,8 @@ func (blockchain *BlockChain) InitChainState() error {
 		} else {
 			//check ffstorage exist
 			cfg := config.Config()
-			_, err := os.Stat(path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage", "0"))
-			if err == nil {
+			stat, err := os.Stat(path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage", "0"))
+			if err == nil && stat.Size() > 0 {
 				Logger.log.Info("Using FFStorage")
 				blockchain.ShardChain[shardID].BlockStorage.useFF = true
 			}
