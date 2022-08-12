@@ -811,6 +811,36 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingAURORAReq(params i
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateRawTxWithBurningAuroraReq(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningAuroraRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		false,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningAURORARequest(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningAuroraReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
 // Avalanche bridge
 func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingAVAXReq(params interface{},
 	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -828,4 +858,34 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingAVAXReq(params int
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningAvaxReq(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningAvaxRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		false,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningAVAXRequest(params interface{},
+	closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningAvaxReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
 }

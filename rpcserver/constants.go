@@ -219,6 +219,8 @@ const (
 	createAndSendBurningFTMRequest        = "createandsendburningftmrequest"
 	createAndSendTxWithIssuingAURORAReq   = "createandsendtxwithissuingaurorareq"
 	createAndSendTxWithIssuingAVAXReq     = "createandsendtxwithissuingavaxreq"
+	createAndSendBurningAURORARequest     = "createandsendburningaurorarequest"
+	createAndSendBurningAVAXRequest       = "createandsendburningavaxrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -231,6 +233,8 @@ const (
 	getPRVBEP20BurnProof     = "getprvbep20burnproof"
 	getPLGBurnProof          = "getplgburnproof"
 	getFTMBurnProof          = "getftmburnproof"
+	getAURORABurnProof       = "getauroraburnproof"
+	getAVAXBurnProof         = "getavaxburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"

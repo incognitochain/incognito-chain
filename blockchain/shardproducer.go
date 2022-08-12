@@ -516,12 +516,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
 				}
-
 			case metadata.IssuingAuroraRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingAuroraResponseMeta, false)
 				}
-
 			case metadata.IssuingAvaxRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingAvaxResponseMeta, false)
