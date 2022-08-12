@@ -199,8 +199,7 @@ func (chain *BeaconChain) CreateNewBlock(
 	//wait a little bit, for shard
 	beaconBestView := chain.GetBestView().(*BeaconBestState)
 	if version < types.ADJUST_BLOCKTIME_VERSION {
-		waitTime := beaconBestView.GetBlockTimeInterval(beaconBestView.GetBeaconHeight()) / 5
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(beaconBestView.GetCurrentTimeSlot()/5) * time.Second)
 	}
 
 	newBlock, err := chain.Blockchain.NewBlockBeacon(beaconBestView, version, proposer, round, startTime)

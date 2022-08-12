@@ -427,6 +427,7 @@ func (a *actorV2) Stop() error {
 }
 
 func (a *actorV2) Destroy() {
+	a.isStarted = false
 	a.destroyCh <- struct{}{}
 }
 
@@ -435,6 +436,7 @@ func (a actorV2) IsStarted() bool {
 }
 
 func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
+
 	switch msgBFT.Type {
 	case MSG_PROPOSE:
 		var msgPropose BFTPropose
@@ -515,6 +517,10 @@ func (a *actorV2) run() error {
 				select {
 				case <-a.proposeMessageCh:
 				case <-a.voteMessageCh:
+				case <-a.destroyCh:
+					a.logger.Infof("exit bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
+					a.closeActor()
+					return
 				default:
 				}
 
