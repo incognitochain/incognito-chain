@@ -32,7 +32,7 @@ func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView mul
 
 	// => check if <= final block, using rawdb
 	if height <= finalView.GetHeight() { //note there is chance that == final view, but block is not stored (store in progress)
-		return rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), height)
+		return blockchain.BeaconChain.BlockStorage.GetFinalizedBeaconBlock(height)
 	}
 
 	// => if > finalblock, we use best view to trace back the correct height
@@ -64,7 +64,7 @@ func (blockchain *BlockChain) GetBeaconBlockHashByView(view multiview.View, heig
 	}
 
 	// => check if <= final block, using rawdb
-	return rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), height)
+	return blockchain.BeaconChain.BlockStorage.GetFinalizedBeaconBlock(height)
 }
 
 func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*types.BeaconBlock, error) {
@@ -307,11 +307,12 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 		lastEpoch := uint64(0)
 		limitTxs := map[int]int{}
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
-			tempShardBlock, err := blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
+			blk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetFinalizedBlockWithLatestValidationDataByHeight(shardHeight)
 			if err != nil {
 				Logger.log.Errorf("GetShardBlockByHeightV1 shard %+v, error  %+v", shardID, err)
 				break
 			}
+			tempShardBlock := blk.(*types.ShardBlock)
 			//only get shard block within epoch
 			if lastEpoch == 0 {
 				lastEpoch = tempShardBlock.GetCurrentEpoch() //update epoch of first block
@@ -483,7 +484,7 @@ func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint6
 }
 
 func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*types.BeaconBlock, error) {
-	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
+	blkhash, err := s.BeaconChain.BlockStorage.GetFinalizedBeaconBlock(height)
 	if err != nil {
 		return nil, err
 	}

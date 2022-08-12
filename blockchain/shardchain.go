@@ -479,7 +479,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 		return err
 	}
 	//rewrite to database
-	if err = chain.BlockStorage.StoreBlock(shardBlock); err != nil {
+	if err = chain.BlockStorage.ReplaceBlock(shardBlock); err != nil {
 		return err
 	}
 	//update multiview

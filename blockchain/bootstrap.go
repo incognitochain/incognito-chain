@@ -353,7 +353,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 			}
 		}
 
-		if err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, beaconBlock.GetHeight(), *beaconBlock.Hash()); err != nil {
+		if err := s.blockchain.BeaconChain.BlockStorage.StoreFinalizedBeaconBlock(beaconBlock.GetHeight(), *beaconBlock.Hash()); err != nil {
 			panic(err)
 		}
 

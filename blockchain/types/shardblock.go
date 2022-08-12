@@ -516,6 +516,9 @@ func (block ShardBlock) GetProducerPubKeyStr() string {
 func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
+func (block ShardBlock) SetValidationField(valData string) {
+	block.ValidationData = valData
+}
 
 func (block ShardBlock) GetVersion() int {
 	return block.Header.Version

@@ -34,9 +34,76 @@ func NewBlockStorage(db incdb.Database, ffPath string, cid int, useFF, useProtoB
 	}
 }
 
+func (s *BlockStorage) ReplaceBlock(blk types.BlockInterface) error {
+	if s.useFF {
+		if !s.IsExisted(*blk.Hash()) {
+			return s.storeBlockUsingFF(blk)
+		} else {
+			return rawdbv2.StoreValidationDataByBlockHash(s.blockStorageDB, *blk.Hash(), []byte(blk.GetValidationField()))
+		}
+	} else {
+		return s.storeBlockUsingDB(blk)
+	}
+}
+
+func (s *BlockStorage) GetFinalizedBlockHashByHeight(height uint64) (common.Hash, error) {
+	switch s.cid {
+	case -1:
+		if s.useFF {
+			h, e := s.GetFinalizedBeaconBlock(height)
+			if e != nil {
+				return common.Hash{}, e
+			}
+			return *h, e
+		} else {
+			h, e := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.rootDB, height)
+			if e != nil {
+				return common.Hash{}, e
+			}
+			return *h, e
+		}
+	default:
+		if s.useFF {
+			h, e := s.GetFinalizedShardBlock(byte(s.cid), height)
+			if e != nil {
+				return common.Hash{}, e
+			}
+			return *h, e
+		} else {
+			h, e := rawdbv2.GetFinalizedShardBlockHashByIndex(s.rootDB, byte(s.cid), height)
+			if e != nil {
+				return common.Hash{}, e
+			}
+			return *h, e
+		}
+	}
+}
+
+func (s *BlockStorage) GetFinalizedBlockWithLatestValidationDataByHeight(height uint64) (types.BlockInterface, int, error) {
+	hash, err := s.GetFinalizedBlockHashByHeight(height)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if s.useFF {
+		blk, size, err := s.getBlockUsingFF(hash)
+		if err != nil {
+			return nil, 0, err
+		}
+		valString, err := rawdbv2.GetValidationDataByBlockHash(s.blockStorageDB, *blk.Hash())
+		if err != nil {
+			return nil, 0, err
+		}
+		blk.SetValidationField(string(valString))
+		return blk, size, err
+	} else {
+		return s.getBlockUsingDB(hash)
+	}
+}
+
 func (s *BlockStorage) StoreBlock(blk types.BlockInterface) error {
 	if s.useFF {
-		return s.storeBlockUsingFF(blk, s.useProtobuf)
+		return s.storeBlockUsingFF(blk)
 	} else {
 		return s.storeBlockUsingDB(blk)
 	}
@@ -64,6 +131,27 @@ func (s *BlockStorage) GetTXIndex(tx common.Hash) (common.Hash, int, error) {
 		return rawdbv2.GetTransactionByHash(s.blockStorageDB, tx)
 	} else {
 		return rawdbv2.GetTransactionByHash(s.rootDB, tx)
+	}
+}
+
+func (s *BlockStorage) StoreFinalizedBeaconBlock(index uint64, hash common.Hash) error {
+	if s.useFF {
+		if err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(s.blockStorageDB, index, hash); err != nil {
+			panic(err)
+		}
+	} else {
+		if err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(s.rootDB, index, hash); err != nil {
+			panic(err)
+		}
+	}
+	return nil
+}
+
+func (s *BlockStorage) GetFinalizedBeaconBlock(index uint64) (*common.Hash, error) {
+	if s.useFF {
+		return rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockStorageDB, index)
+	} else {
+		return rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.rootDB, index)
 	}
 }
 
@@ -101,7 +189,7 @@ func (s *BlockStorage) IsExisted(blkHash common.Hash) bool {
 
 func (s *BlockStorage) GetBlock(blkHash common.Hash) (types.BlockInterface, int, error) {
 	if s.useFF {
-		return s.getBlockUsingFF(blkHash, s.useProtobuf)
+		return s.getBlockUsingFF(blkHash)
 	} else {
 		return s.getBlockUsingDB(blkHash)
 	}
@@ -151,7 +239,7 @@ func (s *BlockStorage) decode(data []byte) (types.BlockInterface, error) {
 	}
 }
 
-func (s *BlockStorage) storeBlockUsingFF(blk types.BlockInterface, useProtobuf bool) error {
+func (s *BlockStorage) storeBlockUsingFF(blk types.BlockInterface) error {
 	dataByte := s.encode(blk)
 
 	ffIndex, err := s.flatfile.Append(dataByte)
@@ -163,7 +251,7 @@ func (s *BlockStorage) storeBlockUsingFF(blk types.BlockInterface, useProtobuf b
 	}
 	return nil
 }
-func (s *BlockStorage) getBlockUsingFF(blkHash common.Hash, useProtobuf bool) (types.BlockInterface, int, error) {
+func (s *BlockStorage) getBlockUsingFF(blkHash common.Hash) (types.BlockInterface, int, error) {
 	if ffIndex, err := rawdbv2.GetFlatFileIndexByBlockHash(s.blockStorageDB, blkHash); err != nil {
 		return nil, 0, err
 	} else {

@@ -11,7 +11,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/config"
@@ -184,7 +183,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 	}
 
-	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
+	beaconHash, err := blockchain.BeaconChain.BlockStorage.GetFinalizedBeaconBlock(beaconProcessHeight)
 	if err != nil {
 		Logger.log.Errorf("Beacon block %+v not found", beaconProcessHeight)
 		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)

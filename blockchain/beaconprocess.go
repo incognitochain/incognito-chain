@@ -1220,8 +1220,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 				}
 			}
 		}
-
-		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
+		err := blockchain.BeaconChain.BlockStorage.StoreFinalizedBeaconBlock(storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}

@@ -17,6 +17,7 @@ var (
 	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
 	beaconHashToBlockPrefix            = []byte("b-b-h" + string(splitter))
 	blockHashToFFIndexPrefix           = []byte("b-h-ff-i" + string(splitter))
+	blockHashToValidationDataPrefix    = []byte("b-h-v-d" + string(splitter))
 	beaconIndexToBlockHashPrefix       = []byte("b-b-i" + string(splitter))
 	beaconBlockHashToIndexPrefix       = []byte("b-b-H" + string(splitter))
 	txHashPrefix                       = []byte("tx-h" + string(splitter))
@@ -130,6 +131,12 @@ func GetShardBestStateKey(shardID byte) []byte {
 func GetBlockHashToFFIndexKey(hash common.Hash) []byte {
 	temp := make([]byte, 0, len(blockHashToFFIndexPrefix))
 	temp = append(temp, blockHashToFFIndexPrefix...)
+	return append(temp, hash[:]...)
+}
+
+func GetBlockHashToValidationDataKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len(blockHashToValidationDataPrefix))
+	temp = append(temp, blockHashToValidationDataPrefix...)
 	return append(temp, hash[:]...)
 }
 

@@ -357,7 +357,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 		Logger.log.Error("Error store beacon block", initBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
 	}
-	rawdbv2.StoreFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), initBlockHeight, initBlockHash)
+	blockchain.BeaconChain.BlockStorage.StoreFinalizedBeaconBlock(initBlockHeight, initBlockHash)
 
 	// State Root Hash
 	bRH := BeaconRootHash{
