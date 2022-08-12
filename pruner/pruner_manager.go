@@ -42,11 +42,11 @@ func (s *PrunerManager) Start() error {
 			//if shard pruner not run -> then check condition to trigger prune
 			if shardPruner.status == IDLE {
 				latest := false
-				if shardPruner.bestView != nil && common.CalculateTimeSlot(shardPruner.bestView.BestBlock.GetProposeTime()) == common.CalculateTimeSlot(time.Now().Unix()) {
+				if shardPruner.bestView != nil && shardPruner.bestView.CalculateTimeSlot(shardPruner.bestView.BestBlock.GetProposeTime()) == shardPruner.bestView.CalculateTimeSlot(time.Now().Unix()) {
 					latest = true
 				}
 				//if auto prune, sync latest block, and bestview block > last processing block
-				if config.Config().EnableAutoPrune && latest && shardPruner.bestView.ShardHeight > shardPruner.lastProcessingHeight+NUM_BLOCK_TRIGGER_PRUNE {
+				if config.Config().EnableAutoPrune && latest && shardPruner.bestView.ShardHeight > shardPruner.lastProcessingHeight+config.Config().NumBlockTriggerPrune {
 					shardPruner.SetBloomSize(config.Config().StateBloomSize)
 					shardPruner.Prune(false)
 				} else if req, ok := s.JobRquest[sid]; ok { //request for this shard from RPC
@@ -121,9 +121,10 @@ func (p *PrunerManager) InsertNewView(shardBestState *blockchain.ShardBestState)
 	p.ShardPruner[int(sid)].handleNewView(shardBestState)
 }
 
-func (s *PrunerManager) Report() error {
+func (s *PrunerManager) Report() map[int]ShardPrunerReport {
+	res := map[int]ShardPrunerReport{}
 	for sid := 0; sid < common.MaxShardNumber; sid++ {
-		s.ShardPruner[sid].Report()
+		res[sid] = s.ShardPruner[sid].Report()
 	}
-	return nil
+	return res
 }

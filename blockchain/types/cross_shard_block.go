@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"log"
-	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -74,6 +75,10 @@ func (block CrossShardBlock) GetVersion() int {
 
 func (block CrossShardBlock) GetHeight() uint64 {
 	return block.Header.Height
+}
+
+func (block CrossShardBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
 }
 
 //consensus interface

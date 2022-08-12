@@ -26,6 +26,7 @@ block_time:
 staking_amount_shard: 1750000000000
 active_shards: 8
 basic_reward: 1386666000
+max_reward: 95000000000000000
 epoch_param:
   number_of_block_in_epoch: 350
   number_of_block_in_epoch_v2: 1000000000000
@@ -108,6 +109,10 @@ auto_enable_feature:
       min_trigger: 2076793
       force_trigger: 1e9
       require_percentage: 90
+  - instantfinalityv2:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
@@ -116,6 +121,12 @@ auto_enable_feature:
       min_trigger: 2132900  
       force_trigger: 1000000000
       require_percentage: 80
+blocktime_param:
+  - "blocktimedef": 40
+  - "blocktime20": 20
+  - "blocktime10": 10
+feature_version:
+  - instantfinalityv2: 9
 bridge_agg_param:
   admin_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
