@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -1264,32 +1263,6 @@ func filterNonSlashingCommittee(committees []*statedb.StakerInfoSlashingVersion,
 	}
 
 	return nonSlashingCommittees
-}
-
-func GetAllBlockTimeFeatureByHeight(triggerMap map[string]uint64, blkHeight uint64) []string {
-	//get sorted blk time feature by enable time ( trigger time <= blkHeight)
-	sortedBlkTimeFeature := []string{}
-	for f, _ := range triggerMap {
-		for blkTimeFeature, triggerHeight := range config.Param().BlockTimeParam {
-			if f == blkTimeFeature {
-				if blkHeight <= uint64(triggerHeight) {
-					sortedBlkTimeFeature = append(sortedBlkTimeFeature, f)
-				}
-
-			}
-		}
-	}
-	sort.Slice(sortedBlkTimeFeature, func(i, j int) bool {
-		if triggerMap[sortedBlkTimeFeature[i]] < triggerMap[sortedBlkTimeFeature[j]] {
-			return true
-		} else {
-			return false
-		}
-	})
-	//insert first default time
-	sortedBlkTimeFeature = append([]string{BLOCKTIME_DEFAULT}, sortedBlkTimeFeature...)
-
-	return sortedBlkTimeFeature
 }
 
 func GetMaxCommitteeSize(currentMaxShardCommittee int, triggerFeature map[string]uint64, blkHeight uint64) int {
