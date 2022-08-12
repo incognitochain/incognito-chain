@@ -17,6 +17,12 @@ if [ $(whoami) != root ]; then
 sudo -i
 fi
 
+if [ -f "$SERVICE" ]; then
+  echo "Service is already installed "
+  systemctl start $(basename $SERVICE) 2> /dev/null
+  exit 0
+fi
+
 # ================================================================
 echo "Checking for / Installing Docker and jq (JSON processor)"
 apt install docker.io jq -y
