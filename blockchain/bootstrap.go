@@ -346,7 +346,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 		for shardID, shardStates := range beaconBlock.Body.ShardState {
 			for _, shardState := range shardStates {
-				err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+				err := s.blockchain.BeaconChain.BlockStorage.StoreBeaconConfirmShardBlockByHeight(shardID, shardState.Height, shardState.Hash)
 				if err != nil {
 					panic(err)
 				}
@@ -486,7 +486,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 			panic(err)
 		}
 
-		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreFinalizedShardBlock(byte(sid), shardBlock.GetHeight(), *shardBlock.Hash()); err != nil {
+		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreFinalizedShardBlock(shardBlock.GetHeight(), *shardBlock.Hash()); err != nil {
 			panic(err)
 		}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"path"
 )
@@ -46,53 +47,31 @@ func (s *BlockStorage) ReplaceBlock(blk types.BlockInterface) error {
 	}
 }
 
-func (s *BlockStorage) GetFinalizedBlockHashByHeight(height uint64) (common.Hash, error) {
-	switch s.cid {
-	case -1:
-		if s.useFF {
-			h, e := s.GetFinalizedBeaconBlock(height)
-			if e != nil {
-				return common.Hash{}, e
-			}
-			return *h, e
-		} else {
-			h, e := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.rootDB, height)
-			if e != nil {
-				return common.Hash{}, e
-			}
-			return *h, e
-		}
-	default:
-		if s.useFF {
-			h, e := s.GetFinalizedShardBlock(byte(s.cid), height)
-			if e != nil {
-				return common.Hash{}, e
-			}
-			return *h, e
-		} else {
-			h, e := rawdbv2.GetFinalizedShardBlockHashByIndex(s.rootDB, byte(s.cid), height)
-			if e != nil {
-				return common.Hash{}, e
-			}
-			return *h, e
-		}
+func (s *BlockStorage) StoreBeaconConfirmShardBlockByHeight(shardID byte, height uint64, hash common.Hash) error {
+	if s.useFF {
+		return rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(s.blockStorageDB, shardID, height, hash)
+	} else {
+		return rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(s.rootDB, shardID, height, hash)
 	}
 }
 
-func (s *BlockStorage) GetFinalizedBlockWithLatestValidationDataByHeight(height uint64) (types.BlockInterface, int, error) {
-	hash, err := s.GetFinalizedBlockHashByHeight(height)
-	if err != nil {
-		return nil, 0, err
+func (s *BlockStorage) GetBeaconConfirmShardBlockByHeight(shardID byte, height uint64) (*common.Hash, error) {
+	if s.useFF {
+		return rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(s.blockStorageDB, shardID, height)
+	} else {
+		return rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(s.rootDB, shardID, height)
 	}
+}
 
+func (s *BlockStorage) GetBlockWithLatestValidationData(hash common.Hash) (types.BlockInterface, int, error) {
 	if s.useFF {
 		blk, size, err := s.getBlockUsingFF(hash)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, errors.Wrap(err, "Cannot get block by hash (ffstorage)")
 		}
 		valString, err := rawdbv2.GetValidationDataByBlockHash(s.blockStorageDB, *blk.Hash())
 		if err != nil {
-			return nil, 0, err
+			return blk, size, nil
 		}
 		blk.SetValidationField(string(valString))
 		return blk, size, err
@@ -155,30 +134,30 @@ func (s *BlockStorage) GetFinalizedBeaconBlock(index uint64) (*common.Hash, erro
 	}
 }
 
-func (s *BlockStorage) StoreFinalizedShardBlock(sid byte, index uint64, hash common.Hash) error {
+func (s *BlockStorage) StoreFinalizedShardBlock(index uint64, hash common.Hash) error {
 	if s.useFF {
-		if err := rawdbv2.StoreFinalizedShardBlockHashByIndex(s.blockStorageDB, sid, index, hash); err != nil {
+		if err := rawdbv2.StoreFinalizedShardBlockHashByIndex(s.blockStorageDB, byte(s.cid), index, hash); err != nil {
 			panic(err)
 		}
 	} else {
-		if err := rawdbv2.StoreFinalizedShardBlockHashByIndex(s.rootDB, sid, index, hash); err != nil {
+		if err := rawdbv2.StoreFinalizedShardBlockHashByIndex(s.rootDB, byte(s.cid), index, hash); err != nil {
 			panic(err)
 		}
 	}
 	return nil
 }
 
-func (s *BlockStorage) GetFinalizedShardBlock(sid byte, index uint64) (*common.Hash, error) {
+func (s *BlockStorage) GetFinalizedShardBlockHashByIndex(index uint64) (*common.Hash, error) {
 	if s.useFF {
-		return rawdbv2.GetFinalizedShardBlockHashByIndex(s.blockStorageDB, sid, index)
+		return rawdbv2.GetFinalizedShardBlockHashByIndex(s.blockStorageDB, byte(s.cid), index)
 	} else {
-		return rawdbv2.GetFinalizedShardBlockHashByIndex(s.rootDB, sid, index)
+		return rawdbv2.GetFinalizedShardBlockHashByIndex(s.rootDB, byte(s.cid), index)
 	}
 }
 
 func (s *BlockStorage) IsExisted(blkHash common.Hash) bool {
 	if s.useFF {
-		if _, err := rawdbv2.GetFlatFileIndexByBlockHash(s.rootDB, blkHash); err != nil {
+		if _, err := rawdbv2.GetFlatFileIndexByBlockHash(s.blockStorageDB, blkHash); err != nil {
 			return false
 		}
 		return true

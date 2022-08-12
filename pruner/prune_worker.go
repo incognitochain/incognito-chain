@@ -11,7 +11,7 @@ import (
 )
 
 func pruneByHeight(db incdb.Database, blockStorage *blockchain.BlockStorage, shardID int, stateBloom *trie.StateBloom, height uint64) (uint64, uint64, error) {
-	h, err := blockStorage.GetFinalizedShardBlock(byte(shardID), height)
+	h, err := blockStorage.GetFinalizedShardBlockHashByIndex(height)
 	if err != nil {
 		return 0, 0, err
 	}

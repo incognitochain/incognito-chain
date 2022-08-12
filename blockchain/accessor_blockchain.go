@@ -140,7 +140,7 @@ func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView mult
 
 	// => check if <= final block, using rawdb
 	if height <= finalView.GetHeight() { //note there is chance that == final view, but block is not stored (store in progress)
-		return blockchain.ShardChain[bestView.(*ShardBestState).ShardID].BlockStorage.GetFinalizedShardBlock(bestView.(*ShardBestState).ShardID, height)
+		return blockchain.ShardChain[bestView.(*ShardBestState).ShardID].BlockStorage.GetFinalizedShardBlockHashByIndex(height)
 	}
 
 	// => if > finalblock, we use best view to trace back the correct height
@@ -171,7 +171,7 @@ func (blockchain *BlockChain) GetShardBlockHashByView(view multiview.View, heigh
 		return &blkhash, nil
 	}
 
-	return blockchain.ShardChain[view.(*ShardBestState).ShardID].BlockStorage.GetFinalizedShardBlock(view.(*ShardBestState).ShardID, height)
+	return blockchain.ShardChain[view.(*ShardBestState).ShardID].BlockStorage.GetFinalizedShardBlockHashByIndex(height)
 }
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*types.ShardBlock, error) {
@@ -203,26 +203,34 @@ func (blockchain *BlockChain) GetShardBlockByView(view multiview.View, height ui
 	return blk.(*types.ShardBlock), err
 }
 
-func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*types.ShardBlock, error) {
-	shardBlocks, err := blockchain.GetShardBlockByHeight(height, shardID)
+func (blockchain *BlockChain) GetShardBlockWithLatestValidation(height uint64, shardID byte) (*types.ShardBlock, error) {
+	blkhash, err := blockchain.
+		GetShardBlockHashByHeight(blockchain.ShardChain[shardID].
+			GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
-		return nil, err
-	}
-	if len(shardBlocks) == 0 {
 		return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
 	}
-	nShardBlocks, err := blockchain.GetShardBlockByHeight(height+1, shardID)
-	if err == nil {
-		for _, blk := range nShardBlocks {
-			if sBlk, ok := shardBlocks[blk.GetPrevHash()]; ok {
-				return sBlk, nil
-			}
-		}
+	blk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlockWithLatestValidationData(*blkhash)
+	if err != nil {
+		return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
 	}
-	for _, v := range shardBlocks {
-		return v, nil
+	shardBlock := blk.(*types.ShardBlock)
+	return shardBlock, nil
+}
+
+func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*types.ShardBlock, error) {
+	blkhash, err := blockchain.
+		GetShardBlockHashByHeight(blockchain.ShardChain[shardID].
+			GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
+	if err != nil {
+		return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
 	}
-	return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
+	blk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlock(*blkhash)
+	if err != nil {
+		return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
+	}
+	shardBlock := blk.(*types.ShardBlock)
+	return shardBlock, nil
 }
 
 func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, shardID byte) (*types.ShardBlock, uint64, error) {
@@ -307,12 +315,11 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 		lastEpoch := uint64(0)
 		limitTxs := map[int]int{}
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
-			blk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetFinalizedBlockWithLatestValidationDataByHeight(shardHeight)
+			tempShardBlock, err := blockchain.GetShardBlockWithLatestValidation(shardHeight, shardID)
 			if err != nil {
 				Logger.log.Errorf("GetShardBlockByHeightV1 shard %+v, error  %+v", shardID, err)
 				break
 			}
-			tempShardBlock := blk.(*types.ShardBlock)
 			//only get shard block within epoch
 			if lastEpoch == 0 {
 				lastEpoch = tempShardBlock.GetCurrentEpoch() //update epoch of first block
@@ -351,7 +358,7 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 		shardBlocks := []*types.ShardBlock{}
 		lastEpoch := uint64(0)
 		for _, height := range requiredShardBlockHeight {
-			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
+			shardBlock, err := blockchain.GetShardBlockWithLatestValidation(height, shardID)
 			if err != nil {
 				return nil, err
 			}

@@ -1301,7 +1301,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			if oldFinalView != nil && storeBlock.GetHeight() <= oldFinalView.GetHeight() {
 				break
 			}
-			err := blockchain.ShardChain[shardID].BlockStorage.StoreFinalizedShardBlock(shardID, storeBlock.GetHeight(), *storeBlock.Hash())
+			err := blockchain.ShardChain[shardID].BlockStorage.StoreFinalizedShardBlock(storeBlock.GetHeight(), *storeBlock.Hash())
 			if err != nil {
 				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
@@ -1322,7 +1322,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			}
 		}
 	} else { //instant finality
-		blockchain.storeFinalizeShardBlockByBeaconView(batchData, shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
+		blockchain.storeFinalizeShardBlockByBeaconView(shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
 	}
 
 	if err != nil {
@@ -1348,7 +1348,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	return nil
 }
 
-func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyValueWriter, shardID byte, finalizedBlockHash common.Hash) error {
+func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(shardID byte, finalizedBlockHash common.Hash) error {
 	finalizedBlockView := blockchain.ShardChain[shardID].multiView.GetViewByHash(finalizedBlockHash)
 	if finalizedBlockView == nil {
 		finalizedBlockView = blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
@@ -1356,15 +1356,15 @@ func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyVa
 
 	finalizedBlock := finalizedBlockView.GetBlock()
 	for {
-		_, err := blockchain.ShardChain[shardID].BlockStorage.GetFinalizedShardBlock(shardID, finalizedBlock.GetHeight())
+		_, err := blockchain.ShardChain[shardID].BlockStorage.GetFinalizedShardBlockHashByIndex(finalizedBlock.GetHeight())
 		if err == nil { //already insert
 			break
 		}
-		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, finalizedBlock.GetHeight())
+		confirmHash, err := blockchain.BeaconChain.BlockStorage.GetBeaconConfirmShardBlockByHeight(shardID, finalizedBlock.GetHeight())
 		if err == nil && confirmHash.String() == finalizedBlock.Hash().String() {
 			fmt.Println("============== StoreFinalizedShardBlockHashByIndex", shardID, finalizedBlock.GetHeight(), finalizedBlock.Hash().String())
 			blockchain.ShardChain[shardID].multiView.FinalizeView(*confirmHash)
-			err = blockchain.ShardChain[shardID].BlockStorage.StoreFinalizedShardBlock(shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash())
+			err = blockchain.ShardChain[shardID].BlockStorage.StoreFinalizedShardBlock(finalizedBlock.GetHeight(), *finalizedBlock.Hash())
 			if err != nil {
 				return NewBlockChainError(StoreBeaconBlockError, err)
 			}

@@ -436,7 +436,7 @@ func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusDat
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
 	if hasBlock := chain.BlockStorage.IsExisted(previousBlockHash); !hasBlock {
 		// This block is not inserted yet, no need to replace
-		Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db" + previousBlockHash.String())
+		Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db " + previousBlockHash.String())
 		return nil
 	}
 
