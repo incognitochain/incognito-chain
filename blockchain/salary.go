@@ -47,7 +47,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 					version = blkVersion
 				}
 			}
-			rewardAmount, err := blockchain.GetRewardAmount(version, acceptBlockRewardIns.ShardBlockHeight(), acceptBlockRewardIns.ShardID())
+			rewardAmount, err := blockchain.GetRewardAmount(acceptBlockRewardIns.ShardID(), version, acceptBlockRewardIns.ShardBlockHeight())
 			if err != nil {
 				return err
 			} else {
@@ -101,7 +101,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 					version = blkVersion
 				}
 			}
-			rewardAmount, err := blockchain.GetRewardAmount(version, acceptedBlkRewardInfo.ShardBlockHeight, acceptedBlkRewardInfo.ShardID)
+			rewardAmount, err := blockchain.GetRewardAmount(acceptedBlkRewardInfo.ShardID, version, acceptedBlkRewardInfo.ShardBlockHeight)
 			if err != nil {
 				return err
 			} else {
@@ -355,7 +355,7 @@ func (blockchain *BlockChain) calculateRewardMultiset(
 	map[common.Hash]uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForRewardMultiset(curView.rewardStateDB, epoch)
-	currentBeaconYear, err := blockchain.GetYearOfBeaconChain(beaconHeight)
+	currentBeaconYear, err := blockchain.GetYearOfBeacon(beaconHeight)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -433,7 +433,7 @@ func (blockchain *BlockChain) calculateReward(
 	map[common.Hash]uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
-	currentBeaconYear, err := blockchain.GetYearOfBeaconChain(beaconHeight)
+	currentBeaconYear, err := blockchain.GetYearOfBeacon(beaconHeight)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -736,7 +736,7 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	return reward
 }
 
-func (blockchain *BlockChain) GetRewardAmount(shardVersion int, shardHeight uint64, sid byte) (uint64, error) {
+func (blockchain *BlockChain) GetRewardAmount(shardID byte, shardVersion int, shardHeight uint64) (uint64, error) {
 	if shardVersion < types.ADJUST_BLOCKTIME_VERSION {
 		return blockchain.getRewardAmount(shardHeight), nil
 	}
@@ -744,16 +744,7 @@ func (blockchain *BlockChain) GetRewardAmount(shardVersion int, shardHeight uint
 	if err != nil {
 		return 0, err
 	}
-
-	shardTSManager := blockchain.GetBeaconBestState().ShardTSManager[sid]
-	triggerMap := map[string]uint64{}
-	for _, anchor := range shardTSManager.Anchors {
-		if _, ok := config.Param().BlockTimeParam[anchor.Feature]; !ok {
-			return 0, errors.New("Cannot get feature from block time param " + anchor.Feature)
-		}
-		triggerMap[anchor.Feature] = anchor.BlockHeight
-	}
-	yearOfShardHeight, err := blockchain.GetYearOfShardChain(triggerMap, shardHeight)
+	yearOfShardHeight, err := blockchain.GetYearOfShard(shardID, shardHeight)
 	if err != nil {
 		return 0, err
 	}
@@ -771,43 +762,52 @@ func (blockchain *BlockChain) getRewardAmountV2(basicReward, year uint64) uint64
 	return reward
 }
 
-func (blockchain *BlockChain) GetYearOfBeaconChain(blockHeight uint64) (uint64, error) {
+func (blockchain *BlockChain) GetYearOfBeacon(blockHeight uint64) (uint64, error) {
+
 	bView := blockchain.GetBeaconBestState()
 	if bView == nil {
 		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", blockHeight)
 	}
-	triggerFeature := bView.TriggeredFeature
-	return getYearOfBlockChain(triggerFeature, blockHeight), nil
+	featureManager := bView.TSManager
+	return getYearOfBlockChain(&featureManager, blockHeight), nil
 }
 
-func (blockchain *BlockChain) GetYearOfShardChain(triggerMap map[string]uint64, blkHeight uint64) (uint64, error) {
-	return getYearOfBlockChain(triggerMap, blkHeight), nil
-}
+func (blockchain *BlockChain) GetYearOfShard(sID byte, blockHeight uint64) (uint64, error) {
 
-func getYearOfBlockChain(triggerMap map[string]uint64, blkHeight uint64) uint64 {
-	blkTimeEnableFeatures := GetAllBlockTimeFeatureByHeight(triggerMap, blkHeight)
-	years := uint64(0)
-	blksOfPrevFeature := uint64(0)
-	prevBeaconHeight := uint64(0)
-	for idx := 0; idx < len(blkTimeEnableFeatures); idx++ {
-		lastBeaconHeight := blkHeight
-		if idx < len(blkTimeEnableFeatures)-1 {
-			lastBeaconHeight = triggerMap[blkTimeEnableFeatures[idx+1]]
-		}
-		blksPerYear := GetNumberBlkPerYear(blkTimeEnableFeatures[idx])
-		if blksOfPrevFeature != 0 {
-			blksOfPrevFeature = convertTotalBlks(blkTimeEnableFeatures[idx-1], blkTimeEnableFeatures[idx], blksOfPrevFeature)
-		}
-		years += (lastBeaconHeight - prevBeaconHeight + blksOfPrevFeature) / blksPerYear
-		blksOfPrevFeature = (lastBeaconHeight - prevBeaconHeight + blksOfPrevFeature) % blksPerYear
+	bView := blockchain.GetBeaconBestState()
+	if bView == nil {
+		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", blockHeight)
 	}
-	return years
+	featureManager := bView.ShardTSManager[sID]
+	return getYearOfBlockChain(featureManager, blockHeight), nil
 }
 
-func convertTotalBlks(fromFeature, toFeature string, totalBlks uint64) uint64 {
-	blkPerYearA := GetNumberBlkPerYear(fromFeature)
-	blkPerYearB := GetNumberBlkPerYear(toFeature)
-	return totalBlks * blkPerYearA / blkPerYearB
+func getYearOfBlockChain(featuresManager *TSManager, blkHeight uint64) uint64 {
+	anchors := featuresManager.Anchors
+	startBlkHeight := uint64(0)
+	endBlkHeight := uint64(0)
+	prevBlockTime := config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]
+	defBlockTime := config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]
+	totalBlock := uint64(0)
+	if len(anchors) > 0 {
+		for _, anchor := range anchors {
+			endBlkHeight = anchor.BlockHeight
+			if endBlkHeight > blkHeight {
+				endBlkHeight = blkHeight
+			}
+			// fmt.Printf("%v - %v - %v - %v\n", prevBlockTime, startBlkHeight, endBlkHeight, (endBlkHeight-startBlkHeight)*uint64(prevBlockTime)/uint64(defBlockTime))
+			totalBlock += (endBlkHeight - startBlkHeight) * uint64(prevBlockTime) / uint64(defBlockTime)
+			startBlkHeight = endBlkHeight
+			prevBlockTime = config.Param().BlockTimeParam[anchor.Feature]
+		}
+	}
+	if endBlkHeight < blkHeight {
+		endBlkHeight = blkHeight
+		// fmt.Printf("%v - %v - %v - %v\n", prevBlockTime, startBlkHeight, endBlkHeight, (endBlkHeight-startBlkHeight)*uint64(prevBlockTime)/uint64(defBlockTime))
+		totalBlock += (endBlkHeight - startBlkHeight) * uint64(prevBlockTime) / uint64(defBlockTime)
+	}
+	// fmt.Printf("%v - %v\n", totalBlock, getNoBlkPerYear(uint64(defBlockTime)))
+	return totalBlock / getNoBlkPerYear(uint64(defBlockTime))
 }
 
 func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
