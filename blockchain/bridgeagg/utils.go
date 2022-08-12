@@ -87,6 +87,10 @@ func GetInsertTxHashIssuedFuncByNetworkID(networkID uint8) func(*statedb.StateDB
 		return statedb.InsertETHTxHashIssued
 	case common.FTMNetworkID:
 		return statedb.InsertFTMTxHashIssued
+	case common.AURORANetworkID:
+		return statedb.InsertAURORATxHashIssued
+	case common.AVAXNetworkID:
+		return statedb.InsertAVAXTxHashIssued
 	}
 	return nil
 }
@@ -306,6 +310,10 @@ func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error
 		} else {
 			burningMetaType = metadata.BurningFantomConfirmMeta
 		}
+	case common.AURORANetworkID:
+		burningMetaType = metadata.BurningAuroraConfirmMeta
+	case common.AVAXNetworkID:
+		burningMetaType = metadata.BurningAvaxConfirmMeta
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
 	}
@@ -350,7 +358,8 @@ func CalculateIncDecimal(decimal, baseDecimal uint8) uint8 {
 
 func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vault config.Vault) error {
 	networkID := vault.NetworkID
-	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID && networkID != common.FTMNetworkID {
+	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID && networkID != common.FTMNetworkID &&
+		networkID != common.AURORANetworkID && networkID != common.AVAXNetworkID {
 		return fmt.Errorf("Cannot find networkID %d", networkID)
 	}
 	if vault.ExternalDecimal == 0 {
@@ -438,6 +447,10 @@ func getPrefixByNetworkID(networkID uint8) (string, error) {
 		prefix = common.PLGPrefix
 	case common.FTMNetworkID:
 		prefix = common.FTMPrefix
+	case common.AURORANetworkID:
+		prefix = common.AURORAPrefix
+	case common.AVAXNetworkID:
+		prefix = common.AVAXPrefix
 	default:
 		return utils.EmptyString, errors.New("Invalid networkID")
 	}
