@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -10,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"golang.org/x/sync/semaphore"
 	"io/ioutil"
 	"log"
 	"os"
@@ -130,12 +132,15 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}
 
 	shardWG := sync.WaitGroup{}
+	sem := semaphore.NewWeighted(4)
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 		shardWG.Add(1)
+		sem.Acquire(context.Background(), 1)
 		go func(sid int) {
 			s.backupShard(backUpPath, shardFinalView[sid])
 			bootstrapInfo.ShardView[sid] = shardFinalView[sid]
 			shardWG.Done()
+			sem.Release(1)
 		}(i)
 	}
 	shardWG.Wait()
@@ -226,15 +231,15 @@ func (s *BackupManager) backupShard(name string, finalView *ShardBestState) {
 	featureDB := finalView.GetCopiedFeatureStateDB()
 	rewardDB := finalView.GetShardRewardStateDB()
 
-	shardStateDB, _ := incdb.Open("leveldb", path.Join(name, fmt.Sprintf("shard%v", finalView.ShardID)))
+	shardKeyValueDB, _ := incdb.Open("leveldb", path.Join(name, fmt.Sprintf("shard%v", finalView.ShardID)))
 
 	wg := sync.WaitGroup{}
 	wg.Add(5)
 	go s.backupShardBlock(name, finalView, &wg)
-	go backupStateDB(consensusDB, shardStateDB, &wg)
-	go backupStateDB(featureDB, shardStateDB, &wg)
-	go backupStateDB(txDB, shardStateDB, &wg)
-	go backupStateDB(rewardDB, shardStateDB, &wg)
+	go backupStateDB(consensusDB, shardKeyValueDB, &wg)
+	go backupStateDB(featureDB, shardKeyValueDB, &wg)
+	go backupStateDB(txDB, shardKeyValueDB, &wg)
+	go backupStateDB(rewardDB, shardKeyValueDB, &wg)
 	wg.Wait()
 }
 
@@ -343,10 +348,21 @@ func (s *BackupManager) backupBeaconBlock(name string, fromBlock uint64, finalVi
 	}
 }
 
-func backupStateDB(stateDB *statedb.StateDB, beaconStateDB incdb.Database, wg *sync.WaitGroup) {
+func recheck(stateDB incdb.Database, roothash common.Hash) {
+	txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(stateDB))
+	if err != nil {
+		panic(fmt.Sprintf("Something wrong when init txDB"))
+	}
+	if err := txDB.Recheck(); err != nil {
+		fmt.Println("Recheck roothash fail!", roothash.String())
+		panic("recheck fail!")
+	}
+}
+
+func backupStateDB(stateDB *statedb.StateDB, kvDB incdb.Database, wg *sync.WaitGroup) {
 	defer wg.Done()
 	it := stateDB.GetIterator()
-	batchData := beaconStateDB.NewBatch()
+	batchData := kvDB.NewBatch()
 	if stateDB == nil {
 		return
 	}
@@ -358,7 +374,7 @@ func backupStateDB(stateDB *statedb.StateDB, beaconStateDB incdb.Database, wg *s
 		key := make([]byte, len(it.Key))
 		copy(key, it.Key)
 		batchData.Put(key, diskvalue)
-		if batchData.ValueSize() > 10*1024*1024 {
+		if batchData.ValueSize() > 5*1024*1024 {
 			batchData.Write()
 			batchData.Reset()
 		}
@@ -371,4 +387,11 @@ func backupStateDB(stateDB *statedb.StateDB, beaconStateDB incdb.Database, wg *s
 		fmt.Println(it.Err)
 		panic(it.Err)
 	}
+
+	//recheck stateDB
+	rootHash, err := stateDB.Commit(false)
+	if err != nil {
+		panic(err)
+	}
+	recheck(kvDB, rootHash)
 }

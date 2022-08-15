@@ -90,7 +90,7 @@ func (s *BlockStorage) storeStakingTx(tx metadata.Transaction) error {
 		}
 		return rawdbv2.StoreStakingTx(s.blockStorageDB, byte(s.cid), *tx.Hash(), b)
 	} else {
-		panic("cannot come here!")
+		return nil
 	}
 }
 
