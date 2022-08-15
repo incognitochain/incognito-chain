@@ -251,17 +251,10 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID().String())
 						return nil, nil, err
 					}
-					blockHash, index, err := blockchain.ShardChain[shardID].BlockStorage.GetTXIndex(stakerInfo.TxStakingID())
+					txData, err := blockchain.ShardChain[shardID].BlockStorage.GetStakingTx(stakerInfo.TxStakingID())
 					if err != nil {
-						continue
+						return nil, nil, err
 					}
-					blk, err := blockchain.ShardChain[shardID].GetBlockByHash(blockHash)
-					if err != nil || blk == nil {
-						Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", index)
-						continue
-					}
-					shardBlock := blk.(*types.ShardBlock)
-					txData := shardBlock.Body.Transactions[index]
 					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
 					if !ok {
 						Logger.log.Error("Can not parse meta data of this tx %v", txData.Hash().String())
@@ -297,17 +290,10 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 				}
 				for i, v := range returnStakingIns.GetPublicKey() {
 					txHash := returnStakingIns.StakingTxHashes[i]
-					blockHash, index, err := blockchain.ShardChain[shardID].BlockStorage.GetTXIndex(txHash)
+					txData, err := blockchain.ShardChain[shardID].BlockStorage.GetStakingTx(txHash)
 					if err != nil {
-						Logger.log.Debugf("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
 					}
-					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
-					if err != nil || shardBlock == nil {
-						Logger.log.Error("ERROR", err, "SHARD ", shardID, "NO Transaction in block with hash", blockHash, "and index", index)
-						continue
-					}
-					txData := shardBlock.Body.Transactions[index]
 					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
 					if !ok {
 						Logger.log.Errorf("Can not parse meta data of this tx %v", txData.Hash().String())

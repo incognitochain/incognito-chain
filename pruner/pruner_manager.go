@@ -89,7 +89,7 @@ func (s *PrunerManager) OfflinePrune() {
 				wg.Add(1)
 				go func() {
 					ffPath := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage")
-					s.ShardPruner[shardID].blockStorage = blockchain.NewBlockStorage(s.ShardPruner[shardID].db, ffPath, shardID, false, false)
+					s.ShardPruner[shardID].blockStorage = blockchain.NewBlockStorage(s.ShardPruner[shardID].db, ffPath, shardID, false)
 
 					if _, ok := s.ShardPruner[shardID]; !ok {
 						fmt.Println("ShardPrunter is not ready")

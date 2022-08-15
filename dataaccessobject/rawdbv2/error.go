@@ -113,6 +113,8 @@ const (
 
 	StoreFFIndexError
 	GetFFIndexError
+	StoreShardStakingTx
+	GetShardStakingTx
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -211,6 +213,9 @@ var ErrCodeMessage = map[int]struct {
 	GetCommmitteeFromBlockCacheError:   {-7003, "Get shard prune status error"},
 	StoreFFIndexError:                  {-7004, "Store FF Index error"},
 	GetFFIndexError:                    {-7005, "Get FF Index error"},
+
+	StoreShardStakingTx: {-7006, "Store shard stakign error"},
+	GetShardStakingTx:   {-7007, "Get shard staking error"},
 }
 
 type RawdbError struct {

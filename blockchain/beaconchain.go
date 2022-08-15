@@ -35,7 +35,7 @@ func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blo
 	committeeInfoCache, _ := lru.New(100)
 	cfg := config.Config()
 	ffPath := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon", "blockstorage")
-	bs := NewBlockStorage(blockchain.GetBeaconChainDatabase(), ffPath, -1, false, false)
+	bs := NewBlockStorage(blockchain.GetBeaconChainDatabase(), ffPath, -1, false)
 	chain := &BeaconChain{
 		multiView:           multiView,
 		BlockGen:            blockGen,

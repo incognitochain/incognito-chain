@@ -53,7 +53,7 @@ func NewShardChain(
 ) *ShardChain {
 	cfg := config.Config()
 	ffPath := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage")
-	bs := NewBlockStorage(blockchain.GetShardChainDatabase(byte(shardID)), ffPath, shardID, false, false)
+	bs := NewBlockStorage(blockchain.GetShardChainDatabase(byte(shardID)), ffPath, shardID, false)
 	chain := &ShardChain{
 		shardID:      shardID,
 		multiView:    multiView,

@@ -330,6 +330,11 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		}
 	}
 
+	mainDir, tmpDir, err := s.blockchain.BeaconChain.BlockStorage.ChangeTmpDir()
+	if err != nil {
+		panic(err)
+	}
+
 	bestView := latestBackup.BeaconView
 	wg.Add(5)
 
@@ -435,9 +440,14 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	Logger.log.Info("Finish sync ... post processing ...")
 
+	err = s.blockchain.BeaconChain.BlockStorage.ChangeMainDir(tmpDir, mainDir)
+	if err != nil {
+		panic(err)
+	}
+
 	allViews := []*BeaconBestState{bestView}
 	b, _ := json.Marshal(allViews)
-	err := rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
+	err = rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -463,6 +473,11 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	//only backup if back 500k block
 	if latestBackup.ShardView[sid].ShardHeight < s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+500*1000 {
 		return
+	}
+
+	mainDir, tmpDir, err := s.blockchain.ShardChain[sid].BlockStorage.ChangeTmpDir()
+	if err != nil {
+		panic(err)
 	}
 
 	wg := sync.WaitGroup{}
@@ -579,7 +594,11 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	if err := rawdbv2.StoreShardBestState(s.blockchain.GetShardChainDatabase(byte(sid)), byte(sid), allViews); err != nil {
 		panic(err)
 	}
-	//s.blockchain.
+	err = s.blockchain.ShardChain[sid].BlockStorage.ChangeMainDir(tmpDir, mainDir)
+	if err != nil {
+		panic(err)
+	}
+
 	s.blockchain.RestoreShardViews(byte(sid))
 	Logger.log.Infof("Bootstrap shard %v finish!", sid)
 }

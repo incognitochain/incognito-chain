@@ -1,16 +1,17 @@
 package blockchain
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
-	"io/ioutil"
+	"os"
 	"path"
 )
 
@@ -20,10 +21,9 @@ type BlockStorage struct {
 	flatfile       flatfile.FlatFile
 	cid            int
 	useFF          bool
-	useProtobuf    bool
 }
 
-func NewBlockStorage(db incdb.Database, ffPath string, cid int, useFF, useProtoBuf bool) *BlockStorage {
+func NewBlockStorage(db incdb.Database, ffPath string, cid int, useFF bool) *BlockStorage {
 	var ff *flatfile.FlatFileManager
 	var blockStorageDB incdb.Database
 
@@ -31,10 +31,45 @@ func NewBlockStorage(db incdb.Database, ffPath string, cid int, useFF, useProtoB
 	blockStorageDB, _ = incdb.Open("leveldb", path.Join(ffPath, "blockKV"))
 
 	return &BlockStorage{
-		db, blockStorageDB, ff, cid, useFF, useProtoBuf,
+		db, blockStorageDB, ff, cid, useFF,
 	}
 }
 
+func (s *BlockStorage) ChangeTmpDir() (string, string, error) {
+	mainDir := s.flatfile.Path()
+	dataDir := path.Join(path.Dir(mainDir), ".tmp")
+	err := os.RemoveAll(dataDir)
+	if err != nil {
+		panic(err)
+	}
+	tmpFF, _ := flatfile.NewFlatFile(dataDir, 5000)
+	tmpDB, _ := incdb.Open("leveldb", path.Join(dataDir, "blockKV"))
+	s.flatfile = tmpFF
+	s.blockStorageDB = tmpDB
+	return mainDir, dataDir, nil
+}
+
+func (s *BlockStorage) ChangeMainDir(tmpDir, mainDir string) error {
+	err := os.RemoveAll(mainDir)
+	if err != nil {
+		panic(err)
+	}
+	s.blockStorageDB.Close()
+
+	err = os.Rename(tmpDir, mainDir)
+	if err != nil {
+		panic(err)
+	}
+	mainFF, _ := flatfile.NewFlatFile(mainDir, 5000)
+	mainKeyDB, _ := incdb.Open("leveldb", path.Join(mainDir, "blockKV"))
+	s.flatfile = mainFF
+	s.blockStorageDB = mainKeyDB
+	return nil
+}
+
+func (s *BlockStorage) Truncate() error {
+	return s.flatfile.Truncate(s.flatfile.Size() - 500)
+}
 func (s *BlockStorage) ReplaceBlock(blk types.BlockInterface) error {
 	if s.useFF {
 		if !s.IsExisted(*blk.Hash()) {
@@ -44,6 +79,51 @@ func (s *BlockStorage) ReplaceBlock(blk types.BlockInterface) error {
 		}
 	} else {
 		return s.storeBlockUsingDB(blk)
+	}
+}
+
+func (s *BlockStorage) storeStakingTx(tx metadata.Transaction) error {
+	if s.useFF {
+		b, err := json.Marshal(tx)
+		if err != nil {
+			panic(err)
+		}
+		return rawdbv2.StoreStakingTx(s.blockStorageDB, byte(s.cid), *tx.Hash(), b)
+	} else {
+		panic("cannot come here!")
+	}
+}
+
+func (s *BlockStorage) GetStakingTx(hash common.Hash) (metadata.Transaction, error) {
+
+	if s.useFF { //get from blockKV
+		b, err := rawdbv2.GetStakingTx(s.blockStorageDB, byte(s.cid), hash)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(string(b))
+		txChoice, parseErr := transaction.DeserializeTransactionJSON(b)
+		if parseErr != nil {
+			return nil, fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)
+		}
+		tx := txChoice.ToTx()
+		if tx == nil {
+			return nil, fmt.Errorf("unmarshall Json Shard Block Is Failed. Corrupted TX")
+		}
+		return tx, nil
+	} else { //legacy flow, get from block
+		blockHash, index, err := s.GetTXIndex(hash)
+		if err != nil {
+			return nil, err
+		}
+		blk, _, err := s.GetBlock(blockHash)
+		if err != nil || blk == nil {
+			Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", index)
+			return nil, err
+		}
+		shardBlock := blk.(*types.ShardBlock)
+		tx := shardBlock.Body.Transactions[index]
+		return tx, nil
 	}
 }
 
@@ -90,8 +170,16 @@ func (s *BlockStorage) StoreBlock(blk types.BlockInterface) error {
 
 func (s *BlockStorage) StoreTXIndex(blk *types.ShardBlock) error {
 	for index, tx := range blk.Body.Transactions {
-		Logger.log.Infof("Process storing tx %v, index %x, shard %v, height %v, blockHash %v\n",
-			tx.Hash().String(), index, blk.GetShardID(), blk.GetHeight(), blk.Hash().String())
+		//Logger.log.Infof("Process storing tx %v, index %x, shard %v, height %v, blockHash %v\n",
+		//	tx.Hash().String(), index, blk.GetShardID(), blk.GetHeight(), blk.Hash().String())
+
+		_, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+		if ok {
+			if err := s.storeStakingTx(tx); err != nil {
+				panic(err)
+			}
+		}
+
 		if s.useFF {
 			if err := rawdbv2.StoreTransactionIndex(s.blockStorageDB, *tx.Hash(), blk.Header.Hash(), index); err != nil {
 				panic(err)
@@ -176,28 +264,18 @@ func (s *BlockStorage) GetBlock(blkHash common.Hash) (types.BlockInterface, int,
 func (s *BlockStorage) encode(blk types.BlockInterface) []byte {
 	b, _ := json.Marshal(blk)
 	//zip
-	var bb bytes.Buffer
-	gz := gzip.NewWriter(&bb)
-	if _, err := gz.Write(b); err != nil {
+	bb, err := common.GZipFromBytes(b)
+	if err != nil {
 		panic(err)
 	}
-	if err := gz.Close(); err != nil {
-		panic(err)
-	}
-
-	return bb.Bytes()
+	return bb
 }
 
 func (s *BlockStorage) decode(data []byte) (types.BlockInterface, error) {
 	//unzip
-	reader := bytes.NewReader([]byte(data))
-	gzreader, e1 := gzip.NewReader(reader)
-	if e1 != nil {
-		panic(e1)
-	}
-	rawData, e2 := ioutil.ReadAll(gzreader)
-	if e2 != nil {
-		panic(e2)
+	rawData, err := common.GZipToBytes(data)
+	if err != nil {
+		panic(err)
 	}
 
 	switch s.cid {
@@ -230,6 +308,7 @@ func (s *BlockStorage) storeBlockUsingFF(blk types.BlockInterface) error {
 	}
 	return nil
 }
+
 func (s *BlockStorage) getBlockUsingFF(blkHash common.Hash) (types.BlockInterface, int, error) {
 	if ffIndex, err := rawdbv2.GetFlatFileIndexByBlockHash(s.blockStorageDB, blkHash); err != nil {
 		return nil, 0, err
