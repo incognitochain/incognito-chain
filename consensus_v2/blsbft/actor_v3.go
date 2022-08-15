@@ -557,8 +557,9 @@ func (a *actorV3) getCommitteesAndCommitteeViewHash() (
 func (a *actorV3) handleCleanMem() {
 
 	for h, proposeBlk := range a.receiveBlockByHash {
-		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute &&
-			(proposeBlk.block == nil || len(proposeBlk.PreVotes) <= 2*len(proposeBlk.SigningCommittees)/3) {
+		if proposeBlk.block == nil ||
+			(time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && len(proposeBlk.PreVotes) <= 2*len(proposeBlk.SigningCommittees)/3) ||
+			proposeBlk.block.GetHeight() < a.chain.GetFinalViewHeight()-2 {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}
@@ -624,7 +625,7 @@ func (a *actorV3) run() error {
 	go func() {
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
-		cleanMemTicker := time.Tick(5 * time.Minute)
+		cleanMemTicker := time.Tick(10 * time.Second)
 		a.logger.Infof("init bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
 		time.Sleep(time.Duration(common.TIMESLOT-1) * time.Second)
 		for { //actor loop
