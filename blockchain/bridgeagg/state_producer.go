@@ -312,11 +312,11 @@ func (sp *stateProducer) shield(
 						IncTokenID:      shieldData.IncTokenID,
 					})
 				}
-				if !validShieldProof {
-					Logger.log.Errorf("[BridgeAgg] no valid shield event found in proof")
-					rejectedInst := buildRejectedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NoValidShieldEventError, []byte{})
-					return [][]string{rejectedInst}, state, ac, nil
-				}
+			}
+			if !validShieldProof {
+				Logger.log.Errorf("[BridgeAgg] no valid shield event found in proof")
+				rejectedInst := buildRejectedInst(metadataCommon.IssuingUnifiedTokenRequestMeta, shardID, action.TxReqID, NoValidShieldEventError, []byte{})
+				return [][]string{rejectedInst}, state, ac, nil
 			}
 
 		default:

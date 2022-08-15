@@ -131,7 +131,7 @@ func (iRes IssuingReshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
             metadataCommon.Logger.Log.Warnf("WARNING - VALIDATION: reshield PublicKey or TxRandom mismatch")
             continue
         }
-        if cv2.GetValue() != acceptedInst.ReshieldData.ShieldAmount {
+        if cv2.GetValue() != acceptedInst.ReshieldData.ShieldAmount + acceptedInst.ReshieldData.Reward { // range check was done by producer
             metadataCommon.Logger.Log.Warnf("WARNING - VALIDATION: reshield amount mismatch - %d vs %d", cv2.GetValue(), acceptedInst.ReshieldData.ShieldAmount)
             continue
         }

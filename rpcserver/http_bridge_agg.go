@@ -210,10 +210,6 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
 	}
 
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
-	}
-
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
@@ -315,10 +311,6 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	// metadata object format to read from RPC parameters
@@ -423,9 +415,6 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
@@ -574,9 +563,6 @@ func (httpServer *HttpServer) createBridgeAggBurnForCallTransaction(params inter
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
