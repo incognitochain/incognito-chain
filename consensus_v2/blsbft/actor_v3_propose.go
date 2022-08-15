@@ -142,6 +142,9 @@ func buildPOLCFromPreVote(bestView multiview.View, info *ProposeBlockInfo) (POLC
 	idx := []int{}
 	sigs := [][]byte{}
 	for pk, vote := range info.PreVotes {
+		if vote.IsValid != 1 {
+			continue
+		}
 		index := common.IndexOfStr(pk, committeeBLSString)
 		idx = append(idx, index)
 		sigs = append(sigs, vote.Confirmation)
