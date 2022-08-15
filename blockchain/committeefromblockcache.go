@@ -9,7 +9,7 @@ import (
 var CommitteeFromBlockBootStrapCache = map[byte]*lru.Cache{}
 
 func (s *BlockChain) RestoreCommitteeFromBlockCache() {
-	allCacheCommitteeFromBlock, err := rawdbv2.GetAllCacheCommitteeFromBlock(s.GetBeaconChainDatabase())
+	allCacheCommitteeFromBlock, err := rawdbv2.GetAllCacheCommitteeFromBlock(s.BeaconChain.BlockStorage.blockStorageDB)
 	if err != nil {
 		panic(err)
 	}

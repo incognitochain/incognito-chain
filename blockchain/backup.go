@@ -1,15 +1,15 @@
 package blockchain
 
 import (
-	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"io/ioutil"
 	"log"
 	"os"
@@ -26,10 +26,10 @@ type BackupProcessInfo struct {
 }
 
 type BackupManager struct {
-	blockchain       *BlockChain
-	lastBootStrap    *BackupProcessInfo
-	runningBootStrap *BackupProcessInfo
-	lock             *sync.Mutex
+	blockchain    *BlockChain
+	lastBackup    *BackupProcessInfo
+	runningBackup *BackupProcessInfo
+	lock          *sync.Mutex
 }
 
 type StateDBData struct {
@@ -58,29 +58,29 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 }
 
 func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
-	return *s.lastBootStrap
+	return *s.lastBackup
 }
 
 const BackupInterval = 350 * 6 * 3 // days
 
 func (s *BackupManager) Backup(backupHeight uint64) {
 	s.lock.Lock()
-	if s.runningBootStrap != nil {
+	if s.runningBackup != nil {
 		s.lock.Unlock()
 		return
 	}
 
-	s.runningBootStrap = &BackupProcessInfo{}
+	s.runningBackup = &BackupProcessInfo{}
 	s.lock.Unlock()
 	defer func() {
-		s.runningBootStrap = nil
+		s.runningBackup = nil
 	}()
 
 	//backup condition period
 	if backupHeight < BackupInterval {
 		return
 	}
-	if s.lastBootStrap != nil && s.lastBootStrap.BeaconView != nil && s.lastBootStrap.BeaconView.BeaconHeight+BackupInterval > backupHeight {
+	if s.lastBackup != nil && s.lastBackup.BeaconView != nil && s.lastBackup.BeaconView.BeaconHeight+BackupInterval > backupHeight {
 		return
 	}
 	bestState := s.blockchain.GetBeaconBestState()
@@ -93,45 +93,52 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 
 	cfg := config.Config()
 
-	beaconBestView := NewBeaconBestState()
-	beaconBestView.cloneBeaconBestStateFrom(s.blockchain.GetBeaconBestState())
+	beaconFinalView := NewBeaconBestState()
+	beaconFinalView.cloneBeaconBestStateFrom(s.blockchain.BeaconChain.FinalView().(*BeaconBestState))
 
 	//update current status
 	checkPoint := time.Now().Format(time.RFC3339)
 	bootstrapInfo := &BackupProcessInfo{
 		CheckpointName: checkPoint,
-		BeaconView:     beaconBestView,
+		BeaconView:     beaconFinalView,
 		ShardView:      map[int]*ShardBestState{},
 	}
-	s.runningBootStrap = bootstrapInfo
+	s.runningBackup = bootstrapInfo
 	defer func() {
-		s.runningBootStrap = nil
+		s.runningBackup = nil
 	}()
 
 	//backup beacon then shard
 	log.Println("backup beacon")
-	s.backupBeacon(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), beaconBestView)
-	beaconBestView.BestBlock = types.BeaconBlock{}
+	backUpPath := path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint)
+	s.backupBeacon(backUpPath, beaconFinalView)
+	beaconFinalView.BestBlock = types.BeaconBlock{}
 
 	//backup shard
 	log.Println("backup shard")
-	shardBestView := map[int]*ShardBestState{}
+	shardFinalView := map[int]*ShardBestState{}
 	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
 	WAITING:
 		finalView := s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState)
-		if finalView.BeaconHeight <= beaconBestView.BeaconHeight {
-			Logger.log.Infof("Waiting for confirm more beacon blocks ... shard confirm beacon: %v, beacon: %v", finalView.BeaconHeight, beaconBestView.BeaconHeight)
+		if finalView.BeaconHeight <= beaconFinalView.BeaconHeight {
+			Logger.log.Infof("Waiting for confirm more beacon blocks ... shard confirm beacon: %v, beacon: %v", finalView.BeaconHeight, beaconFinalView.BeaconHeight)
 			time.Sleep(time.Minute)
 			goto WAITING
 		}
-		shardBestView[i] = NewShardBestState()
-		shardBestView[i].cloneShardBestStateFrom(s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState))
-	}
-	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
-		s.backupShard(path.Join(cfg.DataDir, cfg.DatabaseDir, checkPoint), shardBestView[i])
-		bootstrapInfo.ShardView[i] = shardBestView[i]
+		shardFinalView[i] = NewShardBestState()
+		shardFinalView[i].cloneShardBestStateFrom(s.blockchain.ShardChain[i].multiView.GetFinalView().(*ShardBestState))
 	}
 
+	shardWG := sync.WaitGroup{}
+	for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
+		shardWG.Add(1)
+		go func(sid int) {
+			s.backupShard(backUpPath, shardFinalView[sid])
+			bootstrapInfo.ShardView[sid] = shardFinalView[sid]
+			shardWG.Done()
+		}(i)
+	}
+	shardWG.Wait()
 	//get smallest beacon height of committeefromblock
 	bootstrapInfo.MinBeaconHeight = 1e9
 	for _, view := range bootstrapInfo.ShardView {
@@ -150,10 +157,12 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}
 	bootstrapInfo.MinBeaconHeight-- //for get previous block
 
-	//update final status
+	//backup beacon block
+	s.backupBeaconBlock(backUpPath, bootstrapInfo.MinBeaconHeight, beaconFinalView)
 
-	s.lastBootStrap = bootstrapInfo
-	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
+	//update final status
+	s.lastBackup = bootstrapInfo
+	fd, err := os.OpenFile(path.Join(backUpPath, "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -164,7 +173,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}
 	fd.Truncate(0)
 	n, _ := fd.Write(jsonStr)
-	fmt.Println("update lastBootStrap", n)
+	fmt.Println("update lastBackup", n)
 	fd.Close()
 
 }
@@ -211,93 +220,155 @@ func (s *BackupManager) GetBackupReader(checkpoint string, cid int, dbType int) 
 	return ff
 }
 
-func (s *BackupManager) backupShard(name string, bestView *ShardBestState) {
-	consensusDB := bestView.GetCopiedConsensusStateDB()
-	txDB := bestView.GetCopiedTransactionStateDB()
-	featureDB := bestView.GetCopiedFeatureStateDB()
-	rewardDB := bestView.GetShardRewardStateDB()
+func (s *BackupManager) backupShard(name string, finalView *ShardBestState) {
+	consensusDB := finalView.GetCopiedConsensusStateDB()
+	txDB := finalView.GetCopiedTransactionStateDB()
+	featureDB := finalView.GetCopiedFeatureStateDB()
+	rewardDB := finalView.GetShardRewardStateDB()
 
-	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "consensus"), 5000)
-	featureFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "feature"), 5000)
-	txFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "tx"), 5000)
-	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, fmt.Sprintf("shard%v", bestView.ShardID), "reward"), 5000)
+	shardStateDB, _ := incdb.Open("leveldb", path.Join(name, fmt.Sprintf("shard%v", finalView.ShardID)))
+
+	wg := sync.WaitGroup{}
+	wg.Add(5)
+	go s.backupShardBlock(name, finalView, &wg)
+	go backupStateDB(consensusDB, shardStateDB, &wg)
+	go backupStateDB(featureDB, shardStateDB, &wg)
+	go backupStateDB(txDB, shardStateDB, &wg)
+	go backupStateDB(rewardDB, shardStateDB, &wg)
+	wg.Wait()
+}
+
+func (s *BackupManager) backupShardBlock(name string, finalView *ShardBestState, wg *sync.WaitGroup) {
+	defer wg.Done()
+	sid := finalView.GetShardID()
+	blockStorage := NewBlockStorage(s.blockchain.GetShardChainDatabase(sid), path.Join(name, fmt.Sprintf("shard%v", sid), "blockstorage"), int(sid), true)
+	for blkHeight := uint64(1); blkHeight <= finalView.ShardHeight; blkHeight++ {
+		shardBlock, err := s.blockchain.GetShardBlockByHeightV1(finalView.GetShardHeight(), sid)
+		if err != nil {
+			panic(err)
+		}
+		if shardBlock.GetHeight()%1000 == 0 {
+			log.Println("shard", sid, "save block ", shardBlock.GetHeight())
+		}
+		if err := blockStorage.StoreTXIndex(shardBlock); err != nil {
+			panic(err)
+		}
+
+		if err := blockStorage.StoreBlock(shardBlock); err != nil {
+			panic(err)
+		}
+
+		if err := blockStorage.StoreFinalizedShardBlock(shardBlock.GetHeight(), *shardBlock.Hash()); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (s *BackupManager) backupBeacon(name string, finalView *BeaconBestState) {
+	consensusDB := finalView.GetBeaconConsensusStateDB()
+	featureDB := finalView.GetBeaconFeatureStateDB()
+	rewardDB := finalView.GetBeaconRewardStateDB()
+	slashDB := finalView.GetBeaconSlashStateDB()
+
+	beaconStateDB, _ := incdb.Open("leveldb", path.Join(name, "beacon"))
 
 	wg := sync.WaitGroup{}
 	wg.Add(4)
 
-	go backupStateDB(consensusDB, consensusFF, &wg)
-	go backupStateDB(featureDB, featureFF, &wg)
-	go backupStateDB(txDB, txFF, &wg)
-	go backupStateDB(rewardDB, rewardFF, &wg)
+	go backupStateDB(consensusDB, beaconStateDB, &wg)
+	go backupStateDB(featureDB, beaconStateDB, &wg)
+	go backupStateDB(rewardDB, beaconStateDB, &wg)
+	go backupStateDB(slashDB, beaconStateDB, &wg)
+
+	//store beacon finalview
+	allViews := []*BeaconBestState{finalView}
+	b, _ := json.Marshal(allViews)
+	err := rawdbv2.StoreBeaconViews(beaconStateDB, b)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
 	wg.Wait()
 }
 
-func (s *BackupManager) backupBeacon(name string, bestView *BeaconBestState) {
-	consensusDB := bestView.GetBeaconConsensusStateDB()
-	featureDB := bestView.GetBeaconFeatureStateDB()
-	rewardDB := bestView.GetBeaconRewardStateDB()
-	slashDB := bestView.GetBeaconSlashStateDB()
+func (s *BackupManager) backupBeaconBlock(name string, fromBlock uint64, finalView *BeaconBestState) {
+	blockStorage := NewBlockStorage(s.blockchain.GetBeaconChainDatabase(), path.Join(name, "beacon", "blockstorage"), -1, true)
+	committeeFromBlock := map[byte]map[common.Hash]bool{}
+	for blkHeight := fromBlock; blkHeight <= finalView.BeaconHeight; blkHeight++ {
+		beaconBlock, err := s.blockchain.GetBeaconBlockByHeightV1(blkHeight)
+		if err != nil {
+			panic(err)
+		}
+		if err := blockStorage.StoreBlock(beaconBlock); err != nil {
+			panic(err)
+		}
 
-	consensusFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "consensus"), 5000)
-	featureFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "feature"), 5000)
-	rewardFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "reward"), 5000)
-	slashFF, _ := flatfile.NewFlatFile(path.Join(name, "beacon", "slash"), 5000)
+		for shardID, shardStates := range beaconBlock.Body.ShardState {
+			for _, shardState := range shardStates {
+				err := blockStorage.StoreBeaconConfirmShardBlockByHeight(shardID, shardState.Height, shardState.Hash)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
 
-	wg := sync.WaitGroup{}
-	wg.Add(4)
+		if err := blockStorage.StoreFinalizedBeaconBlock(beaconBlock.GetHeight(), *beaconBlock.Hash()); err != nil {
+			panic(err)
+		}
 
-	go backupStateDB(consensusDB, consensusFF, &wg)
-	go backupStateDB(featureDB, featureFF, &wg)
-	go backupStateDB(rewardDB, rewardFF, &wg)
-	go backupStateDB(slashDB, slashFF, &wg)
-	wg.Wait()
+		for sid, shardStates := range beaconBlock.Body.ShardState {
+			if _, ok := committeeFromBlock[sid]; !ok {
+				committeeFromBlock[sid] = map[common.Hash]bool{}
+			}
+			for _, state := range shardStates {
+				committeeFromBlock[sid][state.CommitteeFromBlock] = true
+			}
+		}
+	}
+
+	for sid, committeeFromBlockHash := range committeeFromBlock {
+		for hash, _ := range committeeFromBlockHash {
+			//stream committee from block and set to cache
+			log.Println("stream", sid, hash.String())
+			committees, err := s.blockchain.BeaconChain.CommitteesFromViewHashForShard(hash, sid)
+			if err != nil {
+				panic(err)
+			}
+			err = rawdbv2.StoreCacheCommitteeFromBlock(blockStorage.blockStorageDB, hash, int(sid), committees)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }
 
-func backupStateDB(stateDB *statedb.StateDB, ff *flatfile.FlatFileManager, wg *sync.WaitGroup) {
+func backupStateDB(stateDB *statedb.StateDB, beaconStateDB incdb.Database, wg *sync.WaitGroup) {
 	defer wg.Done()
 	it := stateDB.GetIterator()
-	batchData := []StateDBData{}
-	totalLen := 0
+	batchData := beaconStateDB.NewBatch()
 	if stateDB == nil {
 		return
 	}
-	cnt := 0
 	for it.Next(false, true, true) {
 		diskvalue, err := stateDB.Database().TrieDB().DiskDB().Get(it.Key)
 		if err != nil {
 			continue
 		}
-		cnt++
-		//fmt.Println(cnt, it.Key, len(diskvalue))
 		key := make([]byte, len(it.Key))
 		copy(key, it.Key)
-		data := StateDBData{key, diskvalue}
-		batchData = append(batchData, data)
-		if len(batchData) == 1000 {
-			totalLen += 1000
-			buf := new(bytes.Buffer)
-			enc := gob.NewEncoder(buf)
-			err := enc.Encode(batchData)
-			if err != nil {
-				panic(err)
-			}
-			_, err = ff.Append(buf.Bytes())
-			if err != nil {
-				panic(err)
-			}
-			batchData = []StateDBData{}
+		batchData.Put(key, diskvalue)
+		if batchData.ValueSize() > 10*1024*1024 {
+			batchData.Write()
+			batchData.Reset()
 		}
 	}
-	if len(batchData) > 0 {
-		buf := new(bytes.Buffer)
-		enc := gob.NewEncoder(buf)
-		enc.Encode(batchData)
-		_, err := ff.Append(buf.Bytes())
-		if err != nil {
-			panic(err)
-		}
+	if batchData.ValueSize() > 0 {
+		batchData.Write()
+		batchData.Reset()
 	}
 	if it.Err != nil {
 		fmt.Println(it.Err)
+		panic(it.Err)
 	}
 }

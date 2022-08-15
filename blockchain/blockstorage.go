@@ -263,19 +263,29 @@ func (s *BlockStorage) GetBlock(blkHash common.Hash) (types.BlockInterface, int,
 }
 func (s *BlockStorage) encode(blk types.BlockInterface) []byte {
 	b, _ := json.Marshal(blk)
-	//zip
-	bb, err := common.GZipFromBytes(b)
-	if err != nil {
-		panic(err)
+	var bb = b
+
+	if s.useFF {
+		//zip
+		var err error
+		bb, err = common.GZipFromBytes(b)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	return bb
 }
 
 func (s *BlockStorage) decode(data []byte) (types.BlockInterface, error) {
-	//unzip
-	rawData, err := common.GZipToBytes(data)
-	if err != nil {
-		panic(err)
+	//unzip if using ffstorage
+	var rawData = data
+	if s.useFF {
+		var err error
+		rawData, err = common.GZipToBytes(data)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	switch s.cid {
