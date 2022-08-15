@@ -45,8 +45,7 @@ type actorV3 struct {
 	currentTimeSlot int64
 
 	proposeHistory     map[int64]struct{}
-	receiveBlockByHash map[string]*ProposeBlockInfo    //blockProposeHash -> blockInfo
-	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
+	receiveBlockByHash map[string]*ProposeBlockInfo //blockProposeHash -> blockInfo
 
 	blockVersion int
 
@@ -102,13 +101,12 @@ func newActorV3WithValue(
 	if err != nil {
 		panic(err) //must not error
 	}
-	a.voteHistory, err = InitVoteHistory(chainID)
 	if err != nil {
 		panic(err) //must not error
 	}
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
-
+	a.handleCleanMem()
 	return a
 }
 
@@ -170,8 +168,6 @@ func (a *actorV3) CleanReceiveBlockByHash(blockHash string) error {
 
 func (a *actorV3) AddVoteHistory(blockHeight uint64, block types.BlockInterface) error {
 
-	a.voteHistory[blockHeight] = block
-
 	var data []byte
 	var err error
 	if a.chainID == common.BeaconChainID {
@@ -194,25 +190,6 @@ func (a *actorV3) AddVoteHistory(blockHeight uint64, block types.BlockInterface)
 	); err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func (a *actorV3) GetVoteHistory(blockHeight uint64) (types.BlockInterface, bool) {
-	res, ok := a.voteHistory[blockHeight]
-	return res, ok
-}
-
-func (a *actorV3) CleanVoteHistory(blockHeight uint64) error {
-
-	if err := rawdb_consensus.DeleteVoteHistory(
-		rawdb_consensus.GetConsensusDatabase(),
-		a.chainID,
-		blockHeight,
-	); err != nil {
-		return err
-	}
-	delete(a.voteHistory, blockHeight)
 
 	return nil
 }
@@ -579,16 +556,9 @@ func (a *actorV3) getCommitteesAndCommitteeViewHash() (
 
 func (a *actorV3) handleCleanMem() {
 
-	for h := range a.voteHistory {
-		if h <= a.chain.GetFinalView().GetHeight() {
-			if err := a.CleanVoteHistory(h); err != nil {
-				a.logger.Errorf("clean vote history error %+v", err)
-			}
-		}
-	}
-
 	for h, proposeBlk := range a.receiveBlockByHash {
-		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute && (proposeBlk.block == nil || proposeBlk.block.GetHeight() <= a.chain.GetFinalView().GetHeight()) {
+		if time.Now().Sub(proposeBlk.ReceiveTime) > time.Minute &&
+			(proposeBlk.block == nil || len(proposeBlk.PreVotes) <= 2*len(proposeBlk.SigningCommittees)/3) {
 			if err := a.CleanReceiveBlockByHash(h); err != nil {
 				a.logger.Errorf("clean receive block by hash error %+v", err)
 			}
