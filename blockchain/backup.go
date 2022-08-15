@@ -167,7 +167,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 
 	//update final status
 	s.lastBackup = bootstrapInfo
-	fd, err := os.OpenFile(path.Join(backUpPath, "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
+	fd, err := os.OpenFile(path.Join(cfg.DataDir, cfg.DatabaseDir, "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -246,9 +246,9 @@ func (s *BackupManager) backupShard(name string, finalView *ShardBestState) {
 func (s *BackupManager) backupShardBlock(name string, finalView *ShardBestState, wg *sync.WaitGroup) {
 	defer wg.Done()
 	sid := finalView.GetShardID()
-	blockStorage := NewBlockStorage(s.blockchain.GetShardChainDatabase(sid), path.Join(name, fmt.Sprintf("shard%v", sid), "blockstorage"), int(sid), true)
+	blockStorage := NewBlockStorage(nil, path.Join(name, fmt.Sprintf("shard%v", sid), "blockstorage"), int(sid), true)
 	for blkHeight := uint64(1); blkHeight <= finalView.ShardHeight; blkHeight++ {
-		shardBlock, err := s.blockchain.GetShardBlockByHeightV1(finalView.GetShardHeight(), sid)
+		shardBlock, err := s.blockchain.GetShardBlockByHeightV1(blkHeight, sid)
 		if err != nil {
 			panic(err)
 		}
@@ -298,7 +298,7 @@ func (s *BackupManager) backupBeacon(name string, finalView *BeaconBestState) {
 }
 
 func (s *BackupManager) backupBeaconBlock(name string, fromBlock uint64, finalView *BeaconBestState) {
-	blockStorage := NewBlockStorage(s.blockchain.GetBeaconChainDatabase(), path.Join(name, "beacon", "blockstorage"), -1, true)
+	blockStorage := NewBlockStorage(nil, path.Join(name, "beacon", "blockstorage"), -1, true)
 	committeeFromBlock := map[byte]map[common.Hash]bool{}
 	for blkHeight := fromBlock; blkHeight <= finalView.BeaconHeight; blkHeight++ {
 		beaconBlock, err := s.blockchain.GetBeaconBlockByHeightV1(blkHeight)
