@@ -2,7 +2,6 @@
 # this is a very stupid work-around to get things work with the current pNode software
 # Should not be copy to the new pNode software in the future if we decide to build one.
 
-sudo bash -c '
 SERVICE="/etc/systemd/system/IncognitoUpdater.service"
 TIMER="/etc/systemd/system/IncognitoUpdater.timer"
 USER_NAME="nuc"
@@ -13,26 +12,26 @@ SCRIPT="$INC_HOME/run_node.sh"
 
 if [ -f "$SERVICE" ]; then
   echo "Service is already installed "
-  systemctl start $(basename $SERVICE) 2> /dev/null
+  sudo systemctl start $(basename $SERVICE) 2> /dev/null
   exit 0
 fi
 
 # ================================================================
 echo "Checking for / Installing Docker and jq (JSON processor)"
-apt install docker.io jq -y
-systemctl start docker.service
-systemctl stop $(basename $SERVICE) 2> /dev/null
-systemctl stop $(basename $TIMER) 2> /dev/null
+sudo apt install docker.io jq -y
+sudo systemctl start docker.service
+sudo systemctl stop $(basename $SERVICE) 2> /dev/null
+sudo systemctl stop $(basename $TIMER) 2> /dev/null
 
 # ================================================================
 echo " # Adding $USER_NAME user to docker group"
-usermod -aG docker $USER_NAME || echo
+sudo usermod -aG docker $USER_NAME || echo
 rm -f $TMP && touch $TMP
 chown $USER_NAME:$USER_NAME $TMP
 
 # ================================================================
 echo " # Creating systemd service to check for new release"
-cat << EOF > $SERVICE
+cat << EOF > tmp.service
 [Unit]
 Description = IncognitoChain Node updater
 After = network.target network-online.target
@@ -49,10 +48,11 @@ SyslogIdentifier = IncNodeUpdt
 [Install]
 WantedBy = multi-user.target
 EOF
+sudo mv tmp.service $SERVICE
 
 # ================================================================
 echo " # Creating timer to preodically run the update checker"
-cat << EOF > $TIMER
+cat << EOF > tmp.timer
 [Unit]
 Description=Run IncognitoUpdater hourly
 
@@ -63,6 +63,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
+sudo mv tmp.timer $TIMER
 
 echo " # Creating run node script"
 cat << EOF > $SCRIPT
@@ -71,7 +72,7 @@ TMP=$TMP
 data_dir=$DATA_DIR
 EOF
 
-cat << \'EOF\' >> $SCRIPT
+cat << EOF >> $SCRIPT
 run()
 {
   rpc_port=9334
@@ -109,6 +110,7 @@ run()
 
 current_latest_tag=$(cat $TMP)
 echo "Getting Incognito docker tags"
+
 tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags | jq ".[].name")
 tags=${tags//\"/}
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
@@ -129,19 +131,11 @@ EOF
 chmod +x $SCRIPT
 
 echo " # Enabling service"
-systemctl daemon-reload
-systemctl enable $(basename $SERVICE)
-systemctl enable $(basename $TIMER)
+sudo systemctl daemon-reload
+sudo systemctl enable $(basename $SERVICE)
+sudo systemctl enable $(basename $TIMER)
 
 
 echo " # Starting service. Please wait..."
-systemctl start $(basename $SERVICE)
-systemctl start $(basename $TIMER)
-cat << EOF
- # ============================= DONE ================================
- To check the installing and starting progress or the running service:
-    $ journalctl | grep Inc
-    or
-    $ journalctl -t IncNodeUpdt
-EOF
-'
+sudo systemctl start $(basename $SERVICE)
+sudo systemctl start $(basename $TIMER)
