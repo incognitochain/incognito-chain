@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -199,30 +198,16 @@ type CheckpointInfo struct {
 	Height int64
 }
 
-func (s *BackupManager) GetBackupReader(checkpoint string, cid int, dbType int) *flatfile.FlatFileManager {
+func (s *BackupManager) GetBackupReader(checkpoint string, cid int) string {
 	cfg := config.Config()
 	dbLoc := path.Join(cfg.DataDir, cfg.DatabaseDir, checkpoint)
-	switch dbType {
-	case BeaconConsensus:
-		dbLoc = path.Join(dbLoc, "beacon", "consensus")
-	case BeaconFeature:
-		dbLoc = path.Join(dbLoc, "beacon", "feature")
-	case BeaconReward:
-		dbLoc = path.Join(dbLoc, "beacon", "reward")
-	case BeaconSlash:
-		dbLoc = path.Join(dbLoc, "beacon", "slash")
-	case ShardConsensus:
-		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "consensus")
-	case ShardTransacton:
-		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "tx")
-	case ShardFeature:
-		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "feature")
-	case ShardReward:
-		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid), "reward")
+	switch cid {
+	case -1:
+		dbLoc = path.Join(dbLoc, "beacon")
+	default:
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid))
 	}
-	fmt.Println("GetBackupReader", dbLoc)
-	ff, _ := flatfile.NewFlatFile(dbLoc, 5000)
-	return ff
+	return dbLoc
 }
 
 func (s *BackupManager) backupShard(name string, finalView *ShardBestState) {

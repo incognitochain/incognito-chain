@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"io/fs"
 	"net"
+	"path/filepath"
 )
 
 func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -23,11 +25,15 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 
 	checkpoint, ok := paramArray[0].(string)
 	chainID, ok := paramArray[1].(float64)
-	dbType, ok := paramArray[2].(float64)
-	offset, ok := paramArray[3].(float64)
+	offset, ok := paramArray[2].(float64)
 
-	ff := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID), int(dbType))
-	ch, _, _ := ff.ReadFromIndex(uint64(offset))
+	checkPointFolder := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID))
+
+	filepath.Walk(checkPointFolder, func(path string, info fs.FileInfo, err error) error {
+		_, err = conn.Write(dataLen)
+		len(info.Name())
+		return nil
+	})
 
 	_, err := conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
 	if err != nil {

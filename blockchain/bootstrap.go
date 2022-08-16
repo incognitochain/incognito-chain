@@ -3,15 +3,12 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"io/ioutil"
 	"log"
@@ -294,149 +291,26 @@ func (s *BootstrapManager) BootstrapBeacon() {
 
 	wg := sync.WaitGroup{}
 
-	//retrieve beacon stateDB
-	flushDB := func(data []byte) {
-		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
-		buf := bytes.NewBuffer(data)
-		dec := gob.NewDecoder(buf)
-		m := []StateDBData{}
-		if err := dec.Decode(&m); err != nil {
-			panic(err)
-		}
-		for _, stateData := range m {
-			//fmt.Printf("%v - %v\n", stateData.K, len(stateData.V))
-			err := batch.Put(stateData.K, stateData.V)
-			if err != nil {
-				panic(err)
-			}
-
-		}
-		err := batch.Write()
-		if err != nil {
-			panic(err)
-		}
-		//time.Sleep(time.Second)
-	}
-
-	recheckDB := func(roothash common.Hash) {
-		txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(s.blockchain.GetBeaconChainDatabase()))
-		if err != nil {
-			panic(fmt.Sprintf("Something wrong when init txDB"))
-		}
-		if err := txDB.Recheck(); err != nil {
-			fmt.Println(err)
-			fmt.Println("Recheck roothash fail!", roothash.String())
-			panic("recheck fail!")
-		}
-	}
-
 	mainDir, tmpDir, err := s.blockchain.BeaconChain.BlockStorage.ChangeTmpDir()
 	if err != nil {
 		panic(err)
 	}
 
 	bestView := latestBackup.BeaconView
-	wg.Add(5)
+	wg.Add(2)
 
-	committeeFromBlock := map[byte]map[common.Hash]bool{}
 	Logger.log.Info("Start bootstrap beacon from host", host)
 	Logger.log.Infof("Stream block beacon from %v", latestBackup.MinBeaconHeight)
 
 	rpcClient.OnBeaconBlock(latestBackup.MinBeaconHeight, bestView.BeaconHeight, func(beaconBlock types.BeaconBlock) {
-		batch := s.blockchain.GetBeaconChainDatabase().NewBatch()
-
 		if err := s.blockchain.BeaconChain.BlockStorage.StoreBlock(&beaconBlock); err != nil {
 			panic(err)
 		}
-
-		for shardID, shardStates := range beaconBlock.Body.ShardState {
-			for _, shardState := range shardStates {
-				err := s.blockchain.BeaconChain.BlockStorage.StoreBeaconConfirmShardBlockByHeight(shardID, shardState.Height, shardState.Hash)
-				if err != nil {
-					panic(err)
-				}
-			}
-		}
-
-		if err := s.blockchain.BeaconChain.BlockStorage.StoreFinalizedBeaconBlock(beaconBlock.GetHeight(), *beaconBlock.Hash()); err != nil {
-			panic(err)
-		}
-
-		batch.Write()
-
-		for sid, shardStates := range beaconBlock.Body.ShardState {
-			if _, ok := committeeFromBlock[sid]; !ok {
-				committeeFromBlock[sid] = map[common.Hash]bool{}
-			}
-			for _, state := range shardStates {
-				committeeFromBlock[sid][state.CommitteeFromBlock] = true
-			}
-		}
-
 		if beaconBlock.GetHeight() == bestView.GetBeaconHeight() {
-			bestView.BestBlock = beaconBlock
-			for sid, committeeFromBlockHash := range committeeFromBlock {
-				if cache, ok := CommitteeFromBlockBootStrapCache[sid]; !ok || cache == nil {
-					CommitteeFromBlockBootStrapCache[sid], _ = lru.New(10)
-				}
-				for hash, _ := range committeeFromBlockHash {
-					//stream committee from block and set to cache
-					log.Println("stream", sid, hash.String())
-					res, err := rpcClient.GetShardCommitteeByBeaconHash(int(sid), hash)
-					if err != nil {
-						panic(err)
-					}
-					err = rawdbv2.StoreCacheCommitteeFromBlock(s.blockchain.GetBeaconChainDatabase(), hash, int(sid), res)
-					if err != nil {
-						panic(err)
-					}
-					CommitteeFromBlockBootStrapCache[sid].Add(hash.String(), res)
-				}
-			}
 			wg.Done()
 		}
 	})
-
-	Logger.log.Info("Stream beacon consensus state ...")
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconConsensus, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(bestView.ConsensusStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(data)
-	})
-
-	Logger.log.Info("Stream beacon reward state ...")
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconReward, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(bestView.ConsensusStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(data)
-	})
-
-	Logger.log.Info("Stream beacon feature state ...")
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconFeature, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(bestView.ConsensusStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(data)
-	})
-
-	Logger.log.Info("Stream beacon slashing state ...")
-	rpcClient.GetStateDB(latestBackup.CheckpointName, -1, BeaconSlash, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(bestView.ConsensusStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(data)
-	})
-	wg.Wait()
+	//TODO: sync backup folder
 
 	Logger.log.Info("Finish sync ... post processing ...")
 
@@ -481,111 +355,28 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(5)
+	wg.Add(2)
 	//retrieve beacon block -> backup height
 	bestView := latestBackup.ShardView[sid]
 
 	Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
 	Logger.log.Infof("Stream block shard %v from %v to %v", sid, s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+1, bestView.ShardHeight)
 
-	rpcClient.OnShardBlock(sid, s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+1, bestView.ShardHeight, func(shardBlock types.ShardBlock) {
-		batch := s.blockchain.GetShardChainDatabase(byte(sid)).NewBatch()
+	rpcClient.OnShardBlock(sid, 1, bestView.ShardHeight, func(shardBlock types.ShardBlock) {
 		if shardBlock.GetHeight()%1000 == 0 {
 			log.Println("shard", sid, "save block ", shardBlock.GetHeight())
 		}
-		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreTXIndex(&shardBlock); err != nil {
-			panic(err)
-		}
-
 		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreBlock(&shardBlock); err != nil {
 			panic(err)
 		}
-
-		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreFinalizedShardBlock(shardBlock.GetHeight(), *shardBlock.Hash()); err != nil {
-			panic(err)
-		}
-
-		batch.Write()
 
 		if shardBlock.GetHeight() == bestView.ShardHeight {
 			bestView.BestBlock = &shardBlock
 			wg.Done()
 		}
 	})
+	//TODO: sync backup folder
 
-	//retrieve beacon stateDB
-	flushDB := func(sid int, data []byte) {
-		batch := s.blockchain.GetShardChainDatabase(byte(sid)).NewBatch()
-		buf := bytes.NewBuffer(data)
-		dec := gob.NewDecoder(buf)
-		m := []StateDBData{}
-		if err := dec.Decode(&m); err != nil {
-			panic(err)
-		}
-		for _, stateData := range m {
-			//fmt.Println("write", stateData.K, len(stateData.V))
-			err := batch.Put(stateData.K, stateData.V)
-			if err != nil {
-				panic(err)
-			}
-
-		}
-		err := batch.Write()
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	recheckDB := func(sid int, roothash common.Hash) {
-		txDB, err := statedb.NewWithPrefixTrie(roothash, statedb.NewDatabaseAccessWarper(s.blockchain.GetShardChainDatabase(byte(sid))))
-		if err != nil {
-			fmt.Println("check", sid, roothash.String(), err)
-			panic(fmt.Sprintf("Something wrong when init txDB"))
-		}
-		if err := txDB.Recheck(); err != nil {
-			fmt.Println(sid, err)
-			fmt.Println("Recheck roothash fail!", roothash.String())
-			panic("recheck fail!")
-		}
-	}
-	Logger.log.Infof("Stream shard %v consensus state ...", sid)
-	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardConsensus, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(sid, bestView.ConsensusStateDBRootHash)
-			wg.Done()
-			return
-		}
-		fmt.Println("sid", sid, len(data))
-		flushDB(sid, data)
-	})
-	Logger.log.Infof("Stream shard %v transaction state ...", sid)
-	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardTransacton, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(sid, bestView.TransactionStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(sid, data)
-	})
-	Logger.log.Infof("Stream shard %v reward state ...", sid)
-	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardReward, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(sid, bestView.RewardStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(sid, data)
-	})
-	Logger.log.Infof("Stream shard %v feature state ...", sid)
-
-	rpcClient.GetStateDB(latestBackup.CheckpointName, sid, ShardFeature, 0, func(data []byte) {
-		if len(data) == 0 {
-			recheckDB(sid, bestView.FeatureStateDBRootHash)
-			wg.Done()
-			return
-		}
-		flushDB(sid, data)
-	})
 	Logger.log.Info("Finish sync ... post processing ...")
 	//post processing
 	wg.Wait()
