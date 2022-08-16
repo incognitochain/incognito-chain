@@ -385,7 +385,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		return
 	}
 
-	cfg := config.LoadConfig()
+	cfg := config.Config()
 
 	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon.tmp")
 	os.RemoveAll(tmpDir)
@@ -440,12 +440,11 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		return
 	}
 
-	cfg := config.LoadConfig()
+	cfg := config.Config()
 	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v.tmp", sid))
 	os.RemoveAll(tmpDir)
 	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0666)
 	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", sid))
-	blockStorage := NewBlockStorage(nil, path.Join(tmpDir, "blockstorage"), -1, true)
 
 	//retrieve beacon block -> backup height
 	bestView := latestBackup.ShardView[sid]
@@ -455,17 +454,20 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
 	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "block", 1, path.Join(tmpDir, "blockstorage"))
 	Logger.log.Info("Finish sync ... post processing ...")
+	s.blockchain.BeaconChain.insertLock.Lock()
+	defer s.blockchain.BeaconChain.insertLock.Unlock()
 
 	err := s.blockchain.ShardChain[sid].BlockStorage.ChangeMainDir(tmpDir, mainDir)
 	if err != nil {
 		panic(err)
 	}
+
 	err = s.blockchain.ReloadDatabase(sid)
+
 	if err != nil {
 		panic(err)
 	}
 
-	s.blockchain.ShardChain[sid].BlockStorage = blockStorage
 	allViews := []*ShardBestState{}
 	allViews = append(allViews, bestView)
 	if err := rawdbv2.StoreShardBestState(s.blockchain.GetShardChainDatabase(byte(sid)), byte(sid), allViews); err != nil {
@@ -474,4 +476,5 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 
 	s.blockchain.RestoreShardViews(byte(sid))
 	Logger.log.Infof("Bootstrap shard %v finish!", sid)
+
 }

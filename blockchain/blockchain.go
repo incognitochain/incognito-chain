@@ -744,7 +744,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	for _, v := range allViews {
 		block, err := blockchain.ShardChain[shardID].GetBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
-			fmt.Println("block ", block)
+			fmt.Println("Cannot get block", v.ShardID, v.ShardHeight, v.BestBlockHash)
 			panic(err)
 		}
 		v.blockChain = blockchain
