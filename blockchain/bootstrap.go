@@ -112,7 +112,6 @@ func (r *remoteRPCClient) GetLatestBackup() (res BackupProcessInfo, err error) {
 func readUint64(r io.Reader) (uint64, error) {
 	b := make([]byte, 8)
 	n, err := r.Read(b)
-	fmt.Println("readsize", n, b)
 	if err != nil && err.Error() != "EOF" {
 		return 0, err
 	}
@@ -175,7 +174,6 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 		if dataLen == 0 {
 			return nil
 		}
-		fmt.Println("read", dataLen)
 		infoByte, err := readSize(resp.Body, dataLen)
 		readData := bytes.NewBuffer(infoByte)
 		dec := gob.NewDecoder(readData)
@@ -185,14 +183,11 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("fileInfo", fileInfo)
 		fileByte, err := readSize(resp.Body, fileInfo.Size)
-		fmt.Println(len(fileByte))
 		fd, err := os.OpenFile(path.Join(dir, fileInfo.Name), os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("writeFile", fileInfo.Name)
 		_, err = fd.Write(fileByte)
 		if err != nil {
 			panic(err)
@@ -452,7 +447,7 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 	Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
 	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "state", 0, tmpDir)
 	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
-	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "block", 1, path.Join(tmpDir, "blockstorage"))
+	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "block", bestView.ShardHeight-500, path.Join(tmpDir, "blockstorage"))
 	Logger.log.Info("Finish sync ... post processing ...")
 	s.blockchain.BeaconChain.insertLock.Lock()
 	defer s.blockchain.BeaconChain.insertLock.Unlock()

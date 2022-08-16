@@ -36,7 +36,7 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 	checkpoint, ok := paramArray[0].(string)
 	chainID, ok := paramArray[1].(float64)
 	dbType, ok := paramArray[2].(string)
-	blkHeight, ok := paramArray[3].(uint64)
+	blkHeight, ok := paramArray[3].(float64)
 
 	checkPointFolder := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID))
 	ff_fileId := uint64(0)
@@ -44,7 +44,7 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 		checkPointFolder = path.Join(checkPointFolder, "blockstorage", "blockKV")
 	} else if dbType == "block" {
 		checkPointFolder = path.Join(checkPointFolder, "blockstorage")
-		ff_fileId = httpServer.GetBlockchain().BackupManager.GetFileID(int(chainID), blkHeight)
+		ff_fileId = httpServer.GetBlockchain().BackupManager.GetFileID(int(chainID), uint64(blkHeight))
 	}
 
 	_, err := conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
@@ -85,7 +85,6 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 
 		var dataLen = make([]byte, 8)
 		binary.LittleEndian.PutUint64(dataLen, uint64(data.Len()))
-		log.Println("write data", file.Name(), uint64(file.Size()))
 		_, err = conn.Write(dataLen)
 		_, err = conn.Write(data.Bytes())
 		fd, err := os.Open(path.Join(checkPointFolder, file.Name()))
