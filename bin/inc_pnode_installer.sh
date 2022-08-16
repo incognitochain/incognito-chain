@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# ============================================================================================
-# Do not edit lines below unless you know what you're doing
-BOOTNODE="mainnet-bootnode.incognito.org:9330"  # this should be left as default
 SERVICE="/etc/systemd/system/IncognitoUpdater.service"
 TIMER="/etc/systemd/system/IncognitoUpdater.timer"
 USER_NAME="nuc"
@@ -10,7 +7,6 @@ INC_HOME="/home/$USER_NAME"
 DATA_DIR="$INC_HOME/aos/inco-data"
 TMP="$INC_HOME/inc_node_latest_tag"
 SCRIPT="$INC_HOME/run_node.sh"
-
 
 # =========================== check super user
 if [ $(whoami) != root ]; then
@@ -98,24 +94,19 @@ run()
   docker pull incognitochain/incognito-mainnet:${latest_tag}
   echo "Create new docker network"
   docker network create --driver bridge inc_net || true
-  for key in ${validator_key[@]}; do
-    echo "Remove old container"
-    docker container stop ${container_name}_${count}
-    docker container rm ${container_name}_${count}
+  echo "Remove old container"
+  docker container stop ${container_name}
+  docker container rm ${container_name}
 
-    echo "Start the incognito mainnet docker container"
-    set -x
-    docker run --restart=always --net inc_net \
-      -p $node_port:$node_port -p $rpc_port:$rpc_port \
-      -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode \
-      -e FULLNODE="" -e MININGKEY=${key} -e TESTNET=false -e LIMIT_FEE=1 \
-      -e INDEXER_ACCESS_TOKEN=$coin_index_access_token -e NUM_INDEXER_WORKERS=$num_index_worker \
-      -v ${data_dir}_${count}:/data -d --name ${container_name}_${count} incognitochain/incognito-mainnet:${latest_tag}
-    set +x
-    ((node_port++))
-    ((rpc_port++))
-    ((count++))
-  done
+  echo "Start the incognito mainnet docker container"
+  set -x
+  docker run --restart=always --net inc_net \
+    -p $node_port:$node_port -p $rpc_port:$rpc_port \
+    -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode \
+    -e FULLNODE="" -e MININGKEY=${validator_key} -e TESTNET=false -e LIMIT_FEE=1 \
+    -e INDEXER_ACCESS_TOKEN=$coin_index_access_token -e NUM_INDEXER_WORKERS=$num_index_worker \
+    -v ${data_dir}:/data -d --name ${container_name} incognitochain/incognito-mainnet:${latest_tag}
+  set +x
 }
 
 current_latest_tag=$(cat $TMP)
