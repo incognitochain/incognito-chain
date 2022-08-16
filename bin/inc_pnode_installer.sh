@@ -1,5 +1,8 @@
 #!/bin/bash
+# this is a very stupid work-around to get things work with the current pNode software
+# Should not be copy to the new pNode software in the future if we decide to build one.
 
+sudo bash -c '
 SERVICE="/etc/systemd/system/IncognitoUpdater.service"
 TIMER="/etc/systemd/system/IncognitoUpdater.timer"
 USER_NAME="nuc"
@@ -7,11 +10,6 @@ INC_HOME="/home/$USER_NAME"
 DATA_DIR="$INC_HOME/aos/inco-data"
 TMP="$INC_HOME/inc_node_latest_tag"
 SCRIPT="$INC_HOME/run_node.sh"
-
-# =========================== check super user
-if [ $(whoami) != root ]; then
-sudo -i
-fi
 
 if [ -f "$SERVICE" ]; then
   echo "Service is already installed "
@@ -146,3 +144,4 @@ cat << EOF
     or
     $ journalctl -t IncNodeUpdt
 EOF
+'
