@@ -3,18 +3,22 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"io"
 	"io/ioutil"
 	"log"
 	mathrand "math/rand"
 	"net/http"
-	"sync"
+	"os"
+	"path"
 	"time"
 )
 
@@ -103,6 +107,98 @@ func (r *remoteRPCClient) GetLatestBackup() (res BackupProcessInfo, err error) {
 	}
 
 	return resp.Result, nil
+}
+
+func readUint64(r io.Reader) (uint64, error) {
+	b := make([]byte, 8)
+	n, err := r.Read(b)
+	fmt.Println("readsize", n, b)
+	if err != nil && err.Error() != "EOF" {
+		return 0, err
+	}
+	if n == 0 {
+		return 0, nil
+	}
+	var dataLen uint64
+
+	err = binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &dataLen)
+	if err != nil || n == 0 {
+		return 0, err
+	}
+	return dataLen, nil
+}
+
+func readSize(r io.Reader, size uint64) ([]byte, error) {
+	dataByte := make([]byte, size)
+	dataRead := uint64(0)
+	for {
+		n, err := r.Read(dataByte[dataRead:])
+		if err != nil {
+			return nil, err
+		}
+		dataRead += uint64(n)
+		if dataRead == size {
+			break
+		}
+	}
+	return dataByte, nil
+
+}
+
+type FileObject struct {
+	Name string
+	Size uint64
+}
+
+func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offset uint64, dir string) error {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbootstrapstatedb",
+		"params":  []interface{}{checkpoint, cid, dbType, offset},
+		"id":      1,
+	})
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		panic(err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	for {
+		dataLen, err := readUint64(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		if dataLen == 0 {
+			return nil
+		}
+		fmt.Println("read", dataLen)
+		infoByte, err := readSize(resp.Body, dataLen)
+		readData := bytes.NewBuffer(infoByte)
+		dec := gob.NewDecoder(readData)
+
+		fileInfo := &FileObject{}
+		err = dec.Decode(fileInfo)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("fileInfo", fileInfo)
+		fileByte, err := readSize(resp.Body, fileInfo.Size)
+		fmt.Println(len(fileByte))
+		fd, err := os.OpenFile(path.Join(dir, fileInfo.Name), os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("writeFile", fileInfo.Name)
+		_, err = fd.Write(fileByte)
+		if err != nil {
+			panic(err)
+		}
+		fd.Close()
+	}
 }
 
 func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
@@ -289,32 +385,27 @@ func (s *BootstrapManager) BootstrapBeacon() {
 		return
 	}
 
-	wg := sync.WaitGroup{}
+	cfg := config.LoadConfig()
 
-	mainDir, tmpDir, err := s.blockchain.BeaconChain.BlockStorage.ChangeTmpDir()
+	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon.tmp")
+	os.RemoveAll(tmpDir)
+	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon")
+	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0666)
+	bestView := latestBackup.BeaconView
+
+	Logger.log.Info("Start bootstrap beacon from host", host)
+	//Logger.log.Infof("Stream block beacon from %v", latestBackup.MinBeaconHeight)
+	rpcClient.SyncDB(latestBackup.CheckpointName, -1, "state", 0, tmpDir)
+	rpcClient.SyncDB(latestBackup.CheckpointName, -1, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
+	rpcClient.SyncDB(latestBackup.CheckpointName, -1, "block", 0, path.Join(tmpDir, "blockstorage"))
+	Logger.log.Info("Finish sync ... post processing ...")
+
+	err := s.blockchain.BeaconChain.BlockStorage.ChangeMainDir(tmpDir, mainDir)
 	if err != nil {
 		panic(err)
 	}
 
-	bestView := latestBackup.BeaconView
-	wg.Add(2)
-
-	Logger.log.Info("Start bootstrap beacon from host", host)
-	Logger.log.Infof("Stream block beacon from %v", latestBackup.MinBeaconHeight)
-
-	rpcClient.OnBeaconBlock(latestBackup.MinBeaconHeight, bestView.BeaconHeight, func(beaconBlock types.BeaconBlock) {
-		if err := s.blockchain.BeaconChain.BlockStorage.StoreBlock(&beaconBlock); err != nil {
-			panic(err)
-		}
-		if beaconBlock.GetHeight() == bestView.GetBeaconHeight() {
-			wg.Done()
-		}
-	})
-	//TODO: sync backup folder
-
-	Logger.log.Info("Finish sync ... post processing ...")
-
-	err = s.blockchain.BeaconChain.BlockStorage.ChangeMainDir(tmpDir, mainDir)
+	err = s.blockchain.ReloadDatabase(-1)
 	if err != nil {
 		panic(err)
 	}
@@ -349,44 +440,35 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		return
 	}
 
-	mainDir, tmpDir, err := s.blockchain.ShardChain[sid].BlockStorage.ChangeTmpDir()
-	if err != nil {
-		panic(err)
-	}
+	cfg := config.LoadConfig()
+	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v.tmp", sid))
+	os.RemoveAll(tmpDir)
+	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0666)
+	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", sid))
+	blockStorage := NewBlockStorage(nil, path.Join(tmpDir, "blockstorage"), -1, true)
 
-	wg := sync.WaitGroup{}
-	wg.Add(2)
 	//retrieve beacon block -> backup height
 	bestView := latestBackup.ShardView[sid]
 
 	Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
-	Logger.log.Infof("Stream block shard %v from %v to %v", sid, s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+1, bestView.ShardHeight)
-
-	rpcClient.OnShardBlock(sid, 1, bestView.ShardHeight, func(shardBlock types.ShardBlock) {
-		if shardBlock.GetHeight()%1000 == 0 {
-			log.Println("shard", sid, "save block ", shardBlock.GetHeight())
-		}
-		if err := s.blockchain.ShardChain[sid].BlockStorage.StoreBlock(&shardBlock); err != nil {
-			panic(err)
-		}
-
-		if shardBlock.GetHeight() == bestView.ShardHeight {
-			bestView.BestBlock = &shardBlock
-			wg.Done()
-		}
-	})
-	//TODO: sync backup folder
-
+	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "state", 0, tmpDir)
+	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
+	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "block", 1, path.Join(tmpDir, "blockstorage"))
 	Logger.log.Info("Finish sync ... post processing ...")
-	//post processing
-	wg.Wait()
+
+	err := s.blockchain.ShardChain[sid].BlockStorage.ChangeMainDir(tmpDir, mainDir)
+	if err != nil {
+		panic(err)
+	}
+	err = s.blockchain.ReloadDatabase(sid)
+	if err != nil {
+		panic(err)
+	}
+
+	s.blockchain.ShardChain[sid].BlockStorage = blockStorage
 	allViews := []*ShardBestState{}
 	allViews = append(allViews, bestView)
 	if err := rawdbv2.StoreShardBestState(s.blockchain.GetShardChainDatabase(byte(sid)), byte(sid), allViews); err != nil {
-		panic(err)
-	}
-	err = s.blockchain.ShardChain[sid].BlockStorage.ChangeMainDir(tmpDir, mainDir)
-	if err != nil {
 		panic(err)
 	}
 

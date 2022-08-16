@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path"
 	"strconv"
 	"sync"
 	"time"
@@ -629,8 +630,9 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, multiVi
 Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
+	fmt.Println("restore 1")
 	blockchain.RestoreCommitteeFromBlockCache()
-
+	fmt.Println("restore 2")
 	allViews := []*BeaconBestState{}
 	bcDB := blockchain.GetBeaconChainDatabase()
 	b, err := rawdbv2.GetBeaconViews(bcDB)
@@ -645,7 +647,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	for i := 0; i < config.Param().ActiveShards; i++ {
 		sID = append(sID, i)
 	}
-
+	fmt.Println("restore 3")
 	blockchain.BeaconChain.multiView.Reset()
 	newMultiview := multiview.NewBeaconMultiView()
 
@@ -696,7 +698,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 	}
 	blockchain.BeaconChain.multiView = newMultiview
-
+	fmt.Println("restore 4")
 	for _, beaconState := range allViews {
 		if beaconState.missingSignatureCounter == nil {
 			block := beaconState.BestBlock
@@ -706,6 +708,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			}
 		}
 	}
+	fmt.Println("restore 5")
 	return nil
 }
 
@@ -1261,4 +1264,26 @@ func (bc *BlockChain) CalculateMintedPRVWithDefaultBlocktime(shardHeights map[by
 		total += blksReminder * bc.getRewardAmountV2(basicReward, uint64(years+1))
 	}
 	return total
+}
+
+func (blockChain *BlockChain) ReloadDatabase(cid int) (err error) {
+	cfg := config.LoadConfig()
+	switch cid {
+	case -1:
+		blockChain.config.DataBase[cid].Close()
+		blockChain.config.DataBase[cid], err = incdb.Open("leveldb", path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon"))
+		if err != nil {
+			return err
+		}
+		blockChain.BeaconChain.BlockStorage.rootDB = blockChain.GetBeaconChainDatabase()
+	default:
+		blockChain.config.DataBase[cid].Close()
+		blockChain.config.DataBase[cid], err = incdb.Open("leveldb", path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", cid)))
+		if err != nil {
+			return err
+		}
+		blockChain.ShardChain[cid].BlockStorage.rootDB = blockChain.GetShardChainDatabase(byte(cid))
+	}
+
+	return nil
 }

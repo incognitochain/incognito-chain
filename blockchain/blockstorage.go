@@ -35,35 +35,14 @@ func NewBlockStorage(db incdb.Database, ffPath string, cid int, useFF bool) *Blo
 	}
 }
 
-func (s *BlockStorage) ChangeTmpDir() (string, string, error) {
-	mainDir := s.flatfile.Path()
-	dataDir := path.Join(path.Dir(mainDir), ".tmp")
-	err := os.RemoveAll(dataDir)
-	if err != nil {
-		panic(err)
-	}
-	tmpFF, _ := flatfile.NewFlatFile(dataDir, 5000)
-	tmpDB, _ := incdb.Open("leveldb", path.Join(dataDir, "blockKV"))
-	s.flatfile = tmpFF
-	s.blockStorageDB = tmpDB
-	return mainDir, dataDir, nil
-}
-
 func (s *BlockStorage) ChangeMainDir(tmpDir, mainDir string) error {
-	err := os.RemoveAll(mainDir)
-	if err != nil {
-		panic(err)
-	}
-	s.blockStorageDB.Close()
+	os.Rename(mainDir, mainDir+".bk")
+	os.Rename(tmpDir, mainDir)
+	blockStorageDB, _ := incdb.Open("leveldb", path.Join(mainDir, "blockstorage", "blockKV"))
+	s.blockStorageDB = blockStorageDB
+	s.flatfile, _ = flatfile.NewFlatFile(path.Join(mainDir, "blockstorage"), 5000)
+	os.RemoveAll(mainDir + ".bk")
 
-	err = os.Rename(tmpDir, mainDir)
-	if err != nil {
-		panic(err)
-	}
-	mainFF, _ := flatfile.NewFlatFile(mainDir, 5000)
-	mainKeyDB, _ := incdb.Open("leveldb", path.Join(mainDir, "blockKV"))
-	s.flatfile = mainFF
-	s.blockStorageDB = mainKeyDB
 	return nil
 }
 
@@ -334,6 +313,10 @@ func (s *BlockStorage) getBlockUsingFF(blkHash common.Hash) (types.BlockInterfac
 		return blk, len(data), nil
 	}
 
+}
+
+func (s *BlockStorage) getFFFileByHeight(blkHeight uint64) (int, error) {
+	return int(blkHeight / s.flatfile.FileSize()), nil
 }
 
 func (s *BlockStorage) storeBlockUsingDB(blk types.BlockInterface) error {

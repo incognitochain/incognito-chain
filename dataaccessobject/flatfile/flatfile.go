@@ -36,6 +36,8 @@ type FlatFile interface {
 
 	//Path
 	Path() string
+
+	FileSize() uint64
 }
 
 type FlatFileManager struct {
@@ -56,6 +58,10 @@ type ReadInfo struct {
 	fd     *os.File
 	offset int64
 	size   int64
+}
+
+func (ff *FlatFileManager) FileSize() uint64 {
+	return ff.fileSizeLimit
 }
 
 func (ff *FlatFileManager) Path() string {

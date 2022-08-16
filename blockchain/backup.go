@@ -198,16 +198,13 @@ type CheckpointInfo struct {
 	Height int64
 }
 
-func (s *BackupManager) GetBackupReader(checkpoint string, cid int) string {
-	cfg := config.Config()
-	dbLoc := path.Join(cfg.DataDir, cfg.DatabaseDir, checkpoint)
+func (s *BackupManager) GetFileID(cid int, blockheight uint64) uint64 {
 	switch cid {
 	case -1:
-		dbLoc = path.Join(dbLoc, "beacon")
+		return blockheight / s.blockchain.BeaconChain.BlockStorage.flatfile.FileSize()
 	default:
-		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid))
+		return blockheight / s.blockchain.ShardChain[cid].BlockStorage.flatfile.FileSize()
 	}
-	return dbLoc
 }
 
 func (s *BackupManager) backupShard(name string, finalView *ShardBestState) {
@@ -226,6 +223,18 @@ func (s *BackupManager) backupShard(name string, finalView *ShardBestState) {
 	go backupStateDB(txDB, shardKeyValueDB, &wg)
 	go backupStateDB(rewardDB, shardKeyValueDB, &wg)
 	wg.Wait()
+}
+
+func (s *BackupManager) GetBackupReader(checkpoint string, cid int) string {
+	cfg := config.Config()
+	dbLoc := path.Join(cfg.DataDir, cfg.DatabaseDir, checkpoint)
+	switch cid {
+	case -1:
+		dbLoc = path.Join(dbLoc, "beacon")
+	default:
+		dbLoc = path.Join(dbLoc, fmt.Sprintf("shard%v", cid))
+	}
+	return dbLoc
 }
 
 func (s *BackupManager) backupShardBlock(name string, finalView *ShardBestState, wg *sync.WaitGroup) {
