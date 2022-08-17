@@ -72,7 +72,7 @@ TMP=$TMP
 data_dir=$DATA_DIR
 EOF
 
-cat << EOF >> $SCRIPT
+cat << 'EOF' >> $SCRIPT
 run()
 {
   rpc_port=9334
