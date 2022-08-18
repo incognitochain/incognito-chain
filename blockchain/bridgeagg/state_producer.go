@@ -630,12 +630,17 @@ func (sp *stateProducer) burnForCall(
 
 			for i := range meta.Data {
 				netPrefix, err := getPrefixByNetworkID(meta.Data[i].ExternalNetworkID)
-				if err != nil || !bytes.HasPrefix(waitingUnshieldDatas[i].ExternalTokenID, []byte(netPrefix)) {
-					Logger.log.Errorf("[BridgeAgg] BurnForCall external network error - %d, %s, %v", meta.Data[i].ExternalNetworkID, meta.Data[i].IncTokenID, err)
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] BurnForCall external network error %v", err)
 					return [][]string{rejectedInst}, state, nil
 				}
 				// build burning confirm insts
-				burningConfirmInsts = buildBurnForCallConfirmInsts(meta, waitingUnshieldReq.GetUnshieldID(), &waitingUnshieldDatas[i], meta.Data[i].ExternalNetworkID, i, beaconHeightForConfirmInst)
+				extAddressForInst, err := metadataBridge.TrimNetworkPrefix(waitingUnshieldDatas[i].ExternalTokenID, netPrefix)
+				if err != nil {
+					Logger.log.Errorf("[BridgeAgg] BurnForCall external address error %v", err)
+					return [][]string{rejectedInst}, state, nil
+				}
+				burningConfirmInsts = buildBurnForCallConfirmInsts(meta, waitingUnshieldReq.GetUnshieldID(), &waitingUnshieldDatas[i], extAddressForInst, meta.Data[i].ExternalNetworkID, i, beaconHeightForConfirmInst)
 				insts = append(insts, burningConfirmInsts...)
 			}
 			// use unshield state update functions
@@ -672,6 +677,11 @@ func (sp *stateProducer) burnForCall(
 				Logger.log.Errorf("[BridgeAgg] Error when updating state for non-unified burnForCall: %v", err)
 				return [][]string{rejectedInst}, state, nil
 			}
+			extAddressForInst, err := metadataBridge.TrimNetworkPrefix(tokenID, netPrefix)
+			if err != nil {
+				Logger.log.Errorf("[BridgeAgg] BurnForCall non-unified external address error %v", err)
+				return [][]string{rejectedInst}, state, nil
+			}
 
 			// Convert amount to big.Int to get bytes later
 			amount := big.NewInt(0).SetUint64(d.BurningAmount)
@@ -688,7 +698,7 @@ func (sp *stateProducer) burnForCall(
 				BurningConfirmMetaType: metadataCommon.BurnForCallConfirmMeta,
 			}
 			waitingUnshieldDatas = append(waitingUnshieldDatas, wdata)
-			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, txReqID, &wdata, d.ExternalNetworkID, 0, beaconHeightForConfirmInst)
+			burningConfirmInsts = buildBurnForCallConfirmInsts(meta, txReqID, &wdata, extAddressForInst, d.ExternalNetworkID, 0, beaconHeightForConfirmInst)
 			insts = append(insts, burningConfirmInsts...)
 		}
 		waitingUnshieldReq := statedb.NewBridgeAggWaitingUnshieldReqStateWithValue(waitingUnshieldDatas, txReqID, beaconHeightForUnshield)

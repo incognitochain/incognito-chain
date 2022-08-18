@@ -287,6 +287,19 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 	return tokenID, nil
 }
 
+// TrimNetworkPrefix is a helper that removes the 3-byte network prefix from the full 23-byte external address (for burning confirm etc.); 
+// within the bridgeagg vault we only use prefixed addresses
+func TrimNetworkPrefix(fullTokenID []byte, prefix string) ([]byte, error) {
+	if !bytes.HasPrefix(fullTokenID, []byte(prefix)) {
+		return nil, fmt.Errorf("invalid prefix in external tokenID %x, expect %s", fullTokenID, prefix)
+	}
+	result := fullTokenID[len(prefix):]
+	if len(result) != common.ExternalBridgeTokenLength {
+		return nil, fmt.Errorf("invalid length %d for un-prefixed external address", len(result))
+	}
+	return result, nil
+}
+
 // findExternalTokenID finds the external tokenID for a bridge token from database
 func findExternalTokenID(stateDB *statedb.StateDB, tokenID *common.Hash) ([]byte, error) {
 	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(stateDB)

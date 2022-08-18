@@ -1074,7 +1074,7 @@ func padExternalAddress(addr []byte) []byte {
 	return result
 }
 
-func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
+func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, externalTokenID []byte, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
 	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
 	newTxReqID := common.HashH(append(unshieldID.Bytes(), common.IntToBytes(index)...))
 	rdRecvStr, _ := req.Data[index].RedepositReceiver.String()
@@ -1082,7 +1082,7 @@ func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshie
 		strconv.Itoa(int(metadataCommon.BurnForCallConfirmMeta)),
 		strconv.Itoa(int(common.BridgeShardID)),
 		strconv.Itoa(int(networkID)),
-		hex.EncodeToString(udata.ExternalTokenID),
+		hex.EncodeToString(externalTokenID),
 		req.Data[index].ExternalCallAddress,
 		udata.ExternalReceivedAmt.Text(16),
 		newTxReqID.String(),
