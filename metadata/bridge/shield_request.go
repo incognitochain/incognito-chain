@@ -105,8 +105,7 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 	}
 	for _, data := range request.Data {
 		switch data.NetworkID {
-		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID,
-			common.AURORANetworkID, common.AVAXNetworkID:
+		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID, common.AVAXNetworkID:
 			proofData := EVMProof{}
 			err := json.Unmarshal(data.Proof, &proofData)
 			if err != nil {

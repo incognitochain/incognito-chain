@@ -75,6 +75,7 @@ type param struct {
 	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
 	AURORAParam                      auroraParam                  `mapstructure:"aurora_param"`
 	AVAXParam                        avaxParam                    `mapstructure:"avax_param"`
+	NEARParam                        nearParam                    `mapstructure:"near_param"`
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
@@ -383,6 +384,16 @@ type avaxParam struct {
 func (avaxParam *avaxParam) GetFromEnv() {
 	if utils.GetEnv(AVAXHostKey, utils.EmptyString) != utils.EmptyString {
 		avaxParam.Host = []string{utils.GetEnv(AVAXHostKey, utils.EmptyString)}
+	}
+}
+
+type nearParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (nearParam *nearParam) GetFromEnv() {
+	if utils.GetEnv(AVAXHostKey, utils.EmptyString) != utils.EmptyString {
+		nearParam.Host = []string{utils.GetEnv(AVAXHostKey, utils.EmptyString)}
 	}
 }
 

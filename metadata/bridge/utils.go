@@ -2,9 +2,16 @@ package bridge
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	nearclient "github.com/eteu-technologies/near-api-go/pkg/client"
+	"github.com/eteu-technologies/near-api-go/pkg/client/block"
+	"github.com/eteu-technologies/near-api-go/pkg/types/hash"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"math/big"
 	"strings"
 
@@ -316,6 +323,125 @@ func VerifyProofAndParseEVMReceipt(
 	return constructedReceipt, nil
 }
 
+type NormalResult struct {
+	Result interface{} `json:"result"`
+}
+
+func VerifyProofAndParseAuroraReceipt(
+	txHash common.Hash,
+	auroraHosts []string,
+	nearHosts []string,
+	minEVMConfirmationBlocks int,
+	networkPrefix string,
+) (*types.Receipt, error) {
+	// query tx receipt from auora chain
+	var unstructuredResult map[string]interface{}
+	var res *types.Receipt
+	var err error
+	for _, h := range auroraHosts {
+		unstructuredResult, err = getAURORATransactionReceipt(h, txHash)
+		if err != nil {
+			return nil, err
+		}
+	}
+	nearTransactionHash := unstructuredResult["nearTransactionHash"].(string)
+	if nearTransactionHash == "" {
+		return nil, fmt.Errorf("invalid aurora transaction: %v", unstructuredResult)
+	}
+
+	// convert map to json
+	jsonString, err := json.Marshal(unstructuredResult)
+	if err != nil {
+		return nil, fmt.Errorf("can not convert json string with err: %v", err.Error())
+	}
+	err = json.Unmarshal(jsonString, &res)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal json string with err: %v", err.Error())
+	}
+
+	if res.Status == 0 || res == nil {
+		return nil, fmt.Errorf("transaction failed: %d", res.Status)
+	}
+	evmHeaderResult, err := evmcaller.GetEVMHeaderResult(res.BlockHash, auroraHosts, minEVMConfirmationBlocks, networkPrefix)
+	if err != nil {
+		metadataCommon.Logger.Log.Errorf("Can not get EVM header result - Error: %+v", err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
+	}
+
+	// check fork
+	if evmHeaderResult.IsForked {
+		metadataCommon.Logger.Log.Errorf("EVM Block hash %s is not in main chain", res.BlockHash.String())
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt,
+			fmt.Errorf("EVM Block hash %s is not in main chain", res.BlockHash.String()))
+	}
+
+	// query near tx from above result
+	ctx := context.Background()
+	decodeTx, err := hex.DecodeString(nearTransactionHash[2:])
+	if err != nil {
+		return nil, fmt.Errorf("invalid hex type with err: %v", err.Error())
+	}
+	nearTx := base58.Encode(decodeTx)
+	tx, err := hash.NewCryptoHashFromBase58(nearTx)
+	if err != nil {
+		return nil, errors.New("Invalid transaction hash")
+	}
+	accountId := "incognito"
+	hostActive := true
+	for i, h := range nearHosts {
+		rpcClient, err := nearclient.NewClient(h)
+		if err != nil {
+			if (i + 1) == len(nearHosts) {
+				hostActive = false
+			}
+			continue
+		}
+		txStatus, err := rpcClient.TransactionStatus(ctx, tx, accountId)
+		if err != nil {
+			if (i + 1) == len(nearHosts) {
+				hostActive = false
+			}
+			continue
+		}
+		// compare receipt root
+		minedBlock, err := rpcClient.BlockDetails(ctx, block.BlockHash(txStatus.TransactionOutcome.BlockHash))
+		if err != nil {
+			if (i + 1) == len(nearHosts) {
+				hostActive = false
+			}
+			continue
+		}
+		receiptRootEVMStr := base58.Encode(evmHeaderResult.Header.ReceiptHash.Bytes())
+		if minedBlock.Header.ChunkReceiptsRoot.String() != receiptRootEVMStr {
+			return nil, errors.New("Root on evm chain and native chain not match")
+		}
+	}
+
+	if !hostActive {
+		return nil, errors.New("no endpoint active to verify or invalid near tx")
+	}
+
+	return res, nil
+}
+
+func getAURORATransactionReceipt(url string, txHash common.Hash) (map[string]interface{}, error) {
+	rpcClient := rpccaller.NewRPCClient()
+	params := []interface{}{"0x" + hex.EncodeToString(txHash.GetBytes())}
+	var res NormalResult
+	err := rpcClient.RPCCall(
+		"",
+		url,
+		"",
+		"eth_getTransactionReceipt",
+		params,
+		&res,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return res.Result.(map[string]interface{}), nil
+}
+
 func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, string, int, bool, error) {
 	var hosts []string
 	var networkPrefix string
@@ -341,7 +467,7 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 		isFTMNetwork = true
 	}
 
-	if metadataType == metadataCommon.IssuingAuroraRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.AURORANetworkID) {
+	if metadataType == metadataCommon.IssuingAuroraRequestMeta {
 		isAURORANetwork = true
 	}
 
@@ -450,7 +576,6 @@ func GetNetworkTypeByNetworkID(networkID uint8) (uint, error) {
 		common.BSCNetworkID,
 		common.PLGNetworkID,
 		common.FTMNetworkID,
-		common.AURORANetworkID,
 		common.AVAXNetworkID:
 		return common.EVMNetworkType, nil
 	default:
