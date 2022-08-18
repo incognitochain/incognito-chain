@@ -344,6 +344,9 @@ func VerifyProofAndParseAuroraReceipt(
 			return nil, err
 		}
 	}
+	if unstructuredResult == nil {
+		return nil, fmt.Errorf("query receipt %v got nil value", txHash.String())
+	}
 	nearTransactionHash := unstructuredResult["nearTransactionHash"].(string)
 	if nearTransactionHash == "" {
 		return nil, fmt.Errorf("invalid aurora transaction: %v", unstructuredResult)
@@ -426,7 +429,7 @@ func VerifyProofAndParseAuroraReceipt(
 
 func getAURORATransactionReceipt(url string, txHash common.Hash) (map[string]interface{}, error) {
 	rpcClient := rpccaller.NewRPCClient()
-	params := []interface{}{"0x" + hex.EncodeToString(txHash.GetBytes())}
+	params := []interface{}{"0x" + txHash.String()}
 	var res NormalResult
 	err := rpcClient.RPCCall(
 		"",
@@ -439,6 +442,10 @@ func getAURORATransactionReceipt(url string, txHash common.Hash) (map[string]int
 	if err != nil {
 		return nil, err
 	}
+	if res.Result == nil {
+		return nil, fmt.Errorf("tx aurora id %s non exist", params[0])
+	}
+
 	return res.Result.(map[string]interface{}), nil
 }
 

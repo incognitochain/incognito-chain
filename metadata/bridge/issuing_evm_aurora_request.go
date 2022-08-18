@@ -43,14 +43,14 @@ func NewIssuingEVMAuroraRequestFromMap(
 	networkID uint,
 	metatype int,
 ) (*IssuingEVMAuroraRequest, error) {
-	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
-	if err != nil {
-		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TokenID incorrect"))
-	}
-
 	txHash, err := common.Hash{}.NewHashFromStr(data["TxHash"].(string))
 	if err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TxHash incorrect"))
+	}
+
+	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
+	if err != nil {
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestNewIssuingEVMRequestFromMapError, errors.Errorf("TokenID incorrect"))
 	}
 
 	req, _ := NewIssuingEVMAuroraRequest(
@@ -67,8 +67,8 @@ func (iReq IssuingEVMAuroraRequest) ValidateTxWithBlockChain(tx metadataCommon.T
 }
 
 func (iReq IssuingEVMAuroraRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	if iReq.TxHash.IsZeroValue() {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, errors.New("Wrong request info's txhash"))
+	if iReq.TxHash.IsZeroValue() || iReq.IncTokenID.IsZeroValue() {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, errors.New("Wrong request info"))
 	}
 
 	return true, true, nil
