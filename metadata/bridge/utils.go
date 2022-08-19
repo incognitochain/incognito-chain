@@ -421,7 +421,7 @@ func VerifyProofAndParseAuroraReceipt(
 	}
 
 	if !hostActive {
-		return nil, errors.New("no endpoint active to verify or invalid near tx")
+		return nil, fmt.Errorf("no endpoint in list %+v is active to verify or invalid near tx %s", nearHosts, tx.String())
 	}
 
 	return res, nil
