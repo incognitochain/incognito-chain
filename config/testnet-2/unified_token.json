@@ -116,5 +116,35 @@
                 "network_id": 3
             }
         }
+    },
+    "190820226": {
+        "3a526c0fa9abfc3e3e37becc52c5c10abbb7897b0534ad17018e766fc6133590": {
+            "c2a62282b58500e329c51ab40bc4f298cd57cce4e17a2912f48d6aec1840b4be": {
+                "external_decimal": 6,
+                "external_token_id": "0xC2C527C0CACF457746Bd31B2a698Fe89de2b6d49",
+                "network_id": 1
+            }
+        },
+        "6fa448f24835b0c72e62004edf391679fdbc391a82e4edb3726d16251509a2d0": {
+            "3352fdcf2d44448e8ad14c98c9d6c7d14c655e592cd450275af0351b8957b33e": {
+                "external_decimal": 6,
+                "external_token_id": "0xD87Ba7A50B2E7E660f678A895E4B72E7CB4CCd9C",
+                "network_id": 1
+            }
+        },
+        "50092f46f3f9dcebd3176de97c936950977bcc52a22eebb2863b8e4d24261434": {
+            "376a9aab2005c1b049facafbcab679cd537174eed186f254316139c5ed4aa1f9": {
+                "external_decimal": 18,
+                "external_token_id": "0xdc31Ee1784292379Fbb2964b3B9C4124D8F89C60",
+                "network_id": 1
+            }
+        },
+        "b35756452dc1fa1260513fa121c20c2b516a8645f8d496fa4235274dac0b1b52": {
+            "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347": {
+                "external_decimal": 18,
+                "external_token_id": "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+                "network_id": 1
+            }
+        }
     }
 }
