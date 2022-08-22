@@ -42,7 +42,7 @@ epoch_param:
   epoch_v2_break_point: 1000000000000
   random_time: 50
   random_time_v2: 1000000000000
-eth_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
+eth_contract_address: "0x81BFbdAa0af287125602C1afe954cBbccff0eB3A"
 bsc_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 plg_contract_address: "0x4fF5c88cD1FD773436C2aBcFE175fe4ba6a2eB68"
 ftm_contract_address: "0x9cb4baf1b60DaBB6B22BcFf07cc0e10395423aed"
@@ -82,7 +82,7 @@ portal_v3_height: 1328816
 tx_pool_version: 0
 geth_param:
   host:
-    - "https://kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "https://goerli.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
 bsc_param:
   host:
     - "https://data-seed-prebsc-1-s1.binance.org:8545"
@@ -145,6 +145,10 @@ auto_enable_feature:
       require_percentage: 90   
   - unified_token_230620225:
       min_trigger: 4864700 
+      force_trigger: 1000000000
+      require_percentage: 90
+  - unified_token_230620226:
+      min_trigger: 5252000
       force_trigger: 1000000000
       require_percentage: 90 
   - blocktime20:
