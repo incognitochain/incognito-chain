@@ -282,7 +282,7 @@ const (
 
 const (
 	StopAutoStakingAmount    = 0
-	EVMConfirmationBlocks    = 15
+	EVMConfirmationBlocks    = 15 // update to 32 when eth merge
 	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
 )
