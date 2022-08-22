@@ -107,8 +107,9 @@ avax_param:
     - "https://api.avax-test.network/ext/C/rpc"
 near_param:
   host:
-    - "https://rpc.testnet.near.org"
+    - "https://near-testnet.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
     - "https://archival-rpc.testnet.near.org"
+    - "https://rpc.testnet.near.org"
 pdex_param:
   pdex_v3_break_point_height: 11
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
