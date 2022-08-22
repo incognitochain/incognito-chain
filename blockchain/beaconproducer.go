@@ -394,7 +394,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		if blockchain.shouldBeaconGenerateBridgeInstruction(curView) {
 			//get data from checkpoint to final view
 			Logger.log.Infof("[Bridge Debug] Checking bridge for beacon block %v %v", curView.LastBlockProcessBridge+1, blockchain.BeaconChain.GetFinalView().GetHeight())
-			retrievedShardBlockForBridge, retrievedShardBlockForBridgeAgg, err = blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash())
+			retrievedShardBlockForBridge, retrievedShardBlockForBridgeAgg, err = blockchain.GetShardBlockForBridge(curView.LastBlockProcessBridge+1, *blockchain.BeaconChain.GetFinalView().GetHash(), newBeaconBlock, shardStates)
 			if err != nil {
 				return nil, nil, NewBlockChainError(BuildBridgeError, err)
 			}
@@ -521,9 +521,10 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	shardBlock *types.ShardBlock,
 	blockchain *BlockChain,
 ) []string {
-	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
-		subsetID := GetSubsetIDFromProposerTime(
-			shardBlock.GetProposeTime(),
+	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.BlockProducingV3Height && shardBlock.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
+		timeSlot := curView.CalculateTimeSlot(shardBlock.GetProposeTime())
+		subsetID := GetSubsetIDFromProposerTimeV2(
+			timeSlot,
 			curView.GetShardProposerLength(),
 		)
 		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
@@ -531,7 +532,6 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 
 		return acceptedRewardInstruction.String()
 	} else {
-
 		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
 			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 		acceptedRewardInstruction, err := acceptedBlockRewardInfo.String()
@@ -779,7 +779,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		enableFeature = append(enableFeature, feature)
 	}
 
-	if len(enableFeature) > 0 {
+	if len(enableFeature) > 0 && curView.BeaconHeight == GetFirstBeaconHeightInEpoch(curView.Epoch) {
 		//generate instruction for valid condition
 		inst := instruction.NewEnableFeatureInstructionWithValue(enableFeature)
 		instructions = append(instructions, inst.ToString())

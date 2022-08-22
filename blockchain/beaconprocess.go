@@ -206,6 +206,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
+
 	startTimeVerifyPreProcessingBeaconBlock := time.Now()
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
@@ -233,8 +234,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive beacon block with timestamp %+v greater than previous block timestamp %+v", beaconBlock.Header.Timestamp, previousBeaconBlock.Header.Timestamp))
 	}
 
-	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) && beaconBlock.GetVersion() != 3 {
-		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
+	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && curView.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= curView.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) && beaconBlock.GetVersion() != 3 {
+		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", curView.CalculateTimeSlot(beaconBlock.Header.ProposeTime), curView.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
 	if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash, curView.CommitteeStateVersion()) {
@@ -385,8 +386,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *types.BeaconBlock, isVerifySig bool) error {
 	//verify producer via index
 	startTimeVerifyWithBestState := time.Now()
-
-	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.GetBeaconCommittee(), beaconBestState.MinBeaconCommitteeSize); err != nil {
+	produceTimeSlot := beaconBestState.CalculateTimeSlot(beaconBlock.GetProduceTime())
+	proposeTimeSlot := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
+	//fmt.Println("produceTimeSlot", produceTimeSlot, "proposeTimeSlot", proposeTimeSlot, beaconBestState.TSManager)
+	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.GetBeaconCommittee(), beaconBestState.MinBeaconCommitteeSize, produceTimeSlot, proposeTimeSlot); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(beaconBlock, common.BlsConsensus); err != nil {
@@ -509,6 +512,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	error,
 ) {
 	startTimeUpdateBeaconBestState := time.Now()
+	prevBeaconBlock := curView.BestBlock
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
 		return nil, nil, nil, nil, err
@@ -581,8 +585,70 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 	}
 
+	if (beaconBlock.Header.Version == types.INSTANT_FINALITY_VERSION_V2) && (prevBeaconBlock.Header.Version < types.INSTANT_FINALITY_VERSION_V2) {
+		shardHeights := map[byte]uint64{}
+		for sID, sState := range prevBeaconBlock.Body.ShardState {
+			shardHeights[sID] = sState[len(sState)-1].Height
+		}
+		beaconBestState.RewardMinted = blockchain.CalculateMintedPRVWithDefaultBlocktime(shardHeights)
+	}
+
+	//checkpoint timeslot
+	curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
+	for feature, _ := range config.Param().BlockTimeParam {
+
+		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
+			if triggerHeight == beaconBlock.GetHeight() {
+				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
+			}
+		}
+	}
+	beaconBestState.TSManager.updateCurrentInfo(beaconBlock.GetVersion(), curTS, beaconBlock.GetProposeTime())
+
+	//checkpoint timeslot for shard
+	for sid, shardstates := range beaconBlock.Body.ShardState {
+		if _, ok := beaconBestState.ShardTSManager[sid]; !ok {
+			beaconBestState.ShardTSManager[sid] = new(TSManager)
+		}
+		for _, shardstate := range shardstates {
+			tsManager := beaconBestState.ShardTSManager[sid]
+			if tsManager.CurrentBlockVersion != shardstate.Version {
+				for feature, blockTime := range config.Param().BlockTimeParam {
+					version := config.Param().FeatureVersion[feature]
+					if version == int64(shardstate.Version) {
+						lastTS := tsManager.CurrentBlockTS      // last shard block timeslot
+						endTime := tsManager.CurrentProposeTime //last shard block propose time
+						startTime := shardstate.ProposerTime - blockTime
+						for { //finding the minimum valid start time (incase, new version proposed block is in several round)
+							if startTime >= endTime+blockTime {
+								startTime = startTime - blockTime
+							} else {
+								break
+							}
+						}
+						if startTime < endTime {
+							Logger.log.Errorf("proposetime: %v, blocktime: %v, endtime: %v", shardstate.ProposerTime, blockTime, endTime)
+							panic("start time must be always >= endtime")
+						}
+						tsManager.updateNewAnchor(endTime, startTime, lastTS, int(blockTime), feature, shardstate.Height-1)
+					}
+				}
+			}
+			tsManager.updateCurrentInfo(shardstate.Version, tsManager.calculateTimeslot(shardstate.ProposerTime), shardstate.ProposerTime)
+		}
+	}
+
+	for feature, _ := range config.Param().BlockTimeParam {
+		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
+			if triggerHeight == beaconBlock.GetHeight() {
+				curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
+				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
+			}
+		}
+	}
+
 	//update bridge process
-	if beaconBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
+	if beaconBlock.GetVersion() == types.INSTANT_FINALITY_VERSION {
 		if beaconBlock.Header.ProcessBridgeFromBlock != nil && *beaconBlock.Header.ProcessBridgeFromBlock != 0 {
 			beaconBestState.LastBlockProcessBridge = beaconBlock.GetHeight() - 1
 		}
@@ -768,8 +834,8 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION {
-		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
+	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION && shardState.Version < types.INSTANT_FINALITY_VERSION_V2 {
+		timeSlot := curView.ShardTSManager[shardID].calculateTimeslot(shardState.ProposerTime)
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
@@ -930,7 +996,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 		Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
 	}
-	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
+	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB, newBestState)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}

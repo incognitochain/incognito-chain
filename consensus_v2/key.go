@@ -124,7 +124,10 @@ func (engine *Engine) ValidateProducerPosition(
 	lastProposerIdx int,
 	committee []incognitokey.CommitteePublicKey,
 	lenProposers int,
+	produceTimeSlot int64,
+	proposeTimeSlot int64,
 ) error {
+
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == types.BFT_VERSION {
@@ -138,8 +141,7 @@ func (engine *Engine) ValidateProducerPosition(
 	} else {
 		//validate producer
 		producer := blk.GetProducer()
-		produceTime := blk.GetProduceTime()
-		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), lenProposers)
+		tempProducerID := blockchain.GetProposerByTimeSlot(produceTimeSlot, lenProposers)
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
@@ -148,8 +150,7 @@ func (engine *Engine) ValidateProducerPosition(
 
 		//validate proposer
 		proposer := blk.GetProposer()
-		proposeTime := blk.GetProposeTime()
-		tempProducerID = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), lenProposers)
+		tempProducerID = blockchain.GetProposerByTimeSlot(proposeTimeSlot, lenProposers)
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, proposer) != 0 {

@@ -453,6 +453,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	maxSize uint64,
 	maxTime time.Duration,
 	getTxsDuration time.Duration,
+	maxTxs int64,
 ) []metadata.Transaction {
 	//TODO Timeout
 	timeOut := time.After(getTxsDuration)
@@ -510,6 +511,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			isDoubleSpend, needToReplace, removedInfo, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
 			if isDoubleSpend && !needToReplace {
 				continue
+			}
+			if len(res)+1 > int(maxTxs) {
+				return res
 			}
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime

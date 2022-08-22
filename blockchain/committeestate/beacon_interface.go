@@ -98,6 +98,8 @@ func NewSplitRewardEnvironmentV1(
 	percentCustodianReward uint64,
 	DAOPercent int,
 	activeShards int,
+	beaconCommittee []incognitokey.CommitteePublicKey,
+	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
@@ -107,5 +109,8 @@ func NewSplitRewardEnvironmentV1(
 		PercentCustodianReward:    percentCustodianReward,
 		DAOPercent:                DAOPercent,
 		ActiveShards:              activeShards,
+		MaxSubsetCommittees:       1,
+		ShardCommittee:            shardCommittee,
+		BeaconCommittee:           beaconCommittee,
 	}
 }
