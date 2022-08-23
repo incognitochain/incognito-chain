@@ -264,7 +264,7 @@ func VerifyTokenPair(
 		return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: %v", err)
 	}
 	if !isValid {
-		return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
+		return fmt.Errorf("WARNING: pair of incognito token id %s & bridge's id %x is invalid with previous blocks", incTokenID, token)
 	}
 	return nil
 }
