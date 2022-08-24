@@ -402,7 +402,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	st = time.Now()
 	txsToAdd := []metadata.Transaction{}
 	totalTxsReminder := int64(config.Param().TransactionInBlockParam.Upper)
-	if curView.BestBlock.GetVersion() >= types.ADJUST_BLOCKTIME_VERSION {
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 {
 		totalTxsReminder = curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
 		if totalTxsReminder < 0 {
 			totalTxsReminder = 0
