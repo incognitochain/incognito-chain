@@ -585,7 +585,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 	}
 
-	if (beaconBlock.Header.Version == types.ADJUST_BLOCKTIME_VERSION) && (prevBeaconBlock.Header.Version < types.ADJUST_BLOCKTIME_VERSION) {
+	if (beaconBlock.Header.Version == types.INSTANT_FINALITY_VERSION_V2) && (prevBeaconBlock.Header.Version < types.INSTANT_FINALITY_VERSION_V2) {
 		shardHeights := map[byte]uint64{}
 		for sID, sState := range prevBeaconBlock.Body.ShardState {
 			shardHeights[sID] = sState[len(sState)-1].Height
@@ -596,10 +596,10 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	//checkpoint timeslot
 	curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
 	for feature, _ := range config.Param().BlockTimeParam {
+
 		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == beaconBlock.GetHeight() {
-				//fmt.Println("updateNewAnchor xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", beaconBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
-				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]))
+				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
 			}
 		}
 	}
@@ -630,7 +630,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 							Logger.log.Errorf("proposetime: %v, blocktime: %v, endtime: %v", shardstate.ProposerTime, blockTime, endTime)
 							panic("start time must be always >= endtime")
 						}
-						tsManager.updateNewAnchor(endTime, startTime, lastTS, int(blockTime))
+						tsManager.updateNewAnchor(endTime, startTime, lastTS, int(blockTime), feature, shardstate.Height-1)
 					}
 				}
 			}
@@ -642,8 +642,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == beaconBlock.GetHeight() {
 				curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
-				//fmt.Println("updateNewAnchor xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", beaconBlock.GetProposeTime()+1, curTS, int(config.Param().BlockTimeParam[feature]))
-				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]))
+				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
 			}
 		}
 	}

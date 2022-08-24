@@ -9,6 +9,8 @@ type anchorTime struct {
 	StartTime       int64
 	StartTimeslot   int64
 	Timeslot        int
+	Feature         string
+	BlockHeight     uint64
 }
 
 type TSManager struct {
@@ -27,8 +29,8 @@ func (s *TSManager) getLatestAnchor() anchorTime {
 	return s.Anchors[len(s.Anchors)-1]
 }
 
-func (s *TSManager) updateNewAnchor(previousEndTime int64, startTime int64, startTS int64, timeslot int) {
-	s.Anchors = append(s.Anchors, anchorTime{previousEndTime, startTime, startTS, timeslot})
+func (s *TSManager) updateNewAnchor(previousEndTime int64, startTime int64, startTS int64, timeslot int, feature string, blockHeight uint64) {
+	s.Anchors = append(s.Anchors, anchorTime{previousEndTime, startTime, startTS, timeslot, feature, blockHeight})
 }
 
 func (s *TSManager) updateCurrentInfo(version int, currentTS int64, currentProposeTime int64) {
@@ -56,7 +58,7 @@ func (s *TSManager) calculateTimeslot(t int64) int64 {
 
 	if checkpoint.Timeslot == 0 {
 		checkpoint = anchorTime{
-			0, 0, 0, int(config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]),
+			0, 0, 0, int(config.Param().BlockTimeParam[BLOCKTIME_DEFAULT]), BLOCKTIME_DEFAULT, 1,
 		}
 	}
 	rangeTS := int64(0)

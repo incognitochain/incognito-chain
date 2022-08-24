@@ -826,7 +826,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 				//endtime is current propose time
 				//starttime is new align time
 				Logger.log.Infof("Align shard timeslot: end in %v, start from %v", shardBlock.GetProposeTime(), alignTime)
-				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime(), alignTime, curTS, int(config.Param().BlockTimeParam[feature]))
+				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime(), alignTime, curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
 			}
 		}
 	}

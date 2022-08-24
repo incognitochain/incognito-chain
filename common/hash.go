@@ -46,7 +46,7 @@ func (hashObj *Hash) Format(f fmt.State, c rune) {
 		m := "%"
 		for i := 0; i < 128; i++ {
 			if f.Flag(i) {
-				m += string(i)
+				m += fmt.Sprint(i)
 			}
 		}
 		m += string(c)
