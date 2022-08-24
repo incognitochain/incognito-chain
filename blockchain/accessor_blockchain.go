@@ -306,12 +306,24 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
-		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView().GetHeight()
-		shardBlocks := []*types.ShardBlock{}
+		expectedFinalView := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
+		finalizedShardHeight := expectedFinalView.GetHeight()
 		// limit maximum number of shard blocks for beacon producer
 		if finalizedShardHeight > bestShardHeight && finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
 			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
 		}
+
+		listShardBlock := map[uint64]*types.ShardBlock{}
+		pointerView := expectedFinalView
+		for {
+			if pointerView.GetHeight() <= bestShardHeight {
+				break
+			}
+			listShardBlock[pointerView.GetHeight()] = pointerView.GetBlock().(*types.ShardBlock)
+			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(*pointerView.GetPreviousHash())
+		}
+
+		shardBlocks := []*types.ShardBlock{}
 		lastEpoch := uint64(0)
 		limitTxs := map[int]int{}
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
@@ -354,6 +366,19 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*types.ShardBlock, error) {
 	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
+		expectedFinalView := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
+		finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
+
+		listShardBlock := map[uint64]*types.ShardBlock{}
+		pointerView := expectedFinalView
+		for {
+			if pointerView.GetHeight() <= finalView.GetHeight() {
+				break
+			}
+			listShardBlock[pointerView.GetHeight()] = pointerView.GetBlock().(*types.ShardBlock)
+			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(*pointerView.GetPreviousHash())
+		}
+
 		limitTxs := map[int]int{}
 		shardBlocks := []*types.ShardBlock{}
 		lastEpoch := uint64(0)
