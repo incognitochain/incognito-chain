@@ -781,12 +781,14 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			temp++
 		}
 	}
-	maxTxsReminder := oldBestState.MaxTxsPerBlockRemainder - int64(len(shardBlock.Body.Transactions))
-	if maxTxsReminder > 0 {
-		if shardBestState.MaxTxsPerBlockRemainder+maxTxsReminder >= (1 << 20) {
-			shardBestState.MaxTxsPerBlockRemainder = (1 << 20)
-		} else {
-			shardBestState.MaxTxsPerBlockRemainder += maxTxsReminder
+	if shardBlock.Header.Version > types.ADJUST_BLOCKTIME_VERSION {
+		maxTxsReminder := oldBestState.MaxTxsPerBlockRemainder - int64(len(shardBlock.Body.Transactions))
+		if maxTxsReminder > 0 {
+			if shardBestState.MaxTxsPerBlockRemainder+maxTxsReminder >= (1 << 20) {
+				shardBestState.MaxTxsPerBlockRemainder = (1 << 20)
+			} else {
+				shardBestState.MaxTxsPerBlockRemainder += maxTxsReminder
+			}
 		}
 	}
 

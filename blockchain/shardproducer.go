@@ -401,12 +401,15 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
 	st = time.Now()
 	txsToAdd := []metadata.Transaction{}
-	totalTxsReminder := curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
-	if totalTxsReminder < 0 {
-		totalTxsReminder = 0
-	} else {
-		if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
-			totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+	totalTxsReminder := int64(config.Param().TransactionInBlockParam.Upper)
+	if curView.BestBlock.GetVersion() >= types.ADJUST_BLOCKTIME_VERSION {
+		totalTxsReminder = curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
+		if totalTxsReminder < 0 {
+			totalTxsReminder = 0
+		} else {
+			if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
+				totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+			}
 		}
 	}
 	if !blockGenerator.chain.config.usingNewPool {
