@@ -142,9 +142,7 @@ func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
 }
 
 func NewShardBestState() *ShardBestState {
-	return &ShardBestState{
-		MaxTxsPerBlockRemainder: int64(config.Param().TransactionInBlockParam.Lower),
-	}
+	return &ShardBestState{}
 }
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}

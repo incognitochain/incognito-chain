@@ -758,6 +758,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	shardBestState.BeaconHeight = shardBlock.Header.BeaconHeight
 	shardBestState.TotalTxns += uint64(len(shardBlock.Body.Transactions))
 	shardBestState.NumTxns = uint64(len(shardBlock.Body.Transactions))
+	shardBestState.MaxTxsPerBlockRemainder = int64(config.Param().TransactionInBlockParam.Lower)
 	if shardBlock.Header.Height == 1 {
 		shardBestState.ShardProposerIdx = 0
 	} else {
@@ -894,6 +895,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	shardBestState.MaxTxsPerBlockRemainder = int64(config.Param().TransactionInBlockParam.Lower)
 
 	// Get all beaconInstructions from beacon here
 	beaconInstructions, _, err := blockchain.
