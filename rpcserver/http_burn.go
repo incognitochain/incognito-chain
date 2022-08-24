@@ -180,6 +180,32 @@ func (httpServer *HttpServer) handleGetAVAXBurnProof(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
+// handleGetBurnAURORAProofForDepositToSC returns a proof of a tx burning pFTM to deposit to SC
+func (httpServer *HttpServer) handleGetBurnAURORAProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningAuroraConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
+// handleGetBurnAVAXProofForDepositToSC returns a proof of a tx burning pFTM to deposit to SC
+func (httpServer *HttpServer) handleGetBurnAVAXProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningAvaxConfirmForDepositToSCMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {
@@ -421,8 +447,8 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 	return burningAddress, nil
 }
 
-//Notice: this function is used when getting proof
-//make sure it will get from final view
+// Notice: this function is used when getting proof
+// make sure it will get from final view
 func getSingleBeaconBlockByHeight(bc *blockchain.BlockChain, height uint64) (*types.BeaconBlock, error) {
 	beaconBlock, err := bc.GetBeaconBlockByView(bc.BeaconChain.GetFinalView(), height)
 	if err != nil {

@@ -75,10 +75,10 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix, bridgeAggUnshieldTxIDs)
 
-		case strconv.Itoa(metadata.BurningAuroraConfirmMeta):
+		case strconv.Itoa(metadata.BurningAuroraConfirmMeta), strconv.Itoa(metadata.BurningAuroraConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.AURORAPrefix, bridgeAggUnshieldTxIDs)
 
-		case strconv.Itoa(metadata.BurningAvaxConfirmMeta):
+		case strconv.Itoa(metadata.BurningAvaxConfirmMeta), strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.AVAXPrefix, bridgeAggUnshieldTxIDs)
 		}
 		if err != nil {

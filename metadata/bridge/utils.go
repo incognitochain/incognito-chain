@@ -604,9 +604,9 @@ func IsBurningConfirmMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BurningPRVBEP20ConfirmMeta, metadataCommon.BurningPRVERC20ConfirmMeta:
 		return true
-	case metadataCommon.BurningAuroraConfirmMeta:
+	case metadataCommon.BurningAuroraConfirmMeta, metadataCommon.BurningAuroraConfirmForDepositToSCMeta:
 		return true
-	case metadataCommon.BurningAvaxConfirmMeta:
+	case metadataCommon.BurningAvaxConfirmMeta, metadataCommon.BurningAvaxConfirmForDepositToSCMeta:
 		return true
 	default:
 		return false

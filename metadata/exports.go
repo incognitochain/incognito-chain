@@ -221,6 +221,12 @@ const (
 	IssuingAvaxResponseMeta = metadataCommon.IssuingAvaxResponseMeta
 	BurningAvaxRequestMeta  = metadataCommon.BurningAvaxRequestMeta
 	BurningAvaxConfirmMeta  = metadataCommon.BurningAvaxConfirmMeta
+
+	BurningAuroraForDepositToSCRequestMeta = metadataCommon.BurningAuroraForDepositToSCRequestMeta
+	BurningAuroraConfirmForDepositToSCMeta = metadataCommon.BurningAuroraConfirmForDepositToSCMeta
+
+	BurningAvaxForDepositToSCRequestMeta = metadataCommon.BurningAvaxForDepositToSCRequestMeta
+	BurningAvaxConfirmForDepositToSCMeta = metadataCommon.BurningAvaxConfirmForDepositToSCMeta
 )
 
 // export error codes

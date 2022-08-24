@@ -225,6 +225,14 @@ const (
 	IssuingAvaxResponseMeta = 354
 	BurningAvaxRequestMeta  = 355
 	BurningAvaxConfirmMeta  = 158
+
+	// pAurora ( Aurora )
+	BurningAuroraForDepositToSCRequestMeta = 356
+	BurningAuroraConfirmForDepositToSCMeta = 159
+
+	// pAVAX ( avalanche )
+	BurningAvaxForDepositToSCRequestMeta = 357
+	BurningAvaxConfirmForDepositToSCMeta = 160
 )
 
 var minerCreatedMetaTypes = []int{
@@ -379,6 +387,8 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningAuroraConfirmMeta),
 	strconv.Itoa(BurningAvaxConfirmMeta),
+	strconv.Itoa(BurningAuroraConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningAvaxConfirmForDepositToSCMeta),
 }
 
 var portalV4MetaTypes = []int{
