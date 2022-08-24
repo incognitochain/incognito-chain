@@ -705,7 +705,11 @@ func (a *actorV3) run() error {
 					a.logger.Info("")
 					a.logger.Info("======================================================")
 					if ActorRuleBuilderContext.CreateRule == CREATE_RULE_NORMAL {
-						a.maybeProposeBlock()
+						err := a.maybeProposeBlock()
+						if err != nil {
+							a.logger.Error(err)
+						}
+
 					}
 				}
 

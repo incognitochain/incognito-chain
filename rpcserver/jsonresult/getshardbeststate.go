@@ -29,6 +29,7 @@ type GetShardBestState struct {
 	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
 	CommitteeEngineVersion int               `json:"CommitteeStateVersion"`
 	TriggeredFeature       map[string]uint64 `json:"TriggeredFeature"`
+	MaxTxsReminder         int64             `json:"MaxTxsReminder"`
 }
 
 func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
@@ -50,6 +51,7 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		BestCrossShard:         data.BestCrossShard,
 		CommitteeFromBlock:     data.CommitteeFromBlock(),
 		BlockVersion:           data.BestBlock.GetVersion(),
+		MaxTxsReminder:         data.MaxTxsPerBlockRemainder,
 	}
 
 	result.TriggeredFeature = make(map[string]uint64)
