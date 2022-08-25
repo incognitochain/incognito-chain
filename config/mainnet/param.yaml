@@ -110,15 +110,15 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 90
   - instantfinalityv2:
-      min_trigger: 1e9
+      min_trigger: 2211160
       force_trigger: 1e9
-      require_percentage: 90
+      require_percentage: 85
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
       require_percentage: 85
   - unified_token_20220714:
-      min_trigger: 2132900  
+      min_trigger: 2132900
       force_trigger: 1000000000
       require_percentage: 80
 blocktime_param:
@@ -127,6 +127,9 @@ blocktime_param:
   - "blocktime10": 10
 feature_version:
   - instantfinalityv2: 9
+transactions_param:
+  lowerbound: 15
+  upperbound: 100
 bridge_agg_param:
   admin_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
   base_decimal: 9 # Use only one time DONOT edit this after deployed

@@ -34,6 +34,7 @@ func (a *actorV3) shouldVote(proposeBlockInfo *ProposeBlockInfo) bool {
 		return false
 	}
 	if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
+		proposeBlockInfo.IsPreVoted &&
 		!proposeBlockInfo.IsVoted &&
 		proposeBlockInfo.IsValid {
 		if proposeBlockInfo.ValidPreVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {

@@ -28,6 +28,7 @@ func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInter
 	lockBlockHash := a.getLockBlockHash(proposeBlockHeight)
 	if lockBlockHash != nil {
 		block = lockBlockHash.block
+		a.validatePreVote(lockBlockHash)
 	} else { //or previous valid block
 		for _, v := range a.GetSortedReceiveBlockByHeight(proposeBlockHeight) {
 			if v.IsValid {
@@ -141,6 +142,9 @@ func buildPOLCFromPreVote(bestView multiview.View, info *ProposeBlockInfo) (POLC
 	idx := []int{}
 	sigs := [][]byte{}
 	for pk, vote := range info.PreVotes {
+		if vote.IsValid != 1 {
+			continue
+		}
 		index := common.IndexOfStr(pk, committeeBLSString)
 		idx = append(idx, index)
 		sigs = append(sigs, vote.Confirmation)
@@ -163,10 +167,12 @@ func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock 
 		return false
 	}
 
-	previousView := a.chain.GetViewByHash(lock.block.GetPrevHash())
-	if lock != nil && polc.Timeslot < previousView.CalculateTimeSlot(lock.block.GetProposeTime()) {
-		a.logger.Info("Not a new POLC")
-		return false
+	if lock != nil {
+		previousView := a.chain.GetViewByHash(lock.block.GetPrevHash())
+		if polc.Timeslot < previousView.CalculateTimeSlot(lock.block.GetProposeTime()) {
+			a.logger.Info("Not a new POLC")
+			return false
+		}
 	}
 
 	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(info.SigningCommittees, common.BlsConsensus)
