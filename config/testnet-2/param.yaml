@@ -151,20 +151,16 @@ auto_enable_feature:
       min_trigger: 5257096
       force_trigger: 1000000000
       require_percentage: 90
-  - blocktime20:
-      min_trigger: 10892003
-      force_trigger: 1000000000
-      require_percentage: 90
-  - blocktime10:
-      min_trigger: 10892003
+  - blocktime30s_23_8:
+      min_trigger: 5272311
       force_trigger: 1000000000
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
-  - "blocktime20": 20
-  - "blocktime40": 40
+  - "blocktime30s_23_8": 30
 feature_version:
   - instantfinalityv2: 9
+  - blocktime30s_23_8: 10
 transactions_param:
   lowerbound: 15
   upperbound: 100
