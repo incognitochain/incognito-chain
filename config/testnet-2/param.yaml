@@ -42,10 +42,10 @@ epoch_param:
   epoch_v2_break_point: 1000000000000
   random_time: 50
   random_time_v2: 1000000000000
-eth_contract_address: "0x81BFbdAa0af287125602C1afe954cBbccff0eB3A"
+eth_contract_address: "0x9cb4baf1b60DaBB6B22BcFf07cc0e10395423aed"
 bsc_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 plg_contract_address: "0x4fF5c88cD1FD773436C2aBcFE175fe4ba6a2eB68"
-ftm_contract_address: "0x9cb4baf1b60DaBB6B22BcFf07cc0e10395423aed"
+ftm_contract_address: "0xDdF0C1B9f513a8D0a26732B18478CC295d204320"
 prv_erc20_contract_address: "0xaE61fEFD69BacF3951F1C86c9A4D3F006810Ac21"
 prv_bep20_contract_address: "0xB49E8844a72CF1ce885aEf13F82BeeAEEFc01527"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -83,6 +83,7 @@ tx_pool_version: 0
 geth_param:
   host:
     - "https://goerli.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "https://goerli.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
 bsc_param:
   host:
     - "https://data-seed-prebsc-1-s1.binance.org:8545"
@@ -151,20 +152,16 @@ auto_enable_feature:
       min_trigger: 5257096
       force_trigger: 1000000000
       require_percentage: 90
-  - blocktime20:
-      min_trigger: 10892003
-      force_trigger: 1000000000
-      require_percentage: 90
-  - blocktime10:
-      min_trigger: 10892003
+  - blocktime30s_23_8:
+      min_trigger: 5272311
       force_trigger: 1000000000
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
-  - "blocktime20": 20
-  - "blocktime40": 40
+  - "blocktime30s_23_8": 30
 feature_version:
   - instantfinalityv2: 9
+  - blocktime30s_23_8: 10
 transactions_param:
   lowerbound: 15
   upperbound: 100
