@@ -267,6 +267,7 @@ func ValidateDoubleShieldProof(
 ) (bool, []byte, error) {
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
+	// in case aurora: will be tx hash
 	uniqTx := append(proof.BlockHash[:], []byte(strconv.Itoa(int(proof.TxIndex)))...)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {

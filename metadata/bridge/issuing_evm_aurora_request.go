@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -108,8 +109,15 @@ func (iReq *IssuingEVMAuroraRequest) BuildReqActions(tx metadataCommon.Transacti
 		return [][]string{}, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestBuildReqActionsError, errors.Errorf("The evm proof's receipt could not be null."))
 	}
 	txReqID := *(tx.Hash())
+	reqTxId := iReq.TxHash.Bytes()
 	actionContent := map[string]interface{}{
-		"meta":       *iReq,
+		"meta": IssuingEVMRequest{
+			MetadataBase: iReq.MetadataBase,
+			BlockHash:    rCommon.BytesToHash(iReq.TxHash[:len(reqTxId)-1]),
+			TxIndex:      uint(reqTxId[len(reqTxId)-1]),
+			IncTokenID:   iReq.IncTokenID,
+			NetworkID:    iReq.NetworkID,
+		},
 		"txReqId":    txReqID,
 		"ethReceipt": *evmReceipt,
 	}
