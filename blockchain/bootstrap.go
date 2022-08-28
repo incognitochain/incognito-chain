@@ -112,11 +112,8 @@ func (r *remoteRPCClient) GetLatestBackup() (res BackupProcessInfo, err error) {
 func readUint64(r io.Reader) (uint64, error) {
 	b := make([]byte, 8)
 	n, err := r.Read(b)
-	if err != nil && err.Error() != "EOF" {
+	if err != nil {
 		return 0, err
-	}
-	if n == 0 {
-		return 0, nil
 	}
 	var dataLen uint64
 
@@ -141,7 +138,6 @@ func readSize(r io.Reader, size uint64) ([]byte, error) {
 		}
 	}
 	return dataByte, nil
-
 }
 
 type FileObject struct {
@@ -165,81 +161,94 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 		return err
 	}
 	defer resp.Body.Close()
+	dataChan := make(chan []byte, 5)
+	closeChannel := make(chan bool)
+	var readUntilLarge = func(data []byte, n int) []byte {
+		for len(data) < n {
+			select {
+			case receiveBuffer := <-dataChan:
+				data = append(data, receiveBuffer...)
+			case <-closeChannel:
+				if len(dataChan) > 0 {
+					continue
+				}
+				return data
+			}
 
-	for {
-		dataLen, err := readUint64(resp.Body)
-		if err != nil {
-			panic(err)
 		}
-		if dataLen == 0 {
-			return nil
-		}
-		infoByte, err := readSize(resp.Body, dataLen)
-		readData := bytes.NewBuffer(infoByte)
-		dec := gob.NewDecoder(readData)
-
-		fileInfo := &FileObject{}
-		err = dec.Decode(fileInfo)
-		if err != nil {
-			panic(err)
-		}
-		fileByte, err := readSize(resp.Body, fileInfo.Size)
-		fd, err := os.OpenFile(path.Join(dir, fileInfo.Name), os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			panic(err)
-		}
-		_, err = fd.Write(fileByte)
-		if err != nil {
-			panic(err)
-		}
-		fd.Close()
+		return data
 	}
-}
-
-func (r *remoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
-	requestBody, err := json.Marshal(map[string]interface{}{
-		"jsonrpc": "1.0",
-		"method":  "getbootstrapstatedb",
-		"params":  []interface{}{checkpoint, cid, dbType, offset},
-		"id":      1,
-	})
-	if err != nil {
-		return err
-	}
-	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		panic(err)
-		return err
-	}
-	defer resp.Body.Close()
-	for {
-		b := make([]byte, 8)
-		n, err := resp.Body.Read(b)
-		if err != nil && err.Error() != "EOF" {
-			panic(err)
-			return err
-		}
-		if n == 0 {
-			f(nil)
-			return nil
-		}
-		var dataLen uint64
-
-		err = binary.Read(bytes.NewBuffer(b), binary.LittleEndian, &dataLen)
-		if err != nil || n == 0 {
-			return err
-		}
-		dataByte := make([]byte, dataLen)
-		dataRead := uint64(0)
+	go func() {
+		readData := []byte{}
 		for {
-			n, _ := resp.Body.Read(dataByte[dataRead:])
-			dataRead += uint64(n)
-			if dataRead == dataLen {
+			readData = readUntilLarge(readData, 8)
+			if len(readData) == 0 {
 				break
 			}
+			dataLen, err := readUint64(bytes.NewBuffer(readData[:8]))
+			if err != nil {
+				panic(err)
+			}
+
+			if dataLen == 0 {
+				panic("receive data 0")
+			}
+
+			readData = readUntilLarge(readData, int(dataLen)+8)
+			infoByte, err := readSize(bytes.NewBuffer(readData[8:]), dataLen)
+			if err != nil {
+				panic(err)
+			}
+
+			rawData := bytes.NewBuffer(infoByte)
+			dec := gob.NewDecoder(rawData)
+			fileInfo := &FileObject{}
+			err = dec.Decode(fileInfo)
+
+			log.Println(cid, dbType, "req", fileInfo.Name, fileInfo.Size)
+			if err != nil {
+				log.Println(cid, dbType, infoByte, dataLen, len(infoByte))
+				panic(err)
+			}
+
+			readData = readUntilLarge(readData, int(dataLen)+8+int(fileInfo.Size))
+
+			fileByte, err := readSize(bytes.NewBuffer(readData[(int(dataLen)+8):]), fileInfo.Size)
+
+			log.Println(cid, dbType, "receive", fileInfo.Name, fileInfo.Size, len(fileByte), common.HashH(fileByte).String())
+			fd, err := os.OpenFile(path.Join(dir, fileInfo.Name), os.O_CREATE|os.O_WRONLY, 0666)
+			if err != nil {
+				panic(err)
+			}
+			_, err = fd.Write(fileByte)
+			if err != nil {
+				panic(err)
+			}
+			fd.Close()
+
+			readData = readData[int(dataLen)+8+int(fileInfo.Size):]
 		}
-		f(dataByte)
+	}()
+
+	for {
+
+		p := make([]byte, 100*1024)
+		n, err := resp.Body.Read(p)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			panic(err)
+		}
+		//do something with p[:n]
+		dataChan <- p[:n]
 	}
+
+	closeChannel <- true
+
+	close(dataChan)
+	//buffReader := resp.Body
+	return nil
 }
 
 func (r *remoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int) (res interface{}, err error) {

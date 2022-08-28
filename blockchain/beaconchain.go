@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"path"
 	"sync"
 	"time"
@@ -515,30 +516,32 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 var CommitteeFromBlockCache = map[byte]*lru.Cache{}
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	if cache, ok := CommitteeFromBlockBootStrapCache[shardID]; ok {
-		tempCommittees, ok := cache.Get(hash.String())
-		if ok {
-			return tempCommittees.([]incognitokey.CommitteePublicKey), nil
-		}
-	}
+	committees := []incognitokey.CommitteePublicKey{}
+	var err error
 
 	if _, ok := CommitteeFromBlockCache[shardID]; !ok {
 		CommitteeFromBlockCache[shardID], _ = lru.New(100)
 	}
 	cache := CommitteeFromBlockCache[shardID]
 
-	committees := []incognitokey.CommitteePublicKey{}
-	var err error
 	tempCommittees, ok := cache.Get(hash.String())
-	if !ok {
-		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
-		if err != nil {
-			return committees, err
-		}
-		cache.Add(hash.String(), committees)
-	} else {
+	if ok {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
+		return committees, nil
 	}
+
+	committees, err = rawdbv2.GetCacheCommitteeFromBlock(chain.BlockStorage.blockStorageDB, hash, int(shardID))
+	if len(committees) > 0 {
+		cache.Add(hash.String(), committees)
+		return committees, nil
+	}
+
+	committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
+	if len(committees) > 0 {
+		cache.Add(hash.String(), committees)
+		return committees, err
+	}
+
 	return committees, nil
 }
 

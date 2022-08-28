@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -92,11 +93,15 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 			panic(err)
 		}
 
-		fileData, err := ioutil.ReadAll(fd)
-		if err != nil {
-			panic(err)
+		n, err := io.Copy(conn, fd)
+
+
+		if file.Size() != int64(n) {
+			panic("not correct " + file.Name())
 		}
-		_, err = conn.Write(fileData)
+		if err != nil {
+			break
+		}
 	}
 
 	return
