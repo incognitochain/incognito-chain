@@ -630,7 +630,6 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, multiVi
 Restart all BeaconView from Database
 */
 func (blockchain *BlockChain) RestoreBeaconViews() error {
-	blockchain.RestoreCommitteeFromBlockCache()
 	allViews := []*BeaconBestState{}
 	bcDB := blockchain.GetBeaconChainDatabase()
 	b, err := rawdbv2.GetBeaconViews(bcDB)
