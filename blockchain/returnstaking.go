@@ -253,7 +253,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 					txData, err := blockchain.ShardChain[shardID].BlockStorage.GetStakingTx(stakerInfo.TxStakingID())
 					if err != nil {
-						return nil, nil, err
+						continue
 					}
 					txMeta, ok := txData.GetMetadata().(*metadata.StakingMetadata)
 					if !ok {
