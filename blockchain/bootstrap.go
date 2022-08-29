@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sync"
 	"time"
 )
 
@@ -163,6 +164,8 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 	defer resp.Body.Close()
 	dataChan := make(chan []byte, 5)
 	closeChannel := make(chan bool)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	var readUntilLarge = func(data []byte, n int) []byte {
 		for len(data) < n {
 			select {
@@ -172,6 +175,7 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 				if len(dataChan) > 0 {
 					continue
 				}
+				wg.Done()
 				return data
 			}
 
@@ -231,7 +235,6 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 	}()
 
 	for {
-
 		p := make([]byte, 100*1024)
 		n, err := resp.Body.Read(p)
 		if err != nil {
@@ -240,13 +243,13 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 			}
 			panic(err)
 		}
-		//do something with p[:n]
 		dataChan <- p[:n]
 	}
 
-	closeChannel <- true
-
+	close(closeChannel)
+	wg.Wait()
 	close(dataChan)
+
 	//buffReader := resp.Body
 	return nil
 }
