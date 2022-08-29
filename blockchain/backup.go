@@ -11,10 +11,13 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"golang.org/x/sync/semaphore"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
@@ -62,8 +65,6 @@ func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
 	return *s.lastBackup
 }
 
-const BackupInterval = 350 * 6 * 3 // days
-
 func (s *BackupManager) Backup(backupHeight uint64) {
 	s.lock.Lock()
 	if s.runningBackup != nil {
@@ -76,7 +77,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	defer func() {
 		s.runningBackup = nil
 	}()
-
+	BackupInterval := uint64(60 / s.blockchain.BeaconChain.GetBestView().GetCurrentTimeSlot() * 60 * 24 * 3)
 	//backup condition period
 	if backupHeight < BackupInterval {
 		return
@@ -180,18 +181,33 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	fmt.Println("update lastBackup", n)
 	fd.Close()
 
-}
+	//remove old backup
+	allFile := []string{}
+	filepath.Walk(path.Join(cfg.DataDir, cfg.DatabaseDir), func(path string, info fs.FileInfo, err error) error {
+		if _, err := time.Parse(time.RFC3339, info.Name()); err == nil {
+			allFile = append(allFile, info.Name())
+		}
+		return nil
+	})
 
-const (
-	BeaconConsensus = 1
-	BeaconFeature   = 2
-	BeaconReward    = 3
-	BeaconSlash     = 4
-	ShardConsensus  = 5
-	ShardTransacton = 6
-	ShardFeature    = 7
-	ShardReward     = 8
-)
+	sort.Slice(allFile, func(i, j int) bool {
+		t1, _ := time.Parse(time.RFC3339, allFile[i])
+		t2, _ := time.Parse(time.RFC3339, allFile[j])
+		return t1.Unix() < t2.Unix()
+	})
+
+	if len(allFile) >= 2 {
+		for i := 0; i < len(allFile)-2; i++ {
+			log.Println("remove backup folder", path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[i]))
+			os.RemoveAll(path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[i]))
+		}
+		time.AfterFunc(time.Hour*24, func() {
+			log.Println("remove backup folder", path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[len(allFile)-2]))
+			os.RemoveAll(path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[len(allFile)-2]))
+		})
+	}
+
+}
 
 type CheckpointInfo struct {
 	Hash   string
