@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
@@ -13,12 +14,17 @@ import (
 )
 
 func TestUnifiedTokenFile(t *testing.T) {
-	// read file config/mainnet/unified_token.json
+	// set network to testnet2
+	os.Setenv(config.NetworkKey, config.TestNetNetwork)
+	os.Setenv(config.NetworkVersionKey, config.TestNetVersion2)
+
+	// read file default path config/mainnet/unified_token.json
 	config.LoadUnifiedToken([]byte{})
 
 	// call API get list privacy tokens:
 	incClient := rpccaller.NewRPCClient()
-	host := "https://mainnet.incognito.org/fullnode"
+	// host := "https://mainnet.incognito.org/fullnode"
+	host := "https://testnet.incognito.org/fullnode"
 	method := "listprivacycustomtoken"
 	method2 := "getallbridgetokens"
 

@@ -457,7 +457,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 ) []metadata.Transaction {
 	//TODO Timeout
 	timeOut := time.After(getTxsDuration)
-	Logger.Infof("Has %v time for crawling txs for shard %v\n", getTxsDuration, sView.GetShardID())
+	Logger.Infof("Has %v time for crawling max %v txs for shard %v\n", getTxsDuration, maxTxs, sView.GetShardID())
 	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
