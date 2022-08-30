@@ -110,7 +110,7 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 84
   - instantfinalityv2:
-      min_trigger: 2211160
+      min_trigger: 2230077
       force_trigger: 1e9
       require_percentage: 85
   - maxcommitteesize48:
