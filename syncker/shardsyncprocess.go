@@ -85,7 +85,6 @@ func NewShardSyncProcess(
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		lastHeight := s.Chain.GetBestViewHeight()
-
 		for {
 			if s.isCommittee {
 				s.crossShardSyncProcess.start()
@@ -173,7 +172,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			}
 			//if already insert and error, last time insert is < 10s then we skip
 			insertTime, ok := insertShardTimeCache.Get(viewHash.String())
-			if ok && time.Since(insertTime.(time.Time)).Seconds() < (float64(common.TIMESLOT)/4) {
+			if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
 				continue
 			}
 
@@ -263,13 +262,14 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 }
 
 func (s *ShardSyncProcess) syncFinishSyncMessage() {
-
-	sleepTime := time.Duration(common.TIMESLOT/2) * time.Second
+	ts := s.blockchain.BeaconChain.GetBestView().GetCurrentTimeSlot()
+	sleepTime := time.Duration(ts/2) * time.Second
 	for {
+
 		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 		if committeeView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
 			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
-			convertedTimeslot := time.Duration(common.TIMESLOT) * time.Second
+			convertedTimeslot := time.Duration(ts) * time.Second
 			now := time.Now().Unix()
 			ceiling := now + int64(5*convertedTimeslot.Seconds())
 			floor := now - int64(5*convertedTimeslot.Seconds())

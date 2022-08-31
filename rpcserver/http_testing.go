@@ -4,14 +4,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"io/ioutil"
 	"log"
 	"reflect"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 
@@ -395,39 +396,43 @@ func (httpServer *HttpServer) handleSetConsensusRule(params interface{}, closeCh
 	}
 
 	voteRule := param["vote_rule"]
+	preVoteRule := param["prevote_rule"]
 	createRule := param["create_rule"]
 	handleVoteRule := param["handle_vote_rule"]
 	handleProposeRule := param["handle_propose_rule"]
 	insertRule := param["insert_rule"]
 	validatorRule := param["validator_rule"]
 
-	if voteRule != nil {
-		blsbft.ActorV2BuilderContext.VoteRule = voteRule.(string)
+	if voteRule != nil && voteRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.VoteRule = voteRule.(string)
 	}
-	if createRule != nil {
-		blsbft.ActorV2BuilderContext.CreateRule = createRule.(string)
+	if preVoteRule != nil && preVoteRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.PreVoteRule = preVoteRule.(string)
 	}
-	if handleVoteRule != nil {
-		blsbft.ActorV2BuilderContext.HandleVoteRule = handleVoteRule.(string)
+	if createRule != nil && createRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.CreateRule = createRule.(string)
 	}
-	if handleProposeRule != nil {
-		blsbft.ActorV2BuilderContext.HandleProposeRule = handleProposeRule.(string)
+	if handleVoteRule != nil && handleVoteRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.HandleVoteRule = handleVoteRule.(string)
 	}
-	if insertRule != nil {
-		blsbft.ActorV2BuilderContext.InsertRule = insertRule.(string)
+	if handleProposeRule != nil && handleProposeRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.HandleProposeRule = handleProposeRule.(string)
 	}
-	if validatorRule != nil {
-		blsbft.ActorV2BuilderContext.ValidatorRule = validatorRule.(string)
+	if insertRule != nil && insertRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.InsertRule = insertRule.(string)
+	}
+	if validatorRule != nil && validatorRule.(string) != "" {
+		blsbft.ActorRuleBuilderContext.ValidatorRule = validatorRule.(string)
 	}
 
 	return map[string]interface{}{
-		"vote_rule":           blsbft.ActorV2BuilderContext.VoteRule,
-		"create_rule":         blsbft.ActorV2BuilderContext.CreateRule,
-		"handle_vote_rule":    blsbft.ActorV2BuilderContext.HandleVoteRule,
-		"handle_propose_rule": blsbft.ActorV2BuilderContext.HandleProposeRule,
-		"insert_rule":         blsbft.ActorV2BuilderContext.InsertRule,
-		"validator_rule":      blsbft.ActorV2BuilderContext.ValidatorRule,
-		"lemma2_height":       blsbft.ActorV2BuilderContext.Lemma2Height,
+		"vote_rule":           blsbft.ActorRuleBuilderContext.VoteRule,
+		"create_rule":         blsbft.ActorRuleBuilderContext.CreateRule,
+		"handle_vote_rule":    blsbft.ActorRuleBuilderContext.HandleVoteRule,
+		"handle_propose_rule": blsbft.ActorRuleBuilderContext.HandleProposeRule,
+		"insert_rule":         blsbft.ActorRuleBuilderContext.InsertRule,
+		"validator_rule":      blsbft.ActorRuleBuilderContext.ValidatorRule,
+		"lemma2_height":       blsbft.ActorRuleBuilderContext.Lemma2Height,
 	}, nil
 }
 
@@ -458,7 +463,7 @@ func (httpServer *HttpServer) handleRemoveByzantineDetector(params interface{}, 
 }
 
 func (httpServer *HttpServer) handleGetConsensusRule(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return blsbft.ActorV2BuilderContext, nil
+	return blsbft.ActorRuleBuilderContext, nil
 }
 
 func (httpServer *HttpServer) handleGetConsensusData(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -501,8 +506,10 @@ func (httpServer *HttpServer) handleGetProposerIndex(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid ShardID Value"))
 	}
 
-	shardBestState := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)].GetBestState()
-	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(common.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
+	sChain := httpServer.blockService.BlockChain.ShardChain[byte(tempShardID)]
+
+	shardBestState := sChain.GetBestState()
+	tempCommittee, committeIndex := blsbft.GetProposerByTimeSlotFromCommitteeList(shardBestState.CalculateTimeSlot(time.Now().Unix()), shardBestState.GetShardCommittee(), shardBestState.GetProposerLength())
 	committee, _ := tempCommittee.ToBase58()
 
 	return map[string]interface{}{

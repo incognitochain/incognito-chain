@@ -81,6 +81,10 @@ func (block CrossShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
 
+func (block CrossShardBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
+}
+
 //consensus interface
 func (block CrossShardBlock) ProposeHash() *common.Hash {
 	panic("Not implement")

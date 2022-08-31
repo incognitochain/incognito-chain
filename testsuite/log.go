@@ -2,6 +2,9 @@ package devframework
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
+	"github.com/incognitochain/incognito-chain/pruner"
 	"os"
 	"path/filepath"
 	"sort"
@@ -85,17 +88,22 @@ var (
 	privacyV2Logger        = backendLog.Logger("Privacy V2 log ", false)
 	instructionLogger      = backendLog.Logger("Instruction log ", false)
 	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
-	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
-	portalLogger           = backendLog.Logger("Portal log ", false)
-	portalRelayingLogger   = backendLog.Logger("Portal relaying log ", false)
-	portalV3CommonLogger   = backendLog.Logger("Portal v3 common log ", false)
-	portalV3ProcessLogger  = backendLog.Logger("Portal v3 process log ", false)
-	portalV3TokenLogger    = backendLog.Logger("Portal v3 token log ", false)
-	txPoolLogger           = backendLog.Logger("Txpool log ", false)
 	pdexLogger             = backendLog.Logger("Pdex log ", false)
-	portalV4ProcessLogger  = backendLog.Logger("Portal v4 process log ", false)
-	portalV4TokenLogger    = backendLog.Logger("Portal v4 token log ", false)
-	evmCallerLogger        = backendLog.Logger("EVMCaller log ", false)
+	bridgeAggLogger        = backendLog.Logger("BridgeAgg log ", false)
+	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
+	prunerLogger           = backendLog.Logger("Pruner log ", false)
+
+	portalLogger          = backendLog.Logger("Portal log ", false)
+	portalRelayingLogger  = backendLog.Logger("Portal relaying log ", false)
+	portalV3CommonLogger  = backendLog.Logger("Portal v3 common log ", false)
+	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
+	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
+
+	portalV4ProcessLogger = backendLog.Logger("Portal v4 process log ", false)
+	portalV4TokenLogger   = backendLog.Logger("Portal v4 token log ", false)
+
+	txPoolLogger    = backendLog.Logger("Txpool log ", false)
+	evmCallerLogger = backendLog.Logger("EVMCaller log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -103,6 +111,7 @@ var (
 type logWriter struct{}
 
 func (logWriter) Write(p []byte) (n int, err error) {
+	os.Stdout.Write(p)
 	logRotator.Write(p)
 	return len(p), nil
 }
@@ -110,7 +119,7 @@ func (logWriter) Write(p []byte) (n int, err error) {
 func init() {
 	// for main thread
 	Logger.Init(mainLogger)
-	finishsync.Logger.Init(finishSyncLogger)
+
 	// for other components
 	connmanager.Logger.Init(connManagerLogger)
 	addrmanager.Logger.Init(addrManagerLoger)
@@ -137,17 +146,21 @@ func init() {
 	dataaccessobject.Logger.Init(daov2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
+	finishsync.Logger.Init(finishSyncLogger)
 	privacy.LoggerV1.Init(privacyV1Logger)
 	privacy.LoggerV2.Init(privacyV2Logger)
 	instruction.Logger.Init(instructionLogger)
 	committeestate.Logger.Init(committeeStateLogger)
-	//pdex.Logger.Init(pdexLogger)
+	pdex.Logger.Init(pdexLogger)
+	bridgeagg.Logger.Init(bridgeAggLogger)
+	pruner.Logger.Init(prunerLogger)
 
 	portal.Logger.Init(portalLogger)
 	portalrelaying.Logger.Init(portalRelayingLogger)
 	portalcommonv3.Logger.Init(portalV3CommonLogger)
 	portalprocessv3.Logger.Init(portalV3ProcessLogger)
 	portaltokensv3.Logger.Init(portalV3TokenLogger)
+
 	portalprocessv4.Logger.Init(portalV4ProcessLogger)
 	portaltokensv4.Logger.Init(portalV4TokenLogger)
 

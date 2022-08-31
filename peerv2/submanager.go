@@ -188,12 +188,11 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		if rolehash == sub.rolehash && !forced { // Not forced => no need to subscribe when role stays the same
 			return nil
 		}
-
 		topics, _, err := sub.registerToProxy(
 			nodePK,
 			"",
 			role,
-			[]byte{255},
+			[]byte{255, 0, 1, 2, 3, 4, 5, 6, 7},
 		)
 		if err != nil {
 			return err // Don't save new role and topics since we need to retry later

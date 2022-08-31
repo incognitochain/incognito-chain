@@ -124,7 +124,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 
 	//if block next timeslot
 	if isFirstBlockNextHeight {
-		isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, env.block)
+		isValid, err := verifyReProposeHashSignatureFromBlock(p.chain, proposeMsg.ReProposeHashSignature, env.block)
 		if err != nil {
 			p.logger.Error("Verify lemma2 first block next height error", err)
 			return nil, err
@@ -161,7 +161,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		isValidLemma2,
 	)
 	//get vote for this propose block (case receive vote faster)
-	votes, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
+	votes, _, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
 	if err != nil {
 		p.logger.Error("Cannot get vote by block hash for rebuild", err)
 		return nil, err
@@ -196,8 +196,9 @@ func (p *ProposeRuleLemma2) isFirstBlockNextHeight(
 		return false
 	}
 
-	previousProposerTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-	producerTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
+	previousView := p.chain.GetViewByHash(*previousBlock.Hash())
+	previousProposerTimeSlot := previousView.CalculateTimeSlot(previousBlock.GetProposeTime())
+	producerTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
 
 	if producerTimeSlot != previousProposerTimeSlot+1 {
 		return false
@@ -216,10 +217,10 @@ func (p *ProposeRuleLemma2) isReProposeFromFirstBlockNextHeight(
 	committees []incognitokey.CommitteePublicKey,
 	numberOfFixedShardBlockValidator int,
 ) bool {
-
-	previousProposerTimeSlot := common.CalculateTimeSlot(previousBlock.GetProposeTime())
-	producerTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
-	proposerTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
+	previousView := p.chain.GetViewByHash(*previousBlock.Hash())
+	previousProposerTimeSlot := previousView.CalculateTimeSlot(previousBlock.GetProposeTime())
+	producerTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
+	proposerTimeSlot := previousView.CalculateTimeSlot(block.GetProposeTime())
 
 	//next propose time is also produce time
 	if producerTimeSlot != previousProposerTimeSlot+1 {
@@ -247,7 +248,7 @@ func (p *ProposeRuleLemma2) verifyLemma2ReProposeBlockNextHeight(
 	numberOfFixedShardBlockVaildator int,
 ) (bool, error) {
 
-	isValid, err := verifyReProposeHashSignatureFromBlock(proposeMsg.ReProposeHashSignature, block)
+	isValid, err := verifyReProposeHashSignatureFromBlock(p.chain, proposeMsg.ReProposeHashSignature, block)
 	if err != nil {
 		return false, err
 	}
@@ -274,10 +275,12 @@ func (p *ProposeRuleLemma2) verifyFinalityProof(
 	finalityProof := proposeMsg.FinalityProof
 
 	previousBlockHash := block.GetPrevHash()
+	previousView := p.chain.GetViewByHash(previousBlockHash)
 	producer := block.GetProducer()
 	rootHash := block.GetAggregateRootHash()
-	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
-	currentTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
+
+	beginTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
+	currentTimeSlot := previousView.CalculateTimeSlot(block.GetProposeTime())
 
 	if int(currentTimeSlot-beginTimeSlot) != len(finalityProof.ReProposeHashSignature) {
 		p.logger.Infof("Failed to verify finality proof, expect number of proof %+v, but got %+v",
@@ -312,8 +315,9 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 	proof FinalityProof,
 ) error {
 	previousHash := block.GetPrevHash()
-	beginTimeSlot := common.CalculateTimeSlot(block.GetProduceTime())
-	currentTimeSlot := common.CalculateTimeSlot(block.GetProposeTime())
+	previousView := p.chain.GetViewByHash(previousHash)
+	beginTimeSlot := previousView.CalculateTimeSlot(block.GetProduceTime())
+	currentTimeSlot := previousView.CalculateTimeSlot(block.GetProposeTime())
 
 	if currentTimeSlot-beginTimeSlot > MAX_FINALITY_PROOF {
 		return nil
@@ -372,7 +376,7 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 
 func (p ProposeRuleLemma2) CreateProposeBFTMessage(env *SendProposeBlockEnvironment, block types.BlockInterface) (*BFTPropose, error) {
 
-	reProposeHashSignature, err := createReProposeHashSignature(
+	reProposeHashSignature, err := createReProposeHashSignature(p.chain,
 		env.userProposeKey.PriKey[common.BridgeConsensus], block)
 
 	if err != nil {
@@ -408,7 +412,8 @@ func (p ProposeRuleLemma2) GetValidFinalityProof(block types.BlockInterface, cur
 	finalityProof := NewFinalityProof()
 
 	producerTime := block.GetProduceTime()
-	producerTimeTimeSlot := common.CalculateTimeSlot(producerTime)
+	previousView := p.chain.GetViewByHash(block.GetPrevHash())
+	producerTimeTimeSlot := previousView.CalculateTimeSlot(producerTime)
 
 	if currentTimeSlot-producerTimeTimeSlot > MAX_FINALITY_PROOF {
 		return finalityProof, false, fmt.Sprintf("exceed max finality proof, required %+v proofs", currentTimeSlot-producerTimeTimeSlot)

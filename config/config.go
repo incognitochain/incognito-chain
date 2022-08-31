@@ -121,6 +121,11 @@ type config struct {
 	UseOutcoinDatabase  []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 	SyncMode            string `mapstructure:"sync_mode" long:"syncmode" description:"archive,batchcommit,lite"`
 	EnableFFStorage     bool   `mapstructure:"enable_ffstorage" long:"ffstorage" description:"enable_ffstorage"`
+	AllowStatePruneByRPC bool   `mapstructure:"allow_state_prune_by_rpc" long:"allowstateprunebyrpc" description:"allow state pruning flag"`
+	OfflinePrune         bool   `mapstructure:"offline_prune" long:"offlineprune" description:"offline pruning flag"`
+	StateBloomSize       uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
+	EnableAutoPrune      bool   `mapstructure:"enable_auto_prune" long:"enableautoprune" description:"enable auto prune"`
+	NumBlockTriggerPrune uint64 `mapstructure:"num_block_trigger_prune" long:"numblocktriggerprune" description:"number block trigger prune"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses

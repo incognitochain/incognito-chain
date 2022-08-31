@@ -737,7 +737,7 @@ func (stateDB *StateDB) getAllTestObjectList() ([]common.Hash, [][]byte) {
 	it := trie.NewIterator(temp)
 	keys := []common.Hash{}
 	values := [][]byte{}
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := stateDB.trie.GetKey(it.Key)
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
@@ -754,7 +754,7 @@ func (stateDB *StateDB) getAllTestObjectMap() map[common.Hash][]byte {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	m := make(map[common.Hash][]byte)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := stateDB.trie.GetKey(it.Key)
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
@@ -771,7 +771,7 @@ func (stateDB *StateDB) getByPrefixTestObjectList(prefix []byte) ([]common.Hash,
 	it := trie.NewIterator(temp)
 	keys := []common.Hash{}
 	values := [][]byte{}
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := stateDB.trie.GetKey(it.Key)
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
@@ -831,7 +831,7 @@ func (stateDB *StateDB) getAllValidatorCommitteePublicKey(role int, ids []int) m
 		prefix := GetCommitteePrefixWithRole(role, id)
 		temp := stateDB.trie.NodeIterator(prefix)
 		it := trie.NewIterator(temp)
-		for it.Next() {
+		for it.Next(true, false, true) {
 			value := it.Value
 			newValue := make([]byte, len(value))
 			copy(newValue, value)
@@ -854,7 +854,7 @@ func (stateDB *StateDB) getAllCandidateCommitteePublicKey(role int) []*Committee
 	prefix := GetCommitteePrefixWithRole(role, CandidateChainID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -873,7 +873,7 @@ func (stateDB *StateDB) getByShardIDCurrentValidatorState(shardID int) []*Commit
 	prefix := GetCommitteePrefixWithRole(CurrentValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -895,7 +895,7 @@ func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*Com
 	prefix := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1117,7 +1117,7 @@ func (stateDB *StateDB) IterateWithStaker(prefix []byte) []*StakerInfo {
 	m := []*StakerInfo{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1135,7 +1135,7 @@ func (stateDB *StateDB) iterateWithCommitteeState(prefix []byte) []*CommitteeSta
 	m := []*CommitteeState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1180,7 +1180,7 @@ func (stateDB *StateDB) getAllCommitteeReward() map[string]map[common.Hash]uint6
 	prefix := GetCommitteeRewardPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1199,7 +1199,7 @@ func (stateDB *StateDB) getAllSlashingCommittee(epoch uint64) map[byte][]string 
 	prefix := GetSlashingCommitteePrefix(epoch)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1448,7 +1448,7 @@ func (stateDB *StateDB) getAllRewardRequestState(epoch uint64) ([]common.Hash, [
 	prefix := GetRewardRequestPrefix(epoch)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
@@ -1472,7 +1472,7 @@ func (stateDB *StateDB) getAllRewardRequestStateV3(epoch uint64) ([]common.Hash,
 	prefix := GetRewardRequestPrefix(epoch)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
@@ -1521,7 +1521,7 @@ func (stateDB *StateDB) getAllBlackListProducerState() []*BlackListProducerState
 	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1540,7 +1540,7 @@ func (stateDB *StateDB) getAllProducerBlackList() map[string]uint8 {
 	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1559,7 +1559,7 @@ func (stateDB *StateDB) getAllProducerBlackListState() map[common.Hash]uint8 {
 	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		value := it.Value
 		newValue := make([]byte, len(value))
@@ -1608,7 +1608,7 @@ func (stateDB *StateDB) getAllSerialNumberByPrefix(tokenID common.Hash, shardID 
 	} else {
 		temp := stateDB.trie.NodeIterator(prefix)
 		it := trie.NewIterator(temp)
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1680,7 +1680,7 @@ func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shard
 	} else {
 		temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
 		it := trie.NewIterator(temp)
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1720,7 +1720,7 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 	} else {
 		temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
 		it := trie.NewIterator(temp)
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1793,7 +1793,7 @@ func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte
 		temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
 		it := trie.NewIterator(temp)
 
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1834,7 +1834,7 @@ func (stateDB *StateDB) getAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]
 	} else {
 		temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
 		it := trie.NewIterator(temp)
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1857,7 +1857,7 @@ func (stateDB *StateDB) getTokenTxs(tokenID common.Hash) []common.Hash {
 	txs := []common.Hash{}
 	temp := stateDB.trie.NodeIterator(GetTokenTransactionPrefix(tokenID))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1895,7 +1895,7 @@ func (stateDB *StateDB) getAllTokenWithTxs() map[common.Hash]*TokenState {
 	} else {
 		temp := stateDB.trie.NodeIterator(GetTokenPrefix())
 		it := trie.NewIterator(temp)
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1926,7 +1926,7 @@ func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
 		temp := stateDB.trie.NodeIterator(GetTokenPrefix())
 		it := trie.NewIterator(temp)
 
-		for it.Next() {
+		for it.Next(true, false, true) {
 			processKey(it.Value)
 		}
 	}
@@ -1938,7 +1938,7 @@ func (stateDB *StateDB) getAllWaitingPDEContributionState() []*WaitingPDEContrib
 	waitingPDEContributionStates := []*WaitingPDEContributionState{}
 	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1956,7 +1956,7 @@ func (stateDB *StateDB) getAllPDEPoolPairState() []*PDEPoolPairState {
 	pdePoolPairStates := []*PDEPoolPairState{}
 	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1985,7 +1985,7 @@ func (stateDB *StateDB) getAllPDEShareState() []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
 	temp := stateDB.trie.NodeIterator(GetPDESharePrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2003,7 +2003,7 @@ func (stateDB *StateDB) getAllPDETradingFeeState() []*PDETradingFeeState {
 	pdeTradingFeeStates := []*PDETradingFeeState{}
 	temp := stateDB.trie.NodeIterator(GetPDETradingFeePrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2021,7 +2021,7 @@ func (stateDB *StateDB) getAllPDEStatus() []*PDEStatusState {
 	pdeStatusStates := []*PDEStatusState{}
 	temp := stateDB.trie.NodeIterator(GetPDEStatusPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2073,7 +2073,7 @@ func (stateDB *StateDB) getAllBridgeTokenInfoState(isCentralized bool) []*Bridge
 	bridgeTokenInfoStates := []*BridgeTokenInfoState{}
 	temp := stateDB.trie.NodeIterator(GetBridgeTokenInfoPrefix(isCentralized))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2115,7 +2115,7 @@ func (stateDB *StateDB) getWaitingPortingRequests() map[string]*WaitingPortingRe
 	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
 	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2169,7 +2169,7 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPool() map[string]*LiquidationP
 	liquidateExchangeRatesPoolList := make(map[string]*LiquidationPool)
 	temp := stateDB.trie.NodeIterator(GetPortalLiquidationPoolPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2203,7 +2203,7 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*RedeemRequest {
 	waitingRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2223,7 +2223,7 @@ func (stateDB *StateDB) getAllMatchedRedeemRequest() map[string]*RedeemRequest {
 	matchedRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetMatchedRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2243,7 +2243,7 @@ func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
 	custodians := make(map[string]*CustodianState)
 	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix())
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2263,7 +2263,7 @@ func (stateDB *StateDB) getPortalRewards(beaconHeight uint64) []*PortalRewardInf
 	portalRewards := make([]*PortalRewardInfo, 0)
 	temp := stateDB.trie.NodeIterator(GetPortalRewardInfoStatePrefix(beaconHeight))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2320,7 +2320,7 @@ func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState,
 
 	temp := stateDB.trie.NodeIterator(GetRewardFeatureStatePrefix(epoch))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2419,7 +2419,7 @@ func (stateDB *StateDB) getShieldingRequestsByTokenID(tokenID string) map[string
 	shieldingRequests := make(map[string]*ShieldingRequest)
 	temp := stateDB.trie.NodeIterator(GetShieldingRequestPrefix(tokenID))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2439,7 +2439,7 @@ func (stateDB *StateDB) getUTXOsByTokenID(tokenID string) map[string]*UTXO {
 	utxos := make(map[string]*UTXO)
 	temp := stateDB.trie.NodeIterator(GetPortalUTXOStatePrefix(tokenID))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2459,7 +2459,7 @@ func (stateDB *StateDB) getListWaitingUnshieldRequestsByTokenID(tokenID string) 
 	waitingUnshieldRequests := make(map[string]*WaitingUnshieldRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingUnshieldRequestPrefix(tokenID))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2479,7 +2479,7 @@ func (stateDB *StateDB) getListProcessedBatchUnshieldRequestsByTokenID(tokenID s
 	processedBatchUnshieldRequests := make(map[string]*ProcessedUnshieldRequestBatch)
 	temp := stateDB.trie.NodeIterator(GetProcessedUnshieldRequestBatchPrefix(tokenID))
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		key := it.Key
 		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
@@ -2589,7 +2589,7 @@ func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[strin
 	res := map[string]rawdbv2.Pdexv3Contribution{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2607,7 +2607,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairs(prefix []byte) (map[string]Pd
 	res := map[string]Pdexv3PoolPairState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2625,7 +2625,7 @@ func (stateDB *StateDB) iterateWithPdexv3Shares(prefix []byte) (map[string]Pdexv
 	shares := map[string]Pdexv3ShareState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2646,7 +2646,7 @@ func (stateDB *StateDB) iterateWithPdexv3Orders(prefix []byte) (
 	orders := map[string]Pdexv3OrderState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2666,7 +2666,7 @@ func (stateDB *StateDB) iterateWithPdexv3Nfts(prefix []byte) (map[string]uint64,
 	res := map[string]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2686,7 +2686,7 @@ func (stateDB *StateDB) iterateWithPdexv3Stakers(prefix []byte) (
 	stakers := map[string]Pdexv3StakerState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2706,7 +2706,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLpFeesPerShare(prefix []byte) (
 	res := map[common.Hash]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2726,7 +2726,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLmRewardPerShare(prefix []byte)
 	res := map[common.Hash]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2746,7 +2746,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairProtocolFees(prefix []byte) (
 	res := map[common.Hash]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2766,7 +2766,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairStakingPoolFees(prefix []byte) 
 	res := map[common.Hash]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2786,7 +2786,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairMakingVolume(prefix []byte) (
 	res := map[common.Hash]map[string]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2809,7 +2809,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairLmLockedShare(prefix []byte) (
 	res := map[string]map[uint64]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2832,7 +2832,7 @@ func (stateDB *StateDB) iterateWithPdexv3PoolPairOrderReward(prefix []byte) (
 	res := map[string]map[common.Hash]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2855,7 +2855,7 @@ func (stateDB *StateDB) iterateWithPdexv3ShareTradingFees(prefix []byte) (
 	res := map[common.Hash]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2875,7 +2875,7 @@ func (stateDB *StateDB) iterateWithPdexv3ShareLastLpFeesPerShare(prefix []byte) 
 	res := map[common.Hash]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2895,7 +2895,7 @@ func (stateDB *StateDB) iterateWithPdexv3ShareLastLmRewardPerShare(prefix []byte
 	res := map[common.Hash]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2915,7 +2915,7 @@ func (stateDB *StateDB) iterateWithPdexv3StakingPoolRewardsPerShare(prefix []byt
 	res := map[common.Hash]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2935,7 +2935,7 @@ func (stateDB *StateDB) iterateWithPdexv3StakerLastRewardsPerShare(prefix []byte
 	res := map[common.Hash]*big.Int{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -2955,7 +2955,7 @@ func (stateDB *StateDB) iterateWithPdexv3StakerRewards(prefix []byte) (
 	res := map[common.Hash]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -3009,7 +3009,7 @@ func (stateDB *StateDB) iterateBridgeAggUnifiedTokens(prefix []byte) ([]*BridgeA
 	res := []*BridgeAggUnifiedTokenState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -3038,7 +3038,7 @@ func (stateDB *StateDB) iterateBridgeAggVaults(prefix []byte) (map[common.Hash]*
 	res := map[common.Hash]*BridgeAggVaultState{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -3058,7 +3058,7 @@ func (stateDB *StateDB) iterateBridgeAggWaitingUnshieldReqs(prefix []byte) ([]*B
 	res := []*BridgeAggWaitingUnshieldReq{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	for it.Next() {
+	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)

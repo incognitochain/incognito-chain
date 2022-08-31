@@ -14,6 +14,7 @@ type BlockPoolInterface interface {
 type BlockInterface interface {
 	GetVersion() int
 	GetHeight() uint64
+	GetBeaconHeight() uint64
 	Hash() *common.Hash
 	ProposeHash() *common.Hash
 	FullHashString() string //hash-proposehash

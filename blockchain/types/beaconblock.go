@@ -300,6 +300,10 @@ func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
 
+func (beaconBlock BeaconBlock) GetBeaconHeight() uint64 {
+	return beaconBlock.Header.Height
+}
+
 func (beaconBlock BeaconBlock) GetShardID() int {
 	return -1
 }

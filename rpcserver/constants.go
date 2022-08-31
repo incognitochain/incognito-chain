@@ -432,6 +432,11 @@ const (
 	unstake = "createunstaketransaction"
 
 	connectionStatus = "getconnectionstatus"
+
+	// prune
+	prune          = "pruneState"
+	getPruneState  = "getPruneState"
+	checkPruneData = "checkprunedata"
 )
 
 const (

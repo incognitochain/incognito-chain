@@ -62,8 +62,8 @@ func (c *Consensus) GetOneValidatorForEachConsensusProcess() map[int]*consensus.
 	return nil
 }
 
-func (c *Consensus) ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
-	return c.consensusEngine.ValidateProducerPosition(blk, lastProposerIdx, committee, minCommitteeSize)
+func (c *Consensus) ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int, produceTimeSlot int64, proposeTimeSlot int64) error {
+	return c.consensusEngine.ValidateProducerPosition(blk, lastProposerIdx, committee, minCommitteeSize, produceTimeSlot, proposeTimeSlot)
 }
 
 func (c *Consensus) ValidateProducerSig(block types.BlockInterface, consensusType string) error {

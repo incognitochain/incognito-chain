@@ -12,6 +12,21 @@ type BlockInterface struct {
 	mock.Mock
 }
 
+func (_m *BlockInterface) GetBeaconHeight() uint64 {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (_m *BlockInterface) ProposeHash() *common.Hash {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (_m *BlockInterface) FullHashString() string {
+	//TODO implement me
+	panic("implement me")
+}
+
 // BodyHash provides a mock function with given fields:
 func (_m *BlockInterface) BodyHash() common.Hash {
 	ret := _m.Called()

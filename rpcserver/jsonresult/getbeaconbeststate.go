@@ -50,6 +50,7 @@ type GetBeaconBestState struct {
 	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"` // lock sync.RWMutex
 	Config                                 map[string]interface{}                       `json:"Config"`
 	TriggeredFeature                       map[string]uint64                            `json:"TriggeredFeature"`
+	RewardMinted                           uint64                                       `json:"RewardMinted"`
 }
 
 func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState {
@@ -69,6 +70,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		ActiveShards:           data.ActiveShards,
 		NumberOfShardBlock:     data.NumberOfShardBlock,
 		BlockVersion:           data.BestBlock.GetVersion(),
+		RewardMinted:           data.RewardMinted,
 	}
 
 	result.TriggeredFeature = make(map[string]uint64)

@@ -35,6 +35,7 @@ block_time:
 staking_amount_shard: 1750000000000
 active_shards: 8
 basic_reward: 400000000
+max_reward: 95000000000000000
 epoch_param:
   number_of_block_in_epoch: 100
   number_of_block_in_epoch_v2: 1000000000000
@@ -122,6 +123,22 @@ auto_enable_feature:
       min_trigger: 1e9
       force_trigger: 1000000000
       require_percentage: 90
+  - blocktime20:
+      min_trigger: 10892003
+      force_trigger: 1000000000
+      require_percentage: 90 
+  - blocktime10:
+      min_trigger: 10892003
+      force_trigger: 1000000000
+      require_percentage: 90
+blocktime_param:
+  - "blocktimedef": 40
+  - "blocktime20": 20
+  - "blocktime10": 10   
+blocktime_features: ["blocktimedef", "blocktime20"]
+transactions_param:
+  lowerbound: 15
+  upperbound: 100 
 flatfileparam:
   maxcachesize: 536870912 #500Mb
   compresslevel: -1

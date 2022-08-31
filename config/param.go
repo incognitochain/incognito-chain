@@ -33,6 +33,11 @@ type AutoEnableFeature struct {
 	RequiredPercentage    int `mapstructure:"require_percentage"`
 }
 
+type TxsPerBlock struct {
+	Lower int `mapstructure:"lowerbound"`
+	Upper int `mapstructure:"upperbound"`
+}
+
 //param for all variables in incognito node process
 type param struct {
 	Name                             string                       `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
@@ -43,6 +48,7 @@ type param struct {
 	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
 	ActiveShards                     int                          `mapstructure:"active_shards"`
 	BasicReward                      uint64                       `mapstructure:"basic_reward"`
+	MaxReward                        uint64                       `mapstructure:"max_reward"`
 	EpochParam                       epochParam                   `mapstructure:"epoch_param"`
 	EthContractAddressStr            string                       `mapstructure:"eth_contract_address" description:"smart contract of ETH for bridge"`
 	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
@@ -68,6 +74,9 @@ type param struct {
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
+	BlockTimeParam                   map[string]int64             `mapstructure:"blocktime_param"`
+	FeatureVersion                   map[string]int64             `mapstructure:"feature_version"`
+	TransactionInBlockParam          TxsPerBlock                  `mapstructure:"transactions_param"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool
 	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
