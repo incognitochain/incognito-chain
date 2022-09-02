@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# ver: 22.09
 # ============================================================================================
 # 1. Interactive mode: just run following command then follow the steps.
 #       sudo ./{this script}
@@ -249,6 +249,7 @@ Description=Run IncognitoUpdater hourly
 
 [Timer]
 OnCalendar=hourly
+RandomizedDelaySec=1000
 Persistent=true
 
 [Install]
@@ -326,15 +327,15 @@ tags=$(curl -s -X GET https://hub.docker.com/v1/repositories/incognitochain/inco
 tags=${tags//\"/}
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
 latest_tag=${sorted_tags[0]}
-echo "Latest tag is ${latest_tag}"
+echo "Current tag |${current_latest_tag}| - Latest tag |${latest_tag}|"
+if [[ -z $latest_tag ]]; then
+  echo "Cannot get tags from docker hub for now. Skip this round!"
+  exit 0
+fi
 
 if [ "$current_latest_tag" != "$latest_tag" ]; then
-	echo "Found newer tag , run it!"
 	run $latest_tag $current_latest_tag
-	current_latest_tag=$latest_tag
-	echo $current_latest_tag > $TMP
-else
-    echo "Runing latest tag already, no need to update"
+	echo $latest_tag > $TMP
 fi
 EOF
 
