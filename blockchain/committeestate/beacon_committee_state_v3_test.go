@@ -25,7 +25,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey0, *incKey, *incKey2, *incKey3, *incKey6,
@@ -1644,7 +1644,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey, *incKey0, *incKey2, *incKey4, *incKey6, *incKey8, *incKey10, *incKey12,
@@ -2098,7 +2098,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey0, *incKey, *incKey2, *incKey3, *incKey6,
@@ -2801,7 +2801,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey0, *incKey, *incKey2, *incKey3, *incKey6,
@@ -4663,7 +4663,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey0, *incKey2, *incKey4, *incKey6, *incKey8, *incKey10, *incKey12,

@@ -1,9 +1,10 @@
 package statedb
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -489,7 +490,7 @@ func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*Committee
 	return stateDB.getShardsCommitteeState(shardIDs)
 }
 
-func GetAllCommitteeStakeInfo(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfo {
+func GetAllCommitteeStakeInfo(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*ShardStakerInfo {
 	return stateDB.getShardsCommitteeInfo(allShardCommittee)
 }
 
@@ -505,7 +506,7 @@ func GetStakingInfo(bcDB *StateDB, shardIDs []int) map[string]bool {
 	return mapAutoStaking
 }
 
-func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, error) {
+func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*ShardStakerInfo, bool, error) {
 	pubKey := incognitokey.NewCommitteePublicKey()
 	err := pubKey.FromString(stakerPubkey)
 	if err != nil {
@@ -601,13 +602,14 @@ func DeleteBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incogn
 	return nil
 }
 
-func storeStakerInfo(
+func storeShardStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 	beaconConfirmHeight uint64,
+	delegate map[string]string,
 ) error {
 	for _, committee := range committees {
 		keyBytes, err := committee.RawBytes()
@@ -616,7 +618,7 @@ func storeStakerInfo(
 		}
 		key := GetStakerInfoKey(keyBytes)
 		committeeString, err := committee.ToBase58()
-		value := NewStakerInfoWithValue(
+		value := NewShardStakerInfoWithValue(
 			rewardReceiver[committee.GetIncKeyBase58()],
 			autoStaking[committeeString],
 			stakingTx[committeeString],
@@ -656,7 +658,7 @@ func SaveStopAutoStakerInfo(
 	return nil
 }
 
-func StoreStakerInfo(
+func StoreShardStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]key.PaymentAddress,
@@ -665,7 +667,7 @@ func StoreStakerInfo(
 	beaconConfirmHeight uint64,
 
 ) error {
-	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, beaconConfirmHeight)
+	return storeShardStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, beaconConfirmHeight)
 }
 
 func GetBeaconCommitteeEnterTime(

@@ -1377,11 +1377,11 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 		return nil
 	}
 
-	stakerKeys := committeeChange.StakerKeys()
-	if len(stakerKeys) != 0 {
-		err := statedb.StoreStakerInfo(
+	shardStakerKeys := committeeChange.ShardStakerKeys()
+	if len(shardStakerKeys) != 0 {
+		err := statedb.StoreShardStakerInfo(
 			beaconBestState.consensusStateDB,
-			stakerKeys,
+			shardStakerKeys,
 			beaconBestState.beaconCommitteeState.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeState.GetAutoStaking(),
 			beaconBestState.beaconCommitteeState.GetStakingTx(),

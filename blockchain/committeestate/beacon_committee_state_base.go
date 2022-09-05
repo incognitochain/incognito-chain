@@ -444,7 +444,7 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 			} else {
 				newShardCandidates = append(newShardCandidates, stakeInstruction.PublicKeys...)
 			}
-			err := statedb.StoreStakerInfo(
+			err := statedb.StoreShardStakerInfo(
 				env.ConsensusStateDB,
 				stakeInstruction.PublicKeyStructs,
 				b.rewardReceiver,

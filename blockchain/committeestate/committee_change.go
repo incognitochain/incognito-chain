@@ -144,7 +144,7 @@ func (committeeChange *CommitteeChange) AddStopAutoStakes(stopAutoStakes []strin
 }
 
 //GetStakerKeys ...
-func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
+func (committeeChange *CommitteeChange) ShardStakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded
 }
 

@@ -267,10 +267,10 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 }
 
 func getCommitteeToPayRewardMultiset(
-	committees []*statedb.StakerInfo,
+	committees []*statedb.ShardStakerInfo,
 	shardReceiveRewardV3 *instruction.ShardReceiveRewardV3,
-) []*statedb.StakerInfo {
-	res := []*statedb.StakerInfo{}
+) []*statedb.ShardStakerInfo {
+	res := []*statedb.ShardStakerInfo{}
 	for i, v := range committees {
 		if i%MaxSubsetCommittees == int(shardReceiveRewardV3.SubsetID()) {
 			res = append(res, v)
@@ -296,7 +296,7 @@ func (blockchain *BlockChain) addShardCommitteeReward(
 	rewardStateDB *statedb.StateDB,
 	shardID byte,
 	reward map[common.Hash]uint64,
-	cStakeInfos []*statedb.StakerInfo,
+	cStakeInfos []*statedb.ShardStakerInfo,
 ) (
 	err error,
 ) {

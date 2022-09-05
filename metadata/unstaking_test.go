@@ -159,7 +159,7 @@ func TestUnStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	hash, err := common.Hash{}.NewHashFromStr("12")
 	assert.Nil(t, err)
 
-	stakerInfo := &statedb.StakerInfo{}
+	stakerInfo := &statedb.ShardStakerInfo{}
 	stakerInfo.SetTxStakingID(*hash)
 
 	beaconViewNotInCandidateList := &metadataCommonMocks.BeaconViewRetriever{}

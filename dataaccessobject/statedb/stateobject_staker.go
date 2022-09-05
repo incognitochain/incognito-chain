@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -37,7 +38,7 @@ func (s StakerInfoSlashingVersion) AutoStaking() bool {
 	return s.autoStaking
 }
 
-func NewStakerInfoSlashingVersion(committeePublicKey string, s *StakerInfo) *StakerInfoSlashingVersion {
+func NewStakerInfoSlashingVersion(committeePublicKey string, s *ShardStakerInfo) *StakerInfoSlashingVersion {
 	return &StakerInfoSlashingVersion{
 		committeePublicKey: committeePublicKey,
 		rewardReceiver:     s.rewardReceiver,
@@ -46,32 +47,35 @@ func NewStakerInfoSlashingVersion(committeePublicKey string, s *StakerInfo) *Sta
 	}
 }
 
-type StakerInfo struct {
+type ShardStakerInfo struct {
 	rewardReceiver      key.PaymentAddress
 	txStakingID         common.Hash
 	autoStaking         bool
 	beaconConfirmHeight uint64
+	delegate            string
 }
 
-func NewStakerInfo() *StakerInfo {
-	return &StakerInfo{}
+func NewStakerInfo() *ShardStakerInfo {
+	return &ShardStakerInfo{}
 }
 
-func NewStakerInfoWithValue(
+func NewShardStakerInfoWithValue(
 	rewardReceiver key.PaymentAddress,
 	autoStaking bool,
 	txStakingID common.Hash,
 	beaconConfirmHeight uint64,
-) *StakerInfo {
-	return &StakerInfo{
+	delegate string,
+) *ShardStakerInfo {
+	return &ShardStakerInfo{
 		rewardReceiver:      rewardReceiver,
 		autoStaking:         autoStaking,
 		txStakingID:         txStakingID,
 		beaconConfirmHeight: beaconConfirmHeight,
+		delegate:            delegate,
 	}
 }
 
-func (c StakerInfo) MarshalJSON() ([]byte, error) {
+func (c ShardStakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		RewardReceiver      key.PaymentAddress
 		AutoStaking         bool
@@ -79,11 +83,13 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		ShardID             byte
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
+		Delegate            string
 	}{
 		RewardReceiver:      c.rewardReceiver,
 		TxStakingID:         c.txStakingID,
 		AutoStaking:         c.autoStaking,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
+		Delegate:            c.delegate,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -91,7 +97,7 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (c *StakerInfo) UnmarshalJSON(data []byte) error {
+func (c *ShardStakerInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		RewardReceiver      key.PaymentAddress
 		AutoStaking         bool
@@ -99,6 +105,7 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 		ShardID             byte
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
+		Delegate            string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -108,34 +115,35 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	c.rewardReceiver = temp.RewardReceiver
 	c.autoStaking = temp.AutoStaking
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
+	c.delegate = temp.Delegate
 	return nil
 }
 
-func (s *StakerInfo) SetRewardReceiver(r key.PaymentAddress) {
+func (s *ShardStakerInfo) SetRewardReceiver(r key.PaymentAddress) {
 	s.rewardReceiver = r
 }
 
-func (s *StakerInfo) SetTxStakingID(t common.Hash) {
+func (s *ShardStakerInfo) SetTxStakingID(t common.Hash) {
 	s.txStakingID = t
 }
 
-func (s *StakerInfo) SetAutoStaking(a bool) {
+func (s *ShardStakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
 }
 
-func (s StakerInfo) RewardReceiver() key.PaymentAddress {
+func (s ShardStakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
 }
 
-func (s StakerInfo) TxStakingID() common.Hash {
+func (s ShardStakerInfo) TxStakingID() common.Hash {
 	return s.txStakingID
 }
 
-func (s StakerInfo) AutoStaking() bool {
+func (s ShardStakerInfo) AutoStaking() bool {
 	return s.autoStaking
 }
 
-func (s StakerInfo) BeaconConfirmHeight() uint64 {
+func (s ShardStakerInfo) BeaconConfirmHeight() uint64 {
 	return s.beaconConfirmHeight
 }
 
@@ -146,7 +154,7 @@ type StakerObject struct {
 
 	version             int
 	stakerPublicKeyHash common.Hash
-	stakerInfo          *StakerInfo
+	stakerInfo          *ShardStakerInfo
 	objectType          int
 	deleted             bool
 
@@ -163,7 +171,7 @@ func newStakerObject(db *StateDB, hash common.Hash) *StakerObject {
 		version:             defaultVersion,
 		db:                  db,
 		stakerPublicKeyHash: hash,
-		stakerInfo:          &StakerInfo{},
+		stakerInfo:          &ShardStakerInfo{},
 		objectType:          StakerObjectType,
 		deleted:             false,
 	}
@@ -179,7 +187,7 @@ func newStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*
 			return nil, err
 		}
 	} else {
-		newStakerInfo, ok = data.(*StakerInfo)
+		newStakerInfo, ok = data.(*ShardStakerInfo)
 		if !ok {
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 		}
@@ -213,7 +221,7 @@ func (c StakerObject) GetTrie(db DatabaseAccessWarper) Trie {
 }
 
 func (c *StakerObject) SetValue(data interface{}) error {
-	newStakerInfo, ok := data.(*StakerInfo)
+	newStakerInfo, ok := data.(*ShardStakerInfo)
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 	}

@@ -267,7 +267,7 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	}
 	newShardCandidates, _ := incognitokey.CommitteeKeyListToString(committeeChange.NextEpochShardCandidateAdded)
 
-	err = statedb.StoreStakerInfo(
+	err = statedb.StoreShardStakerInfo(
 		env.ConsensusStateDB,
 		stakeInstruction.PublicKeyStructs,
 		b.rewardReceiver,
@@ -411,7 +411,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.rewardReceiver[swapInstruction.InPublicKeyStructs[index].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[index]
 		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
 	}
-	err := statedb.StoreStakerInfo(
+	err := statedb.StoreShardStakerInfo(
 		env.ConsensusStateDB,
 		swapInstruction.InPublicKeyStructs,
 		b.rewardReceiver,

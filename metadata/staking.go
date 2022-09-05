@@ -19,6 +19,7 @@ type StakingMetadata struct {
 	StakingAmountShard           uint64
 	AutoReStaking                bool
 	CommitteePublicKey           string
+	Delegate                     string
 	// CommitteePublicKey CommitteePublicKeys of a candidate who join consensus, base58CheckEncode
 	// CommitteePublicKey string <= encode byte <= mashal struct
 }
@@ -30,12 +31,13 @@ func NewStakingMetadata(
 	// candidatePaymentAddress string,
 	stakingAmountShard uint64,
 	committeePublicKey string,
+	delegatePublicKey string,
 	autoReStaking bool,
 ) (
 	*StakingMetadata,
 	error,
 ) {
-	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
+	if stakingType != ShardStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
@@ -46,6 +48,7 @@ func NewStakingMetadata(
 		StakingAmountShard:           stakingAmountShard,
 		CommitteePublicKey:           committeePublicKey,
 		AutoReStaking:                autoReStaking,
+		Delegate:                     delegatePublicKey,
 	}, nil
 }
 
@@ -67,10 +70,22 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
+	if sm.Delegate != "" {
+		if !incognitokey.IsInBase58ShortFormat([]string{sm.Delegate}) {
+			return false
+		}
+		if err := CommitteePublicKey.FromString(sm.Delegate); err != nil {
+			return false
+		}
+		if !CommitteePublicKey.CheckSanityData() {
+			return false
+		}
+	}
 	// only stake to shard
 	return sm.Type == ShardStakingMeta
 }
 
+//TODO modify validate function
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	SC, SPV, sSP, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
 	if err != nil {
@@ -123,9 +138,9 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if stakingMetadata.Type == ShardStakingMeta && amount != config.Param().StakingAmountShard {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount != config.Param().StakingAmountShard*3 {
-		return false, false, errors.New("invalid Stake Beacon Amount")
-	}
+	// if stakingMetadata.Type == BeaconStakingMeta && amount != config.Param().StakingAmountShard*3 {
+	// 	return false, false, errors.New("invalid Stake Beacon Amount")
+	// }
 
 	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.FunderPaymentAddress, tx.GetVersion()); err != nil {
 		return false, false, errors.New(fmt.Sprintf("invalid funder address: %v", err))
@@ -154,9 +169,9 @@ func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stakingMetadata)
 }
 
-func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
-	return stakingMetadata.StakingAmountShard * 3
-}
+// func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
+// 	return stakingMetadata.StakingAmountShard * 3
+// }
 
 func (stakingMetadata StakingMetadata) GetShardStateAmount() uint64 {
 	return stakingMetadata.StakingAmountShard

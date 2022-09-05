@@ -260,15 +260,15 @@ func (_m *BeaconViewRetriever) GetHeight() uint64 {
 }
 
 // GetStakerInfo provides a mock function with given fields: _a0
-func (_m *BeaconViewRetriever) GetStakerInfo(_a0 string) (*statedb.StakerInfo, bool, error) {
+func (_m *BeaconViewRetriever) GetStakerInfo(_a0 string) (*statedb.ShardStakerInfo, bool, error) {
 	ret := _m.Called(_a0)
 
-	var r0 *statedb.StakerInfo
-	if rf, ok := ret.Get(0).(func(string) *statedb.StakerInfo); ok {
+	var r0 *statedb.ShardStakerInfo
+	if rf, ok := ret.Get(0).(func(string) *statedb.ShardStakerInfo); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*statedb.StakerInfo)
+			r0 = ret.Get(0).(*statedb.ShardStakerInfo)
 		}
 	}
 

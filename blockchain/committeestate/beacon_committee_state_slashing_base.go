@@ -2,8 +2,9 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -194,7 +195,7 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 	return swapShardInstructions, nil
 }
 
-func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(returnStakingInstruction *instruction.ReturnStakeInstruction, committeePublicKeyStruct incognitokey.CommitteePublicKey, publicKey string, stakerInfo *statedb.StakerInfo, committeeChange *CommitteeChange) (*instruction.ReturnStakeInstruction, *CommitteeChange) {
+func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(returnStakingInstruction *instruction.ReturnStakeInstruction, committeePublicKeyStruct incognitokey.CommitteePublicKey, publicKey string, stakerInfo *statedb.ShardStakerInfo, committeeChange *CommitteeChange) (*instruction.ReturnStakeInstruction, *CommitteeChange) {
 	returnStakingInstruction = buildReturnStakingInstruction(
 		returnStakingInstruction,
 		publicKey,
