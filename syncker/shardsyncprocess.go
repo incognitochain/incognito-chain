@@ -44,6 +44,7 @@ type ShardSyncProcess struct {
 	consensus             peerv2.ConsensusData
 	lock                  *sync.RWMutex
 	lastInsert            string
+	startSyncTime         time.Time
 }
 
 func NewShardSyncProcess(
@@ -107,14 +108,30 @@ func NewShardSyncProcess(
 					}
 				}
 			case <-ticker.C:
+				maxBlockHeight := uint64(0)
 				for sender, ps := range s.shardPeerState {
 					if ps.Timestamp < time.Now().Unix()-20 {
 						delete(s.shardPeerState, sender)
+					}
+					if maxBlockHeight < ps.BestViewHeight {
+						maxBlockHeight = ps.BestViewHeight
 					}
 				}
 				if lastHeight != s.Chain.GetBestViewHeight() {
 					s.lastInsert = time.Now().Format("2006-01-02T15:04:05-0700")
 					lastHeight = s.Chain.GetBestViewHeight()
+				}
+
+				//bootstrap when stall
+				if s.status == RUNNING_SYNC {
+					if s.startSyncTime.IsZero() {
+						continue
+					}
+					t, _ := time.Parse("2006-01-02T15:04:05-0700", s.lastInsert)
+					//start sync is more 1 hour ago, latest sync is more than 1 hour ago, blockheight is behind 100 block
+					if time.Since(s.startSyncTime).Hours() >= 1 && time.Since(t).Hours() >= 1 && lastHeight+100 < maxBlockHeight {
+						s.bootstrap(true)
+					}
 				}
 			}
 		}
@@ -123,17 +140,22 @@ func NewShardSyncProcess(
 	return s
 }
 
-func (s *ShardSyncProcess) start() {
-	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC {
-		return
-	}
+func (s *ShardSyncProcess) bootstrap(force bool) {
 	s.status = BOOTSTRAP_SYNC
 	bootstrapAddrs := config.Config().BootstrapAddress
 	if bootstrapAddrs != "" {
 		bootstrapServers := strings.Split(bootstrapAddrs, ",")
 		bootstrap := blockchain.NewBootstrapManager(bootstrapServers, s.blockchain)
-		bootstrap.BootstrapShard(s.shardID)
+		bootstrap.BootstrapShard(s.shardID, force)
 	}
+	s.status = RUNNING_SYNC
+}
+
+func (s *ShardSyncProcess) start() {
+	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC {
+		return
+	}
+	s.bootstrap(false)
 	s.status = RUNNING_SYNC
 
 }
@@ -222,9 +244,14 @@ func (s *ShardSyncProcess) syncShardProcess() {
 	for {
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
+			s.startSyncTime = time.Time{}
 			s.isCatchUp = false
 			time.Sleep(time.Second * 5)
 			continue
+		} else {
+			if s.startSyncTime.IsZero() {
+				s.startSyncTime = time.Now()
+			}
 		}
 
 		for peerID, pState := range s.getShardPeerStates() {

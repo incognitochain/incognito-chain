@@ -432,7 +432,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	Logger.log.Info("Bootstrap beacon finish!")
 }
 
-func (s *BootstrapManager) BootstrapShard(sid int) {
+func (s *BootstrapManager) BootstrapShard(sid int, force bool) {
 	randServer := mathrand.Intn(len(s.hosts))
 	host := fmt.Sprintf("http://%v", s.hosts[randServer])
 	rpcClient := remoteRPCClient{host}
@@ -442,8 +442,8 @@ func (s *BootstrapManager) BootstrapShard(sid int) {
 		return
 	}
 
-	//only backup if back 500k block
-	if latestBackup.ShardView[sid].ShardHeight < s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+500*1000 {
+	//if not force backup, only backup if behind 500k block
+	if !force && latestBackup.ShardView[sid].ShardHeight < s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+500*1000 {
 		return
 	}
 
