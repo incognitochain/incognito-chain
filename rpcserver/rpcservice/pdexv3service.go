@@ -535,6 +535,16 @@ func getPdexv3PoolPairs(
 			PoolPairs:       &poolPairStates,
 		}
 		return res, nil
+	case LiquidityVerbosity:
+		poolPairStates, err := pdex.InitLiquidityPoolPairStatesFromDB(stateDB)
+		if err != nil {
+			return nil, NewRPCError(GetPdexv3StateError, err)
+		}
+		res := &jsonresult.Pdexv3State{
+			BeaconTimeStamp: beaconTimeStamp,
+			PoolPairs:       &poolPairStates,
+		}
+		return res, nil		
 	default:
 		return nil, NewRPCError(GetPdexv3StateError, errors.New("Can't recognize verbosity"))
 	}
