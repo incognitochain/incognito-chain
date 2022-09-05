@@ -118,50 +118,45 @@ is_enable_bpv3_stats: false
 auto_enable_feature:
   - instantfinality:
       min_trigger: 4617622
-      force_trigger: 1e9
       require_percentage: 90
   - instantfinalityv2:
       min_trigger: 5167674
-      force_trigger: 1e9
       require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 3965040
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_23062022:
       min_trigger: 4762600
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620222:
       min_trigger: 4763160
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620223:
       min_trigger: 4806400
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620224:
       min_trigger: 4831300
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620225:
       min_trigger: 4864700
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620226:
       min_trigger: 5257096
-      force_trigger: 1000000000
       require_percentage: 90
   - blocktime30s_23_8:
       min_trigger: 5272311
-      force_trigger: 1000000000
+      require_percentage: 90
+  - blocktime15s_30_8:
+      min_trigger: 5289626
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30
+  - "blocktime15s_30_8": 15
 feature_version:
   - instantfinalityv2: 9
   - blocktime30s_23_8: 10
+  - blocktime15s_30_8: 11
 transactions_param:
   lowerbound: 15
   upperbound: 100
