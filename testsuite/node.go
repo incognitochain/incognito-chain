@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -284,7 +285,7 @@ func (sim *NodeEngine) Init() {
 		ps,
 		time.Duration(15*60)*time.Second,
 	)
-	otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
+	otadb, _ := incdb.Open("leveldb", path.Join(dbpath, "ota"))
 	err = bc.Init(&blockchain.Config{
 		BTCChain:          btcChain,
 		BNBChainState:     bnbChainState,
@@ -450,16 +451,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		var proposerPK incognitokey.CommitteePublicKey
 		committeeFromBlock := common.Hash{}
 		committees := curView.GetCommittee()
-		version := 2
-		if config.Param().ConsensusParam.StakingFlowV2Height <= curView.GetBeaconHeight() {
-			version = 3
-		}
+		version := 10
 		switch version {
 		case 2:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			proposerPK, _ = curView.GetProposerByTimeSlot(curView.CalculateTimeSlot(sim.timer.time.Unix()), version)
 			//fmt.Println("version 2")
-		case 3:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+		case 10:
+			proposerPK, _ = curView.GetProposerByTimeSlot(curView.CalculateTimeSlot(sim.timer.time.Unix()), version)
 			committeeFromBlock = *blockchain.BeaconChain.FinalView().GetHash()
 			if chainID > -1 {
 				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
@@ -487,6 +485,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		}
 
 		//SignBlock
+
 		proposeAcc := sim.GetAccountByCommitteePubkey(&proposerPK)
 		userKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(proposeAcc.MiningKey)
 		sim.SignBlock(userKey, block)
@@ -560,7 +559,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 //number of second we want simulation to forward
 //default = round interval
 func (sim *NodeEngine) NextRound() {
-	sim.timer.Forward(int64(common.TIMESLOT))
+	sim.timer.Forward(sim.bc.BeaconChain.GetBestView().GetCurrentTimeSlot())
 }
 
 //func (sim *NodeEngine) InjectTx(txBase58 string) error {
@@ -630,7 +629,7 @@ func (s *NodeEngine) SignBlockWithCommittee(chain blsbft.Chain, block types.Bloc
 
 func (s *NodeEngine) SignBlock(userMiningKey *signatureschemes.MiningKey, block types.BlockInterface) {
 	var validationData consensustypes.ValidationData
-	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.ProposeHash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(blsbft.BlockValidation).AddValidationField(validationDataString)
 }
@@ -671,10 +670,13 @@ func InitChainParam(cfg Config, customParam func(), postInit func(*NodeEngine)) 
 	customParam()
 	node.Init()
 	postInit(node)
+	for i := 0; i < 2; i++ {
+		node.GenerateBlock().NextRound()
+	}
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
 	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 2; i++ {
 		node.GenerateBlock().NextRound()
 	}
 	return node

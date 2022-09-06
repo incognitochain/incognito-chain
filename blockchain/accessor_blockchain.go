@@ -288,6 +288,9 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 	shardBlksForBridge := map[byte][]*types.ShardBlock{}
 	shardBlksForBridgeAgg := map[uint64]map[byte][]*types.ShardBlock{}
 	for {
+		if newBeaconBlock.GetHeight() == 2 {
+			return nil, nil, nil
+		}
 		if beaconBlk == nil {
 			return nil, nil, NewBlockChainError(rawdbv2.GetBeaconBlockByHashError, fmt.Errorf("Cannot find beacon block %v", to))
 		}

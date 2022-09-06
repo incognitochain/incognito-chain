@@ -778,6 +778,9 @@ func (blockchain *BlockChain) GetYearOfShard(sID byte, blockHeight uint64) (uint
 	if bView == nil {
 		return 0, errors.Errorf("Can not get beacon view for get reward amount at block beacon %v", blockHeight)
 	}
+	if _, ok := bView.ShardTSManager[sID]; !ok {
+		bView.ShardTSManager[sID] = new(TSManager)
+	}
 	featureManager := bView.ShardTSManager[sID]
 	return getYearOfBlockChain(featureManager, blockHeight), nil
 }

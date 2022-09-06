@@ -22,11 +22,11 @@ func Test_Shard_Staking_With_Delegation() {
 		config.Param().BCHeightBreakPointNewZKP = 1
 		config.Param().BCHeightBreakPointPrivacyV2 = 2
 		config.Param().BeaconHeightBreakPointBurnAddr = 1
-		config.Param().ConsensusParam.EnableSlashingHeightV2 = 2
-		config.Param().ConsensusParam.StakingFlowV2Height = 5
-		config.Param().ConsensusParam.AssignRuleV3Height = 10
-		config.Param().ConsensusParam.StakingFlowV3Height = 15
-		config.Param().CommitteeSize.MaxShardCommitteeSize = 16
+		config.Param().ConsensusParam.EnableSlashingHeightV2 = 1
+		config.Param().ConsensusParam.StakingFlowV2Height = 1
+		config.Param().ConsensusParam.AssignRuleV3Height = 1
+		config.Param().ConsensusParam.StakingFlowV3Height = 1
+		config.Param().CommitteeSize.MaxShardCommitteeSize = 8
 		config.Param().CommitteeSize.MinShardCommitteeSize = 4
 		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 4
 		config.Param().ConsensusParam.ConsensusV2Epoch = 1
@@ -38,13 +38,15 @@ func Test_Shard_Staking_With_Delegation() {
 		config.Param().TxPoolVersion = 0
 	}, func(node *testsuite.NodeEngine) {})
 
+	fmt.Println("Genesis account balance")
+	node.ShowBalance(node.GenesisAccount)
+
 	//send PRV and stake
 	stakers := []account.Account{}
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 24; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 		node.SendPRV(node.GenesisAccount, acc, 1e14)
-		node.GenerateBlock().NextRound()
 		node.GenerateBlock().NextRound()
 		node.RPC.Stake(acc)
 		fmt.Println("send PRV and stake", acc.Name)
@@ -68,7 +70,7 @@ func Test_Shard_Staking_With_Delegation() {
 			//TODO: check account
 		}
 	}
-
+	node.Pause()
 	for {
 
 		node.SendFinishSync(stakers, 0)
