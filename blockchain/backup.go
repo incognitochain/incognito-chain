@@ -77,7 +77,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	defer func() {
 		s.runningBackup = nil
 	}()
-	BackupInterval := uint64(60 / s.blockchain.BeaconChain.GetBestView().GetCurrentTimeSlot() * 60 * 24 * 3)
+	BackupInterval := uint64(60 / s.blockchain.BeaconChain.GetBestView().GetCurrentTimeSlot() * 60 * 1)
 	//backup condition period
 	if backupHeight < BackupInterval {
 		return
