@@ -214,6 +214,11 @@ const (
 	BurningUnifiedTokenRequestMeta                  = 345
 	BurningUnifiedTokenResponseMeta                 = 346
 	BridgeAggAddTokenMeta                           = 347
+
+	BurnForCallConfirmMeta      = 158
+	BurnForCallRequestMeta      = 348
+	BurnForCallResponseMeta     = 349
+	IssuingReshieldResponseMeta = 350
 )
 
 var minerCreatedMetaTypes = []int{
@@ -264,6 +269,8 @@ var minerCreatedMetaTypes = []int{
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 	IssuingUnifiedTokenResponseMeta,
 	BurningUnifiedTokenResponseMeta,
+	IssuingReshieldResponseMeta,
+	BurnForCallResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -362,6 +369,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
+	strconv.Itoa(BurnForCallConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{
@@ -380,3 +388,7 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 	common.PortalV3Flag:       portalMetaTypesV3,
 	common.PortalV4Flag:       portalV4MetaTypes,
 }
+
+const (
+	ExternalAddressLen = 20
+)
