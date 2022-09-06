@@ -82,7 +82,8 @@ portal_v3_height: 1328816
 tx_pool_version: 0
 geth_param:
   host:
-    - "https://kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "https://goerli.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "https://goerli.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
 bsc_param:
   host:
     - "https://data-seed-prebsc-1-s1.binance.org:8545"
@@ -117,57 +118,52 @@ is_enable_bpv3_stats: false
 auto_enable_feature:
   - instantfinality:
       min_trigger: 4617622
-      force_trigger: 1e9
       require_percentage: 90
   - instantfinalityv2:
       min_trigger: 5167674
-      force_trigger: 1e9
       require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 3965040
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_23062022:
       min_trigger: 4762600
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620222:
       min_trigger: 4763160
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620223:
       min_trigger: 4806400
-      force_trigger: 1000000000
       require_percentage: 90
   - unified_token_230620224:
-      min_trigger: 4831300 
-      force_trigger: 1000000000
-      require_percentage: 90   
+      min_trigger: 4831300
+      require_percentage: 90
   - unified_token_230620225:
-      min_trigger: 4864700 
-      force_trigger: 1000000000
-      require_percentage: 90 
-  - blocktime20:
-      min_trigger: 10892003
-      force_trigger: 1000000000
-      require_percentage: 90 
-  - blocktime10:
-      min_trigger: 10892003
-      force_trigger: 1000000000
+      min_trigger: 4864700
+      require_percentage: 90
+  - unified_token_230620226:
+      min_trigger: 5257096
+      require_percentage: 90
+  - blocktime30s_23_8:
+      min_trigger: 5272311
+      require_percentage: 90
+  - blocktime15s_30_8:
+      min_trigger: 5289626
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
-  - "blocktime20": 20
-  - "blocktime40": 40
+  - "blocktime30s_23_8": 30
+  - "blocktime15s_30_8": 15
 feature_version:
   - instantfinalityv2: 9
+  - blocktime30s_23_8: 10
+  - blocktime15s_30_8: 11
 transactions_param:
   lowerbound: 15
-  upperbound: 100 
+  upperbound: 100
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
   max_len_of_path: 5
   percent_fee_decimal: 1e6
-  default_percent_fee_with_decimal: 500 # 0.05% * 1e6 
+  default_percent_fee_with_decimal: 500 # 0.05% * 1e6
 bc_height_break_point_coin_origin: 4565727
