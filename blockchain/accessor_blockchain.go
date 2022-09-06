@@ -320,7 +320,7 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 			if tempShardBlock.GetHeight() <= bestShardHeight {
 				break
 			}
-			listShardBlock[pointerView.GetHeight()] = tempShardBlock
+			listShardBlock[tempShardBlock.GetHeight()] = tempShardBlock
 
 			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(tempShardBlock.GetPrevHash())
 			if pointerView == nil {
@@ -389,7 +389,7 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 			if tempShardBlock.GetHeight() <= bestShardHeight[shardID] {
 				break
 			}
-			listShardBlock[pointerView.GetHeight()] = tempShardBlock
+			listShardBlock[tempShardBlock.GetHeight()] = tempShardBlock
 
 			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(tempShardBlock.GetPrevHash())
 			if pointerView == nil {
