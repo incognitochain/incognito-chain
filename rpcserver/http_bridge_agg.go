@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -209,10 +210,6 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
 	}
 
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
-	}
-
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
@@ -314,10 +311,6 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	// metadata object format to read from RPC parameters
@@ -422,9 +415,6 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
@@ -531,6 +521,156 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 
 	// create transaction
 	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
+	}
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	res := &jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleBridgeAggBurnForCall(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.createBridgeAggBurnForCallTransaction(params)
+	if err != nil {
+		return nil, err
+	}
+	createTxResult := []interface{}{data.Base58CheckData}
+	// send tx
+	return sendCreatedTransaction(httpServer, createTxResult, false, closeChan)
+}
+
+func (httpServer *HttpServer) createBridgeAggBurnForCallTransaction(params interface{}) (
+	*jsonresult.CreateTransactionResult, *rpcservice.RPCError,
+) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("expect length of param to be %v but get %v", 5, len(arrayParams)))
+	}
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+	privacyDetect, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("privacy detection param need to be int"))
+	}
+	if int(privacyDetect) <= 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
+	}
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
+	}
+
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		metadataBridge.BurnForCallRequest
+		TokenReceivers map[string]uint64 `json:"TokenReceivers,omitempty"`
+	}{}
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
+	}
+
+	for i, _ := range mdReader.Data {
+		var recv privacy.OTAReceiver
+		err = recv.FromAddress(keyWallet.KeySet.PaymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+		}
+		mdReader.Data[i].RedepositReceiver = recv
+	}
+	md := mdReader.BurnForCallRequest
+	md.Type = metadataCommon.BurnForCallRequestMeta
+
+	paramSelect.SetTokenID(mdReader.BurnTokenID)
+	paramSelect.SetMetadata(&md)
+
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+	burningAmount := uint64(0)
+	for _, data := range md.Data {
+		burningAmount += data.BurningAmount
+	}
+
+	burnPayments := []*privacy.PaymentInfo{
+		{
+			PaymentAddress: burnAddr,
+			Amount:         burningAmount,
+		},
+	}
+
+	var prvReceivers []*privacy.PaymentInfo
+	if arrayParams[1] != nil {
+		temp := make(map[string]uint64)
+		raw, err := json.Marshal(arrayParams[1])
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		err = json.Unmarshal(raw, &temp)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		if len(temp) != 0 {
+			for k, v := range temp {
+				key, err := wallet.Base58CheckDeserialize(k)
+				if err != nil {
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+				}
+				prvReceiver := &privacy.PaymentInfo{
+					PaymentAddress: key.KeySet.PaymentAddress,
+					Amount:         v,
+				}
+				prvReceivers = append(prvReceivers, prvReceiver)
+			}
+		}
+	}
+
+	if len(mdReader.TokenReceivers) != 0 {
+		for k, v := range mdReader.TokenReceivers {
+			key, err := wallet.Base58CheckDeserialize(k)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+			}
+			temp := &privacy.PaymentInfo{
+				PaymentAddress: key.KeySet.PaymentAddress,
+				Amount:         v,
+			}
+			burnPayments = append(burnPayments, temp)
+		}
+	}
+
+	if len(prvReceivers) != 0 {
+		// amount by token
+		paramSelect.Token.PaymentInfos = prvReceivers
+		// amount by PRV
+		paramSelect.SetTokenReceivers(burnPayments)
+	} else {
+		paramSelect.Token.PaymentInfos = []*privacy.PaymentInfo{}
+		paramSelect.SetTokenReceivers(burnPayments)
+	}
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, &md)
 	// error must be of type *RPCError for equality
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)

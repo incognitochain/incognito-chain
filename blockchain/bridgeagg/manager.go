@@ -87,17 +87,6 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	}
 	res = append(res, insts...)
 
-	// // build instruction for new unshielding actions
-	// for shardID, actions := range env.UnshieldActions() {
-	// 	for _, action := range actions {
-	// 		insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), byte(shardID), env.StateDBs()[common.BeaconChainID])
-	// 		if err != nil {
-	// 			return [][]string{}, nil, err
-	// 		}
-	// 		res = append(res, insts...)
-	// 	}
-	// }
-
 	// build instruction for modifying param actions
 	for shardID, actions := range env.ModifyParamActions() {
 		for _, action := range actions {
@@ -118,12 +107,22 @@ func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconH
 	var err error
 
 	// build instruction for new unshielding actions
-	for _, unshieldActionForProducer := range unshieldActionForProducers {
-		insts, m.state, err = m.producer.unshield(unshieldActionForProducer, m.state, beaconHeight, stateDB)
-		if err != nil {
-			return [][]string{}, err
+	for _, a := range unshieldActionForProducers {
+		switch a.Action.Meta.GetType() {
+		case metadataCommon.BurningUnifiedTokenRequestMeta:
+			insts, m.state, err = m.producer.unshield(a, m.state, beaconHeight, stateDB)
+			if err != nil {
+				return [][]string{}, err
+			}
+			res = append(res, insts...)
+		case metadataCommon.BurnForCallRequestMeta:
+			insts, m.state, err = m.producer.burnForCall(a, m.state, beaconHeight, stateDB)
+			if err != nil {
+				return [][]string{}, err
+			}
+			res = append(res, insts...)
+		default:
 		}
-		res = append(res, insts...)
 	}
 
 	Logger.log.Info("bridgeagg new unshield instructions:", res)
@@ -175,6 +174,10 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bo
 			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
 		case metadataCommon.BridgeAggModifyParamMeta:
 			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
+		case metadataCommon.BurnForCallRequestMeta:
+			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
+		case metadataCommon.IssuingReshieldResponseMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.reshield(*inst, m.state, sDB, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return bridgeAggUnshieldTxIDs, err

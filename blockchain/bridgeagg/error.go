@@ -25,6 +25,8 @@ const (
 	StoreShieldExtTxError
 	CheckBridgeTokenExistedError
 	StoreBridgeTokenError
+	InsufficientFundsVaultError
+	NoValidShieldEventError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -49,6 +51,8 @@ var ErrCodeMessage = map[int]struct {
 	StoreShieldExtTxError:          {1014, "Store shield external tx error"},
 	CheckBridgeTokenExistedError:   {1015, "Check bridge token existed error"},
 	StoreBridgeTokenError:          {1016, "Store bridge token error"},
+	InsufficientFundsVaultError:    {1017, "Insufficient funds in Vault"},
+	NoValidShieldEventError:        {1018, "Shielding receipt contains no valid shield event"},
 }
 
 type BridgeAggError struct {

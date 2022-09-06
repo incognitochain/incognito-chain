@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -1589,6 +1590,43 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					Logger.log.Infof("store issued token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
+			case metadata.IssuingReshieldResponseMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					inst := metadataCommon.NewInstruction()
+					if err := inst.FromStringSlice(l); err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+					if err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					var acceptedContent metadataBridge.AcceptedReshieldRequest
+					err = json.Unmarshal(contentBytes, &acceptedContent)
+					if err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					shieldTokenID := acceptedContent.ReshieldData.IncTokenID
+					if acceptedContent.UnifiedTokenID != nil {
+						shieldTokenID = *acceptedContent.UnifiedTokenID
+					}
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, shieldTokenID); existed {
+						Logger.log.Infof("eth-reshield token %v existed, skip storing this token", shieldTokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, shieldTokenID, "",
+						"", statedb.BridgeToken, true, acceptedContent.ReshieldData.ShieldAmount, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v", err)
+						return err
+					}
+
+					Logger.log.Infof("store eth-reshield token %v succeeded", shieldTokenID.String())
 				}
 			}
 		}
