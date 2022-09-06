@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -284,7 +285,7 @@ func (sim *NodeEngine) Init() {
 		ps,
 		time.Duration(15*60)*time.Second,
 	)
-	otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
+	otadb, _ := incdb.Open("leveldb", path.Join(dbpath, "ota"))
 	err = bc.Init(&blockchain.Config{
 		BTCChain:          btcChain,
 		BNBChainState:     bnbChainState,
@@ -422,7 +423,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		chainArray = append(chainArray, i)
 	}
 	//beacon
-	chain := sim.bc
+	blockchain := sim.bc
 
 	var err error
 
@@ -450,17 +451,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		var proposerPK incognitokey.CommitteePublicKey
 		committeeFromBlock := common.Hash{}
 		committees := curView.GetCommittee()
-		version := 2
-		if config.Param().ConsensusParam.StakingFlowV2Height <= curView.GetBeaconHeight() {
-			version = 3
-		}
+		version := 10
 		switch version {
 		case 2:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			proposerPK, _ = curView.GetProposerByTimeSlot(curView.CalculateTimeSlot(sim.timer.time.Unix()), version)
 			//fmt.Println("version 2")
-		case 3:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
-			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
+		case 10:
+			proposerPK, _ = curView.GetProposerByTimeSlot(curView.CalculateTimeSlot(sim.timer.time.Unix()), version)
+			committeeFromBlock = *blockchain.BeaconChain.FinalView().GetHash()
 			if chainID > -1 {
 				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
 				//fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
@@ -468,16 +466,18 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		}
 
 		proposerPkStr, _ := proposerPK.ToBase58()
-
+		var chain blsbft.Chain
 		if chainID == -1 {
-			block, err = chain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
+			chain = blockchain.BeaconChain
+			block, err = blockchain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
 			}
 
 		} else {
-			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
+			chain = blockchain.ShardChain[byte(chainID)]
+			block, err = blockchain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -485,6 +485,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		}
 
 		//SignBlock
+
 		proposeAcc := sim.GetAccountByCommitteePubkey(&proposerPK)
 		userKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(proposeAcc.MiningKey)
 		sim.SignBlock(userKey, block)
@@ -501,13 +502,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Validation
 		if chainID == -1 {
-			err = chain.BeaconChain.ValidatePreSignBlock(block.(*types.BeaconBlock), nil, committees)
+			err = blockchain.BeaconChain.ValidatePreSignBlock(block.(*types.BeaconBlock), nil, committees)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
 			}
 		} else {
-			err = chain.ShardChain[byte(chainID)].ValidatePreSignBlock(block.(*types.ShardBlock), nil, committees)
+			err = blockchain.ShardChain[byte(chainID)].ValidatePreSignBlock(block.(*types.ShardBlock), nil, committees)
 			if err != nil {
 				panic(err)
 			}
@@ -519,12 +520,12 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			panic(err)
 		}
 		if validatorIndex == nil {
-			err = sim.SignBlockWithCommittee(block, accs, GenerateCommitteeIndex(len(committees)))
+			err = sim.SignBlockWithCommittee(chain, block, accs, GenerateCommitteeIndex(len(committees)))
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			err = sim.SignBlockWithCommittee(block, accs, validatorIndex)
+			err = sim.SignBlockWithCommittee(chain, block, accs, validatorIndex)
 			if err != nil {
 				panic(err)
 			}
@@ -533,13 +534,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Insert
 		if chainID == -1 {
-			err = chain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), true)
+			err = blockchain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), true)
 			if err != nil {
 				panic(err)
 			}
 			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
-			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
+			err = blockchain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
 			if err != nil {
 				panic(err)
 			} else {
@@ -558,7 +559,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 //number of second we want simulation to forward
 //default = round interval
 func (sim *NodeEngine) NextRound() {
-	sim.timer.Forward(int64(common.TIMESLOT))
+	sim.timer.Forward(sim.bc.BeaconChain.GetBestView().GetCurrentTimeSlot())
 }
 
 //func (sim *NodeEngine) InjectTx(txBase58 string) error {
@@ -588,7 +589,7 @@ func (s *NodeEngine) GetUserDatabase() *leveldb.DB {
 	return s.userDB
 }
 
-func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committees []account.Account, committeeIndex []int) error {
+func (s *NodeEngine) SignBlockWithCommittee(chain blsbft.Chain, block types.BlockInterface, committees []account.Account, committeeIndex []int) error {
 	committeePubKey := []incognitokey.CommitteePublicKey{}
 	miningKeys := []*signatureschemes.MiningKey{}
 	//if len(committees) != len(committeeIndex) {
@@ -605,7 +606,7 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			//}
 		}
 		for _, committeeID := range committeeIndex {
-			vote, _ := blsbft.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
+			vote, _ := blsbft.CreateVote(chain, miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
 			vote.IsValid = 1
 			votes[vote.Validator] = vote
 		}
@@ -628,7 +629,7 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 
 func (s *NodeEngine) SignBlock(userMiningKey *signatureschemes.MiningKey, block types.BlockInterface) {
 	var validationData consensustypes.ValidationData
-	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.ProposeHash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(blsbft.BlockValidation).AddValidationField(validationDataString)
 }
@@ -669,10 +670,13 @@ func InitChainParam(cfg Config, customParam func(), postInit func(*NodeEngine)) 
 	customParam()
 	node.Init()
 	postInit(node)
+	for i := 0; i < 2; i++ {
+		node.GenerateBlock().NextRound()
+	}
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
 	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 2; i++ {
 		node.GenerateBlock().NextRound()
 	}
 	return node

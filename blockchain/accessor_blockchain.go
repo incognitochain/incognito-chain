@@ -288,6 +288,9 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 	shardBlksForBridge := map[byte][]*types.ShardBlock{}
 	shardBlksForBridgeAgg := map[uint64]map[byte][]*types.ShardBlock{}
 	for {
+		if newBeaconBlock.GetHeight() == 2 {
+			return nil, nil, nil
+		}
 		if beaconBlk == nil {
 			return nil, nil, NewBlockChainError(rawdbv2.GetBeaconBlockByHashError, fmt.Errorf("Cannot find beacon block %v", to))
 		}
@@ -345,12 +348,25 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 
 		listShardBlock := map[uint64]*types.ShardBlock{}
 		pointerView := expectedFinalView
+		tempShardBlock := pointerView.GetBlock().(*types.ShardBlock)
 		for {
-			if pointerView.GetHeight() <= bestShardHeight {
+			if tempShardBlock.GetHeight() <= bestShardHeight {
 				break
 			}
-			listShardBlock[pointerView.GetHeight()] = pointerView.GetBlock().(*types.ShardBlock)
-			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(*pointerView.GetPreviousHash())
+			listShardBlock[pointerView.GetHeight()] = tempShardBlock
+
+			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(tempShardBlock.GetPrevHash())
+			if pointerView == nil {
+				shardHeight := tempShardBlock.GetHeight() - 1
+				var err error
+				tempShardBlock, err = blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
+				if err != nil {
+					Logger.log.Errorf("Cannot get block at height %v", shardHeight)
+					return nil
+				}
+			} else {
+				tempShardBlock = pointerView.GetBlock().(*types.ShardBlock)
+			}
 		}
 
 		shardBlocks := []*types.ShardBlock{}
@@ -395,18 +411,30 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 
 func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*types.ShardBlock, error) {
 	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
+	bestShardHeight := blockchain.GetBeaconBestState().BestShardHeight
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
 		expectedFinalView := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
-		finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-
 		listShardBlock := map[uint64]*types.ShardBlock{}
 		pointerView := expectedFinalView
+		tempShardBlock := pointerView.GetBlock().(*types.ShardBlock)
+
 		for {
-			if pointerView.GetHeight() <= finalView.GetHeight() {
+			if tempShardBlock.GetHeight() <= bestShardHeight[shardID] {
 				break
 			}
-			listShardBlock[pointerView.GetHeight()] = pointerView.GetBlock().(*types.ShardBlock)
-			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(*pointerView.GetPreviousHash())
+			listShardBlock[pointerView.GetHeight()] = tempShardBlock
+
+			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(tempShardBlock.GetPrevHash())
+			if pointerView == nil {
+				shardHeight := tempShardBlock.GetHeight() - 1
+				var err error
+				tempShardBlock, err = blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
+				if err != nil {
+					return nil, fmt.Errorf("Cannot get block at height %v", shardHeight)
+				}
+			} else {
+				tempShardBlock = pointerView.GetBlock().(*types.ShardBlock)
+			}
 		}
 
 		limitTxs := map[int]int{}

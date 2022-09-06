@@ -1392,7 +1392,7 @@ func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyVa
 		}
 		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, finalizedBlock.GetHeight())
 		if err == nil && confirmHash.String() == finalizedBlock.Hash().String() {
-			fmt.Println("============== StoreFinalizedShardBlockHashByIndex", shardID, finalizedBlock.GetHeight(), finalizedBlock.Hash().String())
+			Logger.log.Info("============== StoreFinalizedShardBlockHashByIndex", shardID, finalizedBlock.GetHeight(), finalizedBlock.Hash().String())
 			blockchain.ShardChain[shardID].multiView.FinalizeView(*confirmHash)
 			err = rawdbv2.StoreFinalizedShardBlockHashByIndex(db, shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash())
 			if err != nil {
