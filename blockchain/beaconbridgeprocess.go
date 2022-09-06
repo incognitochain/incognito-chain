@@ -329,7 +329,7 @@ func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, inst
 
 		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v, meta type %v", blockHeight, inst, inst[0])
 
-		txID, err := bridgeagg.GetTxIDFromBurningConfirmInst(inst)		
+		txID, err := bridgeagg.GetTxIDFromBurningConfirmInst(inst)
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
@@ -373,6 +373,13 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		} else if metaType == metadata.IssuingResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingResponse)
+			reqTxID = meta.RequestedTxID
+			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
+			if err != nil {
+				return err
+			}
+		} else if metaType == metadataCommon.IssuingReshieldResponseMeta {
+			meta := tx.GetMetadata().(*metadataBridge.IssuingReshieldResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {
