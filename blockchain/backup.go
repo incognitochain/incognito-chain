@@ -88,6 +88,7 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		return
 	}
 	bestState := s.blockchain.GetBeaconBestState()
+	time.Sleep(time.Second * 3 * time.Duration(bestState.GetCurrentTimeSlot()))
 	for sid, shardChain := range s.blockchain.ShardChain {
 		if bestState.BestShardHeight[byte(sid)] > shardChain.GetFinalViewHeight() {
 			log.Println("Not backup as shard not sync up")
