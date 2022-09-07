@@ -313,6 +313,7 @@ const (
 	bridgeaggShield                      = "bridgeaggShield"
 	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
 	bridgeaggUnshield                    = "bridgeaggUnshield"
+	bridgeaggBurnForCall 				 = "bridgeaggBurnForCall"
 	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
