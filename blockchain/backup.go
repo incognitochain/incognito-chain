@@ -84,9 +84,6 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	}
 
 	//backup condition period
-	if backupHeight < BackupInterval {
-		return
-	}
 	if s.lastBackup != nil && s.lastBackup.BeaconView != nil && s.lastBackup.BeaconView.BeaconHeight+BackupInterval > backupHeight {
 		return
 	}
