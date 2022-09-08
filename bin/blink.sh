@@ -113,9 +113,9 @@ cat << EOF
       -h: print this help message then exit.
       -y: Run setup with default settings, non-interactive mode.
           + [-y 1] to install on a new server or reinstall/update node configs current server.
-                   When in doubt, just use this one.
+                   This option will interrupt your node operation (if there's any)..
           + [-y 2] to update the Updater service, not the node configs such as port, access token, validator key ...
-                   This option will not
+                   This option won't affect your node operation.
                    If you want to update the node configs, please use option 1
       -u: Uninstall auto update service
 
@@ -155,6 +155,7 @@ function get_conf_from_input {
     if [[ ! -z $input ]]; then CONFIGS[$conf]=$input; fi
   done
 }
+
 function prepare_new_setup {
   # try cleaning up old service and docker if there's any
   systemctl stop $(basename $SERVICE) 2> /dev/null
@@ -167,6 +168,7 @@ function prepare_new_setup {
   chown -R $USER_NAME:$USER_NAME $INC_HOME
   echo ${CONFIGS[VALIDATOR_K]} > $KEY_FILE
 }
+
 while getopts "uy:ht" option; do
    case "$option" in
       "h")
@@ -224,9 +226,10 @@ cat << EOF
 EOF
 
   while cat << EOF
-! 1: Install on a new server or reinstall/update node configs current server
-      When in doubt, just use this one.
+! 1: Install on a new server or reinstall/update node configs current server.
+      This option will interrupt your node operation (if there's any)..
 ! 2: Update current Updater service, not the node config such as port, access token, validator key ....
+      This option won't affect your node operation.
       If you want to update the node configs, please use option 1
 EOF
   do
@@ -236,10 +239,12 @@ EOF
       # now get new config from user input
       get_conf_from_input
       prepare_new_setup
+      break
     elif [[ $interactive_select == 2 ]]; then
       echo "  !!  UPDATING CURRENT NODE UPDATER SERVICE"
       # read current config from docker
       get_conf_from_existing_container
+      break
     fi
   done
 else
@@ -261,7 +266,7 @@ EOF
   esac
 fi
 cat << EOF
-Configurations:
+Setup with following configurations:
       Validator keys: ${CONFIGS[VALIDATOR_K]}
       Infura: ${CONFIGS[GETH_NAME]}
       RPC port: ${CONFIGS[RPC_PORT]}
