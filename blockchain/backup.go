@@ -17,7 +17,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 )
@@ -71,6 +70,27 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		s.lock.Unlock()
 		return
 	}
+	cfg := config.Config()
+
+	//remove old backup
+	filepath.Walk(path.Join(cfg.DataDir, cfg.DatabaseDir), func(dirPath string, info fs.FileInfo, err error) error {
+		if info == nil {
+			return nil
+		}
+		if _, err := time.Parse(time.RFC3339, info.Name()); err == nil {
+			if stat, err := os.Stat(path.Join(dirPath, "done")); err != nil {
+				t1 := time.Now()
+				os.RemoveAll(dirPath)
+				log.Println("remove unfinished backup folder", dirPath, time.Since(t1).Seconds())
+			} else {
+				if s.lastBackup.CheckpointName != info.Name() && time.Since(stat.ModTime()).Hours() > 12 {
+					log.Println("remove old backup folder", dirPath)
+					os.RemoveAll(dirPath)
+				}
+			}
+		}
+		return nil
+	})
 
 	s.runningBackup = &BackupProcessInfo{}
 	s.lock.Unlock()
@@ -85,30 +105,28 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 
 	//backup condition period
 	if s.lastBackup != nil && s.lastBackup.BeaconView != nil && s.lastBackup.BeaconView.BeaconHeight+BackupInterval > backupHeight {
+		log.Println("view not satisfy to backup")
 		return
 	}
 	bestState := s.blockchain.GetBeaconBestState()
-	time.Sleep(time.Second * 3 * time.Duration(bestState.GetCurrentTimeSlot()))
 	for sid, shardChain := range s.blockchain.ShardChain {
-		if bestState.BestShardHeight[byte(sid)] > shardChain.GetFinalViewHeight() {
+		if bestState.BestShardHeight[byte(sid)]-3 > shardChain.GetFinalViewHeight() {
 			log.Println("Not backup as shard not sync up")
 			return
 		}
 	}
-
-	cfg := config.Config()
 
 	beaconFinalView := NewBeaconBestState()
 	beaconFinalView.cloneBeaconBestStateFrom(s.blockchain.BeaconChain.FinalView().(*BeaconBestState))
 
 	//update current status
 	checkPoint := time.Now().Format(time.RFC3339)
-	bootstrapInfo := &BackupProcessInfo{
+	backupInfo := &BackupProcessInfo{
 		CheckpointName: checkPoint,
 		BeaconView:     beaconFinalView,
 		ShardView:      map[int]*ShardBestState{},
 	}
-	s.runningBackup = bootstrapInfo
+	s.runningBackup = backupInfo
 	defer func() {
 		s.runningBackup = nil
 	}()
@@ -141,15 +159,15 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		sem.Acquire(context.Background(), 1)
 		go func(sid int) {
 			s.backupShard(backUpPath, shardFinalView[sid])
-			bootstrapInfo.ShardView[sid] = shardFinalView[sid]
+			backupInfo.ShardView[sid] = shardFinalView[sid]
 			shardWG.Done()
 			sem.Release(1)
 		}(i)
 	}
 	shardWG.Wait()
 	//get smallest beacon height of committeefromblock
-	bootstrapInfo.MinBeaconHeight = 1e9
-	for _, view := range bootstrapInfo.ShardView {
+	backupInfo.MinBeaconHeight = 1e9
+	for _, view := range backupInfo.ShardView {
 		beaconHash := view.BestBlock.CommitteeFromBlock()
 		view.BestBlock = nil
 		if beaconHash.IsEqual(&common.Hash{}) {
@@ -159,23 +177,27 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 		if err != nil {
 			panic(err)
 		}
-		if bootstrapInfo.MinBeaconHeight > blk.GetHeight() {
-			bootstrapInfo.MinBeaconHeight = blk.GetHeight()
+		if backupInfo.MinBeaconHeight > blk.GetHeight() {
+			backupInfo.MinBeaconHeight = blk.GetHeight()
 		}
 	}
-	bootstrapInfo.MinBeaconHeight-- //for get previous block
+	backupInfo.MinBeaconHeight-- //for get previous block
 
 	//backup beacon block
-	s.backupBeaconBlock(backUpPath, bootstrapInfo.MinBeaconHeight, beaconFinalView)
+	s.backupBeaconBlock(backUpPath, backupInfo.MinBeaconHeight, beaconFinalView)
+
+	//create done file
+	fd, err := os.OpenFile(path.Join(backUpPath, "done"), os.O_CREATE|os.O_RDWR, 0666)
+	fd.Close()
 
 	//update final status
-	s.lastBackup = bootstrapInfo
-	fd, err := os.OpenFile(path.Join(cfg.DataDir, cfg.DatabaseDir, "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
+	s.lastBackup = backupInfo
+	fd, err = os.OpenFile(path.Join(cfg.DataDir, cfg.DatabaseDir, "backupinfo"), os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
 	}
 
-	jsonStr, err := json.Marshal(bootstrapInfo)
+	jsonStr, err := json.Marshal(backupInfo)
 	if err != nil {
 		panic(err)
 	}
@@ -183,33 +205,6 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 	n, _ := fd.Write(jsonStr)
 	fmt.Println("update lastBackup", n)
 	fd.Close()
-
-	//remove old backup
-	allFile := []string{}
-	filepath.Walk(path.Join(cfg.DataDir, cfg.DatabaseDir), func(path string, info fs.FileInfo, err error) error {
-		if _, err := time.Parse(time.RFC3339, info.Name()); err == nil {
-			allFile = append(allFile, info.Name())
-		}
-		return nil
-	})
-
-	sort.Slice(allFile, func(i, j int) bool {
-		t1, _ := time.Parse(time.RFC3339, allFile[i])
-		t2, _ := time.Parse(time.RFC3339, allFile[j])
-		return t1.Unix() < t2.Unix()
-	})
-
-	if len(allFile) >= 2 {
-		for i := 0; i < len(allFile)-2; i++ {
-			log.Println("remove backup folder", path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[i]))
-			os.RemoveAll(path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[i]))
-		}
-		time.AfterFunc(time.Hour*24, func() {
-			log.Println("remove backup folder", path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[len(allFile)-2]))
-			os.RemoveAll(path.Join(cfg.DataDir, cfg.DatabaseDir, allFile[len(allFile)-2]))
-		})
-	}
-
 }
 
 type CheckpointInfo struct {
