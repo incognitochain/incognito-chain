@@ -1,11 +1,9 @@
 package blsbft
 
 import (
-	"sort"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"sort"
 )
 
 type IConsensusValidator interface {
@@ -58,11 +56,6 @@ func (c ConsensusValidatorLemma2) FilterValidProposeBlockInfo(bestViewProposeHas
 			proposeBlockInfo.block.ProposeHash().IsEqual(&bestViewProposeHash) &&
 			!proposeBlockInfo.IsVoted {
 			tryReVoteInsertedBlock = append(tryReVoteInsertedBlock, proposeBlockInfo)
-			continue
-		}
-
-		//not validate if we do it recently
-		if time.Since(proposeBlockInfo.LastValidateTime).Seconds() < 1 {
 			continue
 		}
 
@@ -234,11 +227,6 @@ func (c ConsensusValidatorLemma1) FilterValidProposeBlockInfo(bestViewHash commo
 			proposeBlockInfo.block.Hash().IsEqual(&bestViewHash) &&
 			!proposeBlockInfo.IsVoted {
 			tryReVoteInsertedBlock = append(tryReVoteInsertedBlock, proposeBlockInfo)
-			continue
-		}
-
-		//not validate if we do it recently
-		if time.Since(proposeBlockInfo.LastValidateTime).Seconds() < 1 {
 			continue
 		}
 
