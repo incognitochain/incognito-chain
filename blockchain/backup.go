@@ -32,7 +32,10 @@ type BackupManager struct {
 	blockchain    *BlockChain
 	lastBackup    *BackupProcessInfo
 	runningBackup *BackupProcessInfo
-	lock          *sync.Mutex
+
+	lock            *sync.Mutex
+	downloading     map[string]int
+	donwloadingLock *sync.Mutex
 }
 
 type StateDBData struct {
@@ -45,7 +48,7 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 	cfg := config.Config()
 	fd, err := os.OpenFile(path.Join(path.Join(cfg.DataDir, cfg.DatabaseDir), "backupinfo"), os.O_RDONLY, 0666)
 	if err != nil {
-		return &BackupManager{bc, nil, nil, new(sync.Mutex)}
+		return &BackupManager{bc, nil, nil, new(sync.Mutex), make(map[string]int), new(sync.Mutex)}
 	}
 	jsonStr, err := ioutil.ReadAll(fd)
 	if err != nil {
@@ -57,11 +60,22 @@ func NewBackupManager(bc *BlockChain) *BackupManager {
 		panic(err)
 	}
 	log.Println(string(jsonStr))
-	return &BackupManager{bc, lastBackup, nil, new(sync.Mutex)}
+	return &BackupManager{bc, lastBackup, nil, new(sync.Mutex), make(map[string]int), new(sync.Mutex)}
 }
 
 func (s *BackupManager) GetLastestBootstrap() BackupProcessInfo {
 	return *s.lastBackup
+}
+
+func (s *BackupManager) StartDownload(checkpoint string) {
+	s.donwloadingLock.Lock()
+	defer s.donwloadingLock.Unlock()
+	s.downloading[checkpoint]++
+}
+func (s *BackupManager) StopDownload(checkpoint string) {
+	s.donwloadingLock.Lock()
+	defer s.donwloadingLock.Unlock()
+	s.downloading[checkpoint]--
 }
 
 func (s *BackupManager) Backup(backupHeight uint64) {
@@ -78,15 +92,17 @@ func (s *BackupManager) Backup(backupHeight uint64) {
 			return nil
 		}
 		if _, err := time.Parse(time.RFC3339, info.Name()); err == nil {
-			if stat, err := os.Stat(path.Join(dirPath, "done")); err != nil {
+			if _, err := os.Stat(path.Join(dirPath, "done")); err != nil {
 				t1 := time.Now()
 				os.RemoveAll(dirPath)
 				log.Println("remove unfinished backup folder", dirPath, time.Since(t1).Seconds())
 			} else {
-				if s.lastBackup.CheckpointName != info.Name() && time.Since(stat.ModTime()).Hours() > 12 {
+				s.donwloadingLock.Lock()
+				if s.lastBackup.CheckpointName != info.Name() && s.downloading[info.Name()] == 0 {
 					log.Println("remove old backup folder", dirPath)
 					os.RemoveAll(dirPath)
 				}
+				s.donwloadingLock.Unlock()
 			}
 		}
 		return nil

@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"time"
 )
 
 func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -39,6 +40,10 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 	dbType, ok := paramArray[2].(string)
 	blkHeight, ok := paramArray[3].(float64)
 
+	httpServer.GetBlockchain().BackupManager.StartDownload(checkpoint)
+	startTime := time.Now()
+	defer httpServer.GetBlockchain().BackupManager.StopDownload(checkpoint)
+
 	checkPointFolder := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID))
 	ff_fileId := uint64(0)
 	if dbType == "blockKV" {
@@ -61,6 +66,10 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 	}
 
 	for _, file := range files {
+		if time.Since(startTime).Hours() > 24 {
+			break
+		}
+
 		if file.IsDir() {
 			continue
 		}
@@ -94,7 +103,6 @@ func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params in
 		}
 
 		n, err := io.Copy(conn, fd)
-
 
 		if file.Size() != int64(n) {
 			panic("not correct " + file.Name())
