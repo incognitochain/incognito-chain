@@ -397,7 +397,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon.tmp")
 	os.RemoveAll(tmpDir)
 	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon")
-	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0666)
+	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0776)
 	bestView := latestBackup.BeaconView
 
 	Logger.log.Info("Start bootstrap beacon from host", host)
@@ -450,7 +450,7 @@ func (s *BootstrapManager) BootstrapShard(sid int, force bool) {
 	cfg := config.Config()
 	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v.tmp", sid))
 	os.RemoveAll(tmpDir)
-	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0666)
+	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0776)
 	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", sid))
 
 	//retrieve beacon block -> backup height
