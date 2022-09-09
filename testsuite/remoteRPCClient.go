@@ -3,13 +3,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
-	"io/ioutil"
-	"net/http"
 )
 
 type RemoteRPCClient struct {
@@ -503,6 +504,36 @@ func (r *RemoteRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey str
 		"jsonrpc": "1.0",
 		"method":  "createandsendstopautostakingtransaction",
 		"params":  []interface{}{privateKey, receivers, fee, privacy, stopStakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) CreateAndSendReDelegateTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, redelegateInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendredelegatetransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, redelegateInfo},
 		"id":      1,
 	})
 	if err != nil {

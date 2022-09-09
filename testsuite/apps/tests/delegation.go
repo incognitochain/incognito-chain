@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 )
@@ -43,14 +45,18 @@ func Test_Shard_Staking_With_Delegation() {
 
 	//send PRV and stake
 	stakers := []account.Account{}
-	for i := 0; i < 24; i++ {
+	bcPKStructs := node.GetBlockchain().GetBeaconBestState().GetBeaconCommittee()
+	bcPKStrs, _ := incognitokey.CommitteeKeyListToString(bcPKStructs)
+	for i := 0; i < 3; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 		node.SendPRV(node.GenesisAccount, acc, 1e14)
 		node.GenerateBlock().NextRound()
-		node.RPC.Stake(acc)
-		fmt.Println("send PRV and stake", acc.Name)
 		node.GenerateBlock().NextRound()
+		fmt.Println(node.RPC.StakeNew(acc, bcPKStrs[i%len(bcPKStrs)]))
+		node.GenerateBlock().NextRound()
+		node.GenerateBlock().NextRound()
+		fmt.Println("send PRV and stake", acc.Name)
 		stakers = append(stakers, acc)
 	}
 

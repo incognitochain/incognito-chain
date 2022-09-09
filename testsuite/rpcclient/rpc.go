@@ -353,6 +353,7 @@ type StakingTxParam struct {
 	RewardAddr   string
 	StakeShard   bool
 	AutoRestake  bool
+	Delegate     string
 	Name         string
 }
 
@@ -360,6 +361,13 @@ type StopStakingParam struct {
 	BurnAddr  string
 	StakerPrk string
 	MinerPrk  string
+}
+
+type ReDelegateParam struct {
+	BurnAddr           string
+	StakerPrk          string
+	CommitteePublicKey string
+	NewDelegate        string
 }
 
 func (r *RPCClient) Stake(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
@@ -370,6 +378,27 @@ func (r *RPCClient) Stake(acc account.Account) (*jsonresult.CreateTransactionRes
 		AutoRestake: true,
 	}
 	return r.API_SendTxStaking(stake1)
+}
+
+func (r *RPCClient) StakeNew(acc account.Account, delegate string) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StakingTxParam{
+		BurnAddr:    "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk:   acc.PrivateKey,
+		StakeShard:  true,
+		AutoRestake: true,
+		Delegate:    delegate,
+	}
+	return r.API_SendTxStaking(stake1)
+}
+
+func (r *RPCClient) ReDelegate(acc account.Account, newDelegate string) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := ReDelegateParam{
+		BurnAddr:           "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk:          acc.PrivateKey,
+		CommitteePublicKey: acc.SelfCommitteePubkey,
+		NewDelegate:        newDelegate,
+	}
+	return r.API_SendTxReDelegate(stake1)
 }
 
 func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.CreateTransactionResult, error) {
@@ -425,6 +454,7 @@ func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.Cre
 		"PrivateSeed":                  privateSeed,
 		"RewardReceiverPaymentAddress": stakeMeta.RewardAddr,
 		"AutoReStaking":                stakeMeta.AutoRestake,
+		"Delegate":                     stakeMeta.Delegate,
 	})
 
 	if err != nil {
@@ -451,6 +481,19 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 		"StopAutoStakingType":     float64(127),
 		"CandidatePaymentAddress": minerPayment,
 		"PrivateSeed":             privateSeed,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &txResp, nil
+}
+
+func (r *RPCClient) API_SendTxReDelegate(redelegateMeta ReDelegateParam) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := redelegateMeta.BurnAddr
+
+	txResp, err := r.Client.CreateAndSendReDelegateTransaction(redelegateMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+		"CommitteePublicKey": redelegateMeta.CommitteePublicKey,
+		"NewDelegate":        redelegateMeta.NewDelegate,
 	})
 	if err != nil {
 		return nil, err

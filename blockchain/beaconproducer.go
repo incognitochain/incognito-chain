@@ -157,7 +157,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	return newBeaconBlock, nil
 }
 
-//beacon should only generate bridge (unshield) instruction when curView is finality (generate instructions from checkpoint to curView)
+// beacon should only generate bridge (unshield) instruction when curView is finality (generate instructions from checkpoint to curView)
 func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState) bool {
 	if curView.GetBlock().Hash().IsEqual(blockchain.BeaconChain.GetFinalView().GetBlock().Hash()) {
 		return true
@@ -443,6 +443,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 // GetShardStateFromBlock get state (information) from shard-to-beacon block
 // state will be presented as instruction
+//
 //	Return Params:
 //	1. ShardState
 //	2. Stake Instruction
@@ -545,7 +546,7 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	}
 }
 
-//GenerateInstruction generate instruction for new beacon block
+// GenerateInstruction generate instruction for new beacon block
 func (curView *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
 	shardInstruction *shardInstruction,
@@ -1004,6 +1005,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	newShardInstructions := shardInstructions
 	newStakeInstructions := []*instruction.StakeInstruction{}
 	stakeShardPublicKeys := []string{}
+	stakeShardDelegateList := []string{}
 	stakeShardTx := []string{}
 	stakeShardRewardReceiver := []string{}
 	stakeShardAutoStaking := []bool{}
@@ -1029,6 +1031,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 					stakeShardTx = append(stakeShardTx, stakeInstruction.TxStakes[i])
 					stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakeInstruction.RewardReceivers[i])
 					stakeShardAutoStaking = append(stakeShardAutoStaking, stakeInstruction.AutoStakingFlag[i])
+					stakeShardDelegateList = append(stakeShardDelegateList, stakeInstruction.DelegateList[i])
 				}
 			}
 		}
@@ -1040,11 +1043,13 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 				stakingTxs := []string{}
 				autoStaking := []bool{}
 				rewardReceivers := []string{}
+				delegateList := []string{}
 				for i, v := range stakeInstruction.PublicKeys {
 					if common.IndexOfStr(v, duplicateStakePublicKeys) > -1 {
 						stakingTxs = append(stakingTxs, stakeInstruction.TxStakes[i])
 						rewardReceivers = append(rewardReceivers, stakeInstruction.RewardReceivers[i])
 						autoStaking = append(autoStaking, stakeInstruction.AutoStakingFlag[i])
+						delegateList = append(delegateList, stakeInstruction.DelegateList[i])
 					}
 				}
 				duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
@@ -1053,6 +1058,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 					stakingTxs,
 					rewardReceivers,
 					autoStaking,
+					delegateList,
 				)
 				duplicateKeyStakeInstruction.instructions = append(duplicateKeyStakeInstruction.instructions, duplicateStakeInstruction)
 			}
@@ -1066,6 +1072,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			instruction.SHARD_INST,
 			stakeShardTx, stakeShardRewardReceiver,
 			stakeShardAutoStaking,
+			stakeShardDelegateList,
 		)
 		newStakeInstructions = append(newStakeInstructions, tempStakeShardInstruction)
 	}

@@ -2,8 +2,9 @@ package incognitokey
 
 import (
 	"encoding/json"
-	lru "github.com/hashicorp/golang-lru"
 	"reflect"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -70,6 +71,32 @@ func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, 
 	}
 	return result, nil
 }
+
+// CommitteeKeyListToStruct is the same as CommitteeBase58KeyListToStruct but ignore zero length string error
+func CommitteeKeyListToStruct(strKeyList []string) ([]CommitteePublicKey, error) {
+	if len(strKeyList) == 0 {
+		return []CommitteePublicKey{}, nil
+	}
+	result := []CommitteePublicKey{}
+	for _, key := range strKeyList {
+		if len(key) == 0 {
+			result = append(result, CommitteePublicKey{})
+		} else {
+			if v, ok := keyStructCache.Get(key); !ok {
+				var keyStruct CommitteePublicKey
+				if err := keyStruct.FromString(key); err != nil {
+					return nil, err
+				}
+				result = append(result, keyStruct)
+				keyStructCache.Add(key, keyStruct)
+			} else {
+				result = append(result, v.(CommitteePublicKey))
+			}
+		}
+	}
+	return result, nil
+}
+
 func IsInBase58ShortFormat(strKeyList []string) bool {
 	tempStruct, err := CommitteeBase58KeyListToStruct(strKeyList)
 	if err != nil {

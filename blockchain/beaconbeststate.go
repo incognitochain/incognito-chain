@@ -471,7 +471,7 @@ func (beaconBestState *BeaconBestState) GetSyncingValidatorsString() map[byte][]
 	return res
 }
 
-//CommitteeStateVersion ...
+// CommitteeStateVersion ...
 func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }
@@ -628,6 +628,29 @@ func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {
 
 func (beaconBestState *BeaconBestState) BlockHash() common.Hash {
 	return beaconBestState.BestBlockHash
+}
+
+func (beaconBestState *BeaconBestState) GetAllBeaconValidatorCandidateFlattenList() []string {
+	res := []string{}
+	bV := beaconBestState.GetBeaconCommittee()
+	if bVStr, err := incognitokey.CommitteeKeyListToString(bV); (len(bV) != 0) && (err == nil) {
+		res = append(res, bVStr...)
+	} else {
+		BLogger.log.Errorf("Convert beacon committee len %v got error %v", len(bV), err)
+	}
+	bC := beaconBestState.GetBeaconCandidate()
+	if bCStr, err := incognitokey.CommitteeKeyListToString(bC); (len(bC) != 0) && (err == nil) {
+		res = append(res, bCStr...)
+	} else {
+		BLogger.log.Errorf("Convert beacon candidate len %v got error %v", len(bC), err)
+	}
+	bS := beaconBestState.GetBeaconPendingValidator()
+	if bSStr, err := incognitokey.CommitteeKeyListToString(bS); (len(bS) != 0) && (err == nil) {
+		res = append(res, bSStr...)
+	} else {
+		BLogger.log.Errorf("Convert beacon substitute len %v got error %v", len(bS), err)
+	}
+	return res
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {

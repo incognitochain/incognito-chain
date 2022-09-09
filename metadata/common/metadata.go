@@ -103,6 +103,7 @@ type BeaconViewRetriever interface {
 	GetHeight() uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
+	GetAllBeaconValidatorCandidateFlattenList() []string
 	GetAutoStakingList() map[string]bool
 	// GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB

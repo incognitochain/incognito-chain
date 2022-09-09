@@ -2305,7 +2305,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 		beaconCommitteeStateSlashingBase
 	}
 	type args struct {
-		stopAutoStakeInstruction *instruction.StopAutoStakeInstruction
+		stopAutoStakeInstruction *instruction.ReDelegateInstruction
 		env                      *BeaconCommitteeStateEnvironment
 		committeeChange          *CommitteeChange
 	}
@@ -2339,7 +2339,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				stopAutoStakeInstruction: &instruction.StopAutoStakeInstruction{
+				stopAutoStakeInstruction: &instruction.ReDelegateInstruction{
 					CommitteePublicKeys: []string{key2},
 				},
 				env: &BeaconCommitteeStateEnvironment{
@@ -2372,7 +2372,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				stopAutoStakeInstruction: &instruction.StopAutoStakeInstruction{
+				stopAutoStakeInstruction: &instruction.ReDelegateInstruction{
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{

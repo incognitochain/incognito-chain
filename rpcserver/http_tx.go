@@ -367,7 +367,7 @@ func (httpServer *HttpServer) handleGetEncodedTransactionsByHashes(params interf
 	return httpServer.txService.GetEncodedTransactionsByHashes(txHashList)
 }
 
-//Get transaction by serial numbers
+// Get transaction by serial numbers
 func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
@@ -1282,6 +1282,11 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", data["AutoReStaking"]))
 	}
 
+	delegate, ok := data["Delegate"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Delegate Committee Public Key %+v", data["Delegate"]))
+	}
+
 	//Get tx version
 	var txVersion int8
 	tmpVersionParam, ok := data["TxVersion"]
@@ -1316,7 +1321,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	stakingMetadata, err := metadata.NewStakingMetadata(
 		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
 		config.Param().StakingAmountShard,
-		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
+		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), delegate, autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -1425,6 +1430,11 @@ func (httpServer *HttpServer) handleCreateRawStakingTransactionV2(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", data["AutoReStaking"]))
 	}
 
+	delegate, ok := data["Delegate"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Delegate Committee Public Key %+v", data["Delegate"]))
+	}
+
 	// Get candidate publickey
 	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
 	if err != nil || candidateWallet == nil {
@@ -1446,7 +1456,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransactionV2(params interfa
 	stakingMetadata, err := metadata.NewStakingMetadata(
 		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
 		config.Param().StakingAmountShard,
-		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
+		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), delegate, autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -1467,6 +1477,58 @@ func (httpServer *HttpServer) handleCreateRawStakingTransactionV2(params interfa
 // handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendStakingTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateAndSendStakingTx(params, closeChan)
+}
+
+func (httpServer *HttpServer) handleCreateRawReDelegateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
+	}
+
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	keyWallet := new(wallet.KeyWallet)
+	keyWallet.KeySet = *createRawTxParam.SenderKeySet
+	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	_ = funderPaymentAddress
+
+	//Get data to create meta data
+	data, ok := paramsArray[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid meta data for redelegate transaction %+v", paramsArray[4]))
+	}
+
+	//Get Candidate Payment Address
+	newDelegate, ok := data["NewDelegate"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid NewDelegate Public key for Re-delegate Transaction %+v", data["NewDelegate"]))
+	}
+	// Get private seed, a.k.a mining key
+	committeePKStr, ok := data["CommitteePublicKey"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid CommitteePublickey for Re-delegate Transaction %+v", data["CommitteePublicKey"]))
+	}
+
+	stakingMetadata, err := metadata.NewReDelegateMetadata(committeePKStr, newDelegate)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	result := jsonresult.CreateTransactionResult{
+		TxID:            txID.String(),
+		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
+		ShardID:         txShardID,
+	}
+	return result, nil
 }
 
 // handleCreateRawStopAutoStakingTransaction - RPC create stop auto stake tx
@@ -1563,6 +1625,25 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	data, err := httpServer.handleCreateRawStopAutoStakingTransaction(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendReDelegateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	data, err := httpServer.handleCreateRawReDelegateTransaction(params, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}

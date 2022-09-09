@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-//@NOTE this struct is view object only
+// @NOTE this struct is view object only
 type StakerInfoSlashingVersion struct {
 	committeePublicKey string
 	rewardReceiver     key.PaymentAddress
@@ -131,6 +131,10 @@ func (s *ShardStakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
 }
 
+func (s *ShardStakerInfo) SetDelegate(delegate string) {
+	s.delegate = delegate
+}
+
 func (s ShardStakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
 }
@@ -145,6 +149,10 @@ func (s ShardStakerInfo) AutoStaking() bool {
 
 func (s ShardStakerInfo) BeaconConfirmHeight() uint64 {
 	return s.beaconConfirmHeight
+}
+
+func (s ShardStakerInfo) Delegate() string {
+	return s.delegate
 }
 
 type StakerObject struct {

@@ -56,12 +56,12 @@ func NewBeaconCommitteeStateV2WithValue(
 	}
 }
 
-//shallowCopy maintain dst mutex value
+// shallowCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
 	newB.beaconCommitteeStateSlashingBase = b.beaconCommitteeStateSlashingBase
 }
 
-//Version :
+// Version :
 func (b *BeaconCommitteeStateV2) Version() int {
 	return STAKING_FLOW_V2
 }
@@ -157,6 +157,13 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+		case instruction.RE_DELEGATE:
+			redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				continue
+			}
+			b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 		}
 	}
 
@@ -171,7 +178,7 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
-//Upgrade check interface method for des
+// Upgrade check interface method for des
 func (b *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()

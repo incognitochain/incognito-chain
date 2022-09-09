@@ -22,6 +22,7 @@ type beaconCommitteeStateBase struct {
 	autoStake      map[string]bool                   // committee public key => true or false
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
+	delegate       map[string]string
 
 	hashes *BeaconCommitteeStateHash
 
@@ -43,7 +44,7 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 	}
 }
 
-//NewBeaconCommitteeState constructor for BeaconCommitteeState by version
+// NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
 	version int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
@@ -123,7 +124,7 @@ func NewBeaconCommitteeState(
 	return committeeState
 }
 
-//VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
+// VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64) int {
 	if beaconHeight >= stakingV3Height {
 		return STAKING_FLOW_V3
@@ -142,6 +143,7 @@ func newBeaconCommitteeStateBase() *beaconCommitteeStateBase {
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
 		hashes:          NewBeaconCommitteeStateHash(),
+		delegate:        make(map[string]string),
 		mu:              new(sync.RWMutex),
 	}
 }
@@ -185,10 +187,11 @@ func (b beaconCommitteeStateBase) shallowCopy(newB *beaconCommitteeStateBase) {
 	newB.autoStake = b.autoStake
 	newB.rewardReceiver = b.rewardReceiver
 	newB.stakingTx = b.stakingTx
+	newB.delegate = b.delegate
 	newB.hashes = b.hashes
 }
 
-//Clone:
+// Clone:
 func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -236,6 +239,7 @@ func (b *beaconCommitteeStateBase) reset() {
 	b.autoStake = make(map[string]bool)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
+	b.delegate = make(map[string]string)
 }
 
 func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconCommitteeStateHash) {
@@ -331,6 +335,16 @@ func (b beaconCommitteeStateBase) GetRewardReceiver() map[string]privacy.Payment
 	defer b.mu.RUnlock()
 	res := make(map[string]privacy.PaymentAddress)
 	for k, v := range b.rewardReceiver {
+		res[k] = v
+	}
+	return res
+}
+
+func (b beaconCommitteeStateBase) GetDelegate() map[string]string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	res := make(map[string]string)
+	for k, v := range b.delegate {
 		res[k] = v
 	}
 	return res
@@ -438,6 +452,7 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 				b.autoStake[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
 				b.stakingTx[stakeInstruction.PublicKeys[index]] = stakeInstruction.TxStakeHashes[index]
+				b.delegate[stakeInstruction.PublicKeys[index]] = stakeInstruction.DelegateList[index]
 			}
 			if stakeInstruction.Chain == instruction.BEACON_INST {
 				newBeaconCandidates = append(newBeaconCandidates, stakeInstruction.PublicKeys...)
@@ -451,6 +466,7 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.autoStake,
 				b.stakingTx,
 				1,
+				b.delegate,
 			)
 			if err != nil {
 				panic(err)
@@ -519,6 +535,7 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 		b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 		b.autoStake[committeePublicKey] = stakeInstruction.AutoStakingFlag[index]
 		b.stakingTx[committeePublicKey] = stakeInstruction.TxStakeHashes[index]
+		b.delegate[committeePublicKey] = stakeInstruction.DelegateList[index]
 	}
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 
@@ -555,6 +572,19 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
+func (b *beaconCommitteeStateBase) processReDelegateInstruction(
+	redelegateInstruction *instruction.ReDelegateInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+) {
+	changeMap := map[string]string{}
+	for index, committeePublicKey := range redelegateInstruction.CommitteePublicKeys {
+		b.delegate[committeePublicKey] = redelegateInstruction.DelegateList[index]
+		changeMap[committeePublicKey] = redelegateInstruction.DelegateList[index]
+	}
+	committeeChange.AddReDelegateInfo(changeMap)
+}
+
 func SnapshotShardCommonPoolV2(
 	shardCommonPool []string,
 	shardCommittee map[byte][]string,
@@ -579,7 +609,7 @@ func SnapshotShardCommonPoolV2(
 	return numberOfAssignedCandidates
 }
 
-//Upgrade upgrade committee engine by version
+// Upgrade upgrade committee engine by version
 func (b beaconCommitteeStateBase) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	panic("Implement this function")
 }

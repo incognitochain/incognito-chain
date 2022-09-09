@@ -27,6 +27,7 @@ type CommitteeChange struct {
 	BeaconCommitteeReplaced            [2][]incognitokey.CommitteePublicKey
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
+	ReDelegate                         map[string]string
 	RemovedStaker                      []string
 	FinishedSyncValidators             map[byte][]string
 	SlashingCommittee                  map[byte][]string
@@ -38,6 +39,16 @@ func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEp
 	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateRemoved)
 	committeeChange.NextEpochShardCandidateRemoved = append(committeeChange.NextEpochShardCandidateRemoved, temp...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddReDelegateInfo(redelegateMap map[string]string) *CommitteeChange {
+	if len(redelegateMap) == 0 {
+		return committeeChange
+	}
+	for k, v := range redelegateMap {
+		committeeChange.ReDelegate[k] = v
+	}
 	return committeeChange
 }
 
@@ -143,7 +154,7 @@ func (committeeChange *CommitteeChange) AddStopAutoStakes(stopAutoStakes []strin
 	return committeeChange
 }
 
-//GetStakerKeys ...
+// GetStakerKeys ...
 func (committeeChange *CommitteeChange) ShardStakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded
 }
@@ -186,6 +197,7 @@ func NewCommitteeChange() *CommitteeChange {
 		FinishedSyncValidators:  make(map[byte][]string),
 		SyncingPoolAdded:        make(map[byte][]incognitokey.CommitteePublicKey),
 		SyncingPoolRemoved:      make(map[byte][]incognitokey.CommitteePublicKey),
+		ReDelegate:              make(map[string]string),
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)

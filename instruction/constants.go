@@ -8,6 +8,7 @@ const (
 	ASSIGN_ACTION                  = "assign"
 	ASSIGN_SYNC_ACTION             = "assignsync"
 	STOP_AUTO_STAKE_ACTION         = "stopautostake"
+	RE_DELEGATE                    = "redelegate"
 	SET_ACTION                     = "set"
 	RETURN_ACTION                  = "return"
 	UNSTAKE_ACTION                 = "unstake"
@@ -32,7 +33,7 @@ const (
 	BEACON_CHAIN_ID = -1
 )
 
-//Swap Instruction Sub Type
+// Swap Instruction Sub Type
 const (
 	SWAP_BY_END_EPOCH = iota
 	SWAP_BY_SLASHING

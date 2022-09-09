@@ -21,6 +21,7 @@ type BeaconCommitteeState interface {
 	GetAutoStaking() map[string]bool
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
+	GetDelegate() map[string]string
 	GetAllCandidateSubstituteCommittee() []string
 	GetNumberOfActiveShards() int
 	GetShardCommonPool() []incognitokey.CommitteePublicKey

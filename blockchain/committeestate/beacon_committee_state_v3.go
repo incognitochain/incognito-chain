@@ -48,7 +48,7 @@ func (b *BeaconCommitteeStateV3) Version() int {
 	return STAKING_FLOW_V3
 }
 
-//shallowCopy maintain dst mutex value
+// shallowCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV3) shallowCopy(newB *BeaconCommitteeStateV3) {
 	newB.beaconCommitteeStateSlashingBase = b.beaconCommitteeStateSlashingBase
 	newB.syncPool = b.syncPool
@@ -202,6 +202,13 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+		case instruction.RE_DELEGATE:
+			redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				continue
+			}
+			b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 			//case instruction.DEQUEUE:
 			//	dequeueInstruction, err := instruction.ValidateAndImportDequeueInstructionFromString(inst)
 			//	if err != nil {
@@ -225,7 +232,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
-//assignToSyncPool assign validatrors to syncPool
+// assignToSyncPool assign validatrors to syncPool
 // update beacon committee state and committeechange
 // UPDATE SYNC POOL ONLY
 func (b *BeaconCommitteeStateV3) assignToSyncPool(
@@ -238,7 +245,7 @@ func (b *BeaconCommitteeStateV3) assignToSyncPool(
 	return committeeChange
 }
 
-//assignRandomlyToSubstituteList assign candidates to pending list
+// assignRandomlyToSubstituteList assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
 func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
@@ -254,7 +261,7 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 	return committeeChange
 }
 
-//assignToPending assign candidates to pending list
+// assignToPending assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
 func (b *BeaconCommitteeStateV3) assignBackToSubstituteList(candidates []string, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
@@ -281,7 +288,7 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 
-//processAssignWithRandomInstruction assign candidates to syncPool
+// processAssignWithRandomInstruction assign candidates to syncPool
 // update beacon state and committeechange
 func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	rand int64,
@@ -398,7 +405,7 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 //	return committeeChange, nil
 //}
 
-//processFinishSyncInstruction move validators from pending to sync pool
+// processFinishSyncInstruction move validators from pending to sync pool
 // validators MUST in sync pool
 func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,

@@ -151,7 +151,7 @@ func initGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *Be
 	return beaconCommitteeStateV1
 }
 
-//UpdateCommitteeState :
+// UpdateCommitteeState :
 func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
 	b.mu.Lock()
@@ -195,6 +195,13 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 				continue
 			}
 			b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
+		case instruction.RE_DELEGATE:
+			redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			if err != nil {
+				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				continue
+			}
+			b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 		}
 		if len(tempNewShardCandidates) > 0 {
 			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate, tempNewShardCandidates...)
@@ -274,6 +281,7 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 		b.autoStake,
 		b.stakingTx,
 		env.BeaconHeight,
+		b.delegate,
 	)
 
 	if err != nil {
@@ -302,6 +310,19 @@ func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 			}
 		}
 	}
+}
+
+func (b *BeaconCommitteeStateV1) processReDelegateInstruction(
+	redelegateInstruction *instruction.ReDelegateInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+) {
+	changeMap := map[string]string{}
+	for index, committeePublicKey := range redelegateInstruction.CommitteePublicKeys {
+		b.delegate[committeePublicKey] = redelegateInstruction.DelegateList[index]
+		changeMap[committeePublicKey] = redelegateInstruction.DelegateList[index]
+	}
+	committeeChange.AddReDelegateInfo(changeMap)
 }
 
 func (b *BeaconCommitteeStateV1) processSwapInstruction(
@@ -407,9 +428,11 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		delete(b.autoStake, swapInstruction.OutPublicKeys[index])
 		delete(b.stakingTx, swapInstruction.OutPublicKeys[index])
 		delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
+		delete(b.delegate, swapInstruction.OutPublicKeys[index])
 		b.autoStake[swapInstruction.InPublicKeys[index]] = false
 		b.rewardReceiver[swapInstruction.InPublicKeyStructs[index].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[index]
 		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
+		b.delegate[swapInstruction.InPublicKeys[index]] = ""
 	}
 	err := statedb.StoreShardStakerInfo(
 		env.ConsensusStateDB,
@@ -418,6 +441,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.autoStake,
 		b.stakingTx,
 		env.BeaconHeight,
+		b.delegate,
 	)
 	return err
 }
@@ -476,7 +500,7 @@ func (b *BeaconCommitteeStateV1) GenerateAssignInstructions(env *BeaconCommittee
 	return instructions
 }
 
-//Upgrade check interface method for des
+// Upgrade check interface method for des
 func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()

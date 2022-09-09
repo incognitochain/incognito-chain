@@ -623,6 +623,7 @@ func storeShardStakerInfo(
 			autoStaking[committeeString],
 			stakingTx[committeeString],
 			beaconConfirmHeight,
+			delegate[committeeString],
 		)
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
@@ -665,9 +666,9 @@ func StoreShardStakerInfo(
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 	beaconConfirmHeight uint64,
-
+	delegate map[string]string,
 ) error {
-	return storeShardStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, beaconConfirmHeight)
+	return storeShardStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, beaconConfirmHeight, delegate)
 }
 
 func GetBeaconCommitteeEnterTime(
@@ -704,7 +705,7 @@ func GetAllStaker(stateDB *StateDB, shardIDs []int) int {
 	return stateDB.getAllStaker(shardIDs)
 }
 
-//DeleteStakerInfo :
+// DeleteStakerInfo :
 func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
 	return deleteStakerInfo(stateDB, stakers)
 }
