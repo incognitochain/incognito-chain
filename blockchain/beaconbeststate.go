@@ -839,7 +839,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate,
 		currentEpochShardCandidate, _, _, syncingValidators,
-		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
+		rewardReceivers, autoStaking, stakingTx, delegateList := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
 	delete(substituteValidator, statedb.BeaconChainID)
@@ -882,7 +882,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 			dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
 			consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
 			snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-				_, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+				_, _, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
 			snapshotShardCommonPool, _ := incognitokey.CommitteeKeyListToString(snapshotNextEpochShardCandidate)
 			snapshotShardCommittee := make(map[byte][]string)
 			snapshotShardSubstitute := make(map[byte][]string)
@@ -908,7 +908,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 
 	committeeState := committeestate.NewBeaconCommitteeState(
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
-		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
+		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, delegateList, syncingValidators,
 		swapRule, nextEpochShardCandidate, currentEpochShardCandidate, assignRule,
 	)
 	beaconBestState.beaconCommitteeState = committeeState

@@ -34,11 +34,12 @@ func NewBeaconCommitteeStateV1WithValue(
 	autoStaking map[string]bool,
 	rewardReceivers map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegate map[string]string,
 ) *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBaseWithValue(
 			beaconCommittee, shardCurrentValidator, shardSubstituteValidator,
-			autoStaking, rewardReceivers, stakingTx,
+			autoStaking, rewardReceivers, stakingTx, delegate,
 		),
 		nextEpochShardCandidate:    nextEpochShardCandidate,
 		currentEpochShardCandidate: currentEpochShardCandidate,
@@ -312,19 +313,6 @@ func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 	}
 }
 
-func (b *BeaconCommitteeStateV1) processReDelegateInstruction(
-	redelegateInstruction *instruction.ReDelegateInstruction,
-	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
-) {
-	changeMap := map[string]string{}
-	for index, committeePublicKey := range redelegateInstruction.CommitteePublicKeys {
-		b.delegate[committeePublicKey] = redelegateInstruction.DelegateList[index]
-		changeMap[committeePublicKey] = redelegateInstruction.DelegateList[index]
-	}
-	committeeChange.AddReDelegateInfo(changeMap)
-}
-
 func (b *BeaconCommitteeStateV1) processSwapInstruction(
 	swapInstruction *instruction.SwapInstruction,
 	env *BeaconCommitteeStateEnvironment,
@@ -506,7 +494,7 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 	defer b.mu.RUnlock()
 	beaconCommittee, shardCommittee, shardSubstitute,
 		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule, assignRule := b.getDataForUpgrading(env)
+		autoStake, rewardReceiver, stakingTx, delegates, swapRule, assignRule := b.getDataForUpgrading(env)
 
 	committeeStateV2 := NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
@@ -517,6 +505,7 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		autoStake,
 		rewardReceiver,
 		stakingTx,
+		delegates,
 		swapRule,
 		assignRule,
 	)
@@ -534,6 +523,7 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]bool,
 	map[string]privacy.PaymentAddress,
 	map[string]common.Hash,
+	map[string]string,
 	SwapRuleProcessor,
 	AssignRuleProcessor,
 ) {
@@ -544,6 +534,7 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
 	stakingTx := make(map[string]common.Hash)
+	delegates := make(map[string]string)
 
 	copy(beaconCommittee, b.beaconCommittee)
 	for shardID, oneShardCommittee := range b.shardCommittee {
@@ -568,9 +559,12 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	for k, v := range b.stakingTx {
 		stakingTx[k] = v
 	}
+	for k, v := range b.delegate {
+		delegates[k] = v
+	}
 
 	swapRule := GetSwapRuleVersion(env.BeaconHeight, env.StakingV3Height)
 	assignRule := GetAssignRuleVersion(env.BeaconHeight, env.StakingV2Height, env.AssignRuleV3Height)
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule, assignRule
+		autoStake, rewardReceiver, stakingTx, delegates, swapRule, assignRule
 }

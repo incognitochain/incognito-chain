@@ -36,6 +36,7 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 	shardCommonPool []string,
 	numberOfAssignedCandidates int,
 	swapRule SwapRuleProcessor,
@@ -44,7 +45,7 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 	return &beaconCommitteeStateSlashingBase{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBaseWithValue(
 			beaconCommittee, shardCommittee, shardSubstitute,
-			autoStake, rewardReceiver, stakingTx,
+			autoStake, rewardReceiver, stakingTx, delegateList,
 		),
 		shardCommonPool:            shardCommonPool,
 		numberOfAssignedCandidates: numberOfAssignedCandidates,
@@ -324,7 +325,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwap(
 	return newCommitteeChange, swapShardInstruction.InPublicKeys, normalSwapOutCommittees, slashingCommittees, nil
 }
 
-//processSwapShardInstruction update committees state by swap shard instruction
+// processSwapShardInstruction update committees state by swap shard instruction
 // Process single swap shard instruction for and update committee state
 func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
@@ -449,7 +450,7 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 	return returnStakingInstruction, committeeChange, nil
 }
 
-//processUnstakeInstruction : process unstake instruction from beacon block
+// processUnstakeInstruction : process unstake instruction from beacon block
 func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 	unstakeInstruction *instruction.UnstakeInstruction,
 	env *BeaconCommitteeStateEnvironment,

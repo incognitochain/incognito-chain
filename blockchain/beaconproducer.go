@@ -33,6 +33,7 @@ type shardInstruction struct {
 	unstakeInstructions       []*instruction.UnstakeInstruction
 	swapInstructions          map[byte][]*instruction.SwapInstruction
 	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
+	redelegateInstructions    []*instruction.ReDelegateInstruction
 }
 
 func newShardInstruction() *shardInstruction {
@@ -354,6 +355,9 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 					allPdexTxs[version] = make(map[byte][]metadata.Transaction)
 				}
 				allPdexTxs[version][shardID] = append(allPdexTxs[version][shardID], txs...)
+			}
+			for _, ins := range newShardInstruction.stakeInstructions {
+				Logger.log.Infof("Shard inst: %+v %+v", ins.TxStakes, ins.DelegateList)
 			}
 		}
 	}
@@ -1078,6 +1082,9 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	}
 
 	newShardInstructions.stakeInstructions = newStakeInstructions
+	for _, ins := range newStakeInstructions {
+		Logger.log.Infof("New staker: %+v %+v ", ins.DelegateList, ins.TxStakes)
+	}
 	return newShardInstructions, duplicateKeyStakeInstruction
 }
 
@@ -1153,6 +1160,7 @@ func (shardInstruction *shardInstruction) compose() {
 		stakeInstruction.RewardReceiverStructs = append(stakeInstruction.RewardReceiverStructs, v.RewardReceiverStructs...)
 		stakeInstruction.Chain = v.Chain
 		stakeInstruction.AutoStakingFlag = append(stakeInstruction.AutoStakingFlag, v.AutoStakingFlag...)
+		stakeInstruction.DelegateList = append(stakeInstruction.DelegateList, v.DelegateList...)
 	}
 
 	for _, v := range shardInstruction.unstakeInstructions {

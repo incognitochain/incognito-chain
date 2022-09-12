@@ -73,6 +73,7 @@ func Test_Shard_Staking_With_Delegation() {
 		if height%20 == 1 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			node.ShowAccountPosition(stakers)
+			node.ShowAccountStakeInfo(stakers)
 			//TODO: check account
 		}
 	}

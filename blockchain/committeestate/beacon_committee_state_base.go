@@ -55,6 +55,7 @@ func NewBeaconCommitteeState(
 	autoStake map[string]bool,
 	rewardReceivers map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
 	swapRule SwapRuleProcessor,
 	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
@@ -91,6 +92,7 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
+			delegateList,
 		)
 	case STAKING_FLOW_V2:
 		committeeState = NewBeaconCommitteeStateV2WithValue(
@@ -102,6 +104,7 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
+			delegateList,
 			swapRule,
 			assignRule,
 		)
@@ -115,6 +118,7 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
+			delegateList,
 			tempSyncPool,
 			swapRule,
 			assignRule,
@@ -155,6 +159,7 @@ func newBeaconCommitteeStateBaseWithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 ) *beaconCommitteeStateBase {
 	return &beaconCommitteeStateBase{
 		beaconCommittee: beaconCommittee,
@@ -163,6 +168,7 @@ func newBeaconCommitteeStateBaseWithValue(
 		autoStake:       autoStake,
 		rewardReceiver:  rewardReceiver,
 		stakingTx:       stakingTx,
+		delegate:        delegateList,
 		hashes:          NewBeaconCommitteeStateHash(),
 		mu:              new(sync.RWMutex),
 	}
@@ -220,6 +226,10 @@ func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 
 	for k, v := range b.stakingTx {
 		newB.stakingTx[k] = v
+	}
+
+	for k, v := range b.delegate {
+		newB.delegate[k] = v
 	}
 
 	newB.hashes.BeaconCommitteeAndValidatorHash = b.hashes.BeaconCommitteeAndValidatorHash

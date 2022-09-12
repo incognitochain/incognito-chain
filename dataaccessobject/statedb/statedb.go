@@ -534,6 +534,7 @@ func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*Com
 // return params #6: reward receiver map
 // return params #7: auto staking map
 // return params #8: staking tx
+// return params #8: delegate
 func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentValidator map[int][]*CommitteeState,
 	substituteValidator map[int][]*CommitteeState,
@@ -545,6 +546,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	rewardReceiver map[string]key.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 ) {
 	currentValidator = make(map[int][]*CommitteeState)
 	substituteValidator = make(map[int][]*CommitteeState)
@@ -555,6 +557,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	rewardReceiver = make(map[string]key.PaymentAddress)
 	autoStake = make(map[string]bool)
 	stakingTx = map[string]common.Hash{}
+	delegateList = map[string]string{}
 	syncingValidators = make(map[byte][]*CommitteeState)
 	for _, shardID := range ids {
 		// Current Validator
@@ -579,6 +582,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
+			delegateList[committeePublicKeyStr] = s.delegate
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
 		currentValidator[shardID] = tempCurrentValidator
@@ -604,6 +608,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
+			delegateList[committeePublicKeyStr] = s.delegate
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
 		substituteValidator[shardID] = tempSubstituteValidator
@@ -629,6 +634,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
+			delegateList[committeePublicKeyStr] = s.delegate
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
 		syncingValidators[byte(shardID)] = tempSyncingValidators
@@ -653,6 +659,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[committeePublicKeyStr] = s.autoStaking
 		stakingTx[committeePublicKeyStr] = s.txStakingID
+		delegateList[committeePublicKeyStr] = s.delegate
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 	}
 	// current epoch candidate
@@ -675,6 +682,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[committeePublicKeyStr] = s.autoStaking
 		stakingTx[committeePublicKeyStr] = s.txStakingID
+		delegateList[committeePublicKeyStr] = s.delegate
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 	}
 
@@ -698,6 +706,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[committeePublicKeyStr] = s.autoStaking
 		stakingTx[committeePublicKeyStr] = s.txStakingID
+		delegateList[committeePublicKeyStr] = s.delegate
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 	}
 	// current epoch candidate
@@ -720,10 +729,11 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		incKey := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[pKey] = stakerInfo.autoStaking
 		stakingTx[pKey] = stakerInfo.txStakingID
+		delegateList[pKey] = stakerInfo.delegate
 		rewardReceiver[incKey] = stakerInfo.rewardReceiver
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx, delegateList
 }
 
 func (stateDB *StateDB) IterateWithStaker(prefix []byte) []*ShardStakerInfo {
@@ -1736,7 +1746,7 @@ func (stateDB *StateDB) getFinalExchangeRatesState() (*FinalExchangeRatesState, 
 	return NewFinalExchangeRatesState(), nil
 }
 
-//B
+// B
 func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*RedeemRequest {
 	waitingRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
