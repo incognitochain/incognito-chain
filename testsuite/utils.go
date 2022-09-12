@@ -5,16 +5,17 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/portal"
 	"io"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -264,6 +265,39 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 		}
 	}
 	fmt.Printf("Unstake: %v\n", tmp)
+}
+
+func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
+	chain := sim.GetBlockchain()
+	type AccountInfo struct {
+		Name     string
+		Delegate string
+	}
+
+	pkMap := make(map[string]*AccountInfo)
+	for _, acc := range accounts {
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown"}
+	}
+	bBestState := chain.GetBeaconBestState()
+	bC := bBestState.GetBeaconCommittee()
+	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+
+	for _, acc := range accounts {
+		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
+		if ok {
+			delegate := stakerInfo.Delegate()
+			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
+			for idx, bPK := range bCStr {
+				if bPK == delegate {
+					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
+				}
+			}
+		}
+	}
+
+	for _, stakerInfo := range pkMap {
+		fmt.Printf("Acc: %v, Delegate: %v\n", stakerInfo.Name, stakerInfo.Delegate)
+	}
 }
 
 func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
