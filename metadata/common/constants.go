@@ -390,4 +390,5 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 
 const (
 	ExternalAddressLen = 20
+	BurnForCallMinBlockVersion = 10 // ADJUST_BLOCKTIME_VERSION
 )
