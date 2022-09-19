@@ -53,6 +53,10 @@ func (bReq BurnForCallRequest) TotalBurningAmount() (uint64, error) {
 }
 
 func (bReq BurnForCallRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
+    if shardViewRetriever.GetBlockVersion() < metadataCommon.BurnForCallMinBlockVersion {
+        return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burnForCall feature not supported in block version %d, want %d", shardViewRetriever.GetBlockVersion(), metadataCommon.BurnForCallMinBlockVersion))
+    }
+
     if len(bReq.Data) <= 0 || len(bReq.Data) > int(config.Param().BridgeAggParam.MaxLenOfPath) {
         return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(bReq.Data), config.Param().BridgeAggParam.MaxLenOfPath))
     }
