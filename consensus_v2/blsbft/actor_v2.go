@@ -669,7 +669,7 @@ func (a *actorV2) run() error {
 
 				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && !v.IsVoted {
+					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && v.IsValid && !v.IsVoted {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -1388,7 +1388,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if proposeBlockInfo.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil {
+					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil && proposeBlockInfo.IsValid {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
 							err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0)) // => send vote
@@ -1491,6 +1491,11 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 }
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+
+	//not validate if we do it recently
+	if time.Since(proposeBlockInfo.LastValidateTime).Seconds() < 1 {
+		return nil
+	}
 
 	if proposeBlockInfo.IsValid {
 		return nil
