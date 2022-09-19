@@ -309,6 +309,33 @@ func InitIntermediatePoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]
 	return res, nil
 }
 
+func InitLiquidityPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
+	res := make(map[string]*PoolPairState)
+	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
+	if err != nil {
+		return nil, err
+	}
+	for poolPairID, poolPairState := range poolPairsStates {
+		orderbook := &Orderbook{[]*Order{}}
+		orderMap, err := statedb.GetPdexv3Orders(stateDB, poolPairID)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range orderMap {
+			v := item.Value()
+			orderbook.InsertOrder(&v)
+		}
+
+		poolPair := NewPoolPairStateWithValue(
+			poolPairState.Value(), nil, *orderbook,
+			nil, nil, nil, nil,
+			nil, nil, nil,
+		)
+		res[poolPairID] = poolPair
+	}
+	return res, nil
+}
+
 func InitFullPoolPairStatesFromDB(stateDB *statedb.StateDB) (map[string]*PoolPairState, error) {
 	res := make(map[string]*PoolPairState)
 	poolPairsStates, err := statedb.GetPdexv3PoolPairs(stateDB)
