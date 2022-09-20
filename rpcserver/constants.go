@@ -150,7 +150,8 @@ const (
 	getConsensusData                   = "getconsensusdata"
 	getProposerIndex                   = "getproposerindex"
 	resetCache                         = "resetcache"
-	handleTestValidate                 = "testvalidate"
+	testValidate                       = "testvalidate"
+	stallInsert                        = "stallInsert"
 	// ==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -313,7 +314,7 @@ const (
 	bridgeaggShield                      = "bridgeaggShield"
 	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
 	bridgeaggUnshield                    = "bridgeaggUnshield"
-	bridgeaggBurnForCall 				 = "bridgeaggBurnForCall"
+	bridgeaggBurnForCall                 = "bridgeaggBurnForCall"
 	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"

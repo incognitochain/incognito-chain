@@ -983,6 +983,15 @@ func (httpServer *HttpServer) handleConvertPaymentAddress(params interface{}, cl
 // 	return result, nil
 // }
 
+func (httpServer *HttpServer) handleStallInsert(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Config().Network() != "mainnet" {
+		arrayParams := common.InterfaceSlice(params)
+		chainID := int(arrayParams[0].(float64))
+		httpServer.config.Syncker.ShardSyncProcess[chainID].Stall()
+	}
+	return nil, nil
+}
+
 func (httpServer *HttpServer) handleResetCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	n := int(arrayParams[0].(float64))

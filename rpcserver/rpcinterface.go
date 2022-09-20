@@ -124,7 +124,8 @@ var HttpHandler = map[string]httpHandler{
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
 	resetCache:                 (*HttpServer).handleResetCache,
-	handleTestValidate:         (*HttpServer).handleTestValidate,
+	testValidate:               (*HttpServer).handleTestValidate,
+	stallInsert:                (*HttpServer).handleStallInsert,
 	//=================================
 
 	// Beststate

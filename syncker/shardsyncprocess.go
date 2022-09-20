@@ -152,12 +152,19 @@ func (s *ShardSyncProcess) bootstrap(force bool) {
 }
 
 func (s *ShardSyncProcess) start() {
-	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC {
+	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC || s.status == STALL_SYNC {
 		return
 	}
 	s.bootstrap(false)
 	s.status = RUNNING_SYNC
 
+}
+
+func (s *ShardSyncProcess) Stall() {
+	if s.status == BOOTSTRAP_SYNC {
+		return
+	}
+	s.status = STALL_SYNC
 }
 
 func (s *ShardSyncProcess) stop() {
@@ -194,7 +201,9 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			time.AfterFunc(time.Millisecond*500, s.insertShardBlockFromPool)
 		}
 	}()
-
+	if s.status != RUNNING_SYNC {
+		return
+	}
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
 		blocks := s.shardPool.GetBlockByPrevHash(viewHash)
