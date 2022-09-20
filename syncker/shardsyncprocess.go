@@ -123,6 +123,10 @@ func NewShardSyncProcess(
 				}
 
 				//bootstrap when stall
+				if s.status == STALL_SYNC {
+					s.bootstrap(true)
+				}
+
 				if s.status == RUNNING_SYNC {
 					if s.startSyncTime.IsZero() {
 						continue
