@@ -45,6 +45,7 @@ type ShardSyncProcess struct {
 	lock                  *sync.RWMutex
 	lastInsert            string
 	startSyncTime         time.Time
+	testStall             bool
 }
 
 func NewShardSyncProcess(
@@ -122,7 +123,6 @@ func NewShardSyncProcess(
 					lastHeight = s.Chain.GetBestViewHeight()
 				}
 
-				//bootstrap when stall
 				if s.status == RUNNING_SYNC {
 					if s.startSyncTime.IsZero() {
 						continue
@@ -149,10 +149,11 @@ func (s *ShardSyncProcess) bootstrap(force bool) {
 		bootstrap.BootstrapShard(s.shardID, force)
 	}
 	s.status = RUNNING_SYNC
+	s.testStall = false
 }
 
 func (s *ShardSyncProcess) start() {
-	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC || s.status == STALL_SYNC {
+	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC {
 		return
 	}
 	s.bootstrap(false)
@@ -161,10 +162,7 @@ func (s *ShardSyncProcess) start() {
 }
 
 func (s *ShardSyncProcess) Stall() {
-	if s.status == BOOTSTRAP_SYNC {
-		return
-	}
-	s.status = STALL_SYNC
+	s.testStall = true
 }
 
 func (s *ShardSyncProcess) stop() {
@@ -201,7 +199,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			time.AfterFunc(time.Millisecond*500, s.insertShardBlockFromPool)
 		}
 	}()
-	if s.status != RUNNING_SYNC {
+	if s.testStall {
 		return
 	}
 	//loop all current views, if there is any block connect to the view
@@ -326,6 +324,10 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 }
 
 func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {
+	if s.testStall {
+		return 0
+	}
+
 	if pState.processed {
 		return
 	}
