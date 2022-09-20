@@ -411,6 +411,7 @@ func (s *BootstrapManager) BootstrapBeacon() {
 	if err != nil {
 		panic(err)
 	}
+	s.blockchain.BeaconChain.BlockStorage.useFF = true
 
 	err = s.blockchain.ReloadDatabase(-1)
 	if err != nil {
@@ -468,6 +469,7 @@ func (s *BootstrapManager) BootstrapShard(sid int, force bool) {
 	if err != nil {
 		panic(err)
 	}
+	s.blockchain.ShardChain[sid].BlockStorage.useFF = true
 
 	err = s.blockchain.ReloadDatabase(sid)
 
