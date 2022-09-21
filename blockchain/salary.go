@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -677,17 +676,15 @@ func (blockchain *BlockChain) GetBlockTimeByBlockVersion(blkVersion int) (int64,
 	blockTimeMap := config.Param().BlockTimeParam
 	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
 
-	for feature, version := range config.Param().FeatureVersion {
-		if version == int64(blkVersion) {
-			if t, ok := blockTimeMap[feature]; !ok {
-				return 0, fmt.Errorf("Cannot find block time param %v", feature)
-			} else {
-				return t, nil
-			}
+	blockTime := defaultBlockTime
+	for _, anchor := range blockchain.GetBeaconBestState().TSManager.Anchors {
+		if config.Param().FeatureVersion[anchor.Feature] > int64(blkVersion) {
+			break
 		}
+		blockTime = int64(anchor.Timeslot)
 	}
 
-	return defaultBlockTime, nil
+	return blockTime, nil
 }
 
 func (blockchain *BlockChain) GetBasicRewardByVersion(version int) (uint64, error) {
