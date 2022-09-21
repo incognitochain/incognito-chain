@@ -366,6 +366,11 @@ func (c *config) verify() {
 			panic(err)
 		}
 	}
+
+	if c.Backup && c.BootstrapAddress != "" {
+		err := errors.New("Backup and Bootstrap cannot be set together!")
+		panic(err)
+	}
 }
 
 func LoadConfig() *config {
