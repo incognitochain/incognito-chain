@@ -122,7 +122,7 @@ auto_enable_feature:
       force_trigger: 1000000000
       require_percentage: 80
   - blocktime20s_15_9:
-      min_trigger: 1e9
+      min_trigger: 2275826
       require_percentage: 85
 blocktime_param:
   - "blocktimedef": 40
