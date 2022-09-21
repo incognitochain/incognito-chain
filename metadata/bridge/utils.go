@@ -20,6 +20,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -86,6 +87,10 @@ func IsBridgeAggMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BridgeAggAddTokenMeta:
 		return true
+	case metadataCommon.BurnForCallConfirmMeta, metadataCommon.BurnForCallRequestMeta, metadataCommon.BurnForCallResponseMeta:
+		return true 
+	case metadataCommon.IssuingReshieldResponseMeta:
+		return true
 	default:
 		return false
 	}
@@ -127,9 +132,10 @@ func ExtractIssueEVMDataFromReceipt(
 	if txReceipt == nil {
 		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: bridge tx receipt is null")
 	}
+
 	logMap, err := PickAndParseLogMapFromReceiptByContractAddr(txReceipt, contractAddress, "Deposit")
 	if err != nil {
-		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: an error occurred while parsing log map from receipt: ", err)
+		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: an error occurred while parsing log map from receipt: %v", err)
 	}
 	if logMap == nil {
 		return nil, utils.EmptyString, nil, fmt.Errorf("WARNING: could not find log map out from receipt")
@@ -166,6 +172,76 @@ func ExtractIssueEVMDataFromReceipt(
 	return amt, incAddrStr, extTokenID, nil
 }
 
+type DepositEventData struct {
+	Amount          *big.Int
+	ReceiverStr     string
+	ExternalTokenID []byte
+	IncTxID         []byte
+	ShardID         byte
+	IsOneTime       bool
+}
+
+func ExtractRedepositEVMDataFromReceipt(
+	txReceipt *types.Receipt,
+	contractAddress string, prefix string,
+) ([]DepositEventData, error) {
+	if txReceipt == nil {
+		return nil, fmt.Errorf("bridge tx receipt is null")
+	}
+	if len(txReceipt.Logs) == 0 {
+		metadataCommon.Logger.Log.Errorf("WARNING: LOG data is invalid.")
+		return nil, nil
+	}
+
+	var result []DepositEventData
+	for _, log := range txReceipt.Logs {
+		if log, err := ParseEVMLogDataByEventName(log, contractAddress, "Redeposit"); err != nil {
+			metadataCommon.Logger.Log.Errorf("WARNING: try parse Redeposit event - %v", err)
+		} else {
+			logMapBytes, _ := json.Marshal(log)
+			metadataCommon.Logger.Log.Warn("INFO: eth redeposit log json - ", string(logMapBytes))
+
+			// the token might be ETH/ERC20 BNB/BEP20
+			tokenAddr, ok := log["token"].(rCommon.Address)
+			if !ok {
+				return nil, fmt.Errorf("could not parse evm token id from log map")
+			}
+			extTokenID := append([]byte(prefix), tokenAddr.Bytes()...)
+
+			incAddr, ok := log["redepositIncAddress"].([]byte)
+			if !ok {
+				return nil, fmt.Errorf("could not parse incognito address from bridge log map")
+			}
+			var recv privacy.OTAReceiver
+			err := recv.SetBytes(incAddr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid incognito receiver from bridge reshield log map.")
+			}
+			incAddrStr, _ := recv.String()
+
+			amt, ok := log["amount"].(*big.Int)
+			if !ok {
+				return nil, fmt.Errorf("could not parse amount from bridge log map.")
+			}
+			incTxID, ok := log["itx"].([32]byte)
+			if !ok {
+				return nil, fmt.Errorf("could not parse itx from bridge log map.")
+			}
+
+			result = append(result, DepositEventData{
+				Amount:          amt,
+				ReceiverStr:     incAddrStr,
+				ExternalTokenID: extTokenID,
+				IncTxID:         incTxID[:],
+				ShardID:         recv.GetShardID(),
+				IsOneTime:       true,
+			})
+		}
+	}
+
+	return result, nil
+}
+
 func VerifyTokenPair(
 	stateDBs map[int]*statedb.StateDB,
 	ac *metadataCommon.AccumulatedValues,
@@ -174,7 +250,7 @@ func VerifyTokenPair(
 ) error {
 	canProcess, err := ac.CanProcessTokenPair(token, incTokenID)
 	if err != nil {
-		return fmt.Errorf("WARNING: an error occurred while checking it can process for token pair on the current block or not: ", err)
+		return fmt.Errorf("WARNING: an error occurred while checking it can process for token pair on the current block or not: %v", err)
 	}
 	if !canProcess {
 		return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid in current block")
@@ -185,10 +261,10 @@ func VerifyTokenPair(
 	}
 	isValid, err := statedb.CanProcessTokenPair(stateDBs[common.BeaconChainID], token, incTokenID, privacyTokenExisted)
 	if err != nil {
-		return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
+		return fmt.Errorf("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: %v", err)
 	}
 	if !isValid {
-		return fmt.Errorf("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
+		return fmt.Errorf("WARNING: pair of incognito token id %s & bridge's id %x is invalid with previous blocks", incTokenID, token)
 	}
 	return nil
 }
@@ -209,6 +285,19 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 		return nil, errors.New(fmt.Sprintf("invalid prefix in external tokenID %v", tokenID))
 	}
 	return tokenID, nil
+}
+
+// TrimNetworkPrefix is a helper that removes the 3-byte network prefix from the full 23-byte external address (for burning confirm etc.); 
+// within the bridgeagg vault we only use prefixed addresses
+func TrimNetworkPrefix(fullTokenID []byte, prefix string) ([]byte, error) {
+	if !bytes.HasPrefix(fullTokenID, []byte(prefix)) {
+		return nil, fmt.Errorf("invalid prefix in external tokenID %x, expect %s", fullTokenID, prefix)
+	}
+	result := fullTokenID[len(prefix):]
+	if len(result) != common.ExternalBridgeTokenLength {
+		return nil, fmt.Errorf("invalid length %d for un-prefixed external address", len(result))
+	}
+	return result, nil
 }
 
 // findExternalTokenID finds the external tokenID for a bridge token from database
@@ -374,32 +463,44 @@ func PickAndParseLogMapFromReceiptByContractAddr(
 	constructedReceipt *types.Receipt,
 	ethContractAddressStr string,
 	eventName string) (map[string]interface{}, error) {
-	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
 		metadataCommon.Logger.Log.Errorf("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
-	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(ethContractAddressStr).Bytes(), log.Address.Bytes()) {
-			logData = log.Data
-			break
+	for i, log := range constructedReceipt.Logs {
+		res, err := ParseEVMLogDataByEventName(log, ethContractAddressStr, eventName)
+		if err != nil {
+			metadataCommon.Logger.Log.Infof("WARNING: skip log #%d - %v", i, err)
+		} else {
+			return res, nil
 		}
 	}
-	if len(logData) == 0 {
-		metadataCommon.Logger.Log.Errorf("WARNING: logData is empty.")
-		return nil, nil
-	}
-	return ParseEVMLogDataByEventName(logData, eventName)
+
+	return nil, nil
 }
 
-func ParseEVMLogDataByEventName(data []byte, name string) (map[string]interface{}, error) {
+func ParseEVMLogDataByEventName(log *types.Log, ethContractAddressStr string, name string) (map[string]interface{}, error) {
 	abiIns, err := abi.JSON(strings.NewReader(common.AbiJson))
 	if err != nil {
 		return nil, err
 	}
+	if !bytes.Equal(rCommon.HexToAddress(ethContractAddressStr).Bytes(), log.Address.Bytes()) {
+		return nil, fmt.Errorf("contract address mismatch, expect %s", ethContractAddressStr)
+	}
+	event, exists := abiIns.Events[name]
+	if !exists {
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, fmt.Errorf("event %s not found in vault ABI", name))
+	}
+	evSigHash := event.Id()
+	if !bytes.Equal(log.Topics[0][:], evSigHash[:]) {
+		return nil, fmt.Errorf("event %s with topic %s not found in log %x", name, evSigHash.String(), log.Topics[0])
+	}
+	if len(log.Data) == 0 {
+		return nil, fmt.Errorf("logData is empty")
+	}
 	dataMap := map[string]interface{}{}
-	if err = abiIns.UnpackIntoMap(dataMap, name, data); err != nil {
+	if err = abiIns.UnpackIntoMap(dataMap, name, log.Data); err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, err)
 	}
 	return dataMap, nil
@@ -427,6 +528,8 @@ func IsBurningConfirmMetaType(metaType int) bool {
 	case metadataCommon.BurningPLGConfirmMeta, metadataCommon.BurningPLGConfirmForDepositToSCMeta:
 		return true
 	case metadataCommon.BurningPRVBEP20ConfirmMeta, metadataCommon.BurningPRVERC20ConfirmMeta:
+		return true
+	case metadataCommon.BurnForCallConfirmMeta:
 		return true
 	default:
 		return false

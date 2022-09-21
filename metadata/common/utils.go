@@ -781,7 +781,7 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 // NOTE: append new bridge agg unshield metadata type
 func IsBridgeAggUnshieldMetaType(metadataType int) bool {
 	switch metadataType {
-	case BurningUnifiedTokenRequestMeta:
+	case BurningUnifiedTokenRequestMeta, BurnForCallRequestMeta:
 		return true
 	default:
 		return false
