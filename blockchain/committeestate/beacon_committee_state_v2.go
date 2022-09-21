@@ -158,13 +158,13 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-		case instruction.RE_DELEGATE:
-			redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-				continue
-			}
-			b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
+			// case instruction.RE_DELEGATE:
+			// 	redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			// 	if err != nil {
+			// 		Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+			// 		continue
+			// 	}
+			// 	b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 		}
 	}
 

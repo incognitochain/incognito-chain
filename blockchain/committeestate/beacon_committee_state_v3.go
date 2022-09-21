@@ -203,13 +203,13 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-		case instruction.RE_DELEGATE:
-			redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-				continue
-			}
-			b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
+			// case instruction.RE_DELEGATE:
+			// 	redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			// 	if err != nil {
+			// 		Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+			// 		continue
+			// 	}
+			// b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 			//case instruction.DEQUEUE:
 			//	dequeueInstruction, err := instruction.ValidateAndImportDequeueInstructionFromString(inst)
 			//	if err != nil {
@@ -231,6 +231,82 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 		incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
 	}
 	return hashes, committeeChange, incurredInstructions, nil
+}
+
+func (b *BeaconCommitteeStateV3) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
+	[]string,
+	map[byte][]string,
+	map[byte][]string,
+	[]string,
+	int,
+	map[string]bool,
+	map[string]privacy.PaymentAddress,
+	map[string]common.Hash,
+	map[string]string,
+) {
+	shardCommittee := make(map[byte][]string)
+	shardSubstitute := make(map[byte][]string)
+	numberOfAssignedCandidates := b.numberOfAssignedCandidates
+	autoStake := make(map[string]bool)
+	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	stakingTx := make(map[string]common.Hash)
+	delegates := make(map[string]string)
+
+	beaconCommittee := common.DeepCopyString(b.beaconCommittee)
+
+	for shardID, oneShardCommittee := range b.shardCommittee {
+		shardCommittee[shardID] = common.DeepCopyString(oneShardCommittee)
+	}
+	for shardID, oneShardSubsitute := range b.shardSubstitute {
+		shardSubstitute[shardID] = common.DeepCopyString(oneShardSubsitute)
+	}
+	nextEpochShardCandidate := b.shardCommonPool[numberOfAssignedCandidates:]
+	currentEpochShardCandidate := b.shardCommonPool[:numberOfAssignedCandidates]
+	shardCandidates := append(currentEpochShardCandidate, nextEpochShardCandidate...)
+
+	shardCommonPool := common.DeepCopyString(shardCandidates)
+	for k, v := range b.autoStake {
+		autoStake[k] = v
+	}
+	for k, v := range b.rewardReceiver {
+		rewardReceiver[k] = v
+	}
+	for k, v := range b.stakingTx {
+		stakingTx[k] = v
+	}
+	for k, v := range b.delegate {
+		delegates[k] = v
+	}
+
+	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, delegates
+}
+
+func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, delegates := b.getDataForUpgrading(env)
+
+	committeeStateV4 := NewBeaconCommitteeStateV4WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+		delegates,
+		map[byte][]string{},
+		NewSwapRuleV3(),
+		NewAssignRuleV3(),
+	)
+
+	Logger.log.Infof("Upgrade Committee State V3 to V4, swap rule %+v, assign rule %+v",
+		reflect.TypeOf(*NewSwapRuleV3()), reflect.TypeOf(*NewAssignRuleV3()))
+	return committeeStateV4
 }
 
 // assignToSyncPool assign validatrors to syncPool

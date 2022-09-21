@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -35,6 +36,7 @@ type BeaconCommitteeState interface {
 		*CommitteeChange,
 		[][]string,
 		error)
+	ProcessStoreCommitteeStateInfo(cChange *CommitteeChange, stateDB *statedb.StateDB, isEndOfEpoch bool) error
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
 }

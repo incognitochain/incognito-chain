@@ -15,9 +15,10 @@ type ReDelegateInstruction struct {
 	DelegateListStruct        []incognitokey.CommitteePublicKey
 }
 
-func NewReDelegateInstructionWithValue(publicKeys []string) *ReDelegateInstruction {
+func NewReDelegateInstructionWithValue(publicKeys, redelegateList []string) *ReDelegateInstruction {
 	res := &ReDelegateInstruction{}
 	res.SetPublicKeys(publicKeys)
+	res.SetDelegateList(redelegateList)
 	return res
 }
 
@@ -26,7 +27,7 @@ func NewReDelegateInstruction() *ReDelegateInstruction {
 }
 
 func (s *ReDelegateInstruction) GetType() string {
-	return STOP_AUTO_STAKE_ACTION
+	return RE_DELEGATE
 }
 
 func (s *ReDelegateInstruction) IsEmpty() bool {
@@ -69,13 +70,13 @@ func ValidateAndImportReDelegateInstructionFromString(instruction []string) (*Re
 
 func ImportReDelegateInstructionFromString(instruction []string) *ReDelegateInstruction {
 	redelegateInstruction := NewReDelegateInstruction()
-	if len(instruction[1]) > 0 {
+	if len(instruction[0]) > 0 {
 		publicKeys := strings.Split(instruction[1], SPLITTER)
 		redelegateInstruction, _ = redelegateInstruction.SetPublicKeys(publicKeys)
 	}
-	if len(instruction[2]) > 0 {
+	if len(instruction[1]) > 0 {
 		publicKeys := strings.Split(instruction[2], SPLITTER)
-		redelegateInstruction, _ = redelegateInstruction.SetPublicKeys(publicKeys)
+		redelegateInstruction, _ = redelegateInstruction.SetDelegateList(publicKeys)
 	}
 	return redelegateInstruction
 }

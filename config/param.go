@@ -21,7 +21,7 @@ func Param() *param {
 	return p
 }
 
-//AbortParam use for unit test only
+// AbortParam use for unit test only
 // DO NOT use this function for development process
 func AbortParam() {
 	p = &param{}
@@ -38,7 +38,7 @@ type TxsPerBlock struct {
 	Upper int `mapstructure:"upperbound"`
 }
 
-//param for all variables in incognito node process
+// param for all variables in incognito node process
 type param struct {
 	Name                             string                       `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
 	Net                              uint32                       `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
@@ -141,6 +141,7 @@ type consensusParam struct {
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
 	EnableSlashingHeightV2    uint64   `mapstructure:"enable_slashing_height_v2"`
 	StakingFlowV3Height       uint64   `mapstructure:"staking_flow_v3_height"`
+	StakingFlowV4Height       uint64   `mapstructure:"staking_flow_v4_height"`
 	NotUseBurnedCoins         uint64   `mapstructure:"force_not_use_burned_coins"`
 	Lemma2Height              uint64   `mapstructure:"lemma2_height"`
 	ByzantineDetectorHeight   uint64   `mapstructure:"byzantine_detector_height"`
@@ -231,7 +232,7 @@ func verifyParam(p *param) error {
 	return nil
 }
 
-//key1,key2 : default key of the network
+// key1,key2 : default key of the network
 func (p *param) LoadKey(key1 []byte, key2 []byte) {
 	network := c.Network()
 	configPath := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)

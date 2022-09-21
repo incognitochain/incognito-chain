@@ -53,6 +53,7 @@ type ShardStakerInfo struct {
 	autoStaking         bool
 	beaconConfirmHeight uint64
 	delegate            string
+	hasCredit           bool
 }
 
 func NewStakerInfo() *ShardStakerInfo {
@@ -65,6 +66,7 @@ func NewShardStakerInfoWithValue(
 	txStakingID common.Hash,
 	beaconConfirmHeight uint64,
 	delegate string,
+	hasCredit bool,
 ) *ShardStakerInfo {
 	return &ShardStakerInfo{
 		rewardReceiver:      rewardReceiver,
@@ -72,6 +74,7 @@ func NewShardStakerInfoWithValue(
 		txStakingID:         txStakingID,
 		beaconConfirmHeight: beaconConfirmHeight,
 		delegate:            delegate,
+		hasCredit:           hasCredit,
 	}
 }
 
@@ -84,12 +87,14 @@ func (c ShardStakerInfo) MarshalJSON() ([]byte, error) {
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
 		Delegate            string
+		HasCredit           bool
 	}{
 		RewardReceiver:      c.rewardReceiver,
 		TxStakingID:         c.txStakingID,
 		AutoStaking:         c.autoStaking,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		Delegate:            c.delegate,
+		HasCredit:           c.hasCredit,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -106,6 +111,7 @@ func (c *ShardStakerInfo) UnmarshalJSON(data []byte) error {
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
 		Delegate            string
+		HasCredit           bool
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -116,6 +122,7 @@ func (c *ShardStakerInfo) UnmarshalJSON(data []byte) error {
 	c.autoStaking = temp.AutoStaking
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.delegate = temp.Delegate
+	c.hasCredit = temp.HasCredit
 	return nil
 }
 
@@ -129,6 +136,10 @@ func (s *ShardStakerInfo) SetTxStakingID(t common.Hash) {
 
 func (s *ShardStakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
+}
+
+func (s *ShardStakerInfo) SetHasCredit(c bool) {
+	s.hasCredit = c
 }
 
 func (s *ShardStakerInfo) SetDelegate(delegate string) {
@@ -145,6 +156,10 @@ func (s ShardStakerInfo) TxStakingID() common.Hash {
 
 func (s ShardStakerInfo) AutoStaking() bool {
 	return s.autoStaking
+}
+
+func (s ShardStakerInfo) HasCredit() bool {
+	return s.hasCredit
 }
 
 func (s ShardStakerInfo) BeaconConfirmHeight() uint64 {

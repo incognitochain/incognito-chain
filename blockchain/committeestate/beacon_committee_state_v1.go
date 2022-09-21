@@ -196,13 +196,13 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 				continue
 			}
 			b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
-		case instruction.RE_DELEGATE:
-			redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-				continue
-			}
-			b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
+			// case instruction.RE_DELEGATE:
+			// 	redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			// 	if err != nil {
+			// 		Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+			// 		continue
+			// 	}
+			// 	b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 		}
 		if len(tempNewShardCandidates) > 0 {
 			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate, tempNewShardCandidates...)
@@ -283,6 +283,7 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 		b.stakingTx,
 		env.BeaconHeight,
 		b.delegate,
+		map[string]interface{}{},
 	)
 
 	if err != nil {
@@ -430,6 +431,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.stakingTx,
 		env.BeaconHeight,
 		b.delegate,
+		map[string]interface{}{},
 	)
 	return err
 }

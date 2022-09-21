@@ -29,7 +29,7 @@ type beaconCommitteeStateBase struct {
 	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
-func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
+func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64, stakingFlowV4 uint64,
 	env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3)
 	switch version {
@@ -39,6 +39,8 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 		return initGenesisBeaconCommitteeStateV2(env)
 	case STAKING_FLOW_V3:
 		return initGenesisBeaconCommitteeStateV3(env)
+	case STAKING_FLOW_V4:
+		return initGenesisBeaconCommitteeStateV4(env)
 	default:
 		panic("not valid committee state version")
 	}
@@ -477,6 +479,7 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.stakingTx,
 				1,
 				b.delegate,
+				map[string]interface{}{},
 			)
 			if err != nil {
 				panic(err)
@@ -527,6 +530,10 @@ func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStat
 	[][]string,
 	error) {
 	return nil, nil, [][]string{}, nil
+}
+
+func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(cChange *CommitteeChange, stateDB *statedb.StateDB, isEndOfEpoch bool) error {
+	return nil
 }
 
 func (b *beaconCommitteeStateBase) turnOffStopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
@@ -580,19 +587,6 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
 	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
-}
-
-func (b *beaconCommitteeStateBase) processReDelegateInstruction(
-	redelegateInstruction *instruction.ReDelegateInstruction,
-	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
-) {
-	changeMap := map[string]string{}
-	for index, committeePublicKey := range redelegateInstruction.CommitteePublicKeys {
-		b.delegate[committeePublicKey] = redelegateInstruction.DelegateList[index]
-		changeMap[committeePublicKey] = redelegateInstruction.DelegateList[index]
-	}
-	committeeChange.AddReDelegateInfo(changeMap)
 }
 
 func SnapshotShardCommonPoolV2(

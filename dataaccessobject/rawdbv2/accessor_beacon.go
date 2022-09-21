@@ -97,3 +97,20 @@ func GetBeaconViews(db incdb.KeyValueReader) ([]byte, error) {
 	}
 	return block, nil
 }
+
+func StoreBeaconNextDelegate(db incdb.KeyValueWriter, val []byte) error {
+	key := GetBeaconNextDelegateKey()
+	if err := db.Put(key, val); err != nil {
+		return NewRawdbError(StoreBeaconBestStateError, err)
+	}
+	return nil
+}
+
+func GetBeaconNextDelegte(db incdb.KeyValueReader) ([]byte, error) {
+	key := GetBeaconNextDelegateKey()
+	info, err := db.Get(key)
+	if err != nil {
+		return nil, NewRawdbError(GetBeaconBestStateError, err)
+	}
+	return info, nil
+}
