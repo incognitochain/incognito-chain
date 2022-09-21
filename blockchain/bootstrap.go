@@ -19,6 +19,8 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -375,115 +377,183 @@ func NewBootstrapManager(hosts []string, bc *BlockChain) *BootstrapManager {
 }
 
 func (s *BootstrapManager) BootstrapBeacon() {
-	randServer := mathrand.Intn(len(s.hosts))
-	host := fmt.Sprintf("http://%v", s.hosts[randServer])
-	rpcClient := remoteRPCClient{host}
-	latestBackup, _ := rpcClient.GetLatestBackup()
-
-	log.Println("host", host)
-	tmp, _ := json.Marshal(latestBackup)
-	log.Println("latestBackup", string(tmp))
-
-	if latestBackup.CheckpointName == "" {
-		return
-	}
-	//only backup if back 500k block
-	if latestBackup.BeaconView.BeaconHeight < s.blockchain.GetBeaconBestState().BeaconHeight+500*1000 {
-		return
+	rand := mathrand.Int()
+	m := make(map[string]string)
+	hashes := []string{}
+	for _, h := range s.hosts {
+		seed := h + strconv.Itoa(int(rand))
+		hash := common.HashB([]byte(seed))
+		hashes = append(hashes, string(hash[:32]))
+		m[string(hash[:32])] = h
 	}
 
-	cfg := config.Config()
-
-	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon.tmp")
-	os.RemoveAll(tmpDir)
-	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon")
-	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0776)
-	bestView := latestBackup.BeaconView
-
-	Logger.log.Info("Start bootstrap beacon from host", host)
-	//Logger.log.Infof("Stream block beacon from %v", latestBackup.MinBeaconHeight)
-	rpcClient.SyncDB(latestBackup.CheckpointName, -1, "state", 0, tmpDir)
-	rpcClient.SyncDB(latestBackup.CheckpointName, -1, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
-	rpcClient.SyncDB(latestBackup.CheckpointName, -1, "block", 0, path.Join(tmpDir, "blockstorage"))
-	Logger.log.Info("Finish sync ... post processing ...")
-
-	err := s.blockchain.BeaconChain.BlockStorage.ChangeMainDir(tmpDir, mainDir)
-	if err != nil {
-		panic(err)
-	}
-	s.blockchain.BeaconChain.BlockStorage.useFF = true
-
-	err = s.blockchain.ReloadDatabase(-1)
-	if err != nil {
-		panic(err)
+	sort.Strings(hashes)
+	hosts := []string{}
+	for _, h := range hashes {
+		hosts = append(hosts, m[h])
 	}
 
-	allViews := []*BeaconBestState{bestView}
-	b, _ := json.Marshal(allViews)
-	err = rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
+	for hID, _ := range hosts {
+
+		host := fmt.Sprintf("http://%v", hosts[hID])
+		rpcClient := remoteRPCClient{host}
+		latestBackup, _ := rpcClient.GetLatestBackup()
+		log.Println("latestBackup", host, latestBackup.CheckpointName)
+
+		if latestBackup.CheckpointName == "" {
+			continue
+		}
+		//only backup if back 500k block
+		if latestBackup.BeaconView.BeaconHeight < s.blockchain.GetBeaconBestState().BeaconHeight+500*1000 {
+			continue
+		}
+
+		cfg := config.Config()
+
+		tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon.tmp")
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			panic(err)
+		}
+		mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon")
+		err = os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0776)
+		if err != nil {
+			panic(err)
+		}
+		bestView := latestBackup.BeaconView
+
+		Logger.log.Info("Start bootstrap beacon from host", host)
+		//Logger.log.Infof("Stream block beacon from %v", latestBackup.MinBeaconHeight)
+		err = rpcClient.SyncDB(latestBackup.CheckpointName, -1, "state", 0, tmpDir)
+		if err != nil {
+			continue
+		}
+		err = rpcClient.SyncDB(latestBackup.CheckpointName, -1, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
+		if err != nil {
+			continue
+		}
+		err = rpcClient.SyncDB(latestBackup.CheckpointName, -1, "block", 0, path.Join(tmpDir, "blockstorage"))
+		if err != nil {
+			continue
+		}
+		Logger.log.Info("Finish sync ... post processing ...")
+
+		err = s.blockchain.BeaconChain.BlockStorage.ChangeMainDir(tmpDir, mainDir)
+		if err != nil {
+			panic(err)
+		}
+		s.blockchain.BeaconChain.BlockStorage.useFF = true
+
+		err = s.blockchain.ReloadDatabase(-1)
+		if err != nil {
+			panic(err)
+		}
+
+		allViews := []*BeaconBestState{bestView}
+		b, _ := json.Marshal(allViews)
+		err = rawdbv2.StoreBeaconViews(s.blockchain.GetBeaconChainDatabase(), b)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+		err = s.blockchain.RestoreBeaconViews()
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+		Logger.log.Info("Bootstrap beacon finish!")
+		break
 	}
-	err = s.blockchain.RestoreBeaconViews()
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-	Logger.log.Info("Bootstrap beacon finish!")
 }
 
 func (s *BootstrapManager) BootstrapShard(sid int, force bool) {
-	randServer := mathrand.Intn(len(s.hosts))
-	host := fmt.Sprintf("http://%v", s.hosts[randServer])
-	rpcClient := remoteRPCClient{host}
-	latestBackup, _ := rpcClient.GetLatestBackup()
-	fmt.Println("latestBackup", latestBackup)
-	if latestBackup.CheckpointName == "" {
-		return
+
+	rand := mathrand.Int()
+	m := make(map[string]string)
+	hashes := []string{}
+	for _, h := range s.hosts {
+		seed := h + strconv.Itoa(int(rand))
+		hash := common.HashB([]byte(seed))
+		hashes = append(hashes, string(hash[:32]))
+		m[string(hash[:32])] = h
 	}
 
-	//if not force backup, only backup if behind 500k block
-	if !force && latestBackup.ShardView[sid].ShardHeight < s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+500*1000 {
-		return
+	sort.Strings(hashes)
+	hosts := []string{}
+	for _, h := range hashes {
+		hosts = append(hosts, m[h])
 	}
 
-	cfg := config.Config()
-	tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v.tmp", sid))
-	os.RemoveAll(tmpDir)
-	os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0776)
-	mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", sid))
+	for hID, _ := range hosts {
+		host := fmt.Sprintf("http://%v", hosts[hID])
+		rpcClient := remoteRPCClient{host}
+		latestBackup, _ := rpcClient.GetLatestBackup()
+		log.Println("latestBackup", host, latestBackup.CheckpointName)
 
-	//retrieve beacon block -> backup height
-	bestView := latestBackup.ShardView[sid]
+		if latestBackup.CheckpointName == "" {
+			continue
+		}
 
-	Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
-	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "state", 0, tmpDir)
-	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
-	rpcClient.SyncDB(latestBackup.CheckpointName, sid, "block", bestView.ShardHeight-500, path.Join(tmpDir, "blockstorage"))
-	Logger.log.Info("Finish sync ... post processing ...")
-	s.blockchain.BeaconChain.insertLock.Lock()
-	defer s.blockchain.BeaconChain.insertLock.Unlock()
+		//if not force backup, only backup if behind 500k block
+		if !force && latestBackup.ShardView[sid].ShardHeight < s.blockchain.GetBestStateShard(byte(sid)).ShardHeight+500*1000 {
+			continue
+		}
 
-	err := s.blockchain.ShardChain[sid].BlockStorage.ChangeMainDir(tmpDir, mainDir)
-	if err != nil {
-		panic(err)
+		cfg := config.Config()
+		tmpDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v.tmp", sid))
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			panic(err)
+		}
+		err = os.MkdirAll(path.Join(tmpDir, "blockstorage", "blockKV"), 0776)
+		if err != nil {
+			panic(err)
+		}
+		mainDir := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", sid))
+
+		//retrieve beacon block -> backup height
+		bestView := latestBackup.ShardView[sid]
+
+		Logger.log.Infof("Start bootstrap shard %v from host %v", sid, host)
+		err = rpcClient.SyncDB(latestBackup.CheckpointName, sid, "state", 0, tmpDir)
+		if err != nil {
+			continue
+		}
+		err = rpcClient.SyncDB(latestBackup.CheckpointName, sid, "blockKV", 0, path.Join(tmpDir, "blockstorage", "blockKV"))
+		if err != nil {
+			continue
+		}
+		err = rpcClient.SyncDB(latestBackup.CheckpointName, sid, "block", bestView.ShardHeight-500, path.Join(tmpDir, "blockstorage"))
+		if err != nil {
+			continue
+		}
+		Logger.log.Info("Finish sync ... post processing ...")
+		s.blockchain.BeaconChain.insertLock.Lock()
+		defer s.blockchain.BeaconChain.insertLock.Unlock()
+
+		err = s.blockchain.ShardChain[sid].BlockStorage.ChangeMainDir(tmpDir, mainDir)
+		if err != nil {
+			panic(err)
+		}
+		s.blockchain.ShardChain[sid].BlockStorage.useFF = true
+
+		err = s.blockchain.ReloadDatabase(sid)
+
+		if err != nil {
+			panic(err)
+		}
+
+		allViews := []*ShardBestState{}
+		allViews = append(allViews, bestView)
+		if err := rawdbv2.StoreShardBestState(s.blockchain.GetShardChainDatabase(byte(sid)), byte(sid), allViews); err != nil {
+			panic(err)
+		}
+
+		err = s.blockchain.RestoreShardViews(byte(sid))
+		if err != nil {
+			panic(err)
+		}
+		Logger.log.Infof("Bootstrap shard %v finish!", sid)
+		break
 	}
-	s.blockchain.ShardChain[sid].BlockStorage.useFF = true
-
-	err = s.blockchain.ReloadDatabase(sid)
-
-	if err != nil {
-		panic(err)
-	}
-
-	allViews := []*ShardBestState{}
-	allViews = append(allViews, bestView)
-	if err := rawdbv2.StoreShardBestState(s.blockchain.GetShardChainDatabase(byte(sid)), byte(sid), allViews); err != nil {
-		panic(err)
-	}
-
-	s.blockchain.RestoreShardViews(byte(sid))
-	Logger.log.Infof("Bootstrap shard %v finish!", sid)
-
 }
