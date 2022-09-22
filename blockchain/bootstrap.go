@@ -148,7 +148,15 @@ type FileObject struct {
 	Size uint64
 }
 
-func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offset uint64, dir string) error {
+func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offset uint64, dir string) (streamErr error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Stream panic ... recover", r)
+			streamErr = errors.New("Stream panic")
+		}
+	}()
+
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getbootstrapstatedb",
@@ -184,7 +192,14 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 		}
 		return data
 	}
+
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Stream panic ... recover", r)
+				streamErr = errors.New("Stream panic")
+			}
+		}()
 		readData := []byte{}
 		for {
 			readData = readUntilLarge(readData, 8)
@@ -243,7 +258,7 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 			if err == io.EOF {
 				break
 			}
-			panic(err)
+			return err
 		}
 		dataChan <- p[:n]
 	}
@@ -252,8 +267,7 @@ func (r *remoteRPCClient) SyncDB(checkpoint string, cid int, dbType string, offs
 	wg.Wait()
 	close(dataChan)
 
-	//buffReader := resp.Body
-	return nil
+	return
 }
 
 func (r *remoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int) (res interface{}, err error) {
