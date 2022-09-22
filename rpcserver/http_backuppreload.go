@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"io"
 	"io/ioutil"
@@ -18,6 +19,10 @@ import (
 )
 
 func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if !config.Config().Backup {
+		return nil, nil
+	}
+
 	latest := httpServer.GetBlockchain().BackupManager.GetLastestBootstrap()
 	b, _ := json.Marshal(latest)
 	fmt.Println("GetLastestBootstrap", b)
@@ -30,6 +35,10 @@ type FileObject struct {
 }
 
 func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params interface{}) {
+	if !config.Config().Backup {
+		return
+	}
+
 	paramArray, ok := params.([]interface{})
 	if !ok || len(paramArray) != 4 {
 		return
