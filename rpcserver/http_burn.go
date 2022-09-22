@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
@@ -390,7 +391,7 @@ func findBurnConfirmInst(
 			}
 		}
 
-		h, err := common.Hash{}.NewHashFromStr(inst[5])
+		h, err := bridgeagg.GetTxIDFromBurningConfirmInst(inst)
 		if err != nil {
 			continue
 		}

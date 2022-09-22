@@ -31,7 +31,7 @@ type FeatureReportInfo struct {
 	ValidatorSize map[int]int               // chainid -> all validator size
 }
 
-//filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
+// filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
 func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, reportFeatures []string, validators []*consensus.Validator) (*wire.MessageFeature, error) {
 
 	if len(reportFeatures) == 0 {
@@ -95,7 +95,7 @@ func (bc *BlockChain) InitFeatureStat() {
 	go func() {
 		for {
 			bc.SendFeatureStat()
-			time.Sleep(10 * time.Second)
+			time.Sleep(10 * time.Minute)
 		}
 	}()
 }
@@ -152,7 +152,7 @@ func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
 	stat.msg <- msg
 }
 
-//contain all trigger & untrigger feature
+// contain all trigger & untrigger feature
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
 	stat.lock.RLock()
 	defer stat.lock.RUnlock()
@@ -254,8 +254,8 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 }
 
 func (featureStat *FeatureStat) addNode(timestamp int, key string, features []string) {
-	featureStat.lock.RLock()
-	defer featureStat.lock.RUnlock()
+	featureStat.lock.Lock()
+	defer featureStat.lock.Unlock()
 
 	//not update from old message
 	if _, ok := featureStat.nodes[key]; ok && featureStat.nodes[key].Timestamp > timestamp {

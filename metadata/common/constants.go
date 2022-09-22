@@ -214,25 +214,30 @@ const (
 	BurningUnifiedTokenResponseMeta                 = 346
 	BridgeAggAddTokenMeta                           = 347
 
+	BurnForCallConfirmMeta      = 158
+	BurnForCallRequestMeta      = 348
+	BurnForCallResponseMeta     = 349
+	IssuingReshieldResponseMeta = 350
+
 	// incognito mode for Aurora
-	IssuingAuroraRequestMeta  = 350
-	IssuingAuroraResponseMeta = 351
-	BurningAuroraRequestMeta  = 352
-	BurningAuroraConfirmMeta  = 157
+	IssuingAuroraRequestMeta  = 351
+	IssuingAuroraResponseMeta = 352
+	BurningAuroraRequestMeta  = 353
+	BurningAuroraConfirmMeta  = 159
 
 	// incognito mode for Avalanche
-	IssuingAvaxRequestMeta  = 353
-	IssuingAvaxResponseMeta = 354
-	BurningAvaxRequestMeta  = 355
-	BurningAvaxConfirmMeta  = 158
+	IssuingAvaxRequestMeta  = 354
+	IssuingAvaxResponseMeta = 355
+	BurningAvaxRequestMeta  = 356
+	BurningAvaxConfirmMeta  = 160
 
 	// pAurora ( Aurora )
-	BurningAuroraForDepositToSCRequestMeta = 356
-	BurningAuroraConfirmForDepositToSCMeta = 159
+	BurningAuroraForDepositToSCRequestMeta = 357
+	BurningAuroraConfirmForDepositToSCMeta = 161
 
 	// pAVAX ( avalanche )
-	BurningAvaxForDepositToSCRequestMeta = 357
-	BurningAvaxConfirmForDepositToSCMeta = 160
+	BurningAvaxForDepositToSCRequestMeta = 358
+	BurningAvaxConfirmForDepositToSCMeta = 162
 )
 
 var minerCreatedMetaTypes = []int{
@@ -285,6 +290,8 @@ var minerCreatedMetaTypes = []int{
 	BridgeAggConvertTokenToUnifiedTokenResponseMeta,
 	IssuingUnifiedTokenResponseMeta,
 	BurningUnifiedTokenResponseMeta,
+	IssuingReshieldResponseMeta,
+	BurnForCallResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -304,7 +311,7 @@ const (
 
 const (
 	StopAutoStakingAmount    = 0
-	EVMConfirmationBlocks    = 15
+	EVMConfirmationBlocks    = 15 // update to 32 when eth merge
 	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
 	AuroraConfirmationBlocks = 5
@@ -385,6 +392,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningPLGConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
+	strconv.Itoa(BurnForCallConfirmMeta),
 	strconv.Itoa(BurningAuroraConfirmMeta),
 	strconv.Itoa(BurningAvaxConfirmMeta),
 	strconv.Itoa(BurningAuroraConfirmForDepositToSCMeta),
@@ -407,3 +415,8 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 	common.PortalV3Flag:       portalMetaTypesV3,
 	common.PortalV4Flag:       portalV4MetaTypes,
 }
+
+const (
+	ExternalAddressLen         = 20
+	BurnForCallMinBlockVersion = 10 // ADJUST_BLOCKTIME_VERSION
+)

@@ -3,6 +3,7 @@ package bridgeagg
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -87,10 +87,6 @@ func GetInsertTxHashIssuedFuncByNetworkID(networkID uint8) func(*statedb.StateDB
 		return statedb.InsertETHTxHashIssued
 	case common.FTMNetworkID:
 		return statedb.InsertFTMTxHashIssued
-	case common.AURORANetworkID:
-		return statedb.InsertAURORATxHashIssued
-	case common.AVAXNetworkID:
-		return statedb.InsertAVAXTxHashIssued
 	}
 	return nil
 }
@@ -260,15 +256,14 @@ func IsBridgeTxHashUsedInBlock(uniqTx []byte, uniqTxsUsed [][]byte) bool {
 }
 
 func ValidateDoubleShieldProof(
-	proof *metadataBridge.EVMProof,
+	uniqTx []byte,
 	listTxUsed [][]byte,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqTx []byte) (bool, error),
 	stateDB *statedb.StateDB,
 ) (bool, []byte, error) {
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
-	// in case aurora: will be tx hash
-	uniqTx := append(proof.BlockHash[:], []byte(strconv.Itoa(int(proof.TxIndex)))...)
+	// uniqTx := append(proof.BlockHash[:], []byte(strconv.Itoa(int(proof.TxIndex)))...)
 	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
 		return false, uniqTx, fmt.Errorf("WARNING: tx %v already issued for the hash in current block: ", uniqTx)
@@ -289,39 +284,39 @@ func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error
 	switch networkID {
 	case common.ETHNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningConfirmForDepositToSCMetaV2
+			burningMetaType = metadataCommon.BurningConfirmForDepositToSCMetaV2
 		} else {
-			burningMetaType = metadata.BurningConfirmMetaV2
+			burningMetaType = metadataCommon.BurningConfirmMetaV2
 		}
 	case common.BSCNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningPBSCConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningPBSCConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningBSCConfirmMeta
+			burningMetaType = metadataCommon.BurningBSCConfirmMeta
 		}
 	case common.PLGNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningPLGConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningPLGConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningPLGConfirmMeta
+			burningMetaType = metadataCommon.BurningPLGConfirmMeta
 		}
 	case common.FTMNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningFantomConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningFantomConfirmMeta
+			burningMetaType = metadataCommon.BurningFantomConfirmMeta
 		}
 	case common.AURORANetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningAuroraConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningAuroraConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningAuroraConfirmMeta
+			burningMetaType = metadataCommon.BurningAuroraConfirmMeta
 		}
 	case common.AVAXNetworkID:
 		if isDepositToSC {
-			burningMetaType = metadata.BurningAvaxConfirmForDepositToSCMeta
+			burningMetaType = metadataCommon.BurningAvaxConfirmForDepositToSCMeta
 		} else {
-			burningMetaType = metadata.BurningAvaxConfirmMeta
+			burningMetaType = metadataCommon.BurningAvaxConfirmMeta
 		}
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
@@ -464,6 +459,27 @@ func getPrefixByNetworkID(networkID uint8) (string, error) {
 		return utils.EmptyString, errors.New("Invalid networkID")
 	}
 	return prefix, nil
+}
+
+func GetNetworkIDByPrefix(prefix string) (uint8, error) {
+	var networkID uint8
+	switch prefix {
+	case utils.EmptyString:
+		networkID = common.ETHNetworkID
+	case common.BSCPrefix:
+		networkID = common.BSCNetworkID
+	case common.PLGPrefix:
+		networkID = common.PLGNetworkID
+	case common.FTMPrefix:
+		networkID = common.FTMNetworkID
+	case common.AURORAPrefix:
+		networkID = common.AURORANetworkID
+	case common.AVAXPrefix:
+		networkID = common.AVAXNetworkID
+	default:
+		return 0, fmt.Errorf("Invalid prefix %s for networkID", prefix)
+	}
+	return networkID, nil
 }
 
 func convertPTokenAmtToPUnifiedTokenAmt(extDec uint8, amount uint64) (uint64, error) {
@@ -966,11 +982,18 @@ func BuildUnshieldActionForProducerFromInsts(insts [][]string, shardID byte, bea
 
 		// decode action from shard
 		action := metadataCommon.NewAction()
-		meta := &metadataBridge.UnshieldRequest{}
-		action.Meta = meta
+		switch inst[0] {
+		case strconv.Itoa(metadataCommon.BurningUnifiedTokenRequestMeta):
+			action.Meta = &metadataBridge.UnshieldRequest{}
+		case strconv.Itoa(metadataCommon.BurnForCallRequestMeta):
+			action.Meta = &metadataBridge.BurnForCallRequest{}
+		default:
+			Logger.log.Warnf("Invalid metadata type %s for unshield from shard", inst[0])
+			continue
+		}
 		err := action.FromString(contentStr)
 		if err != nil {
-			Logger.log.Warnf("Can not decode content string for unshield from shard: %v\n", err)
+			Logger.log.Warnf("Can not decode content string for unshield from shard: %v", err)
 			continue
 		}
 
@@ -981,4 +1004,162 @@ func BuildUnshieldActionForProducerFromInsts(insts [][]string, shardID byte, bea
 		})
 	}
 	return unshieldActions
+}
+
+// DecodeBurnForCallConfirmInst packs the BurnForCall instruction into a byte slice.
+// Instruction layout: [meta(1), shard(1), network(1), extToken(32), extCallAddr(32), amount(32), txID(32), recvToken(32), withdrawAddr(32), redepositAddr(101), extCalldata, beaconHeight(32)].
+func DecodeBurnForCallConfirmInst(inst []string) ([]byte, error) {
+	if len(inst) != 12 {
+		return nil, errors.New("invalid BurnForCall instruction length")
+	}
+	meta, err := strconv.ParseUint(inst[0], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	shard, err := strconv.ParseUint(inst[1], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	network, err := strconv.ParseUint(inst[2], 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	extToken, err := hex.DecodeString(inst[3])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	extCallAddr, err := hex.DecodeString(inst[4])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	amount, success := big.NewInt(0).SetString(inst[5], 16)
+	if !success {
+		return nil, fmt.Errorf("instruction %v - expect hex string, got %s", inst, inst[6])
+	}
+	txID, err := common.Hash{}.NewHashFromStr(inst[6])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	recvToken, err := hex.DecodeString(inst[7])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	withdrawAddr, err := hex.DecodeString(inst[8])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	var r privacy.OTAReceiver
+	err = r.FromString(inst[9])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	redepositAddr, _ := r.Bytes()
+	extCalldata, err := hex.DecodeString(inst[10])
+	if err != nil {
+		return nil, fmt.Errorf("instruction %v error %v", inst, err)
+	}
+	bHeight, success := big.NewInt(0).SetString(inst[11], 16)
+	if !success {
+		return nil, fmt.Errorf("instruction %v - expect hex string, got %s", inst, inst[11])
+	}
+
+	// check length of addresses
+	for _, a := range [][]byte{extToken, extCallAddr, recvToken, withdrawAddr} {
+		if len(a) != metadataCommon.ExternalAddressLen {
+			return nil, fmt.Errorf("instruction %v contains address with invalid length", len(a))
+		}
+	}
+
+	Logger.log.Infof("Decoded BurnForCall instruction, meta %d, shard %d, network %d, extToken %x, extCallAddr %x, amount %d, txID %s, recvToken %x, withdrawAddr %x, redepositAddr %x, extCalldata %x, beaconHeight %d", meta, shard, network, extToken, extCallAddr, amount, txID.String(), recvToken, withdrawAddr, redepositAddr, extCalldata, bHeight)
+	var buf bytes.Buffer
+	buf.WriteByte(byte(meta))
+	buf.WriteByte(byte(shard))
+	buf.WriteByte(byte(network))
+	buf.Write(padExternalAddress(extToken))
+	buf.Write(padExternalAddress(extCallAddr))
+	buf.Write(common.AddPaddingBigInt(amount, 32))
+	buf.Write(txID[:])
+	buf.Write(padExternalAddress(recvToken))
+	buf.Write(padExternalAddress(withdrawAddr))
+	buf.Write(redepositAddr)
+	buf.Write(extCalldata)
+	buf.Write(common.AddPaddingBigInt(bHeight, 32))
+
+	return buf.Bytes(), nil
+}
+
+func padExternalAddress(addr []byte) []byte {
+	result := make([]byte, 32)
+	copy(result[12:32], addr)
+	return result
+}
+
+func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, externalTokenID []byte, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
+	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
+	newTxReqID := common.HashH(append(unshieldID.Bytes(), common.IntToBytes(index)...))
+	rdRecvStr, _ := req.Data[index].RedepositReceiver.String()
+	burningInst := []string{
+		strconv.Itoa(int(metadataCommon.BurnForCallConfirmMeta)),
+		strconv.Itoa(int(common.BridgeShardID)),
+		strconv.Itoa(int(networkID)),
+		hex.EncodeToString(externalTokenID),
+		req.Data[index].ExternalCallAddress,
+		udata.ExternalReceivedAmt.Text(16),
+		newTxReqID.String(),
+		req.Data[index].ReceiveToken,
+		req.Data[index].WithdrawAddress,
+		rdRecvStr,
+		req.Data[index].ExternalCalldata,
+		beaconHeightBN.Text(16),
+	}
+	return [][]string{burningInst}
+}
+
+func buildRejectedBurnForCallReqInst(meta metadataBridge.BurnForCallRequest, shardID byte, txReqID common.Hash, errorType int) []string {
+	totalBurnAmt, _ := meta.TotalBurningAmount() // error was handled in tx validation
+	rejectedUnshieldRequest := metadataBridge.RejectedBurnForCallRequest{
+		BurnTokenID: meta.BurnTokenID,
+		Amount:      totalBurnAmt,
+		Receiver:    meta.Data[0].RedepositReceiver, // Data has non-zero length after sanity check
+	}
+	rejectedContent, _ := json.Marshal(rejectedUnshieldRequest)
+	rejectContentStr, _ := metadataCommon.NewRejectContentWithValue(txReqID, ErrCodeMessage[errorType].Code, rejectedContent).String()
+	rejectedInst := metadataCommon.NewInstructionWithValue(
+		metadataCommon.BurnForCallRequestMeta,
+		common.RejectedStatusStr,
+		shardID,
+		rejectContentStr,
+	)
+	return rejectedInst.StringSlice()
+}
+
+func buildAcceptedBurnForCallReqInst(unifiedTokenID *common.Hash, waitingUnshieldReq *statedb.BridgeAggWaitingUnshieldReq, status string, shardID byte) []string {
+	var tid common.Hash
+	if unifiedTokenID != nil {
+		tid = *unifiedTokenID
+	}
+	acceptedUnshieldInst := metadataBridge.AcceptedUnshieldRequestInst{
+		UnifiedTokenID:     tid,
+		IsDepositToSC:      true,
+		WaitingUnshieldReq: waitingUnshieldReq,
+	}
+	acceptedUnshieldInstBytes, _ := json.Marshal(acceptedUnshieldInst)
+	inst := metadataCommon.NewInstructionWithValue(
+		metadataCommon.BurnForCallRequestMeta,
+		status,
+		shardID,
+		base64.StdEncoding.EncodeToString(acceptedUnshieldInstBytes),
+	)
+	return inst.StringSlice()
+}
+
+func GetTxIDFromBurningConfirmInst(inst []string) (*common.Hash, error) {
+	var txhStr string
+	switch inst[0] {
+	case strconv.Itoa(metadataCommon.BurnForCallConfirmMeta):
+		txhStr = inst[6]
+	default:
+		txhStr = inst[5]
+	}
+	return common.Hash{}.NewHashFromStr(txhStr)
 }

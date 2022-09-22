@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -65,6 +66,12 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
+	case strconv.Itoa(metadata.BurnForCallConfirmMeta):
+		var err error
+		flatten, err = bridgeagg.DecodeBurnForCallConfirmInst(inst)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		for _, part := range inst {
 			flatten = append(flatten, []byte(part)...)

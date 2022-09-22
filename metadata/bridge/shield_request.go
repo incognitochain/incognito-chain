@@ -117,6 +117,18 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 				return false
 			}
 			return evmShieldRequest.ValidateMetadataByItself()
+		case common.AURORANetworkID:
+			auroraTxId := common.BytesToHash(data.Proof)
+			auroraShieldRequest, err := NewIssuingEVMAuroraRequest(
+				auroraTxId,
+				data.IncTokenID,
+				common.AURORANetworkID,
+				metadataCommon.IssuingUnifiedTokenRequestMeta,
+			)
+			if err != nil {
+				return false
+			}
+			return auroraShieldRequest.ValidateMetadataByItself()
 		case common.DefaultNetworkID:
 			return false
 		default:
@@ -151,6 +163,29 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 				return [][]string{}, err
 			}
 			evmReceipt, err := evmShieldRequest.verifyProofAndParseReceipt()
+			if err != nil {
+				return [][]string{}, err
+			}
+			if evmReceipt == nil {
+				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
+			}
+			content, err := MarshalActionDataForShieldEVMReq(evmReceipt)
+			if err != nil {
+				return [][]string{}, err
+			}
+			extraData = append(extraData, content)
+		case common.AURORANetworkID:
+			auroraTxId := common.BytesToHash(data.Proof)
+			auroraShieldRequest, err := NewIssuingEVMAuroraRequest(
+				auroraTxId,
+				data.IncTokenID,
+				common.AURORANetworkID,
+				metadataCommon.IssuingUnifiedTokenRequestMeta,
+			)
+			if err != nil {
+				return [][]string{}, err
+			}
+			evmReceipt, err := auroraShieldRequest.verifyProofAndParseReceipt()
 			if err != nil {
 				return [][]string{}, err
 			}

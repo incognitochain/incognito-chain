@@ -141,8 +141,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			waitTime := blockchain.GetBeaconBestState().GetBlockTimeInterval(beaconProcessHeight) / 5
-			time.Sleep(time.Duration(waitTime) * time.Second)
+			time.Sleep(time.Duration(shardBestState.GetCurrentTimeSlot()/5) * time.Second)
 			beaconProcessHeight = getBeaconFinalHeightForProcess()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")
@@ -402,12 +401,15 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
 	st = time.Now()
 	txsToAdd := []metadata.Transaction{}
-	totalTxsReminder := curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
-	if totalTxsReminder < 0 {
-		totalTxsReminder = 0
-	} else {
-		if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
-			totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+	totalTxsReminder := int64(config.Param().TransactionInBlockParam.Upper)
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 {
+		totalTxsReminder = curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
+		if totalTxsReminder < 0 {
+			totalTxsReminder = 0
+		} else {
+			if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
+				totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+			}
 		}
 	}
 	if !blockGenerator.chain.config.usingNewPool {
@@ -810,7 +812,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	startTime := time.Now()
 	sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 	var elasped int64
-	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
+	Logger.log.Infof("Number of transaction get from Block Generator: %v; Maximum txs in this block %v", len(sourceTxns), maxTxs)
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		return []metadata.Transaction{}, []metadata.Transaction{}, 0
@@ -860,7 +862,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 						break
 					}
 					if len(txsToAdd)+1 > int(maxTxs) {
-						return txsToAdd, txToRemove, totalFee
+						break
 					}
 					totalFee += tempTx.GetTxFee()
 					currentSize += tempSize
@@ -872,6 +874,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 				totalFee += tempTx.GetTxFee()
 				tempSize := tempTx.GetTxActualSize()
 				if currentSize+tempSize >= common.MaxBlockSize {
+					break
+				}
+				if len(txsToAdd)+1 > int(maxTxs) {
 					break
 				}
 				currentSize += tempSize

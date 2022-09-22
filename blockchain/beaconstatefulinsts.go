@@ -230,8 +230,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				}
 
 			case metadata.IssuingETHRequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -243,12 +243,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsETHTxHashIssued,
 					false,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTxs...)
 				}
 			case metadata.IssuingBSCRequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -260,12 +260,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsBSCTxHashIssued,
 					false,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTxs...)
 				}
 			case metadata.IssuingPRVERC20RequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -277,12 +277,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsPRVEVMTxHashIssued,
 					true,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTxs...)
 				}
 			case metadata.IssuingPRVBEP20RequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -294,12 +294,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsPRVEVMTxHashIssued,
 					true,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqPRVEVMTxsUsed = append(accumulatedValues.UniqPRVEVMTxsUsed, uniqTxs...)
 				}
 			case metadata.IssuingPLGRequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -311,12 +311,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsPLGTxHashIssued,
 					false,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqPLGTxsUsed = append(accumulatedValues.UniqPLGTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqPLGTxsUsed = append(accumulatedValues.UniqPLGTxsUsed, uniqTxs...)
 				}
 			case metadata.IssuingFantomRequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -328,13 +328,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsFTMTxHashIssued,
 					false,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTxs...)
 				}
 
 			case metadata.IssuingAuroraRequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -346,13 +346,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsAURORATxHashIssued,
 					false,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqAURORATxsUsed = append(accumulatedValues.UniqAURORATxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqAURORATxsUsed = append(accumulatedValues.UniqAURORATxsUsed, uniqTxs...)
 				}
 
 			case metadata.IssuingAvaxRequestMeta:
-				var uniqTx []byte
-				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
 					sDBs,
 					contentStr,
 					shardID,
@@ -364,8 +364,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					statedb.IsAVAXTxHashIssued,
 					false,
 				)
-				if uniqTx != nil {
-					accumulatedValues.UniqAVAXTxsUsed = append(accumulatedValues.UniqAVAXTxsUsed, uniqTx)
+				if uniqTxs != nil {
+					accumulatedValues.UniqAVAXTxsUsed = append(accumulatedValues.UniqAVAXTxsUsed, uniqTxs...)
 				}
 
 			case metadata.PDEContributionMeta:

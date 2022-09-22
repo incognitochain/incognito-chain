@@ -199,8 +199,7 @@ func (chain *BeaconChain) CreateNewBlock(
 	//wait a little bit, for shard
 	beaconBestView := chain.GetBestView().(*BeaconBestState)
 	if version < types.ADJUST_BLOCKTIME_VERSION {
-		waitTime := beaconBestView.GetBlockTimeInterval(beaconBestView.GetBeaconHeight()) / 5
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(beaconBestView.GetCurrentTimeSlot()/5) * time.Second)
 	}
 
 	newBlock, err := chain.Blockchain.NewBlockBeacon(beaconBestView, version, proposer, round, startTime)
@@ -237,7 +236,7 @@ func (chain *BeaconChain) CreateNewBlock(
 	return newBlock, nil
 }
 
-//this function for version 2
+// this function for version 2
 func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.BeaconBlock)
@@ -295,7 +294,7 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) er
 
 }
 
-//this get consensus data for all latest shard state
+// this get consensus data for all latest shard state
 func (chain *BeaconChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
 	bestViewBlock := chain.multiView.GetBestView().GetBlock().(*types.BeaconBlock)
@@ -506,7 +505,7 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
-//CommitteesByShardID ...
+// CommitteesByShardID ...
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
 	var committees []incognitokey.CommitteePublicKey
 	var err error
@@ -544,7 +543,7 @@ func (chain *BeaconChain) FinalView() multiview.View {
 	return chain.GetFinalView()
 }
 
-//BestViewCommitteeFromBlock ...
+// BestViewCommitteeFromBlock ...
 func (chain *BeaconChain) BestViewCommitteeFromBlock() common.Hash {
 	return common.Hash{}
 }

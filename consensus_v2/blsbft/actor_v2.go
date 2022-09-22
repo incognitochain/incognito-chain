@@ -427,6 +427,7 @@ func (a *actorV2) Stop() error {
 }
 
 func (a *actorV2) Destroy() {
+	a.isStarted = false
 	a.destroyCh <- struct{}{}
 }
 
@@ -435,6 +436,7 @@ func (a actorV2) IsStarted() bool {
 }
 
 func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
+
 	switch msgBFT.Type {
 	case MSG_PROPOSE:
 		var msgPropose BFTPropose
@@ -515,6 +517,10 @@ func (a *actorV2) run() error {
 				select {
 				case <-a.proposeMessageCh:
 				case <-a.voteMessageCh:
+				case <-a.destroyCh:
+					a.logger.Infof("exit bls-bft-%+v consensus for chain %+v", a.blockVersion, a.chainKey)
+					a.closeActor()
+					return
 				default:
 				}
 
@@ -663,7 +669,7 @@ func (a *actorV2) run() error {
 
 				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && !v.IsVoted {
+					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && v.IsValid && !v.IsVoted {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -896,7 +902,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	return validationData, err
 }
 
-//VoteValidBlock this function should be use to vote for valid block only
+// VoteValidBlock this function should be use to vote for valid block only
 func (a *actorV2) voteValidBlock(
 	proposeBlockInfo *ProposeBlockInfo,
 ) error {
@@ -1382,7 +1388,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if proposeBlockInfo.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil {
+					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil && proposeBlockInfo.IsValid {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
 							err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0)) // => send vote
@@ -1485,6 +1491,11 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 }
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+
+	//not validate if we do it recently
+	if time.Since(proposeBlockInfo.LastValidateTime).Seconds() < 1 {
+		return nil
+	}
 
 	if proposeBlockInfo.IsValid {
 		return nil

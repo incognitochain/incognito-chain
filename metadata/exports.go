@@ -212,6 +212,11 @@ const (
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 
+	BurnForCallRequestMeta      = metadataCommon.BurnForCallRequestMeta
+	BurnForCallResponseMeta     = metadataCommon.BurnForCallResponseMeta
+	BurnForCallConfirmMeta      = metadataCommon.BurnForCallConfirmMeta
+	IssuingReshieldResponseMeta = metadataCommon.IssuingReshieldResponseMeta
+
 	IssuingAuroraRequestMeta  = metadataCommon.IssuingAuroraRequestMeta
 	IssuingAuroraResponseMeta = metadataCommon.IssuingAuroraResponseMeta
 	BurningAuroraRequestMeta  = metadataCommon.BurningAuroraRequestMeta

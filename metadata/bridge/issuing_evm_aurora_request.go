@@ -23,7 +23,7 @@ type IssuingEVMAuroraRequest struct {
 
 func NewIssuingEVMAuroraRequest(
 	txHash common.Hash,
-	incTokendId common.Hash,
+	incTokenId common.Hash,
 	networkID uint,
 	metaType int,
 ) (*IssuingEVMAuroraRequest, error) {
@@ -32,7 +32,7 @@ func NewIssuingEVMAuroraRequest(
 	}
 	issuingEVMReq := &IssuingEVMAuroraRequest{
 		TxHash:     txHash,
-		IncTokenID: incTokendId,
+		IncTokenID: incTokenId,
 		NetworkID:  networkID,
 	}
 	issuingEVMReq.MetadataBase = metadataBase
@@ -76,7 +76,8 @@ func (iReq IssuingEVMAuroraRequest) ValidateSanityData(chainRetriever metadataCo
 }
 
 func (iReq IssuingEVMAuroraRequest) ValidateMetadataByItself() bool {
-	if iReq.Type != metadataCommon.IssuingAuroraRequestMeta {
+	if iReq.Type != metadataCommon.IssuingAuroraRequestMeta &&
+		!(iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta && iReq.NetworkID == common.AURORANetworkID) {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()

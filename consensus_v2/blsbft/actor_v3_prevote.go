@@ -25,20 +25,35 @@ send prevote for propose block that
 - not lock, or having same blockhash with lock blockhash or having POLC > lockTS (validPOLC)
 */
 func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
-	lockBlockHash := a.getLockBlockHash(a.currentBestViewHeight + 1)
+
 	bestView := a.chain.GetBestView()
 
-	if proposeBlockInfo.block.GetPrevHash().String() == bestView.GetHash().String() &&
-		proposeBlockInfo.IsValid &&
-		!proposeBlockInfo.IsPreVoted &&
-		a.currentTimeSlot == bestView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
-		(proposeBlockInfo.ValidPOLC || lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String()) {
+	if proposeBlockInfo.block.GetPrevHash().String() != bestView.GetHash().String() {
+		return false
+	}
+
+	if !proposeBlockInfo.IsValid {
+		return false
+	}
+
+	if proposeBlockInfo.IsPreVoted {
+		return false
+	}
+
+	if a.currentTimeSlot != bestView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) {
+		return false
+	}
+
+	lockBlockHash := a.getLockBlockHash(a.currentBestViewHeight + 1)
+
+	if proposeBlockInfo.ValidPOLC || lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String() {
 		return true
 	}
+
 	return false
 }
 
-//VoteValidBlock this function should be use to vote for valid block only
+// VoteValidBlock this function should be use to vote for valid block only
 func (a *actorV3) sendVote(
 	proposeBlockInfo *ProposeBlockInfo, phase string,
 ) error {

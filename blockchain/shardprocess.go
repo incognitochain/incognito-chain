@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -757,6 +758,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	shardBestState.BeaconHeight = shardBlock.Header.BeaconHeight
 	shardBestState.TotalTxns += uint64(len(shardBlock.Body.Transactions))
 	shardBestState.NumTxns = uint64(len(shardBlock.Body.Transactions))
+	shardBestState.MaxTxsPerBlockRemainder = int64(config.Param().TransactionInBlockParam.Lower)
 	if shardBlock.Header.Height == 1 {
 		shardBestState.ShardProposerIdx = 0
 	} else {
@@ -779,12 +781,14 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			temp++
 		}
 	}
-	maxTxsReminder := oldBestState.MaxTxsPerBlockRemainder - int64(len(shardBlock.Body.Transactions))
-	if maxTxsReminder > 0 {
-		if shardBestState.MaxTxsPerBlockRemainder+maxTxsReminder >= (1 << 20) {
-			shardBestState.MaxTxsPerBlockRemainder = (1 << 20)
-		} else {
-			shardBestState.MaxTxsPerBlockRemainder += maxTxsReminder
+	if shardBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
+		maxTxsReminder := oldBestState.MaxTxsPerBlockRemainder - int64(len(shardBlock.Body.Transactions))
+		if maxTxsReminder > 0 {
+			if shardBestState.MaxTxsPerBlockRemainder+maxTxsReminder >= 10000 {
+				shardBestState.MaxTxsPerBlockRemainder = 10000
+			} else {
+				shardBestState.MaxTxsPerBlockRemainder += maxTxsReminder
+			}
 		}
 	}
 
@@ -829,7 +833,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 				//endtime is current propose time
 				//starttime is new align time
 				Logger.log.Infof("Align shard timeslot: end in %v, start from %v", shardBlock.GetProposeTime(), alignTime)
-				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime(), alignTime, curTS, int(config.Param().BlockTimeParam[feature]))
+				shardBestState.TSManager.updateNewAnchor(shardBlock.GetProposeTime(), alignTime, curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
 			}
 		}
 	}
@@ -893,6 +897,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	shardBestState.MaxTxsPerBlockRemainder = int64(config.Param().TransactionInBlockParam.Lower)
 
 	// Get all beaconInstructions from beacon here
 	beaconInstructions, _, err := blockchain.
@@ -1585,6 +1590,43 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					Logger.log.Infof("store issued token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
+			case metadata.IssuingReshieldResponseMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					inst := metadataCommon.NewInstruction()
+					if err := inst.FromStringSlice(l); err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+					if err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					var acceptedContent metadataBridge.AcceptedReshieldRequest
+					err = json.Unmarshal(contentBytes, &acceptedContent)
+					if err != nil {
+						Logger.log.Errorf("Parse IssuingReshield(%v) error: %v", l[3], err)
+						return err
+					}
+					shieldTokenID := acceptedContent.ReshieldData.IncTokenID
+					if acceptedContent.UnifiedTokenID != nil {
+						shieldTokenID = *acceptedContent.UnifiedTokenID
+					}
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, shieldTokenID); existed {
+						Logger.log.Infof("eth-reshield token %v existed, skip storing this token", shieldTokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, shieldTokenID, "",
+						"", statedb.BridgeToken, true, acceptedContent.ReshieldData.ShieldAmount, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v", err)
+						return err
+					}
+
+					Logger.log.Infof("store eth-reshield token %v succeeded", shieldTokenID.String())
 				}
 			}
 		}

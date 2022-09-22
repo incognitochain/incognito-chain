@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
-//get beacon block hash by height, with current view
+// get beacon block hash by height, with current view
 func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
 
 	blkheight := bestView.GetHeight()
@@ -129,7 +129,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
-//SHARD
+// SHARD
 func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
 
 	blkheight := bestView.GetHeight()
@@ -282,7 +282,7 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
 }
 
-//traverse finalview back to certain block height from beacon chain
+// traverse finalview back to certain block height from beacon chain
 func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash, newBeaconBlock *types.BeaconBlock, blockShardStates map[byte][]types.ShardState) (map[byte][]*types.ShardBlock, map[uint64]map[byte][]*types.ShardBlock, error) {
 	beaconBlk, _, _ := blockchain.GetBeaconBlockByHash(to)
 	shardBlksForBridge := map[byte][]*types.ShardBlock{}
@@ -336,18 +336,43 @@ func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
-		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView().GetHeight()
-		shardBlocks := []*types.ShardBlock{}
+		expectedFinalView := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
+		finalizedShardHeight := expectedFinalView.GetHeight()
 		// limit maximum number of shard blocks for beacon producer
 		if finalizedShardHeight > bestShardHeight && finalizedShardHeight-bestShardHeight > MAX_S2B_BLOCK {
 			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
 		}
+
+		listShardBlock := map[uint64]*types.ShardBlock{}
+		pointerView := expectedFinalView
+		tempShardBlock := pointerView.GetBlock().(*types.ShardBlock)
+		for {
+			if tempShardBlock.GetHeight() <= bestShardHeight {
+				break
+			}
+			listShardBlock[tempShardBlock.GetHeight()] = tempShardBlock
+
+			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(tempShardBlock.GetPrevHash())
+			if pointerView == nil {
+				shardHeight := tempShardBlock.GetHeight() - 1
+				var err error
+				tempShardBlock, err = blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
+				if err != nil {
+					Logger.log.Errorf("Cannot get block at height %v", shardHeight)
+					return nil
+				}
+			} else {
+				tempShardBlock = pointerView.GetBlock().(*types.ShardBlock)
+			}
+		}
+
+		shardBlocks := []*types.ShardBlock{}
 		lastEpoch := uint64(0)
 		limitTxs := map[int]int{}
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
-			tempShardBlock, err := blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
-			if err != nil {
-				Logger.log.Errorf("GetShardBlockByHeightV1 shard %+v, error  %+v", shardID, err)
+			tempShardBlock, ok := listShardBlock[shardHeight]
+			if !ok {
+				Logger.log.Errorf("Multiview shard %+v, dont have block height %v", shardID, shardHeight)
 				break
 			}
 			//only get shard block within epoch
@@ -383,14 +408,39 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 
 func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*types.ShardBlock, error) {
 	allRequireShardBlocks := make(map[byte][]*types.ShardBlock)
+	bestShardHeight := blockchain.GetBeaconBestState().BestShardHeight
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
+		expectedFinalView := blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
+		listShardBlock := map[uint64]*types.ShardBlock{}
+		pointerView := expectedFinalView
+		tempShardBlock := pointerView.GetBlock().(*types.ShardBlock)
+
+		for {
+			if tempShardBlock.GetHeight() <= bestShardHeight[shardID] {
+				break
+			}
+			listShardBlock[tempShardBlock.GetHeight()] = tempShardBlock
+
+			pointerView = blockchain.ShardChain[shardID].multiView.GetViewByHash(tempShardBlock.GetPrevHash())
+			if pointerView == nil {
+				shardHeight := tempShardBlock.GetHeight() - 1
+				var err error
+				tempShardBlock, err = blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
+				if err != nil {
+					return nil, fmt.Errorf("Cannot get block at height %v", shardHeight)
+				}
+			} else {
+				tempShardBlock = pointerView.GetBlock().(*types.ShardBlock)
+			}
+		}
+
 		limitTxs := map[int]int{}
 		shardBlocks := []*types.ShardBlock{}
 		lastEpoch := uint64(0)
 		for _, height := range requiredShardBlockHeight {
-			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
-			if err != nil {
-				return nil, err
+			shardBlock, ok := listShardBlock[height]
+			if !ok {
+				return nil, errors.Errorf("Multiview shard %+v, dont have block height %v", shardID, height)
 			}
 			if ok := checkLimitTxAction(true, limitTxs, shardBlock); !ok {
 				return nil, errors.Errorf("Total txs of range ShardBlocks [%v..%v] is lager than limit", requiredShardBlockHeight[0], requiredShardBlockHeight[len(requiredShardBlockHeight)-1])
@@ -598,7 +648,7 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 	return bRH, err
 }
 
-//GetStakerInfo : Return staker info from statedb
+// GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }
