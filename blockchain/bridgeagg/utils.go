@@ -87,6 +87,10 @@ func GetInsertTxHashIssuedFuncByNetworkID(networkID uint8) func(*statedb.StateDB
 		return statedb.InsertETHTxHashIssued
 	case common.FTMNetworkID:
 		return statedb.InsertFTMTxHashIssued
+	case common.AURORANetworkID:
+		return statedb.InsertAURORATxHashIssued
+	case common.AVAXNetworkID:
+		return statedb.InsertAVAXTxHashIssued
 	}
 	return nil
 }
