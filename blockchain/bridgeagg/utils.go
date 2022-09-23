@@ -405,7 +405,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 		}
 	}
 	networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(networkID)
-	if networkType == common.EVMNetworkType {
+	if networkType == common.EVMNetworkType || networkType == common.AURORANetworkID {
 		externalTokenIDStr := vault.ExternalTokenID
 		if len(externalTokenIDStr) != len("0x")+common.EVMAddressLength {
 			return fmt.Errorf("ExternalTokenID %s is invalid length", externalTokenIDStr)
@@ -433,7 +433,7 @@ func GetExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]b
 		return nil, err
 	}
 	switch networkType {
-	case common.EVMNetworkType:
+	case common.EVMNetworkType, common.AURORANetworkID:
 		tokenAddr := rCommon.HexToAddress(externalTokenID)
 		res = append([]byte(prefix), tokenAddr.Bytes()...)
 	}
