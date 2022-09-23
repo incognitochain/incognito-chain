@@ -9,38 +9,22 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
 	"github.com/incognitochain/incognito-chain/incdb"
 	errors2 "github.com/pkg/errors"
 	"path"
 	"time"
 )
 
-type FlatFile interface {
-	//append item uint64o flat file, return item index
-	Append([]byte) (uint64, error)
-
-	//read item in flatfile with specific index (return from append)
-	Read(index uint64) ([]byte, error)
-
-	//read recent data, return data channel, errpr channel, and cancel function
-	ReadRecently(index uint64) (chan []byte, chan uint64, func())
-
-	//truncate flat file system
-	Truncate(lastIndex uint64) error
-
-	//return current size of ff
-	Size() uint64
-}
-
 type BatchCommitConfig struct {
 	triegc            *prque.Prque // Priority queue mapping block numbers to tries to gc
 	blockTrieInMemory uint64
 	trieNodeLimit     common.StorageSize
 	trieImgsLimit     common.StorageSize
-	flatFile          FlatFile
+	flatFile          flatfile.FlatFile
 }
 
-func NewBatchCommitConfig(flatFile FlatFile) *BatchCommitConfig {
+func NewBatchCommitConfig(flatFile flatfile.FlatFile) *BatchCommitConfig {
 	return &BatchCommitConfig{
 		triegc:            prque.New(nil),
 		flatFile:          flatFile,
@@ -50,34 +34,39 @@ func NewBatchCommitConfig(flatFile FlatFile) *BatchCommitConfig {
 	}
 }
 
-func (stateDB *StateDB) InitBatchCommit(dbName string, rebuildRootHash *RebuildInfo, pivotState *StateDB) error {
+func InitBatchCommit(dbName string, db DatabaseAccessWarper, rebuildRootHash *RebuildInfo, pivotState *StateDB) (*StateDB, error) {
 
-	ffDir := path.Join(stateDB.db.TrieDB().GetPath(), fmt.Sprintf("batchstatedb_%v", dbName))
-	ff, err := NewFlatFile(ffDir, 5000)
+	ffDir := path.Join(db.TrieDB().GetPath(), fmt.Sprintf("batchstatedb_%v", dbName))
+	ff, err := flatfile.NewFlatFile(ffDir, 5000)
 	if err != nil {
-		return errors2.Wrap(err, "Cannot create flatfile")
+		return nil, errors2.Wrap(err, "Cannot create flatfile")
 	}
-	stateDB.batchCommitConfig = NewBatchCommitConfig(ff)
+	batchCommitConfig := NewBatchCommitConfig(ff)
+
+	//create new stateDB from beginning
+	if rebuildRootHash == nil || rebuildRootHash.IsEmpty() {
+		curRebuildInfo := NewRebuildInfo(common.EmptyRoot, common.EmptyRoot, int64(batchCommitConfig.flatFile.Size())-1, int64(batchCommitConfig.flatFile.Size())-1)
+		stateDB, err := NewWithPrefixTrie(common.EmptyRoot, db)
+		if err != nil {
+			return nil, err
+		}
+		stateDB.curRebuildInfo = curRebuildInfo
+		stateDB.batchCommitConfig = batchCommitConfig
+		return stateDB, nil
+	}
 
 	lastFFIndex := rebuildRootHash.lastFFIndex
 	lastRootHash := rebuildRootHash.lastRootHash
-	//create new stateDB from beginning
-	if rebuildRootHash.IsEmpty() {
-		stateDB.curRebuildInfo = rebuildRootHash.Copy()
-		stateDB.curRebuildInfo.lastFFIndex = int64(stateDB.batchCommitConfig.flatFile.Size()) - 1
-		stateDB.curRebuildInfo.pivotFFIndex = int64(stateDB.batchCommitConfig.flatFile.Size()) - 1
-		return nil
-	}
 
 	//else rebuild from state
 	//if pivotState nil, rebuild it
 	var pivotIndex = rebuildRootHash.pivotFFIndex
-	var err error
-	if pivotState == nil && pivotState == stateDB {
+	if pivotState == nil {
 		//rebuild pivotState
-		pivotState, err = NewWithPrefixTrie(rebuildRootHash.pivotRootHash, stateDB.Database())
+		pivotState, err = NewWithPrefixTrie(rebuildRootHash.pivotRootHash, db)
+		pivotState.batchCommitConfig = NewBatchCommitConfig(ff)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		pivotIndex = pivotState.curRebuildInfo.lastFFIndex //need to rebuild from this pivot rebuild ff index
@@ -87,9 +76,10 @@ func (stateDB *StateDB) InitBatchCommit(dbName string, rebuildRootHash *RebuildI
 	buildTime := time.Now()
 	stateSeries, err := pivotState.GetStateObjectFromBranch(uint64(lastFFIndex), int(pivotIndex))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	newState := pivotState.Copy()
+
 	for i, stateObjects := range stateSeries {
 		if i > 0 && i%1000 == 0 {
 			dataaccessobject.Logger.Log.Infof("Building root: %v / %v commits", i, len(stateSeries))
@@ -97,7 +87,7 @@ func (stateDB *StateDB) InitBatchCommit(dbName string, rebuildRootHash *RebuildI
 		//TODO: count size of object, if size > threshold then we call commit (cap node/image)
 		for objKey, obj := range stateObjects {
 			if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
-				return err
+				return nil, err
 			}
 			if obj.IsDeleted() {
 				newState.MarkDeleteStateObject(obj.GetType(), objKey)
@@ -108,19 +98,15 @@ func (stateDB *StateDB) InitBatchCommit(dbName string, rebuildRootHash *RebuildI
 	newState.db.TrieDB().Reference(newStateRoot, common.Hash{})
 	newState.batchCommitConfig.triegc.Push(newStateRoot, -lastFFIndex)
 
-	if err != nil {
-		return err
-	}
-
 	//check if we have expect rebuild root
 	dataaccessobject.Logger.Log.Infof("%v Build root: %v (%v commits in %v) .Expected root %v", newStateRoot, len(stateSeries),
 		time.Since(buildTime).Seconds(), rebuildRootHash)
 	if newStateRoot.String() != lastRootHash.String() {
-		return errors.New("Cannot rebuild correct root")
+		return nil, errors.New("Cannot rebuild correct root")
 	}
 
 	newState.curRebuildInfo = rebuildRootHash.Copy()
-	return nil
+	return newState, nil
 }
 
 // Commit writes the state to the underlying in-memory trie database.
@@ -129,7 +115,7 @@ func (stateDB *StateDB) checkpoint(finalizedRebuild *RebuildInfo) (*RebuildInfo,
 	batchCommitConfig := stateDB.batchCommitConfig
 
 	if finalizedRebuild == nil {
-		panic(1)
+		return stateDB.curRebuildInfo, nil
 	}
 
 	//ifreach #commit threshold => write to disk

@@ -68,6 +68,7 @@ func (r *RebuildInfo) MarshalJSON() ([]byte, error) {
 
 func (r *RebuildInfo) UnmarshalJSON(byteArr []byte) (err error) {
 
+	byteArr = byteArr[1 : len(byteArr)-1]
 	data, err := base64.StdEncoding.DecodeString(string(byteArr))
 	if err != nil {
 		return err

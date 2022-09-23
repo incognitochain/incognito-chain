@@ -933,10 +933,11 @@ func (shardBestState *ShardBestState) initShardBestState(
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	shardBestState.transactionStateDB, err = statedb.InitBatchCommit("tx", dbAccessWarper, nil, nil)
 	if err != nil {
 		return err
 	}
+
 	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
@@ -954,6 +955,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 	shardBestState.RewardStateDBRootHash = common.EmptyRoot
 	shardBestState.FeatureStateDBRootHash = common.EmptyRoot
 	shardBestState.TransactionStateDBRootHash = common.EmptyRoot
+	shardBestState.ShardRebuildRootHash = new(ShardRebuildRootHash)
 	//statedb===========================END
 	return nil
 }
@@ -1241,8 +1243,12 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	if time.Since(time.Unix(shardBlock.GetProposeTime(), 0)).Minutes() > 30 {
-		finalView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.GetFinalView().(*ShardBestState)
-		finalizedRebuildInfo := finalView.transactionStateDB.GetRebuildInfo()
+		finalView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.GetFinalView()
+		var finalizedRebuildInfo *statedb.RebuildInfo = nil
+		if finalView != nil {
+			finalizedRebuildInfo = finalView.(*ShardBestState).transactionStateDB.GetRebuildInfo()
+		}
+
 		rebuildRootHash, err := newShardState.transactionStateDB.BatchCommit(finalizedRebuildInfo)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
@@ -1318,6 +1324,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	simulatedMultiView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, simulatedMultiView)
+	if err != nil {
+		panic("Backup shard view error")
+	}
 
 	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
 	//traverse back to final view
@@ -1349,10 +1358,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 	} else { //instant finality
 		blockchain.storeFinalizeShardBlockByBeaconView(batchData, shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
-	}
-
-	if err != nil {
-		panic("Backup shard view error")
 	}
 
 	if err := batchData.Write(); err != nil {

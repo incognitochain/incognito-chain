@@ -195,7 +195,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastV
 		return err
 	}
 
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
+	shardBestState.transactionStateDB, err = statedb.InitBatchCommit("tx", dbAccessWarper, shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash, lastView.transactionStateDB)
 	if err != nil {
 		return err
 	}
@@ -209,13 +209,13 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastV
 	if err != nil {
 		return err
 	}
-	if err = shardBestState.transactionStateDB.InitBatchCommit("tx", shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash, lastView.transactionStateDB); err != nil {
-		return err
-	}
 
 	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
+	}
+	if shardBestState.ShardRebuildRootHash != nil {
+		shardBestState.ShardRebuildRootHash = new(ShardRebuildRootHash)
 	}
 	return nil
 }

@@ -167,3 +167,7 @@ bridge_agg_param:
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 500 # 0.05% * 1e6
 bc_height_break_point_coin_origin: 4565727
+trie_journal_cache_size: 1e9
+block_trie_in_memory: 2000
+trie_node_limit: 1e9
+trie_img_limit: 1e9

@@ -206,7 +206,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
+	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx)
+	err = StoreStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

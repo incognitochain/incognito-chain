@@ -159,15 +159,18 @@ func (stateDB *StateDB) Database() DatabaseAccessWarper {
 
 // Copy duplicate statedb and return new statedb instance
 func (stateDB *StateDB) Copy() *StateDB {
-	return &StateDB{
+	newState := &StateDB{
 		db:                  stateDB.db,
 		trie:                stateDB.db.CopyTrie(stateDB.trie),
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
-		curRebuildInfo:      stateDB.curRebuildInfo.Copy(),
 		batchCommitConfig:   stateDB.batchCommitConfig,
 	}
+	if stateDB.curRebuildInfo != nil {
+		newState.curRebuildInfo = stateDB.curRebuildInfo.Copy()
+	}
+	return newState
 }
 
 // Exist check existence of a state object in statedb

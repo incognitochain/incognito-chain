@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"testing"
 )
@@ -14,7 +15,7 @@ func TestNewRebuildInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//fmt.Println("marshal ====>", info1.String(), string(b), len(b), err)
+	fmt.Println("marshal ====>", info1.String(), string(b), len(b), err)
 
 	info2 := NewEmptyRebuildInfo()
 	if err := json.Unmarshal(b, &info2); err != nil {
