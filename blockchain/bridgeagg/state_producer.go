@@ -5,10 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -17,6 +15,8 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"math/big"
+	"strconv"
 )
 
 type stateProducer struct{}
@@ -176,9 +176,18 @@ func (sp *stateProducer) shield(
 		// validate shielding proof
 		networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(shieldData.NetworkID)
 		switch networkType {
-		case common.EVMNetworkType:
+		case common.EVMNetworkType, common.AURORANetworkID:
 			// unmarshal proof and receipt
-			proofData, txReceipt, err := UnmarshalEVMShieldProof(shieldData.Proof, action.ExtraData[i])
+			var uniqTx []byte
+			var txReceipt *types.Receipt
+			if networkType == common.EVMNetworkType {
+				var proofData *metadataBridge.EVMProof
+				proofData, txReceipt, err = UnmarshalEVMShieldProof(shieldData.Proof, action.ExtraData[i])
+				uniqTx = append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
+			} else {
+				_, txReceipt, err = UnmarshalEVMShieldProof([]byte(`{}`), action.ExtraData[i])
+				uniqTx = shieldData.Proof
+			}
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not unmarshal shielding proof - Error %v", err)
 				rejectedInst := buildRejectedInst(
@@ -203,7 +212,6 @@ func (sp *stateProducer) shield(
 				incAddrStr = incAddr
 				key, _ := wallet.Base58CheckDeserialize(incAddr)
 				shardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
-				uniqTx := append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
 				redepositDataLst = append(redepositDataLst, metadataBridge.DepositEventData{
 					Amount:          extAmount,
 					ReceiverStr:     incAddr,
