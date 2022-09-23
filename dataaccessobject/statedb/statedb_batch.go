@@ -99,7 +99,7 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, rebuildRootHash *Re
 	newState.batchCommitConfig.triegc.Push(newStateRoot, -lastFFIndex)
 
 	//check if we have expect rebuild root
-	dataaccessobject.Logger.Log.Infof("%v Build root: %v (%v commits in %v) .Expected root %v", newStateRoot, len(stateSeries),
+	dataaccessobject.Logger.Log.Infof("Build root: %v (%v commits in %v) .Expected root %v", newStateRoot, len(stateSeries),
 		time.Since(buildTime).Seconds(), rebuildRootHash)
 	if newStateRoot.String() != lastRootHash.String() {
 		return nil, errors.New("Cannot rebuild correct root")

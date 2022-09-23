@@ -70,7 +70,7 @@ enable_feature_flags:
   - PortalV3: 0
   - PortalV4: 4079
 portal_v3_height: 10000000
-tx_pool_version: 0
+tx_pool_version: 1
 geth_param:
   host:
     - "https://eth-fullnode.incognito.org"
@@ -140,3 +140,8 @@ bridge_agg_param:
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 750 # 0.075% * 1e6
 bc_height_break_point_coin_origin: 2087774
+batch_commit_sync_mode_param:
+  trie_journal_cache_size: 1e9
+  block_trie_in_memory: 2000
+  trie_node_limit: 1e9
+  trie_img_limit: 1e9
