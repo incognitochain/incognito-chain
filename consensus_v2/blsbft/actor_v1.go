@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -561,7 +562,7 @@ func (actorV1 *actorV1) createNewBlock(userKey *signatureschemes2.MiningKey) (ty
 			return
 		}
 
-		block, err = actorV1.chain.CreateNewBlock(1, base58Str, int(actorV1.roundData.round), actorV1.roundData.timeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
+		block, err = actorV1.chain.CreateNewBlock(1, base58Str, int(actorV1.roundData.round), actorV1.roundData.timeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{}, "")
 		if block != nil {
 			actorV1.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {

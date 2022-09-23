@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -532,7 +533,13 @@ func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStat
 	return nil, nil, [][]string{}, nil
 }
 
-func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(cChange *CommitteeChange, stateDB *statedb.StateDB, isEndOfEpoch bool) error {
+func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(
+	bBlock *types.BeaconBlock,
+	// mView multiview.MultiView,
+	cChange *CommitteeChange,
+	stateDB *statedb.StateDB,
+	isEndOfEpoch bool,
+) error {
 	return nil
 }
 

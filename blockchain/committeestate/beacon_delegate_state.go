@@ -221,6 +221,14 @@ func (b *BeaconDelegateState) Hash() common.Hash {
 	return common.HashH([]byte(res))
 }
 
+func (b *BeaconDelegateState) GetBeaconCandidatePower(bPK string) uint {
+	res := uint(2) //35000/1750
+	if info, ok := b.DelegateInfo[bPK]; ok {
+		res += uint(info.CurrentDelegators)
+	}
+	return res
+}
+
 func (b *BeaconDelegateState) Backup(db incdb.Database) error {
 	nextEpochInfo, err := json.Marshal(b.NextEpochDelegate)
 	if err != nil {

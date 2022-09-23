@@ -1006,6 +1006,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeShardAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	delegateList := []string{}
+	redelegateList := [2][]string{}
 	unstaking := []string{}
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
@@ -1054,6 +1055,16 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		case metadata.BeaconStakingMeta:
 			// BeaconStakingMeta is not supported yet
 			continue
+		case metadata.ReDelegateMeta:
+			// BeaconStakingMeta is not supported yet
+			redelegateMetadata, ok := tx.GetMetadata().(*metadata.ReDelegateMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.ReDelegateMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(redelegateMetadata.CommitteePublicKey) != 0 {
+				redelegateList[0] = append(redelegateList[0], redelegateMetadata.CommitteePublicKey)
+				redelegateList[1] = append(redelegateList[1], redelegateMetadata.NewDelegate)
+			}
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
@@ -1109,6 +1120,14 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	if !reflect.DeepEqual(unstaking, []string{}) {
 		// ["unstake" "pubkey1,pubkey2,..."]
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	if len(redelegateList[0]) > 0 {
+		inst := []string{
+			instruction.RE_DELEGATE,
+			strings.Join(redelegateList[0], ","),
+			strings.Join(redelegateList[1], ","),
+		}
 		instructions = append(instructions, inst)
 	}
 	return instructions, pdexTxs, nil

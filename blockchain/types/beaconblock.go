@@ -59,6 +59,7 @@ type BeaconHeader struct {
 	ConsensusType                   string      `json:"ConsensusType"`
 	Producer                        string      `json:"Producer"`
 	ProducerPubKeyStr               string      `json:"ProducerPubKeyStr"`
+	PreviousValidationData          string      `json:"PrevValData"`
 
 	//for version 2
 	Proposer    string `json:"Proposer"`
@@ -71,8 +72,8 @@ type BeaconHeader struct {
 	ProcessBridgeFromBlock *uint64 `json:"integer,omitempty"`
 }
 
-func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
-	return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr}
+func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string, prevValidationData string) BeaconHeader {
+	return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr, PreviousValidationData: prevValidationData}
 }
 
 func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(
@@ -160,7 +161,7 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-//propose hash of beacon contain consensus info
+// propose hash of beacon contain consensus info
 func (beaconBlock BeaconBlock) ProposeHash() *common.Hash {
 	hash := beaconBlock.Header.ProposeHash()
 	return &hash

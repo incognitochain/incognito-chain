@@ -25,6 +25,7 @@ type View interface {
 	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
 	ReplaceBlock(blk types.BlockInterface)
+	// ReplaceBlock(blk )
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
@@ -45,6 +46,7 @@ type MultiView interface {
 	Clone() MultiView
 	Reset()
 	AddView(v View) (int, error)
+	ReplaceView(v View) bool
 }
 
 type multiView struct {
@@ -131,9 +133,9 @@ func (s *multiView) GetViewByHash(hash common.Hash) View {
 	}
 }
 
-//forward final view to specific view
-//Instant finality: Beacon chain will forward to expected final view. Shard chain will forward to shard view that beacon confirm
-//need to check if it is still compatible with best view
+// forward final view to specific view
+// Instant finality: Beacon chain will forward to expected final view. Shard chain will forward to shard view that beacon confirm
+// need to check if it is still compatible with best view
 func (s *multiView) FinalizeView(hashToFinalize common.Hash) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -183,7 +185,7 @@ func (s *multiView) SimulateAddView(view View) (cloneMultiview MultiView) {
 	return nil
 }
 
-//Only add view if view is validated (at least enough signature)
+// Only add view if view is validated (at least enough signature)
 func (s *multiView) addView(view View) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -203,6 +205,20 @@ func (s *multiView) addView(view View) bool {
 
 }
 
+func (s *multiView) replaceView(view View) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if len(s.viewByHash) != 0 { //if no view in map, there are nothing to replace
+		if oldView, ok := s.viewByHash[*view.GetHash()]; ok { //otherwise, if view is inserted
+			if view.GetPreviousHash() == oldView.GetPreviousHash() {
+				s.viewByHash[*view.GetHash()] = view
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (s *multiView) GetBestView() View {
 	return s.bestView
 }
@@ -215,7 +231,7 @@ func (s *multiView) GetExpectedFinalView() View {
 	return s.expectedFinalView
 }
 
-//update view whenever there is new view insert into system
+// update view whenever there is new view insert into system
 func (s *multiView) updateViewState(newView View) {
 
 	if s.expectedFinalView == nil {
@@ -373,8 +389,12 @@ func (s *multiView) GetAllViewsWithBFS() []View {
 	return s.getAllViewsWithBFS(s.finalView)
 }
 
-//this is just for interface compatible, we dont expect running this function
+// this is just for interface compatible, we dont expect running this function
 func (s *multiView) AddView(v View) (int, error) {
+	panic("must not use this")
+}
+
+func (s *multiView) ReplaceView(v View) bool {
 	panic("must not use this")
 }
 
@@ -397,8 +417,8 @@ func (s *multiView) isFinalized(h common.Hash) bool {
 	}
 }
 
-//for instant finality only
-//2 usecases, when proposer propose a block, it give
+// for instant finality only
+// 2 usecases, when proposer propose a block, it give
 // - previous block for finality check
 // - consensusData  (shard confirm beacon, beacon confirm shard) for making consensus on other chain finality
 func (s *multiView) ReplaceBlockIfImproveFinality(b types.BlockInterface) (bool, error) {

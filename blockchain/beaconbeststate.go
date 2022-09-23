@@ -428,6 +428,10 @@ func (beaconBestState *BeaconBestState) ReplaceBlock(replaceBlock types.BlockInt
 	beaconBestState.BestBlock = *replaceBlock.(*types.BeaconBlock)
 }
 
+func (beaconBestState *BeaconBestState) ReplaceCommitteeState(replaceState committeestate.BeaconCommitteeState) {
+	beaconBestState.beaconCommitteeState = replaceState
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeState.GetBeaconSubstitute()
 }

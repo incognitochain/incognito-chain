@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"time"
 )
 
 func CreateProposeBFTMessage(block types.BlockInterface, peerID string) (*BFTPropose, error) {
@@ -40,8 +41,8 @@ func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInter
 	return block
 }
 
-//check if node should propose in this timeslot
-//if yes, then create and send propose block message
+// check if node should propose in this timeslot
+// if yes, then create and send propose block message
 func (a *actorV3) maybeProposeBlock() error {
 	time1 := time.Now()
 	var err error
@@ -77,13 +78,30 @@ func (a *actorV3) maybeProposeBlock() error {
 	}
 
 	block := a.getBlockForPropose(bestView.GetHeight() + 1)
-
+	rawPreviousValidationData := ""
 	if block == nil || block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
+		if block.Type() == common.BeaconChainKey {
+			previousBlock, _ := a.chain.GetBlockByHash(*bestView.GetHash())
+			if previousBlock != nil {
+				if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
+					previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
+					a.validateVote(previousProposeBlockInfo)
+					rawPreviousValidationData, err = a.createBLSAggregatedSignatures(
+						previousProposeBlockInfo.SigningCommittees,
+						previousProposeBlockInfo.block.ProposeHash(),
+						previousProposeBlockInfo.block.GetValidationField(),
+						previousProposeBlockInfo.Votes)
+					if err != nil {
+						a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+					}
+				}
+			}
+		}
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		a.logger.Info("CreateNewBlock version", a.blockVersion)
-		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
+		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash, rawPreviousValidationData)
 		if err != nil {
 			return NewConsensusError(BlockCreationError, err)
 		}
@@ -117,6 +135,7 @@ func (a *actorV3) maybeProposeBlock() error {
 	}
 
 	bftProposeMessage, err := CreateProposeBFTMessage(block, a.node.GetSelfPeerID().String())
+	// bftProposeMessage.PrevValidationData = rawPreviousValidationData
 	if lockBlockHash := a.getLockBlockHash(block.GetHeight()); lockBlockHash != nil {
 		bftProposeMessage.POLC, err = buildPOLCFromPreVote(bestView, lockBlockHash)
 		if err != nil {
@@ -208,7 +227,7 @@ func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock 
 	return true
 }
 
-//on receive propose message, store it into mem and db
+// on receive propose message, store it into mem and db
 func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)

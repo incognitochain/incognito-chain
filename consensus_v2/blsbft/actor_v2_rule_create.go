@@ -39,7 +39,7 @@ func (n NormalCreateBlockRule) CreateBlock(
 ) (types.BlockInterface, error) {
 
 	if !isRePropose {
-		newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
+		newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash, "")
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -98,8 +98,7 @@ func (n OnlyCreateBlockRule) CreateBlock(
 	isRePropose bool,
 ) (types.BlockInterface, error) {
 
-
-	newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash)
+	newBlock, err := n.chain.CreateNewBlock(blockVersion, b58Str, 1, currentTime, committees, committeeViewHash, "")
 	if err != nil {
 		return nil, NewConsensusError(BlockCreationError, err)
 	}

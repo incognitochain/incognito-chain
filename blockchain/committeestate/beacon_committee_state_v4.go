@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -14,7 +15,7 @@ import (
 type BeaconCommitteeStateV4 struct {
 	*BeaconCommitteeStateV3
 	bDelegateState *BeaconDelegateState
-	delegate       map[string]string
+	bReputation    map[string]uint64
 }
 
 func NewBeaconCommitteeStateV4() *BeaconCommitteeStateV4 {
@@ -262,6 +263,8 @@ func (b *BeaconCommitteeStateV4) processReDelegateInstruction(
 // }
 
 func (b *BeaconCommitteeStateV4) ProcessStoreCommitteeStateInfo(
+	bBlock *types.BeaconBlock,
+	// mView multiview.MultiView,
 	cChange *CommitteeChange,
 	bStateDB *statedb.StateDB,
 	isEndOfEpoch bool,
@@ -339,9 +342,11 @@ func (b *BeaconCommitteeStateV4) ProcessStoreCommitteeStateInfo(
 			}
 		}
 	}
-	// for _, replaceCommittee := range cChange.ShardCommitteeReplaced {
-
-	// }
+	if err := b.UpdateBeaconReputationWithBlock(bBlock); err != nil {
+		return err
+	}
+	// prevView := mView.GetViewByHash(bBlock.GetPrevHash())
+	// mView.AddView(v multiview.View)
 	if isEndOfEpoch {
 		if err := b.bDelegateState.AcceptNextEpochChange(); err != nil {
 			return err

@@ -270,13 +270,14 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 	chain := sim.GetBlockchain()
 	type AccountInfo struct {
-		Name     string
-		Delegate string
+		Name      string
+		Delegate  string
+		HasCredit bool
 	}
 
 	pkMap := make(map[string]*AccountInfo)
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown"}
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown", false}
 	}
 	bBestState := chain.GetBeaconBestState()
 	bC := bBestState.GetBeaconCommittee()
@@ -289,7 +290,8 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
 			for idx, bPK := range bCStr {
 				if bPK == delegate {
-					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
+					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v %v", idx, bPK)
+					pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
 				}
 			}
 		}
@@ -297,6 +299,40 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 
 	for _, stakerInfo := range pkMap {
 		fmt.Printf("Acc: %v, Delegate: %v\n", stakerInfo.Name, stakerInfo.Delegate)
+	}
+}
+
+func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
+	chain := sim.GetBlockchain()
+	type CandidateInfo struct {
+		Name              string
+		CurrentDelegators int
+		// WaitingDelegators int
+
+		CurrentDelegatorsDetails []string
+		// WaitingDelegatorsDetails []string
+	}
+
+	pkStakerMap := make(map[string]string)
+	pkCandidateMap := map[string]CandidateInfo{}
+	for _, acc := range accounts {
+		pkStakerMap[acc.SelfCommitteePubkey] = acc.Name
+	}
+	bBestState := chain.GetBeaconBestState()
+	bC := bBestState.GetBeaconCommittee()
+	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+
+	for index, b := range bCStr {
+		pkCandidateMap[b] = CandidateInfo{
+			Name:                     fmt.Sprintf("Beacon %v", index),
+			CurrentDelegators:        0,
+			CurrentDelegatorsDetails: []string{},
+		}
+	}
+
+	for _, cInfo := range pkCandidateMap {
+		fmt.Printf("Acc: %v\n\tCurrent delegators: %v\n\tDetails: %+v\n",
+			cInfo.Name, cInfo.CurrentDelegators, cInfo.CurrentDelegatorsDetails)
 	}
 }
 

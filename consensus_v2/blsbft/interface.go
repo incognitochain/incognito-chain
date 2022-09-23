@@ -15,7 +15,7 @@ import (
 
 //Used interfaces
 
-//NodeInterface
+// NodeInterface
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
@@ -57,7 +57,9 @@ type Chain interface {
 		round int,
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
-		hash common.Hash) (types.BlockInterface, error)
+		hash common.Hash,
+		prevValidationData string,
+	) (types.BlockInterface, error)
 	CreateNewBlockFromOldBlock(oldBlock types.BlockInterface, proposer string, startTime int64, isValidRePropose bool) (types.BlockInterface, error)
 	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	InsertAndBroadcastBlock(block types.BlockInterface) error

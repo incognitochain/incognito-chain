@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -30,6 +29,7 @@ import (
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/pkg/errors"
 )
 
 // VerifyPreSignBeaconBlock should receives block in consensus round
@@ -221,6 +221,16 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed to unmarshall parent block of block height %+v", beaconBlock.Header.Height))
 	}
+	if beaconBlock.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
+		// prevValDataHash := common.HashH([]byte(prevValData))
+		// if beaconBlock.Header.PreviousValidationData != prevValDataHash {
+		// 	return errors.Errorf("Validate prev validation error, prev Data %v, hash %v, hash in block %v", prevValData, prevValDataHash.String(), beaconBlock.Header.PreviousValidationData.String())
+		// }
+		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
+			return err
+		}
+	}
+
 	// Verify block height with parent block
 	if previousBeaconBlock.Header.Height+1 != beaconBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive beacon block height %+v but get %+v", previousBeaconBlock.Header.Height+1, beaconBlock.Header.Height))
@@ -770,6 +780,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
+		config.Param().ConsensusParam.StakingFlowV4Height,
 		beaconCommitteeStateEnv)
 
 	if config.Param().ConsensusParam.BlockProducingV3Height == beaconBestState.BeaconHeight {
@@ -901,12 +912,25 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	blockHash := beaconBlock.Header.Hash()
 
 	var err error
+	if beaconBlock.GetHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
+		if err = blockchain.BeaconChain.ReplacePreviousValidationData(beaconBlock.GetPrevHash(), *curView.GetBlock().ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
+			return err
+		}
+	}
+
 	//statedb===========================START
 	// Added
 	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
 	if err != nil {
 		return err
 	}
+	// curView.beaconCommitteeState.
+	err = newBestState.beaconCommitteeState.ProcessStoreCommitteeStateInfo(
+		beaconBlock,
+		committeeChange,
+		newBestState.GetBeaconConsensusStateDB(),
+		blockchain.IsLastBeaconHeightInEpoch(beaconBlock.Header.Height),
+	)
 	err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
 	if err != nil {
 		return err
@@ -1390,11 +1414,13 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeState.GetStakingTx(),
 			beaconBestState.BeaconHeight,
 			beaconBestState.beaconCommitteeState.GetDelegate(),
+			map[string]interface{}{},
 		)
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
+	Logger.log.Infof("Committee change: Redelegate map %+v", committeeChange.ReDelegate)
 
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
 	if len(stopAutoStakerKeys) != 0 {

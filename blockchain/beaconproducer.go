@@ -46,6 +46,7 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 	shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, newShardInstruction.stakeInstructions...)
 	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, newShardInstruction.unstakeInstructions...)
 	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, newShardInstruction.stopAutoStakeInstructions...)
+	shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, newShardInstruction.redelegateInstructions...)
 	for shardID, swapInstructions := range newShardInstruction.swapInstructions {
 		shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], swapInstructions...)
 	}
@@ -54,7 +55,9 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 // NewBlockBeacon create new beacon block
 func (blockchain *BlockChain) NewBlockBeacon(
 	curView *BeaconBestState,
-	version int, proposer string, round int, startTime int64) (*types.BeaconBlock, error) {
+	version int, proposer string, round int, startTime int64,
+	prevValidationData string,
+) (*types.BeaconBlock, error) {
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	var err error
 	var epoch uint64
@@ -79,6 +82,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		copiedCurView.ConsensusAlgorithm,
 		proposer,
 		proposer,
+		prevValidationData,
 	)
 
 	if version >= types.INSTANT_FINALITY_VERSION {
@@ -356,8 +360,8 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 				}
 				allPdexTxs[version][shardID] = append(allPdexTxs[version][shardID], txs...)
 			}
-			for _, ins := range newShardInstruction.stakeInstructions {
-				Logger.log.Infof("Shard inst: %+v %+v", ins.TxStakes, ins.DelegateList)
+			for _, ins := range shardInstruction.redelegateInstructions {
+				Logger.log.Infof("Shard inst: %+v %+v", ins.CommitteePublicKeys, ins.DelegateList)
 			}
 		}
 	}
@@ -503,20 +507,23 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	allCommitteeValidatorCandidate := []string{}
 	if len(shardInstruction.stopAutoStakeInstructions) != 0 || len(shardInstruction.unstakeInstructions) != 0 ||
-		len(shardInstruction.stakeInstructions) != 0 {
+		len(shardInstruction.stakeInstructions) != 0 || len(shardInstruction.redelegateInstructions) != 0 {
 		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 	}
 
 	shardInstruction, duplicateKeyStakeInstruction = curView.
 		processStakeInstructionFromShardBlock(shardInstruction, validStakePublicKeys, allCommitteeValidatorCandidate)
-
 	shardInstruction = curView.processStopAutoStakeInstructionFromShardBlock(shardInstruction, allCommitteeValidatorCandidate)
+	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v shard redelegate inst %+v\n", shardBlock.Header.Height, shardID, len(shardInstruction.redelegateInstructions))
+	shardInstruction = curView.processReDelegateInstructionFromShardBlock(shardInstruction, allCommitteeValidatorCandidate)
+	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v shard redelegate inst %+v\n", shardBlock.Header.Height, shardID, len(shardInstruction.redelegateInstructions))
 	shardInstruction = curView.processUnstakeInstructionFromShardBlock(
 		shardInstruction, allCommitteeValidatorCandidate, shardID, validUnstakePublicKeys)
-
+	// for _, redelegateins := range shardInstruction.redelegateInstructions {
+	// 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v shard inst %+v %+v\n", shardBlock.Header.Height, shardID, redelegateins.CommitteePublicKeys, redelegateins.DelegateList)
+	// }
 	// Collect stateful actions
 	statefulActions := collectStatefulActions(instructions)
-	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
 	return shardStates, shardInstruction, duplicateKeyStakeInstruction, acceptedRewardInstruction, statefulActions, pdexTxs, nil
 }
@@ -674,6 +681,11 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Stop Auto Stake
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
+	}
+	Logger.log.Infof("Beacon %v generate instructions from inst %+v %+v", curView.GetBeaconHeight(), len(shardInstruction.redelegateInstructions), shardInstruction.redelegateInstructions)
+
+	for _, redelegateInstruction := range shardInstruction.redelegateInstructions {
+		instructions = append(instructions, redelegateInstruction.ToString())
 	}
 
 	return instructions, nil
@@ -964,6 +976,17 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, tempStopAutoStakeInstruction)
 				}
 			}
+			if inst[0] == instruction.RE_DELEGATE {
+				Logger.log.Info("Beacon Producer/ Process redelegate List ", inst)
+				if redelegateIns, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst); err != nil {
+					Logger.log.Errorf("SKIP Redelegate Instruction Error %+v", err)
+					continue
+				} else {
+					if len(redelegateIns.CommitteePublicKeys) != 0 {
+						shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, redelegateIns)
+					}
+				}
+			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("[unstaking] SKIP Stop Auto Stake Instruction Error %+v", err)
@@ -1111,6 +1134,30 @@ func (beaconBestState *BeaconBestState) processStopAutoStakeInstructionFromShard
 	return shardInstructions
 }
 
+func (beaconBestState *BeaconBestState) processReDelegateInstructionFromShardBlock(
+	shardInstructions *shardInstruction, allCommitteeValidatorCandidate []string) *shardInstruction {
+
+	redelegateList := [2][]string{}
+	redelegateIns := []*instruction.ReDelegateInstruction{}
+
+	for _, redelegateInstruction := range shardInstructions.redelegateInstructions {
+		for idx, tempReDelegatePublicKey := range redelegateInstruction.CommitteePublicKeys {
+			if common.IndexOfStr(tempReDelegatePublicKey, allCommitteeValidatorCandidate) > -1 {
+				redelegateList[0] = append(redelegateList[0], tempReDelegatePublicKey)
+				redelegateList[1] = append(redelegateList[1], redelegateInstruction.DelegateList[idx])
+			}
+		}
+	}
+
+	if len(redelegateList[0]) > 0 {
+		tempReDelegateIns := instruction.NewReDelegateInstructionWithValue(redelegateList[0], redelegateList[1])
+		redelegateIns = append(redelegateIns, tempReDelegateIns)
+	}
+
+	shardInstructions.redelegateInstructions = redelegateIns
+	return shardInstructions
+}
+
 func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 	shardInstructions *shardInstruction,
 	allCommitteeValidatorCandidate []string,
@@ -1146,6 +1193,7 @@ func (shardInstruction *shardInstruction) compose() {
 	stakeInstruction := &instruction.StakeInstruction{}
 	unstakeInstruction := &instruction.UnstakeInstruction{}
 	stopAutoStakeInstruction := &instruction.StopAutoStakeInstruction{}
+	redelegateInstruction := &instruction.ReDelegateInstruction{}
 	unstakeKeys := map[string]bool{}
 
 	for _, v := range shardInstruction.stakeInstructions {
@@ -1161,6 +1209,16 @@ func (shardInstruction *shardInstruction) compose() {
 		stakeInstruction.Chain = v.Chain
 		stakeInstruction.AutoStakingFlag = append(stakeInstruction.AutoStakingFlag, v.AutoStakingFlag...)
 		stakeInstruction.DelegateList = append(stakeInstruction.DelegateList, v.DelegateList...)
+	}
+
+	for _, v := range shardInstruction.redelegateInstructions {
+		if v.IsEmpty() {
+			continue
+		}
+		redelegateInstruction.CommitteePublicKeys = append(redelegateInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
+		redelegateInstruction.CommitteePublicKeysStruct = append(redelegateInstruction.CommitteePublicKeysStruct, v.CommitteePublicKeysStruct...)
+		redelegateInstruction.DelegateList = append(redelegateInstruction.DelegateList, v.DelegateList...)
+		redelegateInstruction.DelegateListStruct = append(redelegateInstruction.DelegateListStruct, v.DelegateListStruct...)
 	}
 
 	for _, v := range shardInstruction.unstakeInstructions {
@@ -1192,6 +1250,7 @@ func (shardInstruction *shardInstruction) compose() {
 	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
 	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+	shardInstruction.redelegateInstructions = []*instruction.ReDelegateInstruction{}
 
 	if !stakeInstruction.IsEmpty() {
 		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
@@ -1203,5 +1262,8 @@ func (shardInstruction *shardInstruction) compose() {
 
 	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	}
+	if !redelegateInstruction.IsEmpty() {
+		shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, redelegateInstruction)
 	}
 }
