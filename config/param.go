@@ -27,6 +27,13 @@ func AbortParam() {
 	p = &param{}
 }
 
+type batchCommitSyncModeParam struct {
+	TrieJournalCacheSize int                `mapstructure:"trie_journal_cache_size"`
+	BlockTrieInMemory    uint64             `mapstructure:"block_trie_in_memory"`
+	TrieNodeLimit        common.StorageSize `mapstructure:"trie_node_limit"`
+	TrieImgsLimit        common.StorageSize `mapstructure:"trie_img_limit"`
+}
+
 type AutoEnableFeature struct {
 	MinTriggerBlockHeight int `mapstructure:"min_trigger"`
 	ForceBlockHeight      int `mapstructure:"force_trigger"`
@@ -79,9 +86,10 @@ type param struct {
 	TransactionInBlockParam          TxsPerBlock                  `mapstructure:"transactions_param"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
 	IsBackup                         bool
-	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
-	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
-	BCHeightBreakPointCoinOrigin     uint64 `mapstructure:"bc_height_break_point_coin_origin"`
+	PRVERC20ContractAddressStr       string                   `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+	PRVBEP20ContractAddressStr       string                   `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	BCHeightBreakPointCoinOrigin     uint64                   `mapstructure:"bc_height_break_point_coin_origin"`
+	BatchCommitSyncModeParam         batchCommitSyncModeParam `mapstructure:"batch_commit_sync_mode_param"`
 }
 
 type genesisParam struct {

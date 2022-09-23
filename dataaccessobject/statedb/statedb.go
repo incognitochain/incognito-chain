@@ -30,6 +30,10 @@ type StateDB struct {
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Hash]struct{} // State objects modified in the current execution
 
+	batchCommitConfig *BatchCommitConfig
+	//rebuild string of current stateDB
+	curRebuildInfo *RebuildInfo
+
 	// DB error.
 	// State objects are used by the consensus core which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -42,6 +46,10 @@ type StateDB struct {
 	StateObjectHashes  time.Duration
 	StateObjectUpdates time.Duration
 	StateObjectCommits time.Duration
+}
+
+func (stateDB *StateDB) GetRebuildInfo() *RebuildInfo {
+	return stateDB.curRebuildInfo
 }
 
 // New return a new statedb attach with a state root
@@ -58,6 +66,7 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
 	}, nil
+
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -156,6 +165,8 @@ func (stateDB *StateDB) Copy() *StateDB {
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
+		curRebuildInfo:      stateDB.curRebuildInfo.Copy(),
+		batchCommitConfig:   stateDB.batchCommitConfig,
 	}
 }
 

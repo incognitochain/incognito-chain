@@ -23,7 +23,7 @@ func TestNewRebuildInfo(t *testing.T) {
 
 	//fmt.Println("===>", info1, info2)
 
-	if info1.rebuildRootHash.String() != info2.rebuildRootHash.String() {
+	if info1.lastRootHash.String() != info2.lastRootHash.String() {
 		t.Fatal("!= rebuild")
 	}
 
@@ -31,8 +31,8 @@ func TestNewRebuildInfo(t *testing.T) {
 		t.Fatal("!= pivotroot")
 	}
 
-	if info1.rebuildFFIndex != info2.rebuildFFIndex {
-		t.Fatal("!= rebuildFFIndex")
+	if info1.lastFFIndex != info2.lastFFIndex {
+		t.Fatal("!= lastFFIndex")
 	}
 	if info1.pivotFFIndex != info2.pivotFFIndex {
 		t.Fatal("!= pivotffindex")

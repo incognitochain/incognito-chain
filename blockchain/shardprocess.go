@@ -1239,11 +1239,25 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+
+	if time.Since(time.Unix(shardBlock.GetProposeTime(), 0)).Minutes() > 30 {
+		finalView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.GetFinalView().(*ShardBestState)
+		finalizedRebuildInfo := finalView.transactionStateDB.GetRebuildInfo()
+		rebuildRootHash, err := newShardState.transactionStateDB.BatchCommit(finalizedRebuildInfo)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		newShardState.TransactionStateDBRootHash = rebuildRootHash.GetLastRootHash()
+		newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = newShardState.transactionStateDB.GetRebuildInfo()
+	} else {
+		err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		newShardState.TransactionStateDBRootHash = transactionRootHash
+		newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = nil
 	}
-	newShardState.TransactionStateDBRootHash = transactionRootHash
+
 	// feature root hash
 	featureRootHash, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {

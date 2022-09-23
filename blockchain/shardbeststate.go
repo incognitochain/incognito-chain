@@ -80,6 +80,15 @@ type ShardBestState struct {
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
 	shardCommitteeState        committeestate.ShardCommitteeState
+	ShardRebuildRootHash       *ShardRebuildRootHash
+}
+
+type ShardRebuildRootHash struct {
+	ConsensusStateDBRootHash   *statedb.RebuildInfo
+	TransactionStateDBRootHash *statedb.RebuildInfo
+	FeatureStateDBRootHash     *statedb.RebuildInfo
+	RewardStateDBRootHash      *statedb.RebuildInfo
+	SlashStateDBRootHash       *statedb.RebuildInfo
 }
 
 func (shardBestState *ShardBestState) CalculateTimeSlot(t int64) int64 {
@@ -178,25 +187,32 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
 
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error {
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastView *ShardBestState) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
+
 	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
+
 	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
+
 	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(shardBestState.RewardStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
+	if err = shardBestState.transactionStateDB.InitBatchCommit("tx", shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash, lastView.transactionStateDB); err != nil {
+		return err
+	}
+
 	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err

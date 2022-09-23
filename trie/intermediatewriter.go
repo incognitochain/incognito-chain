@@ -284,6 +284,11 @@ func NewDatabaseWithCache(diskdb incdb.Database, cache int) *IntermediateWriter 
 }
 
 // DiskDB retrieves the persistent storage backing the trie database.
+func (intermediateWriter *IntermediateWriter) GetPath() string {
+	return intermediateWriter.diskdb.GetPath()
+}
+
+// DiskDB retrieves the persistent storage backing the trie database.
 func (intermediateWriter *IntermediateWriter) DiskDB() incdb.KeyValueReader {
 	return intermediateWriter.diskdb
 }
