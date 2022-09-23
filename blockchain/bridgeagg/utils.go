@@ -367,7 +367,7 @@ func CalculateIncDecimal(decimal, baseDecimal uint8) uint8 {
 func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vault config.Vault) error {
 	networkID := vault.NetworkID
 	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID &&
-		networkID != common.FTMNetworkID && networkID != common.AVAXNetworkID {
+		networkID != common.FTMNetworkID && networkID != common.AURORANetworkID && networkID != common.AVAXNetworkID {
 		return fmt.Errorf("Cannot find networkID %d", networkID)
 	}
 	if vault.ExternalDecimal == 0 {
