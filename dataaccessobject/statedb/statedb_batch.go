@@ -25,12 +25,25 @@ type BatchCommitConfig struct {
 }
 
 func NewBatchCommitConfig(flatFile flatfile.FlatFile) *BatchCommitConfig {
+	block_trie_in_memory := uint64(2000)
+	trie_node_limit := common.StorageSize(1e9)
+	trie_img_limit := common.StorageSize(1e9)
+
+	if config.Param().BatchCommitSyncModeParam.BlockTrieInMemory != 0 {
+		block_trie_in_memory = config.Param().BatchCommitSyncModeParam.BlockTrieInMemory
+	}
+	if config.Param().BatchCommitSyncModeParam.TrieNodeLimit != 0 {
+		trie_node_limit = config.Param().BatchCommitSyncModeParam.TrieNodeLimit
+	}
+	if config.Param().BatchCommitSyncModeParam.TrieImgsLimit != 0 {
+		trie_img_limit = config.Param().BatchCommitSyncModeParam.TrieImgsLimit
+	}
 	return &BatchCommitConfig{
 		triegc:            prque.New(nil),
 		flatFile:          flatFile,
-		blockTrieInMemory: config.Param().BatchCommitSyncModeParam.BlockTrieInMemory,
-		trieNodeLimit:     config.Param().BatchCommitSyncModeParam.TrieNodeLimit,
-		trieImgsLimit:     config.Param().BatchCommitSyncModeParam.TrieImgsLimit,
+		blockTrieInMemory: block_trie_in_memory,
+		trieNodeLimit:     trie_node_limit,
+		trieImgsLimit:     trie_img_limit,
 	}
 }
 
