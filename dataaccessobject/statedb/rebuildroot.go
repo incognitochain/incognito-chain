@@ -38,6 +38,10 @@ func (r RebuildInfo) GetLastRootHash() common.Hash {
 	return r.lastRootHash
 }
 
+func (r RebuildInfo) GetLastFFIndex() int64 {
+	return r.lastFFIndex
+}
+
 func (r RebuildInfo) String() string {
 	return fmt.Sprintf("rebuild:%v-%v pivot:%v-%v", r.lastRootHash.String(), r.lastFFIndex, r.pivotRootHash.String(), r.pivotFFIndex)
 }

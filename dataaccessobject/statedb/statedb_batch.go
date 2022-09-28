@@ -47,7 +47,7 @@ func NewBatchCommitConfig(flatFile flatfile.FlatFile) *BatchCommitConfig {
 	}
 }
 
-func InitBatchCommit(dbName string, db DatabaseAccessWarper, rebuildRootHash *RebuildInfo, pivotState *StateDB) (*StateDB, error) {
+func InitBatchCommit(dbName string, db DatabaseAccessWarper, currentRootHash common.Hash, rebuildRootHash *RebuildInfo, pivotState *StateDB) (*StateDB, error) {
 
 	ffDir := path.Join(db.TrieDB().GetPath(), fmt.Sprintf("batchstatedb_%v", dbName))
 	ff, err := flatfile.NewFlatFile(ffDir, 5000)
@@ -58,8 +58,8 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, rebuildRootHash *Re
 
 	//create new stateDB from beginning
 	if rebuildRootHash == nil || rebuildRootHash.IsEmpty() {
-		curRebuildInfo := NewRebuildInfo(common.EmptyRoot, common.EmptyRoot, int64(batchCommitConfig.flatFile.Size())-1, int64(batchCommitConfig.flatFile.Size())-1)
-		stateDB, err := NewWithPrefixTrie(common.EmptyRoot, db)
+		curRebuildInfo := NewRebuildInfo(currentRootHash, currentRootHash, int64(batchCommitConfig.flatFile.Size())-1, int64(batchCommitConfig.flatFile.Size())-1)
+		stateDB, err := NewWithPrefixTrie(currentRootHash, db)
 		if err != nil {
 			return nil, err
 		}

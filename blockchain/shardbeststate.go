@@ -195,7 +195,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastV
 		return err
 	}
 
-	shardBestState.transactionStateDB, err = statedb.InitBatchCommit("tx", dbAccessWarper, shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash, lastView.transactionStateDB)
+	shardBestState.transactionStateDB, err = statedb.InitBatchCommit("tx", dbAccessWarper, shardBestState.TransactionStateDBRootHash, shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash, lastView.transactionStateDB)
 	if err != nil {
 		return err
 	}

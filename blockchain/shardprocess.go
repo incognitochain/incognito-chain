@@ -933,7 +933,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 	if err != nil {
 		return err
 	}
-	shardBestState.transactionStateDB, err = statedb.InitBatchCommit("tx", dbAccessWarper, nil, nil)
+	shardBestState.transactionStateDB, err = statedb.InitBatchCommit("tx", dbAccessWarper, common.EmptyRoot, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -1261,7 +1261,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		newShardState.TransactionStateDBRootHash = transactionRootHash
-		newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = nil
+		previousRebuildInfo := newShardState.ShardRebuildRootHash.TransactionStateDBRootHash
+		newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = statedb.NewRebuildInfo(transactionRootHash, transactionRootHash,
+			previousRebuildInfo.GetLastFFIndex(), previousRebuildInfo.GetLastFFIndex())
 	}
 
 	// feature root hash
