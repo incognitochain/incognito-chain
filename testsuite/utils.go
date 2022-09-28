@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -305,12 +306,10 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
 	chain := sim.GetBlockchain()
 	type CandidateInfo struct {
-		Name              string
-		CurrentDelegators int
-		// WaitingDelegators int
-
+		Name                     string
+		CurrentDelegators        int
+		Reputation               uint
 		CurrentDelegatorsDetails []string
-		// WaitingDelegatorsDetails []string
 	}
 
 	pkStakerMap := make(map[string]string)
@@ -321,18 +320,30 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
 	bBestState := chain.GetBeaconBestState()
 	bC := bBestState.GetBeaconCommittee()
 	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+	bCState := bBestState.GetCommitteeState()
+	dState := bCState.GetDelegateState()
 
+	bcV4 := bCState.(*committeestate.BeaconCommitteeStateV4)
 	for index, b := range bCStr {
 		pkCandidateMap[b] = CandidateInfo{
 			Name:                     fmt.Sprintf("Beacon %v", index),
 			CurrentDelegators:        0,
 			CurrentDelegatorsDetails: []string{},
+			Reputation:               uint(bcV4.Reputation[b]),
+		}
+		if info, ok := dState[b]; ok {
+			pkCandidateMap[b] = CandidateInfo{
+				Name:                     fmt.Sprintf("Beacon %v", index),
+				CurrentDelegators:        info.CurrentDelegators,
+				CurrentDelegatorsDetails: info.GetCurrentDelegatorsList(),
+				Reputation:               uint(bcV4.Reputation[b]),
+			}
 		}
 	}
 
 	for _, cInfo := range pkCandidateMap {
-		fmt.Printf("Acc: %v\n\tCurrent delegators: %v\n\tDetails: %+v\n",
-			cInfo.Name, cInfo.CurrentDelegators, cInfo.CurrentDelegatorsDetails)
+		fmt.Printf("Acc: %v\n\tCurrent delegators: %v\tDetails: %+v\n\tRep:%v\n",
+			cInfo.Name, cInfo.CurrentDelegators, cInfo.CurrentDelegatorsDetails, cInfo.Reputation)
 	}
 }
 

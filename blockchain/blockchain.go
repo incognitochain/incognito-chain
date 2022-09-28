@@ -740,6 +740,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
 			config.Param().ConsensusParam.StakingFlowV2Height,
 			config.Param().ConsensusParam.StakingFlowV3Height,
+			config.Param().ConsensusParam.StakingFlowV4Height,
 		)
 		v.shardCommitteeState = InitShardCommitteeState(version,
 			v.consensusStateDB,
@@ -1146,7 +1147,7 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 
 }
 
-//receive feature report from other node, add to list feature stat if node is
+// receive feature report from other node, add to list feature stat if node is
 func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	signBytes := []byte{}

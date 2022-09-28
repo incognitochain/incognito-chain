@@ -221,11 +221,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed to unmarshall parent block of block height %+v", beaconBlock.Header.Height))
 	}
-	if beaconBlock.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
-		// prevValDataHash := common.HashH([]byte(prevValData))
-		// if beaconBlock.Header.PreviousValidationData != prevValDataHash {
-		// 	return errors.Errorf("Validate prev validation error, prev Data %v, hash %v, hash in block %v", prevValData, prevValDataHash.String(), beaconBlock.Header.PreviousValidationData.String())
-		// }
+	if (beaconBlock.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height) && (beaconBlock.GetBeaconHeight() > 2) {
 		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 			return err
 		}
@@ -928,8 +924,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	err = newBestState.beaconCommitteeState.ProcessStoreCommitteeStateInfo(
 		beaconBlock,
 		committeeChange,
-		newBestState.GetBeaconConsensusStateDB(),
-		blockchain.IsLastBeaconHeightInEpoch(beaconBlock.Header.Height),
+		newBestState.consensusStateDB,
+		blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height),
 	)
 	err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
 	if err != nil {
@@ -1443,7 +1439,7 @@ func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
 
 	if beaconCurView.CommitteeStateVersion() < committeestate.STAKING_FLOW_V3 {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
-	} else if beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+	} else if beaconCurView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		return beaconCurView.storeAllShardSubstitutesValidatorV3(addedValidators)
 	}
 

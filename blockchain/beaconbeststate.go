@@ -428,6 +428,14 @@ func (beaconBestState *BeaconBestState) ReplaceBlock(replaceBlock types.BlockInt
 	beaconBestState.BestBlock = *replaceBlock.(*types.BeaconBlock)
 }
 
+func (beaconBestState *BeaconBestState) GetCommitteeState() committeestate.BeaconCommitteeState {
+	return beaconBestState.beaconCommitteeState
+}
+
+func (beaconBestState *BeaconBestState) GetDelegateState() map[string]committeestate.BeaconDelegatorInfo {
+	return beaconBestState.beaconCommitteeState.GetDelegateState()
+}
+
 func (beaconBestState *BeaconBestState) ReplaceCommitteeState(replaceState committeestate.BeaconCommitteeState) {
 	beaconBestState.beaconCommitteeState = replaceState
 }
@@ -860,7 +868,9 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	version := committeestate.VersionByBeaconHeight(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
-		config.Param().ConsensusParam.StakingFlowV3Height)
+		config.Param().ConsensusParam.StakingFlowV3Height,
+		config.Param().ConsensusParam.StakingFlowV4Height,
+	)
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0

@@ -3,6 +3,12 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"os"
+	"path"
+	"path/filepath"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -10,11 +16,6 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
-	"net"
-	"os"
-	"path"
-	"path/filepath"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -413,8 +414,8 @@ func (sim *NodeEngine) PrintBlockChainInfo() {
 	fmt.Println("Shard Chain:")
 }
 
-//life cycle of a block generation process:
-//PreCreate -> PreValidation -> PreInsert ->
+// life cycle of a block generation process:
+// PreCreate -> PreValidation -> PreInsert ->
 func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	time.Sleep(time.Nanosecond)
 	var chainArray = []int{-1}
@@ -468,8 +469,10 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		proposerPkStr, _ := proposerPK.ToBase58()
 		var chain blsbft.Chain
 		if chainID == -1 {
+			previousBlock, _ := blockchain.BeaconChain.GetBlockByHash(*curView.GetHash())
+			rawPreviousValidationData := previousBlock.GetValidationField()
 			chain = blockchain.BeaconChain
-			block, err = blockchain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
+			block, err = blockchain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{}, rawPreviousValidationData)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -477,7 +480,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		} else {
 			chain = blockchain.ShardChain[byte(chainID)]
-			block, err = blockchain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
+			block, err = blockchain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock, "")
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -556,8 +559,8 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	return sim
 }
 
-//number of second we want simulation to forward
-//default = round interval
+// number of second we want simulation to forward
+// default = round interval
 func (sim *NodeEngine) NextRound() {
 	sim.timer.Forward(sim.bc.BeaconChain.GetBestView().GetCurrentTimeSlot())
 }

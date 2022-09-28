@@ -15,13 +15,14 @@ import (
 type BeaconCommitteeStateV4 struct {
 	*BeaconCommitteeStateV3
 	bDelegateState *BeaconDelegateState
-	bReputation    map[string]uint64
+	Reputation     map[string]uint64
 }
 
 func NewBeaconCommitteeStateV4() *BeaconCommitteeStateV4 {
 	return &BeaconCommitteeStateV4{
 		BeaconCommitteeStateV3: NewBeaconCommitteeStateV3(),
 		bDelegateState:         &BeaconDelegateState{},
+		Reputation:             map[string]uint64{},
 	}
 }
 
@@ -42,7 +43,9 @@ func NewBeaconCommitteeStateV4WithValue(
 	res := &BeaconCommitteeStateV4{}
 	res.BeaconCommitteeStateV3 = NewBeaconCommitteeStateV3WithValue(beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates, autoStake, rewardReceiver, stakingTx, delegateList, syncPool, swapRule, assignRule)
 	var err error
+	res.Reputation = map[string]uint64{}
 	res.bDelegateState, err = InitBeaconDelegateState(res.BeaconCommitteeStateV3)
+	res.InitReputationState()
 	if err != nil {
 		panic(err)
 	}
@@ -57,6 +60,7 @@ func (b *BeaconCommitteeStateV4) Version() int {
 func (b *BeaconCommitteeStateV4) shallowCopy(newB *BeaconCommitteeStateV4) {
 	b.BeaconCommitteeStateV3.shallowCopy(newB.BeaconCommitteeStateV3)
 	newB.bDelegateState = b.bDelegateState
+	newB.Reputation = b.Reputation
 }
 
 func (b *BeaconCommitteeStateV4) Clone() BeaconCommitteeState {
@@ -69,7 +73,9 @@ func (b *BeaconCommitteeStateV4) clone() *BeaconCommitteeStateV4 {
 	newB := NewBeaconCommitteeStateV4()
 	newB.BeaconCommitteeStateV3 = b.BeaconCommitteeStateV3.clone()
 	newB.bDelegateState = b.bDelegateState.Clone()
-
+	for k, v := range b.Reputation {
+		newB.Reputation[k] = v
+	}
 	return newB
 }
 
@@ -108,6 +114,8 @@ func (b BeaconCommitteeStateV4) isEmpty() bool {
 func initGenesisBeaconCommitteeStateV4(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV4 {
 	BeaconCommitteeStateV4 := NewBeaconCommitteeStateV4()
 	BeaconCommitteeStateV4.initCommitteeState(env)
+	BeaconCommitteeStateV4.InitReputationState()
+	BeaconCommitteeStateV4.bDelegateState, _ = InitBeaconDelegateState(BeaconCommitteeStateV4)
 	return BeaconCommitteeStateV4
 }
 
@@ -342,11 +350,11 @@ func (b *BeaconCommitteeStateV4) ProcessStoreCommitteeStateInfo(
 			}
 		}
 	}
-	if err := b.UpdateBeaconReputationWithBlock(bBlock); err != nil {
-		return err
+	if bBlock.Header.Height > 2 {
+		if err := b.UpdateBeaconReputationWithBlock(bBlock); err != nil {
+			return err
+		}
 	}
-	// prevView := mView.GetViewByHash(bBlock.GetPrevHash())
-	// mView.AddView(v multiview.View)
 	if isEndOfEpoch {
 		if err := b.bDelegateState.AcceptNextEpochChange(); err != nil {
 			return err

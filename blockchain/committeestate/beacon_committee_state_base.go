@@ -32,7 +32,7 @@ type beaconCommitteeStateBase struct {
 
 func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64, stakingFlowV4 uint64,
 	env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
-	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3)
+	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3, stakingFlowV4)
 	switch version {
 	case SELF_SWAP_SHARD_VERSION:
 		return initGenesisBeaconCommitteeStateV1(env)
@@ -126,13 +126,31 @@ func NewBeaconCommitteeState(
 			swapRule,
 			assignRule,
 		)
+	case STAKING_FLOW_V4:
+		committeeState = NewBeaconCommitteeStateV4WithValue(
+			tempBeaconCommittee,
+			tempShardCommittee,
+			tempShardSubstitute,
+			tempShardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+			delegateList,
+			tempSyncPool,
+			swapRule,
+			assignRule,
+		)
 	}
 
 	return committeeState
 }
 
 // VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
-func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64) int {
+func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64, stakingV4Height uint64) int {
+	if beaconHeight >= stakingV4Height {
+		return STAKING_FLOW_V4
+	}
 	if beaconHeight >= stakingV3Height {
 		return STAKING_FLOW_V3
 	}
@@ -531,6 +549,10 @@ func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStat
 	[][]string,
 	error) {
 	return nil, nil, [][]string{}, nil
+}
+
+func (b *beaconCommitteeStateBase) GetDelegateState() map[string]BeaconDelegatorInfo {
+	return nil
 }
 
 func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(

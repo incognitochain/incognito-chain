@@ -28,6 +28,7 @@ func Test_Shard_Staking_With_Delegation() {
 		config.Param().ConsensusParam.StakingFlowV2Height = 1
 		config.Param().ConsensusParam.AssignRuleV3Height = 1
 		config.Param().ConsensusParam.StakingFlowV3Height = 1
+		config.Param().ConsensusParam.StakingFlowV4Height = 1
 		config.Param().CommitteeSize.MaxShardCommitteeSize = 8
 		config.Param().CommitteeSize.MinShardCommitteeSize = 4
 		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 4
@@ -41,19 +42,19 @@ func Test_Shard_Staking_With_Delegation() {
 	}, func(node *testsuite.NodeEngine) {})
 
 	fmt.Println("Genesis account balance")
-	node.ShowBalance(node.GenesisAccount)
 
 	//send PRV and stake
 	stakers := []account.Account{}
 	bcPKStructs := node.GetBlockchain().GetBeaconBestState().GetBeaconCommittee()
 	bcPKStrs, _ := incognitokey.CommitteeKeyListToString(bcPKStructs)
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 		node.SendPRV(node.GenesisAccount, acc, 1e14)
 		node.GenerateBlock().NextRound()
 		node.GenerateBlock().NextRound()
-		fmt.Println(node.RPC.StakeNew(acc, bcPKStrs[i%len(bcPKStrs)]))
+		tx, err := node.RPC.StakeNew(acc, bcPKStrs[i%len(bcPKStrs)])
+		fmt.Printf("Staker %+v create tx stake %v delegate to beacon %v, err %+v\n", acc.Name, tx.TxID, i%len(bcPKStrs), err)
 		node.GenerateBlock().NextRound()
 		node.GenerateBlock().NextRound()
 		fmt.Println("send PRV and stake", acc.Name)
@@ -66,18 +67,26 @@ func Test_Shard_Staking_With_Delegation() {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
-		if epoch > 20 {
+		if epoch > 6 {
 			break
 		}
 
 		if height%20 == 1 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			node.ShowAccountPosition(stakers)
+			if height == 41 {
+				txHash, err := node.RPC.ReDelegate(stakers[0], bcPKStrs[10%len(bcPKStrs)])
+				fmt.Println(txHash.Base58CheckData)
+				fmt.Printf("Staker 0 redelegate to beacon %v; Redelegate tx: %+v, err %+v\n", 10%len(bcPKStrs), txHash.TxID, err)
+			}
+			fmt.Println("Account info:")
 			node.ShowAccountStakeInfo(stakers)
-			//TODO: check account
+			node.ShowBeaconCandidateInfo(stakers)
+			// node.Pause()
 		}
 	}
 	node.Pause()
+	flagg := false
 	for {
 
 		node.SendFinishSync(stakers, 0)
@@ -91,6 +100,13 @@ func Test_Shard_Staking_With_Delegation() {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
+		if (epoch == 20) && (!flagg) {
+			flagg = true
+			tx, _ := node.RPC.UnStake(stakers[0])
+			fmt.Println(tx)
+			node.Pause()
+
+		}
 		if epoch > 26 {
 			break
 		}
@@ -99,7 +115,7 @@ func Test_Shard_Staking_With_Delegation() {
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			node.ShowAccountPosition(stakers)
-
+			node.ShowBeaconCandidateInfo(stakers)
 		}
 		node.GenerateBlock().NextRound()
 

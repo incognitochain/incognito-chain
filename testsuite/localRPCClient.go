@@ -288,6 +288,15 @@ func (r *LocalRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey stri
 	}
 	return resI.(jsonresult.CreateTransactionResult), nil
 }
+func (r *LocalRPCClient) CreateAndSendUnStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, unstakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createunstaketransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey, receivers, fee, privacy, unstakeInfo}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionResult), nil
+}
 func (r *LocalRPCClient) CreateAndSendTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendtransaction"]

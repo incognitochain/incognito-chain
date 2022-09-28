@@ -43,6 +43,7 @@ type BeaconCommitteeState interface {
 		stateDB *statedb.StateDB,
 		isEndOfEpoch bool,
 	) error
+	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
 }

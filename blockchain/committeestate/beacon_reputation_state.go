@@ -6,10 +6,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// type BeaconReputationState struct {
-// 	Reputation uint64
-// 	TotalVotingPower
-// }
+func (b *BeaconCommitteeStateV4) InitReputationState() {
+	Logger.log.Infof("[curtest] Init reputation")
+	bc := b.GetBeaconCommittee()
+	if bs := b.GetBeaconSubstitute(); len(bs) != 0 {
+		bc = append(bc, bs...)
+	}
+	for _, v := range bc {
+		bcPK, _ := v.ToBase58()
+		b.Reputation[bcPK] = 500
+	}
+}
 
 func (b *BeaconCommitteeStateV4) UpdateBeaconReputationWithBlock(bBlock *types.BeaconBlock) error {
 	prevVal, err := consensustypes.DecodeValidationData(bBlock.Header.PreviousValidationData)
@@ -27,7 +34,7 @@ func (b *BeaconCommitteeStateV4) updateBeaconReputation(bCommittee []string, lis
 		votedMap[votedIdx] = nil
 	}
 	for idx, bPK := range bCommittee {
-		if curRep, ok := b.bReputation[bPK]; ok {
+		if curRep, ok := b.Reputation[bPK]; ok {
 			if _, voted := votedMap[idx]; voted {
 				curRep = curRep * 1015 / 1000
 			} else {
@@ -39,7 +46,7 @@ func (b *BeaconCommitteeStateV4) updateBeaconReputation(bCommittee []string, lis
 			if curRep > 1000 {
 				curRep = 1000
 			}
-			b.bReputation[bPK] = curRep
+			b.Reputation[bPK] = curRep
 		} else {
 			return errors.Errorf("Can not found beacon public key %s in list %v, hold list %v", bPK, bCommittee, b.beaconCommittee)
 		}

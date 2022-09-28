@@ -380,6 +380,24 @@ func (r *RPCClient) Stake(acc account.Account) (*jsonresult.CreateTransactionRes
 	return r.API_SendTxStaking(stake1)
 }
 
+func (r *RPCClient) UnStake(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StopStakingParam{
+		BurnAddr:  "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk: acc.PrivateKey,
+		MinerPrk:  "",
+	}
+	return r.API_SendTxUnStake(stake1)
+}
+
+func (r *RPCClient) StopAutoStake(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StopStakingParam{
+		BurnAddr:  "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk: acc.PrivateKey,
+		MinerPrk:  "",
+	}
+	return r.API_SendTxStopAutoStake(stake1)
+}
+
 func (r *RPCClient) StakeNew(acc account.Account, delegate string) (*jsonresult.CreateTransactionResult, error) {
 	stake1 := StakingTxParam{
 		BurnAddr:    "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
@@ -486,6 +504,28 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 		return nil, err
 	}
 	return &txResp, nil
+}
+
+func (r *RPCClient) API_SendTxUnStake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
+	if stopStakeMeta.MinerPrk == "" {
+		stopStakeMeta.MinerPrk = stopStakeMeta.StakerPrk
+	}
+	wl, err := wallet.Base58CheckDeserialize(stopStakeMeta.MinerPrk)
+	if err != nil {
+		return nil, err
+	}
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	minerPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	burnAddr := stopStakeMeta.BurnAddr
+
+	txResp, err := r.Client.CreateAndSendUnStakingTransaction(stopStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+		"UnStakingType":           float64(210),
+		"CandidatePaymentAddress": minerPayment,
+		"PrivateSeed":             privateSeed,
+	})
+	return &txResp, err
 }
 
 func (r *RPCClient) API_SendTxReDelegate(redelegateMeta ReDelegateParam) (*jsonresult.CreateTransactionResult, error) {
