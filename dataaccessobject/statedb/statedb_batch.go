@@ -72,6 +72,16 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, currentRootHash com
 	lastRootHash := rebuildRootHash.lastRootHash
 
 	//else rebuild from state
+	//if rebuildinfo: last == pivot -> rebuild pivotstate from db. If !=, rebuild pivotstate and replay
+	if rebuildRootHash.lastRootHash.String() == rebuildRootHash.pivotRootHash.String() {
+		pivotState, err = NewWithPrefixTrie(rebuildRootHash.pivotRootHash, db)
+		pivotState.batchCommitConfig = NewBatchCommitConfig(ff)
+		pivotState.curRebuildInfo = rebuildRootHash
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	//if pivotState nil, rebuild it
 	var pivotIndex = rebuildRootHash.pivotFFIndex
 	if pivotState == nil {
