@@ -956,6 +956,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 	shardBestState.FeatureStateDBRootHash = common.EmptyRoot
 	shardBestState.TransactionStateDBRootHash = common.EmptyRoot
 	shardBestState.ShardRebuildRootHash = new(ShardRebuildRootHash)
+	shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash = shardBestState.transactionStateDB.GetRebuildInfo()
 	//statedb===========================END
 	return nil
 }
@@ -1262,8 +1263,12 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 		newShardState.TransactionStateDBRootHash = transactionRootHash
 		previousRebuildInfo := newShardState.ShardRebuildRootHash.TransactionStateDBRootHash
-		newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = statedb.NewRebuildInfo(transactionRootHash, transactionRootHash,
-			previousRebuildInfo.GetLastFFIndex(), previousRebuildInfo.GetLastFFIndex())
+		if previousRebuildInfo == nil {
+			panic("must not enter here!")
+		} else {
+			newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = statedb.NewRebuildInfo(transactionRootHash, transactionRootHash,
+				previousRebuildInfo.GetLastFFIndex(), previousRebuildInfo.GetLastFFIndex())
+		}
 	}
 
 	// feature root hash

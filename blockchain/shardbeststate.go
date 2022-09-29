@@ -216,6 +216,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastV
 	}
 	if shardBestState.ShardRebuildRootHash != nil {
 		shardBestState.ShardRebuildRootHash = new(ShardRebuildRootHash)
+		shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash = shardBestState.transactionStateDB.GetRebuildInfo()
 	}
 	return nil
 }
