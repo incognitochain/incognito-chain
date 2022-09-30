@@ -432,12 +432,15 @@ func VerifyProofAndParseAuroraReceipt(
 		if err != nil {
 			return nil, err
 		}
+		if unstructuredResult != nil {
+			break
+		}
 	}
 	if unstructuredResult == nil {
 		return nil, fmt.Errorf("query receipt %v got nil value", txHash.String())
 	}
-	nearTransactionHash := unstructuredResult["nearTransactionHash"].(string)
-	if nearTransactionHash == "" {
+	nearTransactionHash, ok := unstructuredResult["nearTransactionHash"]
+	if !ok || nearTransactionHash == "" {
 		return nil, fmt.Errorf("invalid aurora transaction: %v", unstructuredResult)
 	}
 
@@ -469,7 +472,7 @@ func VerifyProofAndParseAuroraReceipt(
 
 	// query near tx from above result
 	ctx := context.Background()
-	decodeTx, err := hex.DecodeString(nearTransactionHash[2:])
+	decodeTx, err := hex.DecodeString(nearTransactionHash.(string)[2:])
 	if err != nil {
 		return nil, fmt.Errorf("invalid hex type with err: %v", err.Error())
 	}
