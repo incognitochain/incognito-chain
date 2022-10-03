@@ -392,8 +392,8 @@ type nearParam struct {
 }
 
 func (nearParam *nearParam) GetFromEnv() {
-	if utils.GetEnv(AVAXHostKey, utils.EmptyString) != utils.EmptyString {
-		nearParam.Host = []string{utils.GetEnv(AVAXHostKey, utils.EmptyString)}
+	if utils.GetEnv(NEARHostKey, utils.EmptyString) != utils.EmptyString {
+		nearParam.Host = []string{utils.GetEnv(NEARHostKey, utils.EmptyString)}
 	}
 }
 

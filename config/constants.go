@@ -18,6 +18,7 @@ const (
 	FTMHostKey          = "FTM_HOST"
 	AURORAHostKey       = "AURORA_HOST"
 	AVAXHostKey         = "AVAX_HOST"
+	NEARHostKey         = "NEAR_HOST"
 )
 
 // default config
