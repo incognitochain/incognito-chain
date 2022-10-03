@@ -658,7 +658,14 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				v.NumberOfShardBlock[shardID] = 0
 			}
 		}
-
+		if v.ShardTSManager == nil {
+			v.ShardTSManager = make(map[byte]*TSManager)
+		}
+		for i := 0; i < v.ActiveShards; i++ {
+			if v.ShardTSManager[byte(i)] == nil {
+				v.ShardTSManager[byte(i)] = new(TSManager)
+			}
+		}
 		//check config
 		for feature, height := range v.TriggeredFeature {
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
@@ -969,7 +976,8 @@ func (bc *BlockChain) GetEpochByHeight(beaconHeight uint64) uint64 {
 
 func (bc *BlockChain) GetEpochNextHeight(beaconHeight uint64) (uint64, bool) {
 	beaconHeight++
-	return bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
+	epoch, isFisrtHeight := bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
+	return epoch, isFisrtHeight
 }
 
 func (bc *BlockChain) getEpochAndIsFistHeightInEpoch(beaconHeight uint64) (uint64, bool) {
@@ -1029,7 +1037,7 @@ func (bc *BlockChain) GetRandomTimeInEpoch(epoch uint64) uint64 {
 	}
 }
 
-func (bc *BlockChain) GetFirstBeaconHeightInEpoch(epoch uint64) uint64 {
+func GetFirstBeaconHeightInEpoch(epoch uint64) uint64 {
 	params := config.Param()
 	if epoch < params.EpochParam.EpochV2BreakPoint {
 		return (epoch-1)*params.EpochParam.NumberOfBlockInEpoch + 1
@@ -1138,7 +1146,7 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 
 }
 
-//receive feature report from other node, add to list feature stat if node is
+// receive feature report from other node, add to list feature stat if node is
 func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	signBytes := []byte{}
@@ -1264,4 +1272,20 @@ func (blockchain *BlockChain) GetChain(cid int) common.ChainInterface {
 		return blockchain.BeaconChain
 	}
 	return blockchain.ShardChain[cid]
+}
+
+func (bc *BlockChain) CalculateMintedPRVWithDefaultBlocktime(shardHeights map[byte]uint64) uint64 {
+	total := uint64(0)
+	blkPerYear := GetNumberBlkPerYear(BLOCKTIME_DEFAULT)
+	for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
+		years := shardHeights[sID] / blkPerYear
+		blksReminder := shardHeights[sID] % blkPerYear
+		basicReward := config.Param().BasicReward
+		for year := 1; year <= int(years); year++ {
+			reward := bc.getRewardAmountV2(basicReward, uint64(year))
+			total += reward * blkPerYear
+		}
+		total += blksReminder * bc.getRewardAmountV2(basicReward, uint64(years+1))
+	}
+	return total
 }

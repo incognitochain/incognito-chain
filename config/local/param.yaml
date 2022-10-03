@@ -16,7 +16,7 @@ genesis_param:
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
 
 committee_size:
-  max_shard_committee_size: 12
+  max_shard_committee_size: 4
   min_shard_committee_size: 4
   min_beacon_committee_size: 4
   max_beacon_committee_size: 7
@@ -28,23 +28,26 @@ committee_size:
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
-  min_beacon_block_interval: 8s
-  max_beacon_block_creation: 5s
-  min_shard_block_interval: 8s
-  max_shard_block_creation: 5s
+  min_beacon_block_interval: 40s
+  max_beacon_block_creation: 20s
+  min_shard_block_interval: 40s
+  max_shard_block_creation: 20s
 staking_amount_shard: 1750000000000
 active_shards: 2
 basic_reward: 400000000
+max_reward: 95000000000000000
 epoch_param:
   number_of_block_in_epoch: 50
   number_of_block_in_epoch_v2: 1e9
   epoch_v2_break_point: 1e9
   random_time: 25
   random_time_v2: 1e9
-eth_contract_address: "0xf90860014c7e13dE4A86B81c54dDE797820c72bE"
+eth_contract_address: "0x81BFbdAa0af287125602C1afe954cBbccff0eB3A"
 bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
 plg_contract_address: "0x141aa0C4c7d27f7B526a254202F979B60F056333"
 ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
+aurora_contract_address: "0x14D0cf3bC307aA15DA40Aa4c8cc2A2a81eF96B3a"
+avax_contract_address: "0x30fb06E97a6CD370BCE994A88C428F9F3aB6Ec28"
 near_contract_address: "near.bridge.incognito_chain.testnet"
 prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
 prv_bep20_contract_address: "0x0C61C7F99DeE0270a5934F1520d109dc44A51d6c"
@@ -82,7 +85,7 @@ portal_v3_height: 1e9
 tx_pool_version: 0
 geth_param:
   host: 
-    - "https://kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "https://goerli.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
 bsc_param:
   host: 
     - "https://data-seed-prebsc-1-s1.binance.org:8545"
@@ -97,8 +100,15 @@ plg_param:
 ftm_param:
   host: 
     - "https://rpc.testnet.fantom.network"
+aurora_param:
+  host:
+    - "https://testnet.aurora.dev"
+avax_param:
+  host:
+    - "https://api.avax-test.network/ext/C/rpc"
 near_param:
   host:
+    - "https://near-testnet.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
     - "https://archival-rpc.testnet.near.org"
     - "https://rpc.testnet.near.org"
 pdex_param:
@@ -135,6 +145,24 @@ auto_enable_feature:
   #     min_trigger: 15
   #     force_trigger: 1000000000
   #     require_percentage: 90
+  - blocktime20:
+      min_trigger: 2000
+      force_trigger: 1000000000
+      require_percentage: 90
+  - blocktime10:
+      min_trigger: 10892003
+      force_trigger: 1000000000
+      require_percentage: 90
+blocktime_param:
+  - "blocktimedef": 40
+  - "blocktime20": 20
+  - "blocktime10": 10
+feature_version:
+  - blocktime20: 9
+
+transactions_param:
+  lowerbound: 15
+  upperbound: 100
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed

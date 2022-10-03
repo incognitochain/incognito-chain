@@ -194,6 +194,10 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPLGRequest:        (*HttpServer).handleCreateAndSendBurningPLGRequest,
 	createAndSendTxWithIssuingFTMReq:      (*HttpServer).handleCreateAndSendTxWithIssuingFTMReq,
 	createAndSendBurningFTMRequest:        (*HttpServer).handleCreateAndSendBurningFTMRequest,
+	createAndSendTxWithIssuingAURORAReq:   (*HttpServer).handleCreateAndSendTxWithIssuingAURORAReq,
+	createAndSendTxWithIssuingAVAXReq:     (*HttpServer).handleCreateAndSendTxWithIssuingAVAXReq,
+	createAndSendBurningAURORARequest:     (*HttpServer).handleCreateAndSendBurningAURORARequest,
+	createAndSendBurningAVAXRequest:       (*HttpServer).handleCreateAndSendBurningAVAXRequest,
 	createAndSendTxWithIssuingNearReq:     (*HttpServer).handleCreateAndSendTxWithIssuingNearReq,
 	createAndSendBurningNearRequest:       (*HttpServer).handleCreateAndSendBurningNearRequest,
 
@@ -208,6 +212,8 @@ var HttpHandler = map[string]httpHandler{
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
 	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
+	getAURORABurnProof:       (*HttpServer).handleGetAURORABurnProof,
+	getAVAXBurnProof:         (*HttpServer).handleGetAVAXBurnProof,
 	getNearBurnProof:         (*HttpServer).handleGetNearBurnProof,
 
 	//reward
@@ -355,17 +361,19 @@ var HttpHandler = map[string]httpHandler{
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
-	getBurnProofForDepositToSC:                    (*HttpServer).handleGetBurnProofForDepositToSC,
-	getBurnPBSCProofForDepositToSC:                (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
-	createAndSendBurningForDepositToSCRequest:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
-	createAndSendBurningForDepositToSCRequestV2:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
-	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
-	getBurnPLGProofForDepositToSC:                 (*HttpServer).handleGetBurnPLGProofForDepositToSC,
-	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
-	createAndSendBurningFTMForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
-	getBurnFTMProofForDepositToSC:                 (*HttpServer).handleGetBurnFTMProofForDepositToSC,
-	createAndSendBurningNearForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningNearForDepositToSCRequest,
-	getBurnNearProofForDepositToSC:                (*HttpServer).handleGetBurnNearProofForDepositToSC,
+	getBurnProofForDepositToSC:                      (*HttpServer).handleGetBurnProofForDepositToSC,
+	getBurnPBSCProofForDepositToSC:                  (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest:       (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+	createAndSendBurningForDepositToSCRequestV2:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
+	createAndSendBurningPBSCForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
+	getBurnPLGProofForDepositToSC:                   (*HttpServer).handleGetBurnPLGProofForDepositToSC,
+	createAndSendBurningPLGForDepositToSCRequest:    (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
+	createAndSendBurningFTMForDepositToSCRequest:    (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
+	getBurnFTMProofForDepositToSC:                   (*HttpServer).handleGetBurnFTMProofForDepositToSC,
+	createAndSendBurningAURORAForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningAURORAForDepositToSCRequest,
+	getBurnAURORAProofForDepositToSC:                (*HttpServer).handleGetBurnAURORAProofForDepositToSC,
+	createAndSendBurningAVAXForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningAVAXForDepositToSCRequest,
+	getBurnAVAXProofForDepositToSC:                  (*HttpServer).handleGetBurnAVAXProofForDepositToSC,
 
 	//feature stat
 	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,

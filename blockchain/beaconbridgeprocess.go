@@ -55,6 +55,12 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 		case strconv.Itoa(metadata.IssuingNearRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertNEARTxHashIssued, false)
 
+		case strconv.Itoa(metadata.IssuingAuroraRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertAURORATxHashIssued, false)
+
+		case strconv.Itoa(metadata.IssuingAvaxRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertAVAXTxHashIssued, false)
+
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(curView.featureStateDB, inst, updatingInfoByTokenID)
 
@@ -72,7 +78,14 @@ func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState
 
 		case strconv.Itoa(metadata.BurningFantomConfirmMeta), strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.FTMPrefix, bridgeAggUnshieldTxIDs)
-		case strconv.Itoa(metadata.BurningNearConfirmMeta), strconv.Itoa(metadata.BurningNearConfirmForDepositToSCMeta):
+
+		case strconv.Itoa(metadata.BurningAuroraConfirmMeta), strconv.Itoa(metadata.BurningAuroraConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.AURORAPrefix, bridgeAggUnshieldTxIDs)
+
+		case strconv.Itoa(metadata.BurningAvaxConfirmMeta), strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.AVAXPrefix, bridgeAggUnshieldTxIDs)
+
+		case strconv.Itoa(metadata.BurningNearConfirmMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(curView, inst, updatingInfoByTokenID, common.NEARPrefix, bridgeAggUnshieldTxIDs)
 		}
 		if err != nil {
@@ -355,6 +368,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			metaType == metadata.IssuingBSCRequestMeta || metaType == metadata.IssuingPRVERC20RequestMeta ||
 			metaType == metadata.IssuingPRVBEP20RequestMeta || metaType == metadata.IssuingPLGRequestMeta ||
 			metaType == metadata.IssuingFantomRequestMeta || metaType == metadataCommon.IssuingUnifiedTokenRequestMeta ||
+			metaType == metadata.IssuingAuroraRequestMeta || metaType == metadata.IssuingAvaxRequestMeta ||
 			metaType == metadata.IssuingNearRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
@@ -365,7 +379,8 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		if metaType == metadata.IssuingETHResponseMeta || metaType == metadata.IssuingBSCResponseMeta ||
 			metaType == metadata.IssuingPRVERC20ResponseMeta || metaType == metadata.IssuingPRVBEP20ResponseMeta ||
 			metaType == metadata.IssuingPLGResponseMeta || metaType == metadata.IssuingFantomResponseMeta ||
-			metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadata.IssuingNearResponseMeta {
+			metaType == metadataCommon.IssuingUnifiedTokenResponseMeta || metaType == metadata.IssuingAuroraResponseMeta ||
+			metaType == metadata.IssuingAvaxResponseMeta || metaType == metadata.IssuingNearResponseMeta {
 			if metaType == metadataCommon.IssuingUnifiedTokenResponseMeta {
 				meta := tx.GetMetadata().(*metadataBridge.ShieldResponse)
 				reqTxID = meta.RequestedTxID
@@ -379,6 +394,13 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 			}
 		} else if metaType == metadata.IssuingResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingResponse)
+			reqTxID = meta.RequestedTxID
+			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
+			if err != nil {
+				return err
+			}
+		} else if metaType == metadataCommon.IssuingReshieldResponseMeta {
+			meta := tx.GetMetadata().(*metadataBridge.IssuingReshieldResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {

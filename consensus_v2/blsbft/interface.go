@@ -1,6 +1,8 @@
 package blsbft
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -9,12 +11,11 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
-	"time"
 )
 
 //Used interfaces
 
-//NodeInterface
+// NodeInterface
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
@@ -84,7 +85,6 @@ type Chain interface {
 	) []incognitokey.CommitteePublicKey
 	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
 	GetBlockByHash(hash common.Hash) (types.BlockInterface, error)
-	StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error
 }
 
 type CommitteeChainHandler interface {

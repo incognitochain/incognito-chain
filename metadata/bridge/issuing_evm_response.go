@@ -89,7 +89,8 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			(instMetaType != strconv.Itoa(metadataCommon.IssuingETHRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingBSCRequestMeta) &&
 				instMetaType != strconv.Itoa(metadataCommon.IssuingPRVERC20RequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingPRVBEP20RequestMeta) &&
 				instMetaType != strconv.Itoa(metadataCommon.IssuingPLGRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingFantomRequestMeta) &&
-				instMetaType != strconv.Itoa(metadataCommon.IssuingNearRequestMeta)) {
+				instMetaType != strconv.Itoa(metadataCommon.IssuingAuroraRequestMeta) && instMetaType != strconv.Itoa(metadataCommon.IssuingAvaxRequestMeta)) &&
+				instMetaType != strconv.Itoa(metadataCommon.IssuingNearRequestMeta) {
 			continue
 		}
 

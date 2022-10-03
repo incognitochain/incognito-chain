@@ -32,40 +32,40 @@ import (
 )
 
 // NewBlockShard Create New block Shard:
-//	1. Identify Beacon State for this Shard Block: Beacon Hash & Beacon Height & Epoch
-//		+ Get Beacon Block (B) from Beacon Best State (from Beacon Chain of Shard Node)
-//		+ Beacon Block (B) must have the same epoch With New Shard Block (S):
-//		+ If Beacon Block (B) have different height previous shard block PS (previous of S)
-//		Then Beacon Block (B) epoch greater than Shard Block (S) epoch exact 1 value
-//		BUT This only works if Shard Best State have the Beacon Height divisible by epoch
-//		+ Ex: 1 epoch has 50 block
-//		Example 1:
-//			shard block with
-//				height 10,
-//				epoch: 1,
-//				beacon block height: 49
-//			then shard block with
-//				height 11 must have
-//				epoch: 1,
-//				beacon block height: must be 49 or 50
-//		Example 2:
-//			shard block with
-//				height 10,
-//				epoch: 1,
-//				beacon block height: 50
-//			then shard block with
-//				height is 11 can have 2 option:
-//				a. epoch: 1, if beacon block height remain 50
-//				b. epoch: 2, and beacon block must in range from 51-100
-//				Can have beacon block with height > 100
-//	2. Build Shard Block Body:
-//		a. Get Cross Transaction from other shard && Build Cross Shard Tx Custom Token Transaction (if exist)
-//		b. Get Transactions for New Block
-//		c. Process Assign Instructions from Beacon Blocks
-//		c. Generate Instructions
-//	3. Build Shard Block Essential Data for Header
-//	4. Update Cloned ShardBestState with New Shard Block
-//	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
+//  1. Identify Beacon State for this Shard Block: Beacon Hash & Beacon Height & Epoch
+//     + Get Beacon Block (B) from Beacon Best State (from Beacon Chain of Shard Node)
+//     + Beacon Block (B) must have the same epoch With New Shard Block (S):
+//     + If Beacon Block (B) have different height previous shard block PS (previous of S)
+//     Then Beacon Block (B) epoch greater than Shard Block (S) epoch exact 1 value
+//     BUT This only works if Shard Best State have the Beacon Height divisible by epoch
+//     + Ex: 1 epoch has 50 block
+//     Example 1:
+//     shard block with
+//     height 10,
+//     epoch: 1,
+//     beacon block height: 49
+//     then shard block with
+//     height 11 must have
+//     epoch: 1,
+//     beacon block height: must be 49 or 50
+//     Example 2:
+//     shard block with
+//     height 10,
+//     epoch: 1,
+//     beacon block height: 50
+//     then shard block with
+//     height is 11 can have 2 option:
+//     a. epoch: 1, if beacon block height remain 50
+//     b. epoch: 2, and beacon block must in range from 51-100
+//     Can have beacon block with height > 100
+//  2. Build Shard Block Body:
+//     a. Get Cross Transaction from other shard && Build Cross Shard Tx Custom Token Transaction (if exist)
+//     b. Get Transactions for New Block
+//     c. Process Assign Instructions from Beacon Blocks
+//     c. Generate Instructions
+//  3. Build Shard Block Essential Data for Header
+//  4. Update Cloned ShardBestState with New Shard Block
+//  5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
 func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	version int, proposer string, round int, start int64,
 	committees []incognitokey.CommitteePublicKey,
@@ -141,8 +141,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			waitTime := common.TIMESLOT / 5
-			time.Sleep(time.Duration(waitTime) * time.Second)
+			time.Sleep(time.Duration(shardBestState.GetCurrentTimeSlot()/5) * time.Second)
 			beaconProcessHeight = getBeaconFinalHeightForProcess()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")
@@ -402,6 +401,17 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
 	st = time.Now()
 	txsToAdd := []metadata.Transaction{}
+	totalTxsReminder := int64(config.Param().TransactionInBlockParam.Upper)
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 {
+		totalTxsReminder = curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
+		if totalTxsReminder < 0 {
+			totalTxsReminder = 0
+		} else {
+			if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
+				totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+			}
+		}
+	}
 	if !blockGenerator.chain.config.usingNewPool {
 		txToRemove := []metadata.Transaction{}
 		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
@@ -410,6 +420,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 			blockCreationLeftOver.Nanoseconds(),
 			bView.BeaconHeight,
 			curView,
+			totalTxsReminder,
 		)
 		if len(txsToAdd) == 0 {
 			Logger.log.Info("Creating empty block...")
@@ -423,6 +434,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 			maxSize,
 			blockCreationLeftOver*4,
 			blockCreationLeftOver,
+			totalTxsReminder,
 		)
 	}
 	if len(txsToAdd) > 0 {
@@ -505,6 +517,14 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 			case metadata.IssuingFantomRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
+				}
+			case metadata.IssuingAuroraRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingAuroraResponseMeta, false)
+				}
+			case metadata.IssuingAvaxRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingAvaxResponseMeta, false)
 				}
 
 			case metadata.IssuingNearRequestMeta:
@@ -640,14 +660,14 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 	return responsedTxs, errorInstructions, nil
 }
 
-//	generateInstruction create instruction for new shard block
-//	Swap: at the end of beacon epoch
-//	Brigde: at the end of beacon epoch
-//	Return params:
-//	#1: instruction list
-//	#2: shardpendingvalidator
-//	#3: shardcommittee
-//	#4: error
+// generateInstruction create instruction for new shard block
+// Swap: at the end of beacon epoch
+// Brigde: at the end of beacon epoch
+// Return params:
+// #1: instruction list
+// #2: shardpendingvalidator
+// #3: shardcommittee
+// #4: error
 func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	shardID byte, beaconHeight uint64,
 	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock,
@@ -738,19 +758,19 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 
 // getCrossShardData get cross shard data from cross shard block
 //  1. Get Cross Shard Block and Validate
-//	  a. Get Valid Cross Shard Block from Cross Shard Pool
-//	  b. Get Current Cross Shard State: Last Cross Shard Block From other Shard (FS) to this shard (TS) (Ex: last cross shard block from Shard 0 to Shard 1)
-//	  c. Get Next Cross Shard Block Height from other Shard (FS) to this shard (TS)
+//     a. Get Valid Cross Shard Block from Cross Shard Pool
+//     b. Get Current Cross Shard State: Last Cross Shard Block From other Shard (FS) to this shard (TS) (Ex: last cross shard block from Shard 0 to Shard 1)
+//     c. Get Next Cross Shard Block Height from other Shard (FS) to this shard (TS)
 //     + Using FetchCrossShardNextHeight function in Database to determine next block height
-//	  d. Fetch Other Shard (FS) Committee at Next Cross Shard Block Height for Validation
+//     d. Fetch Other Shard (FS) Committee at Next Cross Shard Block Height for Validation
 //  2. Validate
-//	  a. Get Next Cross Shard Height from Database
-//	  b. Cross Shard Block Height is Next Cross Shard Height from Database (if miss Cross Shard Block according to beacon bytemap then stop discard the rest)
-//	  c. Verify Cross Shard Block Signature
+//     a. Get Next Cross Shard Height from Database
+//     b. Cross Shard Block Height is Next Cross Shard Height from Database (if miss Cross Shard Block according to beacon bytemap then stop discard the rest)
+//     c. Verify Cross Shard Block Signature
 //  3. After validation:
-//	  - Process valid block to extract:
-//	   + Cross output coin
-//	   + Cross Normal Token
+//     - Process valid block to extract:
+//     + Cross output coin
+//     + Cross Normal Token
 func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
@@ -782,7 +802,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState,
 }
 
 /*
-	Verify Transaction with these condition: defined in mempool.go
+Verify Transaction with these condition: defined in mempool.go
 */
 func (blockGenerator *BlockGenerator) getPendingTransaction(
 	shardID byte,
@@ -790,13 +810,14 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	blockCreationTimeLeftOver int64,
 	beaconHeight uint64,
 	curView *ShardBestState,
+	maxTxs int64,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
 	sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 	var elasped int64
-	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
+	Logger.log.Infof("Number of transaction get from Block Generator: %v; Maximum txs in this block %v", len(sourceTxns), maxTxs)
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		return []metadata.Transaction{}, []metadata.Transaction{}, 0
@@ -841,11 +862,14 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 						continue
 					}
 					tempTx := tempTxDesc.Tx
-					totalFee += tempTx.GetTxFee()
 					tempSize := tempTx.GetTxActualSize()
 					if currentSize+tempSize >= common.MaxBlockSize {
 						break
 					}
+					if len(txsToAdd)+1 > int(maxTxs) {
+						break
+					}
+					totalFee += tempTx.GetTxFee()
 					currentSize += tempSize
 					txsToAdd = append(txsToAdd, tempTx)
 				}
@@ -855,6 +879,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 				totalFee += tempTx.GetTxFee()
 				tempSize := tempTx.GetTxActualSize()
 				if currentSize+tempSize >= common.MaxBlockSize {
+					break
+				}
+				if len(txsToAdd)+1 > int(maxTxs) {
 					break
 				}
 				currentSize += tempSize
@@ -889,7 +916,7 @@ func createShardSwapActionForKeyListV2(
 	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
 }
 
-//extractInstructionsFromBeacon : preprcess for beacon instructions before move to handle it in committee state
+// extractInstructionsFromBeacon : preprcess for beacon instructions before move to handle it in committee state
 // Store stakingtx address and return it back to outside
 // Only process for instruction not stake instruction
 func (blockchain *BlockChain) extractInstructionsFromBeacon(

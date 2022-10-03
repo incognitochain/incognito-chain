@@ -160,7 +160,7 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-//propose hash of beacon contain consensus info
+// propose hash of beacon contain consensus info
 func (beaconBlock BeaconBlock) ProposeHash() *common.Hash {
 	hash := beaconBlock.Header.ProposeHash()
 	return &hash
@@ -191,6 +191,10 @@ func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 }
 
 func (beaconBlock BeaconBlock) GetHeight() uint64 {
+	return beaconBlock.Header.Height
+}
+
+func (beaconBlock BeaconBlock) GetBeaconHeight() uint64 {
 	return beaconBlock.Header.Height
 }
 

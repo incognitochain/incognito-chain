@@ -753,9 +753,8 @@ func TestBlockChain_GetFirstBeaconHeightInEpoch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config.AbortParam()
-			bc := &BlockChain{}
 			setupParam(tt.param)
-			if got := bc.GetFirstBeaconHeightInEpoch(tt.args.epoch); got != tt.want {
+			if got := GetFirstBeaconHeightInEpoch(tt.args.epoch); got != tt.want {
 				t.Errorf("GetFirstBeaconHeightInEpoch() = %v, want %v", got, tt.want)
 			}
 		})

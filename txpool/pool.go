@@ -453,10 +453,11 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	maxSize uint64,
 	maxTime time.Duration,
 	getTxsDuration time.Duration,
+	maxTxs int64,
 ) []metadata.Transaction {
 	//TODO Timeout
 	timeOut := time.After(getTxsDuration)
-	Logger.Infof("Has %v time for crawling txs for shard %v\n", getTxsDuration, sView.GetShardID())
+	Logger.Infof("Has %v time for crawling max %v txs for shard %v\n", getTxsDuration, maxTxs, sView.GetShardID())
 	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
@@ -510,6 +511,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			isDoubleSpend, needToReplace, removedInfo, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
 			if isDoubleSpend && !needToReplace {
 				continue
+			}
+			if len(res)+1 > int(maxTxs) {
+				return res
 			}
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime

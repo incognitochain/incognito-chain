@@ -64,7 +64,7 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
 	// }
-	isNear := bReq.Type == metadataCommon.BurningNearRequestMeta || bReq.Type == metadataCommon.BurningNearConfirmForDepositToSCMeta
+	isNear := bReq.Type == metadataCommon.BurningNearRequestMeta
 	// validate near unshield address
 	if isNear {
 		unshieldAddressBytesLength := len([]byte(bReq.RemoteAddress))
@@ -102,6 +102,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
+			bReq.Type == metadataCommon.BurningAvaxRequestMeta || bReq.Type == metadataCommon.BurningAuroraRequestMeta ||
+			bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta ||
 			isNear) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
@@ -122,7 +124,9 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningNearRequestMeta || bReq.Type == metadataCommon.BurningNearForDepositToSCRequestMeta
+		bReq.Type == metadataCommon.BurningAuroraRequestMeta || bReq.Type == metadataCommon.BurningAvaxRequestMeta ||
+		bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningNearRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

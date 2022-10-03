@@ -21,7 +21,7 @@ func Config() *config {
 	return c
 }
 
-//AbortConfig use for unit test only
+// AbortConfig use for unit test only
 // DO NOT use this function for development process
 func AbortConfig() {
 	c = &config{}
@@ -121,6 +121,7 @@ type config struct {
 	OfflinePrune         bool   `mapstructure:"offline_prune" long:"offlineprune" description:"offline pruning flag"`
 	StateBloomSize       uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
 	EnableAutoPrune      bool   `mapstructure:"enable_auto_prune" long:"enableautoprune" description:"enable auto prune"`
+	NumBlockTriggerPrune uint64 `mapstructure:"num_block_trigger_prune" long:"numblocktriggerprune" description:"number block trigger prune"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses

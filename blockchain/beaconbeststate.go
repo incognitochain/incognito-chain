@@ -29,6 +29,11 @@ import (
 const (
 	MAX_COMMITTEE_SIZE_48_FEATURE = "maxcommitteesize48"
 	INSTANT_FINALITY_FEATURE      = "instantfinality"
+	BLOCKTIME_DEFAULT             = "blocktimedef"
+	BLOCKTIME_20                  = "blocktime20"
+	BLOCKTIME_10                  = "blocktime10"
+	EPOCHV2                       = "epochparamv2"
+	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
 )
 
 // BestState houses information about the current best block and other info
@@ -70,6 +75,10 @@ type BeaconBestState struct {
 	NumberOfShardBlock               map[byte]uint        `json:"NumberOfShardBlock"`
 	TriggeredFeature                 map[string]uint64    `json:"TriggeredFeature"`
 	NumberOfFixedShardBlockValidator int                  `json:"NumberOfFixedShardBlockValidator"`
+	RewardMinted                     uint64               `json:"RewardMinted"`
+	TSManager                        TSManager
+	ShardTSManager                   map[byte]*TSManager
+
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -99,6 +108,13 @@ type BeaconBestState struct {
 	LastBlockProcessBridge uint64
 }
 
+func (beaconBestState *BeaconBestState) CalculateTimeSlot(t int64) int64 {
+	return beaconBestState.TSManager.calculateTimeslot(t)
+}
+func (beaconBestState *BeaconBestState) GetCurrentTimeSlot() int64 {
+	return beaconBestState.TSManager.getCurrentTS()
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
 	return beaconBestState.slashStateDB.Copy()
 }
@@ -121,12 +137,14 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
 	beaconBestState.bridgeAggManager = bridgeagg.NewManager()
+	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
 	beaconBestState.CurrentRandomNumber = -1
@@ -453,7 +471,7 @@ func (beaconBestState *BeaconBestState) GetSyncingValidatorsString() map[byte][]
 	return res
 }
 
-//CommitteeStateVersion ...
+// CommitteeStateVersion ...
 func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }
@@ -882,7 +900,7 @@ func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockCha
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	beaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
-	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
+	firstBeaconHeightOfEpoch := GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
@@ -1170,7 +1188,7 @@ func (b *BeaconBestState) CalculateExpectedTotalBlock(blockVersion int) map[byte
 	subsetNumberOfShardBlock := make(map[byte]uint)
 
 	for shardID, numberOfBlock := range b.NumberOfShardBlock {
-		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
+		if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock / 2
 		} else {
 			subsetNumberOfShardBlock[shardID] = numberOfBlock

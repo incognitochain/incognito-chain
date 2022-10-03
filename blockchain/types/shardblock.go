@@ -378,7 +378,7 @@ func (shardHeader *ShardHeader) String() string {
 	return res
 }
 
-//hash related to consensus
+// hash related to consensus
 func (shardBlock ShardBlock) ProposeHash() *common.Hash {
 	hash := shardBlock.Header.ProposeHash()
 	return &hash
@@ -523,6 +523,10 @@ func (block ShardBlock) GetVersion() int {
 
 func (block ShardBlock) GetHeight() uint64 {
 	return block.Header.Height
+}
+
+func (block ShardBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
 }
 
 func (block ShardBlock) GetRound() int {

@@ -3,10 +3,11 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -20,18 +21,25 @@ type ProposeBlockInfo struct {
 	SigningCommittees       []incognitokey.CommitteePublicKey
 	UserKeySet              []signatureschemes2.MiningKey
 	Votes                   map[string]*BFTVote //pk->BFTVote
+	PreVotes                map[string]*BFTVote //pk->BFTVote
 	IsValid                 bool
+	HasNewPreVote           bool
 	HasNewVote              bool
 	IsVoted                 bool
+	IsPreVoted              bool
 	IsCommitted             bool
+	ValidPreVotes           int
+	ErrPreVotes             int
 	ValidVotes              int
 	ErrVotes                int
+	ProposerSendPreVote     bool
 	ProposerSendVote        bool
 	ProposerMiningKeyBase58 string
 	LastValidateTime        time.Time
 	ReProposeHashSignature  string
 	IsValidLemma2Proof      bool
 	FinalityProof           FinalityProof
+	ValidPOLC               bool
 }
 
 func NewProposeBlockInfo() *ProposeBlockInfo {
@@ -66,7 +74,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.ReProposeHashSignature = tempBeaconBlock.Alias.ReProposeHashSignature
 		p.IsValidLemma2Proof = tempBeaconBlock.Alias.IsValidLemma2Proof
 		p.FinalityProof = tempBeaconBlock.Alias.FinalityProof
-
+		p.ValidPOLC = tempBeaconBlock.Alias.ValidPOLC
 		return nil
 	} else {
 		tempShardBlock := struct {
@@ -94,6 +102,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.ReProposeHashSignature = tempShardBlock.Alias.ReProposeHashSignature
 		p.IsValidLemma2Proof = tempShardBlock.Alias.IsValidLemma2Proof
 		p.FinalityProof = tempShardBlock.Alias.FinalityProof
+		p.ValidPOLC = tempShardBlock.Alias.ValidPOLC
 		return nil
 	}
 }
@@ -124,6 +133,7 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				ReProposeHashSignature:  p.ReProposeHashSignature,
 				IsValidLemma2Proof:      p.IsValidLemma2Proof,
 				FinalityProof:           p.FinalityProof,
+				ValidPOLC:               p.ValidPOLC,
 			},
 		})
 		if err != nil {
@@ -153,6 +163,7 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				ReProposeHashSignature:  p.ReProposeHashSignature,
 				IsValidLemma2Proof:      p.IsValidLemma2Proof,
 				FinalityProof:           p.FinalityProof,
+				ValidPOLC:               p.ValidPOLC,
 			},
 		})
 		if err != nil {
@@ -244,7 +255,7 @@ func (f *FinalityProof) Verify(
 	return nil
 }
 
-//previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
+// previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
 type ReProposeBlockInfo struct {
 	PreviousBlockHash common.Hash
 	Producer          string
@@ -254,14 +265,14 @@ type ReProposeBlockInfo struct {
 	RootHash          common.Hash
 }
 
-func createReProposeHashSignature(privateKey []byte, block types.BlockInterface) (string, error) {
-
+func createReProposeHashSignature(chain Chain, privateKey []byte, block types.BlockInterface) (string, error) {
+	previousView := chain.GetViewByHash(block.GetPrevHash())
 	reProposeBlockInfo := newReProposeBlockInfo(
 		block.GetPrevHash(),
 		block.GetProducer(),
-		common.CalculateTimeSlot(block.GetProduceTime()),
+		previousView.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
-		common.CalculateTimeSlot(block.GetProposeTime()),
+		previousView.CalculateTimeSlot(block.GetProposeTime()),
 		block.GetAggregateRootHash(),
 	)
 
@@ -295,14 +306,15 @@ func verifyReProposeHashSignature(
 	return reProposeBlockInfo.VerifySignature(sig, publicKey)
 }
 
-func verifyReProposeHashSignatureFromBlock(sig string, block types.BlockInterface) (bool, error) {
+func verifyReProposeHashSignatureFromBlock(chain Chain, sig string, block types.BlockInterface) (bool, error) {
+	previousView := chain.GetViewByHash(block.GetPrevHash())
 	return verifyReProposeHashSignature(
 		sig,
 		block.GetPrevHash(),
 		block.GetProducer(),
-		common.CalculateTimeSlot(block.GetProduceTime()),
+		previousView.CalculateTimeSlot(block.GetProduceTime()),
 		block.GetProposer(),
-		common.CalculateTimeSlot(block.GetProposeTime()),
+		previousView.CalculateTimeSlot(block.GetProposeTime()),
 		block.GetAggregateRootHash(),
 	)
 }

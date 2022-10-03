@@ -48,6 +48,8 @@ var (
 	bridgeBSCTxPrefix                  = []byte("bri-bsc-tx-")
 	bridgePLGTxPrefix                  = []byte("bri-plg-tx-")
 	bridgeFTMTxPrefix                  = []byte("bri-ftm-tx-")
+	bridgeAURORATxPrefix               = []byte("bri-aurora-tx-")
+	bridgeAVAXTxPrefix                 = []byte("bri-avax-tx-")
 	bridgeNEARTxPrefix                 = []byte("bri-near-tx-")
 	bridgePRVEVMPrefix                 = []byte("bri-prv-evm-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
@@ -365,6 +367,16 @@ func GetBridgePLGTxPrefix() []byte {
 
 func GetBridgeFTMTxPrefix() []byte {
 	h := common.HashH(bridgeFTMTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeAURORATxPrefix() []byte {
+	h := common.HashH(bridgeAURORATxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeAVAXTxPrefix() []byte {
+	h := common.HashH(bridgeAVAXTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -774,7 +786,6 @@ func GetPdexv3StakerLastRewardPerShare() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
-//
 func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
 	return pdexv3WithdrawLiquidityStatusPrefix
 }

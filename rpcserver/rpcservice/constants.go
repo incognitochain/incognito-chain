@@ -16,4 +16,5 @@ const (
 	SimpleVerbosity      = 1
 	IntermidateVerbosity = 2
 	FullVerbosity        = 3
+	LiquidityVerbosity   = 4
 )

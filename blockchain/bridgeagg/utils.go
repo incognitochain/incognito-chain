@@ -87,6 +87,10 @@ func GetInsertTxHashIssuedFuncByNetworkID(networkID uint8) func(*statedb.StateDB
 		return statedb.InsertETHTxHashIssued
 	case common.FTMNetworkID:
 		return statedb.InsertFTMTxHashIssued
+	case common.AURORANetworkID:
+		return statedb.InsertAURORATxHashIssued
+	case common.AVAXNetworkID:
+		return statedb.InsertAVAXTxHashIssued
 	}
 	return nil
 }
@@ -306,6 +310,18 @@ func getBurningConfirmMetaType(networkID uint8, isDepositToSC bool) (uint, error
 		} else {
 			burningMetaType = metadataCommon.BurningFantomConfirmMeta
 		}
+	case common.AURORANetworkID:
+		if isDepositToSC {
+			burningMetaType = metadataCommon.BurningAuroraConfirmForDepositToSCMeta
+		} else {
+			burningMetaType = metadataCommon.BurningAuroraConfirmMeta
+		}
+	case common.AVAXNetworkID:
+		if isDepositToSC {
+			burningMetaType = metadataCommon.BurningAvaxConfirmForDepositToSCMeta
+		} else {
+			burningMetaType = metadataCommon.BurningAvaxConfirmMeta
+		}
 	default:
 		return 0, fmt.Errorf("Invalid networkID %v", networkID)
 	}
@@ -350,7 +366,8 @@ func CalculateIncDecimal(decimal, baseDecimal uint8) uint8 {
 
 func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vault config.Vault) error {
 	networkID := vault.NetworkID
-	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID && networkID != common.FTMNetworkID {
+	if networkID != common.BSCNetworkID && networkID != common.ETHNetworkID && networkID != common.PLGNetworkID &&
+		networkID != common.FTMNetworkID && networkID != common.AURORANetworkID && networkID != common.AVAXNetworkID {
 		return fmt.Errorf("Cannot find networkID %d", networkID)
 	}
 	if vault.ExternalDecimal == 0 {
@@ -388,7 +405,7 @@ func validateConfigVault(sDBs map[int]*statedb.StateDB, tokenID common.Hash, vau
 		}
 	}
 	networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(networkID)
-	if networkType == common.EVMNetworkType {
+	if networkType == common.EVMNetworkType || networkType == common.AURORANetworkID {
 		externalTokenIDStr := vault.ExternalTokenID
 		if len(externalTokenIDStr) != len("0x")+common.EVMAddressLength {
 			return fmt.Errorf("ExternalTokenID %s is invalid length", externalTokenIDStr)
@@ -416,7 +433,7 @@ func GetExternalTokenIDByNetworkID(externalTokenID string, networkID uint8) ([]b
 		return nil, err
 	}
 	switch networkType {
-	case common.EVMNetworkType:
+	case common.EVMNetworkType, common.AURORANetworkID:
 		tokenAddr := rCommon.HexToAddress(externalTokenID)
 		res = append([]byte(prefix), tokenAddr.Bytes()...)
 	}
@@ -438,6 +455,10 @@ func getPrefixByNetworkID(networkID uint8) (string, error) {
 		prefix = common.PLGPrefix
 	case common.FTMNetworkID:
 		prefix = common.FTMPrefix
+	case common.AURORANetworkID:
+		prefix = common.AURORAPrefix
+	case common.AVAXNetworkID:
+		prefix = common.AVAXPrefix
 	default:
 		return utils.EmptyString, errors.New("Invalid networkID")
 	}
@@ -455,7 +476,10 @@ func GetNetworkIDByPrefix(prefix string) (uint8, error) {
 		networkID = common.PLGNetworkID
 	case common.FTMPrefix:
 		networkID = common.FTMNetworkID
-
+	case common.AURORAPrefix:
+		networkID = common.AURORANetworkID
+	case common.AVAXPrefix:
+		networkID = common.AVAXNetworkID
 	default:
 		return 0, fmt.Errorf("Invalid prefix %s for networkID", prefix)
 	}
@@ -1074,17 +1098,15 @@ func padExternalAddress(addr []byte) []byte {
 	return result
 }
 
-func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
+func buildBurnForCallConfirmInsts(req *metadataBridge.BurnForCallRequest, unshieldID common.Hash, udata *statedb.WaitingUnshieldReqData, externalTokenID []byte, networkID uint8, index int, beaconHeightForConfirmInst uint64) [][]string {
 	beaconHeightBN := big.NewInt(0).SetUint64(beaconHeightForConfirmInst)
-	// index := 0                                 // currently support 1 call per metadata request
-	// var networkID uint8 = 1                    // TODO: other networks
 	newTxReqID := common.HashH(append(unshieldID.Bytes(), common.IntToBytes(index)...))
 	rdRecvStr, _ := req.Data[index].RedepositReceiver.String()
 	burningInst := []string{
 		strconv.Itoa(int(metadataCommon.BurnForCallConfirmMeta)),
 		strconv.Itoa(int(common.BridgeShardID)),
 		strconv.Itoa(int(networkID)),
-		hex.EncodeToString(udata.ExternalTokenID),
+		hex.EncodeToString(externalTokenID),
 		req.Data[index].ExternalCallAddress,
 		udata.ExternalReceivedAmt.Text(16),
 		newTxReqID.String(),

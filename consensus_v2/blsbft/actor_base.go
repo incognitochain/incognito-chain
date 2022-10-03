@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-//Actor
+// Actor
 type Actor interface {
 	// GetConsensusName - retrieve consensus name
 	GetConsensusName() string
@@ -40,14 +40,19 @@ func NewActorWithValue(
 	chainID, blockVersion int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
-	var res Actor
-	switch version {
-	case types.BFT_VERSION:
+	var res Actor = nil
+	if version == types.BFT_VERSION {
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	case types.MULTI_VIEW_VERSION, types.SHARD_SFV2_VERSION, types.SHARD_SFV3_VERSION, types.LEMMA2_VERSION, types.BLOCK_PRODUCINGV3_VERSION, types.INSTANT_FINALITY_VERSION:
+	} else if version >= types.INSTANT_FINALITY_VERSION_V2 {
+		if chain.IsBeaconChain() {
+			res = NewActorV3WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
+		} else {
+			res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
+		}
+	} else if version >= types.MULTI_VIEW_VERSION {
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
-	default:
-		panic("Bft version is not valid")
+	} else if res == nil {
+		panic("Version not recognized")
 	}
 	return res
 }

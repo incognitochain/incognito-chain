@@ -2,10 +2,11 @@ package consensus_v2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -36,8 +37,8 @@ type Engine struct {
 	currentMiningProcess blsbft.Actor
 }
 
-//just get role of first validator
-//this function support NODE monitor (getmininginfo) which assumed running only 1 validator
+// just get role of first validator
+// this function support NODE monitor (getmininginfo) which assumed running only 1 validator
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
 		return validator.State.Layer, validator.State.Role, validator.State.ChainID
@@ -149,12 +150,16 @@ func (engine *Engine) WatchCommitteeChange() {
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
 		}
-
+		oldVersion := engine.version[chainID]
 		engine.updateVersion(chainID)
 
-		if _, ok := engine.bftProcess[chainID]; !ok {
+		if bftActor, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
 		} else {
+			if oldVersion < types.INSTANT_FINALITY_VERSION_V2 && engine.version[chainID] >= types.INSTANT_FINALITY_VERSION_V2 {
+				bftActor.Destroy()
+				engine.initProcess(chainID, chainName)
+			}
 			engine.bftProcess[chainID].SetBlockVersion(engine.version[chainID])
 		}
 
@@ -201,7 +206,6 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 			engine.config.Blockchain.BeaconChain,
 			engine.version[chainID], blockVersion,
 			chainID, chainName, engine.config.Node, Logger.Log)
-
 	} else {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.ShardChain[chainID],
@@ -215,7 +219,18 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 }
 
 func (engine *Engine) updateVersion(chainID int) {
-	engine.version[chainID] = engine.getBlockVersion(chainID)
+	newVersion := engine.getBlockVersion(chainID)
+	oldVersion := 0
+	if chainID == -1 {
+		oldVersion = engine.config.Blockchain.BeaconChain.GetBestView().GetBlock().GetVersion()
+	} else {
+		oldVersion = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBlock().GetVersion()
+	}
+
+	if newVersion < oldVersion {
+		panic("Init wrong verson ")
+	}
+	engine.version[chainID] = newVersion
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
@@ -318,6 +333,22 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		triggerFeature = engine.config.Blockchain.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
 	}
 
+	//get last trigger feature that change block version
+	latestFeature := ""
+	latestTriggerHeight := uint64(0)
+	for f, h := range triggerFeature {
+		if _, ok := config.Param().FeatureVersion[f]; ok {
+			if latestTriggerHeight < h {
+				latestTriggerHeight = h
+				latestFeature = f
+			}
+		}
+	}
+	if version, ok := config.Param().FeatureVersion[latestFeature]; ok {
+		return int(version)
+	}
+
+	//legacy flow
 	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
 		return types.INSTANT_FINALITY_VERSION
 	}
@@ -345,7 +376,7 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	return types.BFT_VERSION
 }
 
-//BFTProcess for testing only
+// BFTProcess for testing only
 func (engine *Engine) BFTProcess() map[int]blsbft.Actor {
 	return engine.bftProcess
 }

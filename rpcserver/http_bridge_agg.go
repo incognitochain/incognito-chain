@@ -210,10 +210,6 @@ func (httpServer *HttpServer) createBridgeAggConvertTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
 	}
 
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
-	}
-
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
@@ -317,10 +313,6 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
 	}
 
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
-	}
-
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		Data []struct {
@@ -352,19 +344,31 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 			NetworkID:  v.NetworkID,
 			IncTokenID: v.IncTokenID,
 		}
-		type EVMProof struct {
-			BlockHash rCommon.Hash `json:"BlockHash"`
-			TxIndex   uint         `json:"TxIndex"`
-			Proof     []string     `json:"Proof"`
-		}
-		proof := EVMProof{
-			BlockHash: rCommon.HexToHash(v.BlockHash),
-			TxIndex:   *v.TxIndex,
-			Proof:     v.Proof,
-		}
-		proofData, err := json.Marshal(proof)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		var proofData []byte
+		if v.NetworkID == common.AURORANetworkID {
+			if len(v.Proof) != 1 {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid proof for shielding aurora unified token"))
+			}
+			txHash, err := common.Hash{}.NewHashFromStr(v.Proof[0])
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TxHash incorrect"))
+			}
+			proofData = txHash.Bytes()
+		} else {
+			type EVMProof struct {
+				BlockHash rCommon.Hash `json:"BlockHash"`
+				TxIndex   uint         `json:"TxIndex"`
+				Proof     []string     `json:"Proof"`
+			}
+			proof := EVMProof{
+				BlockHash: rCommon.HexToHash(v.BlockHash),
+				TxIndex:   *v.TxIndex,
+				Proof:     v.Proof,
+			}
+			proofData, err = json.Marshal(proof)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+			}
 		}
 		temp.Proof = proofData
 		data = append(data, temp)
@@ -423,9 +427,6 @@ func (httpServer *HttpServer) createBridgeAggUnshieldTransaction(params interfac
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
@@ -574,9 +575,6 @@ func (httpServer *HttpServer) createBridgeAggBurnForCallTransaction(params inter
 	}
 	if int(privacyDetect) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
-	}
-	if len(arrayParams) != 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 4, len(arrayParams)))
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
