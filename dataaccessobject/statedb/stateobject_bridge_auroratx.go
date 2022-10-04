@@ -12,12 +12,12 @@ type BridgeAURORATxState struct {
 	uniqueAURORATx []byte
 }
 
-func (ftmTx BridgeAURORATxState) UniqueAURORATx() []byte {
-	return ftmTx.uniqueAURORATx
+func (auroraTx BridgeAURORATxState) UniqueAURORATx() []byte {
+	return auroraTx.uniqueAURORATx
 }
 
-func (ftmTx *BridgeAURORATxState) SetUniqueAURORATx(uniqueAURORATx []byte) {
-	ftmTx.uniqueAURORATx = uniqueAURORATx
+func (auroraTx *BridgeAURORATxState) SetUniqueAURORATx(uniqueAURORATx []byte) {
+	auroraTx.uniqueAURORATx = uniqueAURORATx
 }
 
 func NewBridgeAURORATxState() *BridgeAURORATxState {
@@ -28,11 +28,11 @@ func NewBridgeAURORATxStateWithValue(uniqueAURORATx []byte) *BridgeAURORATxState
 	return &BridgeAURORATxState{uniqueAURORATx: uniqueAURORATx}
 }
 
-func (ftmTx BridgeAURORATxState) MarshalJSON() ([]byte, error) {
+func (auroraTx BridgeAURORATxState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueAURORATx []byte
 	}{
-		UniqueAURORATx: ftmTx.uniqueAURORATx,
+		UniqueAURORATx: auroraTx.uniqueAURORATx,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -40,7 +40,7 @@ func (ftmTx BridgeAURORATxState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (ftmTx *BridgeAURORATxState) UnmarshalJSON(data []byte) error {
+func (auroraTx *BridgeAURORATxState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniqueAURORATx []byte
 	}{}
@@ -48,7 +48,7 @@ func (ftmTx *BridgeAURORATxState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	ftmTx.uniqueAURORATx = temp.UniqueAURORATx
+	auroraTx.uniqueAURORATx = temp.UniqueAURORATx
 	return nil
 }
 
@@ -113,22 +113,22 @@ func GenerateBridgeAURORATxObjectKey(uniqueAURORATx []byte) common.Hash {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (ftmTx BridgeAURORATxObject) GetVersion() int {
-	return ftmTx.version
+func (auroraTx BridgeAURORATxObject) GetVersion() int {
+	return auroraTx.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (ftmTx *BridgeAURORATxObject) SetError(err error) {
-	if ftmTx.dbErr == nil {
-		ftmTx.dbErr = err
+func (auroraTx *BridgeAURORATxObject) SetError(err error) {
+	if auroraTx.dbErr == nil {
+		auroraTx.dbErr = err
 	}
 }
 
-func (ftmTx BridgeAURORATxObject) GetTrie(db DatabaseAccessWarper) Trie {
-	return ftmTx.trie
+func (auroraTx BridgeAURORATxObject) GetTrie(db DatabaseAccessWarper) Trie {
+	return auroraTx.trie
 }
 
-func (ftmTx *BridgeAURORATxObject) SetValue(data interface{}) error {
+func (auroraTx *BridgeAURORATxObject) SetValue(data interface{}) error {
 	var newBridgeAURORATxState = NewBridgeAURORATxState()
 	var ok bool
 	var dataBytes []byte
@@ -143,16 +143,16 @@ func (ftmTx *BridgeAURORATxObject) SetValue(data interface{}) error {
 			return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeAURORATxStateType, reflect.TypeOf(data))
 		}
 	}
-	ftmTx.bridgeAURORATxState = newBridgeAURORATxState
+	auroraTx.bridgeAURORATxState = newBridgeAURORATxState
 	return nil
 }
 
-func (ftmTx BridgeAURORATxObject) GetValue() interface{} {
-	return ftmTx.bridgeAURORATxState
+func (auroraTx BridgeAURORATxObject) GetValue() interface{} {
+	return auroraTx.bridgeAURORATxState
 }
 
-func (ftmTx BridgeAURORATxObject) GetValueBytes() []byte {
-	data := ftmTx.GetValue()
+func (auroraTx BridgeAURORATxObject) GetValueBytes() []byte {
+	data := auroraTx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
 		panic("failed to marshal bridge BSC tx state")
@@ -160,30 +160,30 @@ func (ftmTx BridgeAURORATxObject) GetValueBytes() []byte {
 	return value
 }
 
-func (ftmTx BridgeAURORATxObject) GetHash() common.Hash {
-	return ftmTx.bridgeAURORATxHash
+func (auroraTx BridgeAURORATxObject) GetHash() common.Hash {
+	return auroraTx.bridgeAURORATxHash
 }
 
-func (ftmTx BridgeAURORATxObject) GetType() int {
-	return ftmTx.objectType
+func (auroraTx BridgeAURORATxObject) GetType() int {
+	return auroraTx.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (ftmTx *BridgeAURORATxObject) MarkDelete() {
-	ftmTx.deleted = true
+func (auroraTx *BridgeAURORATxObject) MarkDelete() {
+	auroraTx.deleted = true
 }
 
-func (ftmTx *BridgeAURORATxObject) Reset() bool {
-	ftmTx.bridgeAURORATxState = NewBridgeAURORATxState()
+func (auroraTx *BridgeAURORATxObject) Reset() bool {
+	auroraTx.bridgeAURORATxState = NewBridgeAURORATxState()
 	return true
 }
 
-func (ftmTx BridgeAURORATxObject) IsDeleted() bool {
-	return ftmTx.deleted
+func (auroraTx BridgeAURORATxObject) IsDeleted() bool {
+	return auroraTx.deleted
 }
 
 // value is either default or nil
-func (ftmTx BridgeAURORATxObject) IsEmpty() bool {
+func (auroraTx BridgeAURORATxObject) IsEmpty() bool {
 	temp := NewBridgeAURORATxState()
-	return reflect.DeepEqual(temp, ftmTx.bridgeAURORATxState) || ftmTx.bridgeAURORATxState == nil
+	return reflect.DeepEqual(temp, auroraTx.bridgeAURORATxState) || auroraTx.bridgeAURORATxState == nil
 }

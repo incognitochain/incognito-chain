@@ -95,6 +95,7 @@ func (iReq IssuingEVMAuroraRequest) ValidateMetadataByItself() bool {
 func (iReq IssuingEVMAuroraRequest) Hash() *common.Hash {
 	record := iReq.MetadataBase.Hash().String()
 	record += iReq.TxHash.String()
+	record += iReq.IncTokenID.String()
 
 	// final hash
 	hash := common.HashH([]byte(record))

@@ -575,7 +575,7 @@ func VerifyProofAndParseAuroraReceipt(
 		return nil, fmt.Errorf("unmarshal json string with err: %v", err.Error())
 	}
 
-	if res.Status == 0 || res == nil {
+	if res == nil || res.Status == 0 {
 		return nil, fmt.Errorf("transaction failed: %d", res.Status)
 	}
 	evmHeaderResult, err := evmcaller.GetEVMHeaderResult(res.BlockHash, auroraHosts, minEVMConfirmationBlocks, networkPrefix)
