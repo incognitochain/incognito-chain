@@ -522,13 +522,13 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		if err != nil {
 			panic(err)
 		}
-		if validatorIndex == nil {
+		if validatorIndex == nil || validatorIndex[chainID] == nil {
 			err = sim.SignBlockWithCommittee(chain, block, accs, GenerateCommitteeIndex(len(committees)))
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			err = sim.SignBlockWithCommittee(chain, block, accs, validatorIndex)
+			err = sim.SignBlockWithCommittee(chain, block, accs, validatorIndex[chainID])
 			if err != nil {
 				panic(err)
 			}

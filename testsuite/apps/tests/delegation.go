@@ -117,7 +117,10 @@ func Test_Shard_Staking_With_Delegation() {
 			node.ShowAccountPosition(stakers)
 			node.ShowBeaconCandidateInfo(stakers)
 		}
-		node.GenerateBlock().NextRound()
+
+		validatorIndex := make(testsuite.ValidatorIndex)
+		validatorIndex[-1] = []int{0, 1, 3}
+		node.GenerateBlock(validatorIndex).NextRound()
 
 	}
 	node.Pause()

@@ -39,7 +39,7 @@ type PreView struct {
 	View multiview.View
 }
 
-type ValidatorIndex []int
+type ValidatorIndex map[int][]int
 
 type Execute struct {
 	sim          *NodeEngine
