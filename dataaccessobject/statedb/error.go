@@ -39,7 +39,7 @@ const (
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
 	ErrInvalidBridgeFTMTxStateType            = "invalid bridge fantom tx state type"
 	ErrInvalidBridgeAURORATxStateType         = "invalid bridge aurora tx state type"
-	ErrInvalidBridgeAVAXTxStateType           = "invalid bridge aurora tx state type"
+	ErrInvalidBridgeAVAXTxStateType           = "invalid bridge avax tx state type"
 	// A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -497,12 +497,12 @@ var ErrCodeMessage = map[int]struct {
 	IsFTMTxHashIssuedError:           {-15107, "Is Fantom Tx Hash Issued Error"},
 
 	// aurora bridge
-	BridgeInsertAURORATxHashIssuedError: {-15106, "Bridge Insert Aurora Tx Hash Issued Error"},
-	IsAURORATxHashIssuedError:           {-15107, "Is Aurora Tx Hash Issued Error"},
+	BridgeInsertAURORATxHashIssuedError: {-15110, "Bridge Insert Aurora Tx Hash Issued Error"},
+	IsAURORATxHashIssuedError:           {-15111, "Is Aurora Tx Hash Issued Error"},
 
 	// avax bridge
-	BridgeInsertAVAXTxHashIssuedError: {-15106, "Bridge Insert Avax Tx Hash Issued Error"},
-	IsAVAXTxHashIssuedError:           {-15107, "Is Avax Tx Hash Issued Error"},
+	BridgeInsertAVAXTxHashIssuedError: {-15112, "Bridge Insert Avax Tx Hash Issued Error"},
+	IsAVAXTxHashIssuedError:           {-15113, "Is Avax Tx Hash Issued Error"},
 
 	// bridge agg
 	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},

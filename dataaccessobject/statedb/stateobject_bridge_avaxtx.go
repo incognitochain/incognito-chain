@@ -12,12 +12,12 @@ type BridgeAVAXTxState struct {
 	uniqueAVAXTx []byte
 }
 
-func (ftmTx BridgeAVAXTxState) UniqueAVAXTx() []byte {
-	return ftmTx.uniqueAVAXTx
+func (avaxTx BridgeAVAXTxState) UniqueAVAXTx() []byte {
+	return avaxTx.uniqueAVAXTx
 }
 
-func (ftmTx *BridgeAVAXTxState) SetUniqueAVAXTx(uniqueAVAXTx []byte) {
-	ftmTx.uniqueAVAXTx = uniqueAVAXTx
+func (avaxTx *BridgeAVAXTxState) SetUniqueAVAXTx(uniqueAVAXTx []byte) {
+	avaxTx.uniqueAVAXTx = uniqueAVAXTx
 }
 
 func NewBridgeAVAXTxState() *BridgeAVAXTxState {
@@ -28,11 +28,11 @@ func NewBridgeAVAXTxStateWithValue(uniqueAVAXTx []byte) *BridgeAVAXTxState {
 	return &BridgeAVAXTxState{uniqueAVAXTx: uniqueAVAXTx}
 }
 
-func (ftmTx BridgeAVAXTxState) MarshalJSON() ([]byte, error) {
+func (avaxTx BridgeAVAXTxState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueAVAXTx []byte
 	}{
-		UniqueAVAXTx: ftmTx.uniqueAVAXTx,
+		UniqueAVAXTx: avaxTx.uniqueAVAXTx,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -40,7 +40,7 @@ func (ftmTx BridgeAVAXTxState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (ftmTx *BridgeAVAXTxState) UnmarshalJSON(data []byte) error {
+func (avaxTx *BridgeAVAXTxState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniqueAVAXTx []byte
 	}{}
@@ -48,7 +48,7 @@ func (ftmTx *BridgeAVAXTxState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	ftmTx.uniqueAVAXTx = temp.UniqueAVAXTx
+	avaxTx.uniqueAVAXTx = temp.UniqueAVAXTx
 	return nil
 }
 
@@ -113,22 +113,22 @@ func GenerateBridgeAVAXTxObjectKey(uniqueAVAXTx []byte) common.Hash {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (ftmTx BridgeAVAXTxObject) GetVersion() int {
-	return ftmTx.version
+func (avaxTx BridgeAVAXTxObject) GetVersion() int {
+	return avaxTx.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (ftmTx *BridgeAVAXTxObject) SetError(err error) {
-	if ftmTx.dbErr == nil {
-		ftmTx.dbErr = err
+func (avaxTx *BridgeAVAXTxObject) SetError(err error) {
+	if avaxTx.dbErr == nil {
+		avaxTx.dbErr = err
 	}
 }
 
-func (ftmTx BridgeAVAXTxObject) GetTrie(db DatabaseAccessWarper) Trie {
-	return ftmTx.trie
+func (avaxTx BridgeAVAXTxObject) GetTrie(db DatabaseAccessWarper) Trie {
+	return avaxTx.trie
 }
 
-func (ftmTx *BridgeAVAXTxObject) SetValue(data interface{}) error {
+func (avaxTx *BridgeAVAXTxObject) SetValue(data interface{}) error {
 	var newBridgeAVAXTxState = NewBridgeAVAXTxState()
 	var ok bool
 	var dataBytes []byte
@@ -143,16 +143,16 @@ func (ftmTx *BridgeAVAXTxObject) SetValue(data interface{}) error {
 			return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeAVAXTxStateType, reflect.TypeOf(data))
 		}
 	}
-	ftmTx.bridgeAVAXTxState = newBridgeAVAXTxState
+	avaxTx.bridgeAVAXTxState = newBridgeAVAXTxState
 	return nil
 }
 
-func (ftmTx BridgeAVAXTxObject) GetValue() interface{} {
-	return ftmTx.bridgeAVAXTxState
+func (avaxTx BridgeAVAXTxObject) GetValue() interface{} {
+	return avaxTx.bridgeAVAXTxState
 }
 
-func (ftmTx BridgeAVAXTxObject) GetValueBytes() []byte {
-	data := ftmTx.GetValue()
+func (avaxTx BridgeAVAXTxObject) GetValueBytes() []byte {
+	data := avaxTx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
 		panic("failed to marshal bridge BSC tx state")
@@ -160,30 +160,30 @@ func (ftmTx BridgeAVAXTxObject) GetValueBytes() []byte {
 	return value
 }
 
-func (ftmTx BridgeAVAXTxObject) GetHash() common.Hash {
-	return ftmTx.bridgeAVAXTxHash
+func (avaxTx BridgeAVAXTxObject) GetHash() common.Hash {
+	return avaxTx.bridgeAVAXTxHash
 }
 
-func (ftmTx BridgeAVAXTxObject) GetType() int {
-	return ftmTx.objectType
+func (avaxTx BridgeAVAXTxObject) GetType() int {
+	return avaxTx.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (ftmTx *BridgeAVAXTxObject) MarkDelete() {
-	ftmTx.deleted = true
+func (avaxTx *BridgeAVAXTxObject) MarkDelete() {
+	avaxTx.deleted = true
 }
 
-func (ftmTx *BridgeAVAXTxObject) Reset() bool {
-	ftmTx.bridgeAVAXTxState = NewBridgeAVAXTxState()
+func (avaxTx *BridgeAVAXTxObject) Reset() bool {
+	avaxTx.bridgeAVAXTxState = NewBridgeAVAXTxState()
 	return true
 }
 
-func (ftmTx BridgeAVAXTxObject) IsDeleted() bool {
-	return ftmTx.deleted
+func (avaxTx BridgeAVAXTxObject) IsDeleted() bool {
+	return avaxTx.deleted
 }
 
 // value is either default or nil
-func (ftmTx BridgeAVAXTxObject) IsEmpty() bool {
+func (avaxTx BridgeAVAXTxObject) IsEmpty() bool {
 	temp := NewBridgeAVAXTxState()
-	return reflect.DeepEqual(temp, ftmTx.bridgeAVAXTxState) || ftmTx.bridgeAVAXTxState == nil
+	return reflect.DeepEqual(temp, avaxTx.bridgeAVAXTxState) || avaxTx.bridgeAVAXTxState == nil
 }
