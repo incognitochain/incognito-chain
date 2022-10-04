@@ -89,6 +89,10 @@ func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.C
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
 	for _, data := range request.Data {
+		if (data.NetworkID == common.AVAXNetworkID || data.NetworkID == common.AURORANetworkID) && shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature not enabled yet"))
+		}
+
 		if data.IncTokenID.IsZeroValue() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, errors.New("IncTokenID can not be empty"))
 		}

@@ -159,6 +159,10 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever metadataCommon.C
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, errors.New("Invalid token id"))
 	}
 
+	if iReq.Type == metadataCommon.IssuingAvaxRequestMeta && shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature not enabled"))
+	}
+
 	return true, true, nil
 }
 

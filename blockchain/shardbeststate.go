@@ -141,6 +141,10 @@ func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
 	return shardBestState.BestBlock.Header.CommitteeFromBlock
 }
 
+func (shardBestState *ShardBestState) GetTriggeredFeature() map[string]uint64 {
+	return shardBestState.TriggeredFeature
+}
+
 func NewShardBestState() *ShardBestState {
 	return &ShardBestState{}
 }
