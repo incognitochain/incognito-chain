@@ -471,7 +471,7 @@ func (beaconBestState *BeaconBestState) GetSyncingValidatorsString() map[byte][]
 	return res
 }
 
-//CommitteeStateVersion ...
+// CommitteeStateVersion ...
 func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }

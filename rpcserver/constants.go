@@ -217,6 +217,10 @@ const (
 	createAndSendTxWithIssuingPLGReq      = "createandsendtxwithissuingplgreq"
 	createAndSendTxWithIssuingFTMReq      = "createandsendtxwithissuingftmreq"
 	createAndSendBurningFTMRequest        = "createandsendburningftmrequest"
+	createAndSendTxWithIssuingAURORAReq   = "createandsendtxwithissuingaurorareq"
+	createAndSendTxWithIssuingAVAXReq     = "createandsendtxwithissuingavaxreq"
+	createAndSendBurningAURORARequest     = "createandsendburningaurorarequest"
+	createAndSendBurningAVAXRequest       = "createandsendburningavaxrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -229,6 +233,8 @@ const (
 	getPRVBEP20BurnProof     = "getprvbep20burnproof"
 	getPLGBurnProof          = "getplgburnproof"
 	getFTMBurnProof          = "getftmburnproof"
+	getAURORABurnProof       = "getauroraburnproof"
+	getAVAXBurnProof         = "getavaxburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
@@ -312,7 +318,7 @@ const (
 	bridgeaggShield                      = "bridgeaggShield"
 	bridgeaggStatusShield                = "bridgeaggGetStatusShield"
 	bridgeaggUnshield                    = "bridgeaggUnshield"
-	bridgeaggBurnForCall 				 = "bridgeaggBurnForCall"
+	bridgeaggBurnForCall                 = "bridgeaggBurnForCall"
 	bridgeaggStatusUnshield              = "bridgeaggGetStatusUnshield"
 	bridgeaggEstimateFeeByExpectedAmount = "bridgeaggEstimateFeeByExpectedAmount"
 	bridgeaggEstimateFeeByBurntAmount    = "bridgeaggEstimateFeeByBurntAmount"
@@ -381,15 +387,19 @@ const (
 	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
-	getBurnProofForDepositToSC                    = "getburnprooffordeposittosc"
-	getBurnPBSCProofForDepositToSC                = "getburnpbscprooffordeposittosc"
-	createAndSendBurningForDepositToSCRequest     = "createandsendburningfordeposittoscrequest"
-	createAndSendBurningForDepositToSCRequestV2   = "createandsendburningfordeposittoscrequestv2"
-	createAndSendBurningPBSCForDepositToSCRequest = "createandsendburningpbscfordeposittoscrequest"
-	getBurnPLGProofForDepositToSC                 = "getburnplgprooffordeposittosc"
-	createAndSendBurningPLGForDepositToSCRequest  = "createandsendburningplgfordeposittoscrequest"
-	createAndSendBurningFTMForDepositToSCRequest  = "createandsendburningftmfordeposittoscrequest"
-	getBurnFTMProofForDepositToSC                 = "getburnftmprooffordeposittosc"
+	getBurnProofForDepositToSC                      = "getburnprooffordeposittosc"
+	getBurnPBSCProofForDepositToSC                  = "getburnpbscprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest       = "createandsendburningfordeposittoscrequest"
+	createAndSendBurningForDepositToSCRequestV2     = "createandsendburningfordeposittoscrequestv2"
+	createAndSendBurningPBSCForDepositToSCRequest   = "createandsendburningpbscfordeposittoscrequest"
+	getBurnPLGProofForDepositToSC                   = "getburnplgprooffordeposittosc"
+	createAndSendBurningPLGForDepositToSCRequest    = "createandsendburningplgfordeposittoscrequest"
+	createAndSendBurningFTMForDepositToSCRequest    = "createandsendburningftmfordeposittoscrequest"
+	getBurnFTMProofForDepositToSC                   = "getburnftmprooffordeposittosc"
+	createAndSendBurningAURORAForDepositToSCRequest = "createandsendburningaurorafordeposittoscrequest"
+	getBurnAURORAProofForDepositToSC                = "getburnauroraprooffordeposittosc"
+	createAndSendBurningAVAXForDepositToSCRequest   = "createandsendburningavaxfordeposittoscrequest"
+	getBurnAVAXProofForDepositToSC                  = "getburnavaxprooffordeposittosc"
 
 	getFeatureStats       = "getfeaturestats"
 	getSyncStats          = "getsyncstats"

@@ -31,7 +31,7 @@ type FeatureReportInfo struct {
 	ValidatorSize map[int]int               // chainid -> all validator size
 }
 
-//filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
+// filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
 func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, reportFeatures []string, validators []*consensus.Validator) (*wire.MessageFeature, error) {
 
 	if len(reportFeatures) == 0 {
@@ -152,7 +152,7 @@ func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
 	stat.msg <- msg
 }
 
-//contain all trigger & untrigger feature
+// contain all trigger & untrigger feature
 func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk string) bool {
 	stat.lock.RLock()
 	defer stat.lock.RUnlock()

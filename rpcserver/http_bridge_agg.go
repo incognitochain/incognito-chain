@@ -344,19 +344,31 @@ func (httpServer *HttpServer) createBridgeAggShieldTransaction(params interface{
 			NetworkID:  v.NetworkID,
 			IncTokenID: v.IncTokenID,
 		}
-		type EVMProof struct {
-			BlockHash rCommon.Hash `json:"BlockHash"`
-			TxIndex   uint         `json:"TxIndex"`
-			Proof     []string     `json:"Proof"`
-		}
-		proof := EVMProof{
-			BlockHash: rCommon.HexToHash(v.BlockHash),
-			TxIndex:   *v.TxIndex,
-			Proof:     v.Proof,
-		}
-		proofData, err := json.Marshal(proof)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		var proofData []byte
+		if v.NetworkID == common.AURORANetworkID {
+			if len(v.Proof) != 1 {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("invalid proof for shielding aurora unified token"))
+			}
+			txHash, err := common.Hash{}.NewHashFromStr(v.Proof[0])
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TxHash incorrect"))
+			}
+			proofData = txHash.Bytes()
+		} else {
+			type EVMProof struct {
+				BlockHash rCommon.Hash `json:"BlockHash"`
+				TxIndex   uint         `json:"TxIndex"`
+				Proof     []string     `json:"Proof"`
+			}
+			proof := EVMProof{
+				BlockHash: rCommon.HexToHash(v.BlockHash),
+				TxIndex:   *v.TxIndex,
+				Proof:     v.Proof,
+			}
+			proofData, err = json.Marshal(proof)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+			}
 		}
 		temp.Proof = proofData
 		data = append(data, temp)

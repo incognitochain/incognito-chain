@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
-//get beacon block hash by height, with current view
+// get beacon block hash by height, with current view
 func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
 
 	blkheight := bestView.GetHeight()
@@ -129,7 +129,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
-//SHARD
+// SHARD
 func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {
 
 	blkheight := bestView.GetHeight()
@@ -282,7 +282,7 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 	return nil, 0, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
 }
 
-//traverse finalview back to certain block height from beacon chain
+// traverse finalview back to certain block height from beacon chain
 func (blockchain *BlockChain) GetShardBlockForBridge(from uint64, to common.Hash, newBeaconBlock *types.BeaconBlock, blockShardStates map[byte][]types.ShardState) (map[byte][]*types.ShardBlock, map[uint64]map[byte][]*types.ShardBlock, error) {
 	beaconBlk, _, _ := blockchain.GetBeaconBlockByHash(to)
 	shardBlksForBridge := map[byte][]*types.ShardBlock{}
@@ -648,7 +648,7 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 	return bRH, err
 }
 
-//GetStakerInfo : Return staker info from statedb
+// GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }

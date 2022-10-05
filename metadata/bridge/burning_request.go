@@ -92,7 +92,9 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			bReq.Type == metadataCommon.BurningPBSCRequestMeta || bReq.Type == metadataCommon.BurningPRVERC20RequestMeta ||
 			bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta || bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
-			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta) {
+			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
+			bReq.Type == metadataCommon.BurningAvaxRequestMeta || bReq.Type == metadataCommon.BurningAuroraRequestMeta ||
+			bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
@@ -100,6 +102,12 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	} else if (bReq.Type != metadataCommon.BurningPRVERC20RequestMeta && bReq.Type != metadataCommon.BurningPRVBEP20RequestMeta) && bReq.TokenID.String() == common.PRVIDStr {
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
+	}
+
+	if (bReq.Type == metadataCommon.BurningAvaxRequestMeta || bReq.Type == metadataCommon.BurningAuroraRequestMeta ||
+		bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta) &&
+		shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+		return false, false, fmt.Errorf("feature with metadata %v not enabled yet", bReq.Type)
 	}
 
 	return true, true, nil
@@ -111,7 +119,9 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == metadataCommon.BurningPRVERC20RequestMeta || bReq.Type == metadataCommon.BurningPRVBEP20RequestMeta ||
 		bReq.Type == metadataCommon.BurningPBSCForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
-		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta
+		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningAuroraRequestMeta || bReq.Type == metadataCommon.BurningAvaxRequestMeta ||
+		bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {
