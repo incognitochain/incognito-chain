@@ -1,5 +1,5 @@
 #!/bin/bash
-# ver: 22.09
+# ver: 22.10
 # ============================================================================================
 # 1. Interactive mode: just run following command then follow the steps.
 #       sudo ./{this script}
