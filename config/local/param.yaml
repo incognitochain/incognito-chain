@@ -153,6 +153,10 @@ auto_enable_feature:
       min_trigger: 10892003
       force_trigger: 1000000000
       require_percentage: 90
+  - auroraavaxbridge:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20": 20

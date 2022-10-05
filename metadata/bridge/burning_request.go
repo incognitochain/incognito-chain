@@ -114,6 +114,12 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		return false, false, fmt.Errorf("metadata type %d does not support for incTokenID %v", bReq.Type, bReq.TokenID.String())
 	}
 
+	if (bReq.Type == metadataCommon.BurningAvaxRequestMeta || bReq.Type == metadataCommon.BurningAuroraRequestMeta ||
+		bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta) &&
+		shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+		return false, false, fmt.Errorf("feature with metadata %v not enabled yet", bReq.Type)
+	}
+
 	return true, true, nil
 }
 
