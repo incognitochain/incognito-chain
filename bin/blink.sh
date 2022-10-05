@@ -372,8 +372,10 @@ if [[ $container_id != "" ]]; then
 fi
 echo "Getting Incognito docker tags"
 tags=$(curl -s -X GET https://hub.docker.com/v2/namespaces/incognitochain/repositories/incognito-mainnet/tags?page_size=100 | jq '.results[].name' | tr -d "\"")
-sorted_tags=($(echo ${tags[*]} | sort -rn))
+IFS=$'\n'
+sorted_tags=($(sort -nr <<< "${tags[*]}"))
 latest_tag=${sorted_tags[0]}
+unset IFS
 echo "Current tag |${current_tag}| - Latest tag |${latest_tag}|"
 if [[ -z $latest_tag ]]; then
   echo "Cannot get tags from docker hub for now. Skip this round!"
