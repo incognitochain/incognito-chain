@@ -46,6 +46,8 @@ eth_contract_address: "0x81BFbdAa0af287125602C1afe954cBbccff0eB3A"
 bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
 plg_contract_address: "0x141aa0C4c7d27f7B526a254202F979B60F056333"
 ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
+aurora_contract_address: "0x14D0cf3bC307aA15DA40Aa4c8cc2A2a81eF96B3a"
+avax_contract_address: "0x30fb06E97a6CD370BCE994A88C428F9F3aB6Ec28"
 prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
 prv_bep20_contract_address: "0x0C61C7F99DeE0270a5934F1520d109dc44A51d6c"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -97,6 +99,17 @@ plg_param:
 ftm_param:
   host: 
     - "https://rpc.testnet.fantom.network"
+aurora_param:
+  host:
+    - "https://testnet.aurora.dev"
+avax_param:
+  host:
+    - "https://api.avax-test.network/ext/C/rpc"
+near_param:
+  host:
+    - "https://near-testnet.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+    - "https://archival-rpc.testnet.near.org"
+    - "https://rpc.testnet.near.org"
 pdex_param:
   pdex_v3_break_point_height: 11
   protocol_fund_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
@@ -139,6 +152,10 @@ auto_enable_feature:
       min_trigger: 10892003
       force_trigger: 1000000000
       require_percentage: 90
+  - auroraavaxbridge:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20": 20

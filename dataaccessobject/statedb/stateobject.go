@@ -163,6 +163,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgePLGTxObjectWithValue(db, hash, value)
 	case BridgeFTMTxObjectType:
 		return newBridgeFTMTxObjectWithValue(db, hash, value)
+	case BridgeAURORATxObjectType:
+		return newBridgeAURORATxObjectWithValue(db, hash, value)
+	case BridgeAVAXTxObjectType:
+		return newBridgeAVAXTxObjectWithValue(db, hash, value)
 	case BridgeAggUnifiedTokenObjectType:
 		return newBridgeAggUnifiedTokenObjectWithValue(db, hash, value)
 	case BridgeAggStatusObjectType:
@@ -317,6 +321,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgePLGTxObject(db, hash)
 	case BridgeFTMTxObjectType:
 		return newBridgeFTMTxObject(db, hash)
+	case BridgeAURORATxObjectType:
+		return newBridgeAURORATxObject(db, hash)
+	case BridgeAVAXTxObjectType:
+		return newBridgeAVAXTxObject(db, hash)
 	case BridgeAggUnifiedTokenObjectType:
 		return newBridgeAggUnifiedTokenObject(db, hash)
 	case BridgeAggStatusObjectType:

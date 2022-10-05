@@ -2,9 +2,16 @@ package bridge
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	nearclient "github.com/eteu-technologies/near-api-go/pkg/client"
+	"github.com/eteu-technologies/near-api-go/pkg/client/block"
+	"github.com/eteu-technologies/near-api-go/pkg/types/hash"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"math/big"
 	"strings"
 
@@ -63,6 +70,16 @@ func GetEVMInfoByNetworkID(networkID uint8, ac *metadataCommon.AccumulatedValues
 		res.ContractAddress = config.Param().FtmContractAddressStr
 		res.Prefix = common.FTMPrefix
 		res.IsTxHashIssued = statedb.IsFTMTxHashIssued
+	case common.AURORANetworkID:
+		res.ListTxUsedInBlock = ac.UniqAURORATxsUsed
+		res.ContractAddress = config.Param().AuroraContractAddressStr
+		res.Prefix = common.AURORAPrefix
+		res.IsTxHashIssued = statedb.IsAURORATxHashIssued
+	case common.AVAXNetworkID:
+		res.ListTxUsedInBlock = ac.UniqAVAXTxsUsed
+		res.ContractAddress = config.Param().AvaxContractAddressStr
+		res.Prefix = common.AVAXPrefix
+		res.IsTxHashIssued = statedb.IsAVAXTxHashIssued
 	default:
 		return nil, errors.New("Invalid networkID")
 	}
@@ -88,7 +105,7 @@ func IsBridgeAggMetaType(metaType int) bool {
 	case metadataCommon.BridgeAggAddTokenMeta:
 		return true
 	case metadataCommon.BurnForCallConfirmMeta, metadataCommon.BurnForCallRequestMeta, metadataCommon.BurnForCallResponseMeta:
-		return true 
+		return true
 	case metadataCommon.IssuingReshieldResponseMeta:
 		return true
 	default:
@@ -287,7 +304,7 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 	return tokenID, nil
 }
 
-// TrimNetworkPrefix is a helper that removes the 3-byte network prefix from the full 23-byte external address (for burning confirm etc.); 
+// TrimNetworkPrefix is a helper that removes the 3-byte network prefix from the full 23-byte external address (for burning confirm etc.);
 // within the bridgeagg vault we only use prefixed addresses
 func TrimNetworkPrefix(fullTokenID []byte, prefix string) ([]byte, error) {
 	if !bytes.HasPrefix(fullTokenID, []byte(prefix)) {
@@ -395,6 +412,139 @@ func VerifyProofAndParseEVMReceipt(
 	return constructedReceipt, nil
 }
 
+type NormalResult struct {
+	Result interface{} `json:"result"`
+}
+
+func VerifyProofAndParseAuroraReceipt(
+	txHash common.Hash,
+	auroraHosts []string,
+	nearHosts []string,
+	minEVMConfirmationBlocks int,
+	networkPrefix string,
+) (*types.Receipt, error) {
+	// query tx receipt from auora chain
+	var unstructuredResult map[string]interface{}
+	var res *types.Receipt
+	var err error
+	for _, h := range auroraHosts {
+		unstructuredResult, err = getAURORATransactionReceipt(h, txHash)
+		if err != nil {
+			return nil, err
+		}
+		if unstructuredResult != nil {
+			break
+		}
+	}
+	if unstructuredResult == nil {
+		return nil, fmt.Errorf("query receipt %v got nil value", txHash.String())
+	}
+	nearTransactionHash, exist := unstructuredResult["nearTransactionHash"]
+	if !exist {
+		return nil, fmt.Errorf("nearTransactionHash non-exist in aurora receipt: %v", unstructuredResult)
+	}
+	nearTransactionHashStr, ok := nearTransactionHash.(string)
+	if !ok || nearTransactionHashStr == "" {
+		return nil, fmt.Errorf("invalid nearTransactionHash: %v", unstructuredResult)
+	}
+
+	// convert map to json
+	jsonString, err := json.Marshal(unstructuredResult)
+	if err != nil {
+		return nil, fmt.Errorf("can not convert json string with err: %v", err.Error())
+	}
+	err = json.Unmarshal(jsonString, &res)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal json string with err: %v", err.Error())
+	}
+
+	if res == nil || res.Status == 0 {
+		return nil, fmt.Errorf("transaction failed: %d", res.Status)
+	}
+	evmHeaderResult, err := evmcaller.GetEVMHeaderResult(res.BlockHash, auroraHosts, minEVMConfirmationBlocks, networkPrefix)
+	if err != nil {
+		metadataCommon.Logger.Log.Errorf("Can not get EVM header result - Error: %+v", err)
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt, err)
+	}
+
+	// check fork
+	if evmHeaderResult.IsForked {
+		metadataCommon.Logger.Log.Errorf("EVM Block hash %s is not in main chain", res.BlockHash.String())
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestVerifyProofAndParseReceipt,
+			fmt.Errorf("EVM Block hash %s is not in main chain", res.BlockHash.String()))
+	}
+
+	// query near tx from above result
+	ctx := context.Background()
+	decodeTx, err := hex.DecodeString(nearTransactionHashStr[2:])
+	if err != nil {
+		return nil, fmt.Errorf("invalid hex type with err: %v", err.Error())
+	}
+	nearTx := base58.Encode(decodeTx)
+	tx, err := hash.NewCryptoHashFromBase58(nearTx)
+	if err != nil {
+		return nil, errors.New("Invalid transaction hash")
+	}
+	accountId := "incognito"
+	hostActive := true
+	for i, h := range nearHosts {
+		rpcClient, err := nearclient.NewClient(h)
+		if err != nil {
+			if (i + 1) == len(nearHosts) {
+				hostActive = false
+			}
+			continue
+		}
+		txStatus, err := rpcClient.TransactionStatus(ctx, tx, accountId)
+		if err != nil {
+			if (i + 1) == len(nearHosts) {
+				hostActive = false
+			}
+			continue
+		}
+		// compare receipt root
+		minedBlock, err := rpcClient.BlockDetails(ctx, block.BlockHash(txStatus.TransactionOutcome.BlockHash))
+		if err != nil {
+			if (i + 1) == len(nearHosts) {
+				hostActive = false
+			}
+			continue
+		}
+		receiptRootEVMStr := base58.Encode(evmHeaderResult.Header.ReceiptHash.Bytes())
+		if minedBlock.Header.ChunkReceiptsRoot.String() != receiptRootEVMStr {
+			return nil, errors.New("Root on evm chain and native chain not match")
+		}
+	}
+
+	if !hostActive {
+		return nil, fmt.Errorf("no endpoint in list %+v is active to verify or invalid near tx %s", nearHosts, tx.String())
+	}
+
+	return res, nil
+}
+
+func getAURORATransactionReceipt(url string, txHash common.Hash) (map[string]interface{}, error) {
+	rpcClient := rpccaller.NewRPCClient()
+	params := []interface{}{"0x" + txHash.String()}
+	var res NormalResult
+	err := rpcClient.RPCCall(
+		"",
+		url,
+		"",
+		"eth_getTransactionReceipt",
+		params,
+		&res,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if res.Result == nil {
+		return nil, fmt.Errorf("tx aurora id %s non exist", params[0])
+	}
+
+	return res.Result.(map[string]interface{}), nil
+}
+
 func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, string, int, bool, error) {
 	var hosts []string
 	var networkPrefix string
@@ -404,6 +554,8 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	isBSCNetwork := false
 	isPLGNetwork := false
 	isFTMNetwork := false
+	isAURORANetwork := false
+	isAVAXNetwork := false
 
 	if metadataType == metadataCommon.IssuingETHRequestMeta || metadataType == metadataCommon.IssuingPRVERC20RequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.ETHNetworkID) {
 		isETHNetwork = true
@@ -416,6 +568,14 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	}
 	if metadataType == metadataCommon.IssuingFantomRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.FTMNetworkID) {
 		isFTMNetwork = true
+	}
+
+	if metadataType == metadataCommon.IssuingAuroraRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.AURORANetworkID) {
+		isAURORANetwork = true
+	}
+
+	if metadataType == metadataCommon.IssuingAvaxRequestMeta || (metadataType == metadataCommon.IssuingUnifiedTokenRequestMeta && networkID == common.AVAXNetworkID) {
+		isAVAXNetwork = true
 	}
 
 	if isBSCNetwork {
@@ -450,6 +610,24 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 
 		minConfirmationBlocks = metadataCommon.FantomConfirmationBlocks
 		networkPrefix = common.FTMPrefix
+		checkEVMHardFork = true
+
+	} else if isAURORANetwork {
+		evmParam := config.Param().AURORAParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		minConfirmationBlocks = metadataCommon.AuroraConfirmationBlocks
+		networkPrefix = common.AURORAPrefix
+		checkEVMHardFork = true
+
+	} else if isAVAXNetwork {
+		evmParam := config.Param().AVAXParam
+		evmParam.GetFromEnv()
+		hosts = evmParam.Host
+
+		minConfirmationBlocks = metadataCommon.AvaxConfirmationBlocks
+		networkPrefix = common.AVAXPrefix
 		checkEVMHardFork = true
 
 	} else {
@@ -508,8 +686,15 @@ func ParseEVMLogDataByEventName(log *types.Log, ethContractAddressStr string, na
 
 func GetNetworkTypeByNetworkID(networkID uint8) (uint, error) {
 	switch networkID {
-	case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+	case
+		common.ETHNetworkID,
+		common.BSCNetworkID,
+		common.PLGNetworkID,
+		common.FTMNetworkID,
+		common.AVAXNetworkID:
 		return common.EVMNetworkType, nil
+	case common.AURORANetworkID:
+		return common.AURORANetworkID, nil
 	default:
 		return 0, errors.New("Not found networkID")
 	}
@@ -530,6 +715,10 @@ func IsBurningConfirmMetaType(metaType int) bool {
 	case metadataCommon.BurningPRVBEP20ConfirmMeta, metadataCommon.BurningPRVERC20ConfirmMeta:
 		return true
 	case metadataCommon.BurnForCallConfirmMeta:
+		return true
+	case metadataCommon.BurningAuroraConfirmMeta, metadataCommon.BurningAuroraConfirmForDepositToSCMeta:
+		return true
+	case metadataCommon.BurningAvaxConfirmMeta, metadataCommon.BurningAvaxConfirmForDepositToSCMeta:
 		return true
 	default:
 		return false
