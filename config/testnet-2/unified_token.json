@@ -146,5 +146,33 @@
                 "network_id": 1
             }
         }
+    },
+    "061020227": {
+        "5075e4903091b61d2a7a3dd9cd5d369b026900301dadbadefef3e35a77ac4073": {
+            "c469fb02623a023b469c81e1564193da7d85fe918cd4a4fdd2c64f97f59f60f5": {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "network_id": 6
+            }
+        },
+        "3a526c0fa9abfc3e3e37becc52c5c10abbb7897b0534ad17018e766fc6133590": {
+            "8133c5a0e01fc03ca77224e653e160ef158ba5d75238816f90d70fa30e3abd63": {
+                "external_decimal": 6,
+                "external_token_id": "0x48601da98F729aE3B4d7DeD8F29777DF102a167d",
+                "network_id": 6
+            },
+            "397883f84afacf6433eb09b3f9cfc51f04b3cc632be93733419a0295b6e585af": {
+                "external_decimal": 6,
+                "external_token_id": "0x30fb06E97a6CD370BCE994A88C428F9F3aB6Ec28",
+                "network_id": 5
+            }
+        },
+        "162f544003ea2a73f7d93549720fab7d6f929ffab4d605b2cf1830874c6747de": {
+            "a189f306574f75733e93a260b168d8a335ba3243899254b3a4bf5f4de69a8e71": {
+                "external_decimal": 18,
+                "external_token_id": "0x0000000000000000000000000000000000000000",
+                "network_id": 5
+            }
+        }
     }
 }
