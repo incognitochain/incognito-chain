@@ -246,6 +246,12 @@ func (b *BeaconDelegateState) Restore(bcState BeaconCommitteeState, stateDB *sta
 	if err != nil {
 		return err
 	}
+	if b.NextEpochDelegate == nil {
+		b.NextEpochDelegate = map[string]struct {
+			Old string
+			New string
+		}{}
+	}
 	staker := bcState.GetAllCandidateSubstituteCommittee()
 	for _, stakerPKStr := range staker {
 		if stakerInfo, exist, err := statedb.GetStakerInfo(stateDB, stakerPKStr); (exist) && (err == nil) {

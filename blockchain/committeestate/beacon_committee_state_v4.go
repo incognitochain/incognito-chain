@@ -14,6 +14,9 @@ import (
 
 type BeaconCommitteeStateV4 struct {
 	*BeaconCommitteeStateV3
+	beaconSubstitute []string
+	beaconWaiting    []string
+
 	bDelegateState *BeaconDelegateState
 	Reputation     map[string]uint64
 }
@@ -59,6 +62,8 @@ func (b *BeaconCommitteeStateV4) Version() int {
 // shallowCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV4) shallowCopy(newB *BeaconCommitteeStateV4) {
 	b.BeaconCommitteeStateV3.shallowCopy(newB.BeaconCommitteeStateV3)
+	newB.beaconSubstitute = b.beaconSubstitute
+	newB.beaconWaiting = b.beaconWaiting
 	newB.bDelegateState = b.bDelegateState
 	newB.Reputation = b.Reputation
 }
@@ -76,6 +81,10 @@ func (b *BeaconCommitteeStateV4) clone() *BeaconCommitteeStateV4 {
 	for k, v := range b.Reputation {
 		newB.Reputation[k] = v
 	}
+	newB.beaconSubstitute = []string{}
+	newB.beaconSubstitute = append(newB.beaconSubstitute, b.beaconSubstitute...)
+	newB.beaconWaiting = []string{}
+	newB.beaconWaiting = append(newB.beaconWaiting, b.beaconWaiting...)
 	return newB
 }
 
@@ -361,4 +370,33 @@ func (b *BeaconCommitteeStateV4) ProcessStoreCommitteeStateInfo(
 		}
 	}
 	return nil
+}
+
+func (b BeaconCommitteeStateV4) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
+	bPKStructs, err := incognitokey.CommitteeKeyListToStruct(b.beaconWaiting)
+	if err != nil {
+		panic(err)
+	}
+	return bPKStructs
+}
+
+func (b BeaconCommitteeStateV4) GetBeaconSubstitute() []incognitokey.CommitteePublicKey {
+	bPKStructs, err := incognitokey.CommitteeKeyListToStruct(b.beaconSubstitute)
+	if err != nil {
+		panic(err)
+	}
+	return bPKStructs
+}
+
+func (b *BeaconCommitteeStateV4) processStakeInstruction(
+	stakeInstruction *instruction.StakeInstruction,
+	committeeChange *CommitteeChange,
+) (*CommitteeChange, error) {
+	newCommitteeChange, err := b.BeaconCommitteeStateV3.processStakeInstruction(stakeInstruction, committeeChange)
+	newWaitingStr, err := incognitokey.CommitteeKeyListToString(newCommitteeChange.CurrentEpochBeaconCandidateAdded)
+	if err != nil {
+		return nil, err
+	}
+	b.beaconWaiting = append(b.beaconWaiting, newWaitingStr...)
+	return newCommitteeChange, err
 }

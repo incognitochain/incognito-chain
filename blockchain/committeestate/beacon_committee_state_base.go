@@ -281,6 +281,10 @@ func (b beaconCommitteeStateBase) GetBeaconCommittee() []incognitokey.CommitteeP
 	return b.getBeaconCommittee()
 }
 
+func (b beaconCommitteeStateBase) GetBeaconCommitteeString() []string {
+	return b.beaconCommittee
+}
+
 func (b beaconCommitteeStateBase) getBeaconCommittee() []incognitokey.CommitteePublicKey {
 	res, _ := incognitokey.CommitteeBase58KeyListToStruct(b.beaconCommittee)
 	return res
@@ -343,6 +347,11 @@ func (b beaconCommitteeStateBase) GetCandidateShardWaitingForCurrentRandom() []i
 func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
 	return []incognitokey.CommitteePublicKey{}
 }
+
+func (b beaconCommitteeStateBase) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
+	return []incognitokey.CommitteePublicKey{}
+}
+
 func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return []incognitokey.CommitteePublicKey{}
 }
@@ -583,7 +592,11 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 		b.stakingTx[committeePublicKey] = stakeInstruction.TxStakeHashes[index]
 		b.delegate[committeePublicKey] = stakeInstruction.DelegateList[index]
 	}
-	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
+	if stakeInstruction.Chain == instruction.BEACON_INST {
+		committeeChange.CurrentEpochBeaconCandidateAdded = append(committeeChange.CurrentEpochBeaconCandidateAdded, stakeInstruction.PublicKeyStructs...)
+	} else {
+		committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
+	}
 
 	return committeeChange, err
 }

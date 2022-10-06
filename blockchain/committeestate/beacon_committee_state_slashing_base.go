@@ -230,7 +230,9 @@ func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, error) {
 	newCommitteeChange, err := b.beaconCommitteeStateBase.processStakeInstruction(stakeInstruction, committeeChange)
-	b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeys...)
+	if stakeInstruction.Chain == instruction.SHARD_INST {
+		b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeys...)
+	}
 	return newCommitteeChange, err
 }
 

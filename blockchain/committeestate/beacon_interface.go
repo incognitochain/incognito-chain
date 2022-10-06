@@ -14,6 +14,7 @@ type BeaconCommitteeState interface {
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	GetBeaconWaiting() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
@@ -76,6 +77,7 @@ type SplitRewardEnvironment struct {
 	MaxSubsetCommittees       byte
 	BeaconCommittee           []incognitokey.CommitteePublicKey
 	ShardCommittee            map[byte][]incognitokey.CommitteePublicKey
+	BeaconCommitteeState      BeaconCommitteeState
 }
 
 func NewSplitRewardEnvironmentMultiset(
@@ -86,6 +88,7 @@ func NewSplitRewardEnvironmentMultiset(
 	DAOPercent int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	bCState BeaconCommitteeState,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
@@ -98,6 +101,7 @@ func NewSplitRewardEnvironmentMultiset(
 		MaxSubsetCommittees:       maxSubsetsCommittee,
 		ShardCommittee:            shardCommittee,
 		BeaconCommittee:           beaconCommittee,
+		BeaconCommitteeState:      bCState,
 	}
 }
 func NewSplitRewardEnvironmentV1(
@@ -110,6 +114,7 @@ func NewSplitRewardEnvironmentV1(
 	activeShards int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	bCState BeaconCommitteeState,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
@@ -122,5 +127,6 @@ func NewSplitRewardEnvironmentV1(
 		MaxSubsetCommittees:       1,
 		ShardCommittee:            shardCommittee,
 		BeaconCommittee:           beaconCommittee,
+		BeaconCommitteeState:      bCState,
 	}
 }

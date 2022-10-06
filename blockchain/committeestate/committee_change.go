@@ -159,6 +159,11 @@ func (committeeChange *CommitteeChange) ShardStakerKeys() []incognitokey.Committ
 	return committeeChange.NextEpochShardCandidateAdded
 }
 
+// GetBeaconStakerKeys ...
+func (committeeChange *CommitteeChange) BeaconStakerKeys() []incognitokey.CommitteePublicKey {
+	return committeeChange.CurrentEpochBeaconCandidateAdded
+}
+
 func (committeeChange *CommitteeChange) RemovedStakers() []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
 	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.RemovedStaker)

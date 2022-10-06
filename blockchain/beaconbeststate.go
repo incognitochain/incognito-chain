@@ -460,6 +460,10 @@ func (beaconBestState *BeaconBestState) GetCandidateBeaconWaitingForCurrentRando
 	return beaconBestState.beaconCommitteeState.GetCandidateBeaconWaitingForCurrentRandom()
 }
 
+func (beaconBestState *BeaconBestState) GetCandidateBeaconWaiting() []incognitokey.CommitteePublicKey {
+	return beaconBestState.beaconCommitteeState.GetBeaconWaiting()
+}
+
 func (beaconBestState *BeaconBestState) GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeState.GetCandidateBeaconWaitingForNextRandom()
 }

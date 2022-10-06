@@ -409,6 +409,17 @@ func (r *RPCClient) StakeNew(acc account.Account, delegate string) (*jsonresult.
 	return r.API_SendTxStaking(stake1)
 }
 
+func (r *RPCClient) StakeNewBeacon(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StakingTxParam{
+		BurnAddr:    "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk:   acc.PrivateKey,
+		StakeShard:  false,
+		AutoRestake: true,
+		Delegate:    "",
+	}
+	return r.API_SendTxStaking(stake1)
+}
+
 func (r *RPCClient) ReDelegate(acc account.Account, newDelegate string) (*jsonresult.CreateTransactionResult, error) {
 	stake1 := ReDelegateParam{
 		BurnAddr:           "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",

@@ -6,6 +6,7 @@ import (
 )
 
 func GetRewardSplitRule(blockVersion int) SplitRewardRuleProcessor {
+	// return RewardSplitRuleV4{}
 	if blockVersion >= types.INSTANT_FINALITY_VERSION_V2 {
 		return RewardSplitRuleV2{}
 	}
@@ -135,3 +136,44 @@ func (r RewardSplitRuleV3) SplitReward(env *SplitRewardEnvironment) (
 	}
 	return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
 }
+
+type RewardSplitRuleV4 struct {
+}
+
+func (r RewardSplitRuleV4) SplitReward(env *SplitRewardEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
+	devPercent := uint64(env.DAOPercent)
+	allCoinTotalReward := env.TotalReward
+	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForShard := map[common.Hash]uint64{}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
+	if len(allCoinTotalReward) == 0 {
+		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
+		return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+	}
+	for key, totalReward := range allCoinTotalReward {
+		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
+		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n",
+			key.String(), totalRewardForDAOAndCustodians)
+		if env.IsSplitRewardForCustodian {
+			rewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians - rewardForCustodian[key]
+		} else {
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
+		}
+		rewardForBeacon[key] += totalReward - totalRewardForDAOAndCustodians
+		rewardForShard[key] = 0
+	}
+	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+}
+
+// func calculateRewardForBeacon(
+// 	validators []string,
+// 	delegateState map[string]BeaconDelegatorInfo,
+// 	repState map[string]uint64,
+// 	totalReward uint64,
+// ) uint64 {
+// 	res := map[common.Hash]uint64{}
+
+// 	return res
+// }

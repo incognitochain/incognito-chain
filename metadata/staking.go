@@ -37,7 +37,7 @@ func NewStakingMetadata(
 	*StakingMetadata,
 	error,
 ) {
-	if stakingType != ShardStakingMeta {
+	if (stakingType != ShardStakingMeta) && (stakingType != BeaconStakingMeta) {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
@@ -52,8 +52,8 @@ func NewStakingMetadata(
 	}, nil
 }
 
-//	+ no need to IsInBase58ShortFormat because error is already check below by FromString
-//	+ what IsInBase58ShortFormat does is the same as FromString does but for an array
+// + no need to IsInBase58ShortFormat because error is already check below by FromString
+// + what IsInBase58ShortFormat does is the same as FromString does but for an array
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	rewardReceiverPaymentAddress := sm.RewardReceiverPaymentAddress
 	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
@@ -82,10 +82,10 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 		}
 	}
 	// only stake to shard
-	return sm.Type == ShardStakingMeta
+	return (sm.Type == ShardStakingMeta) || (sm.Type == BeaconStakingMeta)
 }
 
-//TODO modify validate function
+// TODO modify validate function
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	SC, SPV, sSP, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
 	if err != nil {
@@ -169,9 +169,9 @@ func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stakingMetadata)
 }
 
-// func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
-// 	return stakingMetadata.StakingAmountShard * 3
-// }
+func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
+	return stakingMetadata.StakingAmountShard * 3
+}
 
 func (stakingMetadata StakingMetadata) GetShardStateAmount() uint64 {
 	return stakingMetadata.StakingAmountShard

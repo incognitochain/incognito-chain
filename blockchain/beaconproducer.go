@@ -1039,64 +1039,120 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	stakeShardTx := []string{}
 	stakeShardRewardReceiver := []string{}
 	stakeShardAutoStaking := []bool{}
-	tempValidStakePublicKeys := []string{}
+	stakeBeaconPublicKeys := []string{}
+	stakeBeaconDelegateList := []string{}
+	stakeBeaconTx := []string{}
+	stakeBeaconRewardReceiver := []string{}
+	stakeBeaconAutoStaking := []bool{}
 
 	// Process Stake Instruction form Shard Block
 	// Validate stake instruction => extract only valid stake instruction
 	for _, stakeInstruction := range shardInstructions.stakeInstructions {
-		tempStakePublicKey := make([]string, len(stakeInstruction.PublicKeys))
-		copy(tempStakePublicKey, stakeInstruction.PublicKeys)
-		duplicateStakePublicKeys := []string{}
-		// list of stake public keys and stake transaction and reward receiver must have equal length
+		if stakeInstruction.Chain == instruction.SHARD_INST {
+			tempStakePublicKey := make([]string, len(stakeInstruction.PublicKeys))
+			copy(tempStakePublicKey, stakeInstruction.PublicKeys)
+			duplicateStakePublicKeys := []string{}
+			// list of stake public keys and stake transaction and reward receiver must have equal length
 
-		tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
-		tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
-		tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
-		tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
+			tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
+			tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
+			tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
+			tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
 
-		if len(tempStakePublicKey) > 0 {
-			stakeShardPublicKeys = append(stakeShardPublicKeys, tempStakePublicKey...)
-			for i, v := range stakeInstruction.PublicKeys {
-				if common.IndexOfStr(v, tempStakePublicKey) > -1 {
-					stakeShardTx = append(stakeShardTx, stakeInstruction.TxStakes[i])
-					stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakeInstruction.RewardReceivers[i])
-					stakeShardAutoStaking = append(stakeShardAutoStaking, stakeInstruction.AutoStakingFlag[i])
-					stakeShardDelegateList = append(stakeShardDelegateList, stakeInstruction.DelegateList[i])
-				}
-			}
-		}
-
-		if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
-			(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
-			duplicateStakePublicKeys = committeestate.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
-			if len(duplicateStakePublicKeys) > 0 {
-				stakingTxs := []string{}
-				autoStaking := []bool{}
-				rewardReceivers := []string{}
-				delegateList := []string{}
+			if len(tempStakePublicKey) > 0 {
+				stakeShardPublicKeys = append(stakeShardPublicKeys, tempStakePublicKey...)
 				for i, v := range stakeInstruction.PublicKeys {
-					if common.IndexOfStr(v, duplicateStakePublicKeys) > -1 {
-						stakingTxs = append(stakingTxs, stakeInstruction.TxStakes[i])
-						rewardReceivers = append(rewardReceivers, stakeInstruction.RewardReceivers[i])
-						autoStaking = append(autoStaking, stakeInstruction.AutoStakingFlag[i])
-						delegateList = append(delegateList, stakeInstruction.DelegateList[i])
+					if common.IndexOfStr(v, tempStakePublicKey) > -1 {
+						stakeShardTx = append(stakeShardTx, stakeInstruction.TxStakes[i])
+						stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakeInstruction.RewardReceivers[i])
+						stakeShardAutoStaking = append(stakeShardAutoStaking, stakeInstruction.AutoStakingFlag[i])
+						stakeShardDelegateList = append(stakeShardDelegateList, stakeInstruction.DelegateList[i])
 					}
 				}
-				duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
-					duplicateStakePublicKeys,
-					stakeInstruction.Chain,
-					stakingTxs,
-					rewardReceivers,
-					autoStaking,
-					delegateList,
-				)
-				duplicateKeyStakeInstruction.instructions = append(duplicateKeyStakeInstruction.instructions, duplicateStakeInstruction)
+			}
+
+			if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
+				(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
+				duplicateStakePublicKeys = committeestate.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
+				if len(duplicateStakePublicKeys) > 0 {
+					stakingTxs := []string{}
+					autoStaking := []bool{}
+					rewardReceivers := []string{}
+					delegateList := []string{}
+					for i, v := range stakeInstruction.PublicKeys {
+						if common.IndexOfStr(v, duplicateStakePublicKeys) > -1 {
+							stakingTxs = append(stakingTxs, stakeInstruction.TxStakes[i])
+							rewardReceivers = append(rewardReceivers, stakeInstruction.RewardReceivers[i])
+							autoStaking = append(autoStaking, stakeInstruction.AutoStakingFlag[i])
+							delegateList = append(delegateList, stakeInstruction.DelegateList[i])
+						}
+					}
+					duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
+						duplicateStakePublicKeys,
+						stakeInstruction.Chain,
+						stakingTxs,
+						rewardReceivers,
+						autoStaking,
+						delegateList,
+					)
+					duplicateKeyStakeInstruction.instructions = append(duplicateKeyStakeInstruction.instructions, duplicateStakeInstruction)
+				}
+			}
+		} else {
+			tempStakePublicKey := make([]string, len(stakeInstruction.PublicKeys))
+			copy(tempStakePublicKey, stakeInstruction.PublicKeys)
+			duplicateStakePublicKeys := []string{}
+			// list of stake public keys and stake transaction and reward receiver must have equal length
+
+			tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
+			tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
+			tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
+			tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
+
+			if len(tempStakePublicKey) > 0 {
+				stakeBeaconPublicKeys = append(stakeBeaconPublicKeys, tempStakePublicKey...)
+				for i, v := range stakeInstruction.PublicKeys {
+					if common.IndexOfStr(v, tempStakePublicKey) > -1 {
+						stakeBeaconTx = append(stakeBeaconTx, stakeInstruction.TxStakes[i])
+						stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakeInstruction.RewardReceivers[i])
+						stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, stakeInstruction.AutoStakingFlag[i])
+						stakeBeaconDelegateList = append(stakeBeaconDelegateList, stakeInstruction.DelegateList[i])
+					}
+				}
+			}
+
+			if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
+				(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
+				duplicateStakePublicKeys = committeestate.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
+				if len(duplicateStakePublicKeys) > 0 {
+					stakingTxs := []string{}
+					autoStaking := []bool{}
+					rewardReceivers := []string{}
+					delegateList := []string{}
+					for i, v := range stakeInstruction.PublicKeys {
+						if common.IndexOfStr(v, duplicateStakePublicKeys) > -1 {
+							stakingTxs = append(stakingTxs, stakeInstruction.TxStakes[i])
+							rewardReceivers = append(rewardReceivers, stakeInstruction.RewardReceivers[i])
+							autoStaking = append(autoStaking, stakeInstruction.AutoStakingFlag[i])
+							delegateList = append(delegateList, stakeInstruction.DelegateList[i])
+						}
+					}
+					duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
+						duplicateStakePublicKeys,
+						stakeInstruction.Chain,
+						stakingTxs,
+						rewardReceivers,
+						autoStaking,
+						delegateList,
+					)
+					duplicateKeyStakeInstruction.instructions = append(duplicateKeyStakeInstruction.instructions, duplicateStakeInstruction)
+				}
 			}
 		}
 	}
 
 	if len(stakeShardPublicKeys) > 0 {
-		tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
+		// tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
 		tempStakeShardInstruction := instruction.NewStakeInstructionWithValue(
 			stakeShardPublicKeys,
 			instruction.SHARD_INST,
@@ -1105,6 +1161,17 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			stakeShardDelegateList,
 		)
 		newStakeInstructions = append(newStakeInstructions, tempStakeShardInstruction)
+	}
+	if len(stakeBeaconPublicKeys) > 0 {
+		// tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
+		tempStakeBeaconInstruction := instruction.NewStakeInstructionWithValue(
+			stakeBeaconPublicKeys,
+			instruction.BEACON_INST,
+			stakeBeaconTx, stakeBeaconRewardReceiver,
+			stakeBeaconAutoStaking,
+			stakeBeaconDelegateList,
+		)
+		newStakeInstructions = append(newStakeInstructions, tempStakeBeaconInstruction)
 	}
 
 	newShardInstructions.stakeInstructions = newStakeInstructions

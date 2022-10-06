@@ -1317,10 +1317,14 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Cannot import key set"))
 	}
+	amount := config.Param().StakingAmountShard
+	if stakingType == 64 {
+		amount = amount * 3
+	}
 
 	stakingMetadata, err := metadata.NewStakingMetadata(
 		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
-		config.Param().StakingAmountShard,
+		amount,
 		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), delegate, autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
