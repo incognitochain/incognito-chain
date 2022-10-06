@@ -340,7 +340,13 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
 			}
 		}
 	}
-
+	bcListStr1 := bBestState.GetCommitteeState().GetBeaconSubstitute()
+	bcListStr2 := bBestState.GetCommitteeState().GetBeaconWaiting()
+	bcList1, _ := incognitokey.CommitteeKeyListToString(bcListStr1)
+	bcList2, _ := incognitokey.CommitteeKeyListToString(bcListStr2)
+	// fmt.Println(bcList1)
+	fmt.Printf("Beacon waiting list: %+v\n", bcList2)
+	fmt.Printf("Beacon pending list: %+v\n", bcList1)
 	for _, cInfo := range pkCandidateMap {
 		fmt.Printf("Acc: %v\n\tCurrent delegators: %v\tDetails: %+v\n\tRep:%v\n",
 			cInfo.Name, cInfo.CurrentDelegators, cInfo.CurrentDelegatorsDetails, cInfo.Reputation)

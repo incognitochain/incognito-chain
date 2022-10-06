@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 )
@@ -45,16 +44,16 @@ func Test_Shard_Staking_With_Delegation() {
 
 	//send PRV and stake
 	stakers := []account.Account{}
-	bcPKStructs := node.GetBlockchain().GetBeaconBestState().GetBeaconCommittee()
-	bcPKStrs, _ := incognitokey.CommitteeKeyListToString(bcPKStructs)
-	for i := 0; i < 2; i++ {
+	// bcPKStructs := node.GetBlockchain().GetBeaconBestState().GetBeaconCommittee()
+	// bcPKStrs, _ := incognitokey.CommitteeKeyListToString(bcPKStructs)
+	for i := 0; i < 3; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
 		node.SendPRV(node.GenesisAccount, acc, 1e14)
 		node.GenerateBlock().NextRound()
 		node.GenerateBlock().NextRound()
-		tx, err := node.RPC.StakeNew(acc, bcPKStrs[i%len(bcPKStrs)])
-		fmt.Printf("Staker %+v create tx stake %v delegate to beacon %v, err %+v\n", acc.Name, tx.TxID, i%len(bcPKStrs), err)
+		tx, err := node.RPC.StakeNewBeacon(acc)
+		fmt.Printf("Staker %+v create tx stake beacon %v, err %+v\n", acc.Name, tx.TxID, err)
 		node.GenerateBlock().NextRound()
 		node.GenerateBlock().NextRound()
 		fmt.Println("send PRV and stake", acc.Name)
@@ -74,13 +73,13 @@ func Test_Shard_Staking_With_Delegation() {
 		if height%20 == 1 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			node.ShowAccountPosition(stakers)
-			if height == 41 {
-				txHash, err := node.RPC.ReDelegate(stakers[0], bcPKStrs[10%len(bcPKStrs)])
-				fmt.Println(txHash.Base58CheckData)
-				fmt.Printf("Staker 0 redelegate to beacon %v; Redelegate tx: %+v, err %+v\n", 10%len(bcPKStrs), txHash.TxID, err)
-			}
+			// if height == 41 {
+			// 	txHash, err := node.RPC.ReDelegate(stakers[0], bcPKStrs[10%len(bcPKStrs)])
+			// 	fmt.Println(txHash.Base58CheckData)
+			// 	fmt.Printf("Staker 0 redelegate to beacon %v; Redelegate tx: %+v, err %+v\n", 10%len(bcPKStrs), txHash.TxID, err)
+			// }
 			fmt.Println("Account info:")
-			node.ShowAccountStakeInfo(stakers)
+			// node.ShowAccountStakeInfo(stakers)
 			node.ShowBeaconCandidateInfo(stakers)
 			// node.Pause()
 		}

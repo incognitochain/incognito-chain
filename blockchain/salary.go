@@ -400,6 +400,7 @@ func (blockchain *BlockChain) calculateRewardMultiset(
 				percentForIncognitoDAO,
 				curView.GetBeaconCommittee(),
 				curView.GetShardCommittee(),
+				curView.GetCommitteeState(),
 			)
 
 			Logger.log.Info("[dcs] env.MaxSubsetCommittees:", env.MaxSubsetCommittees)
@@ -472,6 +473,7 @@ func (blockchain *BlockChain) calculateReward(
 			numberOfActiveShards,
 			curView.GetBeaconCommittee(),
 			curView.GetShardCommittee(),
+			curView.GetCommitteeState(),
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
@@ -583,7 +585,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	return resInst, totalRewardForCustodian, rewardForPdex, nil
 }
 
-//buildInstRewardForBeacons create reward instruction for beacons
+// buildInstRewardForBeacons create reward instruction for beacons
 func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
