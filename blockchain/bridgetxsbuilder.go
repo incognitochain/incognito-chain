@@ -302,19 +302,18 @@ func (blockchain *BlockChain) buildInstructionsForIssuingWasmBridgeReq(
 		stateDBs[common.BeaconChainID], listTxUsed, isTxHashIssued,
 		md.TxHash,
 		issuingWasmBridgeReqAction.IncognitoAddr)
-	token := append([]byte(prefix), []byte(issuingWasmBridgeReqAction.TokenId)...)
 	if err != nil {
-		Logger.log.Warn("WARNING: an issue occurred while decode wasm token id: ", err)
-		return nil, nil, nil
+		Logger.log.Warn("WARNING: an issue occurred while execute VerifyWasmData: ", err)
+		return [][]string{rejectedInst}, nil, nil
 	}
 	uniqTxCryptoHash, err := hash.NewCryptoHashFromBase58(md.TxHash)
-	uniqTxTemp := [32]byte(uniqTxCryptoHash)
-	uniqTx := uniqTxTemp[:]
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occurred while decode wasm shielding tx hash: ", err)
-		return nil, nil, nil
+		return [][]string{rejectedInst}, nil, nil
 	}
-
+	uniqTxTemp := [32]byte(uniqTxCryptoHash)
+	uniqTx := uniqTxTemp[:]
+	token := append([]byte(prefix), []byte(issuingWasmBridgeReqAction.TokenId)...)
 	err = metadataBridge.VerifyTokenPair(stateDBs, ac, md.IncTokenID, token)
 	if err != nil {
 		Logger.log.Warnf(err.Error())
