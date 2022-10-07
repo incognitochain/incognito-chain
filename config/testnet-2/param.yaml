@@ -165,7 +165,7 @@ auto_enable_feature:
   - auroraavaxbridge:
       min_trigger: 5505400
       require_percentage: 90
-  - unified_token_061020227:
+  - unified_token_230620226:
       min_trigger: 5505400
       require_percentage: 90
 blocktime_param:
