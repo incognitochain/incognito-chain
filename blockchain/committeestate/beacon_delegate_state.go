@@ -31,8 +31,6 @@ func NewBeaconDelegatorInfo() *BeaconDelegatorInfo {
 }
 
 func (b *BeaconDelegatorInfo) Add(newDelegator string) error {
-	b.locker.Lock()
-	defer b.locker.Unlock()
 	if _, exist := b.CurrentDelegatorsDetails[newDelegator]; exist {
 		return errors.Errorf("This delegator %v already added", newDelegator)
 	}
@@ -42,8 +40,6 @@ func (b *BeaconDelegatorInfo) Add(newDelegator string) error {
 }
 
 func (b *BeaconDelegatorInfo) Remove(delegator string) {
-	b.locker.Lock()
-	defer b.locker.Unlock()
 	if _, exist := b.CurrentDelegatorsDetails[delegator]; !exist {
 		return
 	}
@@ -69,11 +65,9 @@ func (b *BeaconDelegatorInfo) GetCurrentDelegatorsDetails() map[string]interface
 
 func (b *BeaconDelegatorInfo) GetCurrentDelegatorsList() []string {
 	keys := []string{}
-	b.locker.RLock()
 	for k := range b.CurrentDelegatorsDetails {
 		keys = append(keys, k)
 	}
-	b.locker.RUnlock()
 	sort.Slice(keys, func(i, j int) bool {
 		return keys[i] < keys[j]
 	})
@@ -131,7 +125,6 @@ func (b *BeaconDelegateState) Clone() *BeaconDelegateState {
 }
 
 func (b *BeaconDelegateState) AcceptNextEpochChange() error {
-	b.locker.Lock()
 	for delegator, delegateChange := range b.NextEpochDelegate {
 		if bcInfo, ok := b.DelegateInfo[delegateChange.New]; ok {
 			err := bcInfo.Add(delegator)
@@ -147,13 +140,10 @@ func (b *BeaconDelegateState) AcceptNextEpochChange() error {
 		Old string
 		New string
 	}{}
-	b.locker.Unlock()
 	return nil
 }
 
 func (b *BeaconDelegateState) AddReDelegate(delegator, oldDelegate, newDelegate string) {
-	b.locker.Lock()
-	defer b.locker.Unlock()
 	b.NextEpochDelegate[delegator] = struct {
 		Old string
 		New string
@@ -164,8 +154,6 @@ func (b *BeaconDelegateState) AddReDelegate(delegator, oldDelegate, newDelegate 
 }
 
 func (b *BeaconDelegateState) GetDelegateInfo(beaconPK string) (BeaconDelegatorInfo, error) {
-	b.locker.RLock()
-	defer b.locker.RUnlock()
 	if dInfo, ok := b.DelegateInfo[beaconPK]; ok {
 		return *dInfo, nil
 	}
@@ -173,8 +161,7 @@ func (b *BeaconDelegateState) GetDelegateInfo(beaconPK string) (BeaconDelegatorI
 }
 
 func (b *BeaconDelegateState) GetDelegateState() map[string]BeaconDelegatorInfo {
-	b.locker.RLock()
-	defer b.locker.RUnlock()
+
 	res := map[string]BeaconDelegatorInfo{}
 	for k, v := range b.DelegateInfo {
 		res[k] = *v
@@ -183,8 +170,7 @@ func (b *BeaconDelegateState) GetDelegateState() map[string]BeaconDelegatorInfo 
 }
 
 func (b *BeaconDelegateState) Hash() common.Hash {
-	b.locker.RLock()
-	defer b.locker.RUnlock()
+
 	res := ""
 	keys := []string{}
 	for k, _ := range b.DelegateInfo {

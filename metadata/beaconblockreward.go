@@ -19,7 +19,7 @@ type BeaconRewardInfo struct {
 	PayToPublicKey string
 
 	DelegatorReward map[common.Hash]uint64
-	// InfoHash       *common.Hash
+	Epoch           uint64
 }
 
 func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey []byte) ([]string, error) {
@@ -44,11 +44,12 @@ func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey []by
 	return returnedInst, nil
 }
 
-func BuildInstForBeaconRewardV2(bRew, dRew map[common.Hash]uint64, payToPublicKey string) ([]string, error) {
+func BuildInstForBeaconRewardV2(bRew, dRew map[common.Hash]uint64, payToPublicKey string, epoch uint64) ([]string, error) {
 	beaconRewardInfo := BeaconRewardInfo{
 		PayToPublicKey:  payToPublicKey,
 		BeaconReward:    bRew,
 		DelegatorReward: dRew,
+		Epoch:           epoch,
 	}
 
 	contentStr, err := json.Marshal(beaconRewardInfo)

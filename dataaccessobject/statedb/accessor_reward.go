@@ -226,7 +226,7 @@ func AddShardCommitteeReward(stateDB *StateDB, incognitoPublicKey string, sCommi
 	return nil
 }
 
-func SlashShardCommitteeReward(stateDB *StateDB, incognitoPublicKey string, sCommitteeReward map[common.Hash]uint64) error {
+func SlashShardCommitteeReward(stateDB *StateDB, incognitoPublicKey string) error {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
