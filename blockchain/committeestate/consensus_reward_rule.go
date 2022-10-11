@@ -6,7 +6,7 @@ import (
 )
 
 func GetRewardSplitRule(blockVersion int) SplitRewardRuleProcessor {
-	// return RewardSplitRuleV4{}
+	return RewardSplitRuleV4{}
 	if blockVersion >= types.INSTANT_FINALITY_VERSION_V2 {
 		return RewardSplitRuleV2{}
 	}
@@ -166,14 +166,3 @@ func (r RewardSplitRuleV4) SplitReward(env *SplitRewardEnvironment) (map[common.
 	}
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
-
-// func calculateRewardForBeacon(
-// 	validators []string,
-// 	delegateState map[string]BeaconDelegatorInfo,
-// 	repState map[string]uint64,
-// 	totalReward uint64,
-// ) uint64 {
-// 	res := map[common.Hash]uint64{}
-
-// 	return res
-// }

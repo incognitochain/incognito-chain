@@ -23,6 +23,8 @@ const (
 	ReturnStakingMeta            = 41
 	IncDAORewardRequestMeta      = 42
 
+	BeaconCommitteeRewardRequestMeta = 352
+
 	WithDrawRewardRequestMeta  = 44
 	WithDrawRewardResponseMeta = 45
 

@@ -42,7 +42,10 @@ func (cr *CommitteeRewardState) SetReward(reward map[common.Hash]uint64) {
 }
 
 func (cr CommitteeRewardState) RewardLocked() map[common.Hash]uint64 {
-	return cr.reward
+	if cr.rewardLocked != nil {
+		return cr.rewardLocked
+	}
+	return map[common.Hash]uint64{}
 }
 
 func (cr *CommitteeRewardState) SetRewardLocked(reward map[common.Hash]uint64) {

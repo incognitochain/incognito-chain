@@ -273,47 +273,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
 	pdexReward := uint64(0)
-
-	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
-		featureStateDB := curView.GetBeaconFeatureStateDB()
-		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
-		if err != nil {
-			return nil, nil, NewBlockChainError(CloneBeaconBestStateError, err)
-		}
-		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(
-			featureStateDB,
-			cloneBeaconBestState.portalStateV3)
-		if err != nil {
-			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
-		}
-		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
-		isSplitRewardForCustodian := totalLockedCollateral > 0
-		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
-		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
-			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
-		}
-
-		isSplitRewardForPdex := curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
-
-		pdexRewardPercent := uint(0)
-		if isSplitRewardForPdex {
-			pdexRewardPercent = curView.pdeStates[pdex.AmplifierVersion].Reader().Params().DAOContributingPercent
-		}
-
-		rewardByEpochInstruction, rewardForCustodianByEpoch, pdexReward, err = blockchain.buildRewardInstructionByEpoch(
-			curView,
-			newBeaconBlock.Header.Height,
-			curView.Epoch,
-			isSplitRewardForCustodian,
-			percentCustodianRewards,
-			isSplitRewardForPdex,
-			pdexRewardPercent,
-			newBeaconBlock.Header.Version,
-		)
-		if err != nil {
-			return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
-		}
-	}
+	committeeChange := committeestate.NewCommitteeChange()
 
 	keys := []int{}
 	for shardID, shardBlocks := range allShardBlocks {
@@ -433,13 +393,55 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	instructions, err := curView.GenerateInstruction(
 		newBeaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedRewardInstructions,
-		blockchain, shardStates,
+		blockchain, shardStates, committeeChange,
 	)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(instructions) > 0 {
 		BLogger.log.Infof("Producer instructions: %+v", instructions)
+	}
+
+	if blockchain.IsFirstBeaconHeightInEpoch(newBeaconBlock.Header.Height) {
+		featureStateDB := curView.GetBeaconFeatureStateDB()
+		cloneBeaconBestState, err := blockchain.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, nil, NewBlockChainError(CloneBeaconBestStateError, err)
+		}
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(
+			featureStateDB,
+			cloneBeaconBestState.portalStateV3)
+		if err != nil {
+			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+		}
+		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
+		isSplitRewardForCustodian := totalLockedCollateral > 0
+		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
+		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
+			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
+		}
+
+		isSplitRewardForPdex := curView.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight
+
+		pdexRewardPercent := uint(0)
+		if isSplitRewardForPdex {
+			pdexRewardPercent = curView.pdeStates[pdex.AmplifierVersion].Reader().Params().DAOContributingPercent
+		}
+
+		rewardByEpochInstruction, rewardForCustodianByEpoch, pdexReward, err = blockchain.buildRewardInstructionByEpoch(
+			curView,
+			newBeaconBlock.Header.Height,
+			curView.Epoch,
+			isSplitRewardForCustodian,
+			percentCustodianRewards,
+			isSplitRewardForPdex,
+			pdexRewardPercent,
+			newBeaconBlock.Header.Version,
+			committeeChange,
+		)
+		if err != nil {
+			return nil, nil, NewBlockChainError(BuildRewardInstructionError, err)
+		}
 	}
 
 	if len(rewardByEpochInstruction) != 0 {
@@ -566,6 +568,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	acceptedRewardInstructions [][]string,
 	blockchain *BlockChain,
 	shardsState map[byte][]types.ShardState,
+	committeeChange *committeestate.CommitteeChange,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	instructions = append(instructions, bridgeInstructions...)
@@ -669,7 +672,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			case committeestate.STAKING_FLOW_V4:
 				swapShardInstructionsGenerator = curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV4)
 			}
-			swapShardInstructions, err := swapShardInstructionsGenerator.GenerateSwapShardInstructions(env)
+			swapShardInstructions, slashedChange, err := swapShardInstructionsGenerator.GenerateSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -678,6 +681,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 					instructions = append(instructions, swapShardInstruction.ToString())
 				}
 			}
+			committeeChange = slashedChange
 		}
 	}
 

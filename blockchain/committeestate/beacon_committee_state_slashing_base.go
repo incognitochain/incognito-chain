@@ -168,15 +168,16 @@ func (b *beaconCommitteeStateSlashingBase) initCommitteeState(env *BeaconCommitt
 
 func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 	env *BeaconCommitteeStateEnvironment) (
-	[]*instruction.SwapShardInstruction, error) {
+	[]*instruction.SwapShardInstruction, *CommitteeChange, error) {
 	b.addData(env)
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
+	slashedChange := NewCommitteeChange()
 	for i := 0; i < env.ActiveShards; i++ {
 		shardID := byte(i)
 		tempCommittees := common.DeepCopyString(b.shardCommittee[shardID])
 		tempSubstitutes := common.DeepCopyString(b.shardSubstitute[shardID])
 
-		swapShardInstruction, _, _, _, _ := b.swapRule.Process(
+		swapShardInstruction, _, _, slashedCommittee, _ := b.swapRule.Process(
 			shardID,
 			tempCommittees,
 			tempSubstitutes,
@@ -186,14 +187,16 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 			env.NumberOfFixedShardBlockValidator,
 			env.MissingSignaturePenalty,
 		)
-
+		if len(slashedCommittee) > 0 {
+			slashedChange.SlashingCommittee[shardID] = slashedCommittee
+		}
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 		} else {
 			Logger.log.Infof("Generate empty swap shard instructions")
 		}
 	}
-	return swapShardInstructions, nil
+	return swapShardInstructions, slashedChange, nil
 }
 
 func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(returnStakingInstruction *instruction.ReturnStakeInstruction, committeePublicKeyStruct incognitokey.CommitteePublicKey, publicKey string, stakerInfo *statedb.ShardStakerInfo, committeeChange *CommitteeChange) (*instruction.ReturnStakeInstruction, *CommitteeChange) {

@@ -55,6 +55,7 @@ var (
 	burnPrefix                         = []byte("burn-")
 	syncingValidatorsPrefix            = []byte("syncing-validators-")
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
+	allShardStakersPrefix              = []byte("all-s-stk-")
 
 	// pdex v3
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
@@ -227,6 +228,10 @@ func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
 		panic("Create key fail1")
 	}
 	return *finalHash
+}
+
+func GetAllShardStakersKey() common.Hash {
+	return common.HashH(allShardStakersPrefix)
 }
 
 func GetSlashingCommitteePrefix(epoch uint64) []byte {
@@ -768,7 +773,6 @@ func GetPdexv3StakerLastRewardPerShare() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
-//
 func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
 	return pdexv3WithdrawLiquidityStatusPrefix
 }

@@ -333,29 +333,25 @@ func (b *BeaconCommitteeStateV4) ProcessStoreCommitteeStateInfo(
 			return err
 		}
 	}
-	for _, removedCommittee := range cChange.ShardCommitteeRemoved {
-		for _, stakerPubkey := range removedCommittee {
-			if stakerPubkeyStr, err := stakerPubkey.ToBase58(); err != nil {
+	for _, removedCommittee := range cChange.SlashingCommittee {
+		for _, stakerPubkeyStr := range removedCommittee {
+			oldD := ""
+			newD := ""
+			stakerInfo, exist, err := statedb.GetStakerInfo(bStateDB, stakerPubkeyStr)
+			if err != nil || !exist {
 				return err
+			}
+			if delegateChange, exist := b.bDelegateState.NextEpochDelegate[stakerPubkeyStr]; exist {
+				oldD = delegateChange.Old
 			} else {
-				oldD := ""
-				newD := ""
-				stakerInfo, exist, err := statedb.GetStakerInfo(bStateDB, stakerPubkeyStr)
-				if err != nil || !exist {
-					return err
-				}
-				if delegateChange, exist := b.bDelegateState.NextEpochDelegate[stakerPubkeyStr]; exist {
-					oldD = delegateChange.Old
-				} else {
-					oldD = stakerInfo.Delegate()
-				}
-				b.bDelegateState.NextEpochDelegate[stakerPubkeyStr] = struct {
-					Old string
-					New string
-				}{
-					Old: oldD,
-					New: newD,
-				}
+				oldD = stakerInfo.Delegate()
+			}
+			b.bDelegateState.NextEpochDelegate[stakerPubkeyStr] = struct {
+				Old string
+				New string
+			}{
+				Old: oldD,
+				New: newD,
 			}
 		}
 	}

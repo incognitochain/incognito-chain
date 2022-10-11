@@ -424,6 +424,21 @@ func (stateDB *StateDB) getStakerInfo(key common.Hash) (*ShardStakerInfo, bool, 
 	return NewStakerInfo(), false, nil
 }
 
+func (stateDB *StateDB) getAllShardStakersInfo(key common.Hash) (*AllShardStakersInfo, bool, error) {
+	stakerObject, err := stateDB.getStateObject(AllStakersObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if stakerObject != nil {
+		res, ok := stakerObject.GetValue().(*AllShardStakersInfo)
+		if !ok {
+			err = fmt.Errorf("Can not parse staker info")
+		}
+		return res, true, err
+	}
+	return NewAllShardStakersInfo(), false, nil
+}
+
 func (stateDB *StateDB) getStakerObject(key common.Hash) (*StateObject, bool, error) {
 	stakerObject, err := stateDB.getStateObject(StakerObjectType, key)
 	if err != nil {

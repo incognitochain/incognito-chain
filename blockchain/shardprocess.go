@@ -24,6 +24,8 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
@@ -259,7 +261,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, newBestState.BeaconHeight, shardID)
+	err = blockchain.processSalaryInstructions(curView, newBestState.rewardStateDB, newBestState.consensusStateDB, beaconBlocks, newBestState.BeaconHeight, shardID)
 	if err != nil {
 		return err
 	}
@@ -1118,6 +1120,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
 	}
+	// newShardState.
+	if err = blockchain.processStoreAllShardStakerInfo(newShardState, beaconBlocks, committeeChange); err != nil {
+		return err
+	}
 
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
@@ -1634,3 +1640,153 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 
 	return nil
 }
+
+func (blockchain *BlockChain) processStoreAllShardStakerInfo(
+	sBestState *ShardBestState,
+	beaconBlocks []*types.BeaconBlock,
+	committeeChange *committeestate.CommitteeChange,
+) error {
+	shardStakerDelegate := map[string]string{}
+	shardStakerRewardReceivers := map[string]key.PaymentAddress{}
+	shardHasCredit := map[string]bool{}
+	shardReDelegate := map[string]string{}
+	sConsensusDB := sBestState.consensusStateDB
+	currentAllStaker, has, err := statedb.GetAllShardStakersInfo(sConsensusDB)
+	if err != nil {
+		return err
+	}
+	sID := sBestState.GetShardID()
+	neededUpdate := false
+	for _, beaconBlock := range beaconBlocks {
+		if blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()) {
+			BLogger.log.Infof("teststore Start Store All Shard Staker, sH %v ", sBestState.ShardHeight)
+			neededUpdate = true
+			bcBestState := blockchain.GetBeaconBestState()
+			beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(bcBestState, bcBestState.GetHeight())
+			if err != nil {
+				return fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", bcBestState.GetHeight(), err)
+			}
+			beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+			if err != nil {
+				return fmt.Errorf("init beacon consensus statedb return error %v", err)
+			}
+			newCommittees := committeeChange.ShardCommitteeAdded[sID]
+			for _, pk := range newCommittees {
+				pkStr, _ := pk.ToBase58()
+				infor, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, pkStr)
+				BLogger.log.Infof("teststore Add new committee pk %v, delegator %v ", sBestState.ShardHeight, infor.Delegate())
+				if err != nil {
+					return err
+				}
+				if !has {
+					return errors.Errorf("Can not found this staker %v", pkStr)
+				}
+				shardStakerDelegate[pkStr] = infor.Delegate()
+				shardStakerRewardReceivers[pkStr] = infor.RewardReceiver()
+				shardHasCredit[pkStr] = true
+			}
+		}
+	}
+	if has {
+		curStakerDelegate := currentAllStaker.MapDelegate()
+		for sPK, newDelegate := range shardReDelegate {
+			if _, ok := curStakerDelegate[sPK]; ok {
+				curStakerDelegate[sPK] = newDelegate
+				if !neededUpdate {
+					neededUpdate = true
+				}
+			}
+		}
+		if !neededUpdate {
+			return nil
+		}
+		for k, v := range shardStakerDelegate {
+			curStakerDelegate[k] = v
+		}
+		curStakerRewardReceiver := currentAllStaker.RewardReceiver()
+		curHasCredit := currentAllStaker.HasCredit()
+		for k, v := range shardHasCredit {
+			curHasCredit[k] = v
+		}
+		for k, v := range shardStakerRewardReceivers {
+			curStakerRewardReceiver[k] = v
+		}
+		return statedb.StoreAllShardStakersInfo(sConsensusDB, curStakerDelegate, curHasCredit, curStakerRewardReceiver)
+
+	} else {
+		if neededUpdate {
+			BLogger.log.Infof("teststore Cannot get all staker info, shard height %v", sBestState.ShardHeight)
+		}
+		return statedb.StoreAllShardStakersInfo(sConsensusDB, shardStakerDelegate, shardHasCredit, shardStakerRewardReceivers)
+	}
+}
+
+// func (blockchain *BlockChain) processInitAllShardStakerInfo(sBestState *ShardBestState) error {
+// 	shardStakerDelegate := map[string]string{}
+// 	shardStakerRewardReceivers := map[string]key.PaymentAddress{}
+// 	shardHasCredit := map[string]bool{}
+// 	shardReDelegate := map[string]string{}
+// 	sConsensusDB := sBestState.consensusStateDB
+// 	currentAllStaker, has, err := statedb.GetAllShardStakersInfo(sConsensusDB)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	sID := sBestState.GetShardID()
+// 	neededUpdate := false
+// 	for _, beaconBlock := range beaconBlocks {
+// 		for _, inst := range beaconBlock.Body.Instructions {
+// 			if inst[0] == instruction.STAKE_ACTION {
+// 				stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
+// 				for index, receiverPayment := range stakeInstruction.RewardReceiverStructs {
+// 					if common.GetShardIDFromLastByte(receiverPayment.Pk[len(receiverPayment.Pk)-1]) == sID {
+// 						if !neededUpdate {
+// 							neededUpdate = true
+// 						}
+// 						stakerPK := stakeInstruction.PublicKeys[index]
+// 						stakerDelegate := stakeInstruction.DelegateList[index]
+// 						shardStakerDelegate[stakerPK] = stakerDelegate
+// 						shardStakerRewardReceivers[stakerPK] = receiverPayment
+// 						shardHasCredit[stakerPK] = false
+// 					}
+// 				}
+// 			}
+// 			if inst[0] == instruction.RE_DELEGATE {
+// 				redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+// 				if err != nil {
+// 					Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+// 					continue
+// 				}
+// 				for index, shardPublicKey := range redelegateInstruction.CommitteePublicKeys {
+// 					shardReDelegate[shardPublicKey] = redelegateInstruction.DelegateList[index]
+// 				}
+// 			}
+// 		}
+// 	}
+// 	if has {
+// 		curStakerDelegate := currentAllStaker.MapDelegate()
+// 		for sPK, newDelegate := range shardReDelegate {
+// 			if _, ok := curStakerDelegate[sPK]; ok {
+// 				curStakerDelegate[sPK] = newDelegate
+// 				if !neededUpdate {
+// 					neededUpdate = true
+// 				}
+// 			}
+// 		}
+// 		if !neededUpdate {
+// 			return nil
+// 		}
+// 		for k, v := range shardStakerDelegate {
+// 			curStakerDelegate[k] = v
+// 		}
+// 		curStakerRewardReceiver := currentAllStaker.RewardReceiver()
+// 		curHasCredit := currentAllStaker.HasCredit()
+// 		for k, v := range shardHasCredit {
+// 			curHasCredit[k] = v
+// 		}
+// 		for k, v := range shardStakerRewardReceivers {
+// 			curStakerRewardReceiver[k] = v
+// 		}
+
+// 	}
+// 	return statedb.StoreAllShardStakersInfo(sConsensusDB, shardStakerDelegate, shardHasCredit, shardStakerRewardReceivers)
+// }

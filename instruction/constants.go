@@ -2,6 +2,7 @@ package instruction
 
 const (
 	SWAP_SHARD_ACTION              = "swapshard"
+	SWAP_BEACON_ACTION             = "swapbeacon"
 	SWAP_ACTION                    = "swap"
 	RANDOM_ACTION                  = "random"
 	STAKE_ACTION                   = "stake"
@@ -26,7 +27,9 @@ const (
 
 	SHARD_RECEIVE_REWARD_V1_ACTION = 43
 	ACCEPT_BLOCK_REWARD_V1_ACTION  = 37
+	ACCEPT_BEACON_REWARD_ACTION    = 352
 	SHARD_REWARD_INST              = "shardRewardInst"
+	BEACON_REWARD_INST             = "beaconRewardInst"
 )
 
 const (

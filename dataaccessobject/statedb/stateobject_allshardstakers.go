@@ -6,11 +6,13 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
 type AllShardStakersInfo struct {
-	mapDelegate map[string]string
-	hasCredit   map[string]bool
+	mapDelegate    map[string]string
+	hasCredit      map[string]bool
+	rewardReceiver map[string]key.PaymentAddress
 }
 
 func NewAllShardStakersInfo() *AllShardStakersInfo {
@@ -20,20 +22,24 @@ func NewAllShardStakersInfo() *AllShardStakersInfo {
 func NewAllShardStakersInfoWithValue(
 	mapDelegate map[string]string,
 	hasCredit map[string]bool,
+	rewardReceiver map[string]key.PaymentAddress,
 ) *AllShardStakersInfo {
 	return &AllShardStakersInfo{
-		mapDelegate: mapDelegate,
-		hasCredit:   hasCredit,
+		mapDelegate:    mapDelegate,
+		hasCredit:      hasCredit,
+		rewardReceiver: rewardReceiver,
 	}
 }
 
 func (c AllShardStakersInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		MapDelegate map[string]string
-		HasCredit   map[string]bool
+		MapDelegate    map[string]string
+		HasCredit      map[string]bool
+		RewardReceiver map[string]key.PaymentAddress
 	}{
-		MapDelegate: c.mapDelegate,
-		HasCredit:   c.hasCredit,
+		MapDelegate:    c.mapDelegate,
+		HasCredit:      c.hasCredit,
+		RewardReceiver: c.rewardReceiver,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -43,14 +49,9 @@ func (c AllShardStakersInfo) MarshalJSON() ([]byte, error) {
 
 func (c *AllShardStakersInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		MapDelegate         map[string]string
-		AutoStaking         bool
-		TxStakingID         common.Hash
-		ShardID             byte
-		NumberOfRound       int
-		BeaconConfirmHeight uint64
-		Delegate            string
-		HasCredit           map[string]bool
+		MapDelegate    map[string]string
+		HasCredit      map[string]bool
+		RewardReceiver map[string]key.PaymentAddress
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -58,11 +59,16 @@ func (c *AllShardStakersInfo) UnmarshalJSON(data []byte) error {
 	}
 	c.mapDelegate = temp.MapDelegate
 	c.hasCredit = temp.HasCredit
+	c.rewardReceiver = temp.RewardReceiver
 	return nil
 }
 
 func (s *AllShardStakersInfo) SetMapDelegate(m map[string]string) {
 	s.mapDelegate = m
+}
+
+func (s *AllShardStakersInfo) SetRewardReceiver(m map[string]key.PaymentAddress) {
+	s.rewardReceiver = m
 }
 
 func (s *AllShardStakersInfo) SetHasCredit(m map[string]bool) {
@@ -75,6 +81,10 @@ func (s AllShardStakersInfo) MapDelegate() map[string]string {
 
 func (s AllShardStakersInfo) HasCredit() map[string]bool {
 	return s.hasCredit
+}
+
+func (s AllShardStakersInfo) RewardReceiver() map[string]key.PaymentAddress {
+	return s.rewardReceiver
 }
 
 type AllStakersObject struct {

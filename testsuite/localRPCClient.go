@@ -261,6 +261,40 @@ func (r *LocalRPCClient) GetRewardAmount(paymentAddress string) (res map[string]
 	}
 	return resI.(map[string]uint64), nil
 }
+
+func (r *LocalRPCClient) GetRewardAmountByPublicKey(publicKey string) (res map[string]uint64, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getrewardamountbypublickey"]
+	resI, rpcERR := c(httpServer, []interface{}{publicKey}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(map[string]uint64), nil
+}
+func (r *LocalRPCClient) GetAllRewardAmount() (res map[string]map[string]uint64, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["listrewardamount"]
+	resI, rpcERR := c(httpServer, []interface{}{}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resTmp, ok := resI.(map[string]map[common.Hash]uint64)
+	if !ok {
+		return nil, errors.New("Can not convert result to map[string]map[common.Hash]uint64")
+	}
+	res = map[string]map[string]uint64{}
+	for k, v := range resTmp {
+		vNew := map[string]uint64{}
+		for tokenID, amount := range v {
+			vNew[tokenID.String()] = amount
+		}
+		if len(vNew) > 0 {
+			res[k] = vNew
+		}
+	}
+	return res, nil
+}
+
 func (r *LocalRPCClient) WithdrawReward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["withdrawreward"]

@@ -17,6 +17,8 @@ type BlockRewardAcceptInstruction struct {
 type BeaconRewardInfo struct {
 	BeaconReward   map[common.Hash]uint64
 	PayToPublicKey string
+
+	DelegatorReward map[common.Hash]uint64
 	// InfoHash       *common.Hash
 }
 
@@ -25,6 +27,28 @@ func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey []by
 	beaconRewardInfo := BeaconRewardInfo{
 		PayToPublicKey: publicKeyString,
 		BeaconReward:   reward,
+	}
+
+	contentStr, err := json.Marshal(beaconRewardInfo)
+	if err != nil {
+		return nil, NewMetadataTxError(BeaconBlockRewardBuildInstructionForBeaconBlockRewardError, err)
+	}
+
+	returnedInst := []string{
+		strconv.Itoa(BeaconRewardRequestMeta),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(payToPublicKey[len(payToPublicKey)-1]))),
+		"beaconRewardInst",
+		string(contentStr),
+	}
+
+	return returnedInst, nil
+}
+
+func BuildInstForBeaconRewardV2(bRew, dRew map[common.Hash]uint64, payToPublicKey string) ([]string, error) {
+	beaconRewardInfo := BeaconRewardInfo{
+		PayToPublicKey:  payToPublicKey,
+		BeaconReward:    bRew,
+		DelegatorReward: dRew,
 	}
 
 	contentStr, err := json.Marshal(beaconRewardInfo)

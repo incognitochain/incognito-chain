@@ -637,6 +637,28 @@ func storeShardStakerInfo(
 	return nil
 }
 
+func StoreAllShardStakersInfo(
+	stateDB *StateDB,
+	mapDelegate map[string]string,
+	hasCredit map[string]bool,
+	rewardReceiverM map[string]key.PaymentAddress,
+) error {
+	key := GetAllShardStakersKey()
+	value := NewAllShardStakersInfoWithValue(
+		mapDelegate,
+		hasCredit,
+		rewardReceiverM,
+	)
+	return stateDB.SetStateObject(AllStakersObjectType, key, value)
+}
+
+func GetAllShardStakersInfo(
+	stateDB *StateDB,
+) (*AllShardStakersInfo, bool, error) {
+	key := GetAllShardStakersKey()
+	return stateDB.getAllShardStakersInfo(key)
+}
+
 func SaveStopAutoStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,

@@ -72,6 +72,7 @@ const (
 	ShardBlockReward             = metadataCommon.ShardBlockReward
 	ShardBlockSalaryResponseMeta = metadataCommon.ShardBlockSalaryResponseMeta
 	BeaconRewardRequestMeta      = metadataCommon.BeaconRewardRequestMeta
+	BeaconRewardRequestMetaV2    = metadataCommon.BeaconCommitteeRewardRequestMeta
 	BeaconSalaryResponseMeta     = metadataCommon.BeaconSalaryResponseMeta
 	ReturnStakingMeta            = metadataCommon.ReturnStakingMeta
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
@@ -213,9 +214,9 @@ const (
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 
-	BurnForCallRequestMeta = metadataCommon.BurnForCallRequestMeta
-	BurnForCallResponseMeta = metadataCommon.BurnForCallResponseMeta
-	BurnForCallConfirmMeta = metadataCommon.BurnForCallConfirmMeta
+	BurnForCallRequestMeta      = metadataCommon.BurnForCallRequestMeta
+	BurnForCallResponseMeta     = metadataCommon.BurnForCallResponseMeta
+	BurnForCallConfirmMeta      = metadataCommon.BurnForCallConfirmMeta
 	IssuingReshieldResponseMeta = metadataCommon.IssuingReshieldResponseMeta
 )
 

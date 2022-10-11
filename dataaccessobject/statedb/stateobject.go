@@ -105,6 +105,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
+	case AllStakersObjectType:
+		return newAllStakersObjectWithValue(db, hash, value)
 	case PortalV4StatusObjectType:
 		return newPortalV4StatusObjectWithValue(db, hash, value)
 	case PortalV4UTXOObjectType:

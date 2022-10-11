@@ -54,7 +54,7 @@ type AssignInstructionsGenerator interface {
 }
 
 type SwapShardInstructionsGenerator interface {
-	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
+	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, *CommitteeChange, error)
 }
 
 type RandomInstructionsGenerator interface {
