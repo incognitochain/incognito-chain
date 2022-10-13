@@ -1676,7 +1676,7 @@ func (blockchain *BlockChain) processStoreAllShardStakerInfo(
 			for _, inst := range beaconBlock.Body.Instructions {
 				if inst[0] == instruction.SWAP_SHARD_ACTION {
 					swapShardInstruction := instruction.ImportSwapShardInstructionFromString(inst)
-					fmt.Printf("shard %v process list in of shard %v, bc %v\n", sID, swapShardInstruction.ChainID, beaconBlock.Header.Height)
+					//fmt.Printf("shard %v process list in of shard %v, bc %v\n", sID, swapShardInstruction.ChainID, beaconBlock.Header.Height)
 					newCommittees := swapShardInstruction.InPublicKeys
 					for _, pkStr := range newCommittees {
 						infor, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, pkStr)
