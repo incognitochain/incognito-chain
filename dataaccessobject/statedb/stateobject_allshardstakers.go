@@ -11,7 +11,7 @@ import (
 
 type AllShardStakersInfo struct {
 	mapDelegate    map[string]string
-	hasCredit      map[string]bool
+	isCommittee    map[string]bool
 	rewardReceiver map[string]key.PaymentAddress
 }
 
@@ -21,13 +21,13 @@ func NewAllShardStakersInfo() *AllShardStakersInfo {
 
 func NewAllShardStakersInfoWithValue(
 	mapDelegate map[string]string,
-	hasCredit map[string]bool,
+	isCommittee map[string]bool,
 	rewardReceiver map[string]key.PaymentAddress,
 ) *AllShardStakersInfo {
 	return &AllShardStakersInfo{
 		mapDelegate:    mapDelegate,
-		hasCredit:      hasCredit,
 		rewardReceiver: rewardReceiver,
+		isCommittee:    isCommittee,
 	}
 }
 
@@ -36,10 +36,11 @@ func (c AllShardStakersInfo) MarshalJSON() ([]byte, error) {
 		MapDelegate    map[string]string
 		HasCredit      map[string]bool
 		RewardReceiver map[string]key.PaymentAddress
+		IsCommittee    map[string]bool
 	}{
 		MapDelegate:    c.mapDelegate,
-		HasCredit:      c.hasCredit,
 		RewardReceiver: c.rewardReceiver,
+		IsCommittee:    c.isCommittee,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -50,7 +51,7 @@ func (c AllShardStakersInfo) MarshalJSON() ([]byte, error) {
 func (c *AllShardStakersInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		MapDelegate    map[string]string
-		HasCredit      map[string]bool
+		IsCommittee    map[string]bool
 		RewardReceiver map[string]key.PaymentAddress
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -58,8 +59,8 @@ func (c *AllShardStakersInfo) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	c.mapDelegate = temp.MapDelegate
-	c.hasCredit = temp.HasCredit
 	c.rewardReceiver = temp.RewardReceiver
+	c.isCommittee = temp.IsCommittee
 	return nil
 }
 
@@ -71,20 +72,20 @@ func (s *AllShardStakersInfo) SetRewardReceiver(m map[string]key.PaymentAddress)
 	s.rewardReceiver = m
 }
 
-func (s *AllShardStakersInfo) SetHasCredit(m map[string]bool) {
-	s.hasCredit = m
+func (s *AllShardStakersInfo) SetIsCommittee(m map[string]bool) {
+	s.isCommittee = m
 }
 
 func (s AllShardStakersInfo) MapDelegate() map[string]string {
 	return s.mapDelegate
 }
 
-func (s AllShardStakersInfo) HasCredit() map[string]bool {
-	return s.hasCredit
-}
-
 func (s AllShardStakersInfo) RewardReceiver() map[string]key.PaymentAddress {
 	return s.rewardReceiver
+}
+
+func (s *AllShardStakersInfo) IsCommittee() map[string]bool {
+	return s.isCommittee
 }
 
 type AllStakersObject struct {

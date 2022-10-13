@@ -640,13 +640,13 @@ func storeShardStakerInfo(
 func StoreAllShardStakersInfo(
 	stateDB *StateDB,
 	mapDelegate map[string]string,
-	hasCredit map[string]bool,
+	isCommittee map[string]bool,
 	rewardReceiverM map[string]key.PaymentAddress,
 ) error {
 	key := GetAllShardStakersKey()
 	value := NewAllShardStakersInfoWithValue(
 		mapDelegate,
-		hasCredit,
+		isCommittee,
 		rewardReceiverM,
 	)
 	return stateDB.SetStateObject(AllStakersObjectType, key, value)

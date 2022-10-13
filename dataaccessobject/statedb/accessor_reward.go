@@ -271,6 +271,13 @@ func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
 	return stateDB.getAllCommitteeReward()
 }
 
+func ListStakerReward(stateDB *StateDB) (res map[string]struct {
+	Available map[common.Hash]uint64
+	Locked    map[common.Hash]uint64
+}) {
+	return stateDB.getAllStakerReward()
+}
+
 func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, withdrawAmount uint64, tokenID common.Hash) error {
 	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)

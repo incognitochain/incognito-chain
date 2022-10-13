@@ -1645,13 +1645,13 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 func (blockchain *BlockChain) processStoreAllShardStakerInfo(
 	sBestState *ShardBestState,
 	beaconBlocks []*types.BeaconBlock,
-	// committeeChange *committeestate.CommitteeChange,
 ) error {
 	shardStakerDelegate := map[string]string{}
 	shardStakerRewardReceivers := map[string]key.PaymentAddress{}
-	shardHasCredit := map[string]bool{}
+	shardIsCommittee := map[string]bool{}
 	shardReDelegate := map[string]string{}
-	slashedList := []string{}
+	outPKList := []string{}
+
 	sConsensusDB := sBestState.consensusStateDB
 	currentAllStaker, has, err := statedb.GetAllShardStakersInfo(sConsensusDB)
 	if err != nil {
@@ -1696,13 +1696,26 @@ func (blockchain *BlockChain) processStoreAllShardStakerInfo(
 						BLogger.log.Infof("testxx shard %v received pk %v", sID, pkNew)
 						shardStakerDelegate[pkStr] = infor.Delegate()
 						shardStakerRewardReceivers[pkStr] = infor.RewardReceiver()
-						shardHasCredit[pkStr] = true
+						shardIsCommittee[pkStr] = true
 					}
+					outCommittees := swapShardInstruction.OutPublicKeys
+					for _, pkStr := range outCommittees {
+						shardIsCommittee[pkStr] = false
+					}
+					continue
+				}
+				if inst[0] == instruction.RETURN_ACTION {
+					returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
+					if err != nil {
+						Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
+						continue
+					}
+					outPKList = append(outPKList, returnStakingIns.PublicKeys...)
 				}
 			}
 			slashed := statedb.GetSlashingCommittee(beaconConsensusStateDB, beaconBlock.Header.Epoch-1)
 			for _, v := range slashed {
-				slashedList = append(slashedList, v...)
+				outPKList = append(outPKList, v...)
 			}
 		}
 	}
@@ -1719,34 +1732,37 @@ func (blockchain *BlockChain) processStoreAllShardStakerInfo(
 		if !neededUpdate {
 			return nil
 		}
+		curIsCommittee := currentAllStaker.IsCommittee()
+		for k, v := range shardIsCommittee {
+			if _, ok := curIsCommittee[k]; (ok) || (v) {
+				curIsCommittee[k] = v
+			}
+		}
 		for k, v := range shardStakerDelegate {
 			curStakerDelegate[k] = v
 		}
 		curStakerRewardReceiver := currentAllStaker.RewardReceiver()
-		curHasCredit := currentAllStaker.HasCredit()
-		for k, v := range shardHasCredit {
-			curHasCredit[k] = v
-		}
+
 		for k, v := range shardStakerRewardReceivers {
 			curStakerRewardReceiver[k] = v
 		}
-		for _, slashedKey := range slashedList {
+		for _, slashedKey := range outPKList {
 			delete(curStakerDelegate, slashedKey)
-			delete(curHasCredit, slashedKey)
 			delete(curStakerRewardReceiver, slashedKey)
+			delete(curIsCommittee, slashedKey)
 		}
-		return statedb.StoreAllShardStakersInfo(sConsensusDB, curStakerDelegate, curHasCredit, curStakerRewardReceiver)
+		return statedb.StoreAllShardStakersInfo(sConsensusDB, curStakerDelegate, curIsCommittee, curStakerRewardReceiver)
 
 	} else {
 		if neededUpdate {
 			BLogger.log.Infof("teststore Cannot get all staker info, shard height %v", sBestState.ShardHeight)
-			for _, slashedKey := range slashedList {
+			for _, slashedKey := range outPKList {
 				delete(shardStakerDelegate, slashedKey)
-				delete(shardHasCredit, slashedKey)
 				delete(shardStakerRewardReceivers, slashedKey)
+				delete(shardIsCommittee, slashedKey)
 			}
 		}
-		return statedb.StoreAllShardStakersInfo(sConsensusDB, shardStakerDelegate, shardHasCredit, shardStakerRewardReceivers)
+		return statedb.StoreAllShardStakersInfo(sConsensusDB, shardStakerDelegate, shardIsCommittee, shardStakerRewardReceivers)
 	}
 }
 

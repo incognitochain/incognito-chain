@@ -398,12 +398,12 @@ func (r *RPCClient) StopAutoStake(acc account.Account) (*jsonresult.CreateTransa
 	return r.API_SendTxStopAutoStake(stake1)
 }
 
-func (r *RPCClient) StakeNew(acc account.Account, delegate string) (*jsonresult.CreateTransactionResult, error) {
+func (r *RPCClient) StakeNew(acc account.Account, delegate string, autoStake bool) (*jsonresult.CreateTransactionResult, error) {
 	stake1 := StakingTxParam{
 		BurnAddr:    "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
 		StakerPrk:   acc.PrivateKey,
 		StakeShard:  true,
-		AutoRestake: true,
+		AutoRestake: autoStake,
 		Delegate:    delegate,
 	}
 	return r.API_SendTxStaking(stake1)

@@ -733,6 +733,29 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 	return rewardAmountResult, nil
 }
 
+func (blockService BlockService) ListStakerRewardAmount() (
+	res map[string]struct {
+		Available map[common.Hash]uint64
+		Locked    map[common.Hash]uint64
+	},
+	err error,
+) {
+	res = make(map[string]struct {
+		Available map[common.Hash]uint64
+		Locked    map[common.Hash]uint64
+	})
+	beaconBestState := blockService.BlockChain.GetBeaconBestState()
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
+		shardID := byte(i)
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
+		committeeReward := statedb.ListStakerReward(committeeRewardStateDB)
+		for k, v := range committeeReward {
+			res[k] = v
+		}
+	}
+	return res, nil
+}
+
 func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]uint64, error) {
 	m := make(map[string]map[common.Hash]uint64)
 	beaconBestState := blockService.BlockChain.GetBeaconBestState()
@@ -906,7 +929,7 @@ func (blockService BlockService) GetBurningAddress(beaconHeight uint64) string {
 	return blockService.BlockChain.GetBurningAddress(beaconHeight)
 }
 
-//============================= Bridge ===============================
+// ============================= Bridge ===============================
 func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, error) {
 	txIDHash, err := common.Hash{}.NewHashFromStr(txID)
 	if err != nil {
@@ -1055,7 +1078,7 @@ func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte
 //	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
 //}
 
-//============================= Portal ===============================
+// ============================= Portal ===============================
 func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (*metadata.PortalCustodianDepositStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetCustodianDepositStatus(stateDB, depositTxID)
@@ -1345,7 +1368,7 @@ func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatusV3(t
 	return nil, nil
 }
 
-//============================= Reward Feature ===============================
+// ============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, featureName, epoch)

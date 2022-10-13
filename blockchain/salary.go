@@ -316,14 +316,9 @@ func processBeaconRewardV2(
 	sCDB *statedb.StateDB,
 	bCDB *statedb.StateDB, // Beacon Best state db
 ) error {
-	sCommittee := curView.GetShardCommittee()
 	sSlashed := map[byte][]string{}
 	gotSlashedData := false
-	sSlashedList := []string{}
-	sCommitteeStr, err := incognitokey.CommitteeKeyListToString(sCommittee)
-	if err != nil {
-		return err
-	}
+	sCommitteeStr := []string{}
 	delegatorRewM := map[string]map[common.Hash]uint64{}
 	bCommitteeRewM := map[string]map[common.Hash]uint64{}
 	BLogger.log.Infof("beaconrew Process beacon reward for epoch %v, block %v, len ins %v ", curView.Epoch, curView.ShardHeight, len(beaconBlkRewardInfos))
@@ -345,19 +340,23 @@ func processBeaconRewardV2(
 		return err
 	}
 	sDelegateStateM := sDelegateInfo.MapDelegate()
-	sCreditInfoM := sDelegateInfo.HasCredit()
+	sCommitteeInfoM := sDelegateInfo.IsCommittee()
+	for pk, isCommittee := range sCommitteeInfoM {
+		if _, ok := sDelegateStateM[pk]; ok {
+			if isCommittee {
+				sCommitteeStr = append(sCommitteeStr, pk)
+			}
+		}
+	}
 	for _, committees := range sSlashed {
 		for _, pk := range committees {
 			if _, ok := sDelegateStateM[pk]; ok {
 				delete(sDelegateStateM, pk)
-				sSlashedList = append(sSlashedList, pk)
-				delete(sCreditInfoM, pk)
 			}
 		}
 	}
-	// statedb.GetAllShardCommittee(stateDB *statedb.StateDB, shardIDs []int)
 	sRewardReceiverM := sDelegateInfo.RewardReceiver()
-	sStakerRewM, sCommitteeRewM := calculateRewardForDelegators(shardID, curView.Epoch, curView.ShardHeight, sCommitteeStr, delegatorRewM, sDelegateStateM, sCreditInfoM)
+	sStakerRewM, sCommitteeRewM := calculateRewardForDelegators(shardID, curView.Epoch, curView.ShardHeight, sCommitteeStr, delegatorRewM, sDelegateStateM)
 	BLogger.log.Infof("xstaker %v, shardID %v", len(sDelegateInfo.MapDelegate()), shardID)
 	for k, v := range sDelegateInfo.MapDelegate() {
 		BLogger.log.Infof("xstaker %v delegate to %v", k, v)
@@ -376,7 +375,6 @@ func calculateRewardForDelegators(
 	sCommitee []string,
 	delegatorRewM map[string]map[common.Hash]uint64,
 	sDelegateStateM map[string]string,
-	sCreditInfoM map[string]bool,
 ) (
 	stakerLockedRewM map[string]map[common.Hash]uint64,
 	stakerAvailableRewM map[string]map[common.Hash]uint64,
@@ -386,10 +384,6 @@ func calculateRewardForDelegators(
 	stakerLockedRewM = map[string]map[common.Hash]uint64{}
 	for sPK, dPK := range sDelegateStateM { //staker public key & delegate public key
 		BLogger.log.Infof("testdistribute0 sID %v epoch %v-%v %v %v", sID, epoch, blockH, sPK, dPK)
-		if hasCredit, ok := sCreditInfoM[sPK]; (!ok) || (!hasCredit) {
-			BLogger.log.Infof("testdistribute0 CONTINUE sID %v epoch %v-%v %v %v", sID, epoch, blockH, sPK, dPK)
-			continue
-		}
 		if rew, ok := delegatorRewM[dPK]; ok {
 			stakerRewM[sPK] = rew
 		}

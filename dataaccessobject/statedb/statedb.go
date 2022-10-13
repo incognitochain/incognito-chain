@@ -832,6 +832,38 @@ func (stateDB *StateDB) getAllCommitteeReward() map[string]map[common.Hash]uint6
 	return m
 }
 
+func (stateDB *StateDB) getAllStakerReward() (res map[string]struct {
+	Available map[common.Hash]uint64
+	Locked    map[common.Hash]uint64
+}) {
+	res = map[string]struct {
+		Available map[common.Hash]uint64
+		Locked    map[common.Hash]uint64
+	}{}
+	prefix := GetCommitteeRewardPrefix()
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next(true, false, true) {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		committeeRewardState := NewCommitteeRewardState()
+		err := json.Unmarshal(newValue, committeeRewardState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		res[committeeRewardState.incognitoPublicKey] = struct {
+			Available map[common.Hash]uint64
+			Locked    map[common.Hash]uint64
+		}{
+			Available: committeeRewardState.reward,
+			Locked:    committeeRewardState.rewardLocked,
+		}
+
+	}
+	return res
+}
+
 func (stateDB *StateDB) getAllSlashingCommittee(epoch uint64) map[byte][]string {
 	m := make(map[byte][]string)
 	prefix := GetSlashingCommitteePrefix(epoch)
