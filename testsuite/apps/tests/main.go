@@ -18,6 +18,8 @@ func main() {
 	RunTest(
 		//delegation.TestShardStakingWithDelegation,
 		//delegation.TestDelegationAfterStake,
-		delegation.TestShardStakingWithReDelegation,
+		//delegation.TestShardStakingWithReDelegation,
+
+		delegation.TestRewardWithdraw,
 	)
 }
