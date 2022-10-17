@@ -98,6 +98,26 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningFantomConfirmForDepositToSCMeta, inst, beaconHeight, common.FTMPrefix)
 			newInst = [][]string{burningConfirm}
 
+		case metadata.BurningAuroraRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningAuroraConfirmMeta, inst, beaconHeight, common.AURORAPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningAvaxRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningAvaxConfirmMeta, inst, beaconHeight, common.AVAXPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningAuroraForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningAuroraConfirmForDepositToSCMeta, inst, beaconHeight, common.AURORAPrefix)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningAvaxForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningAvaxConfirmForDepositToSCMeta, inst, beaconHeight, common.AVAXPrefix)
+			newInst = [][]string{burningConfirm}
+
 		default:
 			continue
 		}

@@ -159,6 +159,10 @@ func (iReq IssuingEVMRequest) ValidateSanityData(chainRetriever metadataCommon.C
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingEvmRequestValidateSanityDataError, errors.New("Invalid token id"))
 	}
 
+	if iReq.Type == metadataCommon.IssuingAvaxRequestMeta && shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature not enabled"))
+	}
+
 	return true, true, nil
 }
 
@@ -166,7 +170,7 @@ func (iReq IssuingEVMRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != metadataCommon.IssuingETHRequestMeta && iReq.Type != metadataCommon.IssuingBSCRequestMeta &&
 		iReq.Type != metadataCommon.IssuingPRVERC20RequestMeta && iReq.Type != metadataCommon.IssuingPRVBEP20RequestMeta &&
 		iReq.Type != metadataCommon.IssuingPLGRequestMeta && !(iReq.Type == metadataCommon.IssuingUnifiedTokenRequestMeta && iReq.NetworkID != common.DefaultNetworkID) &&
-		iReq.Type != metadataCommon.IssuingFantomRequestMeta {
+		iReq.Type != metadataCommon.IssuingFantomRequestMeta && iReq.Type != metadataCommon.IssuingAvaxRequestMeta {
 		return false
 	}
 	evmReceipt, err := iReq.verifyProofAndParseReceipt()

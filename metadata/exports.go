@@ -212,10 +212,26 @@ const (
 	BurningFantomForDepositToSCRequestMeta = metadataCommon.BurningFantomForDepositToSCRequestMeta
 	BurningFantomConfirmForDepositToSCMeta = metadataCommon.BurningFantomConfirmForDepositToSCMeta
 
-	BurnForCallRequestMeta = metadataCommon.BurnForCallRequestMeta
-	BurnForCallResponseMeta = metadataCommon.BurnForCallResponseMeta
-	BurnForCallConfirmMeta = metadataCommon.BurnForCallConfirmMeta
+	BurnForCallRequestMeta      = metadataCommon.BurnForCallRequestMeta
+	BurnForCallResponseMeta     = metadataCommon.BurnForCallResponseMeta
+	BurnForCallConfirmMeta      = metadataCommon.BurnForCallConfirmMeta
 	IssuingReshieldResponseMeta = metadataCommon.IssuingReshieldResponseMeta
+
+	IssuingAuroraRequestMeta  = metadataCommon.IssuingAuroraRequestMeta
+	IssuingAuroraResponseMeta = metadataCommon.IssuingAuroraResponseMeta
+	BurningAuroraRequestMeta  = metadataCommon.BurningAuroraRequestMeta
+	BurningAuroraConfirmMeta  = metadataCommon.BurningAuroraConfirmMeta
+
+	IssuingAvaxRequestMeta  = metadataCommon.IssuingAvaxRequestMeta
+	IssuingAvaxResponseMeta = metadataCommon.IssuingAvaxResponseMeta
+	BurningAvaxRequestMeta  = metadataCommon.BurningAvaxRequestMeta
+	BurningAvaxConfirmMeta  = metadataCommon.BurningAvaxConfirmMeta
+
+	BurningAuroraForDepositToSCRequestMeta = metadataCommon.BurningAuroraForDepositToSCRequestMeta
+	BurningAuroraConfirmForDepositToSCMeta = metadataCommon.BurningAuroraConfirmForDepositToSCMeta
+
+	BurningAvaxForDepositToSCRequestMeta = metadataCommon.BurningAvaxForDepositToSCRequestMeta
+	BurningAvaxConfirmForDepositToSCMeta = metadataCommon.BurningAvaxConfirmForDepositToSCMeta
 )
 
 // export error codes

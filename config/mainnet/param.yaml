@@ -37,6 +37,8 @@ eth_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 bsc_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 plg_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 ftm_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
+aurora_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
+avax_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 prv_erc20_contract_address: "0xB64fde8f199F073F41c132B9eC7aD5b61De0B1B7"
 prv_bep20_contract_address: "0xB64fde8f199F073F41c132B9eC7aD5b61De0B1B7"
 dao_address: "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" # community fund
@@ -89,6 +91,19 @@ ftm_param:
   host:
     - "https://rpcapi.fantom.network"
     - "https://fantom-mainnet.public.blastapi.io"
+aurora_param:
+  host:
+    - "https://mainnet.aurora.dev"
+    - "https://aurora-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+avax_param:
+  host:
+    - "https://api.avax.network/ext/bc/C/rpc"
+    - "https://proportionate-omniscient-dream.avalanche-mainnet.discover.quiknode.pro/401b15187d2b4dc116bfc4a1073774b288a9bfe4/ext/bc/C/rpc"
+near_param:
+  host:
+    - "https://near-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+    - "https://rpc.mainnet.near.org"
+    - "https://archival-rpc.mainnet.near.org"
 pdex_param:
   pdex_v3_break_point_height: 1699680
   protocol_fund_address: "12skvk3q3wi4nrmXrEn4TJYniSoAqzFApHJoKQbYkY92EDk5E5PJviocx7TTWcuJmCVvoxKNfkusaNPkVMVF9G4LQmfspE9u82djJdJPRybdWRDz5fsCxYvnBfM4AtuC4BET37sRdAiWe482xccZ"
@@ -121,12 +136,18 @@ auto_enable_feature:
       min_trigger: 2132900
       force_trigger: 1000000000
       require_percentage: 80
+  - blocktime20s_15_9:
+      min_trigger: 2275826
+      require_percentage: 85
+  - auroraavaxbridge:
+      min_trigger: 2330938
+      require_percentage: 85
 blocktime_param:
   - "blocktimedef": 40
-  - "blocktime20": 20
-  - "blocktime10": 10
+  - "blocktime20s_15_9": 20
 feature_version:
   - instantfinalityv2: 9
+  - blocktime20s_15_9: 10
 transactions_param:
   lowerbound: 15
   upperbound: 100

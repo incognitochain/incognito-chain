@@ -80,6 +80,8 @@ func buildMetaInfo() {
 		IssuingPRVBEP20ResponseMeta,
 		IssuingPLGResponseMeta,
 		IssuingFantomResponseMeta,
+		IssuingAuroraResponseMeta,
+		IssuingAvaxResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 
@@ -378,6 +380,8 @@ func buildMetaInfo() {
 		IssuingPRVBEP20ResponseMeta,
 		IssuingPLGResponseMeta,
 		IssuingFantomResponseMeta,
+		IssuingAuroraResponseMeta,
+		IssuingAvaxResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,
@@ -541,9 +545,9 @@ func IsPortalMetaTypeV3(metaType int) bool {
 	return res
 }
 
-//Checks if a string payment address is supported by the underlying transaction.
+// Checks if a string payment address is supported by the underlying transaction.
 //
-//TODO: try another approach since the function itself is too complicated.
+// TODO: try another approach since the function itself is too complicated.
 func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) (privacy.PaymentAddress, error) {
 	var addr privacy.PaymentAddress
 	var ok bool
@@ -601,11 +605,11 @@ func IsPortalMetaTypeV4(metaType int) bool {
 	return res
 }
 
-//genTokenID generates a (deterministically) random tokenID for the request transaction.
-//From now on, users cannot generate their own tokenID.
-//The generated tokenID is calculated as the hash of the following components:
-//	- The Tx hash
-//	- The shardID at which the request is sent
+// genTokenID generates a (deterministically) random tokenID for the request transaction.
+// From now on, users cannot generate their own tokenID.
+// The generated tokenID is calculated as the hash of the following components:
+//   - The Tx hash
+//   - The shardID at which the request is sent
 func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 	record := txHash + strconv.FormatUint(uint64(shardID), 10)
 
@@ -772,6 +776,14 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 	case BurningFantomRequestMeta:
 		return true
 	case BurningFantomForDepositToSCRequestMeta:
+		return true
+	case BurningAuroraRequestMeta:
+		return true
+	case BurningAvaxRequestMeta:
+		return true
+	case BurningAuroraForDepositToSCRequestMeta:
+		return true
+	case BurningAvaxForDepositToSCRequestMeta:
 		return true
 	default:
 		return false

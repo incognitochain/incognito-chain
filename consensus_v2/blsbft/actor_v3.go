@@ -755,8 +755,8 @@ func (a *actorV3) run() error {
 	return nil
 }
 
-//get lock block hash, which is blockhash that we had send vote message
-//so that, we will not prevote for other block
+// get lock block hash, which is blockhash that we had send vote message
+// so that, we will not prevote for other block
 func (a *actorV3) getLockBlockHash(proposeBlockHeight uint64) (info *ProposeBlockInfo) {
 	for _, proposeBlockInfo := range a.receiveBlockByHash {
 		if proposeBlockInfo.block.GetHeight() == proposeBlockHeight && proposeBlockInfo.IsVoted {
@@ -773,7 +773,7 @@ func (a *actorV3) getLockBlockHash(proposeBlockHeight uint64) (info *ProposeBloc
 	return info
 }
 
-//job to validate propose block
+// job to validate propose block
 func (a *actorV3) validateBlock(proposeBlockInfo *ProposeBlockInfo) error {
 	//not validate if already valid
 	if proposeBlockInfo.IsValid {

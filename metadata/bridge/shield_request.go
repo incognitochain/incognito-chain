@@ -89,6 +89,10 @@ func (request *ShieldRequest) ValidateSanityData(chainRetriever metadataCommon.C
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, fmt.Errorf("Length of data %d need to be in [1..%d]", len(request.Data), config.Param().BridgeAggParam.MaxLenOfPath))
 	}
 	for _, data := range request.Data {
+		if (data.NetworkID == common.AVAXNetworkID || data.NetworkID == common.AURORANetworkID) && shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature not enabled yet"))
+		}
+
 		if data.IncTokenID.IsZeroValue() {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggShieldValidateSanityDataError, errors.New("IncTokenID can not be empty"))
 		}
@@ -105,7 +109,7 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 	}
 	for _, data := range request.Data {
 		switch data.NetworkID {
-		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID:
+		case common.ETHNetworkID, common.BSCNetworkID, common.PLGNetworkID, common.FTMNetworkID, common.AVAXNetworkID:
 			proofData := EVMProof{}
 			err := json.Unmarshal(data.Proof, &proofData)
 			if err != nil {
@@ -117,6 +121,18 @@ func (request *ShieldRequest) ValidateMetadataByItself() bool {
 				return false
 			}
 			return evmShieldRequest.ValidateMetadataByItself()
+		case common.AURORANetworkID:
+			auroraTxId := common.BytesToHash(data.Proof)
+			auroraShieldRequest, err := NewIssuingEVMAuroraRequest(
+				auroraTxId,
+				data.IncTokenID,
+				common.AURORANetworkID,
+				metadataCommon.IssuingUnifiedTokenRequestMeta,
+			)
+			if err != nil {
+				return false
+			}
+			return auroraShieldRequest.ValidateMetadataByItself()
 		case common.DefaultNetworkID:
 			return false
 		default:
@@ -151,6 +167,29 @@ func (request *ShieldRequest) BuildReqActions(tx metadataCommon.Transaction, cha
 				return [][]string{}, err
 			}
 			evmReceipt, err := evmShieldRequest.verifyProofAndParseReceipt()
+			if err != nil {
+				return [][]string{}, err
+			}
+			if evmReceipt == nil {
+				return [][]string{}, errors.Errorf("The evm proof's receipt could not be null.")
+			}
+			content, err := MarshalActionDataForShieldEVMReq(evmReceipt)
+			if err != nil {
+				return [][]string{}, err
+			}
+			extraData = append(extraData, content)
+		case common.AURORANetworkID:
+			auroraTxId := common.BytesToHash(data.Proof)
+			auroraShieldRequest, err := NewIssuingEVMAuroraRequest(
+				auroraTxId,
+				data.IncTokenID,
+				common.AURORANetworkID,
+				metadataCommon.IssuingUnifiedTokenRequestMeta,
+			)
+			if err != nil {
+				return [][]string{}, err
+			}
+			evmReceipt, err := auroraShieldRequest.verifyProofAndParseReceipt()
 			if err != nil {
 				return [][]string{}, err
 			}

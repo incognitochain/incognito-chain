@@ -1,6 +1,6 @@
 package config
 
-//Env variables key
+// Env variables key
 const (
 	NetworkKey          = "INCOGNITO_NETWORK_KEY"
 	NetworkVersionKey   = "INCOGNITO_NETWORK_VERSION_KEY"
@@ -16,6 +16,9 @@ const (
 	BSCHostKey          = "BSC_HOST"
 	PLGHostKey          = "PLG_HOST"
 	FTMHostKey          = "FTM_HOST"
+	AURORAHostKey       = "AURORA_HOST"
+	AVAXHostKey         = "AVAX_HOST"
+	NEARHostKey         = "NEAR_HOST"
 )
 
 // default config
