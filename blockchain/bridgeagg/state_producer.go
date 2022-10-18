@@ -667,12 +667,14 @@ func (sp *stateProducer) burnForCall(
 	} else {
 		rejectedInst := buildRejectedBurnForCallReqInst(*meta, shardID, txReqID, ProducerUpdateStateError)
 		if unifiedVaultExists {
-			return [][]string{rejectedInst}, state, fmt.Errorf("expect non-unified burnTokenID, got %v", meta.BurnTokenID)
+			Logger.log.Errorf("expect non-unified burnTokenID, got %v", meta.BurnTokenID)
+			return [][]string{rejectedInst}, state, nil
 		}
 		var waitingUnshieldDatas []statedb.WaitingUnshieldReqData
 		for _, d := range meta.Data {
 			if d.IncTokenID != meta.BurnTokenID {
-				return [][]string{rejectedInst}, state, fmt.Errorf("non-unified burnTokenID mismatch")
+				Logger.log.Errorf("non-unified burnTokenID mismatch %v - %v", d.IncTokenID, meta.BurnTokenID)
+				return [][]string{rejectedInst}, state, nil
 			}
 			netPrefix, err := getPrefixByNetworkID(d.ExternalNetworkID)
 			if err != nil {
