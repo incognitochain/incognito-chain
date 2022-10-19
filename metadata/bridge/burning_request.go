@@ -67,6 +67,10 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 	isNear := bReq.Type == metadataCommon.BurningNearRequestMeta
 	// validate near unshield address
 	if isNear {
+		if shardViewRetriever.GetTriggeredFeature()["nearbridge"] == 0 {
+			return false, false, fmt.Errorf("feature with metadata %v not enabled yet", bReq.Type)
+		}
+
 		unshieldAddressBytesLength := len([]byte(bReq.RemoteAddress))
 		if unshieldAddressBytesLength < 2 || unshieldAddressBytesLength > 64 {
 			return false, false, fmt.Errorf("invalid near %v external address", bReq.RemoteAddress)

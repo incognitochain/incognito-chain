@@ -157,6 +157,10 @@ auto_enable_feature:
       min_trigger: 1e9
       force_trigger: 1e9
       require_percentage: 100
+  - nearbridge:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20": 20

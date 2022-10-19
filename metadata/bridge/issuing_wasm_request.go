@@ -131,6 +131,10 @@ func (iReq IssuingWasmRequest) ValidateSanityData(chainRetriever metadataCommon.
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestValidateSanityDataError, errors.New("Wrong request info's tx hash"))
 	}
 
+	if shardViewRetriever.GetTriggeredFeature()["nearbridge"] == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature not enabled"))
+	}
+
 	return true, true, nil
 }
 
