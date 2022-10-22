@@ -995,7 +995,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingWasmReq(params interfa
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	meta, err := metadataBridge.NewIssuingWasmRequestFromMap(data, 0, metatype)
+	meta, err := metadataBridge.NewIssuingWasmRequestFromMap(data, metatype)
 	if err != nil {
 		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		Logger.log.Error(rpcErr)

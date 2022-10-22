@@ -16,7 +16,6 @@ import (
 type IssuingWasmRequest struct {
 	TxHash     string
 	IncTokenID common.Hash
-	NetworkID  uint
 	metadataCommon.MetadataBase
 }
 
@@ -83,7 +82,6 @@ func ParseWasmIssuingInstAcceptedContent(instAcceptedContentStr string) (*Issuin
 func NewIssuingWasmRequest(
 	txHash string,
 	incTokenID common.Hash,
-	networkID uint,
 	metaType int,
 ) (*IssuingWasmRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
@@ -92,7 +90,6 @@ func NewIssuingWasmRequest(
 	issuingWasmReq := &IssuingWasmRequest{
 		TxHash:     txHash,
 		IncTokenID: incTokenID,
-		NetworkID:  networkID,
 	}
 	issuingWasmReq.MetadataBase = metadataBase
 	return issuingWasmReq, nil
@@ -100,7 +97,6 @@ func NewIssuingWasmRequest(
 
 func NewIssuingWasmRequestFromMap(
 	data map[string]interface{},
-	networkID uint,
 	metatype int,
 ) (*IssuingWasmRequest, error) {
 	txHash, ok := data["TxHash"].(string)
@@ -115,7 +111,6 @@ func NewIssuingWasmRequestFromMap(
 	req, _ := NewIssuingWasmRequest(
 		txHash,
 		*incTokenID,
-		networkID,
 		metatype,
 	)
 	return req, nil
