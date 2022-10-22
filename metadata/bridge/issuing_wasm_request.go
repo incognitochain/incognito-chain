@@ -13,14 +13,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-type WasmShieldRequestData struct {
-	TxHash uint `json:"TxHash"`
-}
-
 type IssuingWasmRequest struct {
 	TxHash     string
 	IncTokenID common.Hash
-	NetworkID  uint `json:"NetworkID,omitempty"`
+	NetworkID  uint
 	metadataCommon.MetadataBase
 }
 
@@ -107,7 +103,10 @@ func NewIssuingWasmRequestFromMap(
 	networkID uint,
 	metatype int,
 ) (*IssuingWasmRequest, error) {
-	txHash := data["TxHash"].(string)
+	txHash, ok := data["TxHash"].(string)
+	if !ok {
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestNewIssuingWasmRequestFromMapError, errors.Errorf("Invalid near tx hash"))
+	}
 	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestNewIssuingWasmRequestFromMapError, errors.Errorf("TokenID incorrect"))
@@ -152,12 +151,9 @@ func (iReq IssuingWasmRequest) ValidateMetadataByItself() bool {
 }
 
 func (iReq IssuingWasmRequest) Hash() *common.Hash {
-	record := iReq.TxHash
-	record += iReq.MetadataBase.Hash().String()
-	record += iReq.IncTokenID.String()
+	rawBytes, _ := json.Marshal(&iReq)
+	hash := common.HashH(rawBytes)
 
-	// final hash
-	hash := common.HashH([]byte(record))
 	return &hash
 }
 
@@ -190,7 +186,7 @@ func (iReq *IssuingWasmRequest) CalculateSize() uint64 {
 }
 
 func (iReq *IssuingWasmRequest) verifyProofAndParseReceipt() (string, string, uint64, string, error) {
-	// get hosts, minWasmConfirmationBlocks, networkPrefix depend iReq.Type
+	// get hosts, minWasmConfirmationBlocks, networkPrefix depend on iReq.Type
 	hosts, _, minWasmConfirmationBlocks, contractId, err := GetWasmInfoByMetadataType(iReq.Type)
 	if err != nil {
 		metadataCommon.Logger.Log.Errorf("Can not get Wasm info - Error: %+v", err)

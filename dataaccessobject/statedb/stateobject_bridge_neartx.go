@@ -12,12 +12,12 @@ type BridgeNEARTxState struct {
 	uniqueNEARTx []byte
 }
 
-func (ftmTx BridgeNEARTxState) UniqueNEARTx() []byte {
-	return ftmTx.uniqueNEARTx
+func (nearTx BridgeNEARTxState) UniqueNEARTx() []byte {
+	return nearTx.uniqueNEARTx
 }
 
-func (ftmTx *BridgeNEARTxState) SetUniqueNEARTx(uniqueNEARTx []byte) {
-	ftmTx.uniqueNEARTx = uniqueNEARTx
+func (nearTx *BridgeNEARTxState) SetUniqueNEARTx(uniqueNEARTx []byte) {
+	nearTx.uniqueNEARTx = uniqueNEARTx
 }
 
 func NewBridgeNEARTxState() *BridgeNEARTxState {
@@ -28,11 +28,11 @@ func NewBridgeNEARTxStateWithValue(uniqueNEARTx []byte) *BridgeNEARTxState {
 	return &BridgeNEARTxState{uniqueNEARTx: uniqueNEARTx}
 }
 
-func (ftmTx BridgeNEARTxState) MarshalJSON() ([]byte, error) {
+func (nearTx BridgeNEARTxState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueNEARTx []byte
 	}{
-		UniqueNEARTx: ftmTx.uniqueNEARTx,
+		UniqueNEARTx: nearTx.uniqueNEARTx,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -40,7 +40,7 @@ func (ftmTx BridgeNEARTxState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (ftmTx *BridgeNEARTxState) UnmarshalJSON(data []byte) error {
+func (nearTx *BridgeNEARTxState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniqueNEARTx []byte
 	}{}
@@ -48,7 +48,7 @@ func (ftmTx *BridgeNEARTxState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	ftmTx.uniqueNEARTx = temp.UniqueNEARTx
+	nearTx.uniqueNEARTx = temp.UniqueNEARTx
 	return nil
 }
 
@@ -113,22 +113,22 @@ func GenerateBridgeNEARTxObjectKey(uniqueNEARTx []byte) common.Hash {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (ftmTx BridgeNEARTxObject) GetVersion() int {
-	return ftmTx.version
+func (nearTx BridgeNEARTxObject) GetVersion() int {
+	return nearTx.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (ftmTx *BridgeNEARTxObject) SetError(err error) {
-	if ftmTx.dbErr == nil {
-		ftmTx.dbErr = err
+func (nearTx *BridgeNEARTxObject) SetError(err error) {
+	if nearTx.dbErr == nil {
+		nearTx.dbErr = err
 	}
 }
 
-func (ftmTx BridgeNEARTxObject) GetTrie(db DatabaseAccessWarper) Trie {
-	return ftmTx.trie
+func (nearTx BridgeNEARTxObject) GetTrie(db DatabaseAccessWarper) Trie {
+	return nearTx.trie
 }
 
-func (ftmTx *BridgeNEARTxObject) SetValue(data interface{}) error {
+func (nearTx *BridgeNEARTxObject) SetValue(data interface{}) error {
 	var newBridgeNEARTxState = NewBridgeNEARTxState()
 	var ok bool
 	var dataBytes []byte
@@ -143,16 +143,16 @@ func (ftmTx *BridgeNEARTxObject) SetValue(data interface{}) error {
 			return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeNEARTxStateType, reflect.TypeOf(data))
 		}
 	}
-	ftmTx.bridgeNEARTxState = newBridgeNEARTxState
+	nearTx.bridgeNEARTxState = newBridgeNEARTxState
 	return nil
 }
 
-func (ftmTx BridgeNEARTxObject) GetValue() interface{} {
-	return ftmTx.bridgeNEARTxState
+func (nearTx BridgeNEARTxObject) GetValue() interface{} {
+	return nearTx.bridgeNEARTxState
 }
 
-func (ftmTx BridgeNEARTxObject) GetValueBytes() []byte {
-	data := ftmTx.GetValue()
+func (nearTx BridgeNEARTxObject) GetValueBytes() []byte {
+	data := nearTx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
 		panic("failed to marshal bridge BSC tx state")
@@ -160,30 +160,30 @@ func (ftmTx BridgeNEARTxObject) GetValueBytes() []byte {
 	return value
 }
 
-func (ftmTx BridgeNEARTxObject) GetHash() common.Hash {
-	return ftmTx.bridgeNEARTxHash
+func (nearTx BridgeNEARTxObject) GetHash() common.Hash {
+	return nearTx.bridgeNEARTxHash
 }
 
-func (ftmTx BridgeNEARTxObject) GetType() int {
-	return ftmTx.objectType
+func (nearTx BridgeNEARTxObject) GetType() int {
+	return nearTx.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (ftmTx *BridgeNEARTxObject) MarkDelete() {
-	ftmTx.deleted = true
+func (nearTx *BridgeNEARTxObject) MarkDelete() {
+	nearTx.deleted = true
 }
 
-func (ftmTx *BridgeNEARTxObject) Reset() bool {
-	ftmTx.bridgeNEARTxState = NewBridgeNEARTxState()
+func (nearTx *BridgeNEARTxObject) Reset() bool {
+	nearTx.bridgeNEARTxState = NewBridgeNEARTxState()
 	return true
 }
 
-func (ftmTx BridgeNEARTxObject) IsDeleted() bool {
-	return ftmTx.deleted
+func (nearTx BridgeNEARTxObject) IsDeleted() bool {
+	return nearTx.deleted
 }
 
 // value is either default or nil
-func (ftmTx BridgeNEARTxObject) IsEmpty() bool {
+func (nearTx BridgeNEARTxObject) IsEmpty() bool {
 	temp := NewBridgeNEARTxState()
-	return reflect.DeepEqual(temp, ftmTx.bridgeNEARTxState) || ftmTx.bridgeNEARTxState == nil
+	return reflect.DeepEqual(temp, nearTx.bridgeNEARTxState) || nearTx.bridgeNEARTxState == nil
 }
