@@ -103,7 +103,11 @@ func NewIssuingWasmRequestFromMap(
 	if !ok {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestNewIssuingWasmRequestFromMapError, errors.Errorf("Invalid near tx hash"))
 	}
-	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
+	incTokenIDStr, ok := data["IncTokenID"].(string)
+	if !ok {
+		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestNewIssuingWasmRequestFromMapError, errors.Errorf("Invalid incognito token id"))
+	}
+	incTokenID, err := common.Hash{}.NewHashFromStr(incTokenIDStr)
 	if err != nil {
 		return nil, metadataCommon.NewMetadataTxError(metadataCommon.IssuingWasmRequestNewIssuingWasmRequestFromMapError, errors.Errorf("TokenID incorrect"))
 	}
