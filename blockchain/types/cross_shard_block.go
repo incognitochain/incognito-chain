@@ -104,6 +104,9 @@ func (block CrossShardBlock) GetShardID() int {
 func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
+func (block CrossShardBlock) SetValidationField(string) {
+	panic("should not come here!")
+}
 
 func (block CrossShardBlock) GetRound() int {
 	return block.Header.Round

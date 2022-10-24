@@ -106,6 +106,15 @@ const (
 
 	// state prune
 	StoreShardPruneStatusError
+
+	//cache committee from block hash
+	StoreCommmitteeFromBlockCacheError
+	GetCommmitteeFromBlockCacheError
+
+	StoreFFIndexError
+	GetFFIndexError
+	StoreShardStakingTx
+	GetShardStakingTx
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -192,14 +201,21 @@ var ErrCodeMessage = map[int]struct {
 	GetRelayingBNBHeaderError:   {-5002, "Get relaying header bnb error"},
 	GetBNBDataHashError:         {-5003, "Get bnb data hash by block height error"},
 
-	StoreOutcoinByOTAKeyError:  {-6001, "Store output coin by OTA key error"},
-	GetOutcoinByOTAKeyError:    {-6002, "Get output coin by OTA key error"},
-	StoreOTAKeyError:           {-6003, "Store OTA key error"},
-	GetOTAKeyError:             {-6004, "Get OTA keys error"},
-	DeleteOTAKeyError:          {-6005, "Delete OTA keys error"},
-	StoreCoinHashError:         {-6006, "Store coin hash error"},
-	GetCoinHashError:           {-6007, "Get coin hash error"},
-	StoreShardPruneStatusError: {-7001, "Store shard prune status error"},
+	StoreOutcoinByOTAKeyError:          {-6001, "Store output coin by OTA key error"},
+	GetOutcoinByOTAKeyError:            {-6002, "Get output coin by OTA key error"},
+	StoreOTAKeyError:                   {-6003, "Store OTA key error"},
+	GetOTAKeyError:                     {-6004, "Get OTA keys error"},
+	DeleteOTAKeyError:                  {-6005, "Delete OTA keys error"},
+	StoreCoinHashError:                 {-6006, "Store coin hash error"},
+	GetCoinHashError:                   {-6007, "Get coin hash error"},
+	StoreShardPruneStatusError:         {-7001, "Store shard prune status error"},
+	StoreCommmitteeFromBlockCacheError: {-7002, "Store shard prune status error"},
+	GetCommmitteeFromBlockCacheError:   {-7003, "Get shard prune status error"},
+	StoreFFIndexError:                  {-7004, "Store FF Index error"},
+	GetFFIndexError:                    {-7005, "Get FF Index error"},
+
+	StoreShardStakingTx: {-7006, "Store shard stakign error"},
+	GetShardStakingTx:   {-7007, "Get shard staking error"},
 }
 
 type RawdbError struct {
