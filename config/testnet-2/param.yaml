@@ -17,14 +17,15 @@ genesis_param:
 
 committee_size:
   max_shard_committee_size: 32
-  min_shard_committee_size: 4
+  min_shard_committee_size: 12
   min_beacon_committee_size: 4
   max_beacon_committee_size: 4
-  init_shard_committee_size: 4
+  init_shard_committee_size: 12
   init_beacon_committee_size: 4
-  shard_committee_size_key_list_v2: 4
+  shard_committee_size_key_list_v2: 12
   beacon_committee_size_key_list_v2: 4
-  number_of_fixed_shard_block_validators: 4
+  number_of_fixed_shard_block_validators: 12
+  number_of_fixed_shard_validators_v2: 8
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
@@ -33,14 +34,14 @@ block_time:
   min_shard_block_interval: 10s
   max_shard_block_creation: 6s
 staking_amount_shard: 1750000000000
-active_shards: 8
+active_shards: 1
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:
-  number_of_block_in_epoch: 100
+  number_of_block_in_epoch: 10
   number_of_block_in_epoch_v2: 1000000000000
   epoch_v2_break_point: 1000000000000
-  random_time: 50
+  random_time: 5
   random_time_v2: 1000000000000
 eth_contract_address: "0xc157CC3077ddfa425bae12d2F3002668971A4e3d"
 bsc_contract_address: "0x3534C0a523b3A862c06C8CAF61de230f9b408f51"
@@ -57,15 +58,15 @@ swap_committee_param:
   swap_offset: 1
   assign_offset: 2
 consensus_param:
-  consensus_v2_epoch: 15290
-  staking_flow_v2_height: 2051863
-  enable_slashing_height: 2087789
-  assign_rule_v3_height: 3023315
-  enable_slashing_height_v2: 3068072
-  staking_flow_v3_height: 3335020
-  force_not_use_burned_coins: 4211505
-  lemma2_height: 3790429
-  block_producing_v3_height: 3791509
+  consensus_v2_epoch: 1
+  staking_flow_v2_height: 1
+  enable_slashing_height: 1
+  assign_rule_v3_height: 1
+  enable_slashing_height_v2: 1
+  staking_flow_v3_height: 1
+  force_not_use_burned_coins: 1
+  lemma2_height: 1
+  block_producing_v3_height: 1
   byzantine_detector_height: 1000000000000
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
@@ -130,46 +131,13 @@ pdex_param:
 is_enable_bpv3_stats: false
 auto_enable_feature:
   - instantfinality:
-      min_trigger: 4617622
+      min_trigger: 2
       require_percentage: 90
   - instantfinalityv2:
-      min_trigger: 5167674
+      min_trigger: 2
       require_percentage: 90
-  - maxcommitteesize48:
-      min_trigger: 3965040
-      require_percentage: 90
-  - unified_token_23062022:
-      min_trigger: 4762600
-      require_percentage: 90
-  - unified_token_230620222:
-      min_trigger: 4763160
-      require_percentage: 90
-  - unified_token_230620223:
-      min_trigger: 4806400
-      require_percentage: 90
-  - unified_token_230620224:
-      min_trigger: 4831300
-      require_percentage: 90
-  - unified_token_230620225:
-      min_trigger: 4864700
-      require_percentage: 90
-  - unified_token_230620226:
-      min_trigger: 5257096
-      require_percentage: 90
-  - blocktime30s_23_8:
-      min_trigger: 5272311
-      require_percentage: 90
-  - blocktime15s_30_8:
-      min_trigger: 5289626
-      require_percentage: 90
-  - auroraavaxbridge:
-      min_trigger: 5505400
-      require_percentage: 90
-  - unified_token_061020227:
-      min_trigger: 5505400
-      require_percentage: 90
-  - unified_token_230620227:
-      min_trigger: 5507731
+  - reduce_fix_node:
+      min_trigger: 15
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
@@ -179,6 +147,7 @@ feature_version:
   - instantfinalityv2: 9
   - blocktime30s_23_8: 10
   - blocktime15s_30_8: 11
+  - reduce_fix_node: 12
 transactions_param:
   lowerbound: 15
   upperbound: 100
@@ -189,3 +158,4 @@ bridge_agg_param:
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 500 # 0.05% * 1e6
 bc_height_break_point_coin_origin: 4565727
+
