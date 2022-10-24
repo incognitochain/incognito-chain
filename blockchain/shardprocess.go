@@ -815,6 +815,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 						return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 					}
 
+					//update NumberOfFixedShardBlockValidatorV2
+					if feature == REDUCE_FIX_NODE {
+						shardBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					}
 				}
 			}
 		}

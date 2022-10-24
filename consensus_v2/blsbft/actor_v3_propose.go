@@ -238,6 +238,8 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	proposerCommitteePublicKey.FromBase58(block.GetProposer())
 	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
 	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+
 	if err != nil {
 		return err
 	}
@@ -252,6 +254,7 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
 		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
 		ProposerMiningKeyBase58: proposerMiningKeyBase58,
+		NumberOfFixNode:         previousView.GetProposerLength(),
 	}
 
 	//get vote for this propose block (case receive vote faster)
@@ -273,7 +276,7 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+
 	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", previousView.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil
