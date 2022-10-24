@@ -3,6 +3,7 @@ package rawdbv2
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -166,4 +167,22 @@ func GetPruneStatus(db incdb.KeyValueReader) ([]byte, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+func StoreStakingTx(db incdb.KeyValueWriter, sid byte, hash common.Hash, data []byte) error {
+	keyHash := GetStakingTxKey(sid, hash)
+	if err := db.Put(keyHash, data); err != nil {
+		return NewRawdbError(StoreShardStakingTx, err)
+	}
+	return nil
+}
+
+func GetStakingTx(db incdb.KeyValueReader, sid byte, hash common.Hash) ([]byte, error) {
+	keyHash := GetStakingTxKey(sid, hash)
+	data, err := db.Get(keyHash)
+	if err != nil {
+		log.Println("cannot get staking tx", sid, hash.String())
+		return nil, NewRawdbError(GetShardStakingTx, err)
+	}
+	return data, err
 }

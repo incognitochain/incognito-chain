@@ -64,10 +64,23 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
 	// 	return true, true, nil
 	// }
+	isNear := bReq.Type == metadataCommon.BurningNearRequestMeta
+	// validate near unshield address
+	if isNear {
+		if shardViewRetriever.GetTriggeredFeature()["nearbridge"] == 0 {
+			return false, false, fmt.Errorf("feature with metadata %v not enabled yet", bReq.Type)
+		}
 
-	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
-		return false, false, err
+		unshieldAddressBytesLength := len([]byte(bReq.RemoteAddress))
+		if unshieldAddressBytesLength < 2 || unshieldAddressBytesLength > 64 {
+			return false, false, fmt.Errorf("invalid near %v external address", bReq.RemoteAddress)
+		}
+	} else {
+		if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
+			return false, false, err
+		}
 	}
+
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("wrong request info's burned amount")
 	}
@@ -94,7 +107,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 			bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
 			bReq.Type == metadataCommon.BurningAvaxRequestMeta || bReq.Type == metadataCommon.BurningAuroraRequestMeta ||
-			bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta) {
+			bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta ||
+			isNear) {
 		return false, false, fmt.Errorf("metadata type %d is not supported", bReq.Type)
 	}
 
@@ -121,7 +135,8 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 		bReq.Type == metadataCommon.BurningPLGRequestMeta || bReq.Type == metadataCommon.BurningPLGForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningFantomRequestMeta || bReq.Type == metadataCommon.BurningFantomForDepositToSCRequestMeta ||
 		bReq.Type == metadataCommon.BurningAuroraRequestMeta || bReq.Type == metadataCommon.BurningAvaxRequestMeta ||
-		bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta
+		bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta || bReq.Type == metadataCommon.BurningAvaxForDepositToSCRequestMeta ||
+		bReq.Type == metadataCommon.BurningNearRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {

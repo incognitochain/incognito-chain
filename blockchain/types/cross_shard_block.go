@@ -81,7 +81,7 @@ func (block CrossShardBlock) GetBeaconHeight() uint64 {
 	return block.Header.BeaconHeight
 }
 
-//consensus interface
+// consensus interface
 func (block CrossShardBlock) ProposeHash() *common.Hash {
 	panic("Not implement")
 }
@@ -103,6 +103,9 @@ func (block CrossShardBlock) GetShardID() int {
 
 func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
+}
+func (block CrossShardBlock) SetValidationField(string) {
+	panic("should not come here!")
 }
 
 func (block CrossShardBlock) GetRound() int {
@@ -416,9 +419,10 @@ func CreateCrossShardBlock(shardBlock *ShardBlock, shardID byte) (*CrossShardBlo
 }
 
 // VerifyCrossShardBlockUTXO Calculate Final Hash as Hash of:
-//	1. CrossTransactionFinalHash
-//	2. TxTokenDataVoutFinalHash
-//	3. CrossTxTokenPrivacyData
+//  1. CrossTransactionFinalHash
+//  2. TxTokenDataVoutFinalHash
+//  3. CrossTxTokenPrivacyData
+//
 // These hashes will be calculated as comment in getCrossShardDataHash function
 func VerifyCrossShardBlockUTXO(block *CrossShardBlock) bool {
 	var outputCoinHash common.Hash

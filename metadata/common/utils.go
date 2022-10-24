@@ -82,6 +82,7 @@ func buildMetaInfo() {
 		IssuingFantomResponseMeta,
 		IssuingAuroraResponseMeta,
 		IssuingAvaxResponseMeta,
+		IssuingNearResponseMeta,
 		IssuingResponseMeta,
 		InitTokenResponseMeta,
 
@@ -382,6 +383,7 @@ func buildMetaInfo() {
 		IssuingFantomResponseMeta,
 		IssuingAuroraResponseMeta,
 		IssuingAvaxResponseMeta,
+		IssuingNearResponseMeta,
 		PDEWithdrawalRequestMeta,
 		PDEWithdrawalResponseMeta,
 		PDEPRVRequiredContributionRequestMeta,
@@ -784,6 +786,8 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 	case BurningAuroraForDepositToSCRequestMeta:
 		return true
 	case BurningAvaxForDepositToSCRequestMeta:
+		return true
+	case BurningNearRequestMeta:
 		return true
 	default:
 		return false

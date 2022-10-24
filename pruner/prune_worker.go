@@ -10,8 +10,8 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
-func pruneByHeight(db incdb.Database, shardID int, stateBloom *trie.StateBloom, height uint64) (uint64, uint64, error) {
-	h, err := rawdbv2.GetFinalizedShardBlockHashByIndex(db, byte(shardID), height)
+func pruneByHeight(db incdb.Database, blockStorage *blockchain.BlockStorage, shardID int, stateBloom *trie.StateBloom, height uint64) (uint64, uint64, error) {
+	h, err := blockStorage.GetFinalizedShardBlockHashByIndex(height)
 	if err != nil {
 		return 0, 0, err
 	}

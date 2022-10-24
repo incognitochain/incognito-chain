@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
-func StoreTransactionIndex(db incdb.Database, txHash common.Hash, blockHash common.Hash, index int) error {
+func StoreTransactionIndex(db incdb.KeyValueWriter, txHash common.Hash, blockHash common.Hash, index int) error {
 	key := GetTransactionHashKey(txHash)
 	value := []byte(blockHash.String() + string(splitter) + strconv.Itoa(index))
 	if err := db.Put(key, value); err != nil {

@@ -48,6 +48,7 @@ plg_contract_address: "0x141aa0C4c7d27f7B526a254202F979B60F056333"
 ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
 aurora_contract_address: "0x14D0cf3bC307aA15DA40Aa4c8cc2A2a81eF96B3a"
 avax_contract_address: "0x30fb06E97a6CD370BCE994A88C428F9F3aB6Ec28"
+near_contract_address: "incognito.prv.testnet"
 prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
 prv_bep20_contract_address: "0x0C61C7F99DeE0270a5934F1520d109dc44A51d6c"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
@@ -147,12 +148,16 @@ auto_enable_feature:
   - blocktime20:
       min_trigger: 2000
       force_trigger: 1000000000
-      require_percentage: 90 
+      require_percentage: 90
   - blocktime10:
       min_trigger: 10892003
       force_trigger: 1000000000
       require_percentage: 90
   - auroraavaxbridge:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 100
+  - nearbridge:
       min_trigger: 1e9
       force_trigger: 1e9
       require_percentage: 100
@@ -165,7 +170,7 @@ feature_version:
 
 transactions_param:
   lowerbound: 15
-  upperbound: 100 
+  upperbound: 100
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed

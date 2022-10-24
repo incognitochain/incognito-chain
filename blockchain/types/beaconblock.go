@@ -160,7 +160,7 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-//propose hash of beacon contain consensus info
+// propose hash of beacon contain consensus info
 func (beaconBlock BeaconBlock) ProposeHash() *common.Hash {
 	hash := beaconBlock.Header.ProposeHash()
 	return &hash
@@ -248,6 +248,9 @@ func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
 }
 func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData
+}
+func (beaconBlock *BeaconBlock) SetValidationField(valData string) {
+	beaconBlock.ValidationData = valData
 }
 
 func (beaconBlock BeaconBlock) GetRound() int {

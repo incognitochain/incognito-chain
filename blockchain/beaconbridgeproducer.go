@@ -118,6 +118,11 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningAvaxConfirmForDepositToSCMeta, inst, beaconHeight, common.AVAXPrefix)
 			newInst = [][]string{burningConfirm}
 
+		case metadata.BurningNearRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningNearConfirmMeta, inst, beaconHeight, common.NEARPrefix)
+			newInst = [][]string{burningConfirm}
+
 		default:
 			continue
 		}
