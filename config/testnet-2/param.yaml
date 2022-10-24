@@ -172,7 +172,7 @@ auto_enable_feature:
       min_trigger: 5507731
       require_percentage: 90
   - nearbridge:
-      min_trigger: 5575639
+      min_trigger: 5600073
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
