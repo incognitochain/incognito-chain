@@ -94,9 +94,11 @@ type rawShortNode struct {
 	Val node
 }
 
-func (n rawShortNode) canUnload(uint16, uint16) bool { panic("this should never end up in a live trie") }
-func (n rawShortNode) cache() (hashNode, bool)       { panic("this should never end up in a live trie") }
-func (n rawShortNode) fstring(ind string) string     { panic("this should never end up in a live trie") }
+func (n rawShortNode) canUnload(uint16, uint16) bool {
+	panic("this should never end up in a live trie")
+}
+func (n rawShortNode) cache() (hashNode, bool)   { panic("this should never end up in a live trie") }
+func (n rawShortNode) fstring(ind string) string { panic("this should never end up in a live trie") }
 
 // cachedNode is all the information we know about a single cached node in the
 // memory database write layer.
@@ -364,6 +366,7 @@ func (intermediateWriter *IntermediateWriter) node(hash common.Hash) node {
 	// Content unavailable in memory, attempt to retrieve from disk
 	enc, err := intermediateWriter.diskdb.Get(hash[:])
 	if err != nil || enc == nil {
+		fmt.Println("cannot resolve", hash.String(), hash.Bytes())
 		return nil
 	}
 	if intermediateWriter.cleans != nil {

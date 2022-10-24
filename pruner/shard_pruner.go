@@ -16,13 +16,14 @@ import (
 
 type ShardPruner struct {
 	//state
-	shardID     int
-	db          incdb.Database
-	stateBloom  *trie.StateBloom
-	bloomSize   uint64
-	role        string
-	finalHeight uint64
-	bestView    *blockchain.ShardBestState
+	shardID      int
+	blockStorage *blockchain.BlockStorage
+	db           incdb.Database
+	stateBloom   *trie.StateBloom
+	bloomSize    uint64
+	role         string
+	finalHeight  uint64
+	bestView     *blockchain.ShardBestState
 
 	//lock
 	lock            sync.Mutex
@@ -39,11 +40,12 @@ type ShardPruner struct {
 	nodes                uint64
 }
 
-func NewShardPruner(sid int, db incdb.Database) *ShardPruner {
+func NewShardPruner(sid int, db incdb.Database, blockStorage *blockchain.BlockStorage) *ShardPruner {
 	//init object
 	sp := &ShardPruner{
-		shardID: sid,
-		db:      db,
+		shardID:      sid,
+		db:           db,
+		blockStorage: blockStorage,
 	}
 	sp.restoreStatus()
 	if sp.lastProcessingHeight == 0 {
@@ -145,7 +147,7 @@ func (s *ShardPruner) PruneByHeight() error {
 				return nil
 			}
 
-			storage, node, err := pruneByHeight(s.db, s.shardID, s.stateBloom, height)
+			storage, node, err := pruneByHeight(s.db, s.blockStorage, s.shardID, s.stateBloom, height)
 			s.storage += storage
 			s.nodes += node
 			if err != nil {

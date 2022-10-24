@@ -2,10 +2,10 @@ package syncker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,8 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -59,16 +57,14 @@ func NewSynckerManager() *SynckerManager {
 
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
+	synckerManager.Blockchain = config.Blockchain
 
-	//check preload beacon
-	preloadAddr := configpkg.Config().PreloadAddress
-	if preloadAddr != "" {
-		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
-			fmt.Println(err)
-			Logger.Infof("Preload beacon fail!")
-		} else {
-			config.Blockchain.RestoreBeaconViews()
-		}
+	//check if bootstrap node is set, if yes then we should preload beacon database
+	bootstrapAddrs := configpkg.Config().BootstrapAddress
+	if bootstrapAddrs != "" {
+		bootstrapServers := strings.Split(bootstrapAddrs, ",")
+		bootstrap := blockchain.NewBootstrapManager(bootstrapServers, synckerManager.Blockchain)
+		bootstrap.BootstrapBeacon()
 	}
 
 	if os.Getenv("FULLNODE") == "1" {
@@ -92,7 +88,6 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
 	}
-	synckerManager.Blockchain = config.Blockchain
 
 	//watch commitee change
 	go synckerManager.manageSyncProcess()
@@ -132,7 +127,6 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
 	}
 
-	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
 	if time.Now().Unix()-synckerManager.Blockchain.GetBeaconBestState().BestBlock.GetProduceTime() > 4*60*60 {
@@ -167,17 +161,6 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 			}
 
 			if _, ok := wantedShard[byte(sid)]; ok {
-				//check preload shard
-				if preloadAddr != "" {
-					if syncProc.status != RUNNING_SYNC { //run only when start
-						if err := preloadDatabase(sid, int(syncProc.Chain.GetEpoch()), preloadAddr, synckerManager.config.Blockchain.GetShardChainDatabase(byte(sid)), nil); err != nil {
-							fmt.Println(err)
-							Logger.Infof("Preload shard %v fail!", sid)
-						} else {
-							synckerManager.config.Blockchain.RestoreShardViews(byte(sid))
-						}
-					}
-				}
 				syncProc.start()
 			} else {
 				syncProc.stop()
@@ -271,7 +254,6 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 	}
 
 	bc := synckerManager.config.Blockchain
-	beaconDB := bc.GetBeaconChainDatabase()
 	for i := 0; i < synckerManager.config.Blockchain.GetActiveShardNumber(); i++ {
 		for {
 			if i == int(toShard) {
@@ -295,19 +277,13 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curVie
 			Logger.Info("nextCrossShardInfo.NextCrossShardHeight", i, toShard, requestHeight, nextCrossShardInfo)
 
 			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
-			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(beaconDB, *beaconHash)
+			blk, _, err := synckerManager.Blockchain.BeaconChain.BlockStorage.GetBlock(*beaconHash)
 			if err != nil {
 				Logger.Errorf("Get beacon block by hash %v failed\n", beaconHash.String())
 				break
 			}
 
-			beaconBlock := new(types.BeaconBlock)
-			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
-			if err != nil {
-				Logger.Errorf("Cannot unmarshal beaconBlock %v at syncker\n", beaconBlock.GetHeight()-1)
-				return nil
-			}
-
+			beaconBlock := blk.(*types.BeaconBlock)
 			beaconFinalView := bc.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 
 			Logger.Infof("beaconFinalView: %v\n", beaconFinalView.Hash().String())

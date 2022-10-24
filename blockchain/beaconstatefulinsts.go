@@ -51,6 +51,7 @@ func collectStatefulActions(
 			metadata.IssuingFantomRequestMeta,
 			metadata.IssuingAuroraRequestMeta,
 			metadata.IssuingAvaxRequestMeta,
+			metadata.IssuingNearRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -366,6 +367,23 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTxs != nil {
 					accumulatedValues.UniqAVAXTxsUsed = append(accumulatedValues.UniqAVAXTxsUsed, uniqTxs...)
+				}
+
+			case metadata.IssuingNearRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingWasmBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqNEARTxsUsed,
+					config.Param().NearContractAddressStr,
+					common.NEARPrefix,
+					statedb.IsNEARTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqNEARTxsUsed = append(accumulatedValues.UniqNEARTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:

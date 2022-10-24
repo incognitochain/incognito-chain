@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-//test repropose block
+// test repropose block
 // -> previous valid block
 // -> lock block hash
-//test prevote
+// test prevote
 // -> only prevote if not lock other hash
 func TestActorV3_ReproposeBlock(t *testing.T) {
 	backendLog := common.NewBackend(logWriter{})

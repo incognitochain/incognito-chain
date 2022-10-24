@@ -255,7 +255,7 @@ func (f *FinalityProof) Verify(
 	return nil
 }
 
-//previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
+// previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
 type ReProposeBlockInfo struct {
 	PreviousBlockHash common.Hash
 	Producer          string
