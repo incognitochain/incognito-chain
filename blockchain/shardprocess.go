@@ -1514,7 +1514,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
 				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
 				metadata.IssuingPLGRequestMeta, metadata.IssuingFantomRequestMeta,
-				metadata.IssuingAuroraRequestMeta, metadata.IssuingAvaxRequestMeta:
+				metadata.IssuingAuroraRequestMeta, metadata.IssuingAvaxRequestMeta,
+				metadata.IssuingNearRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadataBridge.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

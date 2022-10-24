@@ -394,7 +394,7 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	return chain.InsertWithPrevValidationData(block, newValidationData)
 }
 
-//this get consensus data for beacon
+// this get consensus data for beacon
 func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusData {
 	consensusData := map[int]types.BlockConsensusData{}
 	bestViewBlock := chain.multiView.GetBestView().GetBlock().(*types.ShardBlock)
@@ -428,7 +428,7 @@ func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusDat
 	return consensusData
 }
 
-//this is only call when insert block successfully, the previous block is replace
+// this is only call when insert block successfully, the previous block is replace
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
 	if hasBlock, err := chain.Blockchain.HasShardBlockByHash(previousBlockHash); err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
@@ -491,7 +491,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	return nil
 }
 
-//consensusData contain beacon finality consensus data
+// consensusData contain beacon finality consensus data
 func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
 	replaceBlockHash := consensusData.BlockHash
 	//retrieve block from database and replace consensus field
@@ -583,7 +583,7 @@ func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalP
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
-//CommitteesV2 get committees by block for shardChain
+// CommitteesV2 get committees by block for shardChain
 // Input block must be ShardBlock
 func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	var isShardView bool
@@ -607,7 +607,7 @@ func (chain *ShardChain) CommitteeStateVersion() int {
 	return chain.GetBestState().shardCommitteeState.Version()
 }
 
-//BestViewCommitteeFromBlock ...
+// BestViewCommitteeFromBlock ...
 func (chain *ShardChain) BestViewCommitteeFromBlock() common.Hash {
 	return chain.GetBestState().CommitteeFromBlock()
 }
@@ -620,7 +620,7 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 	return chain.multiView.GetBestView().CommitteeStateVersion()
 }
 
-//ProposerByTimeSlot ...
+// ProposerByTimeSlot ...
 func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
 		ts,

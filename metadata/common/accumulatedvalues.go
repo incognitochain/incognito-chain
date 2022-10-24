@@ -13,6 +13,7 @@ type AccumulatedValues struct {
 	UniqPRVEVMTxsUsed [][]byte
 	UniqPLGTxsUsed    [][]byte
 	UniqFTMTxsUsed    [][]byte
+	UniqNEARTxsUsed   [][]byte
 	UniqAURORATxsUsed [][]byte
 	UniqAVAXTxsUsed   [][]byte
 	DBridgeTokenPair  map[string][]byte
@@ -34,6 +35,8 @@ func (ac *AccumulatedValues) UpdateUniqTxsUsed(networkID uint8, uniqTxsUsed [][]
 		ac.UniqAURORATxsUsed = uniqTxsUsed
 	case common.AVAXNetworkID:
 		ac.UniqAVAXTxsUsed = uniqTxsUsed
+	case common.NEARNetworkID:
+		ac.UniqNEARTxsUsed = uniqTxsUsed
 	default:
 		return nil, errors.New("Invalid networkID")
 	}

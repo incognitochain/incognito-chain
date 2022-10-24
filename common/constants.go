@@ -127,6 +127,7 @@ const (
 	ExternalBridgeTokenLength = 20
 	EVMAddressLength          = 40
 	UnifiedTokenPrefix        = "UT"
+	NEARPrefix                = "NER"
 )
 
 // Bridge, PDE & Portal statuses for RPCs
@@ -254,6 +255,7 @@ const (
 	FTMNetworkID
 	AURORANetworkID
 	AVAXNetworkID
+	NEARNetworkID
 )
 
 const (

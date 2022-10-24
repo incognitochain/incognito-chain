@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-//Actor
+// Actor
 type Actor interface {
 	// GetConsensusName - retrieve consensus name
 	GetConsensusName() string

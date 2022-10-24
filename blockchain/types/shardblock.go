@@ -378,7 +378,7 @@ func (shardHeader *ShardHeader) String() string {
 	return res
 }
 
-//hash related to consensus
+// hash related to consensus
 func (shardBlock ShardBlock) ProposeHash() *common.Hash {
 	hash := shardBlock.Header.ProposeHash()
 	return &hash

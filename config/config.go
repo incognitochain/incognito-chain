@@ -21,7 +21,7 @@ func Config() *config {
 	return c
 }
 
-//AbortConfig use for unit test only
+// AbortConfig use for unit test only
 // DO NOT use this function for development process
 func AbortConfig() {
 	c = &config{}

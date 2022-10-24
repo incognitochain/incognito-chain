@@ -107,6 +107,15 @@ const (
 	BridgeAggConvertRequestValidateSanityDataError
 	BridgeAggShieldValidateSanityDataError
 	BridgeAggUnshieldValidateSanityDataError
+
+	// near bridge
+	IssuingWasmRequestDecodeInstructionError
+	IssuingWasmRequestUnmarshalJsonError
+	IssuingWasmRequestNewIssuingWasmRequestFromMapError
+	IssuingWasmRequestValidateTxWithBlockChainError
+	IssuingWasmRequestValidateSanityDataError
+	IssuingWasmRequestBuildReqActionsError
+	IssuingWasmRequestVerifyProofAndParseReceipt
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -207,6 +216,15 @@ var ErrCodeMessage = map[int]struct {
 	BridgeAggConvertRequestValidateSanityDataError: {-12001, "Convert request sanity error"},
 	BridgeAggShieldValidateSanityDataError:         {-12002, "Shield request sanity error"},
 	BridgeAggUnshieldValidateSanityDataError:       {-12003, "Unshield request sanity error"},
+
+	// near bridge error definition
+	IssuingWasmRequestDecodeInstructionError:            {-1301, "Can not decode instruction"},
+	IssuingWasmRequestUnmarshalJsonError:                {-1302, "Can not unmarshall json"},
+	IssuingWasmRequestNewIssuingWasmRequestFromMapError: {-1303, "Can no new issuing wasm request from map"},
+	IssuingWasmRequestValidateTxWithBlockChainError:     {-1304, "Validate tx with block chain error"},
+	IssuingWasmRequestValidateSanityDataError:           {-1305, "Validate sanity data error"},
+	IssuingWasmRequestBuildReqActionsError:              {-1306, "Build request action error"},
+	IssuingWasmRequestVerifyProofAndParseReceipt:        {-1307, "Verify proof and parse receipt"},
 }
 
 type MetadataTxError struct {

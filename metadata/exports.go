@@ -232,6 +232,11 @@ const (
 
 	BurningAvaxForDepositToSCRequestMeta = metadataCommon.BurningAvaxForDepositToSCRequestMeta
 	BurningAvaxConfirmForDepositToSCMeta = metadataCommon.BurningAvaxConfirmForDepositToSCMeta
+
+	IssuingNearRequestMeta  = metadataCommon.IssuingNearRequestMeta
+	IssuingNearResponseMeta = metadataCommon.IssuingNearResponseMeta
+	BurningNearRequestMeta  = metadataCommon.BurningNearRequestMeta
+	BurningNearConfirmMeta  = metadataCommon.BurningNearConfirmMeta
 )
 
 // export error codes

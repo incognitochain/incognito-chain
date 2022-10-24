@@ -65,7 +65,7 @@ func (s *PrunerManager) Start() error {
 	}
 }
 
-//run parallel based on available CPU
+// run parallel based on available CPU
 func (s *PrunerManager) OfflinePrune() {
 	cpus := runtime.NumCPU()
 	semNum := cpus / 2

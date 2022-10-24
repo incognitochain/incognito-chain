@@ -56,6 +56,7 @@ type param struct {
 	FtmContractAddressStr            string                       `mapstructure:"ftm_contract_address" description:"smart contract of FTM for bridge"`
 	AuroraContractAddressStr         string                       `mapstructure:"aurora_contract_address" description:"smart contract of AUR for bridge"`
 	AvaxContractAddressStr           string                       `mapstructure:"avax_contract_address" description:"smart contract of AVX for bridge"`
+	NearContractAddressStr           string                       `mapstructure:"near_contract_address" description:"smart contract of NEAR for bridge"`
 	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`

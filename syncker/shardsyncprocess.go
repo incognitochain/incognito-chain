@@ -133,7 +133,7 @@ func (s *ShardSyncProcess) stop() {
 	s.crossShardSyncProcess.stop()
 }
 
-//helper function to access map atomically
+// helper function to access map atomically
 func (s *ShardSyncProcess) getShardPeerStates() map[string]ShardPeerState {
 	res := make(chan map[string]ShardPeerState)
 	s.actionCh <- func() {
@@ -146,7 +146,7 @@ func (s *ShardSyncProcess) getShardPeerStates() map[string]ShardPeerState {
 	return <-res
 }
 
-//periodically check pool and insert shard block to chain
+// periodically check pool and insert shard block to chain
 var insertShardTimeCache, _ = lru.New(10000)
 
 func (s *ShardSyncProcess) insertShardBlockFromPool() {

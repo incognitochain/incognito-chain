@@ -198,6 +198,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithIssuingAVAXReq:     (*HttpServer).handleCreateAndSendTxWithIssuingAVAXReq,
 	createAndSendBurningAURORARequest:     (*HttpServer).handleCreateAndSendBurningAURORARequest,
 	createAndSendBurningAVAXRequest:       (*HttpServer).handleCreateAndSendBurningAVAXRequest,
+	createAndSendTxWithIssuingNearReq:     (*HttpServer).handleCreateAndSendTxWithIssuingNearReq,
+	createAndSendBurningNearRequest:       (*HttpServer).handleCreateAndSendBurningNearRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -212,6 +214,7 @@ var HttpHandler = map[string]httpHandler{
 	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
 	getAURORABurnProof:       (*HttpServer).handleGetAURORABurnProof,
 	getAVAXBurnProof:         (*HttpServer).handleGetAVAXBurnProof,
+	getNearBurnProof:         (*HttpServer).handleGetNearBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
