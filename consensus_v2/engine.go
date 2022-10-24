@@ -146,10 +146,18 @@ func (engine *Engine) WatchCommitteeChange() {
 
 	miningProc := blsbft.Actor(nil)
 	for chainID, validators := range validatorGroup {
+		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		chainName := common.BeaconChainKey
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
 		}
+		//check chain sync up
+		shardFinalizeHeight := engine.config.Blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState).BestShardHeight[byte(chainID)]
+		shardHeight := engine.config.Blockchain.ShardChain[chainID].GetBestView().GetHeight()
+		if shardHeight < shardFinalizeHeight-10 {
+			continue
+		}
+
 		oldVersion := engine.version[chainID]
 		engine.updateVersion(chainID)
 
@@ -169,7 +177,6 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
 		engine.bftProcess[chainID].Start()
-		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = engine.bftProcess[chainID]
 	}
 

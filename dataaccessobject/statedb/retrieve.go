@@ -8,6 +8,12 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
+func (stateDB *StateDB) GetIterator() *trie.Iterator {
+	temp := stateDB.trie.NodeIterator(nil)
+	it := trie.NewIterator(temp)
+	return it
+}
+
 func (stateDB *StateDB) Recheck() error {
 	fmt.Println("[prune] start recheck")
 	temp := stateDB.trie.NodeIterator(nil)

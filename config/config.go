@@ -108,8 +108,8 @@ type config struct {
 	Libp2pPrivateKey string `mapstructure:"p2p_private_key" long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
 
 	//backup
-	PreloadAddress   string `mapstructure:"preload_address" yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
-	ForceBackup      bool   `mapstructure:"force_backup" long:"forcebackup" description:"Force node to backup"`
+	BootstrapAddress string `mapstructure:"bootstrap" yaml:"bootstrap" long:"bootstrap" description:"Endpoint of fullnodes to download backup database"`
+	Backup           bool   `mapstructure:"backup" long:"backup" description:"backup mode"`
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 
 	// Optional : db to store coin by OTA key (for v2)
@@ -122,6 +122,8 @@ type config struct {
 	StateBloomSize       uint64 `mapstructure:"state_bloom_size" long:"statebloomsize" description:"state pruning bloom size"`
 	EnableAutoPrune      bool   `mapstructure:"enable_auto_prune" long:"enableautoprune" description:"enable auto prune"`
 	NumBlockTriggerPrune uint64 `mapstructure:"num_block_trigger_prune" long:"numblocktriggerprune" description:"number block trigger prune"`
+	//backup and bootstrap
+	BackupInterval int64 `mapstructure:"backup_interval" long:"backupinterval" description:"Backup Interval"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -363,6 +365,11 @@ func (c *config) verify() {
 			err := errors.New("discover peers server is empty")
 			panic(err)
 		}
+	}
+
+	if c.Backup && c.BootstrapAddress != "" {
+		err := errors.New("Backup and Bootstrap cannot be set together!")
+		panic(err)
 	}
 }
 
