@@ -37,8 +37,8 @@ type Engine struct {
 	currentMiningProcess blsbft.Actor
 }
 
-//just get role of first validator
-//this function support NODE monitor (getmininginfo) which assumed running only 1 validator
+// just get role of first validator
+// this function support NODE monitor (getmininginfo) which assumed running only 1 validator
 func (s *Engine) GetUserRole() (string, string, int) {
 	for _, validator := range s.validators {
 		return validator.State.Layer, validator.State.Role, validator.State.ChainID
@@ -146,6 +146,7 @@ func (engine *Engine) WatchCommitteeChange() {
 
 	miningProc := blsbft.Actor(nil)
 	for chainID, validators := range validatorGroup {
+		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		chainName := common.BeaconChainKey
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
@@ -157,6 +158,7 @@ func (engine *Engine) WatchCommitteeChange() {
 				continue
 			}
 		}
+
 		oldVersion := engine.version[chainID]
 		engine.updateVersion(chainID)
 
@@ -176,7 +178,6 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
 		engine.bftProcess[chainID].Start()
-		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = engine.bftProcess[chainID]
 	}
 
@@ -383,7 +384,7 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	return types.BFT_VERSION
 }
 
-//BFTProcess for testing only
+// BFTProcess for testing only
 func (engine *Engine) BFTProcess() map[int]blsbft.Actor {
 	return engine.bftProcess
 }

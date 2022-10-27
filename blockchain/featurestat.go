@@ -101,6 +101,9 @@ func (bc *BlockChain) InitFeatureStat() {
 }
 
 func (bc *BlockChain) SendFeatureStat() {
+	if bc.BeaconChain.GetMultiView() == nil || bc.BeaconChain.GetBestView() == nil {
+		return
+	}
 	beaconView := bc.BeaconChain.GetBestView().(*BeaconBestState)
 
 	//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint

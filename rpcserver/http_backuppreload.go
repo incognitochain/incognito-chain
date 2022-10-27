@@ -1,87 +1,125 @@
 package rpcserver
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/gob"
+	"encoding/json"
 	"fmt"
-	"io"
-	"net"
-	"os"
-
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/pkg/errors"
+	"io"
+	"io/ioutil"
+	"log"
+	"net"
+	"os"
+	"path"
+	"strconv"
+	"time"
 )
 
-func (httpServer *HttpServer) handleSetBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramArray, ok := params.([]interface{})
-	if ok && len(paramArray) == 1 {
-		setBackup, ok := paramArray[0].(bool)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("set backup is invalid"))
-		}
-		config.Param().IsBackup = setBackup
-		return setBackup, nil
-	}
-	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("no param"))
-}
-
 func (httpServer *HttpServer) handleGetLatestBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramArray, ok := params.([]interface{})
-	//fmt.Println("handleGetLatestBackup", paramArray)
-	if ok && len(paramArray) == 1 {
-
-		chainName, ok := paramArray[0].(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainName is invalid"))
-		}
-		epoch, _ := httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", chainName))
-		return struct {
-			LatestEpoch int
-		}{
-			epoch,
-		}, nil
+	if !config.Config().Backup {
+		return nil, nil
 	}
 
-	return 0, nil
+	latest := httpServer.GetBlockchain().BackupManager.GetLastestBootstrap()
+	b, _ := json.Marshal(latest)
+	fmt.Println("GetLastestBootstrap", b)
+	return latest, nil
 }
 
-func (httpServer *HttpServer) handleDownloadBackup(conn net.Conn, params interface{}) {
+type FileObject struct {
+	Name string
+	Size uint64
+}
+
+func (httpServer *HttpServer) handleGetBootstrapStateDB(conn net.Conn, params interface{}) {
+	if !config.Config().Backup {
+		return
+	}
+
 	paramArray, ok := params.([]interface{})
-	if ok && len(paramArray) >= 1 {
-		chainName, ok := paramArray[0].(string)
-		if !ok {
-			return
+	if !ok || len(paramArray) != 4 {
+		return
+	}
+
+	checkpoint, ok := paramArray[0].(string)
+	chainID, ok := paramArray[1].(float64)
+	dbType, ok := paramArray[2].(string)
+	blkHeight, ok := paramArray[3].(float64)
+
+	httpServer.GetBlockchain().BackupManager.StartDownload(checkpoint)
+	startTime := time.Now()
+	defer httpServer.GetBlockchain().BackupManager.StopDownload(checkpoint)
+
+	checkPointFolder := httpServer.GetBlockchain().BackupManager.GetBackupReader(checkpoint, int(chainID))
+	ff_fileId := uint64(0)
+	if dbType == "blockKV" {
+		checkPointFolder = path.Join(checkPointFolder, "blockstorage", "blockKV")
+	} else if dbType == "block" {
+		checkPointFolder = path.Join(checkPointFolder, "blockstorage")
+		ff_fileId = httpServer.GetBlockchain().BackupManager.GetFileID(int(chainID), uint64(blkHeight))
+	}
+
+	_, err := conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
+	if err != nil {
+		return
+	}
+
+	//traverse all files -> send (name,hash,body)
+	files, err := ioutil.ReadDir(checkPointFolder)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	for _, file := range files {
+		if time.Since(startTime).Hours() > 24 {
+			break
 		}
-		var fd *os.File
-		var err error
-		if len(paramArray) == 1 {
-			_, filepath := httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", chainName))
-			fd, err = os.Open(filepath)
+
+		if file.IsDir() {
+			continue
+		}
+		if dbType == "block" {
+			fileNameID, err := strconv.ParseInt(file.Name(), 10, 64)
 			if err != nil {
-				fmt.Println(err)
-				return
+				log.Println(err)
 			}
-			defer fd.Close()
-		} else if len(paramArray) == 2 {
-			otherChain, ok := paramArray[1].(string)
-			if !ok {
-				return
+			if ff_fileId > uint64(fileNameID) {
+				continue
 			}
-			_, filepath := httpServer.config.BlockChain.GetBeaconChainDatabase().LatestBackup(fmt.Sprintf("../../backup/%v", otherChain))
-			fd, err = os.Open(filepath)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer fd.Close()
 		}
-		_, err = conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n"))
-		if err != nil {
-			return
+
+		fileInfo := FileObject{
+			file.Name(), uint64(file.Size()),
 		}
-		_, err = io.Copy(conn, fd)
+		data := new(bytes.Buffer)
+		enc := gob.NewEncoder(data)
+		err = enc.Encode(fileInfo)
 		if err != nil {
-			return
+			panic(err)
+		}
+
+		var dataLen = make([]byte, 8)
+		binary.LittleEndian.PutUint64(dataLen, uint64(data.Len()))
+		_, err = conn.Write(dataLen)
+		_, err = conn.Write(data.Bytes())
+		fd, err := os.Open(path.Join(checkPointFolder, file.Name()))
+		if err != nil {
+			panic(err)
+		}
+
+		n, err := io.Copy(conn, fd)
+
+		if file.Size() != int64(n) {
+			panic("not correct " + file.Name())
+		}
+		if err != nil {
+			break
 		}
 	}
+
 	return
 }

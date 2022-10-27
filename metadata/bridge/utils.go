@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"math/big"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -259,6 +260,36 @@ func ExtractRedepositEVMDataFromReceipt(
 	return result, nil
 }
 
+func VerifyWasmData(
+	stateDB *statedb.StateDB, listTxUsed [][]byte,
+	isTxHashIssued func(stateDB *statedb.StateDB, uniqueEthTx []byte) (bool, error),
+	externalShieldTx string, incognitoAddress string,
+) (byte, error) {
+	uniqTxCryptoHash, err := hash.NewCryptoHashFromBase58(externalShieldTx)
+	if err != nil {
+		return 0, fmt.Errorf("WARNING: invalid external shield tx request %v", externalShieldTx)
+	}
+	uniqTxTemp := [32]byte(uniqTxCryptoHash)
+	uniqTx := uniqTxTemp[:]
+	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
+	if isUsedInBlock {
+		return 0, fmt.Errorf("WARNING: already issued for the hash in current block: %v", uniqTx)
+	}
+	isIssued, err := isTxHashIssued(stateDB, uniqTx)
+	if err != nil {
+		return 0, fmt.Errorf("WARNING: an issue occured while checking the bridge tx hash is issued or not: %v", err)
+	}
+	if isIssued {
+		return 0, fmt.Errorf("WARNING: already issued for the hash in previous blocks: %v", uniqTx)
+	}
+
+	receivingShardID, err := GetShardIDFromPaymentAddressStr(incognitoAddress)
+	if err != nil {
+		return 0, fmt.Errorf("WARNING: an error occurred while getting shard id from payment address: %v", err)
+	}
+	return receivingShardID, nil
+}
+
 func VerifyTokenPair(
 	stateDBs map[int]*statedb.StateDB,
 	ac *metadataCommon.AccumulatedValues,
@@ -293,13 +324,15 @@ func FindExternalTokenID(stateDB *statedb.StateDB, incTokenID common.Hash, prefi
 		return nil, err
 	}
 
-	if len(tokenID) < common.ExternalBridgeTokenLength {
-		return nil, errors.New("invalid external token id")
-	}
+	if prefix != common.NEARPrefix {
+		if len(tokenID) < common.ExternalBridgeTokenLength {
+			return nil, errors.New("invalid external token id")
+		}
 
-	prefixLen := len(prefix)
-	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.New(fmt.Sprintf("invalid prefix in external tokenID %v", tokenID))
+		prefixLen := len(prefix)
+		if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) || len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
+			return nil, errors.New(fmt.Sprintf("invalid prefix in external tokenID %v", tokenID))
+		}
 	}
 	return tokenID, nil
 }
@@ -410,6 +443,90 @@ func VerifyProofAndParseEVMReceipt(
 	}
 
 	return constructedReceipt, nil
+}
+
+func VerifyWasmShieldTxId(
+	txHash string,
+	hosts []string,
+	minWasmConfirmationBlocks int,
+	contractId string,
+) (string, string, uint64, string, error) {
+	tx, err := hash.NewCryptoHashFromBase58(txHash)
+	if err != nil {
+		return "", "", 0, "", errors.New("Invalid transaction hash")
+	}
+	ctx := context.Background()
+	accountId := "incognito"
+	var token, incognitoAddress, extractedContractId string
+	var amount uint64
+	isValid := false
+	for _, h := range hosts {
+		rpcClient, err := nearclient.NewClient(h)
+		if err != nil {
+			continue
+		}
+		txStatus, err := rpcClient.TransactionStatus(ctx, tx, accountId)
+		if err != nil {
+			continue
+		}
+		if len(txStatus.Status.Failure) != 0 {
+			return "", "", 0, "", errors.New("Transaction shield is failed")
+		}
+		minedBlock, err := rpcClient.BlockDetails(ctx, block.BlockHash(txStatus.TransactionOutcome.BlockHash))
+		if err != nil {
+			continue
+		}
+		// verify block not forked
+		blockByHeight, err := rpcClient.BlockDetails(ctx, block.BlockID(uint(minedBlock.Header.Height)))
+		if err != nil {
+			continue
+		}
+		if blockByHeight.Header.Hash.String() != txStatus.TransactionOutcome.BlockHash.String() {
+			return "", "", 0, "", errors.New("Transaction is in forked chain")
+		}
+
+		latestBlock, err := rpcClient.BlockDetails(ctx, block.FinalityFinal())
+		if err != nil {
+			continue
+		}
+		if latestBlock.Header.Height < minedBlock.Header.Height+uint64(minWasmConfirmationBlocks) {
+			return "", "", 0, "", errors.New("The shield transaction is not finalized")
+		}
+
+		// detect shield event
+		for _, receiptOutCome := range txStatus.ReceiptsOutcome {
+			if len(receiptOutCome.Outcome.Status.Failure) != 0 {
+				isValid = false
+				break
+			}
+			if isValid {
+				continue
+			}
+			if receiptOutCome.Outcome.ExecutorID != contractId {
+				continue
+			}
+			if len(receiptOutCome.Outcome.Logs) == 0 {
+				continue
+			}
+			events := strings.Split(receiptOutCome.Outcome.Logs[0], " ")
+			if len(events) != 3 {
+				continue
+			}
+			amount, err = strconv.ParseUint(events[2], 10, 64)
+			if err != nil {
+				continue
+			}
+			token = events[1]
+			incognitoAddress = events[0]
+			extractedContractId = receiptOutCome.Outcome.ExecutorID
+			isValid = true
+		}
+		if isValid {
+			return incognitoAddress, token, amount, extractedContractId, nil
+		}
+		break
+	}
+	return "", "", 0, "", errors.New("The endpoints are not response or set or invalid transaction")
 }
 
 type NormalResult struct {
@@ -637,6 +754,21 @@ func GetEVMInfoByMetadataType(metadataType int, networkID uint) ([]string, strin
 	return hosts, networkPrefix, minConfirmationBlocks, checkEVMHardFork, nil
 }
 
+func GetWasmInfoByMetadataType(metadataType int) ([]string, string, int, string, error) {
+	if metadataType == metadataCommon.IssuingNearRequestMeta {
+		wasmParam := config.Param().NEARParam
+		contractAddress := config.Param().NearContractAddressStr
+		wasmParam.GetFromEnv()
+		hosts := wasmParam.Host
+
+		minConfirmationBlocks := metadataCommon.NearConfirmationBlocks
+		networkPrefix := common.NEARPrefix
+
+		return hosts, networkPrefix, minConfirmationBlocks, contractAddress, nil
+	}
+	return nil, "", 0, "", errors.New("Invalid meta data type")
+}
+
 func PickAndParseLogMapFromReceiptByContractAddr(
 	constructedReceipt *types.Receipt,
 	ethContractAddressStr string,
@@ -719,6 +851,8 @@ func IsBurningConfirmMetaType(metaType int) bool {
 	case metadataCommon.BurningAuroraConfirmMeta, metadataCommon.BurningAuroraConfirmForDepositToSCMeta:
 		return true
 	case metadataCommon.BurningAvaxConfirmMeta, metadataCommon.BurningAvaxConfirmForDepositToSCMeta:
+		return true
+	case metadataCommon.BurningNearConfirmMeta:
 		return true
 	default:
 		return false

@@ -468,11 +468,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	prevShardBlockValidatorIndex := ""
 	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		prevShardBlock, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlockWithLatestValidationData(shardBlock.GetPrevHash())
 		if err != nil {
 			return nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
 		}
-		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+		prevShardBlockValidatorIndex = prevShardBlock.(*types.ShardBlock).ValidationData
 	}
 
 	//Get Shard State from Block
@@ -755,7 +755,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		//if number of each shard committee update < 95%, not generate inst
 		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
 			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
-			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*95/100)) {
+			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*89/100)) {
 				invalidCondition = true
 				break
 			}

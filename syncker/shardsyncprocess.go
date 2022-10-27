@@ -3,7 +3,9 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,6 +44,8 @@ type ShardSyncProcess struct {
 	consensus             peerv2.ConsensusData
 	lock                  *sync.RWMutex
 	lastInsert            string
+	startSyncTime         time.Time
+	testStall             bool
 }
 
 func NewShardSyncProcess(
@@ -105,14 +109,29 @@ func NewShardSyncProcess(
 					}
 				}
 			case <-ticker.C:
+				maxBlockHeight := uint64(0)
 				for sender, ps := range s.shardPeerState {
 					if ps.Timestamp < time.Now().Unix()-20 {
 						delete(s.shardPeerState, sender)
+					}
+					if maxBlockHeight < ps.BestViewHeight {
+						maxBlockHeight = ps.BestViewHeight
 					}
 				}
 				if lastHeight != s.Chain.GetBestViewHeight() {
 					s.lastInsert = time.Now().Format("2006-01-02T15:04:05-0700")
 					lastHeight = s.Chain.GetBestViewHeight()
+				}
+
+				if s.status == RUNNING_SYNC {
+					if s.startSyncTime.IsZero() {
+						continue
+					}
+					t, _ := time.Parse("2006-01-02T15:04:05-0700", s.lastInsert)
+					//start sync is more 1 hour ago, latest sync is more than 1 hour ago, blockheight is behind 100 block
+					if time.Since(s.startSyncTime).Hours() >= 1 && time.Since(t).Hours() >= 1 && lastHeight+100 < maxBlockHeight {
+						s.bootstrap(true)
+					}
 				}
 			}
 		}
@@ -121,19 +140,40 @@ func NewShardSyncProcess(
 	return s
 }
 
-func (s *ShardSyncProcess) start() {
-	if s.status == RUNNING_SYNC {
-		return
+func (s *ShardSyncProcess) bootstrap(force bool) {
+	s.status = BOOTSTRAP_SYNC
+	bootstrapAddrs := config.Config().BootstrapAddress
+	if bootstrapAddrs != "" {
+		bootstrapServers := strings.Split(bootstrapAddrs, ",")
+		bootstrap := blockchain.NewBootstrapManager(bootstrapServers, s.blockchain)
+		bootstrap.BootstrapShard(s.shardID, force)
 	}
 	s.status = RUNNING_SYNC
+	s.testStall = false
+}
+
+func (s *ShardSyncProcess) start() {
+	if s.status == RUNNING_SYNC || s.status == BOOTSTRAP_SYNC {
+		return
+	}
+	s.bootstrap(false)
+	s.status = RUNNING_SYNC
+
+}
+
+func (s *ShardSyncProcess) Stall() {
+	s.testStall = true
 }
 
 func (s *ShardSyncProcess) stop() {
+	if s.status == BOOTSTRAP_SYNC {
+		return
+	}
 	s.status = STOP_SYNC
 	s.crossShardSyncProcess.stop()
 }
 
-//helper function to access map atomically
+// helper function to access map atomically
 func (s *ShardSyncProcess) getShardPeerStates() map[string]ShardPeerState {
 	res := make(chan map[string]ShardPeerState)
 	s.actionCh <- func() {
@@ -146,7 +186,7 @@ func (s *ShardSyncProcess) getShardPeerStates() map[string]ShardPeerState {
 	return <-res
 }
 
-//periodically check pool and insert shard block to chain
+// periodically check pool and insert shard block to chain
 var insertShardTimeCache, _ = lru.New(10000)
 
 func (s *ShardSyncProcess) insertShardBlockFromPool() {
@@ -159,7 +199,9 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			time.AfterFunc(time.Millisecond*500, s.insertShardBlockFromPool)
 		}
 	}()
-
+	if s.testStall {
+		return
+	}
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
 		blocks := s.shardPool.GetBlockByPrevHash(viewHash)
@@ -209,9 +251,14 @@ func (s *ShardSyncProcess) syncShardProcess() {
 	for {
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
+			s.startSyncTime = time.Time{}
 			s.isCatchUp = false
 			time.Sleep(time.Second * 5)
 			continue
+		} else {
+			if s.startSyncTime.IsZero() {
+				s.startSyncTime = time.Now()
+			}
 		}
 
 		for peerID, pState := range s.getShardPeerStates() {
@@ -277,6 +324,10 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 }
 
 func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {
+	if s.testStall {
+		return 0
+	}
+
 	if pState.processed {
 		return
 	}

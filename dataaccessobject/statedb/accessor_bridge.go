@@ -135,6 +135,31 @@ func IsFTMTxHashIssued(stateDB *StateDB, uniqueFTMTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertNEARTxHashIssued(stateDB *StateDB, uniqueNEARTx []byte) error {
+	key := GenerateBridgeNEARTxObjectKey(uniqueNEARTx)
+	value := NewBridgeNEARTxStateWithValue(uniqueNEARTx)
+	err := stateDB.SetStateObject(BridgeNEARTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertNEARTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsNEARTxHashIssued(stateDB *StateDB, uniqueNEARTx []byte) (bool, error) {
+	key := GenerateBridgeNEARTxObjectKey(uniqueNEARTx)
+	nearTxState, has, err := stateDB.getBridgeNEARTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsNEARTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(nearTxState.UniqueNEARTx(), uniqueNEARTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func InsertAURORATxHashIssued(stateDB *StateDB, uniqueAURORATx []byte) error {
 	key := GenerateBridgeAURORATxObjectKey(uniqueAURORATx)
 	value := NewBridgeAURORATxStateWithValue(uniqueAURORATx)

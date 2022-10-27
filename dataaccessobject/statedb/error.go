@@ -91,6 +91,8 @@ const (
 	ErrInvalidBridgeAggVaultStateType          = "invalid bridge agg vault state type"
 	ErrInvalidBridgeAggWaitingUnshieldReqType  = "invalid bridge agg waiting unshield request state type"
 	ErrInvalidBridgeAggParamStateType          = "invalid bridge agg param state type"
+
+	ErrInvalidBridgeNEARTxStateType = "invalid bridge near tx state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -315,6 +317,10 @@ const (
 	// Bridge Agg
 	GetBridgeAggStatusError
 	StoreBridgeAggStatusError
+
+	// Near bridge
+	BridgeInsertNEARTxHashIssuedError
+	IsNEARTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -507,6 +513,10 @@ var ErrCodeMessage = map[int]struct {
 	// bridge agg
 	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},
 	StoreBridgeAggStatusError: {-15109, "Store bridge agg status Error"},
+
+	// near bridge
+	BridgeInsertNEARTxHashIssuedError: {-15110, "Insert near shield transaction error"},
+	IsNEARTxHashIssuedError:           {-15111, "Is Near Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

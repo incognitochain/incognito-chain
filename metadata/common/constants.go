@@ -238,6 +238,12 @@ const (
 	// pAVAX ( avalanche )
 	BurningAvaxForDepositToSCRequestMeta = 358
 	BurningAvaxConfirmForDepositToSCMeta = 162
+
+	// incognito mode for Near
+	IssuingNearRequestMeta  = 335
+	IssuingNearResponseMeta = 336
+	BurningNearRequestMeta  = 337
+	BurningNearConfirmMeta  = 163
 )
 
 var minerCreatedMetaTypes = []int{
@@ -250,6 +256,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingPRVBEP20ResponseMeta,
 	IssuingPLGResponseMeta,
 	IssuingFantomResponseMeta,
+	IssuingNearResponseMeta,
 	IssuingAuroraResponseMeta,
 	IssuingAvaxResponseMeta,
 	ReturnStakingMeta,
@@ -316,6 +323,7 @@ const (
 	FantomConfirmationBlocks = 5
 	AuroraConfirmationBlocks = 5
 	AvaxConfirmationBlocks   = 15
+	NearConfirmationBlocks   = 5
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
@@ -397,6 +405,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningAvaxConfirmMeta),
 	strconv.Itoa(BurningAuroraConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningAvaxConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningNearConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{

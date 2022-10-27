@@ -352,7 +352,7 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 	return nil
 }
 
-//ProposerByTimeSlot ...
+// ProposerByTimeSlot ...
 func GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey, numberOfFixedShardBlockValidator int) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
 		ts,

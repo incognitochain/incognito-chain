@@ -337,16 +337,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
-	previousShardBlockData, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), previousBlockHash)
+	preBlk, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlock(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(FetchPreviousBlockError, err)
 	}
+	previousShardBlock := preBlk.(*types.ShardBlock)
 
-	previousShardBlock := types.ShardBlock{}
-	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonShardBlockError, err)
-	}
 	// Verify shardBlock height with parent shardBlock
 	if previousShardBlock.Header.Height+1 != shardBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive shardBlock height %+v but get %+v", previousShardBlock.Header.Height+1, shardBlock.Header.Height))
@@ -463,7 +459,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	//Get beacon hash by height in db
 	//If hash not found then fail to verify
-	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), shardBlock.Header.BeaconHeight)
+	beaconHash, err := blockchain.BeaconChain.BlockStorage.GetFinalizedBeaconBlock(shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
@@ -976,7 +972,7 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	}
 
 	startTimeVerifyPostProcessingShardBlock := time.Now()
-	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
+	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//if hash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot); !isOk {
 	//	return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard staking root hash to be %+v but get %+v", shardBlock.Header.StakingTxRoot, hash))
 	//}
@@ -1136,12 +1132,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
 	listTxHashes := []string{}
+	blockchain.ShardChain[shardID].BlockStorage.StoreTXIndex(shardBlock)
 	for index, tx := range shardBlock.Body.Transactions {
-		Logger.log.Infof("Process storing tx %v, index %x, shard %v, height %v, blockHash %v\n", tx.Hash().String(), index, shardID, blockHeight, blockHash.String())
 		listTxHashes = append(listTxHashes, tx.Hash().String())
-		if err := rawdbv2.StoreTransactionIndex(blockchain.GetShardChainDatabase(shardID), *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
-			return NewBlockChainError(FetchAndStoreTransactionError, err)
-		}
 		// Process Transaction Metadata
 		metaType := tx.GetMetadataType()
 		if metaType == metadata.WithDrawRewardResponseMeta {
@@ -1297,7 +1290,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	//statedb===========================END
-	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
+	if err := blockchain.ShardChain[shardID].BlockStorage.StoreBlock(shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
@@ -1317,7 +1310,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			if oldFinalView != nil && storeBlock.GetHeight() <= oldFinalView.GetHeight() {
 				break
 			}
-			err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
+			err := blockchain.ShardChain[shardID].BlockStorage.StoreFinalizedShardBlock(storeBlock.GetHeight(), *storeBlock.Hash())
 			if err != nil {
 				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
@@ -1338,7 +1331,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			}
 		}
 	} else { //instant finality
-		blockchain.storeFinalizeShardBlockByBeaconView(batchData, shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
+		blockchain.storeFinalizeShardBlockByBeaconView(shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
 	}
 
 	if err != nil {
@@ -1359,30 +1352,12 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	//TODO: @hy check this txDB only use  to verify incoming tx
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
-	if !config.Config().ForceBackup {
-		return nil
-	}
-
-	backupPoint := false
-	for _, beaconBlock := range beaconBlocks {
-		if blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetHeight() + 1) {
-			backupPoint = true
-		}
-	}
-
-	if backupPoint {
-		err := blockchain.GetShardChainDatabase(newShardState.ShardID).Backup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		if err != nil {
-			blockchain.GetShardChainDatabase(newShardState.ShardID).RemoveBackup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		}
-	}
-
 	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil
 }
 
-func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyValueWriter, shardID byte, finalizedBlockHash common.Hash) error {
+func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(shardID byte, finalizedBlockHash common.Hash) error {
 	finalizedBlockView := blockchain.ShardChain[shardID].multiView.GetViewByHash(finalizedBlockHash)
 	if finalizedBlockView == nil {
 		finalizedBlockView = blockchain.ShardChain[shardID].multiView.GetExpectedFinalView()
@@ -1390,15 +1365,15 @@ func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(db incdb.KeyVa
 
 	finalizedBlock := finalizedBlockView.GetBlock()
 	for {
-		_, err := rawdbv2.GetFinalizedShardBlockHashByIndex(blockchain.GetShardChainDatabase(shardID), shardID, finalizedBlock.GetHeight())
+		_, err := blockchain.ShardChain[shardID].BlockStorage.GetFinalizedShardBlockHashByIndex(finalizedBlock.GetHeight())
 		if err == nil { //already insert
 			break
 		}
-		confirmHash, err := rawdbv2.GetBeaconConfirmInstantFinalityShardBlock(blockchain.GetBeaconChainDatabase(), shardID, finalizedBlock.GetHeight())
+		confirmHash, err := blockchain.BeaconChain.BlockStorage.GetBeaconConfirmShardBlockByHeight(shardID, finalizedBlock.GetHeight())
 		if err == nil && confirmHash.String() == finalizedBlock.Hash().String() {
 			fmt.Println("============== StoreFinalizedShardBlockHashByIndex", shardID, finalizedBlock.GetHeight(), finalizedBlock.Hash().String())
 			blockchain.ShardChain[shardID].multiView.FinalizeView(*confirmHash)
-			err = rawdbv2.StoreFinalizedShardBlockHashByIndex(db, shardID, finalizedBlock.GetHeight(), *finalizedBlock.Hash())
+			err = blockchain.ShardChain[shardID].BlockStorage.StoreFinalizedShardBlock(finalizedBlock.GetHeight(), *finalizedBlock.Hash())
 			if err != nil {
 				return NewBlockChainError(StoreBeaconBlockError, err)
 			}
@@ -1519,7 +1494,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta,
 				metadata.IssuingPRVERC20RequestMeta, metadata.IssuingPRVBEP20RequestMeta,
 				metadata.IssuingPLGRequestMeta, metadata.IssuingFantomRequestMeta,
-				metadata.IssuingAuroraRequestMeta, metadata.IssuingAvaxRequestMeta:
+				metadata.IssuingAuroraRequestMeta, metadata.IssuingAvaxRequestMeta,
+				metadata.IssuingNearRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					acceptedContent, err := metadataBridge.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {

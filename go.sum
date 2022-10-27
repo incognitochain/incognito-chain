@@ -110,6 +110,8 @@ github.com/eteu-technologies/golang-uint128 v1.1.2-eteu h1:hEc9sN76qbV0l40GUq2lM
 github.com/eteu-technologies/golang-uint128 v1.1.2-eteu/go.mod h1:5Vr5yDsJV9eBl44ziSgt1xDZbVfJv4+IpqnUf0wa8t4=
 github.com/eteu-technologies/near-api-go v0.0.1 h1:nYinLfSNIPYgxCQLOgug1eOYMq99xmn/dTriqXVmlco=
 github.com/eteu-technologies/near-api-go v0.0.1/go.mod h1:yNWEYxhMGw0rIAaJfNnDsOG3dHs/y85RDiUGKVGy+oc=
+github.com/eteu-technologies/near-api-go v0.0.2-0.20220525104145-c042eac16f21 h1:7rSGgzt9qL9HcBpwCelCTCNZAILv49MqrrEMOOF4YSM=
+github.com/eteu-technologies/near-api-go v0.0.2-0.20220525104145-c042eac16f21/go.mod h1:yNWEYxhMGw0rIAaJfNnDsOG3dHs/y85RDiUGKVGy+oc=
 github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6 h1:dh8n8lldXURQjoTMEFflYHgSWIIIiIeqN7+0MeLZXfY=
 github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6/go.mod h1:PwpWDrCLZrV+tfrhqqF6kPknbISMHaJv9Ln3kPCZLwY=
 github.com/flynn/noise v0.0.0-20180327030543-2492fe189ae6 h1:u/UEqS66A5ckRmS4yNpjmVH56sVtS/RfclBAYocb4as=

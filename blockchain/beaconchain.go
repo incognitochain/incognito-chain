@@ -3,13 +3,15 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"path"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -22,6 +24,7 @@ type BeaconChain struct {
 
 	BlockGen            *BlockGenerator
 	Blockchain          *BlockChain
+	BlockStorage        *BlockStorage
 	hashHistory         *lru.Cache
 	ChainName           string
 	Ready               bool //when has peerstate
@@ -31,9 +34,13 @@ type BeaconChain struct {
 
 func NewBeaconChain(multiView multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
 	committeeInfoCache, _ := lru.New(100)
+	cfg := config.Config()
+	ffPath := path.Join(cfg.DataDir, cfg.DatabaseDir, "beacon", "blockstorage")
+	bs := NewBlockStorage(blockchain.GetBeaconChainDatabase(), ffPath, -1, false)
 	chain := &BeaconChain{
 		multiView:           multiView,
 		BlockGen:            blockGen,
+		BlockStorage:        bs,
 		Blockchain:          blockchain,
 		ChainName:           chainName,
 		committeesInfoCache: committeeInfoCache,
@@ -280,8 +287,7 @@ func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate
 
 func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
-	return err == nil
+	return chain.BlockStorage.IsExisted(*blkHash)
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
@@ -356,7 +362,8 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 	Logger.log.Info("Replace beacon block improving finality", string(b))
 
 	//rewrite to database
-	if err = rawdbv2.StoreBeaconBlockByHash(chain.GetChainDatabase(), replaceBlockHash, beaconBlk); err != nil {
+	err = chain.BlockStorage.StoreBlock(beaconBlk)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -505,20 +512,33 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
-// CommitteesByShardID ...
+//CommitteesByShardID ...
+var CommitteeFromBlockCache, _ = lru.New(500)
+
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	var committees []incognitokey.CommitteePublicKey
+	committees := []incognitokey.CommitteePublicKey{}
 	var err error
-	res, has := chain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
-	if !has {
-		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
-		if err != nil {
-			return committees, err
-		}
-		chain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), committees)
-	} else {
-		committees = res.([]incognitokey.CommitteePublicKey)
+
+	cache := CommitteeFromBlockCache
+	cacheKey := fmt.Sprintf("%v-%v", shardID, hash.String())
+	tempCommittees, ok := cache.Get(cacheKey)
+	if ok {
+		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
+		return committees, nil
 	}
+
+	committees, err = rawdbv2.GetCacheCommitteeFromBlock(chain.BlockStorage.blockStorageDB, hash, int(shardID))
+	if len(committees) > 0 {
+		cache.Add(cacheKey, committees)
+		return committees, nil
+	}
+
+	committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
+	if len(committees) > 0 {
+		cache.Add(cacheKey, committees)
+		return committees, err
+	}
+
 	return committees, nil
 }
 
