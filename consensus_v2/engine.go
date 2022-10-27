@@ -149,6 +149,13 @@ func (engine *Engine) WatchCommitteeChange() {
 		chainName := common.BeaconChainKey
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
+
+			//check chain sync up
+			shardFinalizeHeight := engine.config.Blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState).BestShardHeight[byte(chainID)]
+			shardHeight := engine.config.Blockchain.ShardChain[chainID].GetBestView().GetHeight()
+			if shardHeight+10 < shardFinalizeHeight {
+				continue
+			}
 		}
 		oldVersion := engine.version[chainID]
 		engine.updateVersion(chainID)
