@@ -25,6 +25,7 @@ committee_size:
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
+  number_of_fixed_shard_validators_v2: 6
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
@@ -135,6 +136,9 @@ auto_enable_feature:
   - instantfinalityv2:
       min_trigger: 5167674
       require_percentage: 90
+  - reduce_fix_node:
+      min_trigger: 1e9
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 3965040
       require_percentage: 90
@@ -179,6 +183,7 @@ feature_version:
   - instantfinalityv2: 9
   - blocktime30s_23_8: 10
   - blocktime15s_30_8: 11
+  - reduce_fix_node: 12
 transactions_param:
   lowerbound: 15
   upperbound: 100
