@@ -49,6 +49,9 @@ func collectStatefulActions(
 			metadata.IssuingPRVBEP20RequestMeta,
 			metadata.IssuingPLGRequestMeta,
 			metadata.IssuingFantomRequestMeta,
+			metadata.IssuingAuroraRequestMeta,
+			metadata.IssuingAvaxRequestMeta,
+			metadata.IssuingNearRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -328,6 +331,59 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 				if uniqTxs != nil {
 					accumulatedValues.UniqFTMTxsUsed = append(accumulatedValues.UniqFTMTxsUsed, uniqTxs...)
+				}
+
+			case metadata.IssuingAuroraRequestMeta:
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqAURORATxsUsed,
+					config.Param().AuroraContractAddressStr,
+					common.AURORAPrefix,
+					statedb.IsAURORATxHashIssued,
+					false,
+				)
+				if uniqTxs != nil {
+					accumulatedValues.UniqAURORATxsUsed = append(accumulatedValues.UniqAURORATxsUsed, uniqTxs...)
+				}
+
+			case metadata.IssuingAvaxRequestMeta:
+				var uniqTxs [][]byte
+				newInst, uniqTxs, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqAVAXTxsUsed,
+					config.Param().AvaxContractAddressStr,
+					common.AVAXPrefix,
+					statedb.IsAVAXTxHashIssued,
+					false,
+				)
+				if uniqTxs != nil {
+					accumulatedValues.UniqAVAXTxsUsed = append(accumulatedValues.UniqAVAXTxsUsed, uniqTxs...)
+				}
+
+			case metadata.IssuingNearRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingWasmBridgeReq(
+					sDBs,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqNEARTxsUsed,
+					config.Param().NearContractAddressStr,
+					common.NEARPrefix,
+					statedb.IsNEARTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqNEARTxsUsed = append(accumulatedValues.UniqNEARTxsUsed, uniqTx)
 				}
 
 			case metadata.PDEContributionMeta:

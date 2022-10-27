@@ -544,7 +544,7 @@ func getPdexv3PoolPairs(
 			BeaconTimeStamp: beaconTimeStamp,
 			PoolPairs:       &poolPairStates,
 		}
-		return res, nil		
+		return res, nil
 	default:
 		return nil, NewRPCError(GetPdexv3StateError, errors.New("Can't recognize verbosity"))
 	}

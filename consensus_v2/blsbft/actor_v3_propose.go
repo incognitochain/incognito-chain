@@ -40,8 +40,8 @@ func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInter
 	return block
 }
 
-//check if node should propose in this timeslot
-//if yes, then create and send propose block message
+// check if node should propose in this timeslot
+// if yes, then create and send propose block message
 func (a *actorV3) maybeProposeBlock() error {
 	time1 := time.Now()
 	var err error
@@ -208,7 +208,7 @@ func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock 
 	return true
 }
 
-//on receive propose message, store it into mem and db
+// on receive propose message, store it into mem and db
 func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)

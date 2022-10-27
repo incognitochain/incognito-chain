@@ -5,10 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -17,6 +15,8 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"math/big"
+	"strconv"
 )
 
 type stateProducer struct{}
@@ -176,9 +176,18 @@ func (sp *stateProducer) shield(
 		// validate shielding proof
 		networkType, _ := metadataBridge.GetNetworkTypeByNetworkID(shieldData.NetworkID)
 		switch networkType {
-		case common.EVMNetworkType:
+		case common.EVMNetworkType, common.AURORANetworkID:
 			// unmarshal proof and receipt
-			proofData, txReceipt, err := UnmarshalEVMShieldProof(shieldData.Proof, action.ExtraData[i])
+			var uniqTx []byte
+			var txReceipt *types.Receipt
+			if networkType == common.EVMNetworkType {
+				var proofData *metadataBridge.EVMProof
+				proofData, txReceipt, err = UnmarshalEVMShieldProof(shieldData.Proof, action.ExtraData[i])
+				uniqTx = append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
+			} else {
+				_, txReceipt, err = UnmarshalEVMShieldProof([]byte(`{}`), action.ExtraData[i])
+				uniqTx = shieldData.Proof
+			}
 			if err != nil {
 				Logger.log.Errorf("[BridgeAgg] Can not unmarshal shielding proof - Error %v", err)
 				rejectedInst := buildRejectedInst(
@@ -203,7 +212,6 @@ func (sp *stateProducer) shield(
 				incAddrStr = incAddr
 				key, _ := wallet.Base58CheckDeserialize(incAddr)
 				shardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
-				uniqTx := append(proofData.BlockHash[:], []byte(strconv.Itoa(int(proofData.TxIndex)))...)
 				redepositDataLst = append(redepositDataLst, metadataBridge.DepositEventData{
 					Amount:          extAmount,
 					ReceiverStr:     incAddr,
@@ -329,7 +337,7 @@ func (sp *stateProducer) shield(
 
 	var resInst [][]string
 	if len(acceptedShieldData) > 0 {
-	 	// build accepted instruction
+		// build accepted instruction
 		// incAddrStr was validated in func ExtractIssueEVMDataFromReceipt => don't catch error here
 		key, _ := wallet.Base58CheckDeserialize(incAddrStr)
 		receivingShardID, _ := metadataBridge.GetShardIDFromPaymentAddress(key.KeySet.PaymentAddress)
@@ -593,7 +601,7 @@ func (sp *stateProducer) burnForCall(
 	useUnifiedToken := meta.BurnTokenID != meta.Data[0].IncTokenID
 	vaults, errVault := clonedState.CloneVaultsByUnifiedTokenID(meta.BurnTokenID)
 	unifiedVaultExists := errVault == nil
-	if useUnifiedToken {		
+	if useUnifiedToken {
 		if !unifiedVaultExists {
 			Logger.log.Errorf("[BridgeAgg] UnifiedTokenID is not found: %v", meta.BurnTokenID)
 			rejectedInst := buildRejectedBurnForCallReqInst(
@@ -659,12 +667,14 @@ func (sp *stateProducer) burnForCall(
 	} else {
 		rejectedInst := buildRejectedBurnForCallReqInst(*meta, shardID, txReqID, ProducerUpdateStateError)
 		if unifiedVaultExists {
-			return [][]string{rejectedInst}, state, fmt.Errorf("expect non-unified burnTokenID, got %v", meta.BurnTokenID)
+			Logger.log.Errorf("expect non-unified burnTokenID, got %v", meta.BurnTokenID)
+			return [][]string{rejectedInst}, state, nil
 		}
 		var waitingUnshieldDatas []statedb.WaitingUnshieldReqData
 		for _, d := range meta.Data {
 			if d.IncTokenID != meta.BurnTokenID {
-				return [][]string{rejectedInst}, state, fmt.Errorf("non-unified burnTokenID mismatch")
+				Logger.log.Errorf("non-unified burnTokenID mismatch %v - %v", d.IncTokenID, meta.BurnTokenID)
+				return [][]string{rejectedInst}, state, nil
 			}
 			netPrefix, err := getPrefixByNetworkID(d.ExternalNetworkID)
 			if err != nil {

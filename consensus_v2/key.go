@@ -79,7 +79,7 @@ func (s *Engine) GetNodeMiningPublicKeys() (userPks []*incognitokey.CommitteePub
 	return userPks
 }
 
-//legacy code -> get all key type  of 1 mining key
+// legacy code -> get all key type  of 1 mining key
 func (engine *Engine) GetAllMiningPublicKeys() []string {
 	var keys []string
 	for keyType, _ := range engine.userMiningPublicKeys.MiningPubKey {

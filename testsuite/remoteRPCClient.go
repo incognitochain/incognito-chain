@@ -3,6 +3,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -288,6 +289,57 @@ func (r *RemoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int)
 		return resp.Result, nil
 	}
 }
+
+func (r *RemoteRPCClient) GetLatestBackup() (res blockchain.BootstrapProcess, err error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getlatestbackup",
+		"params":  []interface{}{},
+		"id":      1,
+	})
+	if err != nil {
+		return res, err
+	}
+	body, err := r.sendRequest(requestBody)
+
+	if err != nil {
+		return res, err
+	}
+
+	resp := struct {
+		Result blockchain.BootstrapProcess
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+	if err != nil {
+		return res, err
+	}
+	return resp.Result, nil
+
+}
+
+func (r *RemoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbootstrapstatedb",
+		"params":  []interface{}{checkpoint, cid, dbType, offset},
+		"id":      1,
+	})
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	//TODO: stream body and then parse
+	return nil
+}
+
 func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",

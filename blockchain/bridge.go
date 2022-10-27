@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/common"
@@ -45,9 +45,18 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 		strconv.Itoa(metadata.BurningBSCConfirmMeta), strconv.Itoa(metadata.BurningPRVERC20ConfirmMeta),
 		strconv.Itoa(metadata.BurningPRVBEP20ConfirmMeta), strconv.Itoa(metadata.BurningPBSCConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningPLGConfirmMeta),
-		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningFantomConfirmMeta):
+		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningFantomConfirmMeta),
+		strconv.Itoa(metadata.BurningAuroraConfirmMeta), strconv.Itoa(metadata.BurningAvaxConfirmMeta),
+		strconv.Itoa(metadata.BurningAuroraConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
+		if err != nil {
+			return nil, err
+		}
+
+	case strconv.Itoa(metadata.BurningNearConfirmMeta):
+		var err error
+		flatten, err = decodeNearBurningConfirmInst(inst)
 		if err != nil {
 			return nil, err
 		}
@@ -156,6 +165,47 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	return flatten, nil
 }
 
+// decodeNearBurningConfirmInst decodes and flattens a BurningConfirm instruction
+func decodeNearBurningConfirmInst(inst []string) ([]byte, error) {
+	if len(inst) < 8 {
+		return nil, errors.New("invalid length of BurningConfirm inst")
+	}
+	m, errMeta := strconv.Atoi(inst[0])
+	s, errShard := strconv.Atoi(inst[1])
+	metaType := byte(m)
+	shardID := byte(s)
+	tokenID, _, errToken := base58.Base58Check{}.Decode(inst[2])
+	// prefix 3 bytes + max id 64 bytes
+	tokenIDPadding := toBytes67BigEndian(tokenID)
+	tokenIDLen := byte(len(tokenID))
+	remoteAddr := []byte(inst[3])
+	remoteAddrLen := byte(len(remoteAddr))
+	remoteAddrPadding := toBytes64BigEndian(remoteAddr)
+	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
+	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
+	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
+	height, _, errHeight := base58.Base58Check{}.Decode(inst[7])
+	if err := common.CheckError(errMeta, errShard, errToken, errAmount, errTx, errIncToken, errHeight); err != nil {
+		err = errors.Wrapf(err, "inst: %+v", inst)
+		BLogger.log.Error(err)
+		return nil, err
+	}
+
+	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
+	flatten := []byte{}
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, shardID)
+	flatten = append(flatten, tokenIDLen)
+	flatten = append(flatten, tokenIDPadding...)
+	flatten = append(flatten, remoteAddrLen)
+	flatten = append(flatten, remoteAddrPadding...)
+	flatten = append(flatten, toBytes32BigEndian(amount)...)
+	flatten = append(flatten, txID[:]...)
+	flatten = append(flatten, incTokenID...)
+	flatten = append(flatten, toBytes32BigEndian(height)...)
+	return flatten, nil
+}
+
 // decodeRemoteAddr converts address string to 32 bytes slice
 func decodeRemoteAddr(addr string) ([]byte, error) {
 	remoteAddr, err := hex.DecodeString(addr)
@@ -171,6 +221,20 @@ func decodeRemoteAddr(addr string) ([]byte, error) {
 func toBytes32BigEndian(b []byte) []byte {
 	a := [32]byte{}
 	copy(a[32-len(b):], b)
+	return a[:]
+}
+
+// toBytes64BigEndian converts a []byte to u128
+func toBytes64BigEndian(b []byte) []byte {
+	a := [64]byte{}
+	copy(a[64-len(b):], b)
+	return a[:]
+}
+
+// toBytes67BigEndian
+func toBytes67BigEndian(b []byte) []byte {
+	a := [67]byte{}
+	copy(a[67-len(b):], b)
 	return a[:]
 }
 

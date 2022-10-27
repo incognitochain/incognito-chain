@@ -512,14 +512,15 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 			previousHash := bestBlock.Hash()
 			for numBlock > 0 {
 				numBlock--
-				block, size, errD := blockService.BlockChain.GetShardBlockByHash(*previousHash)
+				blk, size, errD := blockService.BlockChain.ShardChain[shardID].BlockStorage.GetBlock(*previousHash)
 				if errD != nil {
 					Logger.log.Debugf("handleGetBlocks resultShard: %+v, err: %+v", nil, errD)
 					return nil, NewRPCError(GetShardBlockByHashError, errD)
 				}
-				blockResult := jsonresult.NewGetBlockResult(block, size, utils.EmptyString)
+				shardBlock := blk.(*types.ShardBlock)
+				blockResult := jsonresult.NewGetBlockResult(shardBlock, uint64(size), utils.EmptyString)
 				resultShard = append(resultShard, *blockResult)
-				previousHash = &block.Header.PreviousBlockHash
+				previousHash = &shardBlock.Header.PreviousBlockHash
 				if previousHash.String() == (common.Hash{}).String() {
 					break
 				}
@@ -867,11 +868,12 @@ func (blockService BlockService) GetShardBlockHeader(getBy string, blockParam st
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 			return nil, 0, []string{}, NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
 		}
-		shardBlock, _, err := blockService.BlockChain.GetShardBlockByHash(hash)
+		blk, err := blockService.BlockChain.ShardChain[int(shardID)].GetBlockByHash(hash)
 		if err != nil {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 			return nil, 0, []string{}, NewRPCError(GetShardBlockByHashError, errors.New("blockParam not exist"))
 		}
+		shardBlock := blk.(*types.ShardBlock)
 		blockNumber := int(shardBlock.Header.Height) + 1
 		return []*types.ShardHeader{&shardBlock.Header}, blockNumber, []string{hash.String()}, nil
 	case "blocknum":
@@ -906,7 +908,7 @@ func (blockService BlockService) GetBurningAddress(beaconHeight uint64) string {
 	return blockService.BlockChain.GetBurningAddress(beaconHeight)
 }
 
-//============================= Bridge ===============================
+// ============================= Bridge ===============================
 func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, error) {
 	txIDHash, err := common.Hash{}.NewHashFromStr(txID)
 	if err != nil {
@@ -1055,7 +1057,7 @@ func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte
 //	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
 //}
 
-//============================= Portal ===============================
+// ============================= Portal ===============================
 func (blockService BlockService) GetCustodianDepositStatus(depositTxID string) (*metadata.PortalCustodianDepositStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetCustodianDepositStatus(stateDB, depositTxID)
@@ -1345,7 +1347,7 @@ func (blockService BlockService) GetRedeemReqFromLiquidationPoolByTxIDStatusV3(t
 	return nil, nil
 }
 
-//============================= Reward Feature ===============================
+// ============================= Reward Feature ===============================
 func (blockService BlockService) GetRewardFeatureByFeatureName(featureName string, epoch uint64) (map[string]uint64, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetRewardFeatureStateByFeatureName(stateDB, featureName, epoch)

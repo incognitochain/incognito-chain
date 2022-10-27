@@ -135,6 +135,81 @@ func IsFTMTxHashIssued(stateDB *StateDB, uniqueFTMTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertNEARTxHashIssued(stateDB *StateDB, uniqueNEARTx []byte) error {
+	key := GenerateBridgeNEARTxObjectKey(uniqueNEARTx)
+	value := NewBridgeNEARTxStateWithValue(uniqueNEARTx)
+	err := stateDB.SetStateObject(BridgeNEARTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertNEARTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsNEARTxHashIssued(stateDB *StateDB, uniqueNEARTx []byte) (bool, error) {
+	key := GenerateBridgeNEARTxObjectKey(uniqueNEARTx)
+	nearTxState, has, err := stateDB.getBridgeNEARTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsNEARTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(nearTxState.UniqueNEARTx(), uniqueNEARTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
+func InsertAURORATxHashIssued(stateDB *StateDB, uniqueAURORATx []byte) error {
+	key := GenerateBridgeAURORATxObjectKey(uniqueAURORATx)
+	value := NewBridgeAURORATxStateWithValue(uniqueAURORATx)
+	err := stateDB.SetStateObject(BridgeAURORATxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertAURORATxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsAURORATxHashIssued(stateDB *StateDB, uniqueAURORATx []byte) (bool, error) {
+	key := GenerateBridgeAURORATxObjectKey(uniqueAURORATx)
+	auroraTxState, has, err := stateDB.getBridgeAURORATxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsAURORATxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(auroraTxState.UniqueAURORATx(), uniqueAURORATx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
+func InsertAVAXTxHashIssued(stateDB *StateDB, uniqueAVAXTx []byte) error {
+	key := GenerateBridgeAVAXTxObjectKey(uniqueAVAXTx)
+	value := NewBridgeAVAXTxStateWithValue(uniqueAVAXTx)
+	err := stateDB.SetStateObject(BridgeAVAXTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertAVAXTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsAVAXTxHashIssued(stateDB *StateDB, uniqueAVAXTx []byte) (bool, error) {
+	key := GenerateBridgeAVAXTxObjectKey(uniqueAVAXTx)
+	avaxTxState, has, err := stateDB.getBridgeAVAXTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsAVAXTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(avaxTxState.UniqueAVAXTx(), uniqueAVAXTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {

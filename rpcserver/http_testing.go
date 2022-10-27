@@ -250,6 +250,19 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	}, nil
 }
 
+func (httpServer *HttpServer) handleGetShardCommitteeFromBeaconHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+	hash, err := common.Hash{}.NewHashFromStr(tempHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	committees, err := httpServer.GetBlockchain().GetShardCommitteeFromBeaconHash(*hash, byte(shardID))
+	return committees, nil
+
+}
+
 func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardID := uint64(arrayParams[0].(float64))
@@ -969,6 +982,15 @@ func (httpServer *HttpServer) handleConvertPaymentAddress(params interface{}, cl
 // 	}
 // 	return result, nil
 // }
+
+func (httpServer *HttpServer) handleStallInsert(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	if config.Config().Network() != "mainnet" {
+		arrayParams := common.InterfaceSlice(params)
+		chainID := int(arrayParams[0].(float64))
+		httpServer.config.Syncker.ShardSyncProcess[chainID].Stall()
+	}
+	return nil, nil
+}
 
 func (httpServer *HttpServer) handleResetCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)

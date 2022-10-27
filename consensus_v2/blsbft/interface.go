@@ -15,7 +15,7 @@ import (
 
 //Used interfaces
 
-//NodeInterface
+// NodeInterface
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error

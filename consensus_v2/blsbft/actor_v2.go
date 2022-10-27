@@ -902,7 +902,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	return validationData, err
 }
 
-//VoteValidBlock this function should be use to vote for valid block only
+// VoteValidBlock this function should be use to vote for valid block only
 func (a *actorV2) voteValidBlock(
 	proposeBlockInfo *ProposeBlockInfo,
 ) error {

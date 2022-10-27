@@ -157,7 +157,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	return newBeaconBlock, nil
 }
 
-//beacon should only generate bridge (unshield) instruction when curView is finality (generate instructions from checkpoint to curView)
+// beacon should only generate bridge (unshield) instruction when curView is finality (generate instructions from checkpoint to curView)
 func (blockchain *BlockChain) shouldBeaconGenerateBridgeInstruction(curView *BeaconBestState) bool {
 	if curView.GetBlock().Hash().IsEqual(blockchain.BeaconChain.GetFinalView().GetBlock().Hash()) {
 		return true
@@ -443,6 +443,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 // GetShardStateFromBlock get state (information) from shard-to-beacon block
 // state will be presented as instruction
+//
 //	Return Params:
 //	1. ShardState
 //	2. Stake Instruction
@@ -467,11 +468,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	prevShardBlockValidatorIndex := ""
 	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION {
-		prevShardBlock, _, err := blockchain.GetShardBlockByHash(shardBlock.GetPrevHash())
+		prevShardBlock, _, err := blockchain.ShardChain[shardID].BlockStorage.GetBlockWithLatestValidationData(shardBlock.GetPrevHash())
 		if err != nil {
 			return nil, nil, nil, nil, nil, nil, errors.New("Cannot find previous shard block for get validator index")
 		}
-		prevShardBlockValidatorIndex = prevShardBlock.ValidationData
+		prevShardBlockValidatorIndex = prevShardBlock.(*types.ShardBlock).ValidationData
 	}
 
 	//Get Shard State from Block
@@ -545,7 +546,7 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	}
 }
 
-//GenerateInstruction generate instruction for new beacon block
+// GenerateInstruction generate instruction for new beacon block
 func (curView *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
 	shardInstruction *shardInstruction,
@@ -754,7 +755,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		//if number of each shard committee update < 95%, not generate inst
 		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
 			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
-			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*95/100)) {
+			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*89/100)) {
 				invalidCondition = true
 				break
 			}
