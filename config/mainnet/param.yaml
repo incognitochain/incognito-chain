@@ -141,11 +141,11 @@ auto_enable_feature:
       min_trigger: 2275826
       require_percentage: 85
   - auroraavaxbridge:
-      min_trigger: 2330938
-      require_percentage: 85
+      min_trigger: 2403039
+      require_percentage: 75
   - nearbridge:
-      min_trigger: 2399408
-      require_percentage: 85
+      min_trigger: 2403039
+      require_percentage: 75
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
