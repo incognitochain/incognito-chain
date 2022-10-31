@@ -204,7 +204,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		}
 	}
 	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
+
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees, curView.GetProposerLength()); err != nil {
 		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
 		return err
 	}
@@ -811,6 +812,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 						return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 					}
 
+					//update NumberOfFixedShardBlockValidatorV2
+					if feature == REDUCE_FIX_NODE {
+						shardBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					}
 				}
 			}
 		}

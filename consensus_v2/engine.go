@@ -154,7 +154,7 @@ func (engine *Engine) WatchCommitteeChange() {
 			//check chain sync up
 			shardFinalizeHeight := engine.config.Blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState).BestShardHeight[byte(chainID)]
 			shardHeight := engine.config.Blockchain.ShardChain[chainID].GetBestView().GetHeight()
-			if shardHeight < shardFinalizeHeight-10 {
+			if shardHeight+10 < shardFinalizeHeight {
 				continue
 			}
 		}

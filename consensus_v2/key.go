@@ -169,8 +169,8 @@ func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusT
 	}
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
-	return blsbft.ValidateCommitteeSig(block, committees)
+func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error {
+	return blsbft.ValidateCommitteeSig(block, committees, numFixNode)
 }
 
 func GenMiningKeyFromPrivateKey(privateKey string) (string, error) {

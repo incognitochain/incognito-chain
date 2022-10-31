@@ -3,8 +3,10 @@ package blsbft
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
@@ -80,11 +82,24 @@ func CheckValidationDataWithCommittee(valData *consensustypes.ValidationData, co
 	return true
 }
 
-func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
+
+	if block.GetVersion() >= int(config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE]) {
+		cnt := 0
+		for _, v := range valData.ValidatiorsIdx {
+			if v < numFixNode {
+				cnt++
+			}
+		}
+		if cnt <= 2*numFixNode/3 {
+			return errors.New("Not enough fix node votes")
+		}
+	}
+
 	valid := CheckValidationDataWithCommittee(valData, committee)
 	if !valid {
 		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
