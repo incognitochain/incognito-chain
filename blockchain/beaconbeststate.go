@@ -34,6 +34,7 @@ const (
 	BLOCKTIME_10                  = "blocktime10"
 	EPOCHV2                       = "epochparamv2"
 	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
+	REDUCE_FIX_NODE               = "reduce_fix_node"
 )
 
 // BestState houses information about the current best block and other info
