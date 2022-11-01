@@ -587,6 +587,10 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				if feature == REDUCE_FIX_NODE {
 					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
 				}
+				if feature == REDUCE_FIX_NODE_V2 {
+					SFV3_MinShardCommitteeSize = 4
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				}
 			}
 		}
 	}
