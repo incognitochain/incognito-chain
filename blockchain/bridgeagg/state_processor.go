@@ -128,10 +128,10 @@ func (sp *stateProcessor) convert(
 		// increase punifiedtoken amount
 		updatingInfo, found = updatingInfoByTokenID[unifiedTokenID]
 		if found {
-			updatingInfo.CountUpAmt += acceptedContent.ConvertPUnifiedAmount
+			updatingInfo.CountUpAmt = updatingInfo.CountUpAmt + acceptedContent.ConvertPUnifiedAmount + acceptedContent.Reward
 		} else {
 			updatingInfo = metadata.UpdatingInfo{
-				CountUpAmt:      acceptedContent.ConvertPUnifiedAmount,
+				CountUpAmt:      acceptedContent.ConvertPUnifiedAmount + acceptedContent.Reward,
 				DeductAmt:       0,
 				TokenID:         unifiedTokenID,
 				ExternalTokenID: GetExternalTokenIDForUnifiedToken(),
@@ -144,6 +144,9 @@ func (sp *stateProcessor) convert(
 		reward = acceptedContent.Reward
 		txReqID = acceptedContent.TxReqID
 		status = common.AcceptedStatusByte
+
+		fmt.Printf("AAA,%v,%v,%v,%v,%v,%v,%v\n", "CONVERT", unifiedTokenID.String(), tokenID.String(), convertPUnifiedAmount, reward, 0, txReqID.String())
+		fmt.Printf("BBB,%v,%v,%v\n", "MINT", unifiedTokenID.String(), convertPUnifiedAmount+reward)
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
@@ -239,11 +242,15 @@ func (sp *stateProcessor) shield(
 			shieldStatusData = append(shieldStatusData, statusData)
 			totalShieldAmt += data.ShieldAmount
 			totalReward += data.Reward
+
+			fmt.Printf("AAA,%v,%v,%v,%v,%v,%v,%v\n", "SHIELD", acceptedInst.UnifiedTokenID.String(), data.IncTokenID.String(), data.ShieldAmount, data.Reward, 0, acceptedInst.TxReqID.String())
 		}
 		mintAmt := totalShieldAmt + totalReward
 		state.unifiedTokenVaults[acceptedInst.UnifiedTokenID] = clonedVaults
 		txReqID = acceptedInst.TxReqID
 		status = common.AcceptedStatusByte
+
+		fmt.Printf("BBB,%v,%v,%v\n", "MINT", acceptedInst.UnifiedTokenID.String(), mintAmt)
 
 		// update bridge token info
 		updatingInfo, found := updatingInfoByTokenID[acceptedInst.UnifiedTokenID]
@@ -259,6 +266,7 @@ func (sp *stateProcessor) shield(
 			}
 		}
 		updatingInfoByTokenID[acceptedInst.UnifiedTokenID] = updatingInfo
+
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
@@ -339,7 +347,7 @@ func (sp *stateProcessor) unshield(
 		statusStr := inst.Status
 
 		// update state
-		state, err := updateStateForUnshield(state, unifiedTokenID, waitingUnshieldReq, statusStr)
+		state, err = updateStateForUnshield(state, unifiedTokenID, waitingUnshieldReq, statusStr)
 		if err != nil {
 			Logger.log.Errorf("Update bridge agg state error: %v", err)
 			return state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, NewBridgeAggErrorWithValue(ProcessUpdateStateError, err)
@@ -369,6 +377,8 @@ func (sp *stateProcessor) unshield(
 				totalBurnAmt += v.BurningAmount
 			}
 
+			fmt.Printf("BBB,%v,%v,%v\n", "BURN", unifiedTokenID.String(), totalBurnAmt)
+
 			updatingInfo, found := updatingInfoByTokenID[unifiedTokenID]
 			if found {
 				updatingInfo.DeductAmt += totalBurnAmt
@@ -386,9 +396,11 @@ func (sp *stateProcessor) unshield(
 
 		// add TxIDs into bridgeAggUnshieldTxIDs
 		if statusStr == common.AcceptedStatusStr || statusStr == common.FilledStatusStr {
-			for index, _ := range waitingUnshieldReq.GetData() {
+			for index, data := range waitingUnshieldReq.GetData() {
 				newTxReqID := common.HashH(append(txReqID.Bytes(), common.IntToBytes(index)...))
 				bridgeAggUnshieldTxIDs[newTxReqID.String()] = true
+
+				fmt.Printf("AAA,%v,%v,%v,%v,%v,%v,%v\n", "UNSHIELD", unifiedTokenID.String(), data.IncTokenID.String(), data.BurningAmount-data.Fee, 0, data.Fee, txReqID.String())
 			}
 		}
 	}
@@ -598,6 +610,9 @@ func (sp *stateProcessor) reshield(
 				return state, updatingInfoByTokenID, NewBridgeAggErrorWithValue(ProcessUpdateStateError, fmt.Errorf("Can not update vault state for shield request - Error %v", err))
 			}
 			state.unifiedTokenVaults[shieldTokenID] = clonedVaults
+
+			fmt.Printf("AAA,%v,%v,%v,%v,%v,%v,%v\n", "RESHIELD", shieldTokenID.String(), acceptedReq.ReshieldData.IncTokenID.String(), acceptedReq.ReshieldData.ShieldAmount, acceptedReq.ReshieldData.Reward, 0, txReqID.String())
+			fmt.Printf("BBB,%v,%v,%v\n", "MINT", shieldTokenID.String(), acceptedReq.ReshieldData.ShieldAmount+acceptedReq.ReshieldData.Reward)
 		}
 		// new shielding data for storing status
 		statusDataLst = append(statusDataLst, ShieldStatusData{
