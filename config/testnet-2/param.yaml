@@ -143,6 +143,9 @@ auto_enable_feature:
   - reduce_fix_node_v2:
       min_trigger: 5647323
       require_percentage: 90
+  - reduce_fix_node_v3:
+      min_trigger: 5647323
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 3965040
       require_percentage: 90
@@ -192,6 +195,7 @@ feature_version:
   - blocktime15s_30_8: 11
   - reduce_fix_node: 12
   - reduce_fix_node_v2: 13
+  - reduce_fix_node_v3: 14
 transactions_param:
   lowerbound: 15
   upperbound: 100

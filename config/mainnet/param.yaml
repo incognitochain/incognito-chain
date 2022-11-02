@@ -130,7 +130,7 @@ auto_enable_feature:
       min_trigger: 2211160
       force_trigger: 1e9
       require_percentage: 85
-  - reduce_fix_node_v2:
+  - reduce_fix_node_v3:
       min_trigger: 1e9
       require_percentage: 90
   - maxcommitteesize48:
@@ -156,7 +156,7 @@ blocktime_param:
 feature_version:
   - instantfinalityv2: 9
   - blocktime20s_15_9: 10
-  - reduce_fix_node_v2: 11
+  - reduce_fix_node_v3: 11
 transactions_param:
   lowerbound: 15
   upperbound: 100
