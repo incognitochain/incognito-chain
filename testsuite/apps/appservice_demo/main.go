@@ -4,13 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 )
 
 func main() {
-	fullnode := flag.String("h", "http://51.91.220.58:9335/", "Fullnode Endpoint")
+	fullnode := flag.String("h", "http://51.222.153.212:9334/", "Fullnode Endpoint")
 	flag.Parse()
-
+	config.LoadConfig()
+	config.LoadParam()
 	app := devframework.NewAppService(*fullnode, true)
 	//app.OnBeaconBlock(8664, func(blk types.BeaconBlock) {
 	//	for sid, states := range blk.Body.ShardState {
@@ -22,9 +24,11 @@ func main() {
 	//	}
 	//})
 
-	app.OnShardBlock(0, 8650, func(blk types.ShardBlock) {
-		shardID := blk.GetShardID()
-		fmt.Println("blk", blk.GetHeight(), shardID, blk.GetVersion())
+	app.OnShardBlock(4, 2313686, func(blk types.ShardBlock) {
+		fmt.Println(blk.Body.Transactions)
+		for _, tx := range blk.Body.Transactions {
+
+		}
 	})
 
 	//for j := 0; j < 8; j++ {
