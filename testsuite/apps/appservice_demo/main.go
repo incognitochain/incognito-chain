@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"log"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -84,7 +85,7 @@ func main() {
 	}
 	processOTACh := make(chan processOTA, 1000)
 
-	wg.Add(8)
+	wg.Add(1)
 	go func() {
 		for {
 			req := <-processOTACh
@@ -92,7 +93,7 @@ func main() {
 			if pubkey == "" {
 				panic(1)
 			}
-			fmt.Println("process ota", req.index, req.shardID, "0000000000000000000000000000000000000000000000000000000000000005", pubkey)
+			//fmt.Println("process ota", req.index, req.shardID, "0000000000000000000000000000000000000000000000000000000000000005", pubkey)
 			if _, ok := mapOTAString[req.shardID]; !ok {
 				mapOTAString[req.shardID] = make(map[uint64]string)
 			}
@@ -102,6 +103,7 @@ func main() {
 	}()
 
 	var initOTAList []string
+	var requestWithdraw = map[string]string{}
 	var processBlk = func(blk types.ShardBlock) {
 		if blk.GetBeaconHeight() == 2426573 {
 			wg.Done()
@@ -112,20 +114,31 @@ func main() {
 		}
 		for _, tx := range blk.Body.Transactions {
 			//init ota
+			if tx.GetMetadataType() == metadataCommon.Pdexv3WithdrawOrderRequestMeta {
+				md := tx.GetMetadata()
+				req, ok := md.(*metadataPdexv3.WithdrawOrderRequest)
+				if !ok {
+					panic(100)
+				}
+
+				if _, ok := txStringMap[req.OrderID]; ok {
+					requestWithdraw[tx.Hash().String()] = req.OrderID
+				}
+			}
 			if tx.GetMetadataType() == metadataCommon.Pdexv3WithdrawOrderResponseMeta {
 				md := tx.GetMetadata()
 				req, ok := md.(*metadataPdexv3.WithdrawOrderResponse)
 				if !ok {
 					panic(100)
 				}
-				if _, ok := txStringMap[req.RequestTxID.String()]; ok {
+				if _, ok := requestWithdraw[req.RequestTxID.String()]; ok {
 					if _, ok := tx.(*transaction.TxTokenVersion2); ok {
 						if len(tx.(*transaction.TxTokenVersion2).GetTxNormal().GetProof().GetOutputCoins()) == 0 {
 							continue
 						}
 						for _, coin := range tx.(*transaction.TxTokenVersion2).GetTxNormal().GetProof().GetOutputCoins() {
 							publicKey := base58.Base58Check{}.Encode(coin.(*privacy.CoinV2).GetPublicKey().ToBytesS(), common.ZeroByte)
-							log.Printf("init tx %v outcoin %v", tx.Hash().String(), publicKey)
+							log.Printf("init tx %v outcoin %v from requestWithdraw %v addOrderID %v", tx.Hash().String(), publicKey, req.RequestTxID.String(), requestWithdraw[req.RequestTxID.String()])
 							initOTAList = append(initOTAList, publicKey)
 						}
 					}
@@ -156,13 +169,18 @@ func main() {
 	app.OnShardBlock(1, 2167083, processBlk)
 	app.OnShardBlock(2, 2164835, processBlk)
 	app.OnShardBlock(3, 2161584, processBlk)
+
 	app.OnShardBlock(4, 2161694, processBlk)
 	app.OnShardBlock(5, 2158484, processBlk)
 	app.OnShardBlock(6, 2162553, processBlk)
 	app.OnShardBlock(7, 2161572, processBlk)
 
+	app.OnShardBlock(4, 2313570, processBlk)
 	wg.Wait()
-
+	for len(processOTACh) != 0 {
+		fmt.Println("still process processOTACh...")
+		time.Sleep(time.Second * 10)
+	}
 	//process
 	//mapCoin [sharid][index][]tx
 	//mapOTA [sharid][index][string]
@@ -193,7 +211,7 @@ func main() {
 
 				for _, c := range proof.GetOutputCoins() {
 					publicKey := base58.Base58Check{}.Encode(c.(*privacy.CoinV2).GetPublicKey().ToBytesS(), common.ZeroByte)
-					fmt.Println("  ", ota, " -> ", publicKey)
+					fmt.Println("  ", ota, " -> ", publicKey, " ", tx.Hash().String())
 					nextOTAList = append(nextOTAList, publicKey)
 				}
 			}
