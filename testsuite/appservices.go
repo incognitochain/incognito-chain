@@ -82,3 +82,16 @@ func (s *AppService) OnStateDBData(checkpoint string, cid int, dbType int, offse
 		//TODO: parse state data and then pass to f
 	})
 }
+
+func (s *AppService) GetOTACoinByIndices(index uint64, shardid int, token string) string {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	res, err := fullnodeRPC.GetOTAcoinsbyindices(index, shardid, token)
+	if err != nil {
+		panic(err)
+	}
+	if _, ok := res[index]; !ok {
+		fmt.Println(res)
+		panic(1)
+	}
+	return res[index].PublicKey
+}

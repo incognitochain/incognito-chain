@@ -289,6 +289,41 @@ func (r *RemoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int)
 	}
 }
 
+func (r *RemoteRPCClient) GetOTAcoinsbyindices(index uint64, shardid int, token string) (res map[uint64]jsonresult.OutCoin, err error) {
+	type param struct {
+		Indices []uint64
+		ShardID int
+		TokenID string
+	}
+
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getotacoinsbyindices",
+		"params":  []interface{}{param{[]uint64{index}, shardid, token}},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result map[uint64]jsonresult.OutCoin
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, err
+}
+
 func (r *RemoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
