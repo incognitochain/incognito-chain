@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"path"
 	"strconv"
 	"sync"
@@ -692,6 +693,8 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		if _, err := newMultiview.AddView(v); err != nil {
 			panic("Restart beacon views fail")
 		}
+
+		break
 	}
 	blockchain.BeaconChain.multiView = newMultiview
 	for _, beaconState := range allViews {
@@ -703,7 +706,21 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			}
 		}
 	}
+	log.Println("start collecting data...")
+	startBeaconHeight := uint64(2132900)
+	for i := startBeaconHeight; i < newMultiview.GetBestView().GetBeaconHeight(); i++ {
+		beaconBlks, _ := blockchain.GetBeaconBlockByHeight(i)
+		shield, unified, amount := ParseShieldUnshield(beaconBlks[0].Body.Instructions)
+		log.Println(shield, unified, amount)
+	}
+
+	panic(1)
 	return nil
+}
+
+func ParseShieldUnshield(inst [][]string) (shield bool, unified bool, amount string) {
+
+	return shield, unified, amount
 }
 
 /*
