@@ -626,7 +626,8 @@ TransactionLoop:
 		var token0Rate, token1Rate uint64
 		var token0Balance, token1Balance uint64
 		var tokenToBuy common.Hash
-		if currentOrderReq.TokenToSell == pair.state.Token0ID() {
+		switch currentOrderReq.TokenToSell {
+		case pair.state.Token0ID():
 			tradeDirection = v2.TradeDirectionSell0
 			// set order's rates according to request, then set selling token's balance to sellAmount
 			// and buying token to 0
@@ -635,13 +636,17 @@ TransactionLoop:
 			token0Balance = sellAmountAfterFee
 			token1Balance = 0
 			tokenToBuy = pair.state.Token1ID()
-		} else {
+		case pair.state.Token1ID():
 			tradeDirection = v2.TradeDirectionSell1
 			token1Rate = sellAmountAfterFee
 			token0Rate = currentOrderReq.MinAcceptableAmount
 			token1Balance = sellAmountAfterFee
 			token0Balance = 0
 			tokenToBuy = pair.state.Token0ID()
+		default:
+			Logger.log.Warnf("Cannot find pair %s for new order", currentOrderReq.PoolPairID)
+			result = append(result, refundInstructions...)
+			continue TransactionLoop
 		}
 
 		// receivers on order to withdraw to after fully matched
