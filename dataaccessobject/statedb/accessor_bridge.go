@@ -296,7 +296,7 @@ func CanProcessTokenPair(stateDB *StateDB, externalTokenID []byte, incTokenID co
 		log.Println("WARNING: failed at condition 2:", bridgeTokenInfoState.ExternalTokenID()[:], externalTokenID[:])
 		return false, nil
 	}
-	bridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
+	bridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(false)
 	for _, tempBridgeTokenInfoState := range bridgeTokenInfoStates {
 		if bytes.Compare(tempBridgeTokenInfoState.ExternalTokenID(), externalTokenID) != 0 {
 			continue
@@ -343,8 +343,8 @@ func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTok
 }
 
 func GetAllBridgeTokens(stateDB *StateDB) ([]byte, error) {
-	cBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(true)
-	dBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
+	cBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(true)
+	dBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(false)
 	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
 	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
 	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
@@ -400,8 +400,8 @@ func IsBridgeToken(stateDB *StateDB, tokenID common.Hash) (
 }
 
 func GetBridgeTokens(stateDB *StateDB) ([]*rawdbv2.BridgeTokenInfo, error) {
-	cBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(true)
-	dBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
+	cBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(true)
+	dBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(false)
 	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
 	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
 	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {

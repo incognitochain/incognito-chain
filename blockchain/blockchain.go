@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"io"
 	"io/ioutil"
 	"log"
@@ -712,6 +713,9 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		beaconBlks, _ := blockchain.GetBeaconBlockByHeight(i)
 		shield, unified, amount := ParseShieldUnshield(beaconBlks[0].Body.Instructions)
 		log.Println(shield, unified, amount)
+
+		unifyVault, nonUnify := RetrieveVaultInfo(blockchain, i)
+		log.Println(unifyVault, nonUnify)
 	}
 
 	panic(1)
@@ -721,6 +725,37 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 func ParseShieldUnshield(inst [][]string) (shield bool, unified bool, amount string) {
 
 	return shield, unified, amount
+}
+
+var NonUnifyUSDT_ID = common.Hash{}.NewHashFromStr2("716fd1009e2a1669caacc36891e707bfdf02590f96ebd897548e8963c95ebac0")
+var UnifyUSDT_ID = common.Hash{}.NewHashFromStr2("076a4423fa20922526bd50b0d7b0dc1c593ce16e15ba141ede5fb5a28aa3f229")
+
+func RetrieveVaultInfo(blockchain *BlockChain, beaconHeight uint64) (unify, nonunify uint64) {
+	rh, err := blockchain.GetBeaconRootsHash(beaconHeight)
+	if err != nil {
+		panic(err)
+	}
+	db := blockchain.GetBeaconChainDatabase()
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	featureDB, err := statedb.NewWithPrefixTrie(rh.FeatureStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		panic(err)
+	}
+
+	//get allbridge
+	dBridgeTokenInfoStates := featureDB.GetAllBridgeTokenInfoState(false)
+	for _, bridgeTokenInfoState := range dBridgeTokenInfoStates {
+		tokenID := bridgeTokenInfoState.IncTokenID()
+		if tokenID.String() == NonUnifyUSDT_ID.String() {
+			nonunify = bridgeTokenInfoState.Amount()
+		}
+	}
+	//get agg
+	aggState, _ := bridgeagg.InitStateFromDB(featureDB)
+	unifyState := aggState.CloneUnifiedTokenVaults()
+	unify = unifyState[UnifyUSDT_ID][NonUnifyUSDT_ID].Amount()
+
+	return
 }
 
 /*

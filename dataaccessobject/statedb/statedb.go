@@ -1607,7 +1607,7 @@ func (stateDB *StateDB) getBridgeTokenInfoState(key common.Hash) (*BridgeTokenIn
 	return NewBridgeTokenInfoState(), false, nil
 }
 
-func (stateDB *StateDB) getAllBridgeTokenInfoState(isCentralized bool) []*BridgeTokenInfoState {
+func (stateDB *StateDB) GetAllBridgeTokenInfoState(isCentralized bool) []*BridgeTokenInfoState {
 	bridgeTokenInfoStates := []*BridgeTokenInfoState{}
 	temp := stateDB.trie.NodeIterator(GetBridgeTokenInfoPrefix(isCentralized))
 	it := trie.NewIterator(temp)
