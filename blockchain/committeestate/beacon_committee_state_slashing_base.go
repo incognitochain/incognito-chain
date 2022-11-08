@@ -195,11 +195,18 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 }
 
 func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(returnStakingInstruction *instruction.ReturnStakeInstruction, committeePublicKeyStruct incognitokey.CommitteePublicKey, publicKey string, stakerInfo *statedb.StakerInfo, committeeChange *CommitteeChange) (*instruction.ReturnStakeInstruction, *CommitteeChange) {
-	returnStakingInstruction = buildReturnStakingInstruction(
-		returnStakingInstruction,
-		publicKey,
-		stakerInfo.TxStakingID().String(),
-	)
+	//only return staking for non-foundation node
+	if !config.Param().GenesisParam.AllFoundationNode[publicKey] {
+		returnStakingInstruction = buildReturnStakingInstruction(
+			returnStakingInstruction,
+			publicKey,
+			stakerInfo.TxStakingID().String(),
+		)
+		fmt.Println("debug build returnstaking:", publicKey)
+	} else {
+		fmt.Println("debug not build returnstaking:", publicKey)
+	}
+
 	committeeChange = b.deleteStakerInfo(committeePublicKeyStruct, publicKey, committeeChange)
 
 	return returnStakingInstruction, committeeChange
