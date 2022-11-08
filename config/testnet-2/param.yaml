@@ -176,6 +176,9 @@ auto_enable_feature:
   - nearbridge:
       min_trigger: 5601070
       require_percentage: 90
+  - reduce_fix_node_v3:
+      min_trigger: 4617622
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30
