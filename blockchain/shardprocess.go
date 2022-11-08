@@ -816,6 +816,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 					if feature == REDUCE_FIX_NODE || feature == REDUCE_FIX_NODE_V2 {
 						shardBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
 					}
+					if feature == REDUCE_FIX_NODE_V3 {
+						shardBestState.MinShardCommitteeSize = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+						shardBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					}
 				}
 			}
 		}
