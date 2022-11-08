@@ -50,10 +50,27 @@ func NewProposeBlockInfo() *ProposeBlockInfo {
 	return &ProposeBlockInfo{}
 }
 
+func GetLatestReduceFixNodeVersion() int {
+	if v, ok := config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE]; ok {
+		return int(v)
+	}
+
+	if v, ok := config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE_V2]; ok {
+		return int(v)
+	}
+
+	if v, ok := config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE_V3]; ok {
+		return int(v)
+	}
+
+	return 0
+}
 func (p *ProposeBlockInfo) ValidateFixNodeMajority() bool {
-	if p.block.GetVersion() < int(config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE]) {
+	redduceFixNodeVersion := GetLatestReduceFixNodeVersion()
+	if redduceFixNodeVersion == 0 || p.block.GetVersion() < redduceFixNodeVersion {
 		return true
 	}
+
 	if p.NumberOfFixNode == 0 {
 		log.Println("Not set NumberOfFixNode yet")
 		return false
