@@ -577,13 +577,18 @@ func (a *actorV2) run() error {
 				round := a.currentTimeSlot - bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
-				signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
+				signingCommittees, committees, proposerPk, committeeViewHash, proposerIndex, err := a.getCommitteesAndCommitteeViewHash()
 				if err != nil {
 					a.logger.Info(err)
 					continue
 				}
 
-				userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
+				userKeySet, prepareProposerIndex := a.getUserKeySetForSigning(signingCommittees, a.userKeySet, proposerIndex)
+				var shouldPreparePropose bool
+				if prepareProposerIndex != -1 {
+					shouldPreparePropose = true
+				}
+
 				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
 					bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
 					proposerPk,
@@ -599,6 +604,9 @@ func (a *actorV2) run() error {
 					}
 					if shouldPropose {
 						a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", a.chainKey, a.currentTimeSlot, bestView.GetHeight()+1, round)
+					}
+					if shouldPreparePropose {
+						//TODO: @tin Collect txs which will be attached to block in this block of code
 					}
 				}
 
@@ -1158,30 +1166,35 @@ func (a *actorV2) sendVote(
 
 func (a *actorV2) getUserKeySetForSigning(
 	signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey,
-) []signatureschemes2.MiningKey {
+	proposerIndex int,
+) ([]signatureschemes2.MiningKey, int) {
+	prepareProposerIndex := -1
 	res := []signatureschemes2.MiningKey{}
 	if a.chain.IsBeaconChain() {
 		res = userKeySet
 	} else {
-		validCommittees := make(map[string]bool)
-		for _, v := range signingCommittees {
+		validCommittees := make(map[string]int)
+		for i, v := range signingCommittees {
 			key := v.GetMiningKeyBase58(common.BlsConsensus)
-			validCommittees[key] = true
+			validCommittees[key] = i
 		}
-		for _, userKey := range userKeySet {
+		for i, userKey := range userKeySet {
 			userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-			if validCommittees[userPk] {
+			if ci, found := validCommittees[userPk]; found {
 				res = append(res, userKey)
+				if proposerIndex >= 0 && ci == proposerIndex+1 {
+					prepareProposerIndex = i
+				}
 			}
 		}
 	}
-	return res
+	return res, prepareProposerIndex
 }
 
 func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
-	incognitokey.CommitteePublicKey, common.Hash, error,
+	incognitokey.CommitteePublicKey, common.Hash, int, error,
 ) {
 	committeeViewHash := common.Hash{}
 	committees := []incognitokey.CommitteePublicKey{}
@@ -1198,7 +1211,7 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 			return []incognitokey.CommitteePublicKey{},
 				[]incognitokey.CommitteePublicKey{},
 				incognitokey.CommitteePublicKey{},
-				committeeViewHash, err
+				committeeViewHash, -1, err
 		}
 	}
 
@@ -1210,7 +1223,7 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 	signingCommittees = a.chain.GetSigningCommittees(
 		proposerIndex, committees, a.blockVersion)
 
-	return signingCommittees, committees, proposerPk, committeeViewHash, err
+	return signingCommittees, committees, proposerPk, committeeViewHash, proposerIndex, err
 }
 
 func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
@@ -1276,7 +1289,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	if err != nil {
 		return err
 	}
-	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
+	userKeySet, _ := a.getUserKeySetForSigning(signingCommittees, a.userKeySet, -1)
 
 	if len(userKeySet) == 0 && block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
 		a.logger.Infof("HandleProposeMsg, Block Hash %+v,  Block Height %+v, round %+v, NOT in round for voting",
