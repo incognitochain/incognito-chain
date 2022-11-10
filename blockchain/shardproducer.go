@@ -211,18 +211,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := curView.BlockMaxCreateTime - time.Since(newShardBlockBeginTime)
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(
-		curView,
-		&tempPrivateKey,
-		shardID,
-		beaconBlocks,
-		blockCreationLeftOver,
-		beaconProcessHeight,
-	)
-	if err != nil {
-		return nil, err
-	}
+	txsToAddFromBlock := blockchain.config.BlockGen.CollectedTxs
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
 	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(shardBestState, transactionsForNewBlock, &tempPrivateKey, shardID)
@@ -1166,4 +1155,28 @@ func CreateShardBridgeAggUnshieldActionsFromTxs(
 		}
 	}
 	return bridgeAggActions, nil
+}
+
+func (blockGenerator *BlockGenerator) CollectTxs(shardID byte, timeLeftOver time.Duration) error {
+	tempPrivateKey := blockGenerator.chain.config.BlockGen.createTempKeyset()
+	chain := blockGenerator.chain.ShardChain[shardID]
+	curView := chain.GetBestState()
+	var beaconProcessHeight uint64 // TODO: @tin try to fill this parameter later
+	beaconBlocks, err := FetchBeaconBlockFromHeight(
+		blockGenerator.chain,
+		curView.BeaconHeight+1,
+		beaconProcessHeight)
+	txs, err := blockGenerator.chain.config.BlockGen.getTransactionForNewBlock(
+		curView,
+		&tempPrivateKey,
+		shardID,
+		beaconBlocks,
+		timeLeftOver,
+		beaconProcessHeight,
+	)
+	if err != nil {
+		return err
+	}
+	blockGenerator.CollectedTxs = txs
+	return nil
 }

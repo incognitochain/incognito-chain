@@ -53,8 +53,9 @@ type actorV2 struct {
 	receiveBlockByHash map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
-	ruleDirector *ActorV2RuleDirector
-	blockVersion int
+	ruleDirector         *ActorV2RuleDirector
+	blockVersion         int
+	shouldPreparePropose bool
 }
 
 func NewActorV2() *actorV2 {
@@ -565,6 +566,13 @@ func (a *actorV2) run() error {
 				a.currentTime = time.Now().Unix()
 				bestView := a.chain.GetBestView()
 				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
+				if currentTimeSlot == bestView.GetCurrentTimeSlot() || true {
+					if a.shouldPreparePropose {
+						if err := a.chain.CollectTxs(); err != nil {
+							a.logger.Error("cannot collect txs err %v", err)
+						}
+					}
+				}
 
 				newTimeSlot := false
 				if a.currentTimeSlot != currentTimeSlot {
@@ -584,9 +592,8 @@ func (a *actorV2) run() error {
 				}
 
 				userKeySet, prepareProposerIndex := a.getUserKeySetForSigning(signingCommittees, a.userKeySet, proposerIndex)
-				var shouldPreparePropose bool
 				if prepareProposerIndex != -1 {
-					shouldPreparePropose = true
+					a.shouldPreparePropose = true
 				}
 
 				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
@@ -604,9 +611,6 @@ func (a *actorV2) run() error {
 					}
 					if shouldPropose {
 						a.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", a.chainKey, a.currentTimeSlot, bestView.GetHeight()+1, round)
-					}
-					if shouldPreparePropose {
-						//TODO: @tin Collect txs which will be attached to block in this block of code
 					}
 				}
 

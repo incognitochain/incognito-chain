@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 
@@ -39,7 +40,8 @@ type ShardChain struct {
 	TxPool      txpool.TxPool
 	TxsVerifier txpool.TxVerifier
 
-	insertLock sync.Mutex
+	insertLock        sync.Mutex
+	isPrepareProposer bool
 }
 
 func NewShardChain(
@@ -657,6 +659,19 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 	}
 
 	return shardBlock.(*types.ShardBlock), m, nil
+}
+
+func (chain *ShardChain) CollectTxs(timeLeftOver time.Duration) error {
+	if chain.isPrepareProposer {
+		return nil
+	}
+	chain.isPrepareProposer = true
+	err := chain.BlockGen.CollectTxs(byte(chain.shardID), timeLeftOver)
+	if err != nil {
+		return err
+	}
+	chain.isPrepareProposer = false
+	return nil
 }
 
 //
