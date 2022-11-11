@@ -1161,7 +1161,17 @@ func (blockGenerator *BlockGenerator) CollectTxs(shardID byte, timeLeftOver time
 	tempPrivateKey := blockGenerator.chain.config.BlockGen.createTempKeyset()
 	chain := blockGenerator.chain.ShardChain[shardID]
 	curView := chain.GetBestState()
-	var beaconProcessHeight uint64 // TODO: @tin try to fill this parameter later
+	getBeaconFinalHeightForProcess := func() uint64 {
+		view := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
+		// TODO: @consensus validate this if beacon view were right?
+		height := view.GetHeight()
+		if height > curView.BeaconHeight && height-curView.BeaconHeight > MAX_BEACON_BLOCK {
+			height = curView.BeaconHeight + MAX_BEACON_BLOCK
+		}
+		return height
+	}
+	beaconProcessHeight := getBeaconFinalHeightForProcess()
+
 	beaconBlocks, err := FetchBeaconBlockFromHeight(
 		blockGenerator.chain,
 		curView.BeaconHeight+1,
