@@ -132,6 +132,7 @@ type ShardViewRetriever interface {
 	GetCopiedTransactionStateDB() *statedb.StateDB
 	GetHeight() uint64
 	GetBlockVersion() int
+	GetTriggeredFeature() map[string]uint64
 }
 
 type ValidationEnviroment interface {

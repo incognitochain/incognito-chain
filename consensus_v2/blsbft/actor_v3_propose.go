@@ -40,8 +40,8 @@ func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInter
 	return block
 }
 
-//check if node should propose in this timeslot
-//if yes, then create and send propose block message
+// check if node should propose in this timeslot
+// if yes, then create and send propose block message
 func (a *actorV3) maybeProposeBlock() error {
 	time1 := time.Now()
 	var err error
@@ -208,7 +208,7 @@ func (a *actorV3) verifyPOLCFromPreVote(info *ProposeBlockInfo, polc POLC, lock 
 	return true
 }
 
-//on receive propose message, store it into mem and db
+// on receive propose message, store it into mem and db
 func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	blockInfo, err := a.chain.UnmarshalBlock(proposeMsg.Block)
@@ -238,6 +238,8 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	proposerCommitteePublicKey.FromBase58(block.GetProposer())
 	proposerMiningKeyBase58 := proposerCommitteePublicKey.GetMiningKeyBase58(a.GetConsensusName())
 	signingCommittees, committees, err := a.getCommitteeForNewBlock(block)
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+
 	if err != nil {
 		return err
 	}
@@ -252,6 +254,7 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
 		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
 		ProposerMiningKeyBase58: proposerMiningKeyBase58,
+		NumberOfFixNode:         previousView.GetProposerLength(),
 	}
 
 	//get vote for this propose block (case receive vote faster)
@@ -273,7 +276,7 @@ func (a *actorV3) handleProposeMsg(proposeMsg BFTPropose) error {
 	if err := a.AddReceiveBlockByHash(blockHash, proposeBlockInfo); err != nil {
 		a.logger.Errorf("add receive block by hash error %+v", err)
 	}
-	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+
 	a.logger.Info("Receive block ", block.FullHashString(), "height", block.GetHeight(), ",block timeslot ", previousView.CalculateTimeSlot(block.GetProposeTime()))
 
 	return nil

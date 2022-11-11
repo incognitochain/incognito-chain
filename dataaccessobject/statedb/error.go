@@ -38,6 +38,8 @@ const (
 	ErrInvalidBridgePRVEVMStateType           = "invalid bridge prv evm tx state type"
 	ErrInvalidBridgePLGTxStateType            = "invalid bridge polygon tx state type"
 	ErrInvalidBridgeFTMTxStateType            = "invalid bridge fantom tx state type"
+	ErrInvalidBridgeAURORATxStateType         = "invalid bridge aurora tx state type"
+	ErrInvalidBridgeAVAXTxStateType           = "invalid bridge avax tx state type"
 	// A
 	ErrInvalidFinalExchangeRatesStateType  = "invalid final exchange rates state type"
 	ErrInvalidLiquidationExchangeRatesType = "invalid liquidation exchange rates type"
@@ -89,6 +91,8 @@ const (
 	ErrInvalidBridgeAggVaultStateType          = "invalid bridge agg vault state type"
 	ErrInvalidBridgeAggWaitingUnshieldReqType  = "invalid bridge agg waiting unshield request state type"
 	ErrInvalidBridgeAggParamStateType          = "invalid bridge agg param state type"
+
+	ErrInvalidBridgeNEARTxStateType = "invalid bridge near tx state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -302,9 +306,21 @@ const (
 	BridgeInsertFTMTxHashIssuedError
 	IsFTMTxHashIssuedError
 
+	// Aurora bridge
+	BridgeInsertAURORATxHashIssuedError
+	IsAURORATxHashIssuedError
+
+	// Avalanche bridge
+	BridgeInsertAVAXTxHashIssuedError
+	IsAVAXTxHashIssuedError
+
 	// Bridge Agg
 	GetBridgeAggStatusError
 	StoreBridgeAggStatusError
+
+	// Near bridge
+	BridgeInsertNEARTxHashIssuedError
+	IsNEARTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -486,9 +502,21 @@ var ErrCodeMessage = map[int]struct {
 	BridgeInsertFTMTxHashIssuedError: {-15106, "Bridge Insert Fantom Tx Hash Issued Error"},
 	IsFTMTxHashIssuedError:           {-15107, "Is Fantom Tx Hash Issued Error"},
 
+	// aurora bridge
+	BridgeInsertAURORATxHashIssuedError: {-15110, "Bridge Insert Aurora Tx Hash Issued Error"},
+	IsAURORATxHashIssuedError:           {-15111, "Is Aurora Tx Hash Issued Error"},
+
+	// avax bridge
+	BridgeInsertAVAXTxHashIssuedError: {-15112, "Bridge Insert Avax Tx Hash Issued Error"},
+	IsAVAXTxHashIssuedError:           {-15113, "Is Avax Tx Hash Issued Error"},
+
 	// bridge agg
 	GetBridgeAggStatusError:   {-15108, "Get bridge agg status error"},
 	StoreBridgeAggStatusError: {-15109, "Store bridge agg status Error"},
+
+	// near bridge
+	BridgeInsertNEARTxHashIssuedError: {-15110, "Insert near shield transaction error"},
+	IsNEARTxHashIssuedError:           {-15111, "Is Near Tx Hash Issued Error"},
 }
 
 type StatedbError struct {

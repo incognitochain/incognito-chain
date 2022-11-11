@@ -11,7 +11,9 @@ import (
 )
 
 const RUNNING_SYNC = "running_sync"
+const BOOTSTRAP_SYNC = "bootstrap_sync"
 const STOP_SYNC = "stop_sync"
+const STALL_SYNC = "stall_sync" //for test only
 
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
@@ -78,7 +80,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees, chain.GetBestView().GetProposerLength()); err != nil {
 			validBlockForInsert = sameCommitteeBlock[:i]
 		} else {
 			break

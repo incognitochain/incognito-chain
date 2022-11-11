@@ -15,7 +15,7 @@ import (
 
 //Used interfaces
 
-//NodeInterface
+// NodeInterface
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
 	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
@@ -63,11 +63,9 @@ type Chain interface {
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	InsertWithPrevValidationData(types.BlockInterface, string) error
 	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
-	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 	GetChainDatabase() incdb.Database
-
 	//for new syncker
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64

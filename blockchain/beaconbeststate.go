@@ -34,6 +34,9 @@ const (
 	BLOCKTIME_10                  = "blocktime10"
 	EPOCHV2                       = "epochparamv2"
 	INSTANT_FINALITY_FEATURE_V2   = "instantfinalityv2"
+	REDUCE_FIX_NODE               = "reduce_fix_node"
+	REDUCE_FIX_NODE_V2            = "reduce_fix_node_v2"
+	REDUCE_FIX_NODE_V3            = "reduce_fix_node_v3"
 )
 
 // BestState houses information about the current best block and other info
@@ -471,7 +474,7 @@ func (beaconBestState *BeaconBestState) GetSyncingValidatorsString() map[byte][]
 	return res
 }
 
-//CommitteeStateVersion ...
+// CommitteeStateVersion ...
 func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }

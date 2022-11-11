@@ -158,6 +158,7 @@ func (p ProposeRuleLemma2) HandleBFTProposeMessage(env *ProposeMessageEnvironmen
 		env.userKeySet,
 		env.proposerPublicBLSMiningKey,
 		isValidLemma2,
+		env.NumberOfFixedShardBlockValidator,
 	)
 	//get vote for this propose block (case receive vote faster)
 	votes, _, err := GetVotesByBlockHashFromDB(env.block.ProposeHash().String())
@@ -351,7 +352,7 @@ func (p *ProposeRuleLemma2) addFinalityProof(
 	return nil
 }
 
-//ProposerByTimeSlot ...
+// ProposerByTimeSlot ...
 func GetProposerByTimeSlotFromCommitteeList(ts int64, committees []incognitokey.CommitteePublicKey, numberOfFixedShardBlockValidator int) (incognitokey.CommitteePublicKey, int) {
 	proposer, proposerIndex := GetProposer(
 		ts,

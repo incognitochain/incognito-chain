@@ -122,9 +122,12 @@ const (
 	BSCPrefix                 = "BSC"
 	PLGPrefix                 = "PLG"
 	FTMPrefix                 = "FTM"
+	AURORAPrefix              = "AUR"
+	AVAXPrefix                = "AVX"
 	ExternalBridgeTokenLength = 20
 	EVMAddressLength          = 40
 	UnifiedTokenPrefix        = "UT"
+	NEARPrefix                = "NER"
 )
 
 // Bridge, PDE & Portal statuses for RPCs
@@ -250,6 +253,9 @@ const (
 	BSCNetworkID
 	PLGNetworkID
 	FTMNetworkID
+	AURORANetworkID
+	AVAXNetworkID
+	NEARNetworkID
 )
 
 const (

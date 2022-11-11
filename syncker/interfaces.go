@@ -48,7 +48,7 @@ type Chain interface {
 	GetBestViewHash() string
 	GetFinalViewHash() string
 	GetEpoch() uint64
-	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numOfFixNode int) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64

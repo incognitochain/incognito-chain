@@ -80,6 +80,12 @@ const (
 	// Fantom bridge
 	BridgeFTMTxObjectType = 70
 
+	// Fantom bridge
+	BridgeAURORATxObjectType = 80
+
+	// Fantom bridge
+	BridgeAVAXTxObjectType = 81
+
 	// pDex v3
 	Pdexv3StatusObjectType                    = 48
 	Pdexv3ParamsObjectType                    = 49
@@ -110,6 +116,9 @@ const (
 	BridgeAggVaultObjectType              = 74
 	BridgeAggWaitingUnshieldReqObjectType = 75
 	BridgeAggParamObjectType              = 76
+
+	// Near bridge
+	BridgeNEARTxObjectType = 77
 )
 
 // Prefix length

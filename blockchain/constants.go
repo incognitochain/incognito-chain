@@ -7,6 +7,8 @@ import (
 )
 
 //Network fixed params
+var SFV3_MinShardCommitteeSize = 8
+
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
 	VERSION                            = 1
@@ -28,7 +30,6 @@ const (
 	NumberOfFixedShardBlockValidators  = 4
 	Duration                           = 1000000
 	MaxSubsetCommittees                = 2
-	SFV3_MinShardCommitteeSize         = 8
 
 	DEQUEUE_THRESHOLD_PERCENT = 0.5
 )

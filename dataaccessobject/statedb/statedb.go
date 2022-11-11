@@ -1750,7 +1750,7 @@ func (stateDB *StateDB) getFinalExchangeRatesState() (*FinalExchangeRatesState, 
 	return NewFinalExchangeRatesState(), nil
 }
 
-//B
+// B
 func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*RedeemRequest {
 	waitingRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
@@ -2652,4 +2652,40 @@ func (stateDB *StateDB) getBridgeFTMTxState(key common.Hash) (*BridgeFTMTxState,
 		return ftmTxState.GetValue().(*BridgeFTMTxState), true, nil
 	}
 	return NewBridgeFTMTxState(), false, nil
+}
+
+// ================================= AURORA bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeAURORATxState(key common.Hash) (*BridgeAURORATxState, bool, error) {
+	auroraTxState, err := stateDB.getStateObject(BridgeAURORATxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if auroraTxState != nil {
+		return auroraTxState.GetValue().(*BridgeAURORATxState), true, nil
+	}
+	return NewBridgeAURORATxState(), false, nil
+}
+
+// ================================= AVAX bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeAVAXTxState(key common.Hash) (*BridgeAVAXTxState, bool, error) {
+	avaxTxState, err := stateDB.getStateObject(BridgeAVAXTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if avaxTxState != nil {
+		return avaxTxState.GetValue().(*BridgeAVAXTxState), true, nil
+	}
+	return NewBridgeAVAXTxState(), false, nil
+}
+
+// ================================= Near bridge OBJECT =======================================
+func (stateDB *StateDB) getBridgeNEARTxState(key common.Hash) (*BridgeNEARTxState, bool, error) {
+	nearTxState, err := stateDB.getStateObject(BridgeNEARTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if nearTxState != nil {
+		return nearTxState.GetValue().(*BridgeNEARTxState), true, nil
+	}
+	return NewBridgeNEARTxState(), false, nil
 }

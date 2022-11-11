@@ -218,6 +218,32 @@ const (
 	BurnForCallRequestMeta      = 348
 	BurnForCallResponseMeta     = 349
 	IssuingReshieldResponseMeta = 350
+
+	// incognito mode for Aurora
+	IssuingAuroraRequestMeta  = 351
+	IssuingAuroraResponseMeta = 352
+	BurningAuroraRequestMeta  = 353
+	BurningAuroraConfirmMeta  = 159
+
+	// incognito mode for Avalanche
+	IssuingAvaxRequestMeta  = 354
+	IssuingAvaxResponseMeta = 355
+	BurningAvaxRequestMeta  = 356
+	BurningAvaxConfirmMeta  = 160
+
+	// pAurora ( Aurora )
+	BurningAuroraForDepositToSCRequestMeta = 357
+	BurningAuroraConfirmForDepositToSCMeta = 161
+
+	// pAVAX ( avalanche )
+	BurningAvaxForDepositToSCRequestMeta = 358
+	BurningAvaxConfirmForDepositToSCMeta = 162
+
+	// incognito mode for Near
+	IssuingNearRequestMeta  = 335
+	IssuingNearResponseMeta = 336
+	BurningNearRequestMeta  = 337
+	BurningNearConfirmMeta  = 163
 )
 
 var minerCreatedMetaTypes = []int{
@@ -230,6 +256,9 @@ var minerCreatedMetaTypes = []int{
 	IssuingPRVBEP20ResponseMeta,
 	IssuingPLGResponseMeta,
 	IssuingFantomResponseMeta,
+	IssuingNearResponseMeta,
+	IssuingAuroraResponseMeta,
+	IssuingAvaxResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
@@ -292,6 +321,9 @@ const (
 	EVMConfirmationBlocks    = 15 // update to 32 when eth merge
 	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
+	AuroraConfirmationBlocks = 5
+	AvaxConfirmationBlocks   = 15
+	NearConfirmationBlocks   = 5
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
@@ -369,6 +401,11 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningFantomConfirmMeta),
 	strconv.Itoa(BurningFantomConfirmForDepositToSCMeta),
 	strconv.Itoa(BurnForCallConfirmMeta),
+	strconv.Itoa(BurningAuroraConfirmMeta),
+	strconv.Itoa(BurningAvaxConfirmMeta),
+	strconv.Itoa(BurningAuroraConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningAvaxConfirmForDepositToSCMeta),
+	strconv.Itoa(BurningNearConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{
@@ -389,6 +426,6 @@ var FeatureFlagWithMetaTypes = map[string][]int{
 }
 
 const (
-	ExternalAddressLen = 20
+	ExternalAddressLen         = 20
 	BurnForCallMinBlockVersion = 10 // ADJUST_BLOCKTIME_VERSION
 )

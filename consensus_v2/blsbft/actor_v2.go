@@ -755,8 +755,8 @@ func (a *actorV2) processIfBlockGetEnoughVote(proposeBlockInfo *ProposeBlockInfo
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
 
 	if !proposeBlockInfo.IsCommitted {
-		a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees))
-		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
+		a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v). Majority: %+v", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees), proposeBlockInfo.ValidateFixNodeMajority())
+		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 && proposeBlockInfo.ValidateFixNodeMajority() {
 			a.logger.Infof("Commit block %v , height: %v", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.block.GetHeight())
 			var err error
 			if a.chain.IsBeaconChain() {
@@ -902,7 +902,7 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	return validationData, err
 }
 
-//VoteValidBlock this function should be use to vote for valid block only
+// VoteValidBlock this function should be use to vote for valid block only
 func (a *actorV2) voteValidBlock(
 	proposeBlockInfo *ProposeBlockInfo,
 ) error {
@@ -1258,13 +1258,12 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		}
 	}
 
-	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
-	if err != nil {
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+	if previousView == nil {
 		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
 		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
 		return err
 	}
-	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {
 		return errors.New("Receive block create from old view. Rejected!")
@@ -1300,12 +1299,13 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	err = a.handleNewProposeMsg(
 		proposeMsg,
 		block,
-		previousBlock,
+		previousView,
 		committees,
 		signingCommittees,
 		userKeySet,
 		proposerMiningKeyBase58,
 	)
+
 	if err != nil {
 		return err
 	}
@@ -1316,7 +1316,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 func (a *actorV2) handleNewProposeMsg(
 	proposeMsg BFTPropose,
 	block types.BlockInterface,
-	previousBlock types.BlockInterface,
+	previousView multiview.View,
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittees []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
@@ -1326,11 +1326,11 @@ func (a *actorV2) handleNewProposeMsg(
 	blockHash := block.ProposeHash().String()
 	env := NewProposeMessageEnvironment(
 		block,
-		previousBlock,
+		previousView.GetBlock(),
 		committees,
 		signingCommittees,
 		userKeySet,
-		a.chain.GetBestView().GetProposerLength(),
+		previousView.GetProposerLength(),
 		proposerPublicBLSMiningKey,
 	)
 
