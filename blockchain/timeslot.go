@@ -74,8 +74,7 @@ func (s *TSManager) pastHalfTimeslot(t int64) bool {
 	if lastAnchor.Timeslot == 0 {
 		return false
 	}
-	var blockTime int64 // TODO: @tin try to fill here
-	if t-lastAnchor.StartTime < blockTime/2 {
+	if t-lastAnchor.StartTime < s.getCurrentTS()/2 {
 		return false
 	}
 	return true
