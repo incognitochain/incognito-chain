@@ -590,6 +590,33 @@ func (a *actorV2) run() error {
 					userKeySet,
 				)
 
+				latestBlockInCurrentTS := a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				noProposeBlockInCurrentTS := func() bool {
+					if a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())+1 && bestView.PastHalfTimeslot(time.Now().Unix()) {
+						if len(a.GetSortedReceiveBlockByHeight(bestView.GetHeight()+1)) > 0 {
+							return false
+						}
+					}
+					return true
+				}
+				nextProposer := func() bool {
+					nextTS := a.currentTimeSlot + 1
+					nextProposerPk, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(
+						nextTS,
+						committees,
+					)
+					for _, userKey := range userKeySet {
+						userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+						if nextProposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
+							return true
+						}
+					}
+					return false
+				}
+				if (latestBlockInCurrentTS || noProposeBlockInCurrentTS()) && nextProposer() {
+					a.chain.CollectTxs()
+				}
+
 				if newTimeSlot { //for logging
 					a.logger.Info("")
 					a.logger.Info("======================================================")

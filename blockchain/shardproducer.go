@@ -394,7 +394,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	//}
 	//if !blockGenerator.chain.config.usingNewPool {
 	//	txToRemove := []metadata.Transaction{}
-	//	txsToAdd, txToRemove, _ = blockGenerator.streamPendingTransaction(
+	//	txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
 	//		shardID,
 	//		blockCreationLeftOver.Nanoseconds(),
 	//		bView.BeaconHeight,
@@ -783,7 +783,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState,
 /*
 Verify Transaction with these condition: defined in mempool.go
 */
-func (blockGenerator *BlockGenerator) streamPendingTransaction(
+func (blockGenerator *BlockGenerator) getPendingTransaction(
 	shardID byte,
 	ctx context.Context,
 	beaconHeight uint64,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
+	"log"
 
 	// "strconv"
 	"sync"
@@ -41,14 +42,11 @@ func (s *PreFetchTx) GetTxForBlockProducing() []metadata.Transaction {
 //call whenever there is new view
 func (s *PreFetchTx) Reset(view *ShardBestState) {
 	if s.BestView == nil || s.BestView.BestBlock.Hash().String() != view.BestBlock.Hash().String() {
+		s.Stop()
 		s.BeaconBlocks = []*types.BeaconBlock{}
 		s.CollectedTxs = make(map[common.Hash]metadata.Transaction)
 		s.ResponseTxs = make(map[common.Hash]metadata.Transaction)
 		s.BestView = view
-		if s.CancelFunc != nil {
-			s.CancelFunc()
-		}
-		s.Ctx, s.CancelFunc = context.WithCancel(context.Background())
 	}
 }
 
@@ -58,30 +56,27 @@ func (s *PreFetchTx) Stop() {
 		s.CancelFunc()
 	}
 	s.WgStop.Wait()
-	context.WithValue(s.Ctx, "Running", false)
+	s.Ctx, s.CancelFunc = context.WithCancel(context.Background())
+
 }
 
 //call when next timeslot is proposer => prepare tx
 func (s *PreFetchTx) Start() (context.Context, context.CancelFunc) {
 	if s.Ctx.Value("Running") != nil && s.Ctx.Value("Running").(bool) {
-		fmt.Println("debugprefetch: pre fetch already running")
+		log.Println("debugprefetch: pre fetch already running")
 		return s.Ctx, s.CancelFunc
 	}
-	s.Ctx, s.CancelFunc = context.WithCancel(context.Background())
-	s.Ctx = context.WithValue(s.Ctx, "Running", true)
-	s.Ctx, s.CancelFunc = context.WithDeadline(s.Ctx, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
+	Logger.log.Info("debugprefetch: running...")
+	totalTxsReminder := config.Param().TransactionInBlockParam.Upper
 
-	defer func() {
-		s.Ctx = context.WithValue(s.Ctx, "Running", false)
-	}()
+	s.Ctx = context.WithValue(s.Ctx, "Running", true)
+	s.Ctx = context.WithValue(s.Ctx, "maxTXs", totalTxsReminder)
+	s.Ctx, s.CancelFunc = context.WithDeadline(s.Ctx, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
+	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
 	curView := s.BestView
 	shardID := curView.ShardID
-
-	totalTxsReminder := config.Param().TransactionInBlockParam.Upper
-	s.Ctx = context.WithValue(s.Ctx, "maxTXs", totalTxsReminder)
-	currentCtx := s.Ctx
 
 	go func() {
 		s.WgStop.Add(1)
@@ -92,7 +87,7 @@ func (s *PreFetchTx) Start() (context.Context, context.CancelFunc) {
 			time.Sleep(time.Millisecond * 100)
 			select {
 			case <-currentCtx.Done():
-				fmt.Println("debugprefetch: done get response from beacon block", len(s.BeaconBlocks))
+				Logger.log.Info("debugprefetch: done get response from beacon block", len(s.BeaconBlocks), len(s.ResponseTxs))
 				return
 			default:
 			}
@@ -110,7 +105,7 @@ func (s *PreFetchTx) Start() (context.Context, context.CancelFunc) {
 				beaconStartHeight = s.BeaconBlocks[len(s.BeaconBlocks)-1].GetHeight() + 1
 			}
 			beaconBlocks, err := FetchBeaconBlockFromHeight(s.BestView.blockChain, beaconStartHeight, beaconProcessHeight)
-			fmt.Println("debugprefetch: get beacon block", beaconStartHeight, beaconProcessHeight, len(beaconBlocks))
+			//fmt.Println("debugprefetch: get beacon block", beaconStartHeight, beaconProcessHeight, len(beaconBlocks))
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -139,14 +134,14 @@ func (s *PreFetchTx) Start() (context.Context, context.CancelFunc) {
 	go func() {
 		s.WgStop.Add(1)
 		defer func() {
-			fmt.Println("debugprefetch: done get tx from mempool")
+			Logger.log.Info("debugprefetch: done get tx from mempool", len(s.CollectedTxs))
 			s.WgStop.Done()
 		}()
 
 		if !blockChain.config.usingNewPool {
 			st := time.Now()
 			//get transaction until context cancel
-			s.CollectedTxs, _ = blockChain.config.BlockGen.streamPendingTransaction(
+			s.CollectedTxs, _ = blockChain.config.BlockGen.getPendingTransaction(
 				curView.ShardID,
 				currentCtx,
 				curView.BeaconHeight,
