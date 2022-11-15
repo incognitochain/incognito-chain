@@ -44,9 +44,7 @@ type TxPool interface {
 		cView metadata.ChainRetriever,
 		sView metadata.ShardViewRetriever,
 		bcView metadata.BeaconViewRetriever,
-		maxSize uint64,
 		ctx context.Context,
-		maxTxs int64,
 	) []metadata.Transaction
 	FilterWithNewView(
 		cView metadata.ChainRetriever,

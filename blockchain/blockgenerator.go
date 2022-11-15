@@ -15,6 +15,35 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
+type PreFetchContext struct {
+	context.Context
+	NumTxRemain uint64
+	MaxTime     time.Duration
+	MaxSize     uint64
+	running     bool
+	cancelFunc  context.CancelFunc
+}
+
+func (s *PreFetchContext) Value(key interface{}) interface{} {
+	if k, ok := key.(string); ok && k == "MaxTime" {
+		switch k {
+		case "MaxTime":
+			return s.MaxTime
+		case "MaxSize":
+			return s.MaxSize
+		case "NumTxRemain":
+			return s.NumTxRemain
+		default:
+			return s.Context.Value(k)
+		}
+	}
+	return s.Context.Value(key)
+}
+
+func NewPreFetchContext() *PreFetchContext {
+	return &PreFetchContext{context.Background(), 0, 0, 4096, false, nil}
+}
+
 type PreFetchTx struct {
 	BlockChain   *BlockChain
 	BestView     *ShardBestState
@@ -23,8 +52,7 @@ type PreFetchTx struct {
 	CollectedTxs map[common.Hash]metadata.Transaction
 	Error        string
 	WgStop       *sync.WaitGroup
-	Ctx          context.Context
-	CancelFunc   context.CancelFunc
+	Ctx          *PreFetchContext
 }
 
 //get response tx and mempool tx
@@ -52,32 +80,36 @@ func (s *PreFetchTx) Reset(view *ShardBestState) {
 
 //call when start propose block
 func (s *PreFetchTx) Stop() {
-	if s.CancelFunc != nil {
-		s.CancelFunc()
+	if s.Ctx != nil && s.Ctx.cancelFunc != nil {
+		s.Ctx.cancelFunc()
 	}
 	s.WgStop.Wait()
-	s.Ctx, s.CancelFunc = context.WithCancel(context.Background())
+	s.Ctx = NewPreFetchContext()
 
 }
 
 //call when next timeslot is proposer => prepare tx
-func (s *PreFetchTx) Start() (context.Context, context.CancelFunc) {
-	if s.Ctx.Value("Running") != nil && s.Ctx.Value("Running").(bool) {
+func (s *PreFetchTx) Start() {
+	if s.Ctx.running {
 		log.Println("debugprefetch: pre fetch already running")
-		return s.Ctx, s.CancelFunc
+		return
 	}
 	Logger.log.Info("debugprefetch: running...")
-	totalTxsReminder := config.Param().TransactionInBlockParam.Upper
+	numTxRemain := config.Param().TransactionInBlockParam.Upper
 
-	s.Ctx = context.WithValue(s.Ctx, "Running", true)
-	s.Ctx = context.WithValue(s.Ctx, "maxTXs", totalTxsReminder)
-	s.Ctx, s.CancelFunc = context.WithDeadline(s.Ctx, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
+	s.Ctx.running = true
+	s.Ctx.NumTxRemain = uint64(numTxRemain)
+	s.Ctx.Context, s.Ctx.cancelFunc = context.WithDeadline(s.Ctx, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
 	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
 	curView := s.BestView
 	shardID := curView.ShardID
-
+	bView, err := blockChain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
+	if err != nil {
+		Logger.log.Info("debugprefetch: cannot dinf beacon view", curView.BestBeaconHash.String())
+		return
+	}
 	go func() {
 		s.WgStop.Add(1)
 		defer s.WgStop.Done()
@@ -148,10 +180,21 @@ func (s *PreFetchTx) Start() (context.Context, context.CancelFunc) {
 				curView,
 			)
 			Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(s.CollectedTxs), curView.ShardHeight+1, time.Since(st))
+		} else {
+			currentCtx.MaxTime = time.Millisecond * time.Duration(common.TIMESLOT) * 4
+			txsToAdd := blockChain.ShardChain[shardID].TxPool.GetTxsTranferForNewBlock(
+				blockChain,
+				curView,
+				bView,
+				currentCtx,
+			)
+			for _, tx := range txsToAdd {
+				s.CollectedTxs[*tx.Hash()] = tx
+			}
 		}
 	}()
 
-	return s.Ctx, s.CancelFunc
+	return
 }
 
 type BlockGenerator struct {

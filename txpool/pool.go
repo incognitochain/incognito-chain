@@ -451,10 +451,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	cView metadata.ChainRetriever,
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
-	maxSize uint64,
 	ctx context.Context,
-	maxTxs int64,
 ) []metadata.Transaction {
+
 	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
@@ -466,12 +465,21 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Index  uint
 		Detail TxInfoDetail
 	}{}
+	maxTime := ctx.Value("MaxTime").(time.Duration)
+	maxSize := ctx.Value("MaxSize").(uint64)
 	mapForChkDbStake := map[string]interface{}{}
 	defer func() {
 		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v for shard %v \n", len(res), curSize, curTime, maxSize, sView.GetShardID())
 	}()
 	limitTxAction := map[int]int{}
 	for {
+		maxTxs := ctx.Value("NumTxRemain").(uint64)
+		select {
+		case <-ctx.Done():
+			return res
+		default:
+		}
+
 		select {
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
@@ -482,10 +490,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if curSize+txDetails.Size > maxSize {
 				continue
 			}
-			//tmp remove maxTime TODO: review
-			//if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
-			//	continue
-			//}
+			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
+				continue
+			}
 			if ok := checkTxAction(limitTxAction, txDetails.Tx); !ok {
 				continue
 			}

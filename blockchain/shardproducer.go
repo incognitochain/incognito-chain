@@ -801,7 +801,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			return txsToAdd, totalFee
 		default:
 		}
-		maxTxs := ctx.Value("maxTXs").(int)
+		maxTxs := ctx.Value("NumTxRemain").(uint64)
+		panic(maxTxs)
 		sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 		//Logger.log.Infof("Number of transaction get from Block Generator: %v", len(sourceTxns))
 

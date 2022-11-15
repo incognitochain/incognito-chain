@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -75,7 +74,7 @@ func NewShardChain(
 			CollectedTxs: make(map[common.Hash]metadata.Transaction),
 			ResponseTxs:  make(map[common.Hash]metadata.Transaction),
 			BlockChain:   blockchain,
-			Ctx:          context.Background(),
+			Ctx:          NewPreFetchContext(),
 		},
 	}
 
