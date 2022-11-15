@@ -2,9 +2,10 @@ package signaturecounter
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -12,11 +13,11 @@ import (
 
 type Penalty struct {
 	MinPercent   uint
-	Time         int64
 	ForceUnstake bool
 }
 
 type MissingSignature struct {
+	VotePercent uint
 	ActualTotal uint
 	Missing     uint
 }
@@ -31,7 +32,6 @@ func NewMissingSignature() MissingSignature {
 var defaultRule = []Penalty{
 	{
 		MinPercent:   50,
-		Time:         0,
 		ForceUnstake: true,
 	},
 }
@@ -173,29 +173,32 @@ func (s *MissingSignatureCounter) AddPreviousMissignSignature(data string, shard
 }
 
 func (s MissingSignatureCounter) GetAllSlashingPenaltyWithActualTotalBlock() map[string]Penalty {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	penalties := make(map[string]Penalty)
 	for key, numberOfMissingSig := range s.missingSignature {
-		penalty := getSlashingPenalty(numberOfMissingSig.Missing, numberOfMissingSig.ActualTotal, s.penalties)
+		votedPercent, penalty := getSlashingPenalty(numberOfMissingSig.Missing, numberOfMissingSig.ActualTotal, s.penalties)
 		if !penalty.IsEmpty() {
 			penalties[key] = penalty
 		}
+		numberOfMissingSig.VotePercent = votedPercent
+		s.missingSignature[key] = numberOfMissingSig
 	}
 	return penalties
 }
 
 func (s MissingSignatureCounter) GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlocks map[string]uint) map[string]Penalty {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	penalties := make(map[string]Penalty)
 	for key, expectedTotalBlock := range expectedTotalBlocks {
 		var penalty Penalty
+		var votedPercent uint
 		missingSignature, ok := s.missingSignature[key]
 		if !ok {
-			penalty = getSlashingPenalty(expectedTotalBlock, expectedTotalBlock, s.penalties)
+			votedPercent, penalty = getSlashingPenalty(expectedTotalBlock, expectedTotalBlock, s.penalties)
 		} else {
 			signedBlock := missingSignature.ActualTotal - missingSignature.Missing
 			missingBlock := uint(0)
@@ -204,28 +207,38 @@ func (s MissingSignatureCounter) GetAllSlashingPenaltyWithExpectedTotalBlock(exp
 			} else {
 				missingBlock = expectedTotalBlock - signedBlock
 			}
-			penalty = getSlashingPenalty(missingBlock, expectedTotalBlock, s.penalties)
+			votedPercent, penalty = getSlashingPenalty(missingBlock, expectedTotalBlock, s.penalties)
 		}
 		if !penalty.IsEmpty() {
 			penalties[key] = penalty
 		}
+		missingSignature.VotePercent = votedPercent
+		s.missingSignature[key] = missingSignature
 	}
 
 	return penalties
 }
 
-func getSlashingPenalty(numberOfMissingSig uint, total uint, penalties []Penalty) Penalty {
+func getSlashingPenalty(
+	numberOfMissingSig, total uint,
+	penalties []Penalty,
+) (
+	uint,
+	Penalty,
+) {
+	votePercent := uint(100)
 	penalty := NewPenalty()
 	if total == 0 {
-		return penalty
+		return votePercent, penalty
 	}
 	missedPercent := numberOfMissingSig * 100 / total
+	votePercent -= missedPercent
 	for _, penaltyLevel := range penalties {
 		if missedPercent >= penaltyLevel.MinPercent {
 			penalty = penaltyLevel
 		}
 	}
-	return penalty
+	return votePercent, penalty
 }
 
 func (s *MissingSignatureCounter) Reset(committees []string) {

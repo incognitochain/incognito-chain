@@ -13,6 +13,17 @@ type SwapRuleProcessor interface {
 		penalty map[string]signaturecounter.Penalty,
 	) (
 		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees
+	ProcessBeacon(
+		committees, substitutes []string,
+		minCommitteeSize, maxCommitteeSize, numberOfFixedValidators int,
+		reputation map[string]uint64,
+		performance map[string]uint64,
+	) (
+		newCommittees []string,
+		newSubstitutes []string,
+		swapOutList []string,
+		slashedList []string,
+	)
 	CalculateAssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
 	Version() int
 }
