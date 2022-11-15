@@ -111,7 +111,7 @@ type BeaconBestState struct {
 }
 
 func (beaconBestState *BeaconBestState) TimeLeftOver(t int64) int64 {
-	return shardBestState.TSManager.timeLeftOver(t)
+	return beaconBestState.TSManager.timeLeftOver(t)
 }
 
 func (beaconBestState *BeaconBestState) PastHalfTimeslot(t int64) bool {
