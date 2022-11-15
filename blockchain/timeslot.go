@@ -79,3 +79,11 @@ func (s *TSManager) pastHalfTimeslot(t int64) bool {
 	}
 	return true
 }
+
+func (s *TSManager) timeLeftOver(t int64) int64 {
+	lastAnchor := s.getLatestAnchor()
+	if lastAnchor.Timeslot == 0 {
+		return -1
+	}
+	return (t - lastAnchor.StartTime) * s.getCurrentTS()
+}

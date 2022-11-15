@@ -110,6 +110,10 @@ type BeaconBestState struct {
 	LastBlockProcessBridge uint64
 }
 
+func (beaconBestState *BeaconBestState) TimeLeftOver(t int64) int64 {
+	return shardBestState.TSManager.timeLeftOver(t)
+}
+
 func (beaconBestState *BeaconBestState) PastHalfTimeslot(t int64) bool {
 	return false
 }

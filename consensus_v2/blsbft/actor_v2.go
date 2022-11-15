@@ -568,7 +568,7 @@ func (a *actorV2) run() error {
 				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
 				if currentTimeSlot == bestView.GetCurrentTimeSlot() || bestView.PastHalfTimeslot(a.currentTime) {
 					if a.shouldPreparePropose {
-						if err := a.chain.CollectTxs(); err != nil {
+						if err := a.chain.CollectTxs(bestView.TimeLeftOver(a.currentTime)); err != nil {
 							a.logger.Error("cannot collect txs err %v", err)
 						}
 					}
