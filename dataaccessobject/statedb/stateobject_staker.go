@@ -54,9 +54,10 @@ type ShardStakerInfo struct {
 	beaconConfirmHeight uint64
 	delegate            string
 	hasCredit           bool
+	activeInCommittee   int
 }
 
-func NewStakerInfo() *ShardStakerInfo {
+func NewShardStakerInfo() *ShardStakerInfo {
 	return &ShardStakerInfo{}
 }
 
@@ -75,6 +76,7 @@ func NewShardStakerInfoWithValue(
 		beaconConfirmHeight: beaconConfirmHeight,
 		delegate:            delegate,
 		hasCredit:           hasCredit,
+		activeInCommittee:   0,
 	}
 }
 
@@ -88,6 +90,7 @@ func (c ShardStakerInfo) MarshalJSON() ([]byte, error) {
 		BeaconConfirmHeight uint64
 		Delegate            string
 		HasCredit           bool
+		ActiveTimes         int
 	}{
 		RewardReceiver:      c.rewardReceiver,
 		TxStakingID:         c.txStakingID,
@@ -95,6 +98,7 @@ func (c ShardStakerInfo) MarshalJSON() ([]byte, error) {
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		Delegate:            c.delegate,
 		HasCredit:           c.hasCredit,
+		ActiveTimes:         c.activeInCommittee,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -112,6 +116,7 @@ func (c *ShardStakerInfo) UnmarshalJSON(data []byte) error {
 		BeaconConfirmHeight uint64
 		Delegate            string
 		HasCredit           bool
+		ActiveTimes         int
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -123,6 +128,7 @@ func (c *ShardStakerInfo) UnmarshalJSON(data []byte) error {
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.delegate = temp.Delegate
 	c.hasCredit = temp.HasCredit
+	c.activeInCommittee = temp.ActiveTimes
 	return nil
 }
 
@@ -144,6 +150,14 @@ func (s *ShardStakerInfo) SetHasCredit(c bool) {
 
 func (s *ShardStakerInfo) SetDelegate(delegate string) {
 	s.delegate = delegate
+}
+
+func (s *ShardStakerInfo) SetActiveTimesInCommittee(activeTimes int) {
+	s.activeInCommittee = activeTimes
+}
+
+func (s *ShardStakerInfo) ActiveTimesInCommittee() int {
+	return s.activeInCommittee
 }
 
 func (s ShardStakerInfo) RewardReceiver() key.PaymentAddress {
@@ -170,7 +184,7 @@ func (s ShardStakerInfo) Delegate() string {
 	return s.delegate
 }
 
-type StakerObject struct {
+type ShardStakerObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
@@ -189,19 +203,19 @@ type StakerObject struct {
 	dbErr error
 }
 
-func newStakerObject(db *StateDB, hash common.Hash) *StakerObject {
-	return &StakerObject{
+func newShardStakerObject(db *StateDB, hash common.Hash) *ShardStakerObject {
+	return &ShardStakerObject{
 		version:             defaultVersion,
 		db:                  db,
 		stakerPublicKeyHash: hash,
 		stakerInfo:          &ShardStakerInfo{},
-		objectType:          StakerObjectType,
+		objectType:          ShardStakerObjectType,
 		deleted:             false,
 	}
 }
 
-func newStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*StakerObject, error) {
-	var newStakerInfo = NewStakerInfo()
+func newShardStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*ShardStakerObject, error) {
+	var newStakerInfo = NewShardStakerInfo()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
@@ -218,32 +232,32 @@ func newStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*
 	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
 		return nil, fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
 	}
-	return &StakerObject{
+	return &ShardStakerObject{
 		version:             defaultVersion,
 		stakerPublicKeyHash: key,
 		stakerInfo:          newStakerInfo,
 		db:                  db,
-		objectType:          StakerObjectType,
+		objectType:          ShardStakerObjectType,
 		deleted:             false,
 	}, nil
 }
 
-func (c StakerObject) GetVersion() int {
+func (c ShardStakerObject) GetVersion() int {
 	return c.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (c *StakerObject) SetError(err error) {
+func (c *ShardStakerObject) SetError(err error) {
 	if c.dbErr == nil {
 		c.dbErr = err
 	}
 }
 
-func (c StakerObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (c ShardStakerObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return c.trie
 }
 
-func (c *StakerObject) SetValue(data interface{}) error {
+func (c *ShardStakerObject) SetValue(data interface{}) error {
 	newStakerInfo, ok := data.(*ShardStakerInfo)
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
@@ -255,11 +269,11 @@ func (c *StakerObject) SetValue(data interface{}) error {
 	return nil
 }
 
-func (c StakerObject) GetValue() interface{} {
+func (c ShardStakerObject) GetValue() interface{} {
 	return c.stakerInfo
 }
 
-func (c StakerObject) GetValueBytes() []byte {
+func (c ShardStakerObject) GetValueBytes() []byte {
 	data := c.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
@@ -268,31 +282,276 @@ func (c StakerObject) GetValueBytes() []byte {
 	return value
 }
 
-func (c StakerObject) GetHash() common.Hash {
+func (c ShardStakerObject) GetHash() common.Hash {
 	return c.stakerPublicKeyHash
 }
 
-func (c StakerObject) GetType() int {
+func (c ShardStakerObject) GetType() int {
 	return c.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (c *StakerObject) MarkDelete() {
+func (c *ShardStakerObject) MarkDelete() {
 	c.deleted = true
 }
 
 // reset all shard committee value into default value
-func (c *StakerObject) Reset() bool {
-	c.stakerInfo = NewStakerInfo()
+func (c *ShardStakerObject) Reset() bool {
+	c.stakerInfo = NewShardStakerInfo()
 	return true
 }
 
-func (c StakerObject) IsDeleted() bool {
+func (c ShardStakerObject) IsDeleted() bool {
 	return c.deleted
 }
 
 // value is either default or nil
-func (c StakerObject) IsEmpty() bool {
-	temp := NewStakerInfo()
+func (c ShardStakerObject) IsEmpty() bool {
+	temp := NewShardStakerInfo()
+	return reflect.DeepEqual(temp, c.stakerInfo) || c.stakerInfo == nil
+}
+
+type BeaconStakerInfo struct {
+	rewardReceiver      key.PaymentAddress
+	txStakingIDs        []common.Hash
+	autoStaking         bool
+	beaconConfirmHeight uint64
+	stakingAmount       uint64
+	delegatorReward     uint64
+}
+
+func NewBeaconStakerInfo() *BeaconStakerInfo {
+	return &BeaconStakerInfo{}
+}
+
+func NewBeaconStakerInfoWithValue(
+	rewardReceiver key.PaymentAddress,
+	autoStaking bool,
+	txStakingIDs []common.Hash,
+	beaconConfirmHeight uint64,
+	stakingAmount uint64,
+) *BeaconStakerInfo {
+	return &BeaconStakerInfo{
+		rewardReceiver:      rewardReceiver,
+		autoStaking:         autoStaking,
+		txStakingIDs:        txStakingIDs,
+		beaconConfirmHeight: beaconConfirmHeight,
+		stakingAmount:       stakingAmount,
+		delegatorReward:     uint64(0),
+	}
+}
+
+func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		RewardReceiver      key.PaymentAddress
+		AutoStaking         bool
+		TxStakingIDs        []common.Hash
+		ShardID             byte
+		NumberOfRound       int
+		BeaconConfirmHeight uint64
+		StakingAmount       uint64
+	}{
+		RewardReceiver:      c.rewardReceiver,
+		TxStakingIDs:        c.txStakingIDs,
+		AutoStaking:         c.autoStaking,
+		BeaconConfirmHeight: c.beaconConfirmHeight,
+		StakingAmount:       c.stakingAmount,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		RewardReceiver      key.PaymentAddress
+		AutoStaking         bool
+		TxStakingIDs        []common.Hash
+		ShardID             byte
+		NumberOfRound       int
+		BeaconConfirmHeight uint64
+		StakingAmount       uint64
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	c.txStakingIDs = temp.TxStakingIDs
+	c.rewardReceiver = temp.RewardReceiver
+	c.autoStaking = temp.AutoStaking
+	c.beaconConfirmHeight = temp.BeaconConfirmHeight
+	c.stakingAmount = temp.StakingAmount
+	return nil
+}
+
+func (s *BeaconStakerInfo) SetRewardReceiver(r key.PaymentAddress) {
+	s.rewardReceiver = r
+}
+
+func (s *BeaconStakerInfo) SetTxStakingIDs(t []common.Hash) {
+	s.txStakingIDs = t
+}
+
+func (s *BeaconStakerInfo) AddTxStakingID(t common.Hash) {
+	s.txStakingIDs = append(s.txStakingIDs, t)
+}
+
+func (s *BeaconStakerInfo) SetAutoStaking(a bool) {
+	s.autoStaking = a
+}
+
+func (s *BeaconStakerInfo) SetStakingAmount(a uint64) {
+	s.stakingAmount = a
+}
+
+func (s *BeaconStakerInfo) AddStakingAmount(a uint64) {
+	s.stakingAmount = a
+}
+
+func (s BeaconStakerInfo) RewardReceiver() key.PaymentAddress {
+	return s.rewardReceiver
+}
+
+func (s BeaconStakerInfo) TxStakingIDs() []common.Hash {
+	return s.txStakingIDs
+}
+
+func (s BeaconStakerInfo) AutoStaking() bool {
+	return s.autoStaking
+}
+
+func (s BeaconStakerInfo) StakingAmount() uint64 {
+	return s.stakingAmount
+}
+
+func (s BeaconStakerInfo) BeaconConfirmHeight() uint64 {
+	return s.beaconConfirmHeight
+}
+
+type BeaconStakerObject struct {
+	db *StateDB
+	// Write caches.
+	trie Trie // storage trie, which becomes non-nil on first access
+
+	version             int
+	stakerPublicKeyHash common.Hash
+	stakerInfo          *BeaconStakerInfo
+	objectType          int
+	deleted             bool
+
+	// DB error.
+	// State objects are used by the consensus core and VM which are
+	// unable to deal with database-level errors. Any error that occurs
+	// during a database read is memoized here and will eventually be returned
+	// by StateDB.Commit.
+	dbErr error
+}
+
+func newBeaconStakerObject(db *StateDB, hash common.Hash) *BeaconStakerObject {
+	return &BeaconStakerObject{
+		version:             defaultVersion,
+		db:                  db,
+		stakerPublicKeyHash: hash,
+		stakerInfo:          &BeaconStakerInfo{},
+		objectType:          BeaconStakerObjectType,
+		deleted:             false,
+	}
+}
+
+func newBeaconStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BeaconStakerObject, error) {
+	var newStakerInfo = NewBeaconStakerInfo()
+	var ok bool
+	var dataBytes []byte
+	if dataBytes, ok = data.([]byte); ok {
+		err := json.Unmarshal(dataBytes, newStakerInfo)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		newStakerInfo, ok = data.(*BeaconStakerInfo)
+		if !ok {
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
+		}
+	}
+	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
+		return nil, fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
+	}
+	return &BeaconStakerObject{
+		version:             defaultVersion,
+		stakerPublicKeyHash: key,
+		stakerInfo:          newStakerInfo,
+		db:                  db,
+		objectType:          BeaconStakerObjectType,
+		deleted:             false,
+	}, nil
+}
+
+func (c BeaconStakerObject) GetVersion() int {
+	return c.version
+}
+
+// setError remembers the first non-nil error it is called with.
+func (c *BeaconStakerObject) SetError(err error) {
+	if c.dbErr == nil {
+		c.dbErr = err
+	}
+}
+
+func (c BeaconStakerObject) GetTrie(db DatabaseAccessWarper) Trie {
+	return c.trie
+}
+
+func (c *BeaconStakerObject) SetValue(data interface{}) error {
+	newStakerInfo, ok := data.(*BeaconStakerInfo)
+	if !ok {
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
+	}
+	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
+		return fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
+	}
+	c.stakerInfo = newStakerInfo
+	return nil
+}
+
+func (c BeaconStakerObject) GetValue() interface{} {
+	return c.stakerInfo
+}
+
+func (c BeaconStakerObject) GetValueBytes() []byte {
+	data := c.GetValue()
+	value, err := json.Marshal(data)
+	if err != nil {
+		panic("failed to marshal all shard committee")
+	}
+	return value
+}
+
+func (c BeaconStakerObject) GetHash() common.Hash {
+	return c.stakerPublicKeyHash
+}
+
+func (c BeaconStakerObject) GetType() int {
+	return c.objectType
+}
+
+// MarkDelete will delete an object in trie
+func (c *BeaconStakerObject) MarkDelete() {
+	c.deleted = true
+}
+
+// reset all shard committee value into default value
+func (c *BeaconStakerObject) Reset() bool {
+	c.stakerInfo = NewBeaconStakerInfo()
+	return true
+}
+
+func (c BeaconStakerObject) IsDeleted() bool {
+	return c.deleted
+}
+
+// value is either default or nil
+func (c BeaconStakerObject) IsEmpty() bool {
+	temp := NewBeaconStakerInfo()
 	return reflect.DeepEqual(temp, c.stakerInfo) || c.stakerInfo == nil
 }

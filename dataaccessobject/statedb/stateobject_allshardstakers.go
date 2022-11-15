@@ -113,7 +113,7 @@ func newAllStakersObject(db *StateDB, hash common.Hash) *AllStakersObject {
 		db:             db,
 		objectKey:      hash,
 		allStakersInfo: &AllShardStakersInfo{},
-		objectType:     StakerObjectType,
+		objectType:     ShardStakerObjectType,
 		deleted:        false,
 	}
 }
@@ -142,7 +142,7 @@ func newAllStakersObjectWithValue(db *StateDB, key common.Hash, data interface{}
 		objectKey:      key,
 		allStakersInfo: newStakerInfo,
 		db:             db,
-		objectType:     StakerObjectType,
+		objectType:     ShardStakerObjectType,
 		deleted:        false,
 	}, nil
 }
@@ -213,6 +213,6 @@ func (c AllStakersObject) IsDeleted() bool {
 
 // value is either default or nil
 func (c AllStakersObject) IsEmpty() bool {
-	temp := NewStakerInfo()
+	temp := NewShardStakerInfo()
 	return reflect.DeepEqual(temp, c.allStakersInfo) || c.allStakersInfo == nil
 }

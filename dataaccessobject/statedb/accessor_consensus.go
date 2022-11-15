@@ -507,15 +507,26 @@ func GetStakingInfo(bcDB *StateDB, shardIDs []int) map[string]bool {
 	return mapAutoStaking
 }
 
-func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*ShardStakerInfo, bool, error) {
+func GetShardStakerInfo(stateDB *StateDB, stakerPubkey string) (*ShardStakerInfo, bool, error) {
 	pubKey := incognitokey.NewCommitteePublicKey()
 	err := pubKey.FromString(stakerPubkey)
 	if err != nil {
 		return nil, false, err
 	}
 	pubKeyBytes, _ := pubKey.RawBytes()
-	key := GetStakerInfoKey(pubKeyBytes)
-	return stateDB.getStakerInfo(key)
+	key := GetShardStakerInfoKey(pubKeyBytes)
+	return stateDB.getShardStakerInfo(key)
+}
+
+func GetBeaconStakerInfo(stateDB *StateDB, stakerPubkey string) (*BeaconStakerInfo, bool, error) {
+	pubKey := incognitokey.NewCommitteePublicKey()
+	err := pubKey.FromString(stakerPubkey)
+	if err != nil {
+		return nil, false, err
+	}
+	pubKeyBytes, _ := pubKey.RawBytes()
+	key := GetBeaconStakerInfoKey(pubKeyBytes)
+	return stateDB.getBeaconStakerInfo(key)
 }
 
 func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey) error {
@@ -618,8 +629,11 @@ func storeShardStakerInfo(
 		if err != nil {
 			return err
 		}
-		key := GetStakerInfoKey(keyBytes)
+		key := GetShardStakerInfoKey(keyBytes)
 		committeeString, err := committee.ToBase58()
+		if err != nil {
+			return err
+		}
 		_, hasCredit := enableCredit[committeeString]
 		value := NewShardStakerInfoWithValue(
 			rewardReceiver[committee.GetIncKeyBase58()],
@@ -629,7 +643,66 @@ func storeShardStakerInfo(
 			delegate[committeeString],
 			hasCredit,
 		)
-		err = stateDB.SetStateObject(StakerObjectType, key, value)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func StoreBeaconStakersInfo(
+	stateDB *StateDB,
+	committees []incognitokey.CommitteePublicKey,
+	rewardReceiver map[string]key.PaymentAddress,
+	autoStaking map[string]bool,
+	stakingTx map[string]common.Hash,
+	beaconConfirmHeight uint64,
+	stakingAmount map[string]uint64,
+) error {
+	for _, committee := range committees {
+		if keyBytes, err := committee.RawBytes(); err != nil {
+			return err
+		} else {
+			key := GetBeaconStakerInfoKey(keyBytes)
+			if committeeString, err := committee.ToBase58(); err != nil {
+				return err
+			} else {
+				value := NewBeaconStakerInfoWithValue(
+					rewardReceiver[committee.GetIncKeyBase58()],
+					autoStaking[committeeString],
+					[]common.Hash{stakingTx[committeeString]},
+					beaconConfirmHeight,
+					stakingAmount[committeeString],
+				)
+				if err = stateDB.SetStateObject(ShardStakerObjectType, key, value); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func AddBeaconStakingAmount(
+	stateDB *StateDB,
+	stakingAmountMap map[string]uint64,
+) error {
+	for stakerPubkeyStr, addedStakingAmount := range stakingAmountMap {
+		stakerPubkey := incognitokey.NewCommitteePublicKey()
+		err := stakerPubkey.FromString(stakerPubkeyStr)
+		if err != nil {
+			return err
+		}
+		pubKeyBytes, _ := stakerPubkey.RawBytes()
+		key := GetBeaconStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getBeaconStakerInfo(key)
+		if err != nil || !exist {
+			return NewStatedbError(SaveStopAutoStakerInfoError, err)
+		}
+		stakerInfo.stakingAmount += addedStakingAmount
+
+		err = stateDB.SetStateObject(BeaconStakerObjectType, key, stakerInfo)
 		if err != nil {
 			return err
 		}
@@ -666,8 +739,8 @@ func SaveStopAutoStakerInfo(
 ) error {
 	for _, stakerPubkey := range committees {
 		pubKeyBytes, _ := stakerPubkey.RawBytes()
-		key := GetStakerInfoKey(pubKeyBytes)
-		stakerInfo, exist, err := stateDB.getStakerInfo(key)
+		key := GetShardStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getShardStakerInfo(key)
 		if err != nil || !exist {
 			return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
@@ -676,7 +749,7 @@ func SaveStopAutoStakerInfo(
 		committeeString, err := stakerPubkey.ToBase58()
 		stakerInfo.autoStaking = autoStaking[committeeString]
 
-		err = stateDB.SetStateObject(StakerObjectType, key, stakerInfo)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, stakerInfo)
 		if err != nil {
 			return err
 		}
@@ -697,14 +770,14 @@ func SaveStakerReDelegateInfo(
 			return err
 		}
 		pubKeyBytes, _ := stakerPubkey.RawBytes()
-		key := GetStakerInfoKey(pubKeyBytes)
-		stakerInfo, exist, err := stateDB.getStakerInfo(key)
+		key := GetShardStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getShardStakerInfo(key)
 		if err != nil || !exist {
 			return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
 		stakerInfo.delegate = newDelegate
 
-		err = stateDB.SetStateObject(StakerObjectType, key, stakerInfo)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, stakerInfo)
 		if err != nil {
 			return err
 		}
@@ -719,13 +792,13 @@ func EnableStakerCredit(
 ) error {
 	for _, stakerPubkey := range listPK {
 		pubKeyBytes, _ := stakerPubkey.RawBytes()
-		key := GetStakerInfoKey(pubKeyBytes)
-		stakerInfo, exist, err := stateDB.getStakerInfo(key)
+		key := GetShardStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getShardStakerInfo(key)
 		if err != nil || !exist {
 			return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
 		stakerInfo.hasCredit = true
-		err = stateDB.SetStateObject(StakerObjectType, key, stakerInfo)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, stakerInfo)
 		if err != nil {
 			return err
 		}
@@ -740,18 +813,29 @@ func DisableStakerCredit(
 ) error {
 	for _, stakerPubkey := range listPK {
 		pubKeyBytes, _ := stakerPubkey.RawBytes()
-		key := GetStakerInfoKey(pubKeyBytes)
-		stakerInfo, exist, err := stateDB.getStakerInfo(key)
+		key := GetShardStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getShardStakerInfo(key)
 		if err != nil || !exist {
 			return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
 		stakerInfo.hasCredit = true
-		err = stateDB.SetStateObject(StakerObjectType, key, stakerInfo)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, stakerInfo)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func StoreShardStakerInfoObject(stateDB *StateDB, stakerPubkey string, sStakerInfo *ShardStakerInfo) error {
+	pubKey := incognitokey.NewCommitteePublicKey()
+	err := pubKey.FromString(stakerPubkey)
+	if err != nil {
+		return err
+	}
+	pubKeyBytes, _ := pubKey.RawBytes()
+	key := GetShardStakerInfoKey(pubKeyBytes)
+	return stateDB.SetStateObject(ShardStakerObjectType, key, sStakerInfo)
 }
 
 func StoreShardStakerInfo(
@@ -812,8 +896,8 @@ func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKe
 		if err != nil {
 			return err
 		}
-		key := GetStakerInfoKey(keyBytes)
-		stateDB.MarkDeleteStateObject(StakerObjectType, key)
+		key := GetShardStakerInfoKey(keyBytes)
+		stateDB.MarkDeleteStateObject(ShardStakerObjectType, key)
 	}
 	return nil
 }
