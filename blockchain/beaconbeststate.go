@@ -110,7 +110,7 @@ type BeaconBestState struct {
 	LastBlockProcessBridge uint64
 }
 
-func (beaconBestState *BeaconBestState) TimeLeftOver(t int64) int64 {
+func (beaconBestState *BeaconBestState) TimeLeftOver(t int64) time.Duration {
 	return beaconBestState.TSManager.timeLeftOver(t)
 }
 

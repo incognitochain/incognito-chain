@@ -83,7 +83,7 @@ type ShardBestState struct {
 	shardCommitteeState        committeestate.ShardCommitteeState
 }
 
-func (shardBestState *ShardBestState) TimeLeftOver(t int64) int64 {
+func (shardBestState *ShardBestState) TimeLeftOver(t int64) time.Duration {
 	return shardBestState.TSManager.timeLeftOver(t)
 }
 

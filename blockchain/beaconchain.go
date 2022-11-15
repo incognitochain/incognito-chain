@@ -585,6 +585,6 @@ func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalit
 	return nil
 }
 
-func (chain *BeaconChain) CollectTxs() error {
+func (chain *BeaconChain) CollectTxs(_ time.Duration) error {
 	return nil
 }
