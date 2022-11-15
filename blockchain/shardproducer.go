@@ -70,7 +70,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	committees []incognitokey.CommitteePublicKey,
 	committeeFinalViewHash common.Hash) (*types.ShardBlock, error) {
 	var (
-		newShardBlockBeginTime            = time.Now()
 		transactionsForNewBlock           = make([]metadata.Transaction, 0)
 		newShardBlock                     = types.NewShardBlock()
 		shardInstructions                 = [][]string{}
