@@ -250,6 +250,8 @@ func (blockchain *BlockChain) InitChainState() error {
 		txDB := sBestState.GetCopiedTransactionStateDB()
 
 		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
+		blockchain.ShardChain[shardID].PreFetchTx.BestView = blockchain.ShardChain[shardID].GetBestView().(*ShardBestState)
+
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 

@@ -1,8 +1,7 @@
 package txpool
 
 import (
-	"time"
-
+	"context"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -46,8 +45,7 @@ type TxPool interface {
 		sView metadata.ShardViewRetriever,
 		bcView metadata.BeaconViewRetriever,
 		maxSize uint64,
-		maxTime time.Duration,
-		getTxsDuration time.Duration,
+		ctx context.Context,
 		maxTxs int64,
 	) []metadata.Transaction
 	FilterWithNewView(

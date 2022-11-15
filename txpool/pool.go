@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"sync"
@@ -451,13 +452,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
 	maxSize uint64,
-	maxTime time.Duration,
-	getTxsDuration time.Duration,
+	ctx context.Context,
 	maxTxs int64,
 ) []metadata.Transaction {
-	//TODO Timeout
-	timeOut := time.After(getTxsDuration)
-	Logger.Infof("Has %v time for crawling max %v txs for shard %v\n", getTxsDuration, maxTxs, sView.GetShardID())
 	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
@@ -471,7 +468,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	}{}
 	mapForChkDbStake := map[string]interface{}{}
 	defer func() {
-		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v for shard %v \n", len(res), curSize, curTime, maxSize, maxTime, sView.GetShardID())
+		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v for shard %v \n", len(res), curSize, curTime, maxSize, sView.GetShardID())
 	}()
 	limitTxAction := map[int]int{}
 	for {
@@ -482,9 +479,13 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				return res
 			}
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
-			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
+			if curSize+txDetails.Size > maxSize {
 				continue
 			}
+			//tmp remove maxTime TODO: review
+			//if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
+			//	continue
+			//}
 			if ok := checkTxAction(limitTxAction, txDetails.Tx); !ok {
 				continue
 			}
@@ -522,7 +523,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				res[k] = nil
 			}
 			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
-		case <-timeOut:
+		case <-ctx.Done():
 			stopCh <- nil
 			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
 			removeNilTx(&res)
