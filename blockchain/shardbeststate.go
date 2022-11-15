@@ -195,6 +195,11 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastView *ShardBestState) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+
+	if shardBestState.ShardRebuildRootHash == nil {
+		shardBestState.ShardRebuildRootHash = new(ShardRebuildRootHash)
+	}
+
 	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
@@ -204,6 +209,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastV
 	if err != nil {
 		return err
 	}
+	shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash = shardBestState.transactionStateDB.GetRebuildInfo()
 
 	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
 	if err != nil {
@@ -219,10 +225,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, lastV
 	if err != nil {
 		return err
 	}
-	if shardBestState.ShardRebuildRootHash != nil {
-		shardBestState.ShardRebuildRootHash = new(ShardRebuildRootHash)
-		shardBestState.ShardRebuildRootHash.TransactionStateDBRootHash = shardBestState.transactionStateDB.GetRebuildInfo()
-	}
+
 	return nil
 }
 

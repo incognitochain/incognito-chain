@@ -747,7 +747,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		v.blockChain = blockchain
-		v.BestBlock = block
+		v.BestBlock = block.(*types.ShardBlock)
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), allViews[0])
 		if err != nil {
 			panic(err)
