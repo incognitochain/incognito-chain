@@ -73,9 +73,6 @@ func (s *TSManager) calculateTimeslot(t int64) int64 {
 
 func (s *TSManager) pastHalfTimeslot(t int64) bool {
 	lastAnchor := s.getLatestAnchor()
-	if lastAnchor.Timeslot == 0 {
-		return false
-	}
 	if (t-lastAnchor.StartTime)%s.getCurrentTS() < s.getCurrentTS()/2 {
 		return false
 	}

@@ -450,14 +450,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	cView metadata.ChainRetriever,
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
-	maxSize uint64,
-	maxTime time.Duration,
-	getTxsDuration time.Duration,
-	maxTxs int64,
+	ctx PrefetchInterface,
 ) []metadata.Transaction {
-	//TODO Timeout
-	timeOut := time.After(getTxsDuration)
-	Logger.Infof("Has %v time for crawling max %v txs for shard %v\n", getTxsDuration, maxTxs, sView.GetShardID())
+
 	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
@@ -469,12 +464,20 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Index  uint
 		Detail TxInfoDetail
 	}{}
+	maxTime := ctx.GetMaxTime()
+	maxSize := ctx.GetMaxSize()
 	mapForChkDbStake := map[string]interface{}{}
 	defer func() {
-		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v for shard %v \n", len(res), curSize, curTime, maxSize, maxTime, sView.GetShardID())
+		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v for shard %v \n", len(res), curSize, curTime, maxSize, sView.GetShardID())
 	}()
 	limitTxAction := map[int]int{}
 	for {
+		select {
+		case <-ctx.Done():
+			return res
+		default:
+		}
+
 		select {
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
@@ -482,6 +485,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				return res
 			}
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
+			if curSize+txDetails.Size > maxSize {
+				continue
+			}
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -512,9 +518,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if isDoubleSpend && !needToReplace {
 				continue
 			}
-			if len(res)+1 > int(maxTxs) {
-				return res
-			}
+
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
 			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
@@ -522,7 +526,12 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				res[k] = nil
 			}
 			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
-		case <-timeOut:
+			//TODO: review `move code here`
+			ctx.DecreaseNumTXRemain()
+			if ctx.GetNumTxRemain() <= 0 {
+				return res
+			}
+		case <-ctx.Done():
 			stopCh <- nil
 			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
 			removeNilTx(&res)

@@ -1305,6 +1305,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	simulatedMultiView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, simulatedMultiView)
+	if err != nil {
+		fmt.Println(err)
+		panic("Backup shard view error")
+	}
 
 	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
 	//traverse back to final view
@@ -1336,10 +1340,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 	} else { //instant finality
 		blockchain.storeFinalizeShardBlockByBeaconView(shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
-	}
-
-	if err != nil {
-		panic("Backup shard view error")
 	}
 
 	if err := batchData.Write(); err != nil {
