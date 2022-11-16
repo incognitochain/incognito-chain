@@ -25,6 +25,7 @@ committee_size:
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
+  number_of_fixed_shard_validators_v2: 4
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
