@@ -52,7 +52,7 @@ func (s *AppService) OnShardBlock(sid int, fromBlk uint64, f func(block types.Sh
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	go func() {
 		for {
-			fmt.Println("stream sid", sid, fromBlk)
+			//fmt.Println("stream sid", sid, fromBlk)
 			data, err := fullnodeRPC.GetBlocksFromHeight(sid, uint64(fromBlk), 50)
 			if err != nil || len(data.([]types.ShardBlock)) == 0 {
 				fmt.Println(err)
