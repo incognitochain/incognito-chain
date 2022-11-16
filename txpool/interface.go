@@ -1,13 +1,13 @@
 package txpool
 
 import (
-	"time"
-
+	"context"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"time"
 )
 
 type BeaconViewRetriever interface {
@@ -34,6 +34,14 @@ type TxPoolManager interface {
 	StopShardTxsPool(shardID byte) error
 }
 
+type PrefetchInterface interface {
+	context.Context
+	DecreaseNumTXRemain()
+	GetMaxTime() time.Duration
+	GetMaxSize() uint64
+	IsRunning() bool
+	GetNumTxRemain() int64
+}
 type TxPool interface {
 	UpdateTxVerifier(tv TxVerifier)
 	Start()
@@ -45,10 +53,7 @@ type TxPool interface {
 		cView metadata.ChainRetriever,
 		sView metadata.ShardViewRetriever,
 		bcView metadata.BeaconViewRetriever,
-		maxSize uint64,
-		maxTime time.Duration,
-		getTxsDuration time.Duration,
-		maxTxs int64,
+		ctx PrefetchInterface,
 	) []metadata.Transaction
 	FilterWithNewView(
 		cView metadata.ChainRetriever,

@@ -539,8 +539,7 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shard
 		cache.Add(cacheKey, committees)
 		return committees, err
 	}
-
-	return committees, nil
+	return committees, fmt.Errorf("Cannot find committee from shardID %v viewHash %v", shardID, hash.String())
 }
 
 func (chain *BeaconChain) GetSigningCommittees(
@@ -585,6 +584,6 @@ func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalit
 	return nil
 }
 
-func (chain *BeaconChain) CollectTxs(_ time.Duration) error {
-	return nil
+func (chain *BeaconChain) CollectTxs() {
+	return
 }

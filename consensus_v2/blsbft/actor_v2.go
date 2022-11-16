@@ -53,9 +53,8 @@ type actorV2 struct {
 	receiveBlockByHash map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory        map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
-	ruleDirector         *ActorV2RuleDirector
-	blockVersion         int
-	shouldPreparePropose bool
+	ruleDirector *ActorV2RuleDirector
+	blockVersion int
 }
 
 func NewActorV2() *actorV2 {
@@ -566,13 +565,6 @@ func (a *actorV2) run() error {
 				a.currentTime = time.Now().Unix()
 				bestView := a.chain.GetBestView()
 				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
-				if currentTimeSlot == bestView.GetCurrentTimeSlot() || bestView.PastHalfTimeslot(a.currentTime) {
-					if a.shouldPreparePropose {
-						if err := a.chain.CollectTxs(bestView.TimeLeftOver(a.currentTime)); err != nil {
-							a.logger.Error("cannot collect txs err %v", err)
-						}
-					}
-				}
 
 				newTimeSlot := false
 				if a.currentTimeSlot != currentTimeSlot {
@@ -585,22 +577,45 @@ func (a *actorV2) run() error {
 				round := a.currentTimeSlot - bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
-				signingCommittees, committees, proposerPk, committeeViewHash, proposerIndex, err := a.getCommitteesAndCommitteeViewHash()
+				signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
 				if err != nil {
 					a.logger.Info(err)
 					continue
 				}
 
-				userKeySet, prepareProposerIndex := a.getUserKeySetForSigning(signingCommittees, a.userKeySet, proposerIndex)
-				if prepareProposerIndex != -1 {
-					a.shouldPreparePropose = true
-				}
-
+				userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
 					bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
 					proposerPk,
 					userKeySet,
 				)
+
+				latestBlockInCurrentTS := a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				noProposeBlockInCurrentTS := func() bool {
+					if a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())+1 && bestView.PastHalfTimeslot(time.Now().Unix()) {
+						if len(a.GetSortedReceiveBlockByHeight(bestView.GetHeight()+1)) == 0 {
+							return true
+						}
+					}
+					return false
+				}
+				nextProposer := func() bool {
+					nextTS := a.currentTimeSlot + 1
+					nextProposerPk, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(
+						nextTS,
+						committees,
+					)
+					for _, userKey := range userKeySet {
+						userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+						if nextProposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
+							return true
+						}
+					}
+					return false
+				}
+				if (latestBlockInCurrentTS || noProposeBlockInCurrentTS()) && nextProposer() {
+					a.chain.CollectTxs()
+				}
 
 				if newTimeSlot { //for logging
 					a.logger.Info("")
@@ -1116,8 +1131,7 @@ func (a *actorV2) getCommitteeForNewBlock(
 		committees = a.chain.GetBestView().GetCommittee()
 	} else {
 		previousView := a.chain.GetViewByHash(v.GetPrevHash())
-		committees, err = a.
-			committeeChain.
+		committees, err = a.committeeChain.
 			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(a.chainID))
 		if err != nil {
 			return signingCommittees, committees, err
@@ -1170,35 +1184,30 @@ func (a *actorV2) sendVote(
 
 func (a *actorV2) getUserKeySetForSigning(
 	signingCommittees []incognitokey.CommitteePublicKey, userKeySet []signatureschemes2.MiningKey,
-	proposerIndex int,
-) ([]signatureschemes2.MiningKey, int) {
-	prepareProposerIndex := -1
+) []signatureschemes2.MiningKey {
 	res := []signatureschemes2.MiningKey{}
 	if a.chain.IsBeaconChain() {
 		res = userKeySet
 	} else {
-		validCommittees := make(map[string]int)
-		for i, v := range signingCommittees {
+		validCommittees := make(map[string]bool)
+		for _, v := range signingCommittees {
 			key := v.GetMiningKeyBase58(common.BlsConsensus)
-			validCommittees[key] = i
+			validCommittees[key] = true
 		}
-		for i, userKey := range userKeySet {
+		for _, userKey := range userKeySet {
 			userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-			if ci, found := validCommittees[userPk]; found {
+			if validCommittees[userPk] {
 				res = append(res, userKey)
-				if proposerIndex >= 0 && ci == proposerIndex+1 {
-					prepareProposerIndex = i
-				}
 			}
 		}
 	}
-	return res, prepareProposerIndex
+	return res
 }
 
 func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
-	incognitokey.CommitteePublicKey, common.Hash, int, error,
+	incognitokey.CommitteePublicKey, common.Hash, error,
 ) {
 	committeeViewHash := common.Hash{}
 	committees := []incognitokey.CommitteePublicKey{}
@@ -1215,7 +1224,7 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 			return []incognitokey.CommitteePublicKey{},
 				[]incognitokey.CommitteePublicKey{},
 				incognitokey.CommitteePublicKey{},
-				committeeViewHash, -1, err
+				committeeViewHash, err
 		}
 	}
 
@@ -1227,7 +1236,7 @@ func (a *actorV2) getCommitteesAndCommitteeViewHash() (
 	signingCommittees = a.chain.GetSigningCommittees(
 		proposerIndex, committees, a.blockVersion)
 
-	return signingCommittees, committees, proposerPk, committeeViewHash, proposerIndex, err
+	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }
 
 func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
@@ -1293,7 +1302,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	if err != nil {
 		return err
 	}
-	userKeySet, _ := a.getUserKeySetForSigning(signingCommittees, a.userKeySet, -1)
+	userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 
 	if len(userKeySet) == 0 && block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
 		a.logger.Infof("HandleProposeMsg, Block Hash %+v,  Block Height %+v, round %+v, NOT in round for voting",

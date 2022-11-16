@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"path"
 	"sync"
 	"time"
@@ -42,6 +43,8 @@ type ShardChain struct {
 
 	insertLock        sync.Mutex
 	isPrepareProposer bool
+
+	PreFetchTx *PreFetchTx
 }
 
 func NewShardChain(
@@ -56,6 +59,7 @@ func NewShardChain(
 	cfg := config.Config()
 	ffPath := path.Join(cfg.DataDir, cfg.DatabaseDir, fmt.Sprintf("shard%v", shardID), "blockstorage")
 	bs := NewBlockStorage(blockchain.GetShardChainDatabase(byte(shardID)), ffPath, shardID, false)
+
 	chain := &ShardChain{
 		shardID:      shardID,
 		multiView:    multiView,
@@ -65,6 +69,13 @@ func NewShardChain(
 		ChainName:    chainName,
 		TxPool:       tp,
 		TxsVerifier:  tv,
+		PreFetchTx: &PreFetchTx{
+			WgStop:       new(sync.WaitGroup),
+			CollectedTxs: make(map[common.Hash]metadata.Transaction),
+			ResponseTxs:  make(map[common.Hash]metadata.Transaction),
+			BlockChain:   blockchain,
+			Ctx:          NewPreFetchContext(),
+		},
 	}
 
 	return chain
@@ -364,18 +375,16 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate 
 		Logger.log.Error(err)
 		return err
 	}
-
+	chain.PreFetchTx.Reset(chain.GetBestState())
 	return nil
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
-
 	if err := chain.InsertBlock(block, false); err != nil {
 		return err
 	}
-
+	chain.PreFetchTx.Reset(chain.GetBestState())
 	return nil
 }
 
@@ -576,6 +585,8 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (types.BlockInterfac
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error {
+	//stop collect tx if running
+	chain.PreFetchTx.Stop()
 	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), signingCommittees, committees, byte(block.(*types.ShardBlock).GetShardID()))
 }
 
@@ -661,17 +672,8 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 	return shardBlock.(*types.ShardBlock), m, nil
 }
 
-func (chain *ShardChain) CollectTxs(timeLeftOver time.Duration) error {
-	if chain.isPrepareProposer {
-		return nil
-	}
-	chain.isPrepareProposer = true
-	err := chain.BlockGen.CollectTxs(byte(chain.shardID), timeLeftOver)
-	if err != nil {
-		return err
-	}
-	chain.isPrepareProposer = false
-	return nil
+func (chain *ShardChain) CollectTxs() {
+	chain.PreFetchTx.Start()
 }
 
 //

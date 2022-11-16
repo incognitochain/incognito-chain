@@ -80,7 +80,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		currentCommitteePublicKeys        = []string{}
 		currentCommitteePublicKeysStructs = []incognitokey.CommitteePublicKey{}
 		committeeFromBlockHash            = common.Hash{}
-		beaconProcessHeight               uint64
 		err                               error
 	)
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
@@ -114,15 +113,19 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 
-	getBeaconFinalHeightForProcess := func() uint64 {
-		view := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
-		height := view.GetHeight()
-		if height > shardBestState.BeaconHeight && height-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-			height = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	//get beacon blocks
+	getConfirmBeaconBlock := func() ([]*types.BeaconBlock, uint64) {
+		blockchain.ShardChain[shardID].PreFetchTx.Stop()
+		beaconBlocks := blockchain.ShardChain[shardID].PreFetchTx.BeaconBlocks
+		beaconProcessHeight := shardBestState.BeaconHeight
+		if len(beaconBlocks) == 0 {
+			isOldBeaconHeight = true
+		} else {
+			beaconProcessHeight = beaconBlocks[len(beaconBlocks)-1].GetBeaconHeight()
 		}
-		return height
+		return beaconBlocks, beaconProcessHeight
 	}
-	beaconProcessHeight = getBeaconFinalHeightForProcess()
+	beaconBlocks, beaconProcessHeight := getConfirmBeaconBlock()
 
 	if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
 		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV3Height {
@@ -137,10 +140,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 	} else {
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
+			blockchain.ShardChain[shardID].PreFetchTx.Start()
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
 			time.Sleep(time.Duration(shardBestState.GetCurrentTimeSlot()/5) * time.Second)
-			beaconProcessHeight = getBeaconFinalHeightForProcess()
+			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")
 			}
@@ -195,14 +199,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	epoch := beaconBlock.Header.Epoch
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconProcessHeight, shardBestState.BeaconHeight)
-	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, shardBestState.BeaconHeight+1, beaconProcessHeight)
-	if err != nil {
-		return nil, err
-	}
-	if beaconProcessHeight == shardBestState.BeaconHeight {
-		isOldBeaconHeight = true
-	}
 
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
@@ -210,7 +206,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	txsToAddFromBlock := blockchain.config.BlockGen.CollectedTxs
+
+	txsToAddFromBlock := blockchain.ShardChain[shardID].PreFetchTx.GetTxForBlockProducing()
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
 	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(shardBestState, transactionsForNewBlock, &tempPrivateKey, shardID)
@@ -364,68 +361,67 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	[]metadata.Transaction,
 	error,
 ) {
-	var err error
-	st := time.Now()
-	chain := blockGenerator.chain.ShardChain[shardID]
-	maxSize := uint64(4096) //kB
-	var responseTxsBeacon []metadata.Transaction
-	var errInstructions [][]string
-	responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
-	if err != nil {
-		return nil, err
-	}
-	bView := &BeaconBestState{}
-	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
-
-	if err != nil {
-		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
-	}
-	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
-	st = time.Now()
+	//var err error
+	//st := time.Now()
+	////chain := blockGenerator.chain.ShardChain[shardID]
+	////maxSize := uint64(4096) //kB
+	//var responseTxsBeacon []metadata.Transaction
+	////var errInstructions [][]string
+	//responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	////bView := &BeaconBestState{}
+	////bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
+	//
+	//if err != nil {
+	//	return nil, NewBlockChainError(CloneBeaconBestStateError, err)
+	//}
+	//blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
+	//st = time.Now()
 	txsToAdd := []metadata.Transaction{}
-	totalTxsReminder := int64(config.Param().TransactionInBlockParam.Upper)
-	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 {
-		totalTxsReminder = curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
-		if totalTxsReminder < 0 {
-			totalTxsReminder = 0
-		} else {
-			if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
-				totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
-			}
-		}
-	}
-	if !blockGenerator.chain.config.usingNewPool {
-		txToRemove := []metadata.Transaction{}
-		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
-			shardID,
-			beaconBlocks,
-			blockCreationLeftOver.Nanoseconds(),
-			bView.BeaconHeight,
-			curView,
-			totalTxsReminder,
-		)
-		if len(txsToAdd) == 0 {
-			Logger.log.Info("Creating empty block...")
-		}
-		go blockGenerator.txPool.RemoveTx(txToRemove, false)
-	} else {
-		txsToAdd = chain.TxPool.GetTxsTranferForNewBlock(
-			blockGenerator.chain,
-			curView,
-			bView,
-			maxSize,
-			blockCreationLeftOver*4,
-			blockCreationLeftOver,
-			totalTxsReminder,
-		)
-	}
-	if len(txsToAdd) > 0 {
-		Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
-	}
-	txsToAdd = append(txsToAdd, responseTxsBeacon...)
-	if len(errInstructions) > 0 {
-		Logger.log.Error("List error instructions, which can not create tx", errInstructions)
-	}
+	//totalTxsReminder := int64(config.Param().TransactionInBlockParam.Upper)
+	//if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 {
+	//	totalTxsReminder = curView.MaxTxsPerBlockRemainder - int64(len(responseTxsBeacon))
+	//	if totalTxsReminder < 0 {
+	//		totalTxsReminder = 0
+	//	} else {
+	//		if totalTxsReminder > int64(config.Param().TransactionInBlockParam.Upper) {
+	//			totalTxsReminder = int64(config.Param().TransactionInBlockParam.Upper)
+	//		}
+	//	}
+	//}
+	//if !blockGenerator.chain.config.usingNewPool {
+	//	txToRemove := []metadata.Transaction{}
+	//	txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
+	//		shardID,
+	//		blockCreationLeftOver.Nanoseconds(),
+	//		bView.BeaconHeight,
+	//		curView,
+	//		totalTxsReminder,
+	//	)
+	//	if len(txsToAdd) == 0 {
+	//		Logger.log.Info("Creating empty block...")
+	//	}
+	//	go blockGenerator.txPool.RemoveTx(txToRemove, false)
+	//} else {
+	//	txsToAdd = chain.TxPool.GetTxsTranferForNewBlock(
+	//		blockGenerator.chain,
+	//		curView,
+	//		bView,
+	//		maxSize,
+	//		blockCreationLeftOver*4,
+	//		blockCreationLeftOver,
+	//		totalTxsReminder,
+	//	)
+	//}
+	//if len(txsToAdd) > 0 {
+	//	Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
+	//}
+	//txsToAdd = append(txsToAdd, responseTxsBeacon...)
+	//if len(errInstructions) > 0 {
+	//	Logger.log.Error("List error instructions, which can not create tx", errInstructions)
+	//}
 	return txsToAdd, nil
 }
 
@@ -788,62 +784,85 @@ Verify Transaction with these condition: defined in mempool.go
 */
 func (blockGenerator *BlockGenerator) getPendingTransaction(
 	shardID byte,
-	beaconBlocks []*types.BeaconBlock,
-	blockCreationTimeLeftOver int64,
+	ctx *PreFetchContext,
 	beaconHeight uint64,
 	curView *ShardBestState,
-	maxTxs int64,
-) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
-	spareTime := SpareTime * time.Millisecond
-	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
-	startTime := time.Now()
-	sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
-	var elasped int64
-	Logger.log.Infof("Number of transaction get from Block Generator: %v; Maximum txs in this block %v", len(sourceTxns), maxTxs)
-	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
-	if !isEmpty {
-		return []metadata.Transaction{}, []metadata.Transaction{}, 0
-	}
-	currentSize := uint64(0)
-	preparedTxForNewBlock := []metadata.Transaction{}
-	for _, tx := range sourceTxns {
-		tempSize := tx.GetTxActualSize()
-		if currentSize+tempSize >= common.MaxBlockSize {
-			break
+) (txsToAdd map[common.Hash]metadata.Transaction, totalFee uint64) {
+	txToRemove := []metadata.Transaction{}
+	processedTransaction := map[common.Hash]bool{}
+	defer func() {
+		Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool,totalFee %v \n", len(txsToAdd), totalFee)
+	}()
+	for {
+		time.Sleep(time.Millisecond * 10)
+		select {
+		case <-ctx.Done():
+			return txsToAdd, totalFee
+		default:
 		}
-		preparedTxForNewBlock = append(preparedTxForNewBlock, tx)
-		elasped = time.Since(startTime).Nanoseconds()
-		if elasped >= maxBlockCreationTimeLeftTime {
-			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
-			break
+		maxTxs := ctx.GetNumTxRemain()
+		sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
+		//Logger.log.Infof("Number of transaction get from Block Generator: %v", len(sourceTxns))
+
+		isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
+		if !isEmpty {
+			return nil, 0
 		}
-	}
-	listBatchTxs := []metadata.Transaction{}
-	for index, tx := range preparedTxForNewBlock {
-		elasped = time.Since(startTime).Nanoseconds()
-		if elasped >= maxBlockCreationTimeLeftTime {
-			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
-			break
+		currentSize := uint64(0)
+		preparedTxForNewBlock := []metadata.Transaction{}
+		for _, tx := range sourceTxns {
+			if processedTransaction[*tx.Hash()] {
+				continue
+			}
+			tempSize := tx.GetTxActualSize()
+			if currentSize+tempSize >= common.MaxBlockSize {
+				break
+			}
+			preparedTxForNewBlock = append(preparedTxForNewBlock, tx)
+			processedTransaction[*tx.Hash()] = true
 		}
-		listBatchTxs = append(listBatchTxs, tx)
-		if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
-			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight), curView)
-			if err != nil {
-				Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
-				for _, tx2 := range listBatchTxs {
-					if blockGenerator.chain.config.TempTxPool.HaveTransaction(tx2.Hash()) {
-						continue
+
+		listBatchTxs := []metadata.Transaction{}
+		for index, tx := range preparedTxForNewBlock {
+			select {
+			case <-ctx.Done():
+				break
+			default:
+			}
+			listBatchTxs = append(listBatchTxs, tx)
+			if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
+				tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight), curView)
+				if err != nil {
+					Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
+					for _, tx2 := range listBatchTxs {
+						if blockGenerator.chain.config.TempTxPool.HaveTransaction(tx2.Hash()) {
+							continue
+						}
+						txShardID := common.GetShardIDFromLastByte(tx2.GetSenderAddrLastByte())
+						if txShardID != shardID {
+							continue
+						}
+						tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx2, int64(beaconHeight), curView)
+						if err != nil {
+							txToRemove = append(txToRemove, tx2)
+							continue
+						}
+						tempTx := tempTxDesc.Tx
+						tempSize := tempTx.GetTxActualSize()
+						if currentSize+tempSize >= common.MaxBlockSize {
+							break
+						}
+						if len(txsToAdd)+1 > int(maxTxs) {
+							break
+						}
+						totalFee += tempTx.GetTxFee()
+						currentSize += tempSize
+						txsToAdd[*tempTx.Hash()] = tempTx
 					}
-					txShardID := common.GetShardIDFromLastByte(tx2.GetSenderAddrLastByte())
-					if txShardID != shardID {
-						continue
-					}
-					tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx2, int64(beaconHeight), curView)
-					if err != nil {
-						txToRemove = append(txToRemove, tx2)
-						continue
-					}
-					tempTx := tempTxDesc.Tx
+				}
+				for _, tempToAddTxDesc := range tempTxDesc {
+					tempTx := tempToAddTxDesc.Tx
+					totalFee += tempTx.GetTxFee()
 					tempSize := tempTx.GetTxActualSize()
 					if currentSize+tempSize >= common.MaxBlockSize {
 						break
@@ -851,34 +870,21 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 					if len(txsToAdd)+1 > int(maxTxs) {
 						break
 					}
-					totalFee += tempTx.GetTxFee()
 					currentSize += tempSize
-					txsToAdd = append(txsToAdd, tempTx)
+					txsToAdd[*tempTx.Hash()] = tempTx
 				}
-			}
-			for _, tempToAddTxDesc := range tempTxDesc {
-				tempTx := tempToAddTxDesc.Tx
-				totalFee += tempTx.GetTxFee()
-				tempSize := tempTx.GetTxActualSize()
-				if currentSize+tempSize >= common.MaxBlockSize {
-					break
-				}
-				if len(txsToAdd)+1 > int(maxTxs) {
-					break
-				}
-				currentSize += tempSize
-				txsToAdd = append(txsToAdd, tempTx)
-			}
-			// reset list batch and add new txs
-			listBatchTxs = []metadata.Transaction{}
+				// reset list batch and add new txs
+				listBatchTxs = []metadata.Transaction{}
 
-		} else {
-			continue
+			} else {
+				continue
+			}
 		}
+		blockGenerator.chain.config.TempTxPool.EmptyPool()
+		go blockGenerator.txPool.RemoveTx(txToRemove, false)
 	}
-	Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool \n", len(txsToAdd))
-	blockGenerator.chain.config.TempTxPool.EmptyPool()
-	return txsToAdd, txToRemove, totalFee
+
+	return txsToAdd, totalFee
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
@@ -1154,38 +1160,4 @@ func CreateShardBridgeAggUnshieldActionsFromTxs(
 		}
 	}
 	return bridgeAggActions, nil
-}
-
-func (blockGenerator *BlockGenerator) CollectTxs(shardID byte, timeLeftOver time.Duration) error {
-	tempPrivateKey := blockGenerator.chain.config.BlockGen.createTempKeyset()
-	chain := blockGenerator.chain.ShardChain[shardID]
-	curView := chain.GetBestState()
-	getBeaconFinalHeightForProcess := func() uint64 {
-		view := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
-		// TODO: @consensus validate this if beacon view were right?
-		height := view.GetHeight()
-		if height > curView.BeaconHeight && height-curView.BeaconHeight > MAX_BEACON_BLOCK {
-			height = curView.BeaconHeight + MAX_BEACON_BLOCK
-		}
-		return height
-	}
-	beaconProcessHeight := getBeaconFinalHeightForProcess()
-
-	beaconBlocks, err := FetchBeaconBlockFromHeight(
-		blockGenerator.chain,
-		curView.BeaconHeight+1,
-		beaconProcessHeight)
-	txs, err := blockGenerator.chain.config.BlockGen.getTransactionForNewBlock(
-		curView,
-		&tempPrivateKey,
-		shardID,
-		beaconBlocks,
-		timeLeftOver,
-		beaconProcessHeight,
-	)
-	if err != nil {
-		return err
-	}
-	blockGenerator.CollectedTxs = txs
-	return nil
 }

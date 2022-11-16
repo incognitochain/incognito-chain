@@ -816,6 +816,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 					if feature == REDUCE_FIX_NODE || feature == REDUCE_FIX_NODE_V2 {
 						shardBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
 					}
+					if feature == REDUCE_FIX_NODE_V3 {
+						shardBestState.MinShardCommitteeSize = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+						shardBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					}
 				}
 			}
 		}
@@ -1301,6 +1305,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	simulatedMultiView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.SimulateAddView(newShardState)
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, simulatedMultiView)
+	if err != nil {
+		fmt.Println(err)
+		panic("Backup shard view error")
+	}
 
 	storeBlock := simulatedMultiView.GetExpectedFinalView().GetBlock()
 	//traverse back to final view
@@ -1332,10 +1340,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 	} else { //instant finality
 		blockchain.storeFinalizeShardBlockByBeaconView(shardID, *simulatedMultiView.GetExpectedFinalView().GetHash())
-	}
-
-	if err != nil {
-		panic("Backup shard view error")
 	}
 
 	if err := batchData.Write(); err != nil {
