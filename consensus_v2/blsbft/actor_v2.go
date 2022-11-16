@@ -1116,8 +1116,7 @@ func (a *actorV2) getCommitteeForNewBlock(
 		committees = a.chain.GetBestView().GetCommittee()
 	} else {
 		previousView := a.chain.GetViewByHash(v.GetPrevHash())
-		committees, err = a.
-			committeeChain.
+		committees, err = a.committeeChain.
 			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(a.chainID))
 		if err != nil {
 			return signingCommittees, committees, err

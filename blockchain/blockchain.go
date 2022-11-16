@@ -651,7 +651,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 
 		//check config
 		for feature, height := range v.TriggeredFeature {
-			if feature == REDUCE_FIX_NODE_V2 {
+			if feature == REDUCE_FIX_NODE_V3 || feature == REDUCE_FIX_NODE_V2 {
 				SFV3_MinShardCommitteeSize = 4
 			}
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
