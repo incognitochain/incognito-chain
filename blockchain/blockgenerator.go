@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
 	"log"
+	"sync/atomic"
 
 	// "strconv"
 	"sync"
@@ -17,27 +18,30 @@ import (
 
 type PreFetchContext struct {
 	context.Context
-	NumTxRemain uint64
+	NumTxRemain int64
 	MaxTime     time.Duration
 	MaxSize     uint64
 	running     bool
 	cancelFunc  context.CancelFunc
 }
 
-func (s *PreFetchContext) Value(key interface{}) interface{} {
-	if k, ok := key.(string); ok && k == "MaxTime" {
-		switch k {
-		case "MaxTime":
-			return s.MaxTime
-		case "MaxSize":
-			return s.MaxSize
-		case "NumTxRemain":
-			return s.NumTxRemain
-		default:
-			return s.Context.Value(k)
-		}
-	}
-	return s.Context.Value(key)
+type any = interface{}
+
+func (s *PreFetchContext) DecreaseNumTXRemain() {
+	atomic.AddInt64(&s.NumTxRemain, -1)
+}
+
+func (s *PreFetchContext) GetMaxTime() time.Duration {
+	return s.MaxTime
+}
+func (s *PreFetchContext) GetMaxSize() uint64 {
+	return s.MaxSize
+}
+func (s *PreFetchContext) IsRunning() bool {
+	return s.running
+}
+func (s *PreFetchContext) GetNumTxRemain() int64 {
+	return atomic.LoadInt64(&s.NumTxRemain)
 }
 
 func NewPreFetchContext() *PreFetchContext {
@@ -95,11 +99,10 @@ func (s *PreFetchTx) Start() {
 		return
 	}
 	Logger.log.Info("debugprefetch: running...")
-	numTxRemain := config.Param().TransactionInBlockParam.Upper
 
 	s.Ctx.running = true
-	s.Ctx.NumTxRemain = uint64(numTxRemain)
-	s.Ctx.Context, s.Ctx.cancelFunc = context.WithDeadline(s.Ctx, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
+
+	s.Ctx.Context, s.Ctx.cancelFunc = context.WithDeadline(s.Ctx.Context, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
 	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
@@ -110,6 +113,15 @@ func (s *PreFetchTx) Start() {
 		Logger.log.Info("debugprefetch: cannot dinf beacon view", curView.BestBeaconHash.String())
 		return
 	}
+
+	numTxRemain := curView.MaxTxsPerBlockRemainder
+	if curView.BestBlock.GetVersion() >= types.INSTANT_FINALITY_VERSION_V2 {
+		if numTxRemain > int64(config.Param().TransactionInBlockParam.Upper) {
+			numTxRemain = int64(config.Param().TransactionInBlockParam.Upper)
+		}
+	}
+	s.Ctx.NumTxRemain = numTxRemain
+
 	go func() {
 		s.WgStop.Add(1)
 		defer s.WgStop.Done()
@@ -118,7 +130,7 @@ func (s *PreFetchTx) Start() {
 		for {
 			time.Sleep(time.Millisecond * 100)
 			select {
-			case <-currentCtx.Done():
+			case <-currentCtx.Context.Done():
 				Logger.log.Info("debugprefetch: done get response from beacon block", len(s.BeaconBlocks), len(s.ResponseTxs))
 				return
 			default:
@@ -157,6 +169,10 @@ func (s *PreFetchTx) Start() {
 					}
 					for _, tx := range responseTxsBeacon {
 						s.ResponseTxs[*tx.Hash()] = tx
+					}
+					s.Ctx.NumTxRemain -= int64(len(responseTxsBeacon))
+					if s.Ctx.NumTxRemain < 0 {
+						break
 					}
 				}
 			}

@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -785,7 +784,7 @@ Verify Transaction with these condition: defined in mempool.go
 */
 func (blockGenerator *BlockGenerator) getPendingTransaction(
 	shardID byte,
-	ctx context.Context,
+	ctx *PreFetchContext,
 	beaconHeight uint64,
 	curView *ShardBestState,
 ) (txsToAdd map[common.Hash]metadata.Transaction, totalFee uint64) {
@@ -801,8 +800,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			return txsToAdd, totalFee
 		default:
 		}
-		maxTxs := ctx.Value("NumTxRemain").(uint64)
-		panic(maxTxs)
+		maxTxs := ctx.GetNumTxRemain()
 		sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 		//Logger.log.Infof("Number of transaction get from Block Generator: %v", len(sourceTxns))
 

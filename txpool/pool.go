@@ -1,7 +1,6 @@
 package txpool
 
 import (
-	"context"
 	"fmt"
 	"runtime"
 	"sync"
@@ -451,7 +450,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	cView metadata.ChainRetriever,
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
-	ctx context.Context,
+	ctx PrefetchInterface,
 ) []metadata.Transaction {
 
 	st := time.Now()
@@ -465,15 +464,14 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Index  uint
 		Detail TxInfoDetail
 	}{}
-	maxTime := ctx.Value("MaxTime").(time.Duration)
-	maxSize := ctx.Value("MaxSize").(uint64)
+	maxTime := ctx.GetMaxTime()
+	maxSize := ctx.GetMaxSize()
 	mapForChkDbStake := map[string]interface{}{}
 	defer func() {
 		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v for shard %v \n", len(res), curSize, curTime, maxSize, sView.GetShardID())
 	}()
 	limitTxAction := map[int]int{}
 	for {
-		maxTxs := ctx.Value("NumTxRemain").(uint64)
 		select {
 		case <-ctx.Done():
 			return res
@@ -520,9 +518,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if isDoubleSpend && !needToReplace {
 				continue
 			}
-			if len(res)+1 > int(maxTxs) {
-				return res
-			}
+
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
 			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
@@ -530,6 +526,11 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				res[k] = nil
 			}
 			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
+			//TODO: review `move code here`
+			ctx.DecreaseNumTXRemain()
+			if ctx.GetNumTxRemain() <= 0 {
+				return res
+			}
 		case <-ctx.Done():
 			stopCh <- nil
 			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
