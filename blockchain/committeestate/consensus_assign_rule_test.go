@@ -1167,7 +1167,7 @@ func TestAssignRuleV3_ProcessBeacon(t *testing.T) {
 			},
 			want:  []string{"a"},
 			want1: []string{"b", "c"},
-			want2: []byte{2, 0, 1},
+			want2: []byte{0, 1},
 		},
 	}
 	for _, tt := range tests {
@@ -1180,10 +1180,10 @@ func TestAssignRuleV3_ProcessBeacon(t *testing.T) {
 				t.Errorf("AssignRuleV3.ProcessBeacon() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("AssignRuleV3.ProcessBeacon() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("AssignRuleV3.ProcessBeacon() got1 = %v-%v, want %v-%v", got1, reflect.TypeOf(got1), tt.want1, reflect.TypeOf(tt.want1))
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("AssignRuleV3.ProcessBeacon() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("AssignRuleV3.ProcessBeacon() got2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}

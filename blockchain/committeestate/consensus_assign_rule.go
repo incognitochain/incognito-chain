@@ -156,7 +156,7 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 	return m
 }
 
-type FilterBeaconRule func(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (accepted, rejected []string, newStatus []byte)
+type FilterBeaconRule func(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (accepted, rejected []int, newStatus []byte)
 
 type AssignRuleV3 struct {
 	filterBeaconRules []FilterBeaconRule
@@ -221,20 +221,35 @@ func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rando
 	return assignedCandidates
 }
 
-func (a AssignRuleV3) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte) {
-	rejectedCandidate := []string{}
+func (a AssignRuleV3) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) (
+	toPending []string,
+	stayWaiting []string,
+	newWaitingStatus []byte,
+) {
+	var (
+		accepted []int
+		rejected []int
+	)
 	for ruleID, rule := range a.filterBeaconRules {
-		candidates, rejectedCandidate, waitingStatus = rule(candidates, waitingStatus, byte(ruleID), env)
-		fmt.Printf("Filter beacon candidate by rule %v, accepted %v, rejected %v\n", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), candidates, rejectedCandidate)
-		Logger.log.Infof("Filter beacon candidate by rule %v, accepted %v, rejected %v", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), candidates, rejectedCandidate)
+		accepted, rejected, waitingStatus = rule(candidates, waitingStatus, byte(ruleID), env)
+		fmt.Printf("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v\n", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
+		Logger.log.Infof("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
 	}
-	return candidates, rejectedCandidate, waitingStatus
+	for idx, pk := range candidates {
+		if waitingStatus[idx] == byte(len(a.filterBeaconRules)) {
+			toPending = append(toPending, pk)
+		} else {
+			stayWaiting = append(stayWaiting, pk)
+			newWaitingStatus = append(newWaitingStatus, waitingStatus[idx])
+		}
+	}
+	return toPending, stayWaiting, newWaitingStatus
 	// Logger.log.Infof("Process assign beacon done, rejected: ", params ...interface{})
 }
 
 func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
-	accepted []string,
-	rejected []string,
+	accepted []int,
+	rejected []int,
 	newStatus []byte,
 ) {
 	allShardStakerM := map[string]interface{}{}
@@ -253,13 +268,17 @@ func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, e
 	}
 	for id, candidate := range candidates {
 		if candidateStatus[id] > ruleID {
-			accepted = append(accepted, candidate)
+			accepted = append(accepted, id)
+			continue
+		}
+		if candidateStatus[id] < ruleID {
+			rejected = append(rejected, id)
 			continue
 		}
 		if _, has := allShardStakerM[candidate]; has {
-			rejected = append(rejected, candidate)
+			rejected = append(rejected, id)
 		} else {
-			accepted = append(accepted, candidate)
+			accepted = append(accepted, id)
 			candidateStatus[id]++
 		}
 	}
@@ -267,19 +286,19 @@ func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, e
 }
 
 func hasEnoughActiveTimes(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
-	accepted []string,
-	rejected []string,
+	accepted []int,
+	rejected []int,
 	newStatus []byte,
 ) {
 	for id, candidate := range candidates {
 		if candidateStatus[id] > ruleID {
-			accepted = append(accepted, candidate)
+			accepted = append(accepted, id)
 			continue
 		}
 		if stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 50) {
-			rejected = append(rejected, candidate)
+			rejected = append(rejected, id)
 		} else {
-			accepted = append(accepted, candidate)
+			accepted = append(accepted, id)
 			candidateStatus[id]++
 		}
 	}
@@ -287,24 +306,24 @@ func hasEnoughActiveTimes(candidates []string, candidateStatus []byte, ruleID by
 }
 
 func hasEnoughDelegator(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
-	accepted []string,
-	rejected []string,
+	accepted []int,
+	rejected []int,
 	newStatus []byte,
 ) {
 	for id, candidate := range candidates {
 		if candidateStatus[id] > ruleID {
-			accepted = append(accepted, candidate)
+			accepted = append(accepted, id)
 			continue
 		}
 		if dState, has := env.delegateState[candidate]; has {
 			//TODO remove hardcode here
 			if (dState != nil) && (dState.CurrentDelegators > 0) {
-				accepted = append(accepted, candidate)
+				accepted = append(accepted, id)
 				candidateStatus[id]++
 				continue
 			}
 		}
-		rejected = append(rejected, candidate)
+		rejected = append(rejected, id)
 	}
 	return accepted, rejected, candidateStatus
 }
