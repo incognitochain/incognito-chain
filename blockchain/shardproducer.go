@@ -789,6 +789,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	curView *ShardBestState,
 ) (txsToAdd map[common.Hash]metadata.Transaction, totalFee uint64) {
 	txToRemove := []metadata.Transaction{}
+	txsToAdd = map[common.Hash]metadata.Transaction{}
 	processedTransaction := map[common.Hash]bool{}
 	defer func() {
 		Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool,totalFee %v \n", len(txsToAdd), totalFee)
@@ -883,8 +884,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		blockGenerator.chain.config.TempTxPool.EmptyPool()
 		go blockGenerator.txPool.RemoveTx(txToRemove, false)
 	}
-
-	return txsToAdd, totalFee
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
