@@ -345,13 +345,14 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock types.BlockInterfac
 // 	return chain.Blockchain.InsertShardBlock(shardBlock, false)
 // }
 
-func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numOfFixNode int) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees, numOfFixNode); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -475,7 +476,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	if err != nil {
 		return err
 	}
-	if err = chain.ValidateBlockSignatures(shardBlock, committees); err != nil {
+	if err = chain.ValidateBlockSignatures(shardBlock, committees, chain.GetBestView().GetProposerLength()); err != nil {
 		return err
 	}
 	//rewrite to database
@@ -514,7 +515,7 @@ func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDat
 	if err != nil {
 		return err
 	}
-	if err = chain.ValidateBlockSignatures(shardBlk, committees); err != nil {
+	if err = chain.ValidateBlockSignatures(shardBlk, committees, chain.GetBestView().GetProposerLength()); err != nil {
 		return err
 	}
 

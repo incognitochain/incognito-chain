@@ -648,6 +648,21 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 	newMultiview := multiview.NewBeaconMultiView()
 
 	for _, v := range allViews {
+
+		//check config
+		for feature, height := range v.TriggeredFeature {
+			if feature == REDUCE_FIX_NODE_V3 || feature == REDUCE_FIX_NODE_V2 {
+				SFV3_MinShardCommitteeSize = 4
+			}
+			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
+				return errors.New("No config in triggered feature")
+			} else {
+				if height < uint64(value.MinTriggerBlockHeight) {
+					Logger.log.Infof("Feature %v is trigger before checkpoint (expect after %v, but get %v)", feature, value.MinTriggerBlockHeight, height)
+				}
+			}
+		}
+
 		includePdexv3 := false
 		if v.BeaconHeight >= config.Param().PDexParams.Pdexv3BreakPointHeight {
 			includePdexv3 = true
@@ -675,16 +690,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		for i := 0; i < v.ActiveShards; i++ {
 			if v.ShardTSManager[byte(i)] == nil {
 				v.ShardTSManager[byte(i)] = new(TSManager)
-			}
-		}
-		//check config
-		for feature, height := range v.TriggeredFeature {
-			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
-				return errors.New("No config in triggered feature")
-			} else {
-				if height < uint64(value.MinTriggerBlockHeight) {
-					Logger.log.Infof("Feature %v is trigger before checkpoint (expect after %v, but get %v)", feature, value.MinTriggerBlockHeight, height)
-				}
 			}
 		}
 

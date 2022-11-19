@@ -104,19 +104,21 @@ type genesisParam struct {
 	SelectShardNodeSerializedPubkeyV2           map[uint64][]string
 	PreSelectShardNodeSerializedPaymentAddress  []string
 	SelectShardNodeSerializedPaymentAddressV2   map[uint64][]string
+	AllFoundationNode                           map[string]bool
 }
 
 type committeeSize struct {
-	MaxShardCommitteeSize            int            `mapstructure:"max_shard_committee_size"`
-	MinShardCommitteeSize            int            `mapstructure:"min_shard_committee_size"`
-	MaxBeaconCommitteeSize           int            `mapstructure:"max_beacon_committee_size"`
-	MinBeaconCommitteeSize           int            `mapstructure:"min_beacon_committee_size"`
-	InitShardCommitteeSize           int            `mapstructure:"init_shard_committee_size"`
-	InitBeaconCommitteeSize          int            `mapstructure:"init_beacon_committee_size"`
-	ShardCommitteeSizeKeyListV2      int            `mapstructure:"shard_committee_size_key_list_v2"`
-	BeaconCommitteeSizeKeyListV2     int            `mapstructure:"beacon_committee_size_key_list_v2"`
-	NumberOfFixedShardBlockValidator int            `mapstructure:"number_of_fixed_shard_block_validators"`
-	IncreaseMaxShardCommitteeSize    map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
+	MaxShardCommitteeSize              int            `mapstructure:"max_shard_committee_size"`
+	MinShardCommitteeSize              int            `mapstructure:"min_shard_committee_size"`
+	MaxBeaconCommitteeSize             int            `mapstructure:"max_beacon_committee_size"`
+	MinBeaconCommitteeSize             int            `mapstructure:"min_beacon_committee_size"`
+	InitShardCommitteeSize             int            `mapstructure:"init_shard_committee_size"`
+	InitBeaconCommitteeSize            int            `mapstructure:"init_beacon_committee_size"`
+	ShardCommitteeSizeKeyListV2        int            `mapstructure:"shard_committee_size_key_list_v2"`
+	BeaconCommitteeSizeKeyListV2       int            `mapstructure:"beacon_committee_size_key_list_v2"`
+	NumberOfFixedShardBlockValidator   int            `mapstructure:"number_of_fixed_shard_block_validators"`
+	NumberOfFixedShardBlockValidatorV2 int            `mapstructure:"number_of_fixed_shard_validators_v2"`
+	IncreaseMaxShardCommitteeSize      map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
 type blockTime struct {
@@ -234,6 +236,10 @@ func verifyParam(p *param) error {
 			p.EpochParam.RandomTime, p.EpochParam.NumberOfBlockInEpoch)
 	}
 
+	if p.CommitteeSize.NumberOfFixedShardBlockValidatorV2 == 0 {
+		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2")
+	}
+
 	return nil
 }
 
@@ -287,11 +293,13 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 		panic(err)
 	}
 
+	p.GenesisParam.AllFoundationNode = make(map[string]bool)
 	for i := 0; i < p.CommitteeSize.InitBeaconCommitteeSize; i++ {
 		p.GenesisParam.PreSelectBeaconNodeSerializedPubkey =
 			append(p.GenesisParam.PreSelectBeaconNodeSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
 		p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress =
 			append(p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		p.GenesisParam.AllFoundationNode[keylist.Beacon[i].CommitteePublicKey] = true
 	}
 
 	for i := 0; i < p.ActiveShards; i++ {
@@ -300,6 +308,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 				append(p.GenesisParam.PreSelectShardNodeSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
 			p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress =
 				append(p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			p.GenesisParam.AllFoundationNode[keylist.Shard[i][j].CommitteePublicKey] = true
 		}
 	}
 	for _, v := range keylistV2 {
@@ -308,6 +317,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 				append(p.GenesisParam.SelectBeaconNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].CommitteePublicKey)
 			p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
 				append(p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].PaymentAddress)
+			p.GenesisParam.AllFoundationNode[v.Beacon[i].CommitteePublicKey] = true
 		}
 		for i := 0; i < p.ActiveShards; i++ {
 			for j := 0; j < p.CommitteeSize.ShardCommitteeSizeKeyListV2; j++ {
@@ -315,6 +325,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 					append(p.GenesisParam.SelectShardNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].CommitteePublicKey)
 				p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
 					append(p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].PaymentAddress)
+				p.GenesisParam.AllFoundationNode[v.Shard[i][j].CommitteePublicKey] = true
 			}
 		}
 	}

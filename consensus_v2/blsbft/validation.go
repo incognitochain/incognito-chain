@@ -80,11 +80,25 @@ func CheckValidationDataWithCommittee(valData *consensustypes.ValidationData, co
 	return true
 }
 
-func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
+
+	reduceFixNodeVersion := GetLatestReduceFixNodeVersion()
+	if reduceFixNodeVersion != 0 && block.GetVersion() >= reduceFixNodeVersion {
+		cnt := 0
+		for _, v := range valData.ValidatiorsIdx {
+			if v < numFixNode {
+				cnt++
+			}
+		}
+		if cnt <= 2*numFixNode/3 {
+			return errors.New("Not enough fix node votes")
+		}
+	}
+
 	valid := CheckValidationDataWithCommittee(valData, committee)
 	if !valid {
 		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)

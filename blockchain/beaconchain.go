@@ -350,7 +350,7 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 	if err != nil {
 		return err
 	}
-	if err = chain.ValidateBlockSignatures(beaconBlk, committees); err != nil {
+	if err = chain.ValidateBlockSignatures(beaconBlk, committees, chain.GetBestView().GetProposerLength()); err != nil {
 		return err
 	}
 
@@ -416,12 +416,12 @@ func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, signi
 // 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 // }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numOfFixNode int) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees, numOfFixNode); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
@@ -538,8 +538,7 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shard
 		cache.Add(cacheKey, committees)
 		return committees, err
 	}
-
-	return committees, nil
+	return committees, fmt.Errorf("Cannot find committee from shardID %v viewHash %v", shardID, hash.String())
 }
 
 func (chain *BeaconChain) GetSigningCommittees(

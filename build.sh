@@ -35,13 +35,17 @@ fi
 
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
 
-if [[ $env == "testnet" ]]; then
-    docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
-elif [ $env == "mainnet" ]; then
+if [ $env = "testnet" ]; then
+    echo "build testnet"
+    DOCKER_BUILDKIT=1 docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
+elif [ $env = "mainnet" ]; then
+    echo "build mainnet"
     docker build --build-arg commit=$commit . -t incognitochain/incognito-mainnet:${tag} && docker push incognitochain/incognito-mainnet:${tag} && echo "Commit: $commit"
 elif [ $env == "fixednodes" ]; then
+    echo "build fixednodes"
     docker build --build-arg commit=$commit . -t incognitochain/incognito-fixed-nodes:${tag} && docker push incognitochain/incognito-fixed-nodes:${tag} && echo "Commit: $commit"
-elif [ $env == "local" ]; then
+elif [ $env = "local" ]; then
+    echo "build local"
     DOCKER_BUILDKIT=1 docker build --build-arg commit=$commit . -t incognitochain:local
 fi
 
