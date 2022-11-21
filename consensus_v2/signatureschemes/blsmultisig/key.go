@@ -1,13 +1,11 @@
 package blsmultisig
 
 import (
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
+	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"math/big"
 	"sync"
-	"time"
-
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
-	"github.com/incognitochain/incognito-chain/common"
 )
 
 // KeyGen take an input seed and return BLS Key
@@ -59,7 +57,7 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
 
 	result := new(bn256.G2)
 	result.ScalarMult(pkPn, akBInt)
-	Cacher.Add(string(akByte), result, 4*time.Hour)
+	Cacher.Add(string(akByte), result)
 	return result
 }
 

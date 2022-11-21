@@ -13,8 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
-	"github.com/patrickmn/go-cache"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2"
@@ -1003,7 +1001,7 @@ func (httpServer *HttpServer) handleResetCache(params interface{}, closeChan <-c
 		incognitokey.ToBase58Cache, _ = lru.New(2000)
 		log.Println("reset ToBase58Cache")
 	case 3:
-		blsmultisig.Cacher = cache.New(4*time.Hour, 4*time.Hour)
+		blsmultisig.Cacher, _ = lru.New(10000)
 		log.Println("reset blsmultisig.Cacher")
 	default:
 	}

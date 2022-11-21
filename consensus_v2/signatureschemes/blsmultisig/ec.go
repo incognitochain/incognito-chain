@@ -2,11 +2,9 @@ package blsmultisig
 
 import (
 	"errors"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 	"log"
 	"math/big"
-	"time"
-
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
 // CmprG1 take a point in G1 group and return bytes array
@@ -58,7 +56,7 @@ func DecmprG2(bytes []byte) (*bn256.G2, error) {
 	if err != nil {
 		return nil, NewBLSSignatureError(DecompressFromByteErr, nil)
 	}
-	Cacher.Add(string(bytes), pn, 4*time.Hour)
+	Cacher.Add(string(bytes), pn)
 	return pn, nil
 }
 

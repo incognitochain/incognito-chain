@@ -1,13 +1,11 @@
 package blsmultisig
 
 import (
-	"time"
-
-	cache "github.com/patrickmn/go-cache"
+	lru "github.com/hashicorp/golang-lru"
 )
 
-var Cacher *cache.Cache
+var Cacher *lru.Cache
 
 func init() {
-	Cacher = cache.New(4*time.Hour, 4*time.Hour)
+	Cacher, _ = lru.New(10000)
 }

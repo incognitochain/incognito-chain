@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
-	"github.com/incognitochain/incognito-chain/incdb"
 	errors2 "github.com/pkg/errors"
 	"path"
 	"time"
@@ -195,10 +194,11 @@ func (stateDB *StateDB) BatchCommit(finalizedRebuild *RebuildInfo) (*RebuildInfo
 	//cap max memory in stateDB
 	//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here
 	nodes, imgs := stateDB.db.TrieDB().Size()
-	batchCommitConfig := stateDB.batchCommitConfig
-	if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
-		stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
-	}
+	fmt.Println("statedb size:", nodes, imgs)
+	//batchCommitConfig := stateDB.batchCommitConfig
+	//if nodes > batchCommitConfig.trieNodeLimit || imgs > batchCommitConfig.trieImgsLimit {
+	//	stateDB.db.TrieDB().Cap(batchCommitConfig.trieNodeLimit - incdb.IdealBatchSize)
+	//}
 
 	bytesSerialize := MapByteSerialize(changeObj)
 	//append changeObj with previous ff index, to help retrieve stateObject of a branch
