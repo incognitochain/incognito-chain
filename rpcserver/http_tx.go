@@ -138,11 +138,15 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	result := jsonresult.NewCreateTransactionResult(nil, tx.TxID, nil, tx.ShardID)
+	result.Base58CheckData = base58CheckData
+
+	/*sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)*/
+	/*if err != nil {*/
+	/*return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)*/
+	/*}*/
+	/*result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)*/
+
 	return result, nil
 }
 
@@ -367,7 +371,7 @@ func (httpServer *HttpServer) handleGetEncodedTransactionsByHashes(params interf
 	return httpServer.txService.GetEncodedTransactionsByHashes(txHashList)
 }
 
-//Get transaction by serial numbers
+// Get transaction by serial numbers
 func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
