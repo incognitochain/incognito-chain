@@ -132,7 +132,7 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, currentRootHash com
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (stateDB *StateDB) checkpoint(finalizedRebuild *RebuildInfo) (*RebuildInfo, error) {
+func (stateDB *StateDB) checkpoint(force bool, finalizedRebuild *RebuildInfo) (*RebuildInfo, error) {
 	trieDB := stateDB.db.TrieDB()
 	batchCommitConfig := stateDB.batchCommitConfig
 
@@ -143,7 +143,7 @@ func (stateDB *StateDB) checkpoint(finalizedRebuild *RebuildInfo) (*RebuildInfo,
 	//ifreach #commit threshold => write to disk
 	finalViewIndex := finalizedRebuild.lastFFIndex
 	//pivotFFIndex := stateDB.curRebuildInfo.pivotFFIndex
-	if stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
+	if force || stateDB.curRebuildInfo.pivotFFIndex+int64(stateDB.batchCommitConfig.blockTrieInMemory) < finalViewIndex {
 		//write the current roothash commit nodes to disk
 		rootHash := stateDB.curRebuildInfo.lastRootHash
 		rootIndex := stateDB.curRebuildInfo.lastFFIndex
@@ -159,7 +159,7 @@ func (stateDB *StateDB) checkpoint(finalizedRebuild *RebuildInfo) (*RebuildInfo,
 	//dereference roothash of finalized commit, for GC reduce memory
 	for !batchCommitConfig.triegc.Empty() {
 		oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-		if -number >= finalViewIndex {
+		if -number >= finalViewIndex && !force {
 			batchCommitConfig.triegc.Push(oldRootHash, number)
 			break
 		}
@@ -220,7 +220,11 @@ func (stateDB *StateDB) BatchCommit(finalizedRebuild *RebuildInfo) (*RebuildInfo
 	stateDB.batchCommitConfig.triegc.Push(root, -int64(stateObjectsIndex))
 	stateDB.ClearObjects()
 
-	return stateDB.checkpoint(finalizedRebuild)
+	force := false
+	if nodes > 10*1000*1000 {
+		force = true
+	}
+	return stateDB.checkpoint(force, finalizedRebuild)
 
 }
 
