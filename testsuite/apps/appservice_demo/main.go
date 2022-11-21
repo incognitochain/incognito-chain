@@ -1,12 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"os"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -20,17 +28,79 @@ func main() {
 		0: 2163378,
 		1: 2167083,
 		2: 2164835,
-		3: 2161584,
+		3: 2442777,
 		4: 2161694,
 		5: 2158484,
 		6: 2162553,
 		7: 2161572,
 	}
+	otaFD, _ := os.OpenFile("ota", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 
-	for i := 0; i < 8; i++ {
-		app.OnShardBlock(i, lastProcess[i], func(block types.ShardBlock) {
+	//read otaFD
+	scanner := bufio.NewScanner(otaFD)
+	const maxCapacity int = 10 * 1024 * 1024 * 1024 // your required line length
+	buf := make([]byte, maxCapacity)
+	scanner.Buffer(buf, maxCapacity)
+	mapOTAString := map[int]map[uint64]string{}              // shardid -> index >- string
+	mapOTATx := map[string]map[string]metadata.Transaction{} // pubkey string -> tx hash string ->  tx
+	for scanner.Scan() {
+		if scanner.Text() == "" {
+			continue
+		}
+		res := strings.Split(scanner.Text(), " ")
+		sid, _ := strconv.Atoi(res[0])
+		index, _ := strconv.Atoi(res[1])
+		if mapOTAString[sid] == nil {
+			mapOTAString[sid] = make(map[uint64]string)
+		}
+		mapOTAString[sid][uint64(index)] = res[2]
+	}
+
+	processOTA := func(sid int, index uint64, tx metadata.Transaction) {
+		if _, ok := mapOTAString[sid]; !ok {
+			mapOTAString[sid] = make(map[uint64]string)
+		}
+		if pubkey, ok := mapOTAString[sid][index]; ok {
+			if mapOTATx[pubkey] == nil {
+				mapOTATx[pubkey] = make(map[string]metadata.Transaction)
+			}
+			mapOTATx[pubkey][tx.String()] = tx
+		}
+
+		pubkey := app.GetOTACoinByIndices(index, sid, "0000000000000000000000000000000000000000000000000000000000000005")
+		if pubkey == "" {
+			panic(1)
+		}
+		//fmt.Println("process ota", req.index, req.shardID, "0000000000000000000000000000000000000000000000000000000000000005", pubkey)
+		mapOTAString[sid][index] = pubkey
+		if mapOTATx[pubkey] == nil {
+			mapOTATx[pubkey] = make(map[string]metadata.Transaction)
+		}
+		mapOTATx[pubkey][tx.String()] = tx
+	}
+	processShard := func(sid int) {
+		app.OnShardBlock(sid, lastProcess[sid], func(block types.ShardBlock) {
+			fmt.Println("Block:", block.GetHeight(), block.Hash().String())
 			for _, tx := range block.Body.Transactions {
 				if tokenTx, ok := tx.(*transaction.TxTokenVersion2); ok {
+					fmt.Println("Tx:", tx.Hash().String(), " - Type", tx.GetMetadataType())
+					outCoins := []
+					for _, coin := range tx.(*transaction.TxTokenVersion2).GetTxNormal().GetProof().GetOutputCoins() {
+						publicKey := base58.Base58Check{}.Encode(coin.(*privacy.CoinV2).GetPublicKey().ToBytesS(), common.ZeroByte)
+					}
+
+					txSig2 := new(transaction.TxSigPubKeyVer2)
+					if err := txSig2.SetBytes(tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey); err != nil {
+						fmt.Println("set byte error", tx.GetType(), tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey)
+						continue
+					}
+					for _, i := range txSig2.Indexes {
+						for _, j := range i {
+							//mapCoin[blk.GetShardID()][j.Uint64()] = append(mapCoin[blk.GetShardID()][j.Uint64()], tx)
+							processOTACh <- processOTA(sid, j.Uint64(), tx)
+						}
+					}
+
 					if tokenTx.GetMetadata() != nil {
 						switch tokenTx.GetMetadata().GetType() {
 						case 244, 245: //InitTokenResponse
@@ -109,6 +179,7 @@ func main() {
 			}
 		})
 	}
+	processShard(3)
 
 	//type processOTA struct {
 	//	shardID int
