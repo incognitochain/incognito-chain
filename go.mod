@@ -17,6 +17,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dchest/siphash v1.2.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
+	github.com/dgraph-io/dgo/v200 v200.0.0-20210401091508-95bfd74de60e
 	github.com/dgryski/go-identicon v0.0.0-20140725220403-371855927d74
 	github.com/ebfe/keccak v0.0.0-20150115210727-5cc570678d1b
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
@@ -25,8 +26,8 @@ require (
 	github.com/eteu-technologies/near-api-go v0.0.2-0.20220525104145-c042eac16f21
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
-	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0
+	github.com/gogo/protobuf v1.3.2
+	github.com/golang/protobuf v1.4.1
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
@@ -64,8 +65,8 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.27.1

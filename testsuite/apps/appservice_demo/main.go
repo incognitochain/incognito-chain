@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -19,6 +20,10 @@ import (
 )
 
 func main() {
+
+	dg := NewDgraphClient()
+	dg.SetSchema()
+
 	fullnode := flag.String("h", "http://51.222.153.212:9334/", "Fullnode Endpoint")
 	flag.Parse()
 	config.LoadConfig()
@@ -29,7 +34,7 @@ func main() {
 		0: 2163378,
 		1: 2167083,
 		2: 2164835,
-		3: 2400777,
+		3: 2401055,
 		4: 2161694,
 		5: 2158484,
 		6: 2162553,
@@ -90,7 +95,12 @@ func main() {
 			for _, tx := range block.Body.Transactions {
 				if tokenTx, ok := tx.(*transaction.TxTokenVersion2); ok {
 					fmt.Println("Tx:", tx.Hash().String(), " - Type", tx.GetMetadataType())
-
+					metadataType := tx.GetMetadataType()
+					metadataName := ""
+					amount := 0
+					linkTX := ""
+					tokenID := ""
+					tokenName := ""
 					if tokenTx.GetMetadata() != nil {
 						switch tokenTx.GetMetadata().GetType() {
 						case 244, 245: //InitTokenResponse
@@ -110,7 +120,12 @@ func main() {
 						case 285: //TradeRequest
 							//md, _ := tokenTx.GetMetadata().(*pdexv3.TradeRequest)
 						case 286: //TradeResponse
-							//md, _ := tokenTx.GetMetadata().(*pdexv3.TradeResponse)
+							md, _ := tokenTx.GetMetadata().(*pdexv3.TradeResponse)
+							metadataName = "TradeResponse"
+							_, _, amount64, token := tx.GetTransferData()
+							amount = int(amount64)
+							tokenID = token.String()
+							linkTX = md.RequestTxID.String()
 						case 287: //AddOrderRequest
 							//md ,_ := tokenTx.GetMetadata().(*pdexv3.AddOrderRequest)
 						case 288: //AddOrderRequest
@@ -136,14 +151,20 @@ func main() {
 						/* Portal BTC */
 						case 260: //PortalShieldingRequest
 							//md, _ := tokenTx.GetMetadata().(*metadata.PortalShieldingRequest)
-						case 261: //PortalShieldingResponse
+						case 261: //PotalShieldingResponse
 							md, _ := tokenTx.GetMetadata().(*metadata.PortalShieldingResponse)
-							fmt.Println("Mint BTC:", float64(md.MintingAmount)*1e-9)
+							metadataName = "PortalShieldingResponse"
+							amount = int(md.MintingAmount)
+							linkTX = md.ReqTxID.String()
 						case 262:
 							md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldRequest)
-							fmt.Println("Unshield BTC:", float64(md.UnshieldAmount)*1e-9)
+							metadataName = "PortalShieldingResponse"
+							amount = int(md.UnshieldAmount)
 						case 263:
-							//md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldResponse)
+							md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldResponse)
+							metadataName = "PortalUnshieldResponse"
+							amount = int(md.UnshieldAmount)
+							linkTX = md.ReqTxID.String()
 						//* Shield */
 						case 80, 24, 250, 270, 272, 327, 331, 343, 351, 354, 335:
 							//md, _ := tokenTx.GetMetadata().(*bridge.ShieldRequest)
@@ -175,22 +196,27 @@ func main() {
 					}
 					fmt.Println("OutputCoin:", outCoins)
 					txSig2 := new(transaction.TxSigPubKeyVer2)
+
+					incoins := make([][]string, len(txSig2.Indexes))
 					if err := txSig2.SetBytes(tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey); err != nil {
-						//fmt.Println("set byte error", tx.GetType(), tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey)
-						continue
-					}
-					for _, i := range txSig2.Indexes {
-						for _, j := range i {
-							processOTA(sid, j.Uint64(), tx)
+
+					} else {
+						for _, i := range txSig2.Indexes {
+							for _, j := range i {
+								processOTA(sid, j.Uint64(), tx)
+							}
+						}
+						incoins := make([][]string, len(txSig2.Indexes))
+						for id, i := range txSig2.Indexes {
+							incoin := []string{}
+							for _, j := range i {
+								incoin = append(incoin, mapOTAString[sid][j.Uint64()])
+							}
+							incoins[id] = incoin
+							fmt.Println("Incoin", id, incoin)
 						}
 					}
-					for id, i := range txSig2.Indexes {
-						incoin := []string{}
-						for _, j := range i {
-							incoin = append(incoin, mapOTAString[sid][j.Uint64()])
-						}
-						fmt.Println("Incoin", id, incoin)
-					}
+					dg.SetTransaction(tx.Hash().String(), linkTX, metadataType, metadataName, tokenID, tokenName, amount, incoins, outCoins)
 
 				}
 			}
