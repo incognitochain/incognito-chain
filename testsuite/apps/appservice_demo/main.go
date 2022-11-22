@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -28,7 +29,7 @@ func main() {
 		0: 2163378,
 		1: 2167083,
 		2: 2164835,
-		3: 2442777,
+		3: 2400777,
 		4: 2161694,
 		5: 2158484,
 		6: 2162553,
@@ -78,28 +79,17 @@ func main() {
 		}
 		mapOTATx[pubkey][tx.String()] = tx
 	}
+
 	processShard := func(sid int) {
 		app.OnShardBlock(sid, lastProcess[sid], func(block types.ShardBlock) {
-			fmt.Println("Block:", block.GetHeight(), block.Hash().String())
+			if len(block.Body.Transactions) == 0 {
+				return
+			}
+			fmt.Println("==================================================")
+			fmt.Println("Block:", block.GetHeight(), block.Hash().String(), time.Unix(block.GetProposeTime(), 0).Local())
 			for _, tx := range block.Body.Transactions {
 				if tokenTx, ok := tx.(*transaction.TxTokenVersion2); ok {
 					fmt.Println("Tx:", tx.Hash().String(), " - Type", tx.GetMetadataType())
-					outCoins := []
-					for _, coin := range tx.(*transaction.TxTokenVersion2).GetTxNormal().GetProof().GetOutputCoins() {
-						publicKey := base58.Base58Check{}.Encode(coin.(*privacy.CoinV2).GetPublicKey().ToBytesS(), common.ZeroByte)
-					}
-
-					txSig2 := new(transaction.TxSigPubKeyVer2)
-					if err := txSig2.SetBytes(tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey); err != nil {
-						fmt.Println("set byte error", tx.GetType(), tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey)
-						continue
-					}
-					for _, i := range txSig2.Indexes {
-						for _, j := range i {
-							//mapCoin[blk.GetShardID()][j.Uint64()] = append(mapCoin[blk.GetShardID()][j.Uint64()], tx)
-							processOTACh <- processOTA(sid, j.Uint64(), tx)
-						}
-					}
 
 					if tokenTx.GetMetadata() != nil {
 						switch tokenTx.GetMetadata().GetType() {
@@ -147,11 +137,13 @@ func main() {
 						case 260: //PortalShieldingRequest
 							//md, _ := tokenTx.GetMetadata().(*metadata.PortalShieldingRequest)
 						case 261: //PortalShieldingResponse
-							//md, _ := tokenTx.GetMetadata().(*metadata.PortalShieldingResponse)
+							md, _ := tokenTx.GetMetadata().(*metadata.PortalShieldingResponse)
+							fmt.Println("Mint BTC:", float64(md.MintingAmount)*1e-9)
 						case 262:
-							//md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldRequest)
-						//case 263:
-						//	//md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldResponse)
+							md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldRequest)
+							fmt.Println("Unshield BTC:", float64(md.UnshieldAmount)*1e-9)
+						case 263:
+							//md, _ := tokenTx.GetMetadata().(*metadata.PortalUnshieldResponse)
 						//* Shield */
 						case 80, 24, 250, 270, 272, 327, 331, 343, 351, 354, 335:
 							//md, _ := tokenTx.GetMetadata().(*bridge.ShieldRequest)
@@ -175,6 +167,31 @@ func main() {
 					} else {
 						//TODO: this is transfer token
 					}
+
+					outCoins := []string{}
+					for _, coin := range tokenTx.GetTxNormal().GetProof().GetOutputCoins() {
+						publicKey := base58.Base58Check{}.Encode(coin.(*privacy.CoinV2).GetPublicKey().ToBytesS(), common.ZeroByte)
+						outCoins = append(outCoins, publicKey)
+					}
+					fmt.Println("OutputCoin:", outCoins)
+					txSig2 := new(transaction.TxSigPubKeyVer2)
+					if err := txSig2.SetBytes(tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey); err != nil {
+						//fmt.Println("set byte error", tx.GetType(), tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey)
+						continue
+					}
+					for _, i := range txSig2.Indexes {
+						for _, j := range i {
+							processOTA(sid, j.Uint64(), tx)
+						}
+					}
+					for id, i := range txSig2.Indexes {
+						incoin := []string{}
+						for _, j := range i {
+							incoin = append(incoin, mapOTAString[sid][j.Uint64()])
+						}
+						fmt.Println("Incoin", id, incoin)
+					}
+
 				}
 			}
 		})
