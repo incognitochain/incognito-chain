@@ -125,6 +125,7 @@ var HttpHandler = map[string]httpHandler{
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
 	resetCache:                 (*HttpServer).handleResetCache,
 	testValidate:               (*HttpServer).handleTestValidate,
+	getShardRootHash:           (*HttpServer).handleGetShardRootHash,
 	stallInsert:                (*HttpServer).handleStallInsert,
 	//=================================
 

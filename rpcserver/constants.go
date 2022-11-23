@@ -151,6 +151,7 @@ const (
 	getProposerIndex                   = "getproposerindex"
 	resetCache                         = "resetcache"
 	testValidate                       = "testvalidate"
+	getShardRootHash                   = "getShardRootHash"
 	stallInsert                        = "stallInsert"
 	// ==================================================
 

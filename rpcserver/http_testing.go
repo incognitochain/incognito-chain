@@ -1010,6 +1010,14 @@ func (httpServer *HttpServer) handleResetCache(params interface{}, closeChan <-c
 	return "ok", nil
 }
 
+func (httpServer *HttpServer) handleGetShardRootHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := int(arrayParams[0].(float64))
+	height := uint64(arrayParams[1].(float64))
+	srh, _ := httpServer.GetBlockchain().GetShardRootsHash(byte(shardID), height)
+	return srh, nil
+}
+
 func (httpServer *HttpServer) handleTestValidate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	log.Println(arrayParams)

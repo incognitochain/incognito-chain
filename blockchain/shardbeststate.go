@@ -405,7 +405,7 @@ func (shardBestState *ShardBestState) GetBlockVersion() int {
 	return shardBestState.BestBlock.GetVersion()
 }
 
-func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
+func (blockchain *BlockChain) GetShardRootsHash(shardID byte, height uint64) (*ShardRootHash, error) {
 	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
 		return nil, err
