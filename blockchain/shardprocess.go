@@ -1239,10 +1239,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 	newShardState.ConsensusStateDBRootHash = consensusRootHash
 	// transaction root hash
-	transactionRootHash, err := newShardState.transactionStateDB.Commit(true)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
 
 	if time.Since(time.Unix(shardBlock.GetProposeTime(), 0)).Minutes() > 30 {
 		finalView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.GetFinalView()
@@ -1252,12 +1248,17 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 
 		rebuildRootHash, err := newShardState.transactionStateDB.BatchCommit(finalizedRebuildInfo)
+		fmt.Println(shardID, blockHeight, blockHash.String(), rebuildRootHash.String())
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		newShardState.TransactionStateDBRootHash = rebuildRootHash.GetLastRootHash()
 		newShardState.ShardRebuildRootHash.TransactionStateDBRootHash = newShardState.transactionStateDB.GetRebuildInfo()
 	} else {
+		transactionRootHash, err := newShardState.transactionStateDB.Commit(true)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
 		err = newShardState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
@@ -1313,7 +1314,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		FeatureStateDBRootHash:     featureRootHash,
 		RewardStateDBRootHash:      rewardRootHash,
 		SlashStateDBRootHash:       slashRootHash,
-		TransactionStateDBRootHash: transactionRootHash,
+		TransactionStateDBRootHash: newShardState.TransactionStateDBRootHash,
 	}
 
 	if err := rawdbv2.StoreShardRootsHash(batchData, shardID, blockHash, sRH); err != nil {

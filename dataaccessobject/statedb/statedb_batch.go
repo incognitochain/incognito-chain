@@ -150,16 +150,16 @@ func (stateDB *StateDB) checkpoint(force bool, finalizedRebuild *RebuildInfo) (*
 		if err := stateDB.db.TrieDB().Commit(rootHash, false); err != nil {
 			return nil, err
 		}
-		if stateDB.curRebuildInfo.pivotFFIndex > 0 {
-			batchCommitConfig.flatFile.Truncate(uint64(stateDB.curRebuildInfo.pivotFFIndex))
-		}
+		//if stateDB.curRebuildInfo.pivotFFIndex > 0 {
+		//	batchCommitConfig.flatFile.Truncate(uint64(stateDB.curRebuildInfo.pivotFFIndex))
+		//}
 		stateDB.curRebuildInfo.pivotRootHash = rootHash
 		stateDB.curRebuildInfo.pivotFFIndex = rootIndex
 	}
 	//dereference roothash of finalized commit, for GC reduce memory
 	for !batchCommitConfig.triegc.Empty() {
 		oldRootHash, number := batchCommitConfig.triegc.Pop() //the largest number will be pop, (so we get the smallest ffindex, until finalIndex)
-		if -number >= finalViewIndex && !force {
+		if -number >= finalViewIndex {
 			batchCommitConfig.triegc.Push(oldRootHash, number)
 			break
 		}
@@ -178,9 +178,7 @@ func (stateDB *StateDB) BatchCommit(finalizedRebuild *RebuildInfo) (*RebuildInfo
 	}
 
 	// Write the account trie changes, measuing the amount of wasted time
-	root, err := stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
-		return nil
-	})
+	root, err := stateDB.Commit(true)
 
 	if err != nil {
 		return nil, err
