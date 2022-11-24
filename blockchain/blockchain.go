@@ -741,6 +741,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	// fmt.Println("debug RestoreShardViews", len(allViews))
 	newMultiView := multiview.NewShardMultiView()
 	for _, v := range allViews {
+		Logger.log.Info("Restore shard ", shardID, v.GetHeight(), v.GetHash().String())
 		block, err := blockchain.ShardChain[shardID].GetBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
 			fmt.Println("Cannot get block", v.ShardID, v.ShardHeight, v.BestBlockHash)
@@ -776,7 +777,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if _, err := newMultiView.AddView(v); err != nil {
 			panic("Restart shard views fail")
 		}
-		Logger.log.Info("Restore shard ", shardID, v.GetHeight(), v.GetHash().String())
+
 	}
 	blockchain.ShardChain[shardID].multiView = newMultiView
 	return nil

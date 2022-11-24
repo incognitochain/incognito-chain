@@ -108,6 +108,9 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, currentRootHash com
 		}
 		//TODO: count size of object, if size > threshold then we call commit (cap node/image)
 		for objKey, obj := range stateObjects {
+			//if pivotIndex+int64(i) >= 342527 {
+			//	fmt.Println(obj.GetType(), objKey, obj.GetValue(), obj.IsDeleted())
+			//}
 			if err := newState.SetStateObject(obj.GetType(), objKey, obj.GetValue()); err != nil {
 				return nil, err
 			}
@@ -115,6 +118,9 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, currentRootHash com
 				newState.MarkDeleteStateObject(obj.GetType(), objKey)
 			}
 		}
+		//newStateRoot := newState.IntermediateRoot(true)
+		//fmt.Println(pivotIndex+int64(i), newStateRoot.String())
+
 	}
 	newStateRoot := newState.IntermediateRoot(true)
 	newState.db.TrieDB().Reference(newStateRoot, common.Hash{})
@@ -124,6 +130,7 @@ func InitBatchCommit(dbName string, db DatabaseAccessWarper, currentRootHash com
 	dataaccessobject.Logger.Log.Infof("Build root: %v (%v commits in %v) .Expected root %v", newStateRoot, len(stateSeries),
 		time.Since(buildTime).Seconds(), rebuildRootHash)
 	if newStateRoot.String() != lastRootHash.String() {
+		fmt.Println("data from ", pivotIndex, lastFFIndex, len(stateSeries))
 		return nil, errors.New("Cannot rebuild correct root")
 	}
 
@@ -170,24 +177,21 @@ func (stateDB *StateDB) checkpoint(force bool, finalizedRebuild *RebuildInfo) (*
 
 // Commit writes the state to the underlying in-memory trie database.
 func (stateDB *StateDB) BatchCommit(finalizedRebuild *RebuildInfo) (*RebuildInfo, error) {
-	// Finalize any pending changes and merge everything into the tries
-	changeObj := stateDB.stateObjects
-
-	if len(stateDB.stateObjectsDirty) > 0 {
-		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
-	}
 
 	// Write the account trie changes, measuing the amount of wasted time
 	root, err := stateDB.Commit(true)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if len(changeObj) == 0 {
-		rebuildInfo := stateDB.curRebuildInfo.Copy()
-		return rebuildInfo, nil
+	//root hash not change
+	if stateDB.curRebuildInfo.lastRootHash.String() == root.String() {
+		return stateDB.curRebuildInfo.Copy(), nil
 	}
+
+	//else root hash changed
+	// Finalize any pending changes and merge everything into the tries
+	changeObj := stateDB.stateObjects
 
 	//cap max memory in stateDB
 	//TODO: we need to test below case, when mem in stateDB exceed threshold, it will flush to disk, what is the effect here

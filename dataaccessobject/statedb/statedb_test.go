@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -132,6 +133,7 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 
 	rootHash2, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash2, false)
+	stateDB.ClearObjects()
 
 	v0, err = stateDB.getTestObject(keys[0])
 	v1, err = stateDB.getTestObject(keys[1])
@@ -153,6 +155,9 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	if !reflect.DeepEqual(v4, []byte{}) {
 		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v4)
 	}
+
+	x, err := stateDB.getDeletedStateObject(TestObjectType, keys[0])
+	fmt.Println(x, err)
 }
 
 func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {

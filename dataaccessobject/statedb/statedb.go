@@ -315,6 +315,7 @@ func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common
 		if err != nil {
 			return nil, err
 		}
+		//fmt.Println("not in db")
 	}
 	return stateObject, nil
 }

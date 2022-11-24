@@ -1249,6 +1249,12 @@ func (blockchain *BlockChain) processStoreShardBlock(
 
 		rebuildRootHash, err := newShardState.transactionStateDB.BatchCommit(finalizedRebuildInfo)
 		fmt.Println(shardID, blockHeight, blockHash.String(), rebuildRootHash.String())
+		if blockHeight == 2117731 {
+			panic("stop to debug")
+		}
+		if blockHeight == 2117764 {
+			panic("stop to debug")
+		}
 		if err != nil {
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
