@@ -185,6 +185,9 @@ auto_enable_feature:
   - nearbridge:
       min_trigger: 5601070
       require_percentage: 90
+  - aurorahotfix:
+      min_trigger: 5776355
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30
