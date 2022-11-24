@@ -152,8 +152,8 @@ auto_enable_feature:
       min_trigger: 2403039
       require_percentage: 75
   - aurorahotfix:
-    min_trigger: 2521501
-    require_percentage: 75
+      min_trigger: 2521501
+      require_percentage: 75
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
