@@ -397,7 +397,7 @@ var mainnetPortalParam = PortalParams{
 			},
 			PortalTokens: initPortalTokensV4ForMainNet(),
 			DefaultFeeUnshields: map[string]uint64{
-				MainnetPortalV4BTCID: 30000, // nano pbtc
+				MainnetPortalV4BTCID: 50000, // nano pbtc
 			},
 			MinShieldAmts: map[string]uint64{
 				MainnetPortalV4BTCID: 100000, // nano pbtc
