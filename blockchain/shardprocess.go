@@ -1679,7 +1679,7 @@ func (blockchain *BlockChain) processStoreAllShardStakerInfo(
 					//fmt.Printf("shard %v process list in of shard %v, bc %v\n", sID, swapShardInstruction.ChainID, beaconBlock.Header.Height)
 					newCommittees := swapShardInstruction.InPublicKeys
 					for _, pkStr := range newCommittees {
-						infor, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, pkStr)
+						infor, has, err := statedb.GetShardStakerInfo(beaconConsensusStateDB, pkStr)
 						BLogger.log.Infof("teststore Add new committee pk %v, delegator %v ", sBestState.ShardHeight, infor.Delegate())
 						if err != nil {
 							return err

@@ -81,6 +81,7 @@ const (
 	// staking
 	ShardStakingMeta    = metadataCommon.ShardStakingMeta
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
+	AddStakingMeta      = metadataCommon.AddStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
 	UnStakingMeta       = metadataCommon.UnStakingMeta
 	ReDelegateMeta      = metadataCommon.ReDelegateMeta

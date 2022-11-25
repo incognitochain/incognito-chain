@@ -469,7 +469,10 @@ func (r *RemoteRPCClient) GetRewardAmountByPublicKey(publicKey string) (res map[
 	return resp.Result, err
 }
 
-func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]map[string]uint64, err error) {
+func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]struct {
+	Available map[string]uint64
+	Locked    map[string]uint64
+}, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "listrewardamount",
@@ -484,8 +487,11 @@ func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]map[string]uint64
 		return res, errors.New(rpcERR.Error())
 	}
 	resp := struct {
-		Result map[string]map[common.Hash]uint64
-		Error  *ErrMsg
+		Result map[string]struct {
+			Available map[common.Hash]uint64
+			Locked    map[common.Hash]uint64
+		}
+		Error *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
 
@@ -496,14 +502,23 @@ func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]map[string]uint64
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
-	res = map[string]map[string]uint64{}
+	res = map[string]struct {
+		Available map[string]uint64
+		Locked    map[string]uint64
+	}{}
 	resTmp := resp.Result
 	for k, v := range resTmp {
-		vNew := map[string]uint64{}
-		for tokenID, amount := range v {
-			vNew[tokenID.String()] = amount
+		vNew := struct {
+			Available map[string]uint64
+			Locked    map[string]uint64
+		}{}
+		for tokenID, amount := range v.Available {
+			vNew.Available[tokenID.String()] = amount
 		}
-		if len(vNew) > 0 {
+		for tokenID, amount := range v.Locked {
+			vNew.Locked[tokenID.String()] = amount
+		}
+		if (len(vNew.Available) > 0) || (len(vNew.Locked) > 0) {
 			res[k] = vNew
 		}
 	}
@@ -576,6 +591,36 @@ func (r *RemoteRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey str
 		"jsonrpc": "1.0",
 		"method":  "createandsendstopautostakingtransaction",
 		"params":  []interface{}{privateKey, receivers, fee, privacy, stopStakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) CreateAndSendAddStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, addStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendaddstakingtransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, addStakeInfo},
 		"id":      1,
 	})
 	if err != nil {

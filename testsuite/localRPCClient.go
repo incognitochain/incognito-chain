@@ -271,24 +271,42 @@ func (r *LocalRPCClient) GetRewardAmountByPublicKey(publicKey string) (res map[s
 	}
 	return resI.(map[string]uint64), nil
 }
-func (r *LocalRPCClient) GetAllRewardAmount() (res map[string]map[string]uint64, err error) {
+func (r *LocalRPCClient) GetAllRewardAmount() (res map[string]struct {
+	Available map[string]uint64
+	Locked    map[string]uint64
+}, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["listrewardamount"]
 	resI, rpcERR := c(httpServer, []interface{}{}, nil)
 	if rpcERR != nil {
 		return res, errors.New(rpcERR.Error())
 	}
-	resTmp, ok := resI.(map[string]map[common.Hash]uint64)
+	resTmp, ok := resI.(map[string]struct {
+		Available map[common.Hash]uint64
+		Locked    map[common.Hash]uint64
+	})
 	if !ok {
 		return nil, errors.New("Can not convert result to map[string]map[common.Hash]uint64")
 	}
-	res = map[string]map[string]uint64{}
+	res = map[string]struct {
+		Available map[string]uint64
+		Locked    map[string]uint64
+	}{}
 	for k, v := range resTmp {
-		vNew := map[string]uint64{}
-		for tokenID, amount := range v {
-			vNew[tokenID.String()] = amount
+		vNew := struct {
+			Available map[string]uint64
+			Locked    map[string]uint64
+		}{
+			Available: map[string]uint64{},
+			Locked:    map[string]uint64{},
 		}
-		if len(vNew) > 0 {
+		for tokenID, amount := range v.Available {
+			vNew.Available[tokenID.String()] = amount
+		}
+		for tokenID, amount := range v.Locked {
+			vNew.Locked[tokenID.String()] = amount
+		}
+		if (len(vNew.Available) > 0) || (len(vNew.Locked) > 0) {
 			res[k] = vNew
 		}
 	}
@@ -322,6 +340,17 @@ func (r *LocalRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey stri
 	}
 	return resI.(jsonresult.CreateTransactionResult), nil
 }
+
+func (r *LocalRPCClient) CreateAndSendAddStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, addStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createandsendaddstakingtransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey, receivers, fee, privacy, addStakeInfo}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionResult), nil
+}
+
 func (r *LocalRPCClient) CreateAndSendUnStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, unstakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createunstaketransaction"]

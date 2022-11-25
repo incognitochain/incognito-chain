@@ -90,6 +90,12 @@ const (
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
 	IncKeyType      = "inc"
+
+	RETURN_BY_UNSTAKE = 0
+	RETURN_BY_SLASHED = 1
+	RETURN_BY_INVALID = 2
+	RETURN_BY_PROMOTE = 3
+	RETURN_BY_UNKNOWN = 255
 )
 
 const (

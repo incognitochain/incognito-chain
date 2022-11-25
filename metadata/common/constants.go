@@ -31,6 +31,7 @@ const (
 	// staking
 	ShardStakingMeta    = 63
 	StopAutoStakingMeta = 127
+	AddStakingMeta      = 352
 	BeaconStakingMeta   = 64
 	UnStakingMeta       = 210
 	ReDelegateMeta      = 351

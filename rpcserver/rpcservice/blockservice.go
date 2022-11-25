@@ -586,7 +586,7 @@ func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string,
 		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 	}
 
-	validPublicKeys := beaconBestState.GetValidStakers(publicKeys)
+	validPublicKeys := beaconBestState.GetValidStakers(publicKeys, false)
 
 	return validPublicKeys, nil
 }

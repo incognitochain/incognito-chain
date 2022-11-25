@@ -342,7 +342,7 @@ func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, erro
 
 const (
 	stakeShardAmount   int = 1750000000000
-	stakeBeaceonAmount int = stakeShardAmount * 3
+	stakeBeaceonAmount int = stakeShardAmount * 50
 )
 
 type StakingTxParam struct {
@@ -361,6 +361,13 @@ type StopStakingParam struct {
 	BurnAddr  string
 	StakerPrk string
 	MinerPrk  string
+}
+
+type AddStakingParam struct {
+	BurnAddr  string
+	StakerPrk string
+	MinerPrk  string
+	AddAmount uint64
 }
 
 type ReDelegateParam struct {
@@ -396,6 +403,16 @@ func (r *RPCClient) StopAutoStake(acc account.Account) (*jsonresult.CreateTransa
 		MinerPrk:  "",
 	}
 	return r.API_SendTxStopAutoStake(stake1)
+}
+
+func (r *RPCClient) AddStake(acc account.Account, amount uint64) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := AddStakingParam{
+		BurnAddr:  "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk: acc.PrivateKey,
+		MinerPrk:  "",
+		AddAmount: amount,
+	}
+	return r.API_SendTxAddStake(stake1)
 }
 
 func (r *RPCClient) StakeNew(acc account.Account, delegate string, autoStake bool) (*jsonresult.CreateTransactionResult, error) {
@@ -508,6 +525,31 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 
 	txResp, err := r.Client.CreateAndSendStopAutoStakingTransaction(stopStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
 		"StopAutoStakingType":     float64(127),
+		"CandidatePaymentAddress": minerPayment,
+		"PrivateSeed":             privateSeed,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &txResp, nil
+}
+
+func (r *RPCClient) API_SendTxAddStake(addStakeMeta AddStakingParam) (*jsonresult.CreateTransactionResult, error) {
+	if addStakeMeta.MinerPrk == "" {
+		addStakeMeta.MinerPrk = addStakeMeta.StakerPrk
+	}
+	wl, err := wallet.Base58CheckDeserialize(addStakeMeta.MinerPrk)
+	if err != nil {
+		return nil, err
+	}
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	minerPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	burnAddr := addStakeMeta.BurnAddr
+
+	txResp, err := r.Client.CreateAndSendAddStakingTransaction(addStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(addStakeMeta.AddAmount)}, 1, 0, map[string]interface{}{
+		"AddStakingAmount":        addStakeMeta.AddAmount,
 		"CandidatePaymentAddress": minerPayment,
 		"PrivateSeed":             privateSeed,
 	})
