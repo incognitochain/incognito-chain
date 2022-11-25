@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -25,6 +26,7 @@ type BeaconCommitteeState interface {
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetDelegate() map[string]string
+	GetBCStakingAmount() map[string]uint64
 	GetAllCandidateSubstituteCommittee() []string
 	GetNumberOfActiveShards() int
 	GetShardCommonPool() []incognitokey.CommitteePublicKey
@@ -40,6 +42,7 @@ type BeaconCommitteeState interface {
 		error)
 	ProcessStoreCommitteeStateInfo(
 		bBlock *types.BeaconBlock,
+		signatureInfor map[string]signaturecounter.MissingSignature,
 		cChange *CommitteeChange,
 		stateDB *statedb.StateDB,
 		isEndOfEpoch bool,

@@ -44,7 +44,9 @@ func IsConsensusInstruction(action string) bool {
 		action == FINISH_SYNC_ACTION ||
 		action == SHARD_INST ||
 		action == BEACON_INST ||
-		action == RETURN_ACTION
+		action == RETURN_ACTION ||
+		action == RETURN_BEACON_ACTION ||
+		action == ADD_STAKING_ACTION
 }
 
 // the order of instruction must always be maintain

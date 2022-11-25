@@ -9,17 +9,17 @@ import (
 
 type ReturnStakingMetadata struct {
 	MetadataBase
-	TxID          string
+	TxIDs         []string
 	StakerAddress privacy.PaymentAddress
-	SharedRandom []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
-func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int, ) *ReturnStakingMetadata {
+func NewReturnStaking(txIDs []string, producerAddress privacy.PaymentAddress, metaType int) *ReturnStakingMetadata {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	return &ReturnStakingMetadata{
-		TxID:          txID,
+		TxIDs:         txIDs,
 		StakerAddress: producerAddress,
 		MetadataBase:  metadataBase,
 	}
@@ -45,15 +45,15 @@ func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetri
 		return false, false, errors.New("Wrong request info's producer address")
 	}
 
-	if sbsRes.TxID == "" {
+	if len(sbsRes.TxIDs) == 0 {
 		return false, false, errors.New("Wrong request info's Tx staking")
 	}
-
-	_, err := common.Hash{}.NewHashFromStr(sbsRes.TxID)
-	if err != nil {
-		return false, false, errors.New("Wrong request info's Tx staking hash")
+	for _, txID := range sbsRes.TxIDs {
+		_, err := common.Hash{}.NewHashFromStr(txID)
+		if err != nil {
+			return false, false, errors.New("Wrong request info's Tx staking hash")
+		}
 	}
-
 	return false, true, nil
 }
 
@@ -64,7 +64,12 @@ func (sbsRes ReturnStakingMetadata) ValidateMetadataByItself() bool {
 
 func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 	record := sbsRes.StakerAddress.String()
-	record += sbsRes.TxID
+	for id, v := range sbsRes.TxIDs {
+		if id > 0 {
+			record += "-"
+		}
+		record += v
+	}
 	if sbsRes.SharedRandom != nil && len(sbsRes.SharedRandom) > 0 {
 		record += string(sbsRes.SharedRandom)
 	}
@@ -77,4 +82,3 @@ func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 func (sbsRes *ReturnStakingMetadata) SetSharedRandom(r []byte) {
 	sbsRes.SharedRandom = r
 }
-
