@@ -213,12 +213,16 @@ func ValidateReturnBeaconStakingInstructionSanity(instruction []string) error {
 	if err != nil {
 		return err
 	}
-	txStakings := strings.Split(instruction[2], SPLITTER)
-	for _, txStaking := range txStakings {
-		_, err := common.Hash{}.NewHashFromStr(txStaking)
-		if err != nil {
-			log.Println("err:", err)
-			return fmt.Errorf("invalid tx return staking %+v", err)
+
+	stakingTxsRaws := strings.Split(instruction[2], SPLITTER)
+	for _, stakingTxsRaw := range stakingTxsRaws {
+		stakingTxIDsPerPK := strings.Split(stakingTxsRaw, "-")
+		for _, txID := range stakingTxIDsPerPK {
+			_, err := common.Hash{}.NewHashFromStr(txID)
+			if err != nil {
+				log.Println("err:", err)
+				return fmt.Errorf("invalid tx return staking %+v", err)
+			}
 		}
 	}
 	percentRetunrsStr := strings.Split(instruction[3], SPLITTER)
@@ -230,10 +234,10 @@ func ValidateReturnBeaconStakingInstructionSanity(instruction []string) error {
 		}
 		percentReturns[i] = uint(tempPercent)
 	}
-	if len(publicKeys) != len(txStakings) {
+	if len(publicKeys) != len(stakingTxsRaws) {
 		return fmt.Errorf("invalid public key & tx staking txs length, %+v", instruction)
 	}
-	if len(percentReturns) != len(txStakings) {
+	if len(percentReturns) != len(stakingTxsRaws) {
 		return fmt.Errorf("invalid reward percentReturns & tx stakings length, %+v", instruction)
 	}
 	if len(percentReturns) != len(publicKeys) {
