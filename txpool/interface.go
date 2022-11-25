@@ -89,6 +89,7 @@ type FeeEstimator interface {
 	RegisterBlock(block *types.ShardBlock) error
 	EstimateFee(numBlocks uint64, tokenId *common.Hash) (uint64, error)
 	GetLimitFeeForNativeToken() uint64
+	GetMinFeePerTx() uint64
 }
 
 type TxVerifier interface {

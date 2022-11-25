@@ -101,9 +101,9 @@ func (v *TxsVerifier) checkFees(
 ) bool {
 	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
+	limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
+	minFeePerTx := v.feeEstimator.GetMinFeePerTx()
 	if txType == common.TxCustomTokenPrivacyType {
-		limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
-
 		// check transaction fee for meta data
 		meta := tx.GetMetadata()
 		// verify at metadata level
@@ -131,6 +131,15 @@ func (v *TxsVerifier) checkFees(
 			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
 			feeNativeToken += feePTokenToNativeToken
 		}
+
+		// check min fee of tx
+		if feeNativeToken < minFeePerTx {
+			Logger.log.Errorf("ERROR: %+v",
+				fmt.Errorf("transaction %+v has %d fees PRV which is under the required min fee per tx %d",
+					tx.Hash().String(), feeNativeToken, minFeePerTx))
+			return false
+		}
+
 		// get limit fee in native token
 		actualTxSize := tx.GetTxActualSize()
 		// check fee in native token
@@ -142,7 +151,6 @@ func (v *TxsVerifier) checkFees(
 		}
 	} else {
 		// This is a normal tx -> only check like normal tx with PRV
-		limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
 		txFee := tx.GetTxFee()
 		// txNormal := tx.(*transaction.Tx)
 		if limitFee > 0 {
@@ -155,6 +163,15 @@ func (v *TxsVerifier) checkFees(
 				}
 				return ok
 			}
+
+			// check min fee of tx
+			if txFee < minFeePerTx {
+				Logger.log.Errorf("ERROR: %+v",
+					fmt.Errorf("transaction %+v has %d fees PRV which is under the required min fee per tx %d",
+						tx.Hash().String(), txFee, minFeePerTx))
+				return false
+			}
+
 			fullFee := limitFee * tx.GetTxActualSize()
 			// ok := tx.CheckTransactionFee(limitFee)
 			if txFee < fullFee {

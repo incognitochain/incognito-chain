@@ -25,6 +25,7 @@ committee_size:
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
+  number_of_fixed_shard_validators_v2: 4
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
@@ -33,7 +34,7 @@ block_time:
   min_shard_block_interval: 40s
   max_shard_block_creation: 20s
 staking_amount_shard: 1750000000000
-active_shards: 2
+active_shards: 1
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:

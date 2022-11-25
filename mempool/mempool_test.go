@@ -3,8 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io/ioutil"
 	"log"
 	"math"
@@ -15,6 +13,9 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -101,7 +102,7 @@ var _ = func() (_ struct{}) {
 		feeEstimator[shardID] = NewFeeEstimator(
 			DefaultEstimateFeeMaxRollback,
 			DefaultEstimateFeeMinRegisteredBlocks,
-			1)
+			1000000, 0.1*1e9)
 	}
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {
@@ -236,8 +237,8 @@ func initTx(amount string, privateKey string, db incdb.Database) []metadata.Tran
 
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func chooseBestOutCoinsToSpent(outCoins []coin.PlainCoin, amount uint64) (resultOutputCoins []coin.PlainCoin,
-																		remainOutputCoins []coin.PlainCoin,
-																		totalResultOutputCoinAmount uint64, err error) {
+	remainOutputCoins []coin.PlainCoin,
+	totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]coin.PlainCoin, 0)
 	remainOutputCoins = make([]coin.PlainCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)

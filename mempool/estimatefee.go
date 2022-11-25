@@ -153,12 +153,15 @@ type FeeEstimator struct {
 
 	// min fee which be needed for payment on tx(per Kb data)
 	limitFee uint64
+
+	// min fee per transaction
+	minFeePerTx uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee, minFeePerTx uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -168,6 +171,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
 		limitFee:            limitFee,
+		minFeePerTx:         minFeePerTx,
 	}
 }
 
@@ -793,19 +797,12 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	return ef, nil
 }
 
-// returns the limit fee of tokenID
-// if there is no exchange rate between native token and privacy token, return limit fee of native token
+// returns the limit fee (min fee per kb)
 func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
-	limitFee := ef.limitFee
-	//isFeePToken := false
+	return ef.limitFee
+}
 
-	//if tokenID != nil {
-	//	limitFeePToken, err := ConvertNativeTokenToPrivacyToken(ef.limitFee, tokenID)
-	//	if err == nil {
-	//		limitFee = limitFeePToken
-	//		isFeePToken = true
-	//	}
-	//}
-
-	return limitFee
+// returns the min fee per tx
+func (ef FeeEstimator) GetMinFeePerTx() uint64 {
+	return ef.minFeePerTx
 }

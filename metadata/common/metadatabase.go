@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -132,6 +133,7 @@ func (mb MetadataBase) HashWithoutSig() *common.Hash {
 }
 
 func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+	minFeePerTx := config.Config().MinFeePerTx
 	if tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 		feeNativeToken := tx.GetTxFee()
 		feePToken := tx.GetTxFeeToken()
@@ -146,6 +148,13 @@ func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64,
 			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
 			feeNativeToken += feePTokenToNativeToken
 		}
+
+		// check minFeePerTx
+		if feeNativeToken < minFeePerTx {
+			fmt.Printf("transaction %+v has %d fees PRV which is under the required min fee per tx %d",
+				tx.Hash().String(), feeNativeToken, minFeePerTx)
+			return false
+		}
 		// get limit fee in native token
 		actualTxSize := tx.GetTxActualSize()
 		// check fee in native token
@@ -159,6 +168,14 @@ func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64,
 	}
 	// normal privacy tx
 	txFee := tx.GetTxFee()
+
+	// check minFeePerTx
+	if txFee < minFeePerTx {
+		fmt.Printf("transaction %+v has %d fees PRV which is under the required min fee per tx %d",
+			tx.Hash().String(), txFee, minFeePerTx)
+		return false
+	}
+
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return !(txFee < fullFee)
 }

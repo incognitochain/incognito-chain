@@ -466,8 +466,10 @@ func (tp *TxPool) checkFees(
 ) bool {
 	Logger.log.Info("Beacon height for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
+	limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
+	minFeePerTx := tp.config.FeeEstimator[shardID].GetMinFeePerTx()
+
 	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
-		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
 		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainID])
 		if err != nil {
 			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
@@ -505,19 +507,25 @@ func (tp *TxPool) checkFees(
 			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
 			feeNativeToken += feePTokenToNativeToken
 		}
+		// check min fee of tx
+		if feeNativeToken < minFeePerTx {
+			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
+				fmt.Errorf("transaction %+v has %d fees PRV which is under the required min fee per tx %d",
+					tx.Hash().String(), feeNativeToken, minFeePerTx)))
+			return false
+		}
 		// get limit fee in native token
 		actualTxSize := tx.GetTxActualSize()
 		// check fee in native token
-		minFee := actualTxSize * limitFee
-		if feeNativeToken < minFee {
+		minFeeByKB := actualTxSize * limitFee
+		if feeNativeToken < minFeeByKB {
 			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 				fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d, tx size %d",
-					tx.Hash().String(), feeNativeToken, minFee, actualTxSize)))
+					tx.Hash().String(), feeNativeToken, minFeeByKB, actualTxSize)))
 			return false
 		}
 	} else {
 		// This is a normal tx -> only check like normal tx with PRV
-		limitFee := tp.config.FeeEstimator[shardID].limitFee
 		txFee := tx.GetTxFee()
 		// txNormal := tx.(*transaction.Tx)
 		if limitFee > 0 {
@@ -531,6 +539,15 @@ func (tp *TxPool) checkFees(
 				}
 				return ok
 			}
+
+			// check min fee of tx
+			if txFee < minFeePerTx {
+				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
+					fmt.Errorf("transaction %+v has %d fees PRV which is under the required min fee per tx %d",
+						tx.Hash().String(), txFee, minFeePerTx)))
+				return false
+			}
+
 			fullFee := limitFee * tx.GetTxActualSize()
 			// ok := tx.CheckTransactionFee(limitFee)
 			if txFee < fullFee {
