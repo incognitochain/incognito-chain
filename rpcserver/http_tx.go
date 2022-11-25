@@ -139,14 +139,14 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 
-	/*result := jsonresult.NewCreateTransactionResult(nil, tx.TxID, nil, tx.ShardID)*/
-	/*result.Base58CheckData = base58CheckData*/
+	result := jsonresult.NewCreateTransactionResult(nil, tx.TxID, nil, tx.ShardID)
+	result.Base58CheckData = base58CheckData
 
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	/*sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)*/
+	/*if err != nil {*/
+	/*return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)*/
+	/*}*/
+	/*result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)*/
 
 	return result, nil
 }
