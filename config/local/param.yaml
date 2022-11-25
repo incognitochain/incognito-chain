@@ -28,10 +28,10 @@ committee_size:
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
-  min_beacon_block_interval: 40s
-  max_beacon_block_creation: 20s
-  min_shard_block_interval: 40s
-  max_shard_block_creation: 20s
+  min_beacon_block_interval: 6s
+  max_beacon_block_creation: 3s
+  min_shard_block_interval: 6s
+  max_shard_block_creation: 3s
 staking_amount_shard: 1750000000000
 active_shards: 2
 basic_reward: 400000000
@@ -162,15 +162,15 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
 blocktime_param:
-  - "blocktimedef": 40
+  - "blocktimedef": 6
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
 
 transactions_param:
-  lowerbound: 15
-  upperbound: 1000
+  lowerbound: 1000
+  upperbound: 10000
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
