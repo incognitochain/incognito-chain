@@ -83,7 +83,7 @@ enable_feature_flags:
   - PortalV3: 0
   - PortalV4: 1
 portal_v3_height: 1e9
-tx_pool_version: 1
+tx_pool_version: 0
 geth_param:
   host: 
     - "https://goerli.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
