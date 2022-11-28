@@ -197,7 +197,7 @@ func (s *PreFetchTx) Start() {
 			)
 			Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(s.CollectedTxs), curView.ShardHeight+1, time.Since(st))
 		} else {
-			currentCtx.MaxTime = time.Millisecond * time.Duration(common.TIMESLOT) * 4
+			currentCtx.MaxTime = time.Second * time.Duration(common.TIMESLOT) * 4
 			txsToAdd := blockChain.ShardChain[shardID].TxPool.GetTxsTranferForNewBlock(
 				blockChain,
 				curView,
