@@ -131,8 +131,8 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 85
   - reduce_fix_node_v3:
-      min_trigger: 1e9
-      require_percentage: 90
+      min_trigger: 2507098
+      require_percentage: 85
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
