@@ -1,9 +1,10 @@
 package statedb
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -206,7 +207,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
+	err = StoreShardStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +363,7 @@ func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx)
+	err = StoreShardStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx)
 	if err != nil {
 		t.Fatal(err)
 	}

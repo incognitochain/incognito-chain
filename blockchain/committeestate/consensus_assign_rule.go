@@ -2,17 +2,30 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"math/rand"
+	"reflect"
+	"runtime"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
+
+type AssignEnvironment struct {
+	ConsensusStateDB   *statedb.StateDB
+	delegateState      map[string]*BeaconDelegatorInfo
+	shardCommittee     map[byte][]string
+	shardSubstitute    map[byte][]string
+	shardNewCandidates []string
+}
 
 type AssignRuleProcessor interface {
 	Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string
+	ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte)
 	Version() int
 }
 
-//VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
+// VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func GetAssignRuleVersion(beaconHeight, assignRuleV2, assignRuleV3 uint64) AssignRuleProcessor {
 	if beaconHeight < assignRuleV2 && beaconHeight < assignRuleV3 {
 		Logger.log.Infof("Beacon Height %+v, using Assign Rule V1 (Nil Assign Rule)", beaconHeight)
@@ -44,6 +57,10 @@ func (a NilAssignRule) Process(candidates []string, numberOfValidators []int, ra
 }
 
 func (a NilAssignRule) Version() int {
+	panic("implement me")
+}
+
+func (a NilAssignRule) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte) {
 	panic("implement me")
 }
 
@@ -85,6 +102,10 @@ func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand 
 		assignedCandidates[byte(assignShardID)] = append(assignedCandidates[byte(assignShardID)], candidate)
 	}
 	return assignedCandidates
+}
+
+func (a AssignRuleV2) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte) {
+	panic("implement me")
 }
 
 // calculateCandidatePosition calculate reverse shardID for candidate
@@ -135,11 +156,16 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 	return m
 }
 
+type FilterBeaconRule func(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (accepted, rejected []int, newStatus []byte)
+
 type AssignRuleV3 struct {
+	filterBeaconRules []FilterBeaconRule
 }
 
 func NewAssignRuleV3() *AssignRuleV3 {
-	return &AssignRuleV3{}
+	return &AssignRuleV3{
+		filterBeaconRules: []FilterBeaconRule{hasEnoughActiveTimes, notInShardCycle, hasEnoughDelegator},
+	}
 }
 
 func (AssignRuleV3) Version() int {
@@ -193,6 +219,113 @@ func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rando
 	}
 
 	return assignedCandidates
+}
+
+func (a AssignRuleV3) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) (
+	toPending []string,
+	stayWaiting []string,
+	newWaitingStatus []byte,
+) {
+	var (
+		accepted []int
+		rejected []int
+	)
+	for ruleID, rule := range a.filterBeaconRules {
+		accepted, rejected, waitingStatus = rule(candidates, waitingStatus, byte(ruleID), env)
+		fmt.Printf("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v\n", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
+		Logger.log.Infof("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
+	}
+	for idx, pk := range candidates {
+		if waitingStatus[idx] == byte(len(a.filterBeaconRules)) {
+			toPending = append(toPending, pk)
+		} else {
+			stayWaiting = append(stayWaiting, pk)
+			newWaitingStatus = append(newWaitingStatus, waitingStatus[idx])
+		}
+	}
+	return toPending, stayWaiting, newWaitingStatus
+	// Logger.log.Infof("Process assign beacon done, rejected: ", params ...interface{})
+}
+
+func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
+	accepted []int,
+	rejected []int,
+	newStatus []byte,
+) {
+	allShardStakerM := map[string]interface{}{}
+	for _, pk := range env.shardNewCandidates {
+		allShardStakerM[pk] = nil
+	}
+	for _, publicKeys := range env.shardCommittee {
+		for _, pk := range publicKeys {
+			allShardStakerM[pk] = nil
+		}
+	}
+	for _, publicKeys := range env.shardSubstitute {
+		for _, pk := range publicKeys {
+			allShardStakerM[pk] = nil
+		}
+	}
+	for id, candidate := range candidates {
+		if candidateStatus[id] > ruleID {
+			accepted = append(accepted, id)
+			continue
+		}
+		if candidateStatus[id] < ruleID {
+			rejected = append(rejected, id)
+			continue
+		}
+		if _, has := allShardStakerM[candidate]; has {
+			rejected = append(rejected, id)
+		} else {
+			accepted = append(accepted, id)
+			candidateStatus[id]++
+		}
+	}
+	return accepted, rejected, candidateStatus
+}
+
+func hasEnoughActiveTimes(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
+	accepted []int,
+	rejected []int,
+	newStatus []byte,
+) {
+	for id, candidate := range candidates {
+		if candidateStatus[id] > ruleID {
+			accepted = append(accepted, id)
+			continue
+		}
+		if stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 50) {
+			rejected = append(rejected, id)
+		} else {
+			accepted = append(accepted, id)
+			candidateStatus[id]++
+		}
+	}
+	return accepted, rejected, candidateStatus
+}
+
+func hasEnoughDelegator(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
+	accepted []int,
+	rejected []int,
+	newStatus []byte,
+) {
+	for id, candidate := range candidates {
+		if candidateStatus[id] > ruleID {
+			accepted = append(accepted, id)
+			continue
+		}
+		if dState, has := env.delegateState[candidate]; has {
+			//TODO remove hardcode here
+			if (dState != nil) && (dState.CurrentDelegators > 0) {
+				accepted = append(accepted, id)
+				candidateStatus[id]++
+				continue
+			}
+		}
+		rejected = append(rejected, id)
+	}
+	return accepted, rejected, candidateStatus
 }
 
 func getOrderedLowerSet(mean int, numberOfValidators []int) []int {

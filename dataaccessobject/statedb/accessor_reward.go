@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-//AddShardRewardRequestMultiset
+// AddShardRewardRequestMultiset
 func AddShardRewardRequestMultiset(
 	stateDB *StateDB,
 	epoch uint64,
@@ -134,6 +134,120 @@ func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeRe
 	return nil
 }
 
+func AddBeaconCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward map[common.Hash]uint64) error {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	c, has, err := stateDB.getCommitteeRewardState(key)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	committeeRewardM := make(map[common.Hash]uint64)
+	if has {
+		committeeRewardM = c.Reward()
+	}
+	for tokenID, reward := range committeeReward {
+		if amount, ok := committeeRewardM[tokenID]; ok {
+			reward += amount
+		}
+		committeeRewardM[tokenID] = reward
+	}
+	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
+	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	return nil
+}
+
+func AddDelegatorReward(stateDB *StateDB, incognitoPublicKey string, delegatorReward map[common.Hash]uint64) error {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	c, has, err := stateDB.getCommitteeRewardState(key)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	delegatorRewardM := make(map[common.Hash]uint64)
+	if has {
+		delegatorRewardM = c.RewardLocked()
+	}
+	for tokenID, rew := range delegatorReward {
+		if amount, ok := delegatorRewardM[tokenID]; ok {
+			rew += amount
+		}
+		delegatorRewardM[tokenID] = rew
+	}
+	value := NewCommitteeRewardStateWithValueV2(c.Reward(), delegatorRewardM, incognitoPublicKey)
+	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	return nil
+}
+
+func AddShardCommitteeReward(stateDB *StateDB, incognitoPublicKey string, sCommitteeReward map[common.Hash]uint64) error {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	c, has, err := stateDB.getCommitteeRewardState(key)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	lockedRewardM := make(map[common.Hash]uint64)
+	currentRewardM := make(map[common.Hash]uint64)
+	if has {
+		lockedRewardM = c.RewardLocked()
+		currentRewardM = c.Reward()
+	}
+
+	for tokenID, lockedValue := range lockedRewardM {
+		newReward := lockedValue
+		if curReward, ok := currentRewardM[tokenID]; ok {
+			newReward += curReward
+		}
+		currentRewardM[tokenID] = newReward
+	}
+	for tokenID, rew := range sCommitteeReward {
+		if amount, ok := currentRewardM[tokenID]; ok {
+			rew += amount
+		}
+		currentRewardM[tokenID] = rew
+	}
+
+	value := NewCommitteeRewardStateWithValueV2(currentRewardM, nil, incognitoPublicKey)
+	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	return nil
+}
+
+func SlashShardCommitteeReward(stateDB *StateDB, incognitoPublicKey string) error {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	c, has, err := stateDB.getCommitteeRewardState(key)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	currentRewardM := make(map[common.Hash]uint64)
+	if has {
+		currentRewardM = c.Reward()
+	}
+
+	value := NewCommitteeRewardStateWithValueV2(currentRewardM, nil, incognitoPublicKey)
+	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	return nil
+}
+
 func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID common.Hash) (uint64, error) {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
@@ -155,6 +269,13 @@ func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID com
 
 func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
 	return stateDB.getAllCommitteeReward()
+}
+
+func ListStakerReward(stateDB *StateDB) (res map[string]struct {
+	Available map[common.Hash]uint64
+	Locked    map[common.Hash]uint64
+}) {
+	return stateDB.getAllStakerReward()
 }
 
 func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, withdrawAmount uint64, tokenID common.Hash) error {
@@ -193,7 +314,7 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 	return nil
 }
 
-//================================= Testing ======================================
+// ================================= Testing ======================================
 func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardRequestState {
 	_, rewardRequestStates := stateDB.getAllRewardRequestState(epoch)
 	return rewardRequestStates

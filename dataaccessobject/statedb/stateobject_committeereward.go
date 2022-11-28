@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common/base58"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -13,6 +14,7 @@ type CommitteeRewardState struct {
 	// tokenid => amount
 	incognitoPublicKey string
 	reward             map[common.Hash]uint64
+	rewardLocked       map[common.Hash]uint64
 }
 
 func NewCommitteeRewardState() *CommitteeRewardState {
@@ -23,12 +25,31 @@ func NewCommitteeRewardStateWithValue(reward map[common.Hash]uint64, incognitoPu
 	return &CommitteeRewardState{reward: reward, incognitoPublicKey: incognitoPublicKey}
 }
 
+func NewCommitteeRewardStateWithValueV2(reward, locked map[common.Hash]uint64, incognitoPublicKey string) *CommitteeRewardState {
+	return &CommitteeRewardState{
+		reward:             reward,
+		incognitoPublicKey: incognitoPublicKey,
+		rewardLocked:       locked,
+	}
+}
+
 func (cr CommitteeRewardState) Reward() map[common.Hash]uint64 {
 	return cr.reward
 }
 
 func (cr *CommitteeRewardState) SetReward(reward map[common.Hash]uint64) {
 	cr.reward = reward
+}
+
+func (cr CommitteeRewardState) RewardLocked() map[common.Hash]uint64 {
+	if cr.rewardLocked != nil {
+		return cr.rewardLocked
+	}
+	return map[common.Hash]uint64{}
+}
+
+func (cr *CommitteeRewardState) SetRewardLocked(reward map[common.Hash]uint64) {
+	cr.rewardLocked = reward
 }
 
 func (cr CommitteeRewardState) IncognitoPublicKey() string {
@@ -43,9 +64,11 @@ func (c CommitteeRewardState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Reward             map[common.Hash]uint64
 		IncognitoPublicKey string
+		RewardLocked       map[common.Hash]uint64
 	}{
 		Reward:             c.reward,
 		IncognitoPublicKey: c.incognitoPublicKey,
+		RewardLocked:       c.rewardLocked,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -57,6 +80,7 @@ func (c *CommitteeRewardState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Reward             map[common.Hash]uint64
 		IncognitoPublicKey string
+		RewardLocked       map[common.Hash]uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -64,6 +88,7 @@ func (c *CommitteeRewardState) UnmarshalJSON(data []byte) error {
 	}
 	c.reward = temp.Reward
 	c.incognitoPublicKey = temp.IncognitoPublicKey
+	c.rewardLocked = temp.RewardLocked
 	return nil
 }
 

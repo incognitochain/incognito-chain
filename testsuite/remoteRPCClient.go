@@ -3,14 +3,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
-	"io/ioutil"
-	"net/http"
 )
 
 type RemoteRPCClient struct {
@@ -490,6 +490,93 @@ func (r *RemoteRPCClient) GetRewardAmount(paymentAddress string) (res map[string
 	return resp.Result, err
 }
 
+func (r *RemoteRPCClient) GetRewardAmountByPublicKey(publicKey string) (res map[string]uint64, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getrewardamountbypublickey",
+		"params":  []interface{}{publicKey},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result map[string]uint64
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]struct {
+	Available map[string]uint64
+	Locked    map[string]uint64
+}, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "listrewardamount",
+		"params":  []interface{}{},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result map[string]struct {
+			Available map[common.Hash]uint64
+			Locked    map[common.Hash]uint64
+		}
+		Error *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	res = map[string]struct {
+		Available map[string]uint64
+		Locked    map[string]uint64
+	}{}
+	resTmp := resp.Result
+	for k, v := range resTmp {
+		vNew := struct {
+			Available map[string]uint64
+			Locked    map[string]uint64
+		}{}
+		for tokenID, amount := range v.Available {
+			vNew.Available[tokenID.String()] = amount
+		}
+		for tokenID, amount := range v.Locked {
+			vNew.Locked[tokenID.String()] = amount
+		}
+		if (len(vNew.Available) > 0) || (len(vNew.Locked) > 0) {
+			res[k] = vNew
+		}
+	}
+
+	return res, err
+}
+
 func (r *RemoteRPCClient) WithdrawReward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
@@ -555,6 +642,96 @@ func (r *RemoteRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey str
 		"jsonrpc": "1.0",
 		"method":  "createandsendstopautostakingtransaction",
 		"params":  []interface{}{privateKey, receivers, fee, privacy, stopStakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) CreateAndSendAddStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, addStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendaddstakingtransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, addStakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) CreateAndSendUnStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stopStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createunstaketransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, stopStakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) CreateAndSendReDelegateTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, redelegateInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendredelegatetransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, redelegateInfo},
 		"id":      1,
 	})
 	if err != nil {

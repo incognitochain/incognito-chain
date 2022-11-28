@@ -1,10 +1,11 @@
 package instruction
 
 import (
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func TestValidateStopAutoStakeInstructionSanity(t *testing.T) {
@@ -54,7 +55,7 @@ func TestValidateAndImportStopAutoStakeInstructionFromString(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *StopAutoStakeInstruction
+		want    *ReDelegateInstruction
 		wantErr bool
 	}{
 		{
@@ -76,7 +77,7 @@ func TestValidateAndImportStopAutoStakeInstructionFromString(t *testing.T) {
 			args: args{
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1, key2, key3, key4}, SPLITTER)},
 			},
-			want: &StopAutoStakeInstruction{
+			want: &ReDelegateInstruction{
 				CommitteePublicKeys:       []string{key1, key2, key3, key4},
 				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey1, *incKey2, *incKey3, *incKey4},
 			},
@@ -97,8 +98,8 @@ func TestValidateAndImportStopAutoStakeInstructionFromString(t *testing.T) {
 	}
 }
 
-//Stop auto staking instruction format:
-//["stop_auto_staking_action", list_public_keys]
+// Stop auto staking instruction format:
+// ["stop_auto_staking_action", list_public_keys]
 func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 	type args struct {
 		instruction []string
@@ -106,14 +107,14 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *StopAutoStakeInstruction
+		want *ReDelegateInstruction
 	}{
 		{
 			name: "One stop auto stake instruction",
 			args: args{
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1}, SPLITTER)},
 			},
-			want: &StopAutoStakeInstruction{
+			want: &ReDelegateInstruction{
 				CommitteePublicKeys:       []string{key1},
 				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey1},
 			},
@@ -123,7 +124,7 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 			args: args{
 				instruction: []string{STOP_AUTO_STAKE_ACTION, strings.Join([]string{key1, key2, key3}, SPLITTER)},
 			},
-			want: &StopAutoStakeInstruction{
+			want: &ReDelegateInstruction{
 				CommitteePublicKeys:       []string{key1, key2, key3},
 				CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey1, *incKey2, *incKey3},
 			},
@@ -140,7 +141,7 @@ func TestImportStopAutoStakeInstructionFromString(t *testing.T) {
 
 func TestStopAutoStakeInstruction_ToString(t *testing.T) {
 	type args struct {
-		instruction *StopAutoStakeInstruction
+		instruction *ReDelegateInstruction
 	}
 	tests := []struct {
 		name string
@@ -150,7 +151,7 @@ func TestStopAutoStakeInstruction_ToString(t *testing.T) {
 		{
 			name: "One stop auto stake instruction",
 			args: args{
-				instruction: &StopAutoStakeInstruction{
+				instruction: &ReDelegateInstruction{
 					CommitteePublicKeys: []string{key1},
 				},
 			},
@@ -159,7 +160,7 @@ func TestStopAutoStakeInstruction_ToString(t *testing.T) {
 		{
 			name: "Many keys",
 			args: args{
-				instruction: &StopAutoStakeInstruction{
+				instruction: &ReDelegateInstruction{
 					CommitteePublicKeys: []string{key1, key2, key3},
 				},
 			},

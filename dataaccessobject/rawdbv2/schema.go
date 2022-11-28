@@ -6,28 +6,26 @@ import (
 
 // Header key will be used for light mode in the future
 var (
-	lastShardBlockKey                 = []byte("LastShardBlock" + string(splitter))
-	lastBeaconBlockKey                = []byte("LastBeaconBlock")
-	beaconViewsPrefix                 = []byte("BeaconViews")
-	shardBestStatePrefix              = []byte("ShardViews" + string(splitter))
-	shardHashToBlockPrefix            = []byte("s-b-h" + string(splitter))
-	viewPrefix                        = []byte("V" + string(splitter))
-	shardIndexToBlockHashPrefix       = []byte("s-b-i" + string(splitter))
-	beaconConfirmShardBlockPrefix     = []byte("b-c-s" + string(splitter))
-	shardBlockHashToIndexPrefix       = []byte("s-b-H" + string(splitter))
-	beaconHashToBlockPrefix           = []byte("b-b-h" + string(splitter))
-	blockHashToFFIndexPrefix          = []byte("b-h-ff-i" + string(splitter))
-	blockHashToValidationDataPrefix   = []byte("b-h-v-d" + string(splitter))
-	beaconIndexToBlockHashPrefix      = []byte("b-b-i" + string(splitter))
-	beaconBlockHashToIndexPrefix      = []byte("b-b-H" + string(splitter))
-	txHashPrefix                      = []byte("tx-h" + string(splitter))
-	crossShardNextHeightPrefix        = []byte("c-s-n-h" + string(splitter))
-	lastBeaconHeightConfirmCrossShard = []byte("p-c-c-s" + string(splitter))
-	feeEstimatorPrefix                = []byte("fee-est" + string(splitter))
-	txByPublicKeyPrefix               = []byte("tx-pb")
-	rootHashPrefix                    = []byte("R-H-")
-	shardRootHashPrefix               = []byte("S-R-H-")
-
+	lastShardBlockKey                  = []byte("LastShardBlock" + string(splitter))
+	lastBeaconBlockKey                 = []byte("LastBeaconBlock")
+	beaconViewsPrefix                  = []byte("BeaconViews")
+	beaconNextDelegatePrefix           = []byte("BeaconNextDelegate")
+	shardBestStatePrefix               = []byte("ShardViews" + string(splitter))
+	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
+	viewPrefix                         = []byte("V" + string(splitter))
+	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
+	beaconConfirmShardBlockPrefix      = []byte("b-c-s" + string(splitter))
+	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
+	beaconHashToBlockPrefix            = []byte("b-b-h" + string(splitter))
+	beaconIndexToBlockHashPrefix       = []byte("b-b-i" + string(splitter))
+	beaconBlockHashToIndexPrefix       = []byte("b-b-H" + string(splitter))
+	txHashPrefix                       = []byte("tx-h" + string(splitter))
+	crossShardNextHeightPrefix         = []byte("c-s-n-h" + string(splitter))
+	lastBeaconHeightConfirmCrossShard  = []byte("p-c-c-s" + string(splitter))
+	feeEstimatorPrefix                 = []byte("fee-est" + string(splitter))
+	txByPublicKeyPrefix                = []byte("tx-pb")
+	rootHashPrefix                     = []byte("R-H-")
+	shardRootHashPrefix                = []byte("S-R-H-")
 	beaconRootHashPrefix               = []byte("B-R-H-")
 	beaconConsensusRootHashPrefix      = []byte("b-co" + string(splitter))
 	beaconRewardRequestRootHashPrefix  = []byte("b-re" + string(splitter))
@@ -175,6 +173,12 @@ func GetCacheCommitteeFromBlockKey(hash common.Hash, cid int) []byte {
 	temp = append(temp, hash[:]...)
 	buf := common.Int32ToBytes(int32(cid))
 	return append(temp, buf...)
+}
+
+func GetBeaconNextDelegateKey() []byte {
+	temp := make([]byte, 0, len(beaconNextDelegatePrefix))
+	temp = append(temp, beaconNextDelegatePrefix...)
+	return temp
 }
 
 // ============================= Transaction =======================================
@@ -375,17 +379,17 @@ func getBeaconPreCommitteeInfoKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
-//getShardPreCommitteeInfoKey ...
+// getShardPreCommitteeInfoKey ...
 func getShardPreCommitteeInfoKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
-//getShardPreCommitteeInfoForShardKey...
+// getShardPreCommitteeInfoForShardKey...
 func getShardPreCommitteeInfoForShardKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
-//getShardPendingValidatorsKey ...
+// getShardPendingValidatorsKey ...
 func getShardPendingValidatorsKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }

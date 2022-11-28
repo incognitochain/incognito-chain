@@ -782,7 +782,7 @@ func TestAssignRuleV3_Mainnet(t *testing.T) {
 
 }
 
-//TestAssignRuleV3_SimulationBalanceNumberOfValidator case 1
+// TestAssignRuleV3_SimulationBalanceNumberOfValidator case 1
 // assume no new candidates
 // 1. re-assign 40
 // 2. swap out each shard 5 => 40
@@ -812,7 +812,7 @@ func TestAssignRuleV3_SimulationBalanceNumberOfValidator_1(t *testing.T) {
 	t.Log(counter, numberOfValidators)
 }
 
-//TestAssignRuleV3_SimulationBalanceNumberOfValidator case 2
+// TestAssignRuleV3_SimulationBalanceNumberOfValidator case 2
 // 1. 5 new candidates
 // 2. re-assign 40
 // 3. swap out each shard 5 => 40
@@ -842,7 +842,7 @@ func TestAssignRuleV3_SimulationBalanceNumberOfValidator_2(t *testing.T) {
 	t.Log(counter, numberOfValidators)
 }
 
-//BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 1
+// BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 1
 // 1. NO new candidates
 // 2. re-assign 40
 // 3. swap out each shard 5 => 40
@@ -891,7 +891,7 @@ func BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator_1(b *testing.B) {
 	b.Log(sum/len(counters), maxCounter)
 }
 
-//BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 2
+// BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 2
 // 1. 5 new candidates
 // 2. re-assign 40
 // 3. swap out each shard 5 => 40
@@ -1111,6 +1111,79 @@ func Test_assignCandidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := assignCandidate(tt.args.lowerSet, tt.args.randomPosition, tt.args.diff); got != tt.want {
 				t.Errorf("assignCandidate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAssignRuleV3_ProcessBeacon(t *testing.T) {
+	type fields struct {
+		filterBeaconRules []FilterBeaconRule
+	}
+	type args struct {
+		candidates    []string
+		waitingStatus []byte
+		env           *AssignEnvironment
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   []string
+		want1  []string
+		want2  []byte
+	}{
+		{
+			name: "Test 1",
+			fields: fields{
+				filterBeaconRules: []FilterBeaconRule{
+					notInShardCycle,
+					hasEnoughDelegator,
+				}},
+			args: args{
+				candidates:    []string{"a", "b", "c"},
+				waitingStatus: []byte{0, 0, 0},
+				env: &AssignEnvironment{
+					ConsensusStateDB: nil,
+					delegateState: map[string]*BeaconDelegatorInfo{
+						"a": &BeaconDelegatorInfo{
+							CurrentDelegators: 2,
+						},
+						"b": &BeaconDelegatorInfo{
+							CurrentDelegators: 0,
+						},
+						"c": &BeaconDelegatorInfo{
+							CurrentDelegators: 2,
+						},
+					},
+					shardCommittee: map[byte][]string{
+						0: {"b"},
+					},
+					shardSubstitute: map[byte][]string{
+						0: {"d", "e"},
+					},
+					shardNewCandidates: []string{"c"},
+				},
+			},
+			want:  []string{"a"},
+			want1: []string{"b", "c"},
+			want2: []byte{0, 1},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := AssignRuleV3{
+				filterBeaconRules: tt.fields.filterBeaconRules,
+			}
+			got, got1, got2 := a.ProcessBeacon(tt.args.candidates, tt.args.waitingStatus, tt.args.env)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AssignRuleV3.ProcessBeacon() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("AssignRuleV3.ProcessBeacon() got1 = %v-%v, want %v-%v", got1, reflect.TypeOf(got1), tt.want1, reflect.TypeOf(tt.want1))
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("AssignRuleV3.ProcessBeacon() got2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}

@@ -27,3 +27,7 @@ func (s *BeaconMultiView) AddView(v View) (int, error) {
 	}
 	return res, err
 }
+
+func (s *BeaconMultiView) ReplaceView(v View) bool {
+	return s.multiView.replaceView(v)
+}

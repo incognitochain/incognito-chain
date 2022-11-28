@@ -57,7 +57,9 @@ var (
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
 	syncingValidatorsPrefix            = []byte("syncing-validators-")
-	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
+	shardStakerInfoPrefix              = common.HashB([]byte("s-stk-info-"))[:prefixHashKeyLength]
+	beaconStakerInfoPrefix             = common.HashB([]byte("bc-stk-info-"))[:prefixHashKeyLength]
+	allShardStakersPrefix              = []byte("all-s-stk-")
 
 	// pdex v3
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
@@ -208,12 +210,12 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 }
 
 func GetStakerInfoPrefix() []byte {
-	h := common.HashH(stakerInfoPrefix)
+	h := common.HashH(shardStakerInfoPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetCommitteeTermKey(stakerPublicKey []byte) common.Hash {
-	h := common.HashH(stakerInfoPrefix)
+	h := common.HashH(shardStakerInfoPrefix)
 	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
 	finalHash, err := common.Hash{}.NewHash(final)
 	if err != nil {
@@ -222,14 +224,28 @@ func GetCommitteeTermKey(stakerPublicKey []byte) common.Hash {
 	return *finalHash
 }
 
-func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
-	h := common.HashH(stakerInfoPrefix)
+func GetShardStakerInfoKey(stakerPublicKey []byte) common.Hash {
+	h := common.HashH(shardStakerInfoPrefix)
 	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
 	finalHash, err := common.Hash{}.NewHash(final)
 	if err != nil {
 		panic("Create key fail1")
 	}
 	return *finalHash
+}
+
+func GetBeaconStakerInfoKey(stakerPublicKey []byte) common.Hash {
+	h := common.HashH(beaconStakerInfoPrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
+}
+
+func GetAllShardStakersKey() common.Hash {
+	return common.HashH(allShardStakersPrefix)
 }
 
 func GetSlashingCommitteePrefix(epoch uint64) []byte {

@@ -2,13 +2,15 @@ package committeestate
 
 import (
 	"fmt"
+	"math/big"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"math/big"
 )
 
-//swapRuleV3 ...
+// swapRuleV3 ...
 type swapRuleV3 struct {
 }
 
@@ -16,7 +18,48 @@ func NewSwapRuleV3() *swapRuleV3 {
 	return &swapRuleV3{}
 }
 
-//GenInstructions generate instructions for swap rule v3
+func (s *swapRuleV3) ProcessBeacon(
+	committees, substitutes []string,
+	minCommitteeSize, maxCommitteeSize, numberOfFixedValidators int,
+	reputation map[string]uint64,
+	performance map[string]uint64,
+) (
+	newCommittees []string,
+	newSubstitutes []string,
+	swapOutList []string,
+	slashedList []string,
+) {
+	maxSwapout := len(committees) - minCommitteeSize
+	if len(substitutes) > (minCommitteeSize - numberOfFixedValidators) {
+		maxSwapout = len(committees) - numberOfFixedValidators
+	} else {
+		maxSwapout += len(substitutes)
+	}
+	totalVotePower := uint64(10)
+	slashedVotePower := uint64(0)
+	newCommittees, slashedList, slashedVotePower = s.slashingBeaconSwapOut(
+		committees,
+		maxSwapout,
+		numberOfFixedValidators,
+		reputation,
+		performance,
+		totalVotePower,
+	)
+	totalVotePower -= slashedVotePower
+	maxSwapout -= len(slashedList)
+	newCommittees, swapOutList, newSubstitutes = s.beaconSwapOut(
+		newCommittees,
+		substitutes,
+		numberOfFixedValidators,
+		maxCommitteeSize,
+		maxSwapout,
+		reputation,
+		totalVotePower,
+	)
+	return newCommittees, newSubstitutes, swapOutList, slashedList
+}
+
+// GenInstructions generate instructions for swap rule v3
 func (s *swapRuleV3) Process(
 	shardID byte,
 	committees, substitutes []string,
@@ -76,7 +119,7 @@ func (s *swapRuleV3) swapInAfterSwapOut(lenCommitteesAfterSwapOut []string, subs
 	return newCommittees, newSubstitutes, swapInCommittees
 }
 
-//getSwapInOffset calculate based on lenCommitteesAfterSwapOut
+// getSwapInOffset calculate based on lenCommitteesAfterSwapOut
 // swap_in = min(lenSubstitute, lenCommitteesAfterSwapOut/8) but no more than maxCommitteeSize
 // Special case: when committees size reach max and no slashing, swap in equal to normal swap out
 func (s *swapRuleV3) getSwapInOffset(lenCommitteesAfterSwapOut, lenSubstitutes, maxCommitteeSize, numberOfSlashingValidators, lenCommitteesBeforeSwapOut int) int {
@@ -120,7 +163,7 @@ func (s *swapRuleV3) normalSwapOut(committeesAfterSlashing, substitutes []string
 	return resCommittees, resNormalSwapOut
 }
 
-//getNormalSwapOutOffset calculate normal swapout offset
+// getNormalSwapOutOffset calculate normal swapout offset
 func (s *swapRuleV3) getNormalSwapOutOffset(lenCommitteesBeforeSlash, lenSubstitutes, lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize int) int {
 	if lenSubstitutes == 0 {
 		return 0
@@ -158,7 +201,7 @@ func (s *swapRuleV3) getNormalSwapOutOffset(lenCommitteesBeforeSlash, lenSubstit
 	return offset
 }
 
-//slashingSwapOut only consider all penalties type as one type
+// slashingSwapOut only consider all penalties type as one type
 func (s *swapRuleV3) slashingSwapOut(committees []string, penalty map[string]signaturecounter.Penalty, minNumberOfValidators int) ([]string, []string) {
 	fixedCommittees := common.DeepCopyString(committees[:minNumberOfValidators])
 	flexCommittees := common.DeepCopyString(committees[minNumberOfValidators:])
@@ -178,6 +221,117 @@ func (s *swapRuleV3) slashingSwapOut(committees []string, penalty map[string]sig
 
 	newCommittees := append(fixedCommittees, flexAfterSlashingCommittees...)
 	return newCommittees, slashingCommittees
+}
+
+func (s *swapRuleV3) slashingBeaconSwapOut(
+	committees []string,
+	maxSlashedValidator, numberOfFixedValidators int,
+	reputation map[string]uint64,
+	performance map[string]uint64,
+	totalVotePower uint64,
+) (
+	newCommittees []string,
+	slashedList []string,
+	slashedVotePower uint64,
+) {
+	sortedCommittee := committees[numberOfFixedValidators:]
+	fmt.Printf("sorted committee a %+v\n", sortedCommittee)
+	sort.Slice(sortedCommittee, func(i, j int) bool {
+		pi := uint64(0)
+		pj := uint64(0)
+		if _, ok := performance[sortedCommittee[i]]; ok {
+			pi = performance[sortedCommittee[i]]
+		}
+		if _, ok := performance[sortedCommittee[j]]; ok {
+			pj = performance[sortedCommittee[j]]
+		}
+		if pi == pj {
+			return sortedCommittee[i] < sortedCommittee[j]
+		}
+		return pi < pj
+	})
+	fmt.Printf("sorted committee b %+v\n", sortedCommittee)
+	tmp := []string{}
+	lastIdx := -1
+	slashedVotePower = uint64(0)
+	for idx, pk := range sortedCommittee {
+		pi := uint64(0)
+		if _, ok := performance[sortedCommittee[idx]]; ok {
+			pi = performance[sortedCommittee[idx]]
+		}
+		votePower := uint64(0)
+		if _, ok := reputation[sortedCommittee[idx]]; ok {
+			votePower = reputation[sortedCommittee[idx]]
+		}
+		//TODO: remove hardcode constant
+		if pi < 300 {
+			if votePower+uint64(slashedVotePower) < totalVotePower/3 {
+				if len(slashedList) == maxSlashedValidator {
+					break
+				}
+				slashedVotePower += votePower
+				slashedList = append(slashedList, pk)
+				lastIdx = idx
+			} else {
+				tmp = append(tmp, pk)
+			}
+		} else {
+			break
+		}
+	}
+	fmt.Printf("sorted committee c %+v\n", sortedCommittee)
+	sortedCommittee = append(sortedCommittee[lastIdx+1:], tmp...)
+	newCommittees = append(committees[:numberOfFixedValidators], sortedCommittee...)
+	return newCommittees, slashedList, slashedVotePower
+}
+
+func (s *swapRuleV3) beaconSwapOut(
+	committee, substitutes []string,
+	numberOfFixedValidators, maxCommitteeSize, maxSwapOut int,
+	reputation map[string]uint64,
+	totalVotePower uint64,
+) (
+	newCommittee []string,
+	swapOut []string,
+	newSubtitute []string,
+) {
+	sortedCommittee := committee[numberOfFixedValidators:]
+	sort.Slice(sortedCommittee, func(i, j int) bool {
+		pi := uint64(0)
+		pj := uint64(0)
+		if _, ok := reputation[sortedCommittee[i]]; ok {
+			pi = reputation[sortedCommittee[i]]
+		}
+		if _, ok := reputation[sortedCommittee[j]]; ok {
+			pj = reputation[sortedCommittee[j]]
+		}
+		return pi < pj
+	})
+	swappedInIndex := -1
+	for idx, key := range sortedCommittee {
+		if idx+1 > maxSwapOut {
+			break
+		}
+		if (swappedInIndex+1 < len(substitutes)) && (reputation[key] < reputation[substitutes[swappedInIndex+1]]) {
+			swapOut = append(swapOut, key)
+			swappedInIndex++
+		} else {
+			break
+		}
+	}
+	newCommittee = append(committee[:numberOfFixedValidators], sortedCommittee[len(swapOut):]...)
+	newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
+	substitutes = substitutes[swappedInIndex+1:]
+	if (len(substitutes) > 0) && (len(newCommittee) < maxCommitteeSize) {
+		if len(substitutes) > maxCommitteeSize-len(newCommittee) {
+			swappedInIndex = maxCommitteeSize - len(newCommittee) - 1
+		} else {
+			swappedInIndex = len(substitutes) - 1
+		}
+	}
+	newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
+	substitutes = substitutes[swappedInIndex+1:]
+	return
 }
 
 // getMaxSlashingOffset calculate maximum slashing offset, fixed nodes must be spare

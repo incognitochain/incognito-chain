@@ -342,7 +342,7 @@ func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, erro
 
 const (
 	stakeShardAmount   int = 1750000000000
-	stakeBeaceonAmount int = stakeShardAmount * 3
+	stakeBeaceonAmount int = stakeShardAmount * 50
 )
 
 type StakingTxParam struct {
@@ -353,6 +353,7 @@ type StakingTxParam struct {
 	RewardAddr   string
 	StakeShard   bool
 	AutoRestake  bool
+	Delegate     string
 	Name         string
 }
 
@@ -360,6 +361,20 @@ type StopStakingParam struct {
 	BurnAddr  string
 	StakerPrk string
 	MinerPrk  string
+}
+
+type AddStakingParam struct {
+	BurnAddr  string
+	StakerPrk string
+	MinerPrk  string
+	AddAmount uint64
+}
+
+type ReDelegateParam struct {
+	BurnAddr           string
+	StakerPrk          string
+	CommitteePublicKey string
+	NewDelegate        string
 }
 
 func (r *RPCClient) Stake(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
@@ -370,6 +385,66 @@ func (r *RPCClient) Stake(acc account.Account) (*jsonresult.CreateTransactionRes
 		AutoRestake: true,
 	}
 	return r.API_SendTxStaking(stake1)
+}
+
+func (r *RPCClient) UnStake(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StopStakingParam{
+		BurnAddr:  "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk: acc.PrivateKey,
+		MinerPrk:  "",
+	}
+	return r.API_SendTxUnStake(stake1)
+}
+
+func (r *RPCClient) StopAutoStake(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StopStakingParam{
+		BurnAddr:  "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk: acc.PrivateKey,
+		MinerPrk:  "",
+	}
+	return r.API_SendTxStopAutoStake(stake1)
+}
+
+func (r *RPCClient) AddStake(acc account.Account, amount uint64) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := AddStakingParam{
+		BurnAddr:  "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk: acc.PrivateKey,
+		MinerPrk:  "",
+		AddAmount: amount,
+	}
+	return r.API_SendTxAddStake(stake1)
+}
+
+func (r *RPCClient) StakeNew(acc account.Account, delegate string, autoStake bool) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StakingTxParam{
+		BurnAddr:    "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk:   acc.PrivateKey,
+		StakeShard:  true,
+		AutoRestake: autoStake,
+		Delegate:    delegate,
+	}
+	return r.API_SendTxStaking(stake1)
+}
+
+func (r *RPCClient) StakeNewBeacon(acc account.Account) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := StakingTxParam{
+		BurnAddr:    "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk:   acc.PrivateKey,
+		StakeShard:  false,
+		AutoRestake: true,
+		Delegate:    "",
+	}
+	return r.API_SendTxStaking(stake1)
+}
+
+func (r *RPCClient) ReDelegate(acc account.Account, newDelegate string) (*jsonresult.CreateTransactionResult, error) {
+	stake1 := ReDelegateParam{
+		BurnAddr:           "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
+		StakerPrk:          acc.PrivateKey,
+		CommitteePublicKey: acc.SelfCommitteePubkey,
+		NewDelegate:        newDelegate,
+	}
+	return r.API_SendTxReDelegate(stake1)
 }
 
 func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.CreateTransactionResult, error) {
@@ -425,6 +500,7 @@ func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.Cre
 		"PrivateSeed":                  privateSeed,
 		"RewardReceiverPaymentAddress": stakeMeta.RewardAddr,
 		"AutoReStaking":                stakeMeta.AutoRestake,
+		"Delegate":                     stakeMeta.Delegate,
 	})
 
 	if err != nil {
@@ -451,6 +527,66 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 		"StopAutoStakingType":     float64(127),
 		"CandidatePaymentAddress": minerPayment,
 		"PrivateSeed":             privateSeed,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &txResp, nil
+}
+
+func (r *RPCClient) API_SendTxAddStake(addStakeMeta AddStakingParam) (*jsonresult.CreateTransactionResult, error) {
+	if addStakeMeta.MinerPrk == "" {
+		addStakeMeta.MinerPrk = addStakeMeta.StakerPrk
+	}
+	wl, err := wallet.Base58CheckDeserialize(addStakeMeta.MinerPrk)
+	if err != nil {
+		return nil, err
+	}
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	minerPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	burnAddr := addStakeMeta.BurnAddr
+
+	txResp, err := r.Client.CreateAndSendAddStakingTransaction(addStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(addStakeMeta.AddAmount)}, 1, 0, map[string]interface{}{
+		"AddStakingAmount":        addStakeMeta.AddAmount,
+		"CandidatePaymentAddress": minerPayment,
+		"PrivateSeed":             privateSeed,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &txResp, nil
+}
+
+func (r *RPCClient) API_SendTxUnStake(stopStakeMeta StopStakingParam) (*jsonresult.CreateTransactionResult, error) {
+	if stopStakeMeta.MinerPrk == "" {
+		stopStakeMeta.MinerPrk = stopStakeMeta.StakerPrk
+	}
+	wl, err := wallet.Base58CheckDeserialize(stopStakeMeta.MinerPrk)
+	if err != nil {
+		return nil, err
+	}
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	minerPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	burnAddr := stopStakeMeta.BurnAddr
+
+	txResp, err := r.Client.CreateAndSendUnStakingTransaction(stopStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+		"UnStakingType":           float64(210),
+		"CandidatePaymentAddress": minerPayment,
+		"PrivateSeed":             privateSeed,
+	})
+	return &txResp, err
+}
+
+func (r *RPCClient) API_SendTxReDelegate(redelegateMeta ReDelegateParam) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := redelegateMeta.BurnAddr
+
+	txResp, err := r.Client.CreateAndSendReDelegateTransaction(redelegateMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+		"CommitteePublicKey": redelegateMeta.CommitteePublicKey,
+		"NewDelegate":        redelegateMeta.NewDelegate,
 	})
 	if err != nil {
 		return nil, err

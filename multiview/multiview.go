@@ -25,6 +25,7 @@ type View interface {
 	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
 	ReplaceBlock(blk types.BlockInterface)
+	// ReplaceBlock(blk )
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
@@ -45,6 +46,7 @@ type MultiView interface {
 	Clone() MultiView
 	Reset()
 	AddView(v View) (int, error)
+	ReplaceView(v View) bool
 }
 
 type multiView struct {
@@ -204,6 +206,20 @@ func (s *multiView) addView(view View) bool {
 	}
 	return false
 
+}
+
+func (s *multiView) replaceView(view View) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if len(s.viewByHash) != 0 { //if no view in map, there are nothing to replace
+		if oldView, ok := s.viewByHash[*view.GetHash()]; ok { //otherwise, if view is inserted
+			if view.GetPreviousHash() == oldView.GetPreviousHash() {
+				s.viewByHash[*view.GetHash()] = view
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (s *multiView) GetBestView() View {
@@ -378,6 +394,10 @@ func (s *multiView) GetAllViewsWithBFS() []View {
 
 // this is just for interface compatible, we dont expect running this function
 func (s *multiView) AddView(v View) (int, error) {
+	panic("must not use this")
+}
+
+func (s *multiView) ReplaceView(v View) bool {
 	panic("must not use this")
 }
 

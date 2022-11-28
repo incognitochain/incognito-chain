@@ -2,11 +2,12 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -782,7 +783,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 	hash6, _ := common.Hash{}.NewHashFromStr("456")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey,
@@ -1532,7 +1533,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
 	hash6, err := common.Hash{}.NewHashFromStr("456")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1549,7 +1550,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 		},
 		1,
 	)
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB2,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1566,7 +1567,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 		},
 		1,
 	)
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB3,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -2045,7 +2046,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		validSDB1,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
@@ -2062,7 +2063,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 
 	validSDB2, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		validSDB2,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey2, *incKey5, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -2304,7 +2305,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 		beaconCommitteeStateSlashingBase
 	}
 	type args struct {
-		stopAutoStakeInstruction *instruction.StopAutoStakeInstruction
+		stopAutoStakeInstruction *instruction.ReDelegateInstruction
 		env                      *BeaconCommitteeStateEnvironment
 		committeeChange          *CommitteeChange
 	}
@@ -2338,7 +2339,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				stopAutoStakeInstruction: &instruction.StopAutoStakeInstruction{
+				stopAutoStakeInstruction: &instruction.ReDelegateInstruction{
 					CommitteePublicKeys: []string{key2},
 				},
 				env: &BeaconCommitteeStateEnvironment{
@@ -2371,7 +2372,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				stopAutoStakeInstruction: &instruction.StopAutoStakeInstruction{
+				stopAutoStakeInstruction: &instruction.ReDelegateInstruction{
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
@@ -2497,7 +2498,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeSwapRuleV3.RemovedStaker = []string{key11}
 	committeeChangeSwapRuleV3.SlashingCommittee[0] = []string{key11}
 
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey4, *incKey11, *incKey12},
 		map[string]privacy.PaymentAddress{
@@ -3536,7 +3537,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 	committeeChangeTwoSlashing.RemovedStaker = []string{key4, key10}
 	committeeChangeTwoSlashing.SlashingCommittee[0] = []string{key4}
 	committeeChangeTwoSlashing.SlashingCommittee[1] = []string{key10}
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey0, *incKey4, *incKey10, *incKey7},
 		map[string]privacy.PaymentAddress{

@@ -39,7 +39,7 @@ type PreView struct {
 	View multiview.View
 }
 
-type ValidatorIndex []int
+type ValidatorIndex map[int][]int
 
 type Execute struct {
 	sim          *NodeEngine
@@ -75,7 +75,7 @@ type Syncker interface {
 type Consensus interface {
 	GetOneValidator() *consensus.Validator
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
-	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
+	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int, produceTS, proposeTS int64) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	IsCommitteeInChain(int) bool

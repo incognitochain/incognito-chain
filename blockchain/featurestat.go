@@ -163,7 +163,7 @@ func (stat *FeatureStat) IsContainLatestFeature(curView *BeaconBestState, cpk st
 	nodeFeatures := stat.nodes[cpk].Features
 	//get feature that beacon is checking for trigger
 	unTriggerFeatures := curView.getUntriggerFeature(false)
-	fmt.Println("IsContainLatestFeature", cpk, unTriggerFeatures, stat.nodes[cpk].Features)
+	//fmt.Println("IsContainLatestFeature", cpk, unTriggerFeatures, stat.nodes[cpk].Features)
 	//check if node contain the untriggered feature
 	for _, feature := range unTriggerFeatures {
 		if common.IndexOfStr(feature, nodeFeatures) == -1 {

@@ -5,16 +5,18 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/portal"
 	"io"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -264,6 +266,91 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 		}
 	}
 	fmt.Printf("Unstake: %v\n", tmp)
+}
+
+func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
+	chain := sim.GetBlockchain()
+	type AccountInfo struct {
+		Name      string
+		Delegate  string
+		HasCredit bool
+	}
+
+	pkMap := make(map[string]*AccountInfo)
+	for _, acc := range accounts {
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown", false}
+	}
+	bBestState := chain.GetBeaconBestState()
+	bC := bBestState.GetBeaconCommittee()
+	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+
+	for _, acc := range accounts {
+		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
+		if ok {
+			delegate := stakerInfo.Delegate()
+			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
+			for idx, bPK := range bCStr {
+				if bPK == delegate {
+					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v %v", idx, bPK)
+					pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
+				}
+			}
+		}
+	}
+
+	for _, stakerInfo := range pkMap {
+		fmt.Printf("Acc: %v, Delegate: %v\n", stakerInfo.Name, stakerInfo.Delegate)
+	}
+}
+
+func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
+	chain := sim.GetBlockchain()
+	type CandidateInfo struct {
+		Name                     string
+		CurrentDelegators        int
+		Reputation               uint
+		CurrentDelegatorsDetails []string
+	}
+
+	pkStakerMap := make(map[string]string)
+	pkCandidateMap := map[string]CandidateInfo{}
+	for _, acc := range accounts {
+		pkStakerMap[acc.SelfCommitteePubkey] = acc.Name
+	}
+	bBestState := chain.GetBeaconBestState()
+	bC := bBestState.GetBeaconCommittee()
+	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+	bCState := bBestState.GetCommitteeState()
+	dState := bCState.GetDelegateState()
+
+	bcV4 := bCState.(*committeestate.BeaconCommitteeStateV4)
+	for index, b := range bCStr {
+		pkCandidateMap[b] = CandidateInfo{
+			Name:                     fmt.Sprintf("Beacon %v", index),
+			CurrentDelegators:        0,
+			CurrentDelegatorsDetails: []string{},
+			Reputation:               uint(bcV4.Reputation[b]),
+		}
+		if info, ok := dState[b]; ok {
+			pkCandidateMap[b] = CandidateInfo{
+				Name:                     fmt.Sprintf("Beacon %v", index),
+				CurrentDelegators:        info.CurrentDelegators,
+				CurrentDelegatorsDetails: info.GetCurrentDelegatorsList(),
+				Reputation:               uint(bcV4.Reputation[b]),
+			}
+		}
+	}
+	bcListStr1 := bBestState.GetCommitteeState().GetBeaconSubstitute()
+	bcListStr2 := bBestState.GetCommitteeState().GetBeaconWaiting()
+	bcList1, _ := incognitokey.CommitteeKeyListToString(bcListStr1)
+	bcList2, _ := incognitokey.CommitteeKeyListToString(bcListStr2)
+	// fmt.Println(bcList1)
+	fmt.Printf("Beacon waiting list: %+v\n", bcList2)
+	fmt.Printf("Beacon pending list: %+v\n", bcList1)
+	for _, cInfo := range pkCandidateMap {
+		fmt.Printf("Acc: %v\n\tCurrent delegators: %v\tDetails: %+v\n\tRep:%v\n",
+			cInfo.Name, cInfo.CurrentDelegators, cInfo.CurrentDelegatorsDetails, cInfo.Reputation)
+	}
 }
 
 func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {

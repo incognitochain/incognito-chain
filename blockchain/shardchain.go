@@ -240,7 +240,9 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 func (chain *ShardChain) CreateNewBlock(
 	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash) (types.BlockInterface, error) {
+	committeeViewHash common.Hash,
+	prevValidationData string,
+) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
 	curView := chain.GetBestState()
 	newBlock, err := chain.Blockchain.NewBlockShard(

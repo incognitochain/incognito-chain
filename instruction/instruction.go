@@ -26,6 +26,7 @@ type CommitteeStateInstruction struct {
 	StakeInstructions         []*StakeInstruction
 	AssignInstructions        []*AssignInstruction
 	StopAutoStakeInstructions []*StopAutoStakeInstruction
+	RedelegateInstructions    []*ReDelegateInstruction
 }
 
 func IsConsensusInstruction(action string) bool {
@@ -33,6 +34,7 @@ func IsConsensusInstruction(action string) bool {
 		action == SWAP_ACTION ||
 		action == STAKE_ACTION ||
 		action == ASSIGN_ACTION ||
+		action == RE_DELEGATE ||
 		action == STOP_AUTO_STAKE_ACTION ||
 		action == SET_ACTION ||
 		action == SWAP_SHARD_ACTION ||
@@ -42,7 +44,9 @@ func IsConsensusInstruction(action string) bool {
 		action == FINISH_SYNC_ACTION ||
 		action == SHARD_INST ||
 		action == BEACON_INST ||
-		action == RETURN_ACTION
+		action == RETURN_ACTION ||
+		action == RETURN_BEACON_ACTION ||
+		action == ADD_STAKING_ACTION
 }
 
 // the order of instruction must always be maintain
@@ -64,6 +68,10 @@ func (i *CommitteeStateInstruction) ToString(action string) [][]string {
 	case STOP_AUTO_STAKE_ACTION:
 		for _, stopAutoStakeInstruction := range i.StopAutoStakeInstructions {
 			instructions = append(instructions, stopAutoStakeInstruction.ToString())
+		}
+	case RE_DELEGATE:
+		for _, redelegateInstruction := range i.RedelegateInstructions {
+			instructions = append(instructions, redelegateInstruction.ToString())
 		}
 	}
 	return [][]string{}
@@ -98,6 +106,12 @@ func ValidateAndImportInstructionFromString(inst []string) (
 			return nil, errors.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 		}
 		return stopAutoStakeInstruction, nil
+	case RE_DELEGATE:
+		redelegateInstruction, err := ValidateAndImportReDelegateInstructionFromString(inst)
+		if err != nil {
+			return nil, errors.Errorf("SKIP redelegate instruction %+v, error %+v", inst, err)
+		}
+		return redelegateInstruction, nil
 	}
 	return nil, nil
 }

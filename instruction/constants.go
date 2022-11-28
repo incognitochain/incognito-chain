@@ -2,14 +2,18 @@ package instruction
 
 const (
 	SWAP_SHARD_ACTION              = "swapshard"
+	SWAP_BEACON_ACTION             = "swapbeacon"
 	SWAP_ACTION                    = "swap"
 	RANDOM_ACTION                  = "random"
 	STAKE_ACTION                   = "stake"
 	ASSIGN_ACTION                  = "assign"
 	ASSIGN_SYNC_ACTION             = "assignsync"
 	STOP_AUTO_STAKE_ACTION         = "stopautostake"
+	ADD_STAKING_ACTION             = "addstaking"
+	RE_DELEGATE                    = "redelegate"
 	SET_ACTION                     = "set"
 	RETURN_ACTION                  = "return"
+	RETURN_BEACON_ACTION           = "returnb"
 	UNSTAKE_ACTION                 = "unstake"
 	SHARD_INST                     = "shard"
 	BEACON_INST                    = "beacon"
@@ -25,14 +29,16 @@ const (
 
 	SHARD_RECEIVE_REWARD_V1_ACTION = 43
 	ACCEPT_BLOCK_REWARD_V1_ACTION  = 37
+	ACCEPT_BEACON_REWARD_ACTION    = 352
 	SHARD_REWARD_INST              = "shardRewardInst"
+	BEACON_REWARD_INST             = "beaconRewardInst"
 )
 
 const (
 	BEACON_CHAIN_ID = -1
 )
 
-//Swap Instruction Sub Type
+// Swap Instruction Sub Type
 const (
 	SWAP_BY_END_EPOCH = iota
 	SWAP_BY_SLASHING

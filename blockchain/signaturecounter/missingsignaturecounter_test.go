@@ -1,10 +1,11 @@
 package signaturecounter
 
 import (
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 var (
@@ -24,8 +25,8 @@ var (
 	}
 	samplePenaltyRule = []Penalty{
 		{
-			MinPercent:   50,
-			Time:         0,
+			MinPercent: 50,
+			// Time:         0,
 			ForceUnstake: true,
 		},
 	}
@@ -328,7 +329,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 				missingSignature: tt.fields.missingSignature,
 				lock:             new(sync.RWMutex),
 			}
-			if err := s.AddMissingSignature(tt.args.data, tt.args.committees); (err != nil) != tt.wantErr {
+			if err := s.AddMissingSignature(tt.args.data, 5, tt.args.committees); (err != nil) != tt.wantErr {
 				t.Errorf("AddMissingSignature() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				if !reflect.DeepEqual(s.missingSignature, tt.wantFields.missingSignature) {
@@ -444,7 +445,7 @@ func TestSignatureCounter_AddMissingSignature2(t *testing.T) {
 				missingSignature: tt.fields.missingSignature,
 				lock:             new(sync.RWMutex),
 			}
-			if err := s.AddMissingSignature(tt.args.data, tt.args.committees); (err != nil) != tt.wantErr {
+			if err := s.AddMissingSignature(tt.args.data, 5, tt.args.committees); (err != nil) != tt.wantErr {
 				t.Errorf("AddMissingSignature() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				if !reflect.DeepEqual(s.missingSignature, tt.wantFields.missingSignature) {
@@ -522,7 +523,7 @@ func TestSignatureCounter_AddMissingSignature3(t *testing.T) {
 				missingSignature: tt.fields.missingSignature,
 				lock:             new(sync.RWMutex),
 			}
-			if err := s.AddMissingSignature(tt.args.data, tt.args.committees); (err != nil) != tt.wantErr {
+			if err := s.AddMissingSignature(tt.args.data, 5, tt.args.committees); (err != nil) != tt.wantErr {
 				t.Errorf("AddMissingSignature() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				if !reflect.DeepEqual(s.missingSignature, tt.wantFields.missingSignature) {

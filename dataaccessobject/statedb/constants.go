@@ -50,7 +50,8 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType = 34
 
-	StakerObjectType = 35
+	ShardStakerObjectType  = 35
+	BeaconStakerObjectType = 78
 
 	// Portal v3
 	PortalExternalTxObjectType      = 36
@@ -116,8 +117,7 @@ const (
 	BridgeAggVaultObjectType              = 74
 	BridgeAggWaitingUnshieldReqObjectType = 75
 	BridgeAggParamObjectType              = 76
-
-	// Near bridge
+	AllStakersObjectType = 77
 	BridgeNEARTxObjectType = 77
 )
 

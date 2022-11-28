@@ -1011,8 +1011,21 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeShardTxID := []string{}
 	stakeShardRewardReceiver := []string{}
 	stakeShardAutoStaking := []string{}
+	stakeBeaconPublicKey := []string{}
+	stakeBeaconTxID := []string{}
+	stakeBeaconStakingAmount := []string{}
+	stakeBeaconRewardReceiver := []string{}
+	stakeBeaconAutoStaking := []string{}
+	bcDelegateList := []string{}
 	stopAutoStaking := []string{}
+	delegateList := []string{}
+	redelegateList := [2][]string{}
 	unstaking := []string{}
+
+	beaconAddStakingAmount := []uint64{}
+	beaconAddStakeAmountKeys := []string{}
+	beaconAddStakeAmounttxs := []string{}
+
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
 	}
@@ -1043,11 +1056,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		case metadata.ShardStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
-				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				return nil, nil, fmt.Errorf("Expect shard metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
+			delegateList = append(delegateList, stakingMetadata.Delegate)
 			if len(stakingMetadata.CommitteePublicKey) == 0 {
 				continue
 			}
@@ -1057,8 +1071,34 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
 			}
 		case metadata.BeaconStakingMeta:
-			// BeaconStakingMeta is not supported yet
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect beacon metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
+			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
+			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
+			stakeBeaconStakingAmount = append(stakeBeaconStakingAmount, strconv.FormatUint(stakingMetadata.StakingAmount, 10))
+			bcDelegateList = append(bcDelegateList, "")
+			if len(stakingMetadata.CommitteePublicKey) == 0 {
+				continue
+			}
+			if stakingMetadata.AutoReStaking {
+				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "true")
+			} else {
+				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "false")
+			}
 			continue
+		case metadata.ReDelegateMeta:
+			// BeaconStakingMeta is not supported yet
+			redelegateMetadata, ok := tx.GetMetadata().(*metadata.ReDelegateMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.ReDelegateMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(redelegateMetadata.CommitteePublicKey) != 0 {
+				redelegateList[0] = append(redelegateList[0], redelegateMetadata.CommitteePublicKey)
+				redelegateList[1] = append(redelegateList[1], redelegateMetadata.NewDelegate)
+			}
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
@@ -1074,6 +1114,17 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			}
 			if len(unstakingMetadata.CommitteePublicKey) != 0 {
 				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
+			}
+		case metadata.AddStakingMeta:
+			addStakingMetadata, ok := tx.GetMetadata().(*metadata.AddStakingMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if len(addStakingMetadata.CommitteePublicKey) != 0 {
+				beaconAddStakeAmountKeys = append(beaconAddStakeAmountKeys, addStakingMetadata.CommitteePublicKey)
+				beaconAddStakingAmount = append(beaconAddStakingAmount, addStakingMetadata.AddStakingAmount)
+				beaconAddStakeAmounttxs = append(beaconAddStakeAmounttxs, tx.Hash().String())
+				fmt.Println(beaconAddStakeAmountKeys, beaconAddStakingAmount, beaconAddStakeAmounttxs)
 			}
 		}
 	}
@@ -1096,6 +1147,30 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			instruction.SHARD_INST, strings.Join(stakeShardTxID, ","),
 			strings.Join(stakeShardRewardReceiver, ","),
 			strings.Join(stakeShardAutoStaking, ","),
+			strings.Join(delegateList, ","),
+		}
+		instructions = append(instructions, inst)
+	}
+
+	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
+		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) &&
+			len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) &&
+			len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoStaking) {
+			return nil, nil, NewBlockChainError(StakeInstructionError,
+				fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver), len(stakeBeaconAutoStaking)))
+		}
+		stakeBeaconPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeBeaconPublicKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
+		}
+		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
+		inst := []string{
+			instruction.STAKE_ACTION,
+			strings.Join(stakeBeaconPublicKey, ","),
+			instruction.BEACON_INST, strings.Join(stakeBeaconTxID, ","),
+			strings.Join(stakeBeaconRewardReceiver, ","),
+			strings.Join(stakeBeaconAutoStaking, ","),
+			strings.Join(stakeBeaconStakingAmount, ","),
 		}
 		instructions = append(instructions, inst)
 	}
@@ -1103,9 +1178,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
 		// ["stopautostaking" "pubkey1,pubkey2,..."]
 		validStopAutoStaking := []string{}
-		for _, v := range stopAutoStaking {
-			validStopAutoStaking = append(validStopAutoStaking, v)
-		}
+		validStopAutoStaking = append(validStopAutoStaking, stopAutoStaking...)
 		inst := []string{instruction.STOP_AUTO_STAKE_ACTION, strings.Join(validStopAutoStaking, ",")}
 		instructions = append(instructions, inst)
 	}
@@ -1113,6 +1186,21 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	if !reflect.DeepEqual(unstaking, []string{}) {
 		// ["unstake" "pubkey1,pubkey2,..."]
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
+		instructions = append(instructions, inst)
+	}
+	if !reflect.DeepEqual(beaconAddStakeAmountKeys, []string{}) {
+		// ["unstake" "pubkey1,pubkey2,..."]
+		addStakingIns := instruction.NewAddStakingInstructionWithValue(beaconAddStakeAmountKeys, beaconAddStakingAmount, beaconAddStakeAmounttxs)
+		// inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
+		instructions = append(instructions, addStakingIns.ToString())
+		fmt.Printf("abcxyz Create instruction add staking %+v\n", addStakingIns.ToString())
+	}
+	if len(redelegateList[0]) > 0 {
+		inst := []string{
+			instruction.RE_DELEGATE,
+			strings.Join(redelegateList[0], ","),
+			strings.Join(redelegateList[1], ","),
+		}
 		instructions = append(instructions, inst)
 	}
 	return instructions, pdexTxs, nil

@@ -449,7 +449,7 @@ func InitShardCommitteeState(
 		return committeestate.NewShardCommitteeStateV2WithValue(
 			committees,
 		)
-	case committeestate.STAKING_FLOW_V3:
+	case committeestate.STAKING_FLOW_V3, committeestate.STAKING_FLOW_V4:
 		return committeestate.NewShardCommitteeStateV3WithValue(
 			committees,
 		)

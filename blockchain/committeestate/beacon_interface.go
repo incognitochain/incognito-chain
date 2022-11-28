@@ -1,7 +1,10 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -12,6 +15,7 @@ type BeaconCommitteeState interface {
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	GetBeaconWaiting() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
@@ -21,6 +25,8 @@ type BeaconCommitteeState interface {
 	GetAutoStaking() map[string]bool
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
+	GetDelegate() map[string]string
+	GetBCStakingAmount() map[string]uint64
 	GetAllCandidateSubstituteCommittee() []string
 	GetNumberOfActiveShards() int
 	GetShardCommonPool() []incognitokey.CommitteePublicKey
@@ -34,6 +40,14 @@ type BeaconCommitteeState interface {
 		*CommitteeChange,
 		[][]string,
 		error)
+	ProcessStoreCommitteeStateInfo(
+		bBlock *types.BeaconBlock,
+		signatureInfor map[string]signaturecounter.MissingSignature,
+		cChange *CommitteeChange,
+		stateDB *statedb.StateDB,
+		isEndOfEpoch bool,
+	) error
+	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
 }
@@ -43,7 +57,7 @@ type AssignInstructionsGenerator interface {
 }
 
 type SwapShardInstructionsGenerator interface {
-	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
+	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, *CommitteeChange, error)
 }
 
 type RandomInstructionsGenerator interface {
@@ -66,6 +80,7 @@ type SplitRewardEnvironment struct {
 	MaxSubsetCommittees       byte
 	BeaconCommittee           []incognitokey.CommitteePublicKey
 	ShardCommittee            map[byte][]incognitokey.CommitteePublicKey
+	BeaconCommitteeState      BeaconCommitteeState
 }
 
 func NewSplitRewardEnvironmentMultiset(
@@ -76,6 +91,7 @@ func NewSplitRewardEnvironmentMultiset(
 	DAOPercent int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	bCState BeaconCommitteeState,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
@@ -88,6 +104,7 @@ func NewSplitRewardEnvironmentMultiset(
 		MaxSubsetCommittees:       maxSubsetsCommittee,
 		ShardCommittee:            shardCommittee,
 		BeaconCommittee:           beaconCommittee,
+		BeaconCommitteeState:      bCState,
 	}
 }
 func NewSplitRewardEnvironmentV1(
@@ -100,6 +117,7 @@ func NewSplitRewardEnvironmentV1(
 	activeShards int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	bCState BeaconCommitteeState,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
@@ -112,5 +130,6 @@ func NewSplitRewardEnvironmentV1(
 		MaxSubsetCommittees:       1,
 		ShardCommittee:            shardCommittee,
 		BeaconCommittee:           beaconCommittee,
+		BeaconCommitteeState:      bCState,
 	}
 }

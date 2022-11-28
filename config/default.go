@@ -246,6 +246,10 @@ var Tesnet2Param = &param{
 		"PortalV3":       0,
 		"PortalV4":       30225,
 	},
+	BlockTimeParam: map[string]int64{
+		"blocktimedef": 10,
+	},
+	TransactionInBlockParam:    TxsPerBlock{15, 100},
 	AutoEnableFeature:          map[string]AutoEnableFeature{},
 	BCHeightBreakPointPortalV3: 1328816,
 	TxPoolVersion:              1,

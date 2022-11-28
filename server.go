@@ -982,7 +982,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 
 var finishSyncMessageHistory = metrics.NewRegisteredCounter("message/finish-sync", nil)
 
-//OnFinishSync handle finish sync message
+// OnFinishSync handle finish sync message
 func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
 	Logger.log.Info("Receive a MsgFinishSync", msg.CommitteePublicKey)
 	finishSyncMessageHistory.Inc(1)
@@ -991,7 +991,7 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 	}
 }
 
-//OnFeatureMsg handle feature message
+// OnFeatureMsg handle feature message
 func (serverObj *Server) OnFeatureMsg(p *peer.PeerConn, msg *wire.MessageFeature) {
 	blockchain.DefaultFeatureStat.ReceiveMsg(msg)
 }
@@ -2000,7 +2000,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	shardCommitteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
 	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-	if beaconFinalView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+	if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
 	}
 
@@ -2098,7 +2098,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 		shardCandidateFromBeaconView = beaconFinalView.GetShardCandidate()
 		shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-		if beaconFinalView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+		if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 			shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
 		}
 		//check if in committee or pending committee in beacon

@@ -11,8 +11,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//StakeInstruction :
-//StakeInstruction Format:
+// StakeInstruction :
+// StakeInstruction Format:
 // ["STAKE_ACTION", list_public_keys, chain or beacon, list_txs, list_reward_addresses, list_autostaking_status(boolean)]
 type StakeInstruction struct {
 	PublicKeys            []string
@@ -23,18 +23,21 @@ type StakeInstruction struct {
 	RewardReceivers       []string
 	RewardReceiverStructs []privacy.PaymentAddress
 	AutoStakingFlag       []bool
+	DelegateList          []string
+	DelegateListStruct    []incognitokey.CommitteePublicKey
 }
 
 func NewStakeInstructionWithValue(
 	publicKeys []string, chain string,
 	txStakes []string, rewardReceivers []string,
-	autoStakingFlag []bool) *StakeInstruction {
+	autoStakingFlag []bool, delegateList []string) *StakeInstruction {
 	stakeInstruction := &StakeInstruction{}
 	stakeInstruction.SetPublicKeys(publicKeys)
 	stakeInstruction.SetChain(chain)
 	stakeInstruction.SetTxStakes(txStakes)
 	stakeInstruction.SetRewardReceivers(rewardReceivers)
 	stakeInstruction.SetAutoStakingFlag(autoStakingFlag)
+	stakeInstruction.SetDelegateList(delegateList)
 	return stakeInstruction
 }
 
@@ -84,6 +87,16 @@ func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeIn
 	return s
 }
 
+func (s *StakeInstruction) SetDelegateList(delegates []string) (*StakeInstruction, error) {
+	s.DelegateList = delegates
+	publicKeyStructs, err := incognitokey.CommitteeKeyListToStruct(delegates)
+	if err != nil {
+		return nil, err
+	}
+	s.DelegateListStruct = publicKeyStructs
+	return s, nil
+}
+
 func (s *StakeInstruction) SetAutoStakingFlag(autoStakingFlag []bool) *StakeInstruction {
 	s.AutoStakingFlag = autoStakingFlag
 	return s
@@ -104,6 +117,7 @@ func (s *StakeInstruction) ToString() []string {
 		}
 	}
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.DelegateList, SPLITTER))
 	return stakeInstructionStr
 }
 
@@ -131,6 +145,11 @@ func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 	}
 	stakeInstruction.SetAutoStakingFlag(autoStakeFlags)
 	stakeInstruction.SetChain(instruction[2])
+	delegates := make([]string, len(stakeInstruction.PublicKeys))
+	if len(instruction) == 7 {
+		delegates = strings.Split(instruction[6], SPLITTER)
+	}
+	stakeInstruction, _ = stakeInstruction.SetDelegateList(delegates)
 	return stakeInstruction
 }
 
@@ -138,7 +157,7 @@ func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 // beaconprocess.go: 1122 - 1165
 // beaconproducer.go: 386
 func ValidateStakeInstructionSanity(instruction []string) error {
-	if len(instruction) != 6 {
+	if len(instruction) != 7 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != STAKE_ACTION {
@@ -163,12 +182,21 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 		}
 	}
 	autoStakes := strings.Split(instruction[5], SPLITTER)
+	delegateList := strings.Split(instruction[6], SPLITTER)
 	_, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
 	if err != nil {
 		return fmt.Errorf("invalid public key type,err %+v, %+v", err, instruction)
 	}
+	//ignore zero length string
+	_, err = incognitokey.CommitteeKeyListToStruct(delegateList)
+	if err != nil {
+		return fmt.Errorf("invalid delegate public key type,err %+v, %+v", err, instruction)
+	}
 	if len(publicKeys) != len(txStakes) {
 		return fmt.Errorf("invalid public key & tx stake length, %+v", instruction)
+	}
+	if len(delegateList) != len(txStakes) {
+		return fmt.Errorf("invalid delegate list & tx stake length, %+v", instruction)
 	}
 	if len(rewardReceivers) != len(txStakes) {
 		return fmt.Errorf("invalid reward receivers & tx stake length, %+v", instruction)
@@ -186,6 +214,11 @@ func ImportInitStakeInstructionFromString(instruction []string) *StakeInstructio
 	stakeInstruction.SetTxStakes(strings.Split(instruction[3], SPLITTER))
 	stakeInstruction.SetRewardReceivers(strings.Split(instruction[4], SPLITTER))
 	tempAutoStakes := strings.Split(instruction[5], SPLITTER)
+	delegates := make([]string, len(stakeInstruction.PublicKeys))
+	if len(instruction) == 7 {
+		delegates = strings.Split(instruction[6], SPLITTER)
+	}
+	stakeInstruction, _ = stakeInstruction.SetDelegateList(delegates)
 	autoStakeFlags := []bool{}
 	for _, v := range tempAutoStakes {
 		if v == TRUE {

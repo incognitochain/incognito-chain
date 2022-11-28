@@ -48,6 +48,7 @@ type BeaconCommitteeStateEnvironment struct {
 	shardSubstitute                  map[byte][]string
 	numberOfValidator                []int
 	PreviousBlockHashes              *BeaconCommitteeStateHash
+	BeaconDelegateState              *BeaconDelegateState
 }
 
 type BeaconCommitteeStateHash struct {
@@ -57,6 +58,7 @@ type BeaconCommitteeStateHash struct {
 	ShardCandidateHash              common.Hash
 	ShardCommitteeAndValidatorHash  common.Hash
 	AutoStakeHash                   common.Hash
+	DelegateStateHash               common.Hash
 }
 
 func NewBeaconCommitteeStateHash() *BeaconCommitteeStateHash {
@@ -67,6 +69,7 @@ func NewBeaconCommitteeStateHash() *BeaconCommitteeStateHash {
 		ShardCommitteeAndValidatorHash:  common.Hash{},
 		AutoStakeHash:                   common.Hash{},
 		ShardSyncValidatorsHash:         common.Hash{},
+		DelegateStateHash:               common.Hash{},
 	}
 }
 
@@ -120,6 +123,16 @@ func isNilOrAutoStakeHash(h *BeaconCommitteeStateHash) bool {
 	return false
 }
 
+func isNilOrDelegateStateHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.DelegateStateHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
+}
+
 func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber int64, assignOffset int, beaconHeight uint64) *BeaconCommitteeStateEnvironment {
 	return &BeaconCommitteeStateEnvironment{
 		RandomNumber: randomNumber,
@@ -139,7 +152,7 @@ func NewBeaconCommitteeStateEnvironmentForUpgrading(beaconHeight, stakingV2Heigh
 	}
 }
 
-//ShardCommitteeStateEnvironment :
+// ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment struct {
 	ShardHeight                  uint64
 	ShardBlockHash               common.Hash

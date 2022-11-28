@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-//swapRuleV2 ...
+// swapRuleV2 ...
 type swapRuleV2 struct {
 }
 
@@ -14,7 +14,21 @@ func NewSwapRuleV2() *swapRuleV2 {
 	return &swapRuleV2{}
 }
 
-//genInstructions
+func (s *swapRuleV2) ProcessBeacon(
+	committees, substitutes []string,
+	minCommitteeSize, maxCommitteeSize, numberOfFixedValidators int,
+	reputation map[string]uint64,
+	performance map[string]uint64,
+) (
+	newCommittees []string,
+	newSubstitutes []string,
+	swapOutList []string,
+	slashedList []string,
+) {
+	return nil, nil, nil, nil
+}
+
+// genInstructions
 func (s *swapRuleV2) Process(
 	shardID byte,
 	committees, substitutes []string,

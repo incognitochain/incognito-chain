@@ -2683,3 +2683,81 @@ func Test_calculateNewSubstitutePosition(t *testing.T) {
 		})
 	}
 }
+
+func Test_swapRuleV3_slashingBeaconSwapOut(t *testing.T) {
+	type args struct {
+		committees              []string
+		maxSlashedValidator     int
+		numberOfFixedValidators int
+		reputation              map[string]uint64
+		performance             map[string]uint64
+		totalVotePower          uint64
+	}
+	setupTestParam := func(name string, args args) args {
+		fixedNode := []string{"fixedA", "fixedB", "fixedC", "fixedD", "fixedE", "fixedF"}
+		switch name {
+		case "test1":
+			args.totalVotePower = 0
+			args.committees = append(fixedNode, args.committees...)
+			for _, v := range fixedNode {
+				args.performance[v] = 1000
+			}
+			for _, v := range fixedNode {
+				args.reputation[v] = 200
+			}
+			for _, v := range args.reputation {
+				args.totalVotePower += v
+			}
+		}
+		return args
+	}
+	tests := []struct {
+		name                 string
+		s                    *swapRuleV3
+		args                 args
+		wantNewCommittees    []string
+		wantSlashedList      []string
+		wantSlashedVotePower uint64
+	}{
+		{
+			name: "test1",
+			s:    &swapRuleV3{},
+			args: args{
+				committees:              []string{"a", "b", "c", "d"},
+				maxSlashedValidator:     4,
+				numberOfFixedValidators: 6,
+				reputation: map[string]uint64{
+					"a": uint64(5),
+					"b": uint64(5),
+					"c": uint64(5),
+					"d": uint64(5),
+				},
+				performance: map[string]uint64{
+					"a": uint64(100),
+					"b": uint64(200),
+					"c": uint64(100),
+					"d": uint64(200),
+				},
+			},
+			wantNewCommittees:    []string{"fixedA", "fixedB", "fixedC", "fixedD", "fixedE", "fixedF"},
+			wantSlashedList:      []string{"a", "c", "b", "d"},
+			wantSlashedVotePower: 20,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &swapRuleV3{}
+			tt.args = setupTestParam(tt.name, tt.args)
+			gotNewCommittees, gotSlashedList, gotSlashedVotePower := s.slashingBeaconSwapOut(tt.args.committees, tt.args.maxSlashedValidator, tt.args.numberOfFixedValidators, tt.args.reputation, tt.args.performance, tt.args.totalVotePower)
+			if !reflect.DeepEqual(gotNewCommittees, tt.wantNewCommittees) {
+				t.Errorf("swapRuleV3.slashingBeaconSwapOut() gotNewCommittees = %v, want %v", gotNewCommittees, tt.wantNewCommittees)
+			}
+			if !reflect.DeepEqual(gotSlashedList, tt.wantSlashedList) {
+				t.Errorf("swapRuleV3.slashingBeaconSwapOut() gotSlashedList = %v, want %v", gotSlashedList, tt.wantSlashedList)
+			}
+			if gotSlashedVotePower != tt.wantSlashedVotePower {
+				t.Errorf("swapRuleV3.slashingBeaconSwapOut() gotSlashedVotePower = %v, want %v", gotSlashedVotePower, tt.wantSlashedVotePower)
+			}
+		})
+	}
+}

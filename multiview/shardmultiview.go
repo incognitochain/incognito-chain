@@ -33,3 +33,7 @@ func (s *ShardMultiView) AddView(v View) (res int, err error) {
 	}
 	return res, err
 }
+
+func (s *ShardMultiView) ReplaceView(v View) bool {
+	return s.multiView.replaceView(v)
+}

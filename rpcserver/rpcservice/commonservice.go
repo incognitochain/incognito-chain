@@ -298,10 +298,10 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 
 func GetStakingAmount(stakingType int, stakingShardAmountParam uint64) uint64 {
 	amount := uint64(0)
-	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", stakingShardAmountParam, "", true)
-	if stakingType == 1 {
-		amount = stakingData.GetBeaconStakeAmount()
-	}
+	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", stakingShardAmountParam, "", "", true)
+	// if stakingType == 1 {
+	// 	amount = stakingData.GetBeaconStakeAmount()
+	// }
 	if stakingType == 0 {
 		amount = stakingData.GetShardStateAmount()
 	}

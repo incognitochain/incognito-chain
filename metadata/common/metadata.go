@@ -103,12 +103,14 @@ type BeaconViewRetriever interface {
 	GetHeight() uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
+	GetAllBeaconValidatorCandidateFlattenList() []string
 	GetAutoStakingList() map[string]bool
 	// GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
-	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
+	GetStakerInfo(string) (*statedb.ShardStakerInfo, bool, error)
+	GetBeaconStakerInfo(string) (*statedb.BeaconStakerInfo, bool, error)
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey

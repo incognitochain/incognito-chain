@@ -31,13 +31,14 @@ func NewBeaconCommitteeStateV3WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 	syncPool map[byte][]string,
 	swapRule SwapRuleProcessor,
 	assignRule AssignRuleProcessor,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBaseWithValue(
-			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
+			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx, delegateList,
 			shardCommonPool, numberOfAssignedCandidates, swapRule, assignRule,
 		),
 		syncPool: syncPool,
@@ -48,7 +49,7 @@ func (b *BeaconCommitteeStateV3) Version() int {
 	return STAKING_FLOW_V3
 }
 
-//shallowCopy maintain dst mutex value
+// shallowCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV3) shallowCopy(newB *BeaconCommitteeStateV3) {
 	newB.beaconCommitteeStateSlashingBase = b.beaconCommitteeStateSlashingBase
 	newB.syncPool = b.syncPool
@@ -202,6 +203,13 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+			// case instruction.RE_DELEGATE:
+			// 	redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
+			// 	if err != nil {
+			// 		Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+			// 		continue
+			// 	}
+			// b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 			//case instruction.DEQUEUE:
 			//	dequeueInstruction, err := instruction.ValidateAndImportDequeueInstructionFromString(inst)
 			//	if err != nil {
@@ -225,7 +233,83 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
-//assignToSyncPool assign validatrors to syncPool
+func (b *BeaconCommitteeStateV3) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
+	[]string,
+	map[byte][]string,
+	map[byte][]string,
+	[]string,
+	int,
+	map[string]bool,
+	map[string]privacy.PaymentAddress,
+	map[string]common.Hash,
+	map[string]string,
+) {
+	shardCommittee := make(map[byte][]string)
+	shardSubstitute := make(map[byte][]string)
+	numberOfAssignedCandidates := b.numberOfAssignedCandidates
+	autoStake := make(map[string]bool)
+	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	stakingTx := make(map[string]common.Hash)
+	delegates := make(map[string]string)
+
+	beaconCommittee := common.DeepCopyString(b.beaconCommittee)
+
+	for shardID, oneShardCommittee := range b.shardCommittee {
+		shardCommittee[shardID] = common.DeepCopyString(oneShardCommittee)
+	}
+	for shardID, oneShardSubsitute := range b.shardSubstitute {
+		shardSubstitute[shardID] = common.DeepCopyString(oneShardSubsitute)
+	}
+	nextEpochShardCandidate := b.shardCommonPool[numberOfAssignedCandidates:]
+	currentEpochShardCandidate := b.shardCommonPool[:numberOfAssignedCandidates]
+	shardCandidates := append(currentEpochShardCandidate, nextEpochShardCandidate...)
+
+	shardCommonPool := common.DeepCopyString(shardCandidates)
+	for k, v := range b.autoStake {
+		autoStake[k] = v
+	}
+	for k, v := range b.rewardReceiver {
+		rewardReceiver[k] = v
+	}
+	for k, v := range b.stakingTx {
+		stakingTx[k] = v
+	}
+	for k, v := range b.delegate {
+		delegates[k] = v
+	}
+
+	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, delegates
+}
+
+func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, delegates := b.getDataForUpgrading(env)
+
+	committeeStateV4 := NewBeaconCommitteeStateV4WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+		delegates,
+		map[byte][]string{},
+		NewSwapRuleV3(),
+		NewAssignRuleV3(),
+	)
+
+	Logger.log.Infof("Upgrade Committee State V3 to V4, swap rule %+v, assign rule %+v",
+		reflect.TypeOf(*NewSwapRuleV3()), reflect.TypeOf(*NewAssignRuleV3()))
+	return committeeStateV4
+}
+
+// assignToSyncPool assign validatrors to syncPool
 // update beacon committee state and committeechange
 // UPDATE SYNC POOL ONLY
 func (b *BeaconCommitteeStateV3) assignToSyncPool(
@@ -238,7 +322,7 @@ func (b *BeaconCommitteeStateV3) assignToSyncPool(
 	return committeeChange
 }
 
-//assignRandomlyToSubstituteList assign candidates to pending list
+// assignRandomlyToSubstituteList assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
 func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
@@ -254,7 +338,7 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 	return committeeChange
 }
 
-//assignToPending assign candidates to pending list
+// assignToPending assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
 func (b *BeaconCommitteeStateV3) assignBackToSubstituteList(candidates []string, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
@@ -281,7 +365,7 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 
-//processAssignWithRandomInstruction assign candidates to syncPool
+// processAssignWithRandomInstruction assign candidates to syncPool
 // update beacon state and committeechange
 func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	rand int64,
@@ -398,7 +482,7 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 //	return committeeChange, nil
 //}
 
-//processFinishSyncInstruction move validators from pending to sync pool
+// processFinishSyncInstruction move validators from pending to sync pool
 // validators MUST in sync pool
 func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,

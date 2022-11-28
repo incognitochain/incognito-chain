@@ -1,15 +1,16 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 var samplePenalty = signaturecounter.Penalty{
-	MinPercent:   50,
-	Time:         0,
+	MinPercent: 50,
+	// Time:         0,
 	ForceUnstake: true,
 }
 

@@ -122,6 +122,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
+	case AddStakingMeta:
+		md = &AddStakingMetadata{}
+	case ReDelegateMeta:
+		md = &ReDelegateMetadata{}
 	case PDEContributionMeta:
 		md = &PDEContribution{}
 	case PDEPRVRequiredContributionRequestMeta:

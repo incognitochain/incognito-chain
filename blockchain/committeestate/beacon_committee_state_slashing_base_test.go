@@ -1,13 +1,14 @@
 package committeestate
 
 import (
+	"reflect"
+	"sync"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"sync"
-	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -183,7 +184,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfo(
+	statedb.StoreShardStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
 			*incKey0, *incKey2, *incKey4, *incKey6, *incKey8, *incKey10, *incKey12,

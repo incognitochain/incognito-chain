@@ -12,11 +12,14 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	"github.com/pkg/errors"
 )
 
 type BeaconChain struct {
@@ -202,6 +205,7 @@ func (chain *BeaconChain) CreateNewBlock(
 	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
+	prevValidationData string,
 ) (types.BlockInterface, error) {
 	//wait a little bit, for shard
 	beaconBestView := chain.GetBestView().(*BeaconBestState)
@@ -209,7 +213,7 @@ func (chain *BeaconChain) CreateNewBlock(
 		time.Sleep(time.Duration(beaconBestView.GetCurrentTimeSlot()/5) * time.Second)
 	}
 
-	newBlock, err := chain.Blockchain.NewBlockBeacon(beaconBestView, version, proposer, round, startTime)
+	newBlock, err := chain.Blockchain.NewBlockBeacon(beaconBestView, version, proposer, round, startTime, prevValidationData)
 	if err != nil {
 		return nil, err
 	}
@@ -370,8 +374,84 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 
 }
 
-func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error {
-	panic("this function is not supported on beacon chain")
+func (chain *BeaconChain) ValidatePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
+	if hasBlock, err := chain.Blockchain.HasBeaconBlockByHash(previousBlockHash); err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	} else {
+		if !hasBlock {
+			// This block is not inserted yet, no need to replace
+			return errors.Errorf("Replace previous validation data fail! Cannot find find block in db" + previousBlockHash.String())
+		}
+	}
+
+	bcBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(previousBlockHash)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if !previousProposeHash.IsEqual(bcBlock.ProposeHash()) {
+		Logger.log.Errorf("Replace previous validation data fail! Propose hash not correct, data for" + previousProposeHash.String() + " got " + bcBlock.ProposeHash().String())
+		return nil
+	}
+
+	decodedOldValidationData, err := consensustypes.DecodeValidationData(bcBlock.ValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
+		Logger.log.Infof("BEACON | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v (old %+v)",
+			bcBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx))
+	} else {
+		return nil
+	}
+
+	// validate block
+	bcBlock.ValidationData = newValidationData
+	committees, err := chain.GetCommitteeV2(bcBlock)
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(bcBlock, committees); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
+	if hasBlock, err := chain.Blockchain.HasBeaconBlockByHash(previousBlockHash); err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	} else {
+		if !hasBlock {
+			return errors.Errorf("Replace previous validation data fail! Cannot find find block in db" + previousBlockHash.String())
+		}
+	}
+
+	bcBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(previousBlockHash)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	// validate block before rewrite to
+	replaceBlockHash := *bcBlock.Hash()
+	bcBlock.ValidationData = newValidationData
+	//rewrite to database
+	if err = rawdbv2.StoreBeaconBlockByHash(chain.GetChainDatabase(), replaceBlockHash, bcBlock); err != nil {
+		return err
+	}
+	//update multiview
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(bcBlock)
+	} else {
+		fmt.Println("Cannot find beacon view", replaceBlockHash.String())
+	}
+	return nil
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, s string) error {
@@ -512,9 +592,7 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
-//CommitteesByShardID ...
-var CommitteeFromBlockCache, _ = lru.New(500)
-
+// CommitteesByShardID ...
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
 	committees := []incognitokey.CommitteePublicKey{}
 	var err error

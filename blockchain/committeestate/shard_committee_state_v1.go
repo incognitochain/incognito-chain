@@ -14,22 +14,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func InitGenesisShardCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
+func InitGenesisShardCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3, stakingFlowV4 uint64,
 	env *ShardCommitteeStateEnvironment) ShardCommitteeState {
-	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3)
+	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3, stakingFlowV4)
 	switch version {
 	case SELF_SWAP_SHARD_VERSION:
 		return initGenesisShardCommitteeStateV1(env)
 	case STAKING_FLOW_V2:
 		return initGenesisShardCommitteeStateV2(env)
-	case STAKING_FLOW_V3:
+	case STAKING_FLOW_V3, STAKING_FLOW_V4:
 		return initGenesisShardCommitteeStateV3(env)
 	default:
 		panic("not a valid shard committee state version")
 	}
 }
 
-//ShardCommitteeStateHash
+// ShardCommitteeStateHash
 type ShardCommitteeStateHash struct {
 	ShardCommitteeHash        common.Hash
 	ShardSubstituteHash       common.Hash
@@ -37,7 +37,7 @@ type ShardCommitteeStateHash struct {
 	SubsetCommitteesFromBlock common.Hash
 }
 
-//ShardCommitteeStateV1
+// ShardCommitteeStateV1
 type ShardCommitteeStateV1 struct {
 	shardCommittee  []string
 	shardSubstitute []string
@@ -45,16 +45,16 @@ type ShardCommitteeStateV1 struct {
 	mu *sync.RWMutex
 }
 
-//NewShardCommitteeStateV1 is default constructor for ShardCommitteeStateV1 ...
-//Output: pointer of ShardCommitteeStateV1 struct
+// NewShardCommitteeStateV1 is default constructor for ShardCommitteeStateV1 ...
+// Output: pointer of ShardCommitteeStateV1 struct
 func NewShardCommitteeStateV1() *ShardCommitteeStateV1 {
 	return &ShardCommitteeStateV1{
 		mu: new(sync.RWMutex),
 	}
 }
 
-//NewShardCommitteeStateV1WithValue is constructor for ShardCommitteeStateV1 with value
-//Output: pointer of ShardCommitteeStateV1 struct with value
+// NewShardCommitteeStateV1WithValue is constructor for ShardCommitteeStateV1 with value
+// Output: pointer of ShardCommitteeStateV1 struct with value
 func NewShardCommitteeStateV1WithValue(shardCommittee, shardSubstitute []incognitokey.CommitteePublicKey) *ShardCommitteeStateV1 {
 	tempShardCommittee, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 	tempShardSubstitute, _ := incognitokey.CommitteeKeyListToString(shardSubstitute)
@@ -65,13 +65,13 @@ func NewShardCommitteeStateV1WithValue(shardCommittee, shardSubstitute []incogni
 	}
 }
 
-//clone ShardCommitteeStateV1 to new instance
+// clone ShardCommitteeStateV1 to new instance
 func (s ShardCommitteeStateV1) clone(newCommitteeState *ShardCommitteeStateV1) {
 	newCommitteeState.shardCommittee = common.DeepCopyString(s.shardCommittee)
 	newCommitteeState.shardSubstitute = common.DeepCopyString(s.shardSubstitute)
 }
 
-//Clone ...
+// Clone ...
 func (s *ShardCommitteeStateV1) Clone() ShardCommitteeState {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -80,18 +80,18 @@ func (s *ShardCommitteeStateV1) Clone() ShardCommitteeState {
 	return newS
 }
 
-//Version get version of engine
+// Version get version of engine
 func (s *ShardCommitteeStateV1) Version() int {
 	return SELF_SWAP_SHARD_VERSION
 }
 
-//GetShardCommittee get shard committees
+// GetShardCommittee get shard committees
 func (s *ShardCommitteeStateV1) GetShardCommittee() []incognitokey.CommitteePublicKey {
 	res, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardCommittee)
 	return res
 }
 
-//GetShardSubstitute get shard pending validators
+// GetShardSubstitute get shard pending validators
 func (s *ShardCommitteeStateV1) GetShardSubstitute() []incognitokey.CommitteePublicKey {
 	res, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardSubstitute)
 	return res
@@ -101,9 +101,9 @@ func (s *ShardCommitteeStateV1) SubsetCommitteesFromBlock() common.Hash {
 	return common.Hash{}
 }
 
-//initGenesisShardCommitteeStateV1 init committee state at genesis block or anytime restore program
-//	- call function processInstructionFromBeacon for process instructions received from beacon
-//	- call function processShardBlockInstruction for process shard block instructions
+// initGenesisShardCommitteeStateV1 init committee state at genesis block or anytime restore program
+//   - call function processInstructionFromBeacon for process instructions received from beacon
+//   - call function processShardBlockInstruction for process shard block instructions
 func initGenesisShardCommitteeStateV1(env *ShardCommitteeStateEnvironment) *ShardCommitteeStateV1 {
 	s := NewShardCommitteeStateV1()
 
@@ -148,13 +148,13 @@ func initGenesisShardCommitteeStateV1(env *ShardCommitteeStateEnvironment) *Shar
 	return s
 }
 
-//UpdateCommitteeState update committeState from valid data before
-//	- call process instructions from beacon
-//	- check conditions for epoch timestamp
-//		+ process shard block instructions for key
-//			+ process shard block instructions normally
-//	- hash for checking commit later
-//	- Only call once in new or insert block process
+// UpdateCommitteeState update committeState from valid data before
+//   - call process instructions from beacon
+//   - check conditions for epoch timestamp
+//   - process shard block instructions for key
+//   - process shard block instructions normally
+//   - hash for checking commit later
+//   - Only call once in new or insert block process
 func (s *ShardCommitteeStateV1) UpdateCommitteeState(
 	env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	s.mu.Lock()
@@ -208,7 +208,8 @@ func (s *ShardCommitteeStateV1) GenerateSwapInstructions(env *ShardCommitteeStat
 	return swapInstruction, shardPendingValidator, append(fixedProducerShardValidators, shardCommittees...), nil
 }
 
-//hash generate hashes relate to uncommitted committees of struct ShardCommitteeStateV1
+// hash generate hashes relate to uncommitted committees of struct ShardCommitteeStateV1
+//
 //	append committees and subtitutes to struct and hash it
 func (s ShardCommitteeStateV1) hash() (*ShardCommitteeStateHash, error) {
 	if reflect.DeepEqual(s, NewShardCommitteeStateV1()) {
@@ -231,12 +232,12 @@ func (s ShardCommitteeStateV1) hash() (*ShardCommitteeStateHash, error) {
 	}, nil
 }
 
-//processnstructionFromBeacon process instruction from beacon blocks
-//	- Get all subtitutes in shard
-//  - Loop over the list instructions:
-//		+ Create Assign instruction struct from assign instruction string
-//	- Update shard subtitute added in committee change struct
-//	- Only call once in new or insert block process
+// processnstructionFromBeacon process instruction from beacon blocks
+//   - Get all subtitutes in shard
+//   - Loop over the list instructions:
+//   - Create Assign instruction struct from assign instruction string
+//   - Update shard subtitute added in committee change struct
+//   - Only call once in new or insert block process
 func (s *ShardCommitteeStateV1) processInstructionFromBeacon(
 	listInstructions [][]string,
 	shardID byte,
@@ -259,13 +260,13 @@ func extractAssignInstruction(listInstructions [][]string, shardID byte) []strin
 	return newSubstitutes
 }
 
-//processShardBlockInstruction process shard block instruction for sending to beacon
-//	- get list instructions from input environment
-//	- loop over the list instructions
-//		+ Check type of instructions and process itp
-//		+ At this moment, there will be only swap action for this function
-//	- After process all instructions, we will updatew commitee change variable
-//	- Only call once in new or insert block process
+// processShardBlockInstruction process shard block instruction for sending to beacon
+//   - get list instructions from input environment
+//   - loop over the list instructions
+//   - Check type of instructions and process itp
+//   - At this moment, there will be only swap action for this function
+//   - After process all instructions, we will updatew commitee change variable
+//   - Only call once in new or insert block process
 func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	env *ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
@@ -376,11 +377,11 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	return newCommitteeChange, nil
 }
 
-//processShardBlockInstructionForKeyListV2 process shard block instructions for key list v2
-//	- get list instructions from input environment
-//	- loop over the list instructions
-//		+ Check type of instructions and process it
-//		+ At this moment, there will be only swap action for this function
+// processShardBlockInstructionForKeyListV2 process shard block instructions for key list v2
+//   - get list instructions from input environment
+//   - loop over the list instructions
+//   - Check type of instructions and process it
+//   - At this moment, there will be only swap action for this function
 func (s *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
 	env *ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
@@ -409,7 +410,7 @@ func (s *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
 	return newCommitteeChange, nil
 }
 
-//ProcessInstructionFromBeacon : process instrucction from beacon
+// ProcessInstructionFromBeacon : process instrucction from beacon
 func (s ShardCommitteeStateV1) ProcessAssignInstructions(env *ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey {
 	newSubstitutes := extractAssignInstruction(env.BeaconInstructions, env.ShardID)
 	res, _ := incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)

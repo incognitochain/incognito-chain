@@ -72,6 +72,7 @@ const (
 	ShardBlockReward             = metadataCommon.ShardBlockReward
 	ShardBlockSalaryResponseMeta = metadataCommon.ShardBlockSalaryResponseMeta
 	BeaconRewardRequestMeta      = metadataCommon.BeaconRewardRequestMeta
+	BeaconRewardRequestMetaV2    = metadataCommon.BeaconCommitteeRewardRequestMeta
 	BeaconSalaryResponseMeta     = metadataCommon.BeaconSalaryResponseMeta
 	ReturnStakingMeta            = metadataCommon.ReturnStakingMeta
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
@@ -80,8 +81,10 @@ const (
 	// staking
 	ShardStakingMeta    = metadataCommon.ShardStakingMeta
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
+	AddStakingMeta      = metadataCommon.AddStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
 	UnStakingMeta       = metadataCommon.UnStakingMeta
+	ReDelegateMeta      = metadataCommon.ReDelegateMeta
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = metadataCommon.BeaconSwapConfirmMeta
 	BridgeSwapConfirmMeta = metadataCommon.BridgeSwapConfirmMeta

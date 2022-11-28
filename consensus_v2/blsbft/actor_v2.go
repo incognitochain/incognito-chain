@@ -999,7 +999,7 @@ func (a *actorV2) proposeBeaconBlock(
 	var err error
 	if block == nil {
 		a.logger.Info("CreateNewBlock version", a.blockVersion)
-		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)
+		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash, "")
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}

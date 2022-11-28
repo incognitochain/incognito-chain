@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -22,15 +23,16 @@ type beaconCommitteeStateBase struct {
 	autoStake      map[string]bool                   // committee public key => true or false
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
+	delegate       map[string]string
 
 	hashes *BeaconCommitteeStateHash
 
 	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
-func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
+func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64, stakingFlowV4 uint64,
 	env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
-	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3)
+	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3, stakingFlowV4)
 	switch version {
 	case SELF_SWAP_SHARD_VERSION:
 		return initGenesisBeaconCommitteeStateV1(env)
@@ -38,12 +40,14 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 		return initGenesisBeaconCommitteeStateV2(env)
 	case STAKING_FLOW_V3:
 		return initGenesisBeaconCommitteeStateV3(env)
+	case STAKING_FLOW_V4:
+		return initGenesisBeaconCommitteeStateV4(env)
 	default:
 		panic("not valid committee state version")
 	}
 }
 
-//NewBeaconCommitteeState constructor for BeaconCommitteeState by version
+// NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
 	version int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
@@ -54,6 +58,7 @@ func NewBeaconCommitteeState(
 	autoStake map[string]bool,
 	rewardReceivers map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
 	swapRule SwapRuleProcessor,
 	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
@@ -90,6 +95,7 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
+			delegateList,
 		)
 	case STAKING_FLOW_V2:
 		committeeState = NewBeaconCommitteeStateV2WithValue(
@@ -101,6 +107,7 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
+			delegateList,
 			swapRule,
 			assignRule,
 		)
@@ -114,6 +121,22 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
+			delegateList,
+			tempSyncPool,
+			swapRule,
+			assignRule,
+		)
+	case STAKING_FLOW_V4:
+		committeeState = NewBeaconCommitteeStateV4WithValue(
+			tempBeaconCommittee,
+			tempShardCommittee,
+			tempShardSubstitute,
+			tempShardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+			delegateList,
 			tempSyncPool,
 			swapRule,
 			assignRule,
@@ -123,8 +146,11 @@ func NewBeaconCommitteeState(
 	return committeeState
 }
 
-//VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
-func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64) int {
+// VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
+func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64, stakingV4Height uint64) int {
+	if beaconHeight >= stakingV4Height {
+		return STAKING_FLOW_V4
+	}
 	if beaconHeight >= stakingV3Height {
 		return STAKING_FLOW_V3
 	}
@@ -142,6 +168,7 @@ func newBeaconCommitteeStateBase() *beaconCommitteeStateBase {
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
 		hashes:          NewBeaconCommitteeStateHash(),
+		delegate:        make(map[string]string),
 		mu:              new(sync.RWMutex),
 	}
 }
@@ -153,6 +180,7 @@ func newBeaconCommitteeStateBaseWithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	delegateList map[string]string,
 ) *beaconCommitteeStateBase {
 	return &beaconCommitteeStateBase{
 		beaconCommittee: beaconCommittee,
@@ -161,6 +189,7 @@ func newBeaconCommitteeStateBaseWithValue(
 		autoStake:       autoStake,
 		rewardReceiver:  rewardReceiver,
 		stakingTx:       stakingTx,
+		delegate:        delegateList,
 		hashes:          NewBeaconCommitteeStateHash(),
 		mu:              new(sync.RWMutex),
 	}
@@ -185,10 +214,11 @@ func (b beaconCommitteeStateBase) shallowCopy(newB *beaconCommitteeStateBase) {
 	newB.autoStake = b.autoStake
 	newB.rewardReceiver = b.rewardReceiver
 	newB.stakingTx = b.stakingTx
+	newB.delegate = b.delegate
 	newB.hashes = b.hashes
 }
 
-//Clone:
+// Clone:
 func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -219,6 +249,10 @@ func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 		newB.stakingTx[k] = v
 	}
 
+	for k, v := range b.delegate {
+		newB.delegate[k] = v
+	}
+
 	newB.hashes.BeaconCommitteeAndValidatorHash = b.hashes.BeaconCommitteeAndValidatorHash
 	newB.hashes.BeaconCandidateHash = b.hashes.BeaconCandidateHash
 	newB.hashes.ShardSyncValidatorsHash = b.hashes.ShardSyncValidatorsHash
@@ -236,6 +270,7 @@ func (b *beaconCommitteeStateBase) reset() {
 	b.autoStake = make(map[string]bool)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
+	b.delegate = make(map[string]string)
 }
 
 func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconCommitteeStateHash) {
@@ -244,6 +279,10 @@ func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconC
 
 func (b beaconCommitteeStateBase) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
 	return b.getBeaconCommittee()
+}
+
+func (b beaconCommitteeStateBase) GetBeaconCommitteeString() []string {
+	return b.beaconCommittee
 }
 
 func (b beaconCommitteeStateBase) getBeaconCommittee() []incognitokey.CommitteePublicKey {
@@ -308,6 +347,11 @@ func (b beaconCommitteeStateBase) GetCandidateShardWaitingForCurrentRandom() []i
 func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
 	return []incognitokey.CommitteePublicKey{}
 }
+
+func (b beaconCommitteeStateBase) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
+	return []incognitokey.CommitteePublicKey{}
+}
+
 func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return []incognitokey.CommitteePublicKey{}
 }
@@ -331,6 +375,16 @@ func (b beaconCommitteeStateBase) GetRewardReceiver() map[string]privacy.Payment
 	defer b.mu.RUnlock()
 	res := make(map[string]privacy.PaymentAddress)
 	for k, v := range b.rewardReceiver {
+		res[k] = v
+	}
+	return res
+}
+
+func (b beaconCommitteeStateBase) GetDelegate() map[string]string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	res := make(map[string]string)
+	for k, v := range b.delegate {
 		res[k] = v
 	}
 	return res
@@ -438,19 +492,22 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 				b.autoStake[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
 				b.stakingTx[stakeInstruction.PublicKeys[index]] = stakeInstruction.TxStakeHashes[index]
+				b.delegate[stakeInstruction.PublicKeys[index]] = stakeInstruction.DelegateList[index]
 			}
 			if stakeInstruction.Chain == instruction.BEACON_INST {
 				newBeaconCandidates = append(newBeaconCandidates, stakeInstruction.PublicKeys...)
 			} else {
 				newShardCandidates = append(newShardCandidates, stakeInstruction.PublicKeys...)
 			}
-			err := statedb.StoreStakerInfo(
+			err := statedb.StoreShardStakerInfo(
 				env.ConsensusStateDB,
 				stakeInstruction.PublicKeyStructs,
 				b.rewardReceiver,
 				b.autoStake,
 				b.stakingTx,
 				1,
+				b.delegate,
+				map[string]interface{}{},
 			)
 			if err != nil {
 				panic(err)
@@ -503,6 +560,20 @@ func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStat
 	return nil, nil, [][]string{}, nil
 }
 
+func (b *beaconCommitteeStateBase) GetDelegateState() map[string]BeaconDelegatorInfo {
+	return nil
+}
+
+func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(
+	bBlock *types.BeaconBlock,
+	// mView multiview.MultiView,
+	cChange *CommitteeChange,
+	stateDB *statedb.StateDB,
+	isEndOfEpoch bool,
+) error {
+	return nil
+}
+
 func (b *beaconCommitteeStateBase) turnOffStopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
 	b.autoStake[publicKey] = false
 	committeeChange.AddStopAutoStake(publicKey)
@@ -519,8 +590,13 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 		b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 		b.autoStake[committeePublicKey] = stakeInstruction.AutoStakingFlag[index]
 		b.stakingTx[committeePublicKey] = stakeInstruction.TxStakeHashes[index]
+		b.delegate[committeePublicKey] = stakeInstruction.DelegateList[index]
 	}
-	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
+	if stakeInstruction.Chain == instruction.BEACON_INST {
+		committeeChange.CurrentEpochBeaconCandidateAdded = append(committeeChange.CurrentEpochBeaconCandidateAdded, stakeInstruction.PublicKeyStructs...)
+	} else {
+		committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
+	}
 
 	return committeeChange, err
 }
@@ -579,7 +655,7 @@ func SnapshotShardCommonPoolV2(
 	return numberOfAssignedCandidates
 }
 
-//Upgrade upgrade committee engine by version
+// Upgrade upgrade committee engine by version
 func (b beaconCommitteeStateBase) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	panic("Implement this function")
 }

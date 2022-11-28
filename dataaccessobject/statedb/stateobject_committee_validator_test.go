@@ -11,7 +11,7 @@ import (
 
 func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from, to int) (common.Hash, map[common.Hash]*CommitteeState) {
 	m := make(map[common.Hash]*CommitteeState)
-	m1 := make(map[common.Hash]*StakerInfo)
+	m1 := make(map[common.Hash]*ShardStakerInfo)
 	tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	if err != nil {
 		panic(err)
@@ -26,7 +26,7 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 			panic(err)
 		}
 		key1 := GetStakerInfoKey(keyBytes)
-		stakerInfo := NewStakerInfoWithValue(
+		stakerInfo := NewShardStakerInfoWithValue(
 			receiverPaymentAddressStructs[0],
 			true,
 			txHashes[0],

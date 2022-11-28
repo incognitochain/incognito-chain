@@ -587,7 +587,7 @@ func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string,
 		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 	}
 
-	validPublicKeys := beaconBestState.GetValidStakers(publicKeys)
+	validPublicKeys := beaconBestState.GetValidStakers(publicKeys, false)
 
 	return validPublicKeys, nil
 }
@@ -732,6 +732,29 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 		}
 	}
 	return rewardAmountResult, nil
+}
+
+func (blockService BlockService) ListStakerRewardAmount() (
+	res map[string]struct {
+		Available map[common.Hash]uint64
+		Locked    map[common.Hash]uint64
+	},
+	err error,
+) {
+	res = make(map[string]struct {
+		Available map[common.Hash]uint64
+		Locked    map[common.Hash]uint64
+	})
+	beaconBestState := blockService.BlockChain.GetBeaconBestState()
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
+		shardID := byte(i)
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
+		committeeReward := statedb.ListStakerReward(committeeRewardStateDB)
+		for k, v := range committeeReward {
+			res[k] = v
+		}
+	}
+	return res, nil
 }
 
 func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]uint64, error) {
