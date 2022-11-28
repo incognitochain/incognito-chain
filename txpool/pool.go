@@ -472,6 +472,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	}()
 	limitTxAction := map[int]int{}
 	for {
+		time.Sleep(time.Millisecond * 10)
 		select {
 		case <-ctx.Done():
 			return res
@@ -482,7 +483,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
 				removeNilTx(&res)
-				return res
+				continue
 			}
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
 			if curSize+txDetails.Size > maxSize {
@@ -521,7 +522,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
-			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
+			Logger.Infof("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
 			for k := range removeIdx {
 				res[k] = nil
 			}
@@ -533,7 +534,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			}
 		case <-ctx.Done():
 			stopCh <- nil
-			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
+			Logger.Infof("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
 			removeNilTx(&res)
 			return res
 		}
