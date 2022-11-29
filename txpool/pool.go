@@ -511,10 +511,10 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				sView.GetBeaconHeight(),
 			)
 			if !ok || err != nil {
-				Logger.Errorf("[txTracing]Validate tx %v return error %v\n", txDetails.Hash, err)
+				Logger.Info("[txTracing]Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
-			Logger.Debugf("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
+			Logger.Infof("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
 			isDoubleSpend, needToReplace, removedInfo, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
 			if isDoubleSpend && !needToReplace {
 				continue

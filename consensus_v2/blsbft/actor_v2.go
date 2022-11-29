@@ -592,10 +592,15 @@ func (a *actorV2) run() error {
 
 				latestBlockInCurrentTS := a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				noProposeBlockInCurrentTS := func() bool {
-					if a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())+1 && bestView.PastHalfTimeslot(time.Now().Unix()) {
-						if len(a.GetSortedReceiveBlockByHeight(bestView.GetHeight()+1)) == 0 {
+					if a.currentTimeSlot != bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) && bestView.PastHalfTimeslot(time.Now().Unix()) {
+						blks := a.GetSortedReceiveBlockByHeight(bestView.GetHeight() + 1)
+						if len(blks) == 0 {
 							return true
 						}
+						if a.currentTimeSlot == bestView.CalculateTimeSlot(blks[0].block.GetProposeTime()) {
+							return false
+						}
+						return true
 					}
 					return false
 				}
