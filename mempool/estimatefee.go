@@ -156,12 +156,15 @@ type FeeEstimator struct {
 
 	// min fee per transaction
 	minFeePerTx uint64
+
+	// specified fee for special transactions
+	specifiedFeeTx uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee, minFeePerTx uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee, minFeePerTx, specifiedFeeTx uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -172,6 +175,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee, minFeePe
 		dropped:             make([]*registeredBlock, 0, maxRollback),
 		limitFee:            limitFee,
 		minFeePerTx:         minFeePerTx,
+		specifiedFeeTx:      specifiedFeeTx,
 	}
 }
 
@@ -805,4 +809,9 @@ func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
 // returns the min fee per tx
 func (ef FeeEstimator) GetMinFeePerTx() uint64 {
 	return ef.minFeePerTx
+}
+
+// returns the specified fee tx
+func (ef FeeEstimator) GetSpecifiedFeeTx() uint64 {
+	return ef.specifiedFeeTx
 }

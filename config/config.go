@@ -90,10 +90,11 @@ type config struct {
 	FastStartup bool `mapstructure:"fast_start_up" long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 
 	//Txpool config
-	TxPoolTTL   uint   `mapstructure:"tx_pool_ttl" long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
-	TxPoolMaxTx uint64 `mapstructure:"tx_pool_max_tx" long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
-	LimitFee    uint64 `mapstructure:"limit_fee" long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
-	MinFeePerTx uint64 `mapstructure:"min_fee_per_tx" long:"minfeepertx" description:"Required minimum fee per tx, default is 0.1 PRV"`
+	TxPoolTTL         uint   `mapstructure:"tx_pool_ttl" long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
+	TxPoolMaxTx       uint64 `mapstructure:"tx_pool_max_tx" long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
+	LimitFee          uint64 `mapstructure:"limit_fee" long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
+	MinFeePerTx       uint64 `mapstructure:"min_fee_per_tx" long:"minfeepertx" description:"Required minimum fee per tx, default is 0.1 PRV"`
+	SpecifiedFeePerTx uint64 `mapstructure:"specified_fee_per_tx" long:"specifiedfeepertx" description:"Specified fee for some txs, default is 10 PRV"`
 
 	//Mempool config
 	IsLoadFromMempool bool `mapstructure:"is_load_from_mem_pool" long:"loadmempool" description:"Load transactions from Mempool database"`

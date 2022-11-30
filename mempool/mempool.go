@@ -468,6 +468,12 @@ func (tp *TxPool) checkFees(
 	txType := tx.GetType()
 	limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
 	minFeePerTx := tp.config.FeeEstimator[shardID].GetMinFeePerTx()
+	specifiedFeeTx := tp.config.FeeEstimator[shardID].GetSpecifiedFeeTx()
+
+	// set min fee for specified tx metadata types
+	if tx.GetMetadata() != nil && metadataCommon.IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
+		minFeePerTx = specifiedFeeTx
+	}
 
 	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
 		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainID])

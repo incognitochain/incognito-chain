@@ -23,6 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -525,11 +526,17 @@ func (txService TxService) EstimateFee(
 	if txService.Wallet != nil {
 		estimateFeeCoinPerKb += uint64(txService.Wallet.GetConfig().IncrementalFee)
 	}
+
 	limitFee := uint64(0)
 	minFeePerTx := uint64(0)
+	specifiedFeeTx := uint64(0)
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFeeForNativeToken()
 		minFeePerTx = feeEstimator.GetMinFeePerTx()
+		specifiedFeeTx = feeEstimator.GetSpecifiedFeeTx()
+	}
+	if metadata != nil && metadataCommon.IsSpecifiedFeeMetaType(metadata.GetType()) && minFeePerTx < specifiedFeeTx {
+		minFeePerTx = specifiedFeeTx
 	}
 	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(version, len(candidatePlainCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)

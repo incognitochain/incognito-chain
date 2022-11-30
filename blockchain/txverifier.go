@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -103,6 +104,13 @@ func (v *TxsVerifier) checkFees(
 	txType := tx.GetType()
 	limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
 	minFeePerTx := v.feeEstimator.GetMinFeePerTx()
+	specifiedFeeTx := v.feeEstimator.GetSpecifiedFeeTx()
+
+	// set min fee for specified tx metadata types
+	if tx.GetMetadata() != nil && metadataCommon.IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
+		minFeePerTx = specifiedFeeTx
+	}
+
 	if txType == common.TxCustomTokenPrivacyType {
 		// check transaction fee for meta data
 		meta := tx.GetMetadata()
