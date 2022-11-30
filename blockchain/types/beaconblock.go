@@ -250,6 +250,9 @@ func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
 func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData
 }
+func (beaconBlock *BeaconBlock) SetValidationField(valData string) {
+	beaconBlock.ValidationData = valData
+}
 
 func (beaconBlock BeaconBlock) GetRound() int {
 	return beaconBlock.Header.Round

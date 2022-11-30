@@ -3,6 +3,9 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/config"
+	"log"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,6 +21,7 @@ type ProposeBlockInfo struct {
 	block                   types.BlockInterface
 	ReceiveTime             time.Time
 	Committees              []incognitokey.CommitteePublicKey
+	NumberOfFixNode         int
 	SigningCommittees       []incognitokey.CommitteePublicKey
 	UserKeySet              []signatureschemes2.MiningKey
 	Votes                   map[string]*BFTVote //pk->BFTVote
@@ -46,6 +50,46 @@ func NewProposeBlockInfo() *ProposeBlockInfo {
 	return &ProposeBlockInfo{}
 }
 
+func GetLatestReduceFixNodeVersion() int {
+	if v, ok := config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE]; ok {
+		return int(v)
+	}
+
+	if v, ok := config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE_V2]; ok {
+		return int(v)
+	}
+
+	if v, ok := config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE_V3]; ok {
+		return int(v)
+	}
+
+	return 0
+}
+func (p *ProposeBlockInfo) ValidateFixNodeMajority() bool {
+	redduceFixNodeVersion := GetLatestReduceFixNodeVersion()
+	if redduceFixNodeVersion == 0 || p.block.GetVersion() < redduceFixNodeVersion {
+		return true
+	}
+
+	if p.NumberOfFixNode == 0 {
+		log.Println("Not set NumberOfFixNode yet")
+		return false
+	}
+	cnt := 0
+	for i := 0; i < p.NumberOfFixNode; i++ {
+		cpk := p.SigningCommittees[i]
+		if v, ok := p.Votes[cpk.GetMiningKeyBase58(consensusName)]; ok {
+			if v.IsValid == 1 {
+				cnt++
+			}
+		}
+	}
+	if cnt > 2*p.NumberOfFixNode/3 {
+		return true
+	}
+	return false
+}
+
 func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 	type Alias ProposeBlockInfo
 	if p.block.Type() == common.BeaconChainKey {
@@ -61,6 +105,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.ReceiveTime = tempBeaconBlock.Alias.ReceiveTime
 		p.Committees = tempBeaconBlock.Alias.Committees
 		p.SigningCommittees = tempBeaconBlock.Alias.SigningCommittees
+		p.NumberOfFixNode = tempBeaconBlock.Alias.NumberOfFixNode
 		p.UserKeySet = tempBeaconBlock.Alias.UserKeySet
 		p.IsValid = tempBeaconBlock.Alias.IsValid
 		p.HasNewVote = true //force check 2/3+1 after init
@@ -89,6 +134,7 @@ func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
 		p.ReceiveTime = tempShardBlock.Alias.ReceiveTime
 		p.Committees = tempShardBlock.Alias.Committees
 		p.SigningCommittees = tempShardBlock.Alias.SigningCommittees
+		p.NumberOfFixNode = tempShardBlock.Alias.NumberOfFixNode
 		p.UserKeySet = tempShardBlock.Alias.UserKeySet
 		p.IsValid = tempShardBlock.Alias.IsValid
 		p.HasNewVote = true //force check 2/3+1 after init
@@ -120,6 +166,7 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				ReceiveTime:             p.ReceiveTime,
 				Committees:              p.Committees,
 				SigningCommittees:       p.SigningCommittees,
+				NumberOfFixNode:         p.NumberOfFixNode,
 				UserKeySet:              p.UserKeySet,
 				IsValid:                 p.IsValid,
 				HasNewVote:              p.HasNewVote,
@@ -150,6 +197,7 @@ func (p *ProposeBlockInfo) MarshalJSON() ([]byte, error) {
 				ReceiveTime:             p.ReceiveTime,
 				Committees:              p.Committees,
 				SigningCommittees:       p.SigningCommittees,
+				NumberOfFixNode:         p.NumberOfFixNode,
 				UserKeySet:              p.UserKeySet,
 				IsValid:                 p.IsValid,
 				HasNewVote:              p.HasNewVote,
@@ -181,6 +229,7 @@ func newProposeBlockForProposeMsgLemma2(
 	userKeySet []signatureschemes2.MiningKey,
 	proposerMiningKeyBase58 string,
 	isValidLemma2 bool,
+	numberOfFixNode int,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
 		block:                   block,
@@ -188,6 +237,7 @@ func newProposeBlockForProposeMsgLemma2(
 		Votes:                   make(map[string]*BFTVote),
 		Committees:              incognitokey.DeepCopy(committees),
 		SigningCommittees:       incognitokey.DeepCopy(signingCommittees),
+		NumberOfFixNode:         numberOfFixNode,
 		UserKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
 		ProposerMiningKeyBase58: proposerMiningKeyBase58,
 		IsValidLemma2Proof:      isValidLemma2,
@@ -255,7 +305,7 @@ func (f *FinalityProof) Verify(
 	return nil
 }
 
-//previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
+// previousblockhash, producerTimeslot, Producer, proposerTimeslot, Proposer roothash
 type ReProposeBlockInfo struct {
 	PreviousBlockHash common.Hash
 	Producer          string

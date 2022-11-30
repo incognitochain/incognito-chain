@@ -53,7 +53,7 @@ func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
 	return false
 }
 
-//VoteValidBlock this function should be use to vote for valid block only
+// VoteValidBlock this function should be use to vote for valid block only
 func (a *actorV3) sendVote(
 	proposeBlockInfo *ProposeBlockInfo, phase string,
 ) error {

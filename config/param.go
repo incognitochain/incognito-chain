@@ -54,6 +54,9 @@ type param struct {
 	BscContractAddressStr            string                       `mapstructure:"bsc_contract_address" description:"smart contract of BSC for bridge"`
 	PlgContractAddressStr            string                       `mapstructure:"plg_contract_address" description:"smart contract of PLG for bridge"`
 	FtmContractAddressStr            string                       `mapstructure:"ftm_contract_address" description:"smart contract of FTM for bridge"`
+	AuroraContractAddressStr         string                       `mapstructure:"aurora_contract_address" description:"smart contract of AUR for bridge"`
+	AvaxContractAddressStr           string                       `mapstructure:"avax_contract_address" description:"smart contract of AVX for bridge"`
+	NearContractAddressStr           string                       `mapstructure:"near_contract_address" description:"smart contract of NEAR for bridge"`
 	IncognitoDAOAddress              string                       `mapstructure:"dao_address"`
 	CentralizedWebsitePaymentAddress string                       `mapstructure:"centralized_website_payment_address" description:"centralized website's pubkey"`
 	SwapCommitteeParam               swapCommitteeParam           `mapstructure:"swap_committee_param"`
@@ -71,6 +74,9 @@ type param struct {
 	BSCParam                         bscParam                     `mapstructure:"bsc_param"`
 	PLGParam                         plgParam                     `mapstructure:"plg_param"`
 	FTMParam                         ftmParam                     `mapstructure:"ftm_param"`
+	AURORAParam                      auroraParam                  `mapstructure:"aurora_param"`
+	AVAXParam                        avaxParam                    `mapstructure:"avax_param"`
+	NEARParam                        nearParam                    `mapstructure:"near_param"`
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
@@ -78,10 +84,10 @@ type param struct {
 	FeatureVersion                   map[string]int64             `mapstructure:"feature_version"`
 	TransactionInBlockParam          TxsPerBlock                  `mapstructure:"transactions_param"`
 	AutoEnableFeature                map[string]AutoEnableFeature `mapstructure:"auto_enable_feature"`
-	IsBackup                         bool
-	PRVERC20ContractAddressStr       string `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
-	PRVBEP20ContractAddressStr       string `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
-	BCHeightBreakPointCoinOrigin     uint64 `mapstructure:"bc_height_break_point_coin_origin"`
+	IsBackup                         bool                         `mapstructure:"is_backup"`
+	PRVERC20ContractAddressStr       string                       `mapstructure:"prv_erc20_contract_address" description:"smart contract of prv erc20"`
+	PRVBEP20ContractAddressStr       string                       `mapstructure:"prv_bep20_contract_address" description:"smart contract of prv bep20"`
+	BCHeightBreakPointCoinOrigin     uint64                       `mapstructure:"bc_height_break_point_coin_origin"`
 }
 
 type genesisParam struct {
@@ -98,19 +104,21 @@ type genesisParam struct {
 	SelectShardNodeSerializedPubkeyV2           map[uint64][]string
 	PreSelectShardNodeSerializedPaymentAddress  []string
 	SelectShardNodeSerializedPaymentAddressV2   map[uint64][]string
+	AllFoundationNode                           map[string]bool
 }
 
 type committeeSize struct {
-	MaxShardCommitteeSize            int            `mapstructure:"max_shard_committee_size"`
-	MinShardCommitteeSize            int            `mapstructure:"min_shard_committee_size"`
-	MaxBeaconCommitteeSize           int            `mapstructure:"max_beacon_committee_size"`
-	MinBeaconCommitteeSize           int            `mapstructure:"min_beacon_committee_size"`
-	InitShardCommitteeSize           int            `mapstructure:"init_shard_committee_size"`
-	InitBeaconCommitteeSize          int            `mapstructure:"init_beacon_committee_size"`
-	ShardCommitteeSizeKeyListV2      int            `mapstructure:"shard_committee_size_key_list_v2"`
-	BeaconCommitteeSizeKeyListV2     int            `mapstructure:"beacon_committee_size_key_list_v2"`
-	NumberOfFixedShardBlockValidator int            `mapstructure:"number_of_fixed_shard_block_validators"`
-	IncreaseMaxShardCommitteeSize    map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
+	MaxShardCommitteeSize              int            `mapstructure:"max_shard_committee_size"`
+	MinShardCommitteeSize              int            `mapstructure:"min_shard_committee_size"`
+	MaxBeaconCommitteeSize             int            `mapstructure:"max_beacon_committee_size"`
+	MinBeaconCommitteeSize             int            `mapstructure:"min_beacon_committee_size"`
+	InitShardCommitteeSize             int            `mapstructure:"init_shard_committee_size"`
+	InitBeaconCommitteeSize            int            `mapstructure:"init_beacon_committee_size"`
+	ShardCommitteeSizeKeyListV2        int            `mapstructure:"shard_committee_size_key_list_v2"`
+	BeaconCommitteeSizeKeyListV2       int            `mapstructure:"beacon_committee_size_key_list_v2"`
+	NumberOfFixedShardBlockValidator   int            `mapstructure:"number_of_fixed_shard_block_validators"`
+	NumberOfFixedShardBlockValidatorV2 int            `mapstructure:"number_of_fixed_shard_validators_v2"`
+	IncreaseMaxShardCommitteeSize      map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
 type blockTime struct {
@@ -229,6 +237,10 @@ func verifyParam(p *param) error {
 			p.EpochParam.RandomTime, p.EpochParam.NumberOfBlockInEpoch)
 	}
 
+	if p.CommitteeSize.NumberOfFixedShardBlockValidatorV2 == 0 {
+		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2")
+	}
+
 	return nil
 }
 
@@ -282,11 +294,13 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 		panic(err)
 	}
 
+	p.GenesisParam.AllFoundationNode = make(map[string]bool)
 	for i := 0; i < p.CommitteeSize.InitBeaconCommitteeSize; i++ {
 		p.GenesisParam.PreSelectBeaconNodeSerializedPubkey =
 			append(p.GenesisParam.PreSelectBeaconNodeSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
 		p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress =
 			append(p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		p.GenesisParam.AllFoundationNode[keylist.Beacon[i].CommitteePublicKey] = true
 	}
 
 	for i := 0; i < p.ActiveShards; i++ {
@@ -295,6 +309,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 				append(p.GenesisParam.PreSelectShardNodeSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
 			p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress =
 				append(p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			p.GenesisParam.AllFoundationNode[keylist.Shard[i][j].CommitteePublicKey] = true
 		}
 	}
 	for _, v := range keylistV2 {
@@ -303,6 +318,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 				append(p.GenesisParam.SelectBeaconNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].CommitteePublicKey)
 			p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
 				append(p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].PaymentAddress)
+			p.GenesisParam.AllFoundationNode[v.Beacon[i].CommitteePublicKey] = true
 		}
 		for i := 0; i < p.ActiveShards; i++ {
 			for j := 0; j < p.CommitteeSize.ShardCommitteeSizeKeyListV2; j++ {
@@ -310,6 +326,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 					append(p.GenesisParam.SelectShardNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].CommitteePublicKey)
 				p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
 					append(p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].PaymentAddress)
+				p.GenesisParam.AllFoundationNode[v.Shard[i][j].CommitteePublicKey] = true
 			}
 		}
 	}
@@ -360,6 +377,36 @@ type ftmParam struct {
 func (ftmParam *ftmParam) GetFromEnv() {
 	if utils.GetEnv(FTMHostKey, utils.EmptyString) != utils.EmptyString {
 		ftmParam.Host = []string{utils.GetEnv(FTMHostKey, utils.EmptyString)}
+	}
+}
+
+type auroraParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (auroraParam *auroraParam) GetFromEnv() {
+	if utils.GetEnv(AURORAHostKey, utils.EmptyString) != utils.EmptyString {
+		auroraParam.Host = []string{utils.GetEnv(AURORAHostKey, utils.EmptyString)}
+	}
+}
+
+type avaxParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (avaxParam *avaxParam) GetFromEnv() {
+	if utils.GetEnv(AVAXHostKey, utils.EmptyString) != utils.EmptyString {
+		avaxParam.Host = []string{utils.GetEnv(AVAXHostKey, utils.EmptyString)}
+	}
+}
+
+type nearParam struct {
+	Host []string `mapstructure:"host"`
+}
+
+func (nearParam *nearParam) GetFromEnv() {
+	if utils.GetEnv(NEARHostKey, utils.EmptyString) != utils.EmptyString {
+		nearParam.Host = []string{utils.GetEnv(NEARHostKey, utils.EmptyString)}
 	}
 }
 

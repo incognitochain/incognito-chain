@@ -47,7 +47,6 @@ var HttpHandler = map[string]httpHandler{
 	// getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
 	//backup and preload
-	setBackup:       (*HttpServer).handleSetBackup,
 	getLatestBackup: (*HttpServer).handleGetLatestBackup,
 	// block
 	getBestBlock:                (*HttpServer).handleGetBestBlock,
@@ -101,19 +100,21 @@ var HttpHandler = map[string]httpHandler{
 	hasSerialNumbersInMempool:                 (*HttpServer).handleHasSerialNumbersInMempool,
 
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
-	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
-	unlockMempool:              (*HttpServer).handleUnlockMempool,
-	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
-	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
-	sendFinishSync:             (*HttpServer).handleSendFinishSync,
-	setAutoEnableFeatureConfig: (*HttpServer).handleSetAutoEnableFeatureConfig,
-	getAutoEnableFeatureConfig: (*HttpServer).handleGetAutoEnableFeatureConfig,
-	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
-	convertPaymentAddress:      (*HttpServer).handleConvertPaymentAddress,
-	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
-	getDetailBlocksOfEpoch:     (*HttpServer).handleGetDetailBlocksOfEpoch,
-	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
+	getAndSendTxsFromFile:              (*HttpServer).handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2:            (*HttpServer).handleGetAndSendTxsFromFileV2,
+	unlockMempool:                      (*HttpServer).handleUnlockMempool,
+	handleGetConsensusInfoV3:           (*HttpServer).handleGetConsensusInfoV3,
+	getAutoStakingByHeight:             (*HttpServer).handleGetAutoStakingByHeight,
+	sendFinishSync:                     (*HttpServer).handleSendFinishSync,
+	setAutoEnableFeatureConfig:         (*HttpServer).handleSetAutoEnableFeatureConfig,
+	getAutoEnableFeatureConfig:         (*HttpServer).handleGetAutoEnableFeatureConfig,
+	getCommitteeState:                  (*HttpServer).handleGetCommitteeState,
+	convertPaymentAddress:              (*HttpServer).handleConvertPaymentAddress,
+	getTotalBlockInEpoch:               (*HttpServer).handleGetTotalBlockInEpoch,
+	getDetailBlocksOfEpoch:             (*HttpServer).handleGetDetailBlocksOfEpoch,
+	getCommitteeStateByShard:           (*HttpServer).handleGetCommitteeStateByShard,
+	getShardCommitteeStateByBeaconHash: (*HttpServer).handleGetShardCommitteeFromBeaconHash,
+
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
 	getFinalityProof:           (*HttpServer).handleGetFinalityProof,
@@ -125,7 +126,8 @@ var HttpHandler = map[string]httpHandler{
 	getConsensusData:           (*HttpServer).handleGetConsensusData,
 	getProposerIndex:           (*HttpServer).handleGetProposerIndex,
 	resetCache:                 (*HttpServer).handleResetCache,
-	handleTestValidate:         (*HttpServer).handleTestValidate,
+	testValidate:               (*HttpServer).handleTestValidate,
+	stallInsert:                (*HttpServer).handleStallInsert,
 	//=================================
 
 	// Beststate
@@ -196,6 +198,12 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningPLGRequest:        (*HttpServer).handleCreateAndSendBurningPLGRequest,
 	createAndSendTxWithIssuingFTMReq:      (*HttpServer).handleCreateAndSendTxWithIssuingFTMReq,
 	createAndSendBurningFTMRequest:        (*HttpServer).handleCreateAndSendBurningFTMRequest,
+	createAndSendTxWithIssuingAURORAReq:   (*HttpServer).handleCreateAndSendTxWithIssuingAURORAReq,
+	createAndSendTxWithIssuingAVAXReq:     (*HttpServer).handleCreateAndSendTxWithIssuingAVAXReq,
+	createAndSendBurningAURORARequest:     (*HttpServer).handleCreateAndSendBurningAURORARequest,
+	createAndSendBurningAVAXRequest:       (*HttpServer).handleCreateAndSendBurningAVAXRequest,
+	createAndSendTxWithIssuingNearReq:     (*HttpServer).handleCreateAndSendTxWithIssuingNearReq,
+	createAndSendBurningNearRequest:       (*HttpServer).handleCreateAndSendBurningNearRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -208,6 +216,9 @@ var HttpHandler = map[string]httpHandler{
 	getPRVBEP20BurnProof:     (*HttpServer).handleGetPRVBEP20BurnProof,
 	getPLGBurnProof:          (*HttpServer).handleGetPLGBurnProof,
 	getFTMBurnProof:          (*HttpServer).handleGetFTMBurnProof,
+	getAURORABurnProof:       (*HttpServer).handleGetAURORABurnProof,
+	getAVAXBurnProof:         (*HttpServer).handleGetAVAXBurnProof,
+	getNearBurnProof:         (*HttpServer).handleGetNearBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -354,15 +365,19 @@ var HttpHandler = map[string]httpHandler{
 	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
-	getBurnProofForDepositToSC:                    (*HttpServer).handleGetBurnProofForDepositToSC,
-	getBurnPBSCProofForDepositToSC:                (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
-	createAndSendBurningForDepositToSCRequest:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
-	createAndSendBurningForDepositToSCRequestV2:   (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
-	createAndSendBurningPBSCForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
-	getBurnPLGProofForDepositToSC:                 (*HttpServer).handleGetBurnPLGProofForDepositToSC,
-	createAndSendBurningPLGForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
-	createAndSendBurningFTMForDepositToSCRequest:  (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
-	getBurnFTMProofForDepositToSC:                 (*HttpServer).handleGetBurnFTMProofForDepositToSC,
+	getBurnProofForDepositToSC:                      (*HttpServer).handleGetBurnProofForDepositToSC,
+	getBurnPBSCProofForDepositToSC:                  (*HttpServer).handleGetBurnPBSCProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest:       (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+	createAndSendBurningForDepositToSCRequestV2:     (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
+	createAndSendBurningPBSCForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningPBSCForDepositToSCRequest,
+	getBurnPLGProofForDepositToSC:                   (*HttpServer).handleGetBurnPLGProofForDepositToSC,
+	createAndSendBurningPLGForDepositToSCRequest:    (*HttpServer).handleCreateAndSendBurningPLGForDepositToSCRequest,
+	createAndSendBurningFTMForDepositToSCRequest:    (*HttpServer).handleCreateAndSendBurningFTMForDepositToSCRequest,
+	getBurnFTMProofForDepositToSC:                   (*HttpServer).handleGetBurnFTMProofForDepositToSC,
+	createAndSendBurningAURORAForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningAURORAForDepositToSCRequest,
+	getBurnAURORAProofForDepositToSC:                (*HttpServer).handleGetBurnAURORAProofForDepositToSC,
+	createAndSendBurningAVAXForDepositToSCRequest:   (*HttpServer).handleCreateAndSendBurningAVAXForDepositToSCRequest,
+	getBurnAVAXProofForDepositToSC:                  (*HttpServer).handleGetBurnAVAXProofForDepositToSC,
 
 	//feature stat
 	getFeatureStats: (*HttpServer).hanldeGetFeatureStats,

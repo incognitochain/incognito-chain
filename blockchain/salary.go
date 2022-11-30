@@ -1,9 +1,7 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
-	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -929,41 +927,16 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 func (blockchain *BlockChain) GetBlockTimeByBlockVersion(blkVersion int) (int64, error) {
 	blockTimeMap := config.Param().BlockTimeParam
 	defaultBlockTime := blockTimeMap[BLOCKTIME_DEFAULT]
-	blockVersionEnableFeature := map[string]int{}
-	sortBlockVersionEnableFeature := []string{}
 
-	//from TriggeredFeature in beacon beststate, we extract feature that related to adjusting block time
-	for feature, enableBlockHeight := range blockchain.BeaconChain.GetBestView().(*BeaconBestState).TriggeredFeature {
-		if _, ok := config.Param().BlockTimeParam[feature]; ok {
-			beaconBlock, err := blockchain.GetBeaconBlockByHeightV1(enableBlockHeight)
-			if err != nil {
-				return 0, fmt.Errorf("Cannot find beacon block %v", enableBlockHeight)
-			}
-			blockVersionEnableFeature[feature] = beaconBlock.GetVersion() //this is version before adjusting block time
-			sortBlockVersionEnableFeature = append(sortBlockVersionEnableFeature, feature)
+	blockTime := defaultBlockTime
+	for _, anchor := range blockchain.GetBeaconBestState().TSManager.Anchors {
+		if config.Param().FeatureVersion[anchor.Feature] > int64(blkVersion) {
+			break
 		}
+		blockTime = int64(anchor.Timeslot)
 	}
 
-	//then sort by version
-	sort.Slice(sortBlockVersionEnableFeature, func(i, j int) bool {
-		if blockVersionEnableFeature[sortBlockVersionEnableFeature[i]] > blockVersionEnableFeature[sortBlockVersionEnableFeature[j]] {
-			return true
-		}
-		return false
-	})
-
-	//return the corresponding blocktime of blkVersion
-	for _, feature := range sortBlockVersionEnableFeature {
-		if blkVersion > blockVersionEnableFeature[feature] { //version must be greater than the version before adjusting
-			if t, ok := blockTimeMap[feature]; !ok {
-				return 0, fmt.Errorf("Cannot find block time param %v", feature)
-			} else {
-				return t, nil
-			}
-		}
-	}
-
-	return defaultBlockTime, nil
+	return blockTime, nil
 }
 
 func (blockchain *BlockChain) GetBasicRewardByVersion(version int) (uint64, error) {

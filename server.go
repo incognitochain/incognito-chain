@@ -349,6 +349,7 @@ func (serverObj *Server) NewServer(
 	serverObj.Pruner = p
 	for sid := 0; sid < serverObj.GetActiveShardNumber(); sid++ {
 		serverObj.Pruner.SetShardInsertLock(sid, serverObj.blockChain.ShardChain[sid].GetInsertLock())
+		serverObj.Pruner.SetShardBlockStorage(sid, serverObj.blockChain.ShardChain[sid].BlockStorage)
 	}
 	go serverObj.Pruner.Start()
 

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
@@ -181,6 +180,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 
+	//backup if finalized block is created recently and satisfy interval period
+	if config.Config().Backup && beaconBlock.GetProposeTime() >= int64(time.Now().Unix()-20) && beaconBlock.GetFinalityHeight() == beaconBlock.GetHeight() {
+		go blockchain.BackupManager.Backup(beaconBlock.GetHeight())
+	}
+
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
@@ -211,16 +215,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	startTimeVerifyPreProcessingBeaconBlock := time.Now()
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
-	parentBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), previousBlockHash)
+	preBlk, _, err := blockchain.BeaconChain.BlockStorage.GetBlock(previousBlockHash)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
+	previousBeaconBlock := preBlk.(*types.BeaconBlock)
 
-	previousBeaconBlock := types.NewBeaconBlock()
-	err = json.Unmarshal(parentBlockBytes, previousBeaconBlock)
-	if err != nil {
-		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed to unmarshall parent block of block height %+v", beaconBlock.Header.Height))
-	}
 	if (beaconBlock.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height) && (beaconBlock.GetBeaconHeight() > 2) {
 		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 			return err
@@ -403,7 +403,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		return err
 	}
 	if isVerifySig {
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee()); err != nil {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee(), beaconBestState.GetProposerLength()); err != nil {
 			return err
 		}
 	}
@@ -588,6 +588,20 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 				}
+
+				//update NumberOfFixedShardBlockValidatorV2
+				switch feature {
+				case REDUCE_FIX_NODE:
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				case REDUCE_FIX_NODE_V2:
+					SFV3_MinShardCommitteeSize = 4
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				case REDUCE_FIX_NODE_V3:
+					SFV3_MinShardCommitteeSize = 4
+					beaconBestState.MinShardCommitteeSize = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				}
+
 			}
 		}
 	}
@@ -603,7 +617,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	//checkpoint timeslot
 	curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
 	for feature, _ := range config.Param().BlockTimeParam {
-
 		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == beaconBlock.GetHeight() {
 				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
@@ -795,10 +808,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardStates map[byte][]types.ShardState) error {
 	for shardID, shardStates := range allShardStates {
-		cache, err := lru.New(1000)
-		if err != nil {
-			return err
-		}
 		for _, shardState := range shardStates {
 			// skip genesis block
 			if shardState.Height == 1 {
@@ -810,7 +819,7 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 					return err
 				}
 			} else {
-				err := curView.countMissingSignatureV2(cache, bc, shardID, shardState)
+				err := curView.countMissingSignatureV2(bc, shardID, shardState)
 				if err != nil {
 					return err
 				}
@@ -821,7 +830,6 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 }
 
 func (curView *BeaconBestState) countMissingSignatureV2(
-	cache *lru.Cache,
 	bc *BlockChain,
 	shardID byte,
 	shardState types.ShardState,
@@ -830,17 +838,9 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	if beaconHashForCommittee.IsZeroValue() {
 		return nil
 	}
-	committees := []incognitokey.CommitteePublicKey{}
-	var err error
-	tempCommittees, ok := cache.Get(beaconHashForCommittee)
-	if !ok {
-		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID)
-		if err != nil {
-			return err
-		}
-		cache.Add(beaconHashForCommittee, committees)
-	} else {
-		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
+	committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID)
+	if err != nil {
+		return err
 	}
 	if shardState.Version >= types.BLOCK_PRODUCINGV3_VERSION && shardState.Version < types.INSTANT_FINALITY_VERSION_V2 {
 		timeSlot := curView.ShardTSManager[shardID].calculateTimeslot(shardState.ProposerTime)
@@ -877,11 +877,11 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 		return nil
 	}
 
-	shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
+	blk, err := bc.ShardChain[shardID].GetBlockByHash(shardState.Hash)
 	if err != nil {
 		return nil
 	}
-
+	shardBlock := blk.(*types.ShardBlock)
 	committees, err := getOneShardCommitteeFromShardDB(bc.GetShardChainDatabase(shardID), shardID, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		return nil
@@ -1109,6 +1109,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningFantomConfirmMeta),
 		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurnForCallConfirmMeta),
+		strconv.Itoa(metadata.BurningAuroraConfirmMeta),
+		strconv.Itoa(metadata.BurningAuroraConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningAvaxConfirmMeta),
+		strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningNearConfirmMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
@@ -1231,7 +1236,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
+	if err := blockchain.BeaconChain.BlockStorage.StoreBlock(beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
@@ -1247,19 +1252,17 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	storeBlock := newFinalView.GetBlock()
 	finalizedBlocks := []*types.BeaconBlock{}
-
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		//store beacon confirm shard block
 		for shardID, shardStates := range storeBlock.(*types.BeaconBlock).Body.ShardState {
 			for _, shardState := range shardStates {
-				err := rawdbv2.StoreBeaconConfirmInstantFinalityShardBlock(batch, shardID, shardState.Height, shardState.Hash)
+				err := blockchain.BeaconChain.BlockStorage.StoreBeaconConfirmShardBlockByHeight(shardID, shardState.Height, shardState.Hash)
 				if err != nil {
 					return NewBlockChainError(StoreBeaconBlockError, err)
 				}
 			}
 		}
-
-		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
+		err := blockchain.BeaconChain.BlockStorage.StoreFinalizedBeaconBlock(storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
@@ -1298,29 +1301,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	blockchain.BeaconChain.multiView.AddView(newBestState)
 	//update multiview final view
 	for sid, bestShardHash := range newFinalView.(*BeaconBestState).BestShardHash {
-		blockchain.storeFinalizeShardBlockByBeaconView(blockchain.GetShardChainDatabase(sid), sid, bestShardHash)
+		blockchain.storeFinalizeShardBlockByBeaconView(sid, bestShardHash)
 	}
 
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
-
-	if !config.Config().ForceBackup {
-		return nil
-	}
-
-	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
-		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-
-	}
 	return nil
 }
 

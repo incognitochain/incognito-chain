@@ -11,6 +11,7 @@ type ShardMultiView struct {
 func NewShardMultiView() *ShardMultiView {
 	sv := &ShardMultiView{}
 	sv.multiView = NewMultiView()
+	sv.RunCleanProcess()
 	return sv
 }
 

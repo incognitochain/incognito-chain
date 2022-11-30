@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func StoreBeaconRootsHash(db incdb.KeyValueWriter, hash common.Hash, rootsHash interface{}) error {
@@ -106,6 +107,18 @@ func StoreBeaconNextDelegate(db incdb.KeyValueWriter, val []byte) error {
 	return nil
 }
 
+func StoreCacheCommitteeFromBlock(db incdb.KeyValueWriter, hash common.Hash, cid int, cpks []incognitokey.CommitteePublicKey) error {
+	key := GetCacheCommitteeFromBlockKey(hash, cid)
+	b, err := json.Marshal(cpks)
+	if err != nil {
+		return NewRawdbError(StoreCommmitteeFromBlockCacheError, err)
+	}
+	if err := db.Put(key, b); err != nil {
+		return NewRawdbError(StoreBeaconBestStateError, err)
+	}
+	return nil
+}
+
 func GetBeaconNextDelegte(db incdb.KeyValueReader) ([]byte, error) {
 	key := GetBeaconNextDelegateKey()
 	info, err := db.Get(key)
@@ -113,4 +126,47 @@ func GetBeaconNextDelegte(db incdb.KeyValueReader) ([]byte, error) {
 		return nil, NewRawdbError(GetBeaconBestStateError, err)
 	}
 	return info, nil
+}
+
+func GetAllCacheCommitteeFromBlock(db incdb.Database) (map[int]map[common.Hash][]incognitokey.CommitteePublicKey, error) {
+	res := map[int]map[common.Hash][]incognitokey.CommitteePublicKey{}
+	it := db.NewIteratorWithPrefix(cacheCommitteeFromBlockPrefix)
+	for it.Next() {
+		cpks := []incognitokey.CommitteePublicKey{}
+		err := json.Unmarshal(it.Value(), &cpks)
+		if err != nil {
+			return nil, NewRawdbError(GetCommmitteeFromBlockCacheError, err)
+		}
+		key := it.Key()
+		keyData := key[len(cacheCommitteeFromBlockPrefix):]
+
+		h := common.Hash{}
+		err = h.SetBytes(keyData[:32])
+		if err != nil {
+			return nil, NewRawdbError(GetCommmitteeFromBlockCacheError, err)
+		}
+		cid, err := common.BytesToInt32(keyData[32:])
+		if err != nil {
+			return nil, NewRawdbError(GetCommmitteeFromBlockCacheError, err)
+		}
+		if _, ok := res[int(cid)]; !ok {
+			res[int(cid)] = make(map[common.Hash][]incognitokey.CommitteePublicKey)
+		}
+		res[int(cid)][h] = cpks
+	}
+	return res, nil
+}
+
+func GetCacheCommitteeFromBlock(db incdb.Database, hash common.Hash, cid int) ([]incognitokey.CommitteePublicKey, error) {
+	key := GetCacheCommitteeFromBlockKey(hash, cid)
+	b, err := db.Get(key)
+	if err != nil {
+		return nil, NewRawdbError(GetCommmitteeFromBlockCacheError, err)
+	}
+	cpks := []incognitokey.CommitteePublicKey{}
+	err = json.Unmarshal(b, &cpks)
+	if err != nil {
+		return nil, NewRawdbError(GetCommmitteeFromBlockCacheError, err)
+	}
+	return cpks, nil
 }

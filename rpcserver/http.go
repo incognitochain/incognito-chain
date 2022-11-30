@@ -299,8 +299,8 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 			}
 		}
 		if jsonErr == nil {
-			if request.Method == "downloadbackup" {
-				httpServer.handleDownloadBackup(conn, request.Params)
+			if request.Method == getBootstrapStateDB {
+				httpServer.handleGetBootstrapStateDB(conn, request.Params)
 				return
 			}
 

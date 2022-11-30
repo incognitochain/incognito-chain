@@ -11,7 +11,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/config"
@@ -183,22 +182,17 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 	}
 
-	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
+	beaconHash, err := blockchain.BeaconChain.BlockStorage.GetFinalizedBeaconBlock(beaconProcessHeight)
 	if err != nil {
 		Logger.log.Errorf("Beacon block %+v not found", beaconProcessHeight)
 		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
 	}
 
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
+	blk, _, err := blockchain.BeaconChain.BlockStorage.GetBlock(*beaconHash)
 	if err != nil {
 		return nil, err
 	}
-
-	beaconBlock := types.BeaconBlock{}
-	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
-	if err != nil {
-		return nil, err
-	}
+	beaconBlock := blk.(*types.BeaconBlock)
 
 	epoch := beaconBlock.Header.Epoch
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconProcessHeight, shardBestState.BeaconHeight)
@@ -517,6 +511,19 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 			case metadata.IssuingFantomRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingFantomResponseMeta, false)
+				}
+			case metadata.IssuingAuroraRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingAuroraResponseMeta, false)
+				}
+			case metadata.IssuingAvaxRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingAvaxResponseMeta, false)
+				}
+
+			case metadata.IssuingNearRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingNearResponseMeta, false)
 				}
 
 			// portal

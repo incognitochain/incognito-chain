@@ -65,11 +65,9 @@ type Chain interface {
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	InsertWithPrevValidationData(types.BlockInterface, string) error
 	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
-	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 	GetChainDatabase() incdb.Database
-
 	//for new syncker
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64

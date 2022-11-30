@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"time"
@@ -139,6 +140,10 @@ func (shardBestState *ShardBestState) GetBlockTime() int64 {
 
 func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
 	return shardBestState.BestBlock.Header.CommitteeFromBlock
+}
+
+func (shardBestState *ShardBestState) GetTriggeredFeature() map[string]uint64 {
+	return shardBestState.TriggeredFeature
 }
 
 func NewShardBestState() *ShardBestState {
@@ -396,6 +401,10 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 	return tokenIDs
 }
 
+func (shardBestState *ShardBestState) GetBlockVersion() int {
+	return shardBestState.BestBlock.GetVersion()
+}
+
 func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
 	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
@@ -425,7 +434,11 @@ func InitShardCommitteeState(
 		return shardCommitteeState
 	}
 	if shardHeight != 1 {
-		committees, err = bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
+		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(block.Header.CommitteeFromBlock, shardID)
+		if err != nil {
+			log.Println("err", shardID, block.Header.CommitteeFromBlock.String())
+			panic(err)
+		}
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
@@ -526,7 +539,7 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		committees = shardBestState.GetCommittee()
 	} else {
 		committeeFromBlock = shardBestState.BestBlock.CommitteeFromBlock()
-		committees, err = bc.getShardCommitteeFromBeaconHash(committeeFromBlock, shardBestState.ShardID)
+		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(committeeFromBlock, shardBestState.ShardID)
 		if err != nil {
 			return err
 		}
@@ -672,7 +685,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
 	}
 	if shardBlock.Header.Version >= types.MULTI_VIEW_VERSION && shardBlock.Header.Version <= types.LEMMA2_VERSION || shardBlock.Header.Version >= types.INSTANT_FINALITY_VERSION_V2 {
-		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
@@ -680,8 +693,9 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		return committees, signingCommittees, nil
 	}
 	if shardBlock.Header.Version >= types.BLOCK_PRODUCINGV3_VERSION && shardBlock.Header.Version <= types.INSTANT_FINALITY_VERSION {
-		committees, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		committees, err := bc.BeaconChain.CommitteesFromViewHashForShard(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
+			log.Println("error committee from block", shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
 		timeSlot := shardBestState.CalculateTimeSlot(shardBlock.Header.ProposeTime)

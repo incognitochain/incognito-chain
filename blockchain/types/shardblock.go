@@ -378,7 +378,7 @@ func (shardHeader *ShardHeader) String() string {
 	return res
 }
 
-//hash related to consensus
+// hash related to consensus
 func (shardBlock ShardBlock) ProposeHash() *common.Hash {
 	hash := shardBlock.Header.ProposeHash()
 	return &hash
@@ -515,6 +515,9 @@ func (block ShardBlock) GetProducerPubKeyStr() string {
 
 func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
+}
+func (block *ShardBlock) SetValidationField(valData string) {
+	block.ValidationData = valData
 }
 
 func (block ShardBlock) GetVersion() int {

@@ -7,6 +7,7 @@ type BeaconMultiView struct {
 func NewBeaconMultiView() *BeaconMultiView {
 	bv := &BeaconMultiView{}
 	bv.multiView = NewMultiView()
+	bv.RunCleanProcess()
 	return bv
 }
 

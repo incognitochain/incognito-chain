@@ -219,6 +219,27 @@ const (
 	BurnForCallResponseMeta     = metadataCommon.BurnForCallResponseMeta
 	BurnForCallConfirmMeta      = metadataCommon.BurnForCallConfirmMeta
 	IssuingReshieldResponseMeta = metadataCommon.IssuingReshieldResponseMeta
+
+	IssuingAuroraRequestMeta  = metadataCommon.IssuingAuroraRequestMeta
+	IssuingAuroraResponseMeta = metadataCommon.IssuingAuroraResponseMeta
+	BurningAuroraRequestMeta  = metadataCommon.BurningAuroraRequestMeta
+	BurningAuroraConfirmMeta  = metadataCommon.BurningAuroraConfirmMeta
+
+	IssuingAvaxRequestMeta  = metadataCommon.IssuingAvaxRequestMeta
+	IssuingAvaxResponseMeta = metadataCommon.IssuingAvaxResponseMeta
+	BurningAvaxRequestMeta  = metadataCommon.BurningAvaxRequestMeta
+	BurningAvaxConfirmMeta  = metadataCommon.BurningAvaxConfirmMeta
+
+	BurningAuroraForDepositToSCRequestMeta = metadataCommon.BurningAuroraForDepositToSCRequestMeta
+	BurningAuroraConfirmForDepositToSCMeta = metadataCommon.BurningAuroraConfirmForDepositToSCMeta
+
+	BurningAvaxForDepositToSCRequestMeta = metadataCommon.BurningAvaxForDepositToSCRequestMeta
+	BurningAvaxConfirmForDepositToSCMeta = metadataCommon.BurningAvaxConfirmForDepositToSCMeta
+
+	IssuingNearRequestMeta  = metadataCommon.IssuingNearRequestMeta
+	IssuingNearResponseMeta = metadataCommon.IssuingNearResponseMeta
+	BurningNearRequestMeta  = metadataCommon.BurningNearRequestMeta
+	BurningNearConfirmMeta  = metadataCommon.BurningNearConfirmMeta
 )
 
 // export error codes

@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 )
@@ -73,5 +74,11 @@ func (s *AppService) OnShardBlock(sid int, fromBlk uint64, f func(block types.Sh
 			}
 		}
 	}()
+}
 
+func (s *AppService) OnStateDBData(checkpoint string, cid int, dbType int, offset uint64, f func(data blockchain.StateDBData)) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	fullnodeRPC.GetStateDB(checkpoint, cid, dbType, offset, func(dataByte []byte) {
+		//TODO: parse state data and then pass to f
+	})
 }

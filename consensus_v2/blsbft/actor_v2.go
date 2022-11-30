@@ -669,7 +669,7 @@ func (a *actorV2) run() error {
 
 				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
-					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && !v.IsVoted {
+					if err := a.validateBlock(bestView.GetHeight(), v); err == nil && v.IsValid && !v.IsVoted {
 						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
@@ -755,8 +755,8 @@ func (a *actorV2) processIfBlockGetEnoughVote(proposeBlockInfo *ProposeBlockInfo
 	proposeBlockInfo = a.ruleDirector.builder.VoteRule().ValidateVote(proposeBlockInfo)
 
 	if !proposeBlockInfo.IsCommitted {
-		a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees))
-		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 {
+		a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v). Majority: %+v", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees), proposeBlockInfo.ValidateFixNodeMajority())
+		if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 && proposeBlockInfo.ValidateFixNodeMajority() {
 			a.logger.Infof("Commit block %v , height: %v", proposeBlockInfo.block.FullHashString(), proposeBlockInfo.block.GetHeight())
 			var err error
 			if a.chain.IsBeaconChain() {
@@ -1104,8 +1104,7 @@ func (a *actorV2) getCommitteeForNewBlock(
 		committees = a.chain.GetBestView().GetCommittee()
 	} else {
 		previousView := a.chain.GetViewByHash(v.GetPrevHash())
-		committees, err = a.
-			committeeChain.
+		committees, err = a.committeeChain.
 			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(a.chainID))
 		if err != nil {
 			return signingCommittees, committees, err
@@ -1258,13 +1257,12 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 		}
 	}
 
-	previousBlock, err := a.chain.GetBlockByHash(block.GetPrevHash())
-	if err != nil {
+	previousView := a.chain.GetViewByHash(block.GetPrevHash())
+	if previousView == nil {
 		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
 		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
 		return err
 	}
-	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {
 		return errors.New("Receive block create from old view. Rejected!")
@@ -1300,12 +1298,13 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	err = a.handleNewProposeMsg(
 		proposeMsg,
 		block,
-		previousBlock,
+		previousView,
 		committees,
 		signingCommittees,
 		userKeySet,
 		proposerMiningKeyBase58,
 	)
+
 	if err != nil {
 		return err
 	}
@@ -1316,7 +1315,7 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 func (a *actorV2) handleNewProposeMsg(
 	proposeMsg BFTPropose,
 	block types.BlockInterface,
-	previousBlock types.BlockInterface,
+	previousView multiview.View,
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittees []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
@@ -1326,11 +1325,11 @@ func (a *actorV2) handleNewProposeMsg(
 	blockHash := block.ProposeHash().String()
 	env := NewProposeMessageEnvironment(
 		block,
-		previousBlock,
+		previousView.GetBlock(),
 		committees,
 		signingCommittees,
 		userKeySet,
-		a.chain.GetBestView().GetProposerLength(),
+		previousView.GetProposerLength(),
 		proposerPublicBLSMiningKey,
 	)
 
@@ -1388,7 +1387,7 @@ func (a *actorV2) processVoteMessage(voteMsg BFTVote) error {
 				pubKey := userKey.GetPublicKey()
 				if proposeBlockInfo.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.ProposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
-					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil {
+					if err = a.validateBlock(a.chain.GetBestView().GetHeight(), proposeBlockInfo); err == nil && proposeBlockInfo.IsValid {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
 							err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, a.chain.GetPortalParamsV4(0)) // => send vote
@@ -1491,6 +1490,11 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 }
 
 func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) error {
+
+	//not validate if we do it recently
+	if time.Since(proposeBlockInfo.LastValidateTime).Seconds() < 1 {
+		return nil
+	}
 
 	if proposeBlockInfo.IsValid {
 		return nil

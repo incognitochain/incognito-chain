@@ -97,6 +97,18 @@
                 "external_token_id": "0x07de306FF27a2B630B1141956844eB1552B956B5",
                 "network_id": 3
             }
+        },
+        "90a97a01c9f82177cf18b3e39a5d249edaa848b96bf252535b18fb8817f00a3d": {
+            "eb152b6fedaa52dba167f37f1b964d70f54453ff08f956905d5a7645a091f267": {
+                "external_decimal": 6,
+                "external_token_id": "0xCe7F47c42b1E7aC02d90152D56F5417535c48883",
+                "network_id": 5
+            },
+            "019d1492a022133807d587db9c99f31bccb20859c4eafb4587b6863c3b212c4c": {
+                "external_decimal": 18,
+                "external_token_id": "0x2b816ad8CFF495cf6C65a9062d112520d3DbE44B",
+                "network_id": 6
+            }
         }
     }
 }

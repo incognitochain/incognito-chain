@@ -33,6 +33,7 @@ var (
 	beaconSlashRootHashPrefix          = []byte("b-sl" + string(splitter))
 	shardCommitteeRewardRootHashPrefix = []byte("s-cr" + string(splitter))
 	shardConsensusRootHashPrefix       = []byte("s-co" + string(splitter))
+	stakingTxPrefix                    = []byte("st-tx-" + string(splitter))
 	shardTransactionRootHashPrefix     = []byte("s-tx" + string(splitter))
 	shardSlashRootHashPrefix           = []byte("s-sl" + string(splitter))
 	shardFeatureRootHashPrefix         = []byte("s-fe" + string(splitter))
@@ -47,6 +48,8 @@ var (
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
 	pruneStatusPrefix         = []byte("p-s")
+
+	cacheCommitteeFromBlockPrefix = []byte("c-c-f-b" + string(splitter))
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -123,6 +126,20 @@ func GetShardBestStateKey(shardID byte) []byte {
 	return append(temp, shardID)
 }
 
+//
+
+func GetBlockHashToFFIndexKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len(blockHashToFFIndexPrefix))
+	temp = append(temp, blockHashToFFIndexPrefix...)
+	return append(temp, hash[:]...)
+}
+
+func GetBlockHashToValidationDataKey(hash common.Hash) []byte {
+	temp := make([]byte, 0, len(blockHashToValidationDataPrefix))
+	temp = append(temp, blockHashToValidationDataPrefix...)
+	return append(temp, hash[:]...)
+}
+
 // ============================= BEACON =======================================
 func GetBeaconHashToBlockKey(hash common.Hash) []byte {
 	temp := make([]byte, 0, len(beaconHashToBlockPrefix))
@@ -154,6 +171,13 @@ func GetBeaconNextDelegateKey() []byte {
 	temp := make([]byte, 0, len(beaconNextDelegatePrefix))
 	temp = append(temp, beaconNextDelegatePrefix...)
 	return temp
+}
+func GetCacheCommitteeFromBlockKey(hash common.Hash, cid int) []byte {
+	temp := make([]byte, 0, len(cacheCommitteeFromBlockPrefix))
+	temp = append(temp, cacheCommitteeFromBlockPrefix...)
+	temp = append(temp, hash[:]...)
+	buf := common.Int32ToBytes(int32(cid))
+	return append(temp, buf...)
 }
 
 // ============================= Transaction =======================================
@@ -339,6 +363,14 @@ func GetLastBeaconHeightConfirmCrossShardKey() []byte {
 	temp := make([]byte, 0, len(lastBeaconHeightConfirmCrossShard))
 	temp = append(temp, lastBeaconHeightConfirmCrossShard...)
 	return temp
+}
+
+func GetStakingTxKey(shardID byte, hash common.Hash) []byte {
+	temp := make([]byte, 0, len(stakingTxPrefix))
+	temp = append(temp, stakingTxPrefix...)
+	key := append(temp, shardID)
+	key = append(key, hash.Bytes()...)
+	return key
 }
 
 // getBeaconPreCommitteeInfoKey ...
