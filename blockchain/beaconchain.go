@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"path"
 	"sync"
@@ -198,6 +199,66 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
+// this is call when create new block
+func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
+	if hasBlock := chain.BlockStorage.IsExisted(previousBlockHash); !hasBlock {
+		// This block is not inserted yet, no need to replace
+		Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db " + previousBlockHash.String())
+		return nil
+	}
+
+	blk, err := chain.GetBlockByHash(previousBlockHash)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+	beaconBlock := blk.(*types.BeaconBlock)
+
+	if !previousProposeHash.IsEqual(beaconBlock.ProposeHash()) {
+		Logger.log.Errorf("Replace previous validation data fail! Propose hash not correct, data for" + previousProposeHash.String() + " got " + beaconBlock.ProposeHash().String())
+		return nil
+	}
+
+	decodedOldValidationData, err := consensustypes.DecodeValidationData(beaconBlock.ValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
+		Logger.log.Infof("Beacon | Height %+v, Replace Previous ValidationData new number of signatures %+v (old %+v)",
+			beaconBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx))
+	} else {
+		return nil
+	}
+
+	// validate block before rewrite to
+	replaceBlockHash := *beaconBlock.Hash()
+	beaconBlock.ValidationData = newValidationData
+	committees, err := chain.GetCommitteeV2(beaconBlock)
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(beaconBlock, committees, chain.GetBestView().GetProposerLength()); err != nil {
+		return err
+	}
+	//rewrite to database
+	if err = chain.BlockStorage.ReplaceBlock(beaconBlock); err != nil {
+		return err
+	}
+	//update multiview
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(beaconBlock)
+	} else {
+		fmt.Println("Cannot find beacon view", replaceBlockHash.String())
+	}
+	return nil
+}
+
 func (chain *BeaconChain) CreateNewBlock(
 	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
@@ -368,10 +429,6 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 	}
 	return nil
 
-}
-
-func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error {
-	panic("this function is not supported on beacon chain")
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, s string) error {

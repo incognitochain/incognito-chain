@@ -123,6 +123,16 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 	}
 	return blk.(*types.BeaconBlock), uint64(size), nil
 }
+func (blockchain *BlockChain) GetBeaconBlockByHashWithLatestValidationData(beaconBlockHash common.Hash) (*types.BeaconBlock, uint64, error) {
+	if blockchain.IsTest {
+		return &types.BeaconBlock{}, 2, nil
+	}
+	blk, size, err := blockchain.BeaconChain.BlockStorage.GetBlockWithLatestValidationData(beaconBlockHash)
+	if err != nil {
+		return nil, 0, err
+	}
+	return blk.(*types.BeaconBlock), uint64(size), nil
+}
 
 // SHARD
 func (blockchain *BlockChain) GetShardBlockHashByHeight(finalView, bestView multiview.View, height uint64) (*common.Hash, error) {

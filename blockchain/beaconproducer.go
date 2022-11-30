@@ -68,6 +68,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 
 	epoch, _ = blockchain.GetEpochNextHeight(copiedCurView.BeaconHeight)
 	Logger.log.Infof("New Beacon Block, height %+v, epoch %+v", copiedCurView.BeaconHeight+1, epoch)
+
 	newBeaconBlock.Header = types.NewBeaconHeader(
 		version,
 		copiedCurView.BeaconHeight+1,
@@ -78,6 +79,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		copiedCurView.ConsensusAlgorithm,
 		proposer,
 		proposer,
+		curView.BestBlock.ValidationData,
 	)
 
 	if version >= types.INSTANT_FINALITY_VERSION {
