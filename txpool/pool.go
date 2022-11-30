@@ -422,7 +422,7 @@ func (tp *TxsPool) FilterWithNewView(
 			txsToRemove = append(txsToRemove, txsValid[k].Hash().String())
 			txsValid[k] = nil
 		}
-		if info, ok := tp.Data.TxInfos[txHash]; ok {
+		if info, ok := txsData.TxInfos[txHash]; ok {
 			txsValid = insertTxIntoList(
 				mapForChkDbSpend,
 				TxInfoDetail{
