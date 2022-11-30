@@ -533,8 +533,16 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 
 		return acceptedRewardInstruction.String()
 	} else {
+		totalFee := map[common.Hash]uint64{}
+		if curView.TriggeredFeature["burnfee95"] != 0 {
+			for tokenID, amount := range shardBlock.Header.TotalTxsFee {
+				if amount != 0 && amount*5/100 != 0 {
+					totalFee[tokenID] = amount * 5 / 100
+				}
+			}
+		}
 		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
-			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+			shardID, totalFee, shardBlock.Header.Height)
 		acceptedRewardInstruction, err := acceptedBlockRewardInfo.String()
 		if err != nil {
 			// if err then ignore accepted reward instruction
