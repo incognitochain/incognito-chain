@@ -147,7 +147,7 @@ auto_enable_feature:
   #     force_trigger: 1000000000
   #     require_percentage: 90
   - blocktime20:
-      min_trigger: 2000
+      min_trigger: 6000
       force_trigger: 1000000000
       require_percentage: 90
   - blocktime10:
@@ -164,7 +164,7 @@ auto_enable_feature:
       require_percentage: 100
 blocktime_param:
   - "blocktimedef": 5
-  - "blocktime20": 20
+  - "blocktime20": 2
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
