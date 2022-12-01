@@ -992,14 +992,13 @@ func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *jso
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
-
+	if err != nil {
+		return res, err
+	}
 	if resp.Error != nil && resp.Error.StackTrace != "" {
 		return res, errors.New(resp.Error.StackTrace)
 	}
 
-	if err != nil {
-		return res, errors.New(rpcERR.Error())
-	}
 	return resp.Result, err
 }
 
