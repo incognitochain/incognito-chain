@@ -43,6 +43,7 @@ type NetSync struct {
 	cache  *NetSyncCache
 
 	usingNewPool bool
+	temp         uint64
 }
 
 type NetSyncConfig struct {
@@ -316,16 +317,19 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transaction, beaconHeight int64) {
+	netSync.temp++
+	Logger.log.Infof("[collect-txs] number of transactions receive:", netSync.temp)
 	txHash := tx.Hash().String()
 	Logger.log.Debugf(" Handling new message tx %v", txHash)
 	if isAdded := netSync.handleCacheTx(*tx.Hash()); !isAdded {
 		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		sBState := netSync.config.BlockChain.GetBestStateShard(sID)
 		if sBState == nil {
-			Logger.log.Debugf("Received tx from sID %v but cannot get shard Beststate", sID)
+			Logger.log.Infof("[collect-txs] Received tx from sID %v but cannot get shard Beststate", sID)
 			return
 		}
 		if (sBState.BestBlock == nil) || (sBState.BestBlock.GetProposeTime() < (time.Now().Unix() - int64(time.Hour.Seconds()))) {
+			Logger.log.Infof("[collect-txs] 0")
 			return
 		}
 		if !netSync.usingNewPool {
@@ -334,24 +338,25 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 			if err == nil {
 				hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
 				if err != nil {
-					Logger.log.Errorf("Validate tx %v return err %v", tx.Hash().String(), err)
+					Logger.log.Infof("[collect-txs] Validate tx %v return err %v", tx.Hash().String(), err)
 				} else {
 					Logger.log.Debugf("Node got hash of transaction %s", hash.String())
 				}
 			} else {
-				Logger.log.Errorf("Validate tx %v return err %v", tx.Hash().String(), err)
+				Logger.log.Infof("[collect-txs] Validate tx %v return err %v", tx.Hash().String(), err)
 			}
 
 		} else {
 			tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 			if err != nil {
-				Logger.log.Errorf("Cannot get tx pool of shard %v, got err %v", sID, err)
+				Logger.log.Infof("[collect-txs] Cannot get tx pool of shard %v, got err %v", sID, err)
 			} else {
 				if !tp.IsRunning() {
+					Logger.log.Infof("[collect-txs] 1")
 					return
 				}
 				tp.GetInbox() <- tx
-				Logger.log.Infof("Sent transaction %+v to pool", txHash)
+				Logger.log.Infof("[collect-txs] Sent transaction %+v to pool", txHash)
 			}
 		}
 	}
