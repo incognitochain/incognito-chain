@@ -29,9 +29,9 @@ committee_size:
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
-  min_beacon_block_interval: 5s
+  min_beacon_block_interval: 3s
   max_beacon_block_creation: 2s
-  min_shard_block_interval: 5s
+  min_shard_block_interval: 3s
   max_shard_block_creation: 2s
 staking_amount_shard: 1750000000000
 active_shards: 2
@@ -147,7 +147,7 @@ auto_enable_feature:
   #     force_trigger: 1000000000
   #     require_percentage: 90
   - blocktime20:
-      min_trigger: 6000
+      min_trigger: 1e9
       force_trigger: 1000000000
       require_percentage: 90
   - blocktime10:
@@ -163,8 +163,8 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
 blocktime_param:
-  - "blocktimedef": 5
-  - "blocktime20": 2
+  - "blocktimedef": 3
+  - "blocktime20": 10
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9

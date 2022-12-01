@@ -143,7 +143,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			blockchain.ShardChain[shardID].PreFetchTx.Start()
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			time.Sleep(time.Duration(shardBestState.GetCurrentTimeSlot()/5) * time.Second)
+			time.Sleep(time.Duration(1) * time.Second)
 			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")
