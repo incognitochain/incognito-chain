@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -194,25 +195,25 @@ func (blockchain *BlockChain) processSalaryInstructions(curView *ShardBestState,
 			if err != nil {
 				return NewBlockChainError(ProcessSalaryInstructionsError, err)
 			}
-			if beaconBlock.GetHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
-				Logger.log.Infof("test salary aaaaaaaaaaaaaaaaaaaa")
-				switch instType {
-				case metadata.BeaconRewardRequestMeta:
-					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
-					if err != nil {
-						Logger.log.Infof("test salary %v", err)
-						return NewBlockChainError(ProcessSalaryInstructionsError, err)
-					}
-					rewInsV2 = append(rewInsV2, *beaconBlkRewardInfo)
-					continue
-				}
-			}
+			// if beaconBlock.GetHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
+			// 	Logger.log.Infof("test salary aaaaaaaaaaaaaaaaaaaa")
+			// 	switch instType {
+			// 	case metadata.BeaconRewardRequestMeta:
+			// 		beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
+			// 		if err != nil {
+			// 			Logger.log.Infof("test salary %v", err)
+			// 			return NewBlockChainError(ProcessSalaryInstructionsError, err)
+			// 		}
+			// 		rewInsV2 = append(rewInsV2, *beaconBlkRewardInfo)
+			// 		continue
+			// 	}
+			// }
 			if shardToProcess == int(shardID) {
 				switch instType {
 				case metadata.BeaconRewardRequestMeta:
-					if beaconBlock.GetHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
-						continue
-					}
+					// if beaconBlock.GetHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
+					// 	continue
+					// }
 					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
@@ -747,17 +748,17 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	}
 
 	if len(totalRewardForBeacon) > 0 {
-		if curView.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
-			instRewardForBeacons, err = curView.buildInstRewardForBeaconDelegation(epoch, totalRewardForBeacon, committeeChange)
-			if err != nil {
-				return nil, nil, rewardForPdex, err
-			}
-		} else {
-			instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
-			if err != nil {
-				return nil, nil, rewardForPdex, err
-			}
+		// if curView.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
+		// 	instRewardForBeacons, err = curView.buildInstRewardForBeaconDelegation(epoch, totalRewardForBeacon, committeeChange)
+		// 	if err != nil {
+		// 		return nil, nil, rewardForPdex, err
+		// 	}
+		// } else {
+		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
+		if err != nil {
+			return nil, nil, rewardForPdex, err
 		}
+		// }
 
 	}
 
@@ -809,7 +810,7 @@ func (beaconBestState *BeaconBestState) buildInstRewardForBeaconDelegation(epoch
 	}
 	validators := bCStateV4.GetBeaconCommitteeString()
 	dState := bCStateV4.GetDelegateState()
-	rState := bCStateV4.Reputation
+	rState := bCStateV4.Performance
 	slashed := map[string]interface{}{}
 	for _, slashcommittees := range committeeChange.SlashingCommittee {
 		for _, pkSlashed := range slashcommittees {

@@ -107,11 +107,12 @@ func appDataDir(goos, appName string, roaming bool) string {
 // (%LOCALAPPDATA%) that is used by default.
 //
 // Example results:
-//  dir := AppDataDir("myapp", false)
-//   POSIX (Linux/BSD): ~/.myapp
-//   Mac OS: $HOME/Library/Application Support/Myapp
-//   Windows: %LOCALAPPDATA%\Myapp
-//   Plan 9: $home/myapp
+//
+//	dir := AppDataDir("myapp", false)
+//	 POSIX (Linux/BSD): ~/.myapp
+//	 Mac OS: $HOME/Library/Application Support/Myapp
+//	 Windows: %LOCALAPPDATA%\Myapp
+//	 Plan 9: $home/myapp
 func AppDataDir(appName string, roaming bool) string {
 	return appDataDir(runtime.GOOS, appName, roaming)
 }
@@ -621,7 +622,7 @@ func GetEpochFromBeaconHeight(beaconHeight uint64, epochNumBlocksPerEpoch uint64
 	return (beaconHeight-1)/epochNumBlocksPerEpoch + 1
 }
 
-//FilesExists reports whether the named file or directory exists.
+// FilesExists reports whether the named file or directory exists.
 func FileExists(name string) bool {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
@@ -665,4 +666,35 @@ func GetCPUSample() (idle, total uint64) {
 		}
 	}
 	return
+}
+
+func IntersectionString(a, b []string) (c []string) {
+	m := make(map[string]interface{})
+
+	for _, item := range a {
+		m[item] = nil
+	}
+
+	for _, item := range b {
+		if _, ok := m[item]; ok {
+			c = append(c, item)
+		}
+	}
+	return c
+}
+
+func LogCommitteePublickeyList(log Logger, prefix string, listPKs []string) {
+	listPKsTmp := []string{}
+	for _, value := range listPKs {
+		listPKsTmp = append(listPKsTmp, value[len(value)-5:])
+	}
+	log.Infof("%v: %+v", prefix, listPKsTmp)
+}
+
+func ShortPKList(listPKs []string) []string {
+	listPKsTmp := []string{}
+	for _, value := range listPKs {
+		listPKsTmp = append(listPKsTmp, value[len(value)-5:])
+	}
+	return listPKsTmp
 }

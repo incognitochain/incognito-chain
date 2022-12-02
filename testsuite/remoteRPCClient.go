@@ -291,7 +291,7 @@ func (r *RemoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int)
 	}
 }
 
-func (r *RemoteRPCClient) GetLatestBackup() (res blockchain.BootstrapProcess, err error) {
+func (r *RemoteRPCClient) GetLatestBackup() (res blockchain.BackupProcessInfo, err error) {
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "getlatestbackup",
@@ -308,7 +308,7 @@ func (r *RemoteRPCClient) GetLatestBackup() (res blockchain.BootstrapProcess, er
 	}
 
 	resp := struct {
-		Result blockchain.BootstrapProcess
+		Result blockchain.BackupProcessInfo
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)

@@ -118,6 +118,10 @@ func (shardBestState *ShardBestState) GetHash() *common.Hash {
 	return shardBestState.BestBlock.Hash()
 }
 
+func (shardBestState *ShardBestState) GetReputation() map[string]uint64 {
+	return map[string]uint64{}
+}
+
 func (shardBestState *ShardBestState) GetPreviousHash() *common.Hash {
 	return &shardBestState.BestBlock.Header.PreviousBlockHash
 }

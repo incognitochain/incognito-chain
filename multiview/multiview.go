@@ -25,11 +25,11 @@ type View interface {
 	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
 	ReplaceBlock(blk types.BlockInterface)
-	// ReplaceBlock(blk )
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
 	CompareCommitteeFromBlock(View) int
+	GetReputation() map[string]uint64
 }
 
 type MultiView interface {

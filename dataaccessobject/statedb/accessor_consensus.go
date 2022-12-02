@@ -655,6 +655,7 @@ func StoreBeaconStakersInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]key.PaymentAddress,
+	funderAddress map[string]key.PaymentAddress,
 	autoStaking map[string]bool,
 	stakingTx map[string]common.Hash,
 	beaconConfirmHeight uint64,
@@ -670,12 +671,13 @@ func StoreBeaconStakersInfo(
 			} else {
 				value := NewBeaconStakerInfoWithValue(
 					rewardReceiver[committee.GetIncKeyBase58()],
+					funderAddress[committee.GetIncKeyBase58()],
 					autoStaking[committeeString],
 					[]common.Hash{stakingTx[committeeString]},
 					beaconConfirmHeight,
 					stakingAmount[committeeString],
 				)
-				if err = stateDB.SetStateObject(ShardStakerObjectType, key, value); err != nil {
+				if err = stateDB.SetStateObject(BeaconStakerObjectType, key, value); err != nil {
 					return err
 				}
 			}
@@ -836,6 +838,17 @@ func StoreShardStakerInfoObject(stateDB *StateDB, stakerPubkey string, sStakerIn
 	pubKeyBytes, _ := pubKey.RawBytes()
 	key := GetShardStakerInfoKey(pubKeyBytes)
 	return stateDB.SetStateObject(ShardStakerObjectType, key, sStakerInfo)
+}
+
+func StoreBeaconStakerInfoObject(stateDB *StateDB, stakerPubkey string, sStakerInfo *BeaconStakerInfo) error {
+	pubKey := incognitokey.NewCommitteePublicKey()
+	err := pubKey.FromString(stakerPubkey)
+	if err != nil {
+		return err
+	}
+	pubKeyBytes, _ := pubKey.RawBytes()
+	key := GetBeaconStakerInfoKey(pubKeyBytes)
+	return stateDB.SetStateObject(BeaconStakerObjectType, key, sStakerInfo)
 }
 
 func StoreShardStakerInfo(

@@ -34,6 +34,7 @@ type shardInstruction struct {
 	swapInstructions          map[byte][]*instruction.SwapInstruction
 	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
 	redelegateInstructions    []*instruction.ReDelegateInstruction
+	addStakingInstructions    []*instruction.AddStakingInstruction
 }
 
 func newShardInstruction() *shardInstruction {
@@ -47,6 +48,7 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, newShardInstruction.unstakeInstructions...)
 	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, newShardInstruction.stopAutoStakeInstructions...)
 	shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, newShardInstruction.redelegateInstructions...)
+	shardInstruction.addStakingInstructions = append(shardInstruction.addStakingInstructions, newShardInstruction.addStakingInstructions...)
 	for shardID, swapInstructions := range newShardInstruction.swapInstructions {
 		shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], swapInstructions...)
 	}
@@ -695,6 +697,10 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, redelegateInstruction.ToString())
 	}
 
+	for _, addStakingInstruction := range shardInstruction.addStakingInstructions {
+		instructions = append(instructions, addStakingInstruction.ToString())
+	}
+
 	return instructions, nil
 }
 
@@ -994,6 +1000,17 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					}
 				}
 			}
+			if inst[0] == instruction.ADD_STAKING_ACTION {
+				Logger.log.Infof("Beacon Producer/ Process add staking list %v", inst)
+				if addStakingIns, err := instruction.ValidateAndImportAddStakingInstructionFromString(inst); err != nil {
+					Logger.log.Errorf("SKIP Add Staking Instruction Error %+v", err)
+					continue
+				} else {
+					if len(addStakingIns.CommitteePublicKeys) != 0 {
+						shardInstruction.addStakingInstructions = append(shardInstruction.addStakingInstructions, addStakingIns)
+					}
+				}
+			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("[unstaking] SKIP Stop Auto Stake Instruction Error %+v", err)
@@ -1024,6 +1041,12 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 	if len(shardInstruction.stakeInstructions) != 0 {
 		Logger.log.Info("Beacon Producer/ Process Stakers List ", shardInstruction.stakeInstructions)
 	}
+	if len(shardInstruction.addStakingInstructions) != 0 {
+		Logger.log.Info("Beacon Producer/ Process Stakers List:")
+		for _, inst := range shardInstruction.addStakingInstructions {
+			Logger.log.Infof("add staking inst %v", inst.ToString())
+		}
+	}
 	if len(shardInstruction.swapInstructions[shardID]) != 0 {
 		Logger.log.Info("Beacon Producer/ Process Swap List ", shardInstruction.swapInstructions[shardID])
 	}
@@ -1044,10 +1067,10 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	stakeShardRewardReceiver := []string{}
 	stakeShardAutoStaking := []bool{}
 	stakeBeaconPublicKeys := []string{}
-	stakeBeaconDelegateList := []string{}
 	stakeBeaconTx := []string{}
 	stakeBeaconRewardReceiver := []string{}
 	stakeBeaconAutoStaking := []bool{}
+	stakeBeaconStakingAmount := []uint64{}
 
 	// Process Stake Instruction form Shard Block
 	// Validate stake instruction => extract only valid stake instruction
@@ -1058,7 +1081,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			duplicateStakePublicKeys := []string{}
 			// list of stake public keys and stake transaction and reward receiver must have equal length
 
-			tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
+			tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey, false)
 			tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
 			tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
 			tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
@@ -1091,7 +1114,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 							delegateList = append(delegateList, stakeInstruction.DelegateList[i])
 						}
 					}
-					duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
+					duplicateStakeInstruction := instruction.NewShardStakeInstructionWithValue(
 						duplicateStakePublicKeys,
 						stakeInstruction.Chain,
 						stakingTxs,
@@ -1108,10 +1131,10 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			duplicateStakePublicKeys := []string{}
 			// list of stake public keys and stake transaction and reward receiver must have equal length
 
-			tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
+			tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey, true)
 			tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
 			tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
-			tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
+			// tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
 
 			if len(tempStakePublicKey) > 0 {
 				stakeBeaconPublicKeys = append(stakeBeaconPublicKeys, tempStakePublicKey...)
@@ -1120,7 +1143,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 						stakeBeaconTx = append(stakeBeaconTx, stakeInstruction.TxStakes[i])
 						stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakeInstruction.RewardReceivers[i])
 						stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, stakeInstruction.AutoStakingFlag[i])
-						stakeBeaconDelegateList = append(stakeBeaconDelegateList, stakeInstruction.DelegateList[i])
+						stakeBeaconStakingAmount = append(stakeBeaconStakingAmount, stakeInstruction.StakingAmount[i])
 					}
 				}
 			}
@@ -1132,22 +1155,22 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 					stakingTxs := []string{}
 					autoStaking := []bool{}
 					rewardReceivers := []string{}
-					delegateList := []string{}
+					stakingAmountList := []uint64{}
 					for i, v := range stakeInstruction.PublicKeys {
 						if common.IndexOfStr(v, duplicateStakePublicKeys) > -1 {
 							stakingTxs = append(stakingTxs, stakeInstruction.TxStakes[i])
 							rewardReceivers = append(rewardReceivers, stakeInstruction.RewardReceivers[i])
 							autoStaking = append(autoStaking, stakeInstruction.AutoStakingFlag[i])
-							delegateList = append(delegateList, stakeInstruction.DelegateList[i])
+							stakingAmountList = append(stakingAmountList, stakeInstruction.StakingAmount[i])
 						}
 					}
-					duplicateStakeInstruction := instruction.NewStakeInstructionWithValue(
+					duplicateStakeInstruction := instruction.NewBeaconStakeInstructionWithValue(
 						duplicateStakePublicKeys,
-						stakeInstruction.Chain,
+						// stakeInstruction.Chain,
 						stakingTxs,
 						rewardReceivers,
 						autoStaking,
-						delegateList,
+						stakingAmountList,
 					)
 					duplicateKeyStakeInstruction.instructions = append(duplicateKeyStakeInstruction.instructions, duplicateStakeInstruction)
 				}
@@ -1157,7 +1180,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 
 	if len(stakeShardPublicKeys) > 0 {
 		// tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
-		tempStakeShardInstruction := instruction.NewStakeInstructionWithValue(
+		tempStakeShardInstruction := instruction.NewShardStakeInstructionWithValue(
 			stakeShardPublicKeys,
 			instruction.SHARD_INST,
 			stakeShardTx, stakeShardRewardReceiver,
@@ -1168,12 +1191,12 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	}
 	if len(stakeBeaconPublicKeys) > 0 {
 		// tempValidStakePublicKeys = append(tempValidStakePublicKeys, stakeShardPublicKeys...)
-		tempStakeBeaconInstruction := instruction.NewStakeInstructionWithValue(
+		tempStakeBeaconInstruction := instruction.NewBeaconStakeInstructionWithValue(
 			stakeBeaconPublicKeys,
-			instruction.BEACON_INST,
-			stakeBeaconTx, stakeBeaconRewardReceiver,
+			stakeBeaconTx,
+			stakeBeaconRewardReceiver,
 			stakeBeaconAutoStaking,
-			stakeBeaconDelegateList,
+			stakeBeaconStakingAmount,
 		)
 		newStakeInstructions = append(newStakeInstructions, tempStakeBeaconInstruction)
 	}
@@ -1264,25 +1287,39 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 }
 
 func (shardInstruction *shardInstruction) compose() {
-	stakeInstruction := &instruction.StakeInstruction{}
+	stakeShardInstruction := &instruction.StakeInstruction{}
+	stakeBeaconInstruction := &instruction.StakeInstruction{}
 	unstakeInstruction := &instruction.UnstakeInstruction{}
 	stopAutoStakeInstruction := &instruction.StopAutoStakeInstruction{}
 	redelegateInstruction := &instruction.ReDelegateInstruction{}
+	addStakingInstruction := &instruction.AddStakingInstruction{}
 	unstakeKeys := map[string]bool{}
 
 	for _, v := range shardInstruction.stakeInstructions {
 		if v.IsEmpty() {
 			continue
 		}
-		stakeInstruction.PublicKeys = append(stakeInstruction.PublicKeys, v.PublicKeys...)
-		stakeInstruction.PublicKeyStructs = append(stakeInstruction.PublicKeyStructs, v.PublicKeyStructs...)
-		stakeInstruction.TxStakeHashes = append(stakeInstruction.TxStakeHashes, v.TxStakeHashes...)
-		stakeInstruction.TxStakes = append(stakeInstruction.TxStakes, v.TxStakes...)
-		stakeInstruction.RewardReceivers = append(stakeInstruction.RewardReceivers, v.RewardReceivers...)
-		stakeInstruction.RewardReceiverStructs = append(stakeInstruction.RewardReceiverStructs, v.RewardReceiverStructs...)
-		stakeInstruction.Chain = v.Chain
-		stakeInstruction.AutoStakingFlag = append(stakeInstruction.AutoStakingFlag, v.AutoStakingFlag...)
-		stakeInstruction.DelegateList = append(stakeInstruction.DelegateList, v.DelegateList...)
+		if v.Chain == instruction.SHARD_INST {
+			stakeShardInstruction.PublicKeys = append(stakeShardInstruction.PublicKeys, v.PublicKeys...)
+			stakeShardInstruction.PublicKeyStructs = append(stakeShardInstruction.PublicKeyStructs, v.PublicKeyStructs...)
+			stakeShardInstruction.TxStakeHashes = append(stakeShardInstruction.TxStakeHashes, v.TxStakeHashes...)
+			stakeShardInstruction.TxStakes = append(stakeShardInstruction.TxStakes, v.TxStakes...)
+			stakeShardInstruction.RewardReceivers = append(stakeShardInstruction.RewardReceivers, v.RewardReceivers...)
+			stakeShardInstruction.RewardReceiverStructs = append(stakeShardInstruction.RewardReceiverStructs, v.RewardReceiverStructs...)
+			stakeShardInstruction.Chain = v.Chain
+			stakeShardInstruction.AutoStakingFlag = append(stakeShardInstruction.AutoStakingFlag, v.AutoStakingFlag...)
+			stakeShardInstruction.DelegateList = append(stakeShardInstruction.DelegateList, v.DelegateList...)
+		} else {
+			stakeBeaconInstruction.PublicKeys = append(stakeBeaconInstruction.PublicKeys, v.PublicKeys...)
+			stakeBeaconInstruction.PublicKeyStructs = append(stakeBeaconInstruction.PublicKeyStructs, v.PublicKeyStructs...)
+			stakeBeaconInstruction.TxStakeHashes = append(stakeBeaconInstruction.TxStakeHashes, v.TxStakeHashes...)
+			stakeBeaconInstruction.TxStakes = append(stakeBeaconInstruction.TxStakes, v.TxStakes...)
+			stakeBeaconInstruction.RewardReceivers = append(stakeBeaconInstruction.RewardReceivers, v.RewardReceivers...)
+			stakeBeaconInstruction.RewardReceiverStructs = append(stakeBeaconInstruction.RewardReceiverStructs, v.RewardReceiverStructs...)
+			stakeBeaconInstruction.AutoStakingFlag = append(stakeBeaconInstruction.AutoStakingFlag, v.AutoStakingFlag...)
+			stakeBeaconInstruction.StakingAmount = append(stakeBeaconInstruction.StakingAmount, v.StakingAmount...)
+			stakeBeaconInstruction.Chain = v.Chain
+		}
 	}
 
 	for _, v := range shardInstruction.redelegateInstructions {
@@ -1320,14 +1357,37 @@ func (shardInstruction *shardInstruction) compose() {
 
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 	}
+	for _, v := range shardInstruction.addStakingInstructions {
+		if v.IsEmpty() {
+			continue
+		}
+
+		committeePublicKeys := []string{}
+		addStakingAmounts := []uint64{}
+		stakingTxs := []string{}
+		for id, key := range v.CommitteePublicKeys {
+			if !unstakeKeys[key] {
+				committeePublicKeys = append(committeePublicKeys, key)
+			}
+			addStakingAmounts = append(addStakingAmounts, v.StakingAmount[id])
+			stakingTxs = append(stakingTxs, v.StakingTxIDs[id])
+		}
+
+		addStakingInstruction.CommitteePublicKeys = append(addStakingInstruction.CommitteePublicKeys, committeePublicKeys...)
+		addStakingInstruction.StakingAmount = append(addStakingInstruction.StakingAmount, addStakingAmounts...)
+		addStakingInstruction.StakingTxIDs = append(addStakingInstruction.StakingTxIDs, stakingTxs...)
+	}
 
 	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
 	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 	shardInstruction.redelegateInstructions = []*instruction.ReDelegateInstruction{}
 
-	if !stakeInstruction.IsEmpty() {
-		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
+	if !stakeShardInstruction.IsEmpty() {
+		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeShardInstruction)
+	}
+	if !stakeBeaconInstruction.IsEmpty() {
+		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeBeaconInstruction)
 	}
 
 	if !unstakeInstruction.IsEmpty() {
@@ -1339,5 +1399,8 @@ func (shardInstruction *shardInstruction) compose() {
 	}
 	if !redelegateInstruction.IsEmpty() {
 		shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, redelegateInstruction)
+	}
+	if !addStakingInstruction.IsEmpty() {
+		shardInstruction.addStakingInstructions = append(shardInstruction.addStakingInstructions, addStakingInstruction)
 	}
 }

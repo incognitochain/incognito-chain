@@ -23,7 +23,7 @@ const (
 	ReturnStakingMeta            = 41
 	IncDAORewardRequestMeta      = 42
 
-	BeaconCommitteeRewardRequestMeta = 352
+	BeaconCommitteeRewardRequestMeta = 359
 
 	WithDrawRewardRequestMeta  = 44
 	WithDrawRewardResponseMeta = 45
@@ -31,10 +31,10 @@ const (
 	// staking
 	ShardStakingMeta    = 63
 	StopAutoStakingMeta = 127
-	AddStakingMeta      = 352
+	AddStakingMeta      = 360
 	BeaconStakingMeta   = 64
 	UnStakingMeta       = 210
-	ReDelegateMeta      = 351
+	ReDelegateMeta      = 361
 
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = 70

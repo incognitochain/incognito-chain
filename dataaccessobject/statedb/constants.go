@@ -51,7 +51,7 @@ const (
 	PDETradingFeeObjectType = 34
 
 	ShardStakerObjectType  = 35
-	BeaconStakerObjectType = 78
+	BeaconStakerObjectType = 79
 
 	// Portal v3
 	PortalExternalTxObjectType      = 36

@@ -312,6 +312,7 @@ func (c ShardStakerObject) IsEmpty() bool {
 }
 
 type BeaconStakerInfo struct {
+	funderAddress       key.PaymentAddress
 	rewardReceiver      key.PaymentAddress
 	txStakingIDs        []common.Hash
 	autoStaking         bool
@@ -326,6 +327,7 @@ func NewBeaconStakerInfo() *BeaconStakerInfo {
 
 func NewBeaconStakerInfoWithValue(
 	rewardReceiver key.PaymentAddress,
+	funderAddress key.PaymentAddress,
 	autoStaking bool,
 	txStakingIDs []common.Hash,
 	beaconConfirmHeight uint64,
@@ -333,6 +335,7 @@ func NewBeaconStakerInfoWithValue(
 ) *BeaconStakerInfo {
 	return &BeaconStakerInfo{
 		rewardReceiver:      rewardReceiver,
+		funderAddress:       funderAddress,
 		autoStaking:         autoStaking,
 		txStakingIDs:        txStakingIDs,
 		beaconConfirmHeight: beaconConfirmHeight,
@@ -344,6 +347,7 @@ func NewBeaconStakerInfoWithValue(
 func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		RewardReceiver      key.PaymentAddress
+		FunderAddress       key.PaymentAddress
 		AutoStaking         bool
 		TxStakingIDs        []common.Hash
 		ShardID             byte
@@ -352,6 +356,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		StakingAmount       uint64
 	}{
 		RewardReceiver:      c.rewardReceiver,
+		FunderAddress:       c.funderAddress,
 		TxStakingIDs:        c.txStakingIDs,
 		AutoStaking:         c.autoStaking,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
@@ -366,6 +371,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		RewardReceiver      key.PaymentAddress
+		FunderAddress       key.PaymentAddress
 		AutoStaking         bool
 		TxStakingIDs        []common.Hash
 		ShardID             byte
@@ -382,6 +388,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.autoStaking = temp.AutoStaking
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.stakingAmount = temp.StakingAmount
+	c.funderAddress = temp.FunderAddress
 	return nil
 }
 
@@ -405,12 +412,19 @@ func (s *BeaconStakerInfo) SetStakingAmount(a uint64) {
 	s.stakingAmount = a
 }
 
+func (s *BeaconStakerInfo) SetFunderAddress(f key.PaymentAddress) {
+	s.funderAddress = f
+}
 func (s *BeaconStakerInfo) AddStakingAmount(a uint64) {
 	s.stakingAmount = a
 }
 
 func (s BeaconStakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
+}
+
+func (s BeaconStakerInfo) FunderAddress() key.PaymentAddress {
+	return s.funderAddress
 }
 
 func (s BeaconStakerInfo) TxStakingIDs() []common.Hash {
@@ -475,7 +489,7 @@ func newBeaconStakerObjectWithValue(db *StateDB, key common.Hash, data interface
 		}
 	}
 	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
-		return nil, fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
+		return nil, fmt.Errorf("%+v, got err %+v, staker key %v, payment %v", ErrInvalidPaymentAddressType, err, newStakerInfo.rewardReceiver, newStakerInfo.funderAddress)
 	}
 	return &BeaconStakerObject{
 		version:             defaultVersion,

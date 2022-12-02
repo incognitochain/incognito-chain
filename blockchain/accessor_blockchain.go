@@ -125,11 +125,11 @@ func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) 
 }
 
 func (blockchain *BlockChain) HasBeaconBlockByHash(hash common.Hash) (bool, error) {
-	has, err := rawdbv2.HasBeaconBlock(blockchain.GetBeaconChainDatabase(), hash)
+	blk, _, err := blockchain.BeaconChain.BlockStorage.GetBlock(hash)
 	if err != nil {
 		return false, NewBlockChainError(GetShardBlockByHashError, err)
 	}
-	if has {
+	if blk != nil {
 		return true, nil
 	}
 	return false, NewBlockChainError(GetShardBlockByHashError, fmt.Errorf("Not found shard block by hash %+v", hash))
@@ -634,5 +634,8 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 
 // GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.ShardStakerInfo, bool, error) {
-	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+	return statedb.GetShardStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+}
+func (beaconBestState *BeaconBestState) GetBeaconStakerInfo(stakerPubkey string) (*statedb.BeaconStakerInfo, bool, error) {
+	return statedb.GetBeaconStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }
