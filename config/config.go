@@ -92,7 +92,7 @@ type config struct {
 	//Txpool config
 	TxPoolTTL         uint   `mapstructure:"tx_pool_ttl" long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
 	TxPoolMaxTx       uint64 `mapstructure:"tx_pool_max_tx" long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
-	LimitFee          uint64 `mapstructure:"limit_fee" long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
+	LimitFee          uint64 `mapstructure:"limit_fee" long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.001 PRV"`
 	MinFeePerTx       uint64 `mapstructure:"min_fee_per_tx" long:"minfeepertx" description:"Required minimum fee per tx, default is 0.1 PRV"`
 	SpecifiedFeePerTx uint64 `mapstructure:"specified_fee_per_tx" long:"specifiedfeepertx" description:"Specified fee for some txs, default is 10 PRV"`
 
