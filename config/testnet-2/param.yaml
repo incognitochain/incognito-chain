@@ -187,6 +187,8 @@ auto_enable_feature:
       require_percentage: 90
   - burnfee95:
       min_trigger: 1e9
+  - aurorahotfix:
+      min_trigger: 5776355
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
