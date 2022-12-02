@@ -34,12 +34,11 @@ func NewBeaconCommitteeStateV1WithValue(
 	autoStaking map[string]bool,
 	rewardReceivers map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
-	delegate map[string]string,
 ) *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBaseWithValue(
 			beaconCommittee, shardCurrentValidator, shardSubstituteValidator,
-			autoStaking, rewardReceivers, stakingTx, delegate,
+			autoStaking, rewardReceivers, stakingTx,
 		),
 		nextEpochShardCandidate:    nextEpochShardCandidate,
 		currentEpochShardCandidate: currentEpochShardCandidate,
@@ -282,7 +281,7 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 		b.autoStake,
 		b.stakingTx,
 		env.BeaconHeight,
-		b.delegate,
+		map[string]string{},
 		map[string]interface{}{},
 	)
 
@@ -364,7 +363,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				// if auto staking not found or flag auto stake is false then do not re-stake for this out public key
 				// if auto staking flag is true then system will automatically add this out public key to current candidate list
 				for index, outPublicKey := range swapInstruction.OutPublicKeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}
@@ -417,11 +416,9 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		delete(b.autoStake, swapInstruction.OutPublicKeys[index])
 		delete(b.stakingTx, swapInstruction.OutPublicKeys[index])
 		delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
-		delete(b.delegate, swapInstruction.OutPublicKeys[index])
 		b.autoStake[swapInstruction.InPublicKeys[index]] = false
 		b.rewardReceiver[swapInstruction.InPublicKeyStructs[index].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[index]
 		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
-		b.delegate[swapInstruction.InPublicKeys[index]] = ""
 	}
 	err := statedb.StoreShardStakerInfo(
 		env.ConsensusStateDB,
@@ -430,7 +427,7 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.autoStake,
 		b.stakingTx,
 		env.BeaconHeight,
-		b.delegate,
+		map[string]string{},
 		map[string]interface{}{},
 	)
 	return err
@@ -496,7 +493,7 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 	defer b.mu.RUnlock()
 	beaconCommittee, shardCommittee, shardSubstitute,
 		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, delegates, swapRule, assignRule := b.getDataForUpgrading(env)
+		autoStake, rewardReceiver, stakingTx, swapRule, assignRule := b.getDataForUpgrading(env)
 
 	committeeStateV2 := NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
@@ -507,7 +504,6 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		autoStake,
 		rewardReceiver,
 		stakingTx,
-		delegates,
 		swapRule,
 		assignRule,
 	)
@@ -525,7 +521,6 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]bool,
 	map[string]privacy.PaymentAddress,
 	map[string]common.Hash,
-	map[string]string,
 	SwapRuleProcessor,
 	AssignRuleProcessor,
 ) {
@@ -536,7 +531,6 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
 	stakingTx := make(map[string]common.Hash)
-	delegates := make(map[string]string)
 
 	copy(beaconCommittee, b.beaconCommittee)
 	for shardID, oneShardCommittee := range b.shardCommittee {
@@ -561,12 +555,9 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	for k, v := range b.stakingTx {
 		stakingTx[k] = v
 	}
-	for k, v := range b.delegate {
-		delegates[k] = v
-	}
 
 	swapRule := GetSwapRuleVersion(env.BeaconHeight, env.StakingV3Height)
 	assignRule := GetAssignRuleVersion(env.BeaconHeight, env.StakingV2Height, env.AssignRuleV3Height)
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, delegates, swapRule, assignRule
+		autoStake, rewardReceiver, stakingTx, swapRule, assignRule
 }

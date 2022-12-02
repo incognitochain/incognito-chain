@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
@@ -23,7 +24,6 @@ type beaconCommitteeStateBase struct {
 	autoStake      map[string]bool                   // committee public key => true or false
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
-	delegate       map[string]string
 
 	hashes *BeaconCommitteeStateHash
 
@@ -95,7 +95,6 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
-			delegateList,
 		)
 	case STAKING_FLOW_V2:
 		committeeState = NewBeaconCommitteeStateV2WithValue(
@@ -107,7 +106,6 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
-			delegateList,
 			swapRule,
 			assignRule,
 		)
@@ -121,7 +119,6 @@ func NewBeaconCommitteeState(
 			autoStake,
 			rewardReceivers,
 			stakingTx,
-			delegateList,
 			tempSyncPool,
 			swapRule,
 			assignRule,
@@ -168,7 +165,6 @@ func newBeaconCommitteeStateBase() *beaconCommitteeStateBase {
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
 		hashes:          NewBeaconCommitteeStateHash(),
-		delegate:        make(map[string]string),
 		mu:              new(sync.RWMutex),
 	}
 }
@@ -180,7 +176,6 @@ func newBeaconCommitteeStateBaseWithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
-	delegateList map[string]string,
 ) *beaconCommitteeStateBase {
 	return &beaconCommitteeStateBase{
 		beaconCommittee: beaconCommittee,
@@ -189,7 +184,6 @@ func newBeaconCommitteeStateBaseWithValue(
 		autoStake:       autoStake,
 		rewardReceiver:  rewardReceiver,
 		stakingTx:       stakingTx,
-		delegate:        delegateList,
 		hashes:          NewBeaconCommitteeStateHash(),
 		mu:              new(sync.RWMutex),
 	}
@@ -214,7 +208,6 @@ func (b beaconCommitteeStateBase) shallowCopy(newB *beaconCommitteeStateBase) {
 	newB.autoStake = b.autoStake
 	newB.rewardReceiver = b.rewardReceiver
 	newB.stakingTx = b.stakingTx
-	newB.delegate = b.delegate
 	newB.hashes = b.hashes
 }
 
@@ -249,10 +242,6 @@ func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 		newB.stakingTx[k] = v
 	}
 
-	for k, v := range b.delegate {
-		newB.delegate[k] = v
-	}
-
 	newB.hashes.BeaconCommitteeAndValidatorHash = b.hashes.BeaconCommitteeAndValidatorHash
 	newB.hashes.BeaconCandidateHash = b.hashes.BeaconCandidateHash
 	newB.hashes.ShardSyncValidatorsHash = b.hashes.ShardSyncValidatorsHash
@@ -270,7 +259,6 @@ func (b *beaconCommitteeStateBase) reset() {
 	b.autoStake = make(map[string]bool)
 	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
 	b.stakingTx = make(map[string]common.Hash)
-	b.delegate = make(map[string]string)
 }
 
 func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconCommitteeStateHash) {
@@ -381,13 +369,11 @@ func (b beaconCommitteeStateBase) GetRewardReceiver() map[string]privacy.Payment
 }
 
 func (b beaconCommitteeStateBase) GetDelegate() map[string]string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	res := make(map[string]string)
-	for k, v := range b.delegate {
-		res[k] = v
-	}
-	return res
+	return nil
+}
+
+func (b beaconCommitteeStateBase) GetBCStakingAmount() map[string]uint64 {
+	return nil
 }
 
 func (b beaconCommitteeStateBase) GetStakingTx() map[string]common.Hash {
@@ -492,7 +478,6 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 				b.autoStake[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
 				b.stakingTx[stakeInstruction.PublicKeys[index]] = stakeInstruction.TxStakeHashes[index]
-				b.delegate[stakeInstruction.PublicKeys[index]] = stakeInstruction.DelegateList[index]
 			}
 			if stakeInstruction.Chain == instruction.BEACON_INST {
 				newBeaconCandidates = append(newBeaconCandidates, stakeInstruction.PublicKeys...)
@@ -506,7 +491,7 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 				b.autoStake,
 				b.stakingTx,
 				1,
-				b.delegate,
+				map[string]string{},
 				map[string]interface{}{},
 			)
 			if err != nil {
@@ -566,7 +551,7 @@ func (b *beaconCommitteeStateBase) GetDelegateState() map[string]BeaconDelegator
 
 func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(
 	bBlock *types.BeaconBlock,
-	// mView multiview.MultiView,
+	signatureCounter map[string]signaturecounter.MissingSignature,
 	cChange *CommitteeChange,
 	stateDB *statedb.StateDB,
 	isEndOfEpoch bool,
@@ -590,11 +575,8 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 		b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
 		b.autoStake[committeePublicKey] = stakeInstruction.AutoStakingFlag[index]
 		b.stakingTx[committeePublicKey] = stakeInstruction.TxStakeHashes[index]
-		b.delegate[committeePublicKey] = stakeInstruction.DelegateList[index]
 	}
-	if stakeInstruction.Chain == instruction.BEACON_INST {
-		committeeChange.CurrentEpochBeaconCandidateAdded = append(committeeChange.CurrentEpochBeaconCandidateAdded, stakeInstruction.PublicKeyStructs...)
-	} else {
+	if stakeInstruction.Chain == instruction.SHARD_INST {
 		committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 	}
 
@@ -629,6 +611,10 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
 	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
+}
+
+func (b *beaconCommitteeStateBase) GetReputation() map[string]uint64 {
+	return map[string]uint64{}
 }
 
 func SnapshotShardCommonPoolV2(

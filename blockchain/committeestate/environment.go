@@ -49,6 +49,14 @@ type BeaconCommitteeStateEnvironment struct {
 	numberOfValidator                []int
 	PreviousBlockHashes              *BeaconCommitteeStateHash
 	BeaconDelegateState              *BeaconDelegateState
+
+	NumberOfFixedBeaconBlockValidator int
+	IsBeaconChangeTime                bool
+	beaconCommittee                   []string
+	beaconSubstitute                  []string
+	beaconWaiting                     []string
+	waitingStatus                     []byte
+	MissingSignature                  map[string]signaturecounter.MissingSignature
 }
 
 type BeaconCommitteeStateHash struct {

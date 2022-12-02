@@ -6,7 +6,6 @@ import (
 )
 
 func GetRewardSplitRule(blockVersion int) SplitRewardRuleProcessor {
-	return RewardSplitRuleV4{}
 	if blockVersion >= types.INSTANT_FINALITY_VERSION_V2 {
 		return RewardSplitRuleV2{}
 	}

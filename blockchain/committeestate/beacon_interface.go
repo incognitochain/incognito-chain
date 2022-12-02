@@ -50,6 +50,7 @@ type BeaconCommitteeState interface {
 	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
+	GetReputation() map[string]uint64
 }
 
 type AssignInstructionsGenerator interface {

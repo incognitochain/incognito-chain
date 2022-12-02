@@ -15,6 +15,7 @@ import (
 )
 
 type BeaconDelegatorInfo struct {
+	StakingAmount            uint64
 	CurrentDelegators        int
 	CurrentDelegatorsDetails map[string]interface{}
 	// WaitingDelegators        int
@@ -24,15 +25,20 @@ type BeaconDelegatorInfo struct {
 
 func NewBeaconDelegatorInfo() *BeaconDelegatorInfo {
 	return &BeaconDelegatorInfo{
+		StakingAmount:            0,
 		CurrentDelegators:        0,
 		CurrentDelegatorsDetails: map[string]interface{}{},
 		locker:                   &sync.RWMutex{},
 	}
 }
 
+func (b *BeaconDelegatorInfo) AddStakingAmount(amount uint64) {
+	b.StakingAmount += amount
+}
+
 func (b *BeaconDelegatorInfo) Add(newDelegator string) error {
 	if _, exist := b.CurrentDelegatorsDetails[newDelegator]; exist {
-		return errors.Errorf("This delegator %v already added", newDelegator)
+		return nil
 	}
 	b.CurrentDelegators++
 	b.CurrentDelegatorsDetails[newDelegator] = nil
@@ -45,6 +51,12 @@ func (b *BeaconDelegatorInfo) Remove(delegator string) {
 	}
 	b.CurrentDelegators--
 	delete(b.CurrentDelegatorsDetails, delegator)
+}
+
+func (b *BeaconDelegatorInfo) GetStakingAmount() uint64 {
+	b.locker.RLock()
+	defer b.locker.RUnlock()
+	return b.StakingAmount
 }
 
 func (b *BeaconDelegatorInfo) GetCurrentDelegators() int {
@@ -153,6 +165,19 @@ func (b *BeaconDelegateState) AddReDelegate(delegator, oldDelegate, newDelegate 
 	}
 }
 
+func (b *BeaconDelegateState) AddStakingAmount(newCandidate string, stakingAmount uint64) {
+	if _, ok := b.DelegateInfo[newCandidate]; !ok {
+		Logger.log.Infof("Added staking amount to unexist candidate %v %v", newCandidate, stakingAmount)
+		b.DelegateInfo[newCandidate] = NewBeaconDelegatorInfo()
+	}
+	b.DelegateInfo[newCandidate].AddStakingAmount(stakingAmount)
+}
+
+func (b *BeaconDelegateState) AddBeaconCandidate(newCandidate string, stakingAmount uint64) {
+	b.DelegateInfo[newCandidate] = NewBeaconDelegatorInfo()
+	b.DelegateInfo[newCandidate].StakingAmount = stakingAmount
+}
+
 func (b *BeaconDelegateState) GetDelegateInfo(beaconPK string) (BeaconDelegatorInfo, error) {
 	if dInfo, ok := b.DelegateInfo[beaconPK]; ok {
 		return *dInfo, nil
@@ -207,10 +232,11 @@ func (b *BeaconDelegateState) Hash() common.Hash {
 	return common.HashH([]byte(res))
 }
 
-func (b *BeaconDelegateState) GetBeaconCandidatePower(bPK string) uint {
-	res := uint(2) //35000/1750
+func (b *BeaconDelegateState) GetBeaconCandidatePower(bPK string) uint64 {
+	res := uint64(0)
 	if info, ok := b.DelegateInfo[bPK]; ok {
-		res += uint(info.CurrentDelegators)
+		res = info.StakingAmount / 1750000000000
+		res += uint64(info.CurrentDelegators)
 	}
 	return res
 }
@@ -240,7 +266,7 @@ func (b *BeaconDelegateState) Restore(bcState BeaconCommitteeState, stateDB *sta
 	}
 	staker := bcState.GetAllCandidateSubstituteCommittee()
 	for _, stakerPKStr := range staker {
-		if stakerInfo, exist, err := statedb.GetStakerInfo(stateDB, stakerPKStr); (exist) && (err == nil) {
+		if stakerInfo, exist, err := statedb.GetShardStakerInfo(stateDB, stakerPKStr); (exist) && (err == nil) {
 			if stakerInfo.HasCredit() {
 				curD := stakerInfo.Delegate()
 				if info, ok := b.NextEpochDelegate[stakerPKStr]; ok {

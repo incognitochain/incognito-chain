@@ -320,7 +320,7 @@ func (s *swapRuleV3) beaconSwapOut(
 		}
 	}
 	newCommittee = append(committee[:numberOfFixedValidators], sortedCommittee[len(swapOut):]...)
-	newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
+	sortedCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
 	substitutes = substitutes[swappedInIndex+1:]
 	if (len(substitutes) > 0) && (len(newCommittee) < maxCommitteeSize) {
 		if len(substitutes) > maxCommitteeSize-len(newCommittee) {
@@ -331,6 +331,7 @@ func (s *swapRuleV3) beaconSwapOut(
 	}
 	newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
 	substitutes = substitutes[swappedInIndex+1:]
+	newSubtitute = substitutes
 	return
 }
 

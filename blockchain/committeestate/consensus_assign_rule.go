@@ -232,7 +232,7 @@ func (a AssignRuleV3) ProcessBeacon(candidates []string, waitingStatus []byte, e
 	)
 	for ruleID, rule := range a.filterBeaconRules {
 		accepted, rejected, waitingStatus = rule(candidates, waitingStatus, byte(ruleID), env)
-		fmt.Printf("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v\n", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
+		// fmt.Printf("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v, status %+v\n", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected, waitingStatus)
 		Logger.log.Infof("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
 	}
 	for idx, pk := range candidates {
@@ -244,7 +244,6 @@ func (a AssignRuleV3) ProcessBeacon(candidates []string, waitingStatus []byte, e
 		}
 	}
 	return toPending, stayWaiting, newWaitingStatus
-	// Logger.log.Infof("Process assign beacon done, rejected: ", params ...interface{})
 }
 
 func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
@@ -295,7 +294,11 @@ func hasEnoughActiveTimes(candidates []string, candidateStatus []byte, ruleID by
 			accepted = append(accepted, id)
 			continue
 		}
-		if stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 50) {
+		if candidateStatus[id] < ruleID {
+			rejected = append(rejected, id)
+			continue
+		}
+		if stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 10) {
 			rejected = append(rejected, id)
 		} else {
 			accepted = append(accepted, id)
@@ -315,9 +318,13 @@ func hasEnoughDelegator(candidates []string, candidateStatus []byte, ruleID byte
 			accepted = append(accepted, id)
 			continue
 		}
+		if candidateStatus[id] < ruleID {
+			rejected = append(rejected, id)
+			continue
+		}
 		if dState, has := env.delegateState[candidate]; has {
 			//TODO remove hardcode here
-			if (dState != nil) && (dState.CurrentDelegators > 0) {
+			if (dState != nil) && (dState.CurrentDelegators >= 0) {
 				accepted = append(accepted, id)
 				candidateStatus[id]++
 				continue

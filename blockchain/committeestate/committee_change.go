@@ -3,6 +3,7 @@ package committeestate
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
 type CommitteeChange struct {
@@ -31,6 +32,12 @@ type CommitteeChange struct {
 	RemovedStaker                      []string
 	FinishedSyncValidators             map[byte][]string
 	SlashingCommittee                  map[byte][]string
+	SwapoutAndBackToPending            map[byte][]string
+	FunderAddress                      map[string]key.PaymentAddress
+	AddStakingInfo                     map[string]struct {
+		TxID          []string
+		StakingAmount uint64
+	}
 }
 
 func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEpochShardCandidateRemoved []string) *CommitteeChange {
@@ -48,6 +55,21 @@ func (committeeChange *CommitteeChange) AddReDelegateInfo(redelegateMap map[stri
 	}
 	for k, v := range redelegateMap {
 		committeeChange.ReDelegate[k] = v
+	}
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddAddStakingInfo(
+	addStakingMap map[string]struct {
+		TxID          []string
+		StakingAmount uint64
+	},
+) *CommitteeChange {
+	if len(addStakingMap) == 0 {
+		return committeeChange
+	}
+	for k, v := range addStakingMap {
+		committeeChange.AddStakingInfo[k] = v
 	}
 	return committeeChange
 }
@@ -79,6 +101,24 @@ func (committeeChange *CommitteeChange) AddShardSubstituteRemoved(shardID byte, 
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddBeaconSubstituteAdded(shardID byte, shardSubstituteAdded []string) *CommitteeChange {
+	if len(shardSubstituteAdded) == 0 {
+		return committeeChange
+	}
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteAdded)
+	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddBeaconSubstituteRemoved(shardID byte, shardSubstituteRemoved []string) *CommitteeChange {
+	if len(shardSubstituteRemoved) == 0 {
+		return committeeChange
+	}
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteRemoved)
+	committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID], temp...)
+	return committeeChange
+}
+
 func (committeeChange *CommitteeChange) AddShardCommitteeAdded(shardID byte, shardCommitteeAdded []string) *CommitteeChange {
 	if len(shardCommitteeAdded) == 0 {
 		return committeeChange
@@ -89,6 +129,24 @@ func (committeeChange *CommitteeChange) AddShardCommitteeAdded(shardID byte, sha
 }
 
 func (committeeChange *CommitteeChange) AddShardCommitteeRemoved(shardID byte, ShardCommitteeRemoved []string) *CommitteeChange {
+	if len(ShardCommitteeRemoved) == 0 {
+		return committeeChange
+	}
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(ShardCommitteeRemoved)
+	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], temp...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddBeaconCommitteeAdded(shardID byte, shardCommitteeAdded []string) *CommitteeChange {
+	if len(shardCommitteeAdded) == 0 {
+		return committeeChange
+	}
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardCommitteeAdded)
+	committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], temp...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddBeaconCommitteeRemoved(shardID byte, ShardCommitteeRemoved []string) *CommitteeChange {
 	if len(ShardCommitteeRemoved) == 0 {
 		return committeeChange
 	}
@@ -199,11 +257,17 @@ func NewCommitteeChange() *CommitteeChange {
 		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
 		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 		SlashingCommittee:       make(map[byte][]string),
+		SwapoutAndBackToPending: make(map[byte][]string),
 		FinishedSyncValidators:  make(map[byte][]string),
 		SyncingPoolAdded:        make(map[byte][]incognitokey.CommitteePublicKey),
 		SyncingPoolRemoved:      make(map[byte][]incognitokey.CommitteePublicKey),
 		ReDelegate:              make(map[string]string),
+		AddStakingInfo: map[string]struct {
+			TxID          []string
+			StakingAmount uint64
+		}{},
 	}
+	committeeChange.SlashingCommittee[common.BeaconChainSyncID] = []string{}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)
 		committeeChange.ShardSubstituteAdded[shardID] = []incognitokey.CommitteePublicKey{}
@@ -213,6 +277,7 @@ func NewCommitteeChange() *CommitteeChange {
 		committeeChange.SyncingPoolAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SyncingPoolRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SlashingCommittee[shardID] = []string{}
+		committeeChange.SwapoutAndBackToPending[shardID] = []string{}
 		committeeChange.FinishedSyncValidators[shardID] = []string{}
 	}
 	return committeeChange

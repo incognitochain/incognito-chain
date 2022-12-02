@@ -14,7 +14,7 @@ func (b *BeaconCommitteeStateV4) InitReputationState() {
 	}
 	for _, v := range bc {
 		bcPK, _ := v.ToBase58()
-		b.Reputation[bcPK] = 500
+		b.Performance[bcPK] = 500
 	}
 }
 
@@ -34,7 +34,7 @@ func (b *BeaconCommitteeStateV4) updateBeaconReputation(bCommittee []string, lis
 		votedMap[votedIdx] = nil
 	}
 	for idx, bPK := range bCommittee {
-		if curRep, ok := b.Reputation[bPK]; ok {
+		if curRep, ok := b.Performance[bPK]; ok {
 			if _, voted := votedMap[idx]; voted {
 				curRep = curRep * 1015 / 1000
 			} else {
@@ -46,7 +46,7 @@ func (b *BeaconCommitteeStateV4) updateBeaconReputation(bCommittee []string, lis
 			if curRep > 1000 {
 				curRep = 1000
 			}
-			b.Reputation[bPK] = curRep
+			b.Performance[bPK] = curRep
 		} else {
 			return errors.Errorf("Can not found beacon public key %s in list %v, hold list %v", bPK, bCommittee, b.beaconCommittee)
 		}

@@ -31,14 +31,13 @@ func NewBeaconCommitteeStateV3WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
-	delegateList map[string]string,
 	syncPool map[byte][]string,
 	swapRule SwapRuleProcessor,
 	assignRule AssignRuleProcessor,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBaseWithValue(
-			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx, delegateList,
+			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
 			shardCommonPool, numberOfAssignedCandidates, swapRule, assignRule,
 		),
 		syncPool: syncPool,
@@ -242,7 +241,6 @@ func (b *BeaconCommitteeStateV3) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]bool,
 	map[string]privacy.PaymentAddress,
 	map[string]common.Hash,
-	map[string]string,
 ) {
 	shardCommittee := make(map[byte][]string)
 	shardSubstitute := make(map[byte][]string)
@@ -250,7 +248,6 @@ func (b *BeaconCommitteeStateV3) getDataForUpgrading(env *BeaconCommitteeStateEn
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
 	stakingTx := make(map[string]common.Hash)
-	delegates := make(map[string]string)
 
 	beaconCommittee := common.DeepCopyString(b.beaconCommittee)
 
@@ -274,12 +271,9 @@ func (b *BeaconCommitteeStateV3) getDataForUpgrading(env *BeaconCommitteeStateEn
 	for k, v := range b.stakingTx {
 		stakingTx[k] = v
 	}
-	for k, v := range b.delegate {
-		delegates[k] = v
-	}
 
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, delegates
+		autoStake, rewardReceiver, stakingTx
 }
 
 func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
@@ -287,7 +281,7 @@ func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) B
 	defer b.mu.RUnlock()
 	beaconCommittee, shardCommittee, shardSubstitute,
 		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, delegates := b.getDataForUpgrading(env)
+		autoStake, rewardReceiver, stakingTx := b.getDataForUpgrading(env)
 
 	committeeStateV4 := NewBeaconCommitteeStateV4WithValue(
 		beaconCommittee,
@@ -298,7 +292,7 @@ func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) B
 		autoStake,
 		rewardReceiver,
 		stakingTx,
-		delegates,
+		map[string]string{},
 		map[byte][]string{},
 		NewSwapRuleV3(),
 		NewAssignRuleV3(),
@@ -354,15 +348,20 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
+) (
+	[]string,
+	*CommitteeChange,
+	*instruction.ReturnStakeInstruction,
+	error,
+) {
 	newCommitteeChange := committeeChange
 	candidates, newCommitteeChange, returnStakingInstruction, err := b.classifyValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction)
 	if err != nil {
-		return newCommitteeChange, returnStakingInstruction, err
+		return candidates, newCommitteeChange, returnStakingInstruction, err
 	}
 	newReturnStakingInstruction := returnStakingInstruction
 	newCommitteeChange = b.assignBackToSubstituteList(candidates, env.ShardID, newCommitteeChange)
-	return newCommitteeChange, newReturnStakingInstruction, nil
+	return candidates, newCommitteeChange, newReturnStakingInstruction, nil
 }
 
 // processAssignWithRandomInstruction assign candidates to syncPool
@@ -385,15 +384,21 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
 ) (
-	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
+	*CommitteeChange,
+	*instruction.ReturnStakeInstruction,
+	error,
+) {
 	shardID := byte(swapShardInstruction.ChainID)
 	env.ShardID = shardID
 
 	// process normal swap out
 	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processSwap(swapShardInstruction, env, committeeChange)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// process after swap for assign old committees to current shard pool
-	newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
+	_, newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
 		normalSwapOutCommittees,
 		newCommitteeChange,
 		returnStakingInstruction,
