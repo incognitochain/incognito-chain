@@ -803,3 +803,13 @@ func IsBridgeAggUnshieldMetaType(metadataType int) bool {
 		return false
 	}
 }
+
+// NOTE: append metadata types need to specify network fee
+func IsSpecifiedFeeMetaType(metaType int) bool {
+	switch metaType {
+	case InitTokenRequestMeta:
+		return true
+	default:
+		return false
+	}
+}
