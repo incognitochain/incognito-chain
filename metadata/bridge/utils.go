@@ -631,6 +631,7 @@ func VerifyProofAndParseAuroraReceipt(
 		if minedBlock.Header.ChunkReceiptsRoot.String() != receiptRootEVMStr {
 			return nil, errors.New("Root on evm chain and native chain not match")
 		}
+		break
 	}
 
 	if !hostActive {
