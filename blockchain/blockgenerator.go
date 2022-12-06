@@ -3,6 +3,7 @@ package blockchain
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
 	"log"
@@ -73,13 +74,12 @@ func (s *PreFetchTx) GetTxForBlockProducing() []metadata.Transaction {
 
 //call whenever there is new view
 func (s *PreFetchTx) Reset(view *ShardBestState) {
-	if s.BestView == nil || s.BestView.BestBlock.Hash().String() != view.BestBlock.Hash().String() {
-		s.Stop()
-		s.BeaconBlocks = []*types.BeaconBlock{}
-		s.CollectedTxs = make(map[common.Hash]metadata.Transaction)
-		s.ResponseTxs = make(map[common.Hash]metadata.Transaction)
-		s.BestView = view
-	}
+	s.Stop()
+	s.BeaconBlocks = []*types.BeaconBlock{}
+	s.CollectedTxs = make(map[common.Hash]metadata.Transaction)
+	s.ResponseTxs = make(map[common.Hash]metadata.Transaction)
+	s.BestView = view
+
 }
 
 //call when start propose block
@@ -93,20 +93,23 @@ func (s *PreFetchTx) Stop() {
 }
 
 //call when next timeslot is proposer => prepare tx
-func (s *PreFetchTx) Start() {
+func (s *PreFetchTx) Start(curView *ShardBestState) {
+	if s.BestView.BestBlock.Hash().String() != curView.BestBlock.Hash().String() {
+		s.Reset(curView)
+	}
+
 	if s.Ctx.running {
 		log.Println("debugprefetch: pre fetch already running")
 		return
 	}
 	Logger.log.Info("debugprefetch: running...")
-
+	s.Reset(curView)
 	s.Ctx.running = true
 
 	s.Ctx.Context, s.Ctx.cancelFunc = context.WithDeadline(s.Ctx.Context, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
 	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
-	curView := s.BestView
 	shardID := curView.ShardID
 	bView, err := blockChain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
 	if err != nil {
@@ -148,6 +151,13 @@ func (s *PreFetchTx) Start() {
 			if len(s.BeaconBlocks) > 0 {
 				beaconStartHeight = s.BeaconBlocks[len(s.BeaconBlocks)-1].GetHeight() + 1
 			}
+
+			if s.BestView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
+				if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV3Height {
+					beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV3Height
+				}
+			}
+
 			beaconBlocks, err := FetchBeaconBlockFromHeight(s.BestView.blockChain, beaconStartHeight, beaconProcessHeight)
 			//fmt.Println("debugprefetch: get beacon block", beaconStartHeight, beaconProcessHeight, len(beaconBlocks))
 			if err != nil {

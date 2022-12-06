@@ -672,8 +672,8 @@ func (chain *ShardChain) GetFinalityProof(hash common.Hash) (*types.ShardBlock, 
 	return shardBlock.(*types.ShardBlock), m, nil
 }
 
-func (chain *ShardChain) CollectTxs() {
-	chain.PreFetchTx.Start()
+func (chain *ShardChain) CollectTxs(view multiview.View) {
+	chain.PreFetchTx.Start(view.(*ShardBestState))
 }
 
 //

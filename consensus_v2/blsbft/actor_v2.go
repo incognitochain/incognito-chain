@@ -619,7 +619,7 @@ func (a *actorV2) run() error {
 					return false
 				}
 				if (latestBlockInCurrentTS || noProposeBlockInCurrentTS()) && nextProposer() {
-					a.chain.CollectTxs()
+					a.chain.CollectTxs(bestView)
 				}
 
 				if newTimeSlot { //for logging

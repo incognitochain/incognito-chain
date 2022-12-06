@@ -69,6 +69,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	version int, proposer string, round int, start int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeFinalViewHash common.Hash) (*types.ShardBlock, error) {
+
 	var (
 		transactionsForNewBlock           = make([]metadata.Transaction, 0)
 		newShardBlock                     = types.NewShardBlock()
@@ -82,6 +83,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		committeeFromBlockHash            = common.Hash{}
 		err                               error
 	)
+
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	//check if expected final view is not confirmed by beacon for too far
 	beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
@@ -115,7 +117,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	//get beacon blocks
 	getConfirmBeaconBlock := func() ([]*types.BeaconBlock, uint64) {
-		blockchain.ShardChain[shardID].PreFetchTx.Stop()
 		beaconBlocks := blockchain.ShardChain[shardID].PreFetchTx.BeaconBlocks
 		beaconProcessHeight := shardBestState.BeaconHeight
 		if len(beaconBlocks) == 0 {
@@ -125,22 +126,19 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 		return beaconBlocks, beaconProcessHeight
 	}
+
 	beaconBlocks, beaconProcessHeight := getConfirmBeaconBlock()
 
-	if shardBestState.CommitteeStateVersion() == committeestate.STAKING_FLOW_V2 {
-		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV3Height {
-			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV3Height
-		}
-	}
-
 	if shardBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		blockchain.ShardChain[shardID].PreFetchTx.Stop()
+		beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
 		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV2Height {
 			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV2Height
 		}
 	} else {
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
-			blockchain.ShardChain[shardID].PreFetchTx.Start()
+			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
 			time.Sleep(time.Duration(shardBestState.GetCurrentTimeSlot()/5) * time.Second)
@@ -149,6 +147,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 				return nil, errors.New("Waiting For Beacon Produce Block")
 			}
 		}
+		blockchain.ShardChain[shardID].PreFetchTx.Stop()
+		beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 
 		currentCommitteePublicKeysStructs = committees
 		committeeFinalViewBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFinalViewHash)
