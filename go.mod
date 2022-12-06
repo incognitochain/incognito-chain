@@ -36,7 +36,7 @@ require (
 	github.com/jbenet/goprocess v0.1.4
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
-	github.com/klauspost/compress v1.10.10
+	github.com/klauspost/compress v1.13.6
 	github.com/libp2p/go-libp2p v0.11.0
 	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/libp2p/go-libp2p-crypto v0.1.0
@@ -65,8 +65,9 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	go.mongodb.org/mongo-driver v1.11.0
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.27.1
