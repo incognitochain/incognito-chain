@@ -453,10 +453,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	ctx PrefetchInterface,
 ) []metadata.Transaction {
 
-	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
-	stopCh := make(chan interface{}, 2)
+	stopCh := make(chan interface{})
 	go tp.getTxsFromPool(txDetailCh, stopCh)
 	curSize := uint64(0)
 	curTime := 0 * time.Millisecond
@@ -467,12 +466,16 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	maxTime := ctx.GetMaxTime()
 	maxSize := ctx.GetMaxSize()
 	mapForChkDbStake := map[string]interface{}{}
+	collectedTx := map[string]bool{}
 	defer func() {
 		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v for shard %v \n", len(res), curSize, curTime, maxSize, sView.GetShardID())
+		if stopCh != nil {
+			close(stopCh)
+		}
+		removeNilTx(&res)
 	}()
 	limitTxAction := map[int]int{}
 	for {
-		time.Sleep(time.Millisecond * 10)
 		select {
 		case <-ctx.Done():
 			return res
@@ -480,11 +483,23 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		}
 
 		select {
+		case <-ctx.Done():
+			return res
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
-				removeNilTx(&res)
+				close(stopCh)
+				stopCh = make(chan interface{})
+				go func() {
+					time.Sleep(time.Millisecond * 100)
+					tp.getTxsFromPool(txDetailCh, stopCh)
+				}()
 				continue
 			}
+			//already inserted
+			if _, ok := collectedTx[txDetails.Tx.Hash().String()]; ok {
+				continue
+			}
+
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
 			if curSize+txDetails.Size > maxSize {
 				continue
@@ -527,16 +542,12 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				res[k] = nil
 			}
 			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
-			//TODO: review `move code here`
+			collectedTx[txDetails.Tx.Hash().String()] = true
 			ctx.DecreaseNumTXRemain()
 			if ctx.GetNumTxRemain() <= 0 {
 				return res
 			}
-		case <-ctx.Done():
-			stopCh <- nil
-			Logger.Infof("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
-			removeNilTx(&res)
-			return res
+
 		}
 	}
 }
@@ -866,13 +877,14 @@ func (tp *TxsPool) getTxsFromPool(
 					txDetails.Tx = v
 					Logger.Debugf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
 					if txCh != nil {
-						txCh <- txDetails
+						select {
+						case txCh <- txDetails:
+						case <-time.NewTimer(time.Second * 10).C:
+							return
+						}
 					}
 				}
 			}
-		}
-		if txCh != nil {
-			txCh <- nil
 		}
 	}
 
