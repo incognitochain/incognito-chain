@@ -46,6 +46,7 @@ type param struct {
 	CommitteeSize                    committeeSize                `mapstructure:"committee_size"`
 	BlockTime                        blockTime                    `mapstructure:"block_time"`
 	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
+	StakingAmountBeacon              uint64                       `mapstructure:"staking_amount_beacon"`
 	ActiveShards                     int                          `mapstructure:"active_shards"`
 	BasicReward                      uint64                       `mapstructure:"basic_reward"`
 	MaxReward                        uint64                       `mapstructure:"max_reward"`
@@ -118,6 +119,7 @@ type committeeSize struct {
 	BeaconCommitteeSizeKeyListV2       int            `mapstructure:"beacon_committee_size_key_list_v2"`
 	NumberOfFixedShardBlockValidator   int            `mapstructure:"number_of_fixed_shard_block_validators"`
 	NumberOfFixedShardBlockValidatorV2 int            `mapstructure:"number_of_fixed_shard_validators_v2"`
+	NumberOfFixedBeaconBlockValidator  int            `mapstructure:"number_of_fixed_beacon_block_validators"`
 	IncreaseMaxShardCommitteeSize      map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
@@ -238,7 +240,7 @@ func verifyParam(p *param) error {
 	}
 
 	if p.CommitteeSize.NumberOfFixedShardBlockValidatorV2 == 0 {
-		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2")
+		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2, net ID %v", p.Name)
 	}
 
 	return nil
