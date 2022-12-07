@@ -556,9 +556,9 @@ func (chain *BeaconChain) GetSyncingValidators() map[byte][]incognitokey.Committ
 	return chain.GetBestView().(*BeaconBestState).GetSyncingValidators()
 }
 
-func (chain *BeaconChain) GetAllCurrentSlashingCommittee() map[byte][]string {
-	return chain.GetBestView().(*BeaconBestState).GetAllCurrentSlashingCommittee()
-}
+/*func (chain *BeaconChain) GetAllCurrentSlashingCommittee() map[byte][]string {*/
+/*return chain.GetBestView().(*BeaconBestState).GetAllCurrentSlashingCommittee()*/
+/*}*/
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
