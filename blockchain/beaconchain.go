@@ -14,7 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -418,7 +417,7 @@ func (chain *BeaconChain) ValidatePreviousValidationData(previousBlockHash commo
 	if err != nil {
 		return err
 	}
-	if err = chain.ValidateBlockSignatures(bcBlock, committees); err != nil {
+	if err = chain.ValidateBlockSignatures(bcBlock, committees, config.Param().CommitteeSize.NumberOfFixedBeaconBlockValidator); err != nil {
 		return err
 	}
 	return nil
@@ -555,6 +554,10 @@ func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incogni
 
 func (chain *BeaconChain) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	return chain.GetBestView().(*BeaconBestState).GetSyncingValidators()
+}
+
+func (chain *BeaconChain) GetAllCurrentSlashingCommittee() map[byte][]string {
+	return chain.GetBestView().(*BeaconBestState).GetAllCurrentSlashingCommittee()
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
