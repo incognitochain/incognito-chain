@@ -3,6 +3,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -1634,6 +1635,36 @@ func (r *RemoteRPCClient) DefragmentAccountToken(privateKey string, receiver map
 
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) PreparePRVForTest(
+	privateKey string, receivers map[string]interface{},
+) (res *jsonresult.CreateTransactionResult, err error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendtransaction",
+		"params":  []interface{}{privateKey, receivers, -1, 0},
+		"id":      1,
+	})
+	if err != nil {
+
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, fmt.Errorf(resp.Error.StackTrace)
 	}
 	return resp.Result, err
 }

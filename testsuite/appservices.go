@@ -2,9 +2,10 @@ package devframework
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"time"
 )
 
 func NewAppService(fullnode string, finalizedBlock bool) *AppService {
@@ -81,4 +82,12 @@ func (s *AppService) OnStateDBData(checkpoint string, cid int, dbType int, offse
 	fullnodeRPC.GetStateDB(checkpoint, cid, dbType, offset, func(dataByte []byte) {
 		//TODO: parse state data and then pass to f
 	})
+}
+
+func (s *AppService) PreparePRVForTest(privateKey string, receivers map[string]interface{}) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	_, err := fullnodeRPC.PreparePRVForTest(privateKey, receivers)
+	if err != nil {
+		panic(err)
+	}
 }
