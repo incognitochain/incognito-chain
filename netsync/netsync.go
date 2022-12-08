@@ -246,15 +246,16 @@ func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan 
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
-	if netSync.cpuUsage > 80 {
-		Logger.log.Infof("Received tx %v, cpuUsage too high %v, send to another pool", msg.Transaction.Hash().String(), netSync.cpuUsage)
-		go func(msg *wire.MessageTx) {
-			netSync.cTxMessage <- msg
-		}(msg)
-	} else {
-		Logger.log.Infof("Received tx %v, send to mempool", msg.Transaction.Hash().String(), netSync.cpuUsage)
-		netSync.cMessage <- msg
-	}
+	//if netSync.cpuUsage > 80 {
+	//	Logger.log.Infof("Received tx %v, cpuUsage too high %v, send to another pool", msg.Transaction.Hash().String(), netSync.cpuUsage)
+	//	go func(msg *wire.MessageTx) {
+	//		netSync.cTxMessage <- msg
+	//	}(msg)
+	//} else {
+	//	Logger.log.Infof("Received tx %v, send to mempool", msg.Transaction.Hash().String(), netSync.cpuUsage)
+	//	netSync.cMessage <- msg
+	//}
+	netSync.cMessage <- msg
 	return nil
 }
 
@@ -264,13 +265,14 @@ func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTx
 		done <- struct{}{}
 		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
-	if netSync.cpuUsage > 80 {
-		go func(msg *wire.MessageTx) {
-			netSync.cTxMessage <- msg
-		}((*wire.MessageTx)(msg))
-	} else {
-		netSync.cMessage <- msg
-	}
+	//if netSync.cpuUsage > 80 {
+	//	go func(msg *wire.MessageTx) {
+	//		netSync.cTxMessage <- msg
+	//	}((*wire.MessageTx)(msg))
+	//} else {
+	//	netSync.cMessage <- msg
+	//}
+	netSync.cMessage <- msg
 	return nil
 }
 
