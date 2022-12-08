@@ -1535,12 +1535,11 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := a.chain.GetBestView().CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
+	proposeBlockInfo.LastValidateTime = time.Now()
 	isValid, err := a.ruleDirector.builder.ValidatorRule().ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
 		return err
 	}
-
-	proposeBlockInfo.LastValidateTime = time.Now()
 
 	if !isValid {
 		a.logger.Debugf("can't vote for this block %v height %v timeslot %v",
