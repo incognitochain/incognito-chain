@@ -142,7 +142,6 @@ func mainMaster(serverChan chan<- *Server) error {
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb! Clear mempool DB")
 		Logger.log.Error(err)
-		os.RemoveAll(filepath.Join(cfg.DataDir, cfg.MempoolDir))
 		panic(err)
 	}
 	// Check wallet and start it

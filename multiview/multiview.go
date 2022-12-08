@@ -30,7 +30,6 @@ type View interface {
 	GetProposerLength() int
 	CompareCommitteeFromBlock(View) int
 	PastHalfTimeslot(int64) bool
-	TimeLeftOver(int64) time.Duration
 }
 
 type MultiView interface {

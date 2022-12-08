@@ -1026,7 +1026,14 @@ func (r *RemoteRPCClient) GetShardBestState(sid int) (res jsonresult.GetShardBes
 	return resp.Result, err
 }
 
-func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *jsonresult.TransactionDetail, err error) {
+type TXDetail struct {
+	*jsonresult.TransactionDetail
+	Proof                         interface{}
+	ProofDetail                   interface{}
+	PrivacyCustomTokenProofDetail interface{}
+}
+
+func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *TXDetail, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "gettransactionbyhash",
@@ -1041,14 +1048,8 @@ func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *jso
 		return res, errors.New(rpcERR.Error())
 	}
 
-	type detail struct {
-		*jsonresult.TransactionDetail
-		Proof                         interface{}
-		ProofDetail                   interface{}
-		PrivacyCustomTokenProofDetail interface{}
-	}
 	resp := struct {
-		Result *jsonresult.TransactionDetail
+		Result *TXDetail
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)

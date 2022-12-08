@@ -41,8 +41,7 @@ type ShardChain struct {
 	TxPool      txpool.TxPool
 	TxsVerifier txpool.TxVerifier
 
-	insertLock        sync.Mutex
-	isPrepareProposer bool
+	insertLock sync.Mutex
 
 	PreFetchTx *PreFetchTx
 }

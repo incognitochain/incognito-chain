@@ -225,15 +225,14 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 
 type BlockGenerator struct {
 	// blockpool   BlockPool
-	txPool       TxPool
-	syncker      Syncker
-	chain        *BlockChain
-	CQuit        chan struct{}
-	CPendingTxs  <-chan metadata.Transaction
-	CRemovedTxs  <-chan metadata.Transaction
-	PendingTxs   map[common.Hash]metadata.Transaction
-	CollectedTxs []metadata.Transaction
-	mtx          sync.RWMutex
+	txPool      TxPool
+	syncker     Syncker
+	chain       *BlockChain
+	CQuit       chan struct{}
+	CPendingTxs <-chan metadata.Transaction
+	CRemovedTxs <-chan metadata.Transaction
+	PendingTxs  map[common.Hash]metadata.Transaction
+	mtx         sync.RWMutex
 }
 
 func NewBlockGenerator(txPool TxPool, chain *BlockChain, syncker Syncker, cPendingTxs chan metadata.Transaction, cRemovedTxs chan metadata.Transaction) (*BlockGenerator, error) {

@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"time"
-
 	"github.com/incognitochain/incognito-chain/config"
 )
 
@@ -77,12 +75,4 @@ func (s *TSManager) pastHalfTimeslot(t int64) bool {
 		return false
 	}
 	return true
-}
-
-func (s *TSManager) timeLeftOver(t int64) time.Duration {
-	lastAnchor := s.getLatestAnchor()
-	if lastAnchor.Timeslot == 0 {
-		return -1
-	}
-	return time.Duration((t - lastAnchor.StartTime) % s.getCurrentTS())
 }

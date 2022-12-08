@@ -85,7 +85,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	)
 	defer blockchain.ShardChain[shardID].PreFetchTx.Stop()
 
-	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
+	Logger.log.Info("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	//check if expected final view is not confirmed by beacon for too far
 	beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	if beaconFinalView.BestShardHeight[shardID]+100 < blockchain.ShardChain[shardID].multiView.GetExpectedFinalView().GetHeight() {
@@ -113,7 +113,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
-	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
+
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 
 	//get beacon blocks
@@ -124,6 +124,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			isOldBeaconHeight = true
 		} else {
 			beaconProcessHeight = beaconBlocks[len(beaconBlocks)-1].GetBeaconHeight()
+			Logger.log.Infof("Number of beacon block confirm: %d from %d to %d", len(beaconBlocks), beaconBlocks[0].GetBeaconHeight(), beaconBlocks[len(beaconBlocks)-1].GetBeaconHeight())
 		}
 		return beaconBlocks, beaconProcessHeight
 	}
