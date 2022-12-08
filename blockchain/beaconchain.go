@@ -3,11 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -383,6 +384,10 @@ func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, str
 	panic("this function is not supported on beacon chain")
 }
 
+func (chain *BeaconChain) CollectTxs(view multiview.View) {
+	return
+}
+
 func (chain *BeaconChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
 	block, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
 	return block, err
@@ -512,7 +517,7 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
-//CommitteesByShardID ...
+// CommitteesByShardID ...
 var CommitteeFromBlockCache, _ = lru.New(500)
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {

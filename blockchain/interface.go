@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"context"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-core/peer"
 
@@ -70,13 +68,6 @@ type Syncker interface {
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 	ReceiveBlock(block interface{}, previousValidationData string, peerID string)
-}
-
-type TxsCrawler interface {
-	// RemoveTx remove tx from tx resource
-	RemoveTxs(txs []metadata.Transaction)
-	GetTxsTranferForNewBlock(sView interface{}, bcView interface{}, maxSize uint64, maxTime time.Duration, maxTxs int64) []metadata.Transaction
-	CheckValidatedTxs(txs []metadata.Transaction) (valid []metadata.Transaction, needValidate []metadata.Transaction)
 }
 
 type Pubsub interface {
