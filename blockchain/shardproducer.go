@@ -83,6 +83,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		committeeFromBlockHash            = common.Hash{}
 		err                               error
 	)
+	defer blockchain.ShardChain[shardID].PreFetchTx.Stop()
 
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	//check if expected final view is not confirmed by beacon for too far
@@ -141,7 +142,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			time.Sleep(time.Duration(shardBestState.GetCurrentTimeSlot()/5) * time.Second)
+			time.Sleep(time.Duration(float64(shardBestState.GetCurrentTimeSlot())/3) * time.Second)
 			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")

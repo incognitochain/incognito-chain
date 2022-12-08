@@ -143,7 +143,7 @@ func (tx *Tx) LoadData(transactionStateDB *statedb.StateDB) error {
 		return nil
 	}
 	txSigPubKey := new(SigPubKey)
-	utils.Logger.Log.Infof("tx val env %v %v %v %v", tx.Hash().String(), txEnv.IsPrivacy(), tx.GetType(), txEnv.TxAction())
+	//utils.Logger.Log.Infof("tx val env %v %v %v %v", tx.Hash().String(), txEnv.IsPrivacy(), tx.GetType(), txEnv.TxAction())
 	if err := txSigPubKey.SetBytes(txEnv.SigPubKey()); err != nil {
 		return utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when parsing bytes of txSigPubKey %v", err))
 	}

@@ -266,7 +266,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 
 func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 	tp.CData.locker.Lock()
-	tp.CData.locker.Unlock()
+	defer tp.CData.locker.Unlock()
 	txH := validTx.tx.Hash().String()
 	tp.Data.TxByHash[txH] = validTx.tx
 	tp.Data.TxInfos[txH] = TxInfo{
@@ -282,7 +282,7 @@ func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 
 func (tp *TxsPool) removeDoubleSpendTx(txH string) {
 	tp.CData.locker.Lock()
-	tp.CData.locker.Unlock()
+	defer tp.CData.locker.Unlock()
 	delete(tp.Data.TxByHash, txH)
 	delete(tp.Data.TxInfos, txH)
 	if keyList, ok := tp.CData.CoinsByTxHash[txH]; ok {
@@ -489,6 +489,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if txDetails == nil {
 				close(stopCh)
 				stopCh = make(chan interface{})
+				txDetailCh = make(chan *TxInfoDetail, 1024)
 				go func() {
 					time.Sleep(time.Millisecond * 100)
 					tp.getTxsFromPool(txDetailCh, stopCh)
@@ -856,7 +857,9 @@ func (tp *TxsPool) getTxsFromPool(
 ) {
 	tp.action <- func(tpTemp *TxsPool) {
 		defer func() {
-			close(txCh)
+			if txCh != nil {
+				close(txCh)
+			}
 			Logger.Debug("tx channel is closed")
 		}()
 		for k, v := range tpTemp.Data.TxByHash {

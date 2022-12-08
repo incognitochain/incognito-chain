@@ -384,6 +384,10 @@ func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, str
 	panic("this function is not supported on beacon chain")
 }
 
+func (chain *BeaconChain) CollectTxs(view multiview.View) {
+	return
+}
+
 func (chain *BeaconChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
 	block, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
 	return block, err
@@ -582,8 +586,4 @@ func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 
 func (chain *BeaconChain) StoreFinalityProof(block types.BlockInterface, finalityProof interface{}, reProposeSig interface{}) error {
 	return nil
-}
-
-func (chain *BeaconChain) CollectTxs() {
-	return
 }
