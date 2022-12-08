@@ -167,7 +167,6 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 			if len(beaconBlocks) > 0 {
 				for _, bBlock := range beaconBlocks {
 					responseTxsBeacon, errInstructions, err := blockChain.config.BlockGen.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, &tempPrivateKey, shardID)
-					s.BeaconBlocks = append(s.BeaconBlocks, bBlock)
 					if err != nil {
 						s.Error = err.Error()
 						Logger.log.Error("Error during get response tx from beacon instruction", err)
@@ -177,6 +176,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 						s.Error = fmt.Sprintf("Error instruction: %+v", errInstructions)
 						Logger.log.Error("List error instructions, which can not create tx", errInstructions)
 					}
+					s.BeaconBlocks = append(s.BeaconBlocks, bBlock)
 					for _, tx := range responseTxsBeacon {
 						s.ResponseTxs[*tx.Hash()] = tx
 					}
