@@ -9,10 +9,12 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -31,6 +33,36 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
+
+const (
+	SHARD_WAIT   = "s_waiting"
+	SHARD_PEND   = "s_pending"
+	SHARD_SYNC   = "s_syncing"
+	SHARD_VALS   = "s_committee"
+	SHARD_SLASH  = "s_slashed"
+	SHARD_NORMAL = "s_normal"
+)
+
+type AccountInfo struct {
+	Acc              *account.Account
+	Name             string
+	Queue            string
+	CountInCommittee uint64
+	CID              int
+}
+
+type StakerInfo struct {
+	Name            string
+	Delegate        string
+	StakingAmount   uint64
+	HasCredit       bool
+	RewardPRV       uint64
+	RewardPRVLocked uint64
+	InCommittee     int
+	AutoStake       bool
+	Balance         uint64
+	Chain           string
+}
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
 	relayingChainParams := map[string]*chaincfg.Params{
@@ -156,9 +188,9 @@ func (sim *NodeEngine) SendPRV(args ...interface{}) (string, error) {
 			switch arg.(type) {
 			default:
 				if i%2 == 1 {
-					amount, ok := args[i+1].(float64)
+					amount, ok := args[i+1].(uint64)
 					if !ok {
-						amountF64 := args[i+1].(float64)
+						amountF64 := args[i+1].(uint64)
 						amount = amountF64
 					}
 					receivers[arg.(account.Account).PaymentAddress] = uint64(amount)
@@ -268,48 +300,247 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 	fmt.Printf("Unstake: %v\n", tmp)
 }
 
+func (sim *NodeEngine) ShowAccountsInfo(infos map[string]*AccountInfo) {
+	fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", sim.GetBlockchain().BeaconChain.CurrentHeight(), sim.GetBlockchain().BeaconChain.GetEpoch())
+	infosByPool := map[string]map[int][]*AccountInfo{}
+	poolNames := []string{SHARD_NORMAL, SHARD_WAIT, SHARD_SYNC, SHARD_PEND, SHARD_VALS, SHARD_SLASH}
+	for _, name := range poolNames {
+		infosByPool[name] = map[int][]*AccountInfo{}
+		for _, info := range infos {
+			if info.Queue == name {
+				infosByPool[name][info.CID] = append(infosByPool[name][info.CID], info)
+			}
+		}
+	}
+	for _, name := range poolNames {
+		fmt.Printf("List %v:\n", name)
+		infoByCIDs := infosByPool[name]
+		switch name {
+		case SHARD_SYNC, SHARD_PEND, SHARD_VALS, SHARD_SLASH:
+			for cID := 0; cID < sim.bc.GetBeaconBestState().ActiveShards; cID++ {
+				fmt.Printf("\tcID %v: ", cID)
+				for _, v := range infoByCIDs[cID] {
+					fmt.Printf(" %v ", v.Name)
+				}
+				fmt.Println()
+			}
+		case SHARD_NORMAL, SHARD_WAIT:
+			fmt.Printf("\t")
+			for _, v := range infoByCIDs[-2] {
+				fmt.Printf(" %v ", v.Name)
+			}
+			fmt.Println()
+		}
+	}
+}
+
+func (sim *NodeEngine) GetAccountPosition(accounts []account.Account, bcView *blockchain.BeaconBestState) map[string]*AccountInfo {
+	chain := sim.GetBlockchain()
+	pkMap := make(map[string]*AccountInfo)
+	for _, acc := range accounts {
+		x := acc
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{&x, acc.Name, SHARD_NORMAL, 0, -2}
+	}
+	shardWaitingList, _ := incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsWaitingList())
+	tmp := ""
+	for _, pk := range shardWaitingList {
+		if pkMap[pk] != nil && pkMap[pk].Name != "" {
+			tmp += pkMap[pk].Name + " "
+			pkMap[pk].Queue = SHARD_WAIT
+			pkMap[pk].CID = -2
+		} else {
+			tmp += "@@ "
+		}
+	}
+
+	shardPendingList := make(map[int][]string)
+	shardCommitteeList := make(map[int][]string)
+	shardSyncingList := make(map[int][]string)
+	shardSlashingList := sim.bc.GetBeaconBestState().GetAllCurrentSlashingCommittee()
+
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
+		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
+		shardSyncingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetSyncingValidators()[byte(sid)])
+
+	}
+
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		tmp = ""
+		for _, pk := range shardSyncingList[sid] {
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = SHARD_SYNC
+				pkMap[pk].CID = sid
+			} else {
+				tmp += "@@ "
+			}
+		}
+
+		tmp = ""
+		for _, pk := range shardPendingList[sid] {
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = SHARD_PEND
+				pkMap[pk].CID = sid
+			} else {
+				tmp += "@@ "
+			}
+		}
+	}
+
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		tmp = ""
+		for _, pk := range shardCommitteeList[sid] {
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = SHARD_VALS
+				pkMap[pk].CID = sid
+			} else {
+				tmp += "@@ "
+			}
+		}
+	}
+
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		tmp = ""
+		for _, pk := range shardSlashingList[byte(sid)] {
+			if pkMap[pk] != nil && pkMap[pk].Name != "" {
+				tmp += pkMap[pk].Name + " "
+				pkMap[pk].Queue = SHARD_SLASH
+				pkMap[pk].CID = sid
+			} else {
+				tmp += "@@ "
+			}
+		}
+	}
+	return pkMap
+}
+
 func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 	chain := sim.GetBlockchain()
 	type AccountInfo struct {
-		Name      string
-		Delegate  string
-		HasCredit bool
+		Name            string
+		Delegate        string
+		HasCredit       bool
+		RewardPRV       uint64
+		RewardPRVLocked uint64
+		InCommittee     int
+		AutoStake       bool
+		Balance         uint64
 	}
-
+	allReward, err := sim.RPC.Client.GetAllRewardAmount()
+	if err != nil {
+		panic(err)
+	}
 	pkMap := make(map[string]*AccountInfo)
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown", false}
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown", false, 0, 0, 0, false, 0}
+	}
+	fmt.Println()
+	bBestState := chain.GetBeaconBestState()
+	bC := bBestState.GetBeaconCommittee()
+	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+
+	for _, acc := range accounts {
+		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey].Available[common.PRVIDStr]
+		pkMap[acc.SelfCommitteePubkey].RewardPRVLocked = allReward[acc.PublicKey].Locked[common.PRVIDStr]
+		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
+		if ok {
+			delegate := stakerInfo.Delegate()
+			// pkMap[acc.SelfCommitteePubkey].InCommittee = stakerInfo.ActiveTimesInCommittee()
+			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
+			pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
+			pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
+			for idx, bPK := range bCStr {
+				if bPK == delegate {
+					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
+				}
+			}
+		}
+		stakerInfo2, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
+		if ok {
+			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo2.ActiveTimesInCommittee())
+		}
+
+		balanceMap, err := sim.RPC.API_GetBalance(acc)
+		if err != nil {
+			panic(err)
+		}
+		pkMap[acc.SelfCommitteePubkey].Balance = balanceMap[common.PRVCoinName]
+	}
+	for _, acc := range accounts {
+		stakerInfo := pkMap[acc.SelfCommitteePubkey]
+		fmt.Printf("Acc: %v , Delegate: %v, Has credit %v, In committee %v, AutoStake %+v Balance %v\n", stakerInfo.Name, stakerInfo.Delegate, stakerInfo.HasCredit, stakerInfo.InCommittee, stakerInfo.AutoStake, stakerInfo.Balance)
+	}
+}
+
+func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*StakerInfo {
+	chain := sim.GetBlockchain()
+	allReward, err := sim.RPC.Client.GetAllRewardAmount()
+	if err != nil {
+		panic(err)
+	}
+	pkMap := make(map[string]*StakerInfo)
+	for _, acc := range accounts {
+		pkMap[acc.SelfCommitteePubkey] = &StakerInfo{acc.Name, "unknown", 0, false, 0, 0, 0, false, 0, "unknown"}
 	}
 	bBestState := chain.GetBeaconBestState()
 	bC := bBestState.GetBeaconCommittee()
 	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 
 	for _, acc := range accounts {
+		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey].Available[common.PRVIDStr]
+		pkMap[acc.SelfCommitteePubkey].RewardPRVLocked = allReward[acc.PublicKey].Locked[common.PRVIDStr]
 		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
 		if ok {
 			delegate := stakerInfo.Delegate()
 			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
+			pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
+			pkMap[acc.SelfCommitteePubkey].StakingAmount = 1750000000000
+			pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
 			for idx, bPK := range bCStr {
 				if bPK == delegate {
-					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v %v", idx, bPK)
-					pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
+					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
 				}
 			}
+			pkMap[acc.SelfCommitteePubkey].Chain = "Shard"
+		} else {
+			stakerInfo, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
+			if ok {
+				pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo.ActiveTimesInCommittee())
+				pkMap[acc.SelfCommitteePubkey].StakingAmount = stakerInfo.StakingAmount()
+				pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
+				pkMap[acc.SelfCommitteePubkey].Chain = "Beacon"
+			}
 		}
+		balanceMap, err := sim.RPC.API_GetBalance(acc)
+		if err != nil {
+			panic(err)
+		}
+		pkMap[acc.SelfCommitteePubkey].Balance = balanceMap[common.PRVCoinName]
 	}
-
-	for _, stakerInfo := range pkMap {
-		fmt.Printf("Acc: %v, Delegate: %v\n", stakerInfo.Name, stakerInfo.Delegate)
+	for _, acc := range accounts {
+		stakerInfo := pkMap[acc.SelfCommitteePubkey]
+		fmt.Printf("Acc: %v , Has credit %v, In committee %v, Reward %v, AutoStake %+v Balance %v\n", stakerInfo.Name, stakerInfo.HasCredit, stakerInfo.InCommittee, stakerInfo.RewardPRV, stakerInfo.AutoStake, stakerInfo.Balance)
 	}
+	return pkMap
 }
 
-func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
+var rep []uint64
+var rew []uint64
+
+func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts, acc []account.Account, epoch uint64) {
 	chain := sim.GetBlockchain()
 	type CandidateInfo struct {
 		Name                     string
 		CurrentDelegators        int
 		Reputation               uint
+		Performance              uint
 		CurrentDelegatorsDetails []string
+		RewardPRV                uint64
+		StakingAmount            uint64
+		StakingTxs               []string
 	}
 
 	pkStakerMap := make(map[string]string)
@@ -318,39 +549,100 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account) {
 		pkStakerMap[acc.SelfCommitteePubkey] = acc.Name
 	}
 	bBestState := chain.GetBeaconBestState()
-	bC := bBestState.GetBeaconCommittee()
-	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 	bCState := bBestState.GetCommitteeState()
 	dState := bCState.GetDelegateState()
-
+	keys := []string{}
+	allReward, err := sim.RPC.Client.GetAllRewardAmount()
+	if err != nil {
+		panic(err)
+	}
+	keys = []string{}
 	bcV4 := bCState.(*committeestate.BeaconCommitteeStateV4)
-	for index, b := range bCStr {
+	bcCommitteeStruct := bBestState.GetBeaconCommittee()
+	bcWaitingStruct := bBestState.GetCandidateBeaconWaiting()
+	bcSubstituteStruct := bBestState.GetBeaconPendingValidator()
+	bcList := []string{}
+	bcCommitteeString, _ := incognitokey.CommitteeKeyListToString(bcCommitteeStruct)
+	bcList = append(bcList, bcCommitteeString...)
+	bcWaitingString, _ := incognitokey.CommitteeKeyListToString(bcWaitingStruct)
+	bcList = append(bcList, bcWaitingString...)
+	bcSubsString, _ := incognitokey.CommitteeKeyListToString(bcSubstituteStruct)
+	bcList = append(bcList, bcSubsString...)
+	for index, b := range bcCommitteeString {
+		bCPk := base58.Base58Check{}.Encode(bcCommitteeStruct[index].GetNormalKey(), 0)
 		pkCandidateMap[b] = CandidateInfo{
 			Name:                     fmt.Sprintf("Beacon %v", index),
 			CurrentDelegators:        0,
 			CurrentDelegatorsDetails: []string{},
 			Reputation:               uint(bcV4.Reputation[b]),
+			Performance:              uint(bcV4.Performance[b]),
+			RewardPRV:                allReward[bCPk].Available[common.PRVIDStr],
 		}
+
+		keys = append(keys, b)
+
 		if info, ok := dState[b]; ok {
-			pkCandidateMap[b] = CandidateInfo{
-				Name:                     fmt.Sprintf("Beacon %v", index),
-				CurrentDelegators:        info.CurrentDelegators,
-				CurrentDelegatorsDetails: info.GetCurrentDelegatorsList(),
-				Reputation:               uint(bcV4.Reputation[b]),
+			detailsList := []string{}
+			for _, pk := range info.GetCurrentDelegatorsList() {
+				for _, acc := range accounts {
+					if pk == acc.SelfCommitteePubkey {
+						detailsList = append(detailsList, acc.Name)
+						break
+					}
+				}
 			}
+			infor, ok := pkCandidateMap[b]
+			if !ok {
+				infor = CandidateInfo{
+					Name:                     fmt.Sprintf("Beacon %v", index),
+					CurrentDelegators:        0,
+					CurrentDelegatorsDetails: []string{},
+					Reputation:               uint(bcV4.Reputation[b]),
+					Performance:              uint(bcV4.Performance[b]),
+					RewardPRV:                allReward[bCPk].Available[common.PRVIDStr],
+				}
+			}
+			infor.CurrentDelegators = info.CurrentDelegators
+			infor.CurrentDelegatorsDetails = detailsList
 		}
 	}
-	bcListStr1 := bBestState.GetCommitteeState().GetBeaconSubstitute()
-	bcListStr2 := bBestState.GetCommitteeState().GetBeaconWaiting()
-	bcList1, _ := incognitokey.CommitteeKeyListToString(bcListStr1)
-	bcList2, _ := incognitokey.CommitteeKeyListToString(bcListStr2)
-	// fmt.Println(bcList1)
-	fmt.Printf("Beacon waiting list: %+v\n", bcList2)
-	fmt.Printf("Beacon pending list: %+v\n", bcList1)
-	for _, cInfo := range pkCandidateMap {
-		fmt.Printf("Acc: %v\n\tCurrent delegators: %v\tDetails: %+v\n\tRep:%v\n",
-			cInfo.Name, cInfo.CurrentDelegators, cInfo.CurrentDelegatorsDetails, cInfo.Reputation)
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	for _, k := range keys {
+		if info2, has, err := statedb.GetBeaconStakerInfo(bBestState.GetBeaconConsensusStateDB(), k); (!has) || (err != nil) {
+			fmt.Printf("Can not get beacon staker infor of key %v, err %v\n", k[len(k)-5:], err)
+		} else {
+			infor := pkCandidateMap[k]
+			infor.StakingAmount = info2.StakingAmount()
+			for _, v := range info2.TxStakingIDs() {
+				infor.StakingTxs = append(infor.StakingTxs, v.String())
+			}
+			pkCandidateMap[k] = infor
+		}
+		cInfo := pkCandidateMap[k]
+		fmt.Printf("%v\tRep:%v\tDelegators: %v\tReward %+v\tDetails: %+v\tStakingAmount %+v Staking Txs %+v\n",
+			cInfo.Name, cInfo.Reputation, cInfo.CurrentDelegators, cInfo.RewardPRV, cInfo.CurrentDelegatorsDetails, cInfo.StakingAmount, cInfo.StakingTxs)
 	}
+	for id, value := range bcCommitteeString {
+		if len(value) > 5 {
+			bcCommitteeString[id] = value[len(value)-5:]
+		}
+	}
+	for id, value := range bcWaitingString {
+		if len(value) > 5 {
+			bcWaitingString[id] = value[len(value)-5:]
+		}
+	}
+	for id, value := range bcSubsString {
+		if len(value) > 5 {
+			bcSubsString[id] = value[len(value)-5:]
+		}
+	}
+
+	fmt.Printf("List beacon waiting: %+v\n", bcWaitingString)
+	fmt.Printf("List beacon pending: %+v\n", bcSubsString)
+	fmt.Printf("List beacon committee: %+v\n", bcCommitteeString)
 }
 
 func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
@@ -443,4 +735,109 @@ func (node *NodeEngine) PrintAccountNameFromCPK(committee []incognitokey.Committ
 		}
 	}
 	fmt.Println(tmp)
+}
+
+func (node *NodeEngine) PreparePRVForTest(
+	sender account.Account,
+	receivers []account.Account,
+	amounts []uint64,
+) (txIDs []string, errs []error) {
+	node.ShowBalance(node.GenesisAccount)
+	done := map[int]interface{}{}
+	maxTries := 5
+	txIDs = make([]string, len(receivers))
+	errs = make([]error, len(receivers))
+	for {
+		for id, acc := range receivers {
+			if _, ok := done[id]; ok {
+				continue
+			}
+			node.RPC.API_SubmitKey(acc.PrivateKey)
+			txid, err := node.SendPRV(node.GenesisAccount, acc, amounts[id])
+			if (err == nil) && (len(txid) == 32) {
+				done[id] = nil
+			}
+			txIDs[id] = txid
+			errs[id] = err
+			node.GenerateBlock().NextRound()
+		}
+		maxTries--
+		if (len(done) == len(receivers)) || (maxTries == 0) {
+			break
+		}
+		fmt.Printf("Try one more times %v", maxTries)
+		node.Pause()
+	}
+	for idx, txID := range txIDs {
+		fmt.Printf("Send PRV to account %v, got txID %v, err %v\n", receivers[idx].Name, txID, errs[idx])
+	}
+	return txIDs, errs
+}
+
+func (node *NodeEngine) StakeNewShards(
+	stakers []account.Account,
+	delegates []string,
+	autoStakings []bool,
+) (txIDs []string, errs []error) {
+	node.ShowBalance(node.GenesisAccount)
+	done := map[int]interface{}{}
+	maxTries := 5
+	txIDs = make([]string, len(stakers))
+	errs = make([]error, len(stakers))
+	for {
+		for id, acc := range stakers {
+			if _, ok := done[id]; ok {
+				continue
+			}
+			txid, err := node.RPC.StakeNew(acc, delegates[id], autoStakings[id])
+			if err == nil {
+				done[id] = nil
+				txIDs[id] = txid.TxID
+			}
+			errs[id] = err
+		}
+		maxTries--
+		node.GenerateBlock().NextRound()
+		if (len(done) == len(stakers)) || (maxTries == 0) {
+			break
+		}
+		fmt.Printf("Try one more times %v", maxTries)
+		node.Pause()
+	}
+	for idx, txID := range txIDs {
+		fmt.Printf("stake for account %v, got txID %v, err %v\n", stakers[idx].Name, txID, errs[idx])
+	}
+	return txIDs, errs
+}
+
+func (node *NodeEngine) StakeNewBeacons(
+	stakers []account.Account,
+) (txIDs []string, errs []error) {
+	node.ShowBalance(node.GenesisAccount)
+	done := map[int]interface{}{}
+	maxTries := 5
+	txIDs = make([]string, len(stakers))
+	errs = make([]error, len(stakers))
+	for {
+		for id, acc := range stakers {
+			if _, ok := done[id]; ok {
+				continue
+			}
+			txid, err := node.RPC.StakeNewBeacon(acc)
+			if err == nil {
+				done[id] = nil
+				txIDs[id] = txid.TxID
+			}
+			errs[id] = err
+		}
+		maxTries--
+		node.GenerateBlock().NextRound()
+		if (len(done) == len(stakers)) || (maxTries == 0) {
+			break
+		}
+	}
+	for idx, txID := range txIDs {
+		fmt.Printf("stake beacon for account %v, got txID %v, err %v\n", stakers[idx].Name, txID, errs[idx])
+	}
+	return txIDs, errs
 }

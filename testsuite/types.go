@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"context"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -23,7 +24,7 @@ type Chain interface {
 	GetBestViewHash() string
 	GetFinalViewHash() string
 	GetEpoch() uint64
-	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, len int) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
