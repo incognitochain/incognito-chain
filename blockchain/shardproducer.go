@@ -143,7 +143,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
-			time.Sleep(time.Duration(float64(shardBestState.GetCurrentTimeSlot())/3) * time.Second)
+			if shardBestState.GetCurrentTimeSlot() <= 4 {
+				time.Sleep(time.Second)
+			} else {
+				time.Sleep(time.Duration(float64(shardBestState.GetCurrentTimeSlot())/4) * time.Second)
+			}
 			beaconBlocks, beaconProcessHeight = getConfirmBeaconBlock()
 			if beaconProcessHeight <= shardBestState.BeaconHeight { //cannot receive beacon block after waiting
 				return nil, errors.New("Waiting For Beacon Produce Block")
@@ -714,7 +718,13 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	processedTransaction := map[common.Hash]bool{}
 	defer func() {
 		Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool,totalFee %v \n", len(txsToAdd), totalFee)
+		blockGenerator.chain.config.TempTxPool.EmptyPool()
 	}()
+	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
+	if !isEmpty {
+		return nil, 0
+	}
+
 	for {
 		time.Sleep(time.Millisecond * 10)
 		select {
@@ -722,15 +732,13 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			return txsToAdd, totalFee
 		default:
 		}
+
 		maxTxs := ctx.GetNumTxRemain()
 		sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 		//Logger.log.Infof("Number of transaction get from Block Generator: %v", len(sourceTxns))
 
-		isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
-		if !isEmpty {
-			return nil, 0
-		}
 		currentSize := uint64(0)
+		totalFee = 0
 		preparedTxForNewBlock := []metadata.Transaction{}
 		for _, tx := range sourceTxns {
 			if processedTransaction[*tx.Hash()] {
@@ -748,12 +756,14 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		for index, tx := range preparedTxForNewBlock {
 			select {
 			case <-ctx.Done():
-				break
+				return txsToAdd, totalFee
 			default:
 			}
 			listBatchTxs = append(listBatchTxs, tx)
 			if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
+				t1 := time.Now()
 				tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight), curView)
+				fmt.Println("debugprefetch: processing batching....", time.Since(t1).Seconds(), err, len(listBatchTxs))
 				if err != nil {
 					Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
 					for _, tx2 := range listBatchTxs {
@@ -774,12 +784,12 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 						if currentSize+tempSize >= common.MaxBlockSize {
 							break
 						}
-						if len(txsToAdd)+1 > int(maxTxs) {
-							break
-						}
 						totalFee += tempTx.GetTxFee()
 						currentSize += tempSize
 						txsToAdd[*tempTx.Hash()] = tempTx
+						if len(txsToAdd)+1 > int(maxTxs) {
+							return
+						}
 					}
 				}
 				for _, tempToAddTxDesc := range tempTxDesc {
@@ -789,11 +799,12 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 					if currentSize+tempSize >= common.MaxBlockSize {
 						break
 					}
-					if len(txsToAdd)+1 > int(maxTxs) {
-						break
-					}
+
 					currentSize += tempSize
 					txsToAdd[*tempTx.Hash()] = tempTx
+					if len(txsToAdd)+1 > int(maxTxs) {
+						return
+					}
 				}
 				// reset list batch and add new txs
 				listBatchTxs = []metadata.Transaction{}
@@ -802,9 +813,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 				continue
 			}
 		}
-		blockGenerator.chain.config.TempTxPool.EmptyPool()
 		go blockGenerator.txPool.RemoveTx(txToRemove, false)
 	}
+
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {

@@ -408,7 +408,7 @@ func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	}
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
-		return res, errors.New(rpcERR.Error())
+		return res, err
 	}
 	resp := struct {
 		Result bool

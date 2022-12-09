@@ -255,6 +255,7 @@ func (chain *ShardChain) CreateNewBlock(
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
 	curView := chain.GetBestState()
+	chain.PreFetchTx.Start(curView)
 	newBlock, err := chain.Blockchain.NewBlockShard(
 		curView,
 		version, proposer, round,
@@ -374,7 +375,6 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate 
 		Logger.log.Error(err)
 		return err
 	}
-	chain.PreFetchTx.Reset(chain.GetBestState())
 	return nil
 }
 
@@ -383,7 +383,6 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	if err := chain.InsertBlock(block, false); err != nil {
 		return err
 	}
-	chain.PreFetchTx.Reset(chain.GetBestState())
 	return nil
 }
 
