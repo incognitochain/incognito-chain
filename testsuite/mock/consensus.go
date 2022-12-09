@@ -17,7 +17,7 @@ type ConsensusInterface interface {
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int, produceTS, proposeTS int64) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
-	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, fixedNode int) error
 	IsCommitteeInChain(int) bool
 	GetValidators() []*consensus.Validator
 }
