@@ -344,6 +344,10 @@ func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForNextRandom() []inc
 	return []incognitokey.CommitteePublicKey{}
 }
 
+func (b beaconCommitteeStateBase) GetBeaconLocking() []incognitokey.CommitteePublicKey {
+	return []incognitokey.CommitteePublicKey{}
+}
+
 func (b beaconCommitteeStateBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
 	panic("do not use function of beaconCommitteeStateBase struct")
 }
