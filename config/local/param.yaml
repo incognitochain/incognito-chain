@@ -69,6 +69,7 @@ consensus_param:
   assign_rule_v3_height: 1e9
   enable_slashing_height_v2: 1e9
   staking_flow_v3_height: 1e9
+  staking_flow_v4_height: 1e9
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
   timeslot: 10

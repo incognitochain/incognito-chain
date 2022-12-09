@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-//Random Instruction which get nonce from bitcoin block
+// Random Instruction which get nonce from bitcoin block
 type RandomInstruction struct {
 	randomNumber int64
 }
@@ -38,6 +38,13 @@ func (s *RandomInstruction) ToString() []string {
 }
 
 func ValidateAndImportRandomInstructionFromString(instruction []string) (*RandomInstruction, error) {
+	if err := ValidateRandomInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportRandomInstructionFromString(instruction), nil
+}
+
+func BuildRandomInstructionFromString(instruction []string) (Instruction, error) {
 	if err := ValidateRandomInstructionSanity(instruction); err != nil {
 		return nil, err
 	}

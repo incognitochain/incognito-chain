@@ -68,6 +68,13 @@ func ValidateAndImportReDelegateInstructionFromString(instruction []string) (*Re
 	return ImportReDelegateInstructionFromString(instruction), nil
 }
 
+func BuildReDelegateInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateReDelegateInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportReDelegateInstructionFromString(instruction), nil
+}
+
 func ImportReDelegateInstructionFromString(instruction []string) *ReDelegateInstruction {
 	redelegateInstruction := NewReDelegateInstruction()
 	if len(instruction[0]) > 0 {

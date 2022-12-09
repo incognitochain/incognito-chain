@@ -14,7 +14,7 @@ var (
 	ErrFinishSyncInstruction = errors.New("finish sync instruction error")
 )
 
-//FinishSyncInstruction :
+// FinishSyncInstruction :
 // format: "finish_sync", "0", "key1,key2"
 type FinishSyncInstruction struct {
 	ChainID          int
@@ -68,6 +68,13 @@ func ValidateAndImportFinishSyncInstructionFromString(instruction []string) (*Fi
 	return ImportFinishSyncInstructionFromString(instruction)
 }
 
+func BuildFinishSyncInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateFinishSyncInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportFinishSyncInstructionFromString(instruction)
+}
+
 // ImportFinishSyncInstructionFromString is unsafe method
 func ImportFinishSyncInstructionFromString(instruction []string) (*FinishSyncInstruction, error) {
 	finishSyncInstruction := NewFinishSyncInstruction()
@@ -83,7 +90,7 @@ func ImportFinishSyncInstructionFromString(instruction []string) (*FinishSyncIns
 	return finishSyncInstruction, err
 }
 
-//ValidateFinishSyncInstructionSanity ...
+// ValidateFinishSyncInstructionSanity ...
 func ValidateFinishSyncInstructionSanity(instruction []string) error {
 	if len(instruction) != 3 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrFinishSyncInstruction, instruction)

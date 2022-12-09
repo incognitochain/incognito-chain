@@ -63,6 +63,7 @@ consensus_param:
   assign_rule_v3_height: 2823522
   enable_slashing_height_v2: 2823650
   staking_flow_v3_height: 2823780
+  staking_flow_v4_height: 1e9
   lemma2_height: 2868685
   force_not_use_burned_coins: 2922689
   block_producing_v3_height: 3146717

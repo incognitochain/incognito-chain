@@ -12,9 +12,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//SwapInstruction :
-//Swap instruction format:
-//["swap-action", list-keys-in, list-keys-out, shard or beacon chain, shard_id(optional), "punished public key", "new reward receivers"]
+// SwapInstruction :
+// Swap instruction format:
+// ["swap-action", list-keys-in, list-keys-out, shard or beacon chain, shard_id(optional), "punished public key", "new reward receivers"]
 type SwapInstruction struct {
 	InPublicKeys        []string
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
@@ -113,6 +113,13 @@ func (s *SwapInstruction) SetIsReplace(isReplace bool) *SwapInstruction {
 }
 
 func ValidateAndImportSwapInstructionFromString(instruction []string) (*SwapInstruction, error) {
+	if err := ValidateSwapInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportSwapInstructionFromString(instruction), nil
+}
+
+func BuildSwapInstructionFromString(instruction []string) (Instruction, error) {
 	if err := ValidateSwapInstructionSanity(instruction); err != nil {
 		return nil, err
 	}

@@ -835,6 +835,18 @@ func (b *BeaconCommitteeStateV4) countActiveTimes(
 	return enoughActivetimes, nil
 }
 
+func (b BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePublicKey {
+	lockingKeysStr := []string{}
+	for _, lockingInfo := range b.beaconLocking {
+		lockingKeysStr = append(lockingKeysStr, lockingInfo.PublicKey)
+	}
+	bPKStructs, err := incognitokey.CommitteeKeyListToStruct(lockingKeysStr)
+	if err != nil {
+		panic(err)
+	}
+	return bPKStructs
+}
+
 func (b *BeaconCommitteeStateV4) addDataToEnvironment(env *BeaconCommitteeStateEnvironment) {
 	b.BeaconCommitteeStateV3.addDataToEnvironment(env)
 	env.beaconCommittee = common.DeepCopyString(b.beaconCommittee)
