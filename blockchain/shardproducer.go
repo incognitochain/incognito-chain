@@ -211,7 +211,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := curView.BlockMaxCreateTime - time.Since(newShardBlockBeginTime)
+	blockCreationLeftOver := 2*time.Second - time.Since(newShardBlockBeginTime)
 	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(
 		curView,
 		&tempPrivateKey,
