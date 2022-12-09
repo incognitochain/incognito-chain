@@ -3,6 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/flatfile"
@@ -11,8 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
-	"os"
-	"path"
 )
 
 type BlockStorage struct {
@@ -80,7 +81,7 @@ func (s *BlockStorage) GetStakingTx(hash common.Hash) (metadata.Transaction, err
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(string(b))
+		// fmt.Println(string(b))
 		txChoice, parseErr := transaction.DeserializeTransactionJSON(b)
 		if parseErr != nil {
 			return nil, fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)

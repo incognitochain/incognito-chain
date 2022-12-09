@@ -232,7 +232,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	}
 	previousBeaconBlock := preBlk.(*types.BeaconBlock)
 
-	if (beaconBlock.GetBeaconHeight() >= config.Param().ConsensusParam.StakingFlowV4Height) && (beaconBlock.GetBeaconHeight() > 2) {
+	if (beaconBlock.GetBeaconHeight() >= SFV4_StartHeight) && (beaconBlock.GetBeaconHeight() > 2) {
 		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 			return err
 		}
@@ -612,6 +612,8 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					SFV3_MinShardCommitteeSize = 4
 					beaconBestState.MinShardCommitteeSize = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
 					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				case ENABLE_STAKE_BEACON:
+					SFV4_StartHeight = config.Param().ConsensusParam.StakingFlowV4Height
 				}
 
 			}
@@ -802,7 +804,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
-		config.Param().ConsensusParam.StakingFlowV4Height,
+		SFV4_StartHeight,
 		beaconCommitteeStateEnv)
 
 	if config.Param().ConsensusParam.BlockProducingV3Height == beaconBestState.BeaconHeight {
@@ -924,7 +926,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		Logger.log.Infof("test stake Next epoch beacon candidata len %v, %+v", len(committeeChange.CurrentEpochBeaconCandidateAdded), keys)
 	}
 	var err error
-	if beaconBlock.GetHeight() >= config.Param().ConsensusParam.StakingFlowV4Height {
+	if beaconBlock.GetHeight() >= SFV4_StartHeight {
 		if beaconBlock.GetHeight() > 2 {
 			if err = blockchain.BeaconChain.ReplacePreviousValidationData(beaconBlock.GetPrevHash(), *curView.GetBlock().ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 				return err
@@ -936,7 +938,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 				return err
 			}
 		}
-		if (beaconBlock.GetHeight() == config.Param().ConsensusParam.StakingFlowV4Height) || ((1 == config.Param().ConsensusParam.StakingFlowV4Height) && (beaconBlock.GetHeight() == 2)) {
+		if beaconBlock.GetHeight() == SFV4_StartHeight {
 			if err = newBestState.UpdateFixedNodeForBeaconStaking(); err != nil {
 				return err
 			}
@@ -1436,7 +1438,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 
 	beaconStakerKeys := committeeChange.BeaconStakerKeys()
 
-	if (beaconBestState.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV4Height) && (len(beaconStakerKeys) != 0) {
+	if (beaconBestState.BeaconHeight >= SFV4_StartHeight) && (len(beaconStakerKeys) != 0) {
 		err := statedb.StoreBeaconStakersInfo(
 			beaconBestState.consensusStateDB,
 			beaconStakerKeys,

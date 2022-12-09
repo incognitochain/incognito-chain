@@ -76,6 +76,12 @@ func ValidateAndImportAddStakingInstructionFromString(instruction []string) (*Ad
 	}
 	return ImportAddStakingInstructionFromString(instruction), nil
 }
+func BuildAddStakingInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateAddStakingInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportAddStakingInstructionFromString(instruction), nil
+}
 
 func ImportAddStakingInstructionFromString(instruction []string) *AddStakingInstruction {
 	addStakingInstruction := NewAddStakingInstruction()

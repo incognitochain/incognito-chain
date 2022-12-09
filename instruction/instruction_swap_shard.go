@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-//SwapShardInstruction Shard Swap Instruction
+// SwapShardInstruction Shard Swap Instruction
 type SwapShardInstruction struct {
 	InPublicKeys        []string
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
@@ -91,6 +91,13 @@ func (s *SwapShardInstruction) SetType(typeIns int) *SwapShardInstruction {
 }
 
 func ValidateAndImportSwapShardInstructionFromString(instruction []string) (*SwapShardInstruction, error) {
+	if err := ValidateSwapShardInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportSwapShardInstructionFromString(instruction), nil
+}
+
+func BuildSwapShardInstructionFromString(instruction []string) (Instruction, error) {
 	if err := ValidateSwapShardInstructionSanity(instruction); err != nil {
 		return nil, err
 	}

@@ -160,6 +160,13 @@ func ValidateAndImportStakeInstructionFromString(instruction []string) (*StakeIn
 	return ImportStakeInstructionFromString(instruction), nil
 }
 
+func BuildStakeInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateStakeInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportStakeInstructionFromString(instruction), nil
+}
+
 // ImportStakeInstructionFromString is unsafe method
 func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 	stakeInstruction := NewStakeInstruction()

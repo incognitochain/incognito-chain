@@ -16,6 +16,7 @@ type BeaconCommitteeState interface {
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetBeaconWaiting() []incognitokey.CommitteePublicKey
+	GetBeaconLocking() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey

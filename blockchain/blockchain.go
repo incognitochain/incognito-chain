@@ -654,6 +654,10 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			if feature == REDUCE_FIX_NODE_V3 || feature == REDUCE_FIX_NODE_V2 {
 				SFV3_MinShardCommitteeSize = 4
 			}
+			if feature == ENABLE_STAKE_BEACON {
+				SFV4_StartHeight = config.Param().ConsensusParam.StakingFlowV4Height
+			}
+
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {
 				return errors.New("No config in triggered feature")
 			} else {
@@ -756,7 +760,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
 			config.Param().ConsensusParam.StakingFlowV2Height,
 			config.Param().ConsensusParam.StakingFlowV3Height,
-			config.Param().ConsensusParam.StakingFlowV4Height,
+			SFV4_StartHeight,
 		)
 		v.shardCommitteeState = InitShardCommitteeState(version,
 			v.consensusStateDB,

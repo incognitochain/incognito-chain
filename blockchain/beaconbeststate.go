@@ -37,6 +37,7 @@ const (
 	REDUCE_FIX_NODE               = "reduce_fix_node"
 	REDUCE_FIX_NODE_V2            = "reduce_fix_node_v2"
 	REDUCE_FIX_NODE_V3            = "reduce_fix_node_v3"
+	ENABLE_STAKE_BEACON           = "enable_stake_beacon"
 )
 
 // BestState houses information about the current best block and other info
@@ -674,7 +675,7 @@ func (beaconBestState *BeaconBestState) GetAllBeaconValidatorCandidateFlattenLis
 	return res
 }
 
-func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	sC := make(map[byte][]incognitokey.CommitteePublicKey)
 	sPV := make(map[byte][]incognitokey.CommitteePublicKey)
 	sSP := make(map[byte][]incognitokey.CommitteePublicKey)
@@ -693,7 +694,8 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map
 	cBWFNR := beaconBestState.beaconCommitteeState.GetCandidateBeaconWaitingForNextRandom()
 	cSWFCR := beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForCurrentRandom()
 	cSWFNR := beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForNextRandom()
-	return sC, sPV, sSP, bC, bPV, cBWFCR, cBWFNR, cSWFCR, cSWFNR, nil
+	bL := beaconBestState.beaconCommitteeState.GetBeaconLocking()
+	return sC, sPV, sSP, bC, bPV, cBWFCR, cBWFNR, cSWFCR, cSWFNR, bL, nil
 }
 
 func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string, isBeacon bool) []string {
@@ -715,6 +717,12 @@ func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string, isBeac
 		panic(err)
 	}
 	stakers = common.GetValidStaker(candidateBeaconWaitingForCurrentRandomStr, stakers)
+	lockedCandidateBeacon := beaconBestState.beaconCommitteeState.GetBeaconLocking()
+	lockedCandidateBeaconStr, err := incognitokey.CommitteeKeyListToString(lockedCandidateBeacon)
+	if err != nil {
+		panic(err)
+	}
+	stakers = common.GetValidStaker(lockedCandidateBeaconStr, stakers)
 	candidateBeaconWaitingForNextRandom := beaconBestState.beaconCommitteeState.GetCandidateBeaconWaitingForNextRandom()
 	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(candidateBeaconWaitingForNextRandom)
 	if err != nil {
@@ -910,7 +918,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
-		config.Param().ConsensusParam.StakingFlowV4Height,
+		SFV4_StartHeight,
 	)
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
@@ -1301,6 +1309,20 @@ func (beaconBestState *BeaconBestState) GetNonSlashingCommittee(committees []*st
 	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, epoch)
 
 	return filterNonSlashingCommittee(committees, slashingCommittees[shardID]), nil
+}
+
+func (beaconBestState *BeaconBestState) GetACurrentSlashingCommittee(shardID byte) []string {
+
+	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, beaconBestState.Epoch)
+
+	return slashingCommittees[shardID]
+}
+
+func (beaconBestState *BeaconBestState) GetAllCurrentSlashingCommittee() map[byte][]string {
+
+	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.slashStateDB, beaconBestState.Epoch-1)
+
+	return slashingCommittees
 }
 
 func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []string {

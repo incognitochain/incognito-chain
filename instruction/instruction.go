@@ -84,34 +84,50 @@ func (i *CommitteeStateInstruction) ValidateAndFilterStakeInstructionsV1(v *View
 }
 
 func ValidateAndImportInstructionFromString(inst []string) (
-	Instruction,
-	error,
+	instStr Instruction,
+	err error,
 ) {
-	switch inst[0] {
-	case STAKE_ACTION:
-		stakeInstruction, err := ValidateAndImportStakeInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-		}
-		return stakeInstruction, nil
-	case SWAP_ACTION:
-		swapInstruction, err := ValidateAndImportSwapInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP swap instruction %+v, error %+v", inst, err)
-		}
-		return swapInstruction, nil
-	case STOP_AUTO_STAKE_ACTION:
-		stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-		}
-		return stopAutoStakeInstruction, nil
-	case RE_DELEGATE:
-		redelegateInstruction, err := ValidateAndImportReDelegateInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP redelegate instruction %+v, error %+v", inst, err)
-		}
-		return redelegateInstruction, nil
+	action := inst[0]
+	var buildInstructionFromString func(x []string) (Instruction, error)
+	if !IsConsensusInstruction(action) {
+		return nil, errors.Errorf("this inst %v is not Consensus instruction", inst)
 	}
-	return nil, nil
+	switch action {
+	case STAKE_ACTION:
+		buildInstructionFromString = BuildStakeInstructionFromString
+	case RANDOM_ACTION:
+		buildInstructionFromString = BuildRandomInstructionFromString
+	case STOP_AUTO_STAKE_ACTION:
+		buildInstructionFromString = BuildStopAutoStakeInstructionFromString
+	case SWAP_ACTION:
+		buildInstructionFromString = BuildSwapInstructionFromString
+	case SWAP_SHARD_ACTION:
+		buildInstructionFromString = BuildSwapShardInstructionFromString
+	case FINISH_SYNC_ACTION:
+		buildInstructionFromString = BuildFinishSyncInstructionFromString
+	case UNSTAKE_ACTION:
+		buildInstructionFromString = BuildUnstakeInstructionFromString
+	case RE_DELEGATE:
+		buildInstructionFromString = BuildReDelegateInstructionFromString
+	case ADD_STAKING_ACTION:
+		buildInstructionFromString = BuildAddStakingInstructionFromString
+	}
+	instStr, err = buildInstructionFromString(inst)
+	if err != nil {
+		return nil, errors.Errorf("SKIP %v instruction %+v, error %+v", action, inst, err)
+	}
+	return instStr, nil
+}
+
+func ValidateAndImportConsensusInstructionFromListString(insts [][]string) []Instruction {
+	iInsts := []Instruction{}
+	for _, instString := range insts {
+		iInst, err := ValidateAndImportInstructionFromString(instString)
+		if err != nil {
+			Logger.Log.Error(err)
+			continue
+		}
+		iInsts = append(iInsts, iInst)
+	}
+	return iInsts
 }

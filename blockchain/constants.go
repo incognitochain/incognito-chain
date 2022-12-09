@@ -6,8 +6,11 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics"
 )
 
-//Network fixed params
-var SFV3_MinShardCommitteeSize = 8
+// Network fixed params
+var (
+	SFV3_MinShardCommitteeSize = 8
+	SFV4_StartHeight           = uint64(1e9)
+)
 
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
