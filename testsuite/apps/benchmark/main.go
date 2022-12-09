@@ -15,12 +15,12 @@ import (
 )
 
 func main() {
-	submitKey()
-	time.Sleep(time.Second * 10)
-	sendSeed()
-	time.Sleep(time.Second * 10)
-	distributePRVCoin()
-	time.Sleep(time.Second * 20)
+	//submitKey()
+	//time.Sleep(time.Second * 10)
+	//sendSeed()
+	//time.Sleep(time.Second * 10)
+	//distributePRVCoin()
+	//time.Sleep(time.Second * 20)
 	createBenchmark()
 	time.Sleep(time.Second * 10)
 	sendTx()

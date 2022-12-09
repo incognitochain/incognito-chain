@@ -106,7 +106,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 	s.Reset(curView)
 	s.Ctx.running = true
 
-	s.Ctx.Context, s.Ctx.cancelFunc = context.WithDeadline(s.Ctx.Context, time.Now().Add(time.Second*time.Duration(common.TIMESLOT)))
+	s.Ctx.Context, s.Ctx.cancelFunc = context.WithTimeout(s.Ctx.Context, time.Second*4)
 	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
@@ -131,7 +131,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 
 		tempPrivateKey := blockChain.config.BlockGen.createTempKeyset()
 		for {
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 10)
 			select {
 			case <-currentCtx.Context.Done():
 				Logger.log.Info("debugprefetch: done get response from beacon block", len(s.BeaconBlocks), len(s.ResponseTxs))

@@ -255,6 +255,7 @@ func (chain *ShardChain) CreateNewBlock(
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
 	curView := chain.GetBestState()
+	chain.PreFetchTx.Start(curView)
 	newBlock, err := chain.Blockchain.NewBlockShard(
 		curView,
 		version, proposer, round,

@@ -73,6 +73,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 	//
 
 	//========Verify shardBlock only
+	t1 := time.Now()
 	if err := blockchain.verifyPreProcessingShardBlock(
 		shardBestState, shardBlock, beaconBlocks,
 		shardID, true, signingCommittees); err != nil {
@@ -93,11 +94,12 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
+
 	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 		Logger.log.Error("err:", err)
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing", shardID, shardBlock.GetHeight(), shardBlock.Hash().String())
+	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing - cost %+v", shardID, shardBlock.GetHeight(), shardBlock.Hash().String(), time.Since(t1).Seconds())
 	return nil
 }
 
@@ -1377,7 +1379,7 @@ func (blockchain *BlockChain) storeFinalizeShardBlockByBeaconView(shardID byte, 
 //   - Remove Candiates in Mempool
 //   - Remove Transaction in Mempool and Block Generator
 func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock *types.ShardBlock, shardID byte) {
-	go func() {
+	func() {
 		//Remove Candidate In pool
 		candidates := []string{}
 		for _, tx := range shardBlock.Body.Transactions {
@@ -1394,9 +1396,9 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 				}
 			}
 		}
-		go blockchain.config.TxPool.RemoveCandidateList(candidates)
+		blockchain.config.TxPool.RemoveCandidateList(candidates)
 		//Remove tx out of pool
-		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
+		blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
 	}()
 }
 
