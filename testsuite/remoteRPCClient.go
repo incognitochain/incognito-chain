@@ -3,6 +3,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -371,11 +372,11 @@ func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	return resp.Result, err
 }
 
-func (r *RemoteRPCClient) AuthorizedSubmitKey(privateKey string) (res bool, err error) {
+func (r *RemoteRPCClient) AuthorizedSubmitKey(otaPrivateKey string) (res bool, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "authorizedsubmitkey",
-		"params":  []interface{}{privateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, true},
+		"params":  []interface{}{otaPrivateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, true},
 		"id":      1,
 	})
 	if err != nil {
@@ -1634,6 +1635,36 @@ func (r *RemoteRPCClient) DefragmentAccountToken(privateKey string, receiver map
 
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) PreparePRVForTest(
+	privateKey string, receivers map[string]interface{},
+) (res *jsonresult.CreateTransactionResult, err error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendtransaction",
+		"params":  []interface{}{privateKey, receivers, -1, 0},
+		"id":      1,
+	})
+	if err != nil {
+
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, fmt.Errorf(resp.Error.StackTrace)
 	}
 	return resp.Result, err
 }

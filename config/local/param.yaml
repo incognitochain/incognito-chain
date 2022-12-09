@@ -30,20 +30,20 @@ committee_size:
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
-  min_beacon_block_interval: 40s
-  max_beacon_block_creation: 20s
-  min_shard_block_interval: 40s
-  max_shard_block_creation: 20s
+  min_beacon_block_interval: 5s
+  max_beacon_block_creation: 3s
+  min_shard_block_interval: 5s
+  max_shard_block_creation: 3s
 staking_amount_shard: 1750000000000
 staking_amount_beacon: 87500000000000
 active_shards: 2
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:
-  number_of_block_in_epoch: 50
+  number_of_block_in_epoch: 10
   number_of_block_in_epoch_v2: 1e9
   epoch_v2_break_point: 1e9
-  random_time: 25
+  random_time: 5
   random_time_v2: 1e9
 eth_contract_address: "0x81BFbdAa0af287125602C1afe954cBbccff0eB3A"
 bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
@@ -150,7 +150,7 @@ auto_enable_feature:
   #     force_trigger: 1000000000
   #     require_percentage: 90
   - blocktime20:
-      min_trigger: 2000
+      min_trigger: 200000
       force_trigger: 1000000000
       require_percentage: 90
   - blocktime10:
@@ -166,7 +166,7 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
 blocktime_param:
-  - "blocktimedef": 40
+  - "blocktimedef": 5
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
