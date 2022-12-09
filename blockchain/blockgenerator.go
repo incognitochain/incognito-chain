@@ -106,7 +106,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 	s.Reset(curView)
 	s.Ctx.running = true
 
-	s.Ctx.Context, s.Ctx.cancelFunc = context.WithTimeout(s.Ctx.Context, (time.Duration(curView.GetCurrentTimeSlot())/2)*time.Second)
+	s.Ctx.Context, s.Ctx.cancelFunc = context.WithTimeout(s.Ctx.Context, (time.Duration(curView.GetCurrentTimeSlot()))*time.Second)
 	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
