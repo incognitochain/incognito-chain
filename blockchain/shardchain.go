@@ -375,7 +375,6 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate 
 		Logger.log.Error(err)
 		return err
 	}
-	chain.PreFetchTx.Reset(chain.GetBestState())
 	return nil
 }
 
@@ -384,7 +383,6 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	if err := chain.InsertBlock(block, false); err != nil {
 		return err
 	}
-	chain.PreFetchTx.Reset(chain.GetBestState())
 	return nil
 }
 

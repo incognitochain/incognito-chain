@@ -752,7 +752,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		for index, tx := range preparedTxForNewBlock {
 			select {
 			case <-ctx.Done():
-				break
+				return txsToAdd, totalFee
 			default:
 			}
 			listBatchTxs = append(listBatchTxs, tx)

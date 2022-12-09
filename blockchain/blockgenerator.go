@@ -106,7 +106,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 	s.Reset(curView)
 	s.Ctx.running = true
 
-	s.Ctx.Context, s.Ctx.cancelFunc = context.WithTimeout(s.Ctx.Context, time.Second*4)
+	s.Ctx.Context, s.Ctx.cancelFunc = context.WithTimeout(s.Ctx.Context, time.Duration(curView.GetCurrentTimeSlot())*time.Second)
 	currentCtx := s.Ctx
 
 	blockChain := s.BestView.blockChain
@@ -207,7 +207,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 			)
 			Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(s.CollectedTxs), curView.ShardHeight+1, time.Since(st))
 		} else {
-			currentCtx.MaxTime = time.Second * time.Duration(common.TIMESLOT) * 4
+			currentCtx.MaxTime = time.Second * time.Duration(curView.GetCurrentTimeSlot()) * 4
 			txsToAdd := blockChain.ShardChain[shardID].TxPool.GetTxsTranferForNewBlock(
 				blockChain,
 				curView,

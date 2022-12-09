@@ -203,8 +203,8 @@ feature_version:
   - reduce_fix_node_v2: 13
   - reduce_fix_node_v3: 14
 transactions_param:
-  lowerbound: 90
-  upperbound: 90
+  lowerbound: 150
+  upperbound: 150
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed
