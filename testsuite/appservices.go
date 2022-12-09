@@ -91,3 +91,17 @@ func (s *AppService) PreparePRVForTest(privateKey string, receivers map[string]i
 		panic(err)
 	}
 }
+
+func (s *AppService) ConvertTokenV1ToV2(privateKey string) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	if err := fullnodeRPC.CreateConvertCoinVer1ToVer2Transaction(privateKey); err != nil {
+		panic(err)
+	}
+}
+
+func (s *AppService) AuthorizedSubmitKey(otaPrivateKey string) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	if _, err := fullnodeRPC.AuthorizedSubmitKey(otaPrivateKey); err != nil {
+		panic(err)
+	}
+}

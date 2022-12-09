@@ -372,11 +372,11 @@ func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	return resp.Result, err
 }
 
-func (r *RemoteRPCClient) AuthorizedSubmitKey(privateKey string) (res bool, err error) {
+func (r *RemoteRPCClient) AuthorizedSubmitKey(otaPrivateKey string) (res bool, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "authorizedsubmitkey",
-		"params":  []interface{}{privateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, true},
+		"params":  []interface{}{otaPrivateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, true},
 		"id":      1,
 	})
 	if err != nil {
