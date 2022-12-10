@@ -593,6 +593,9 @@ func (a *actorV2) run() error {
 				latestBlockInCurrentTS := a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
 				noProposeBlockInCurrentTS := func() bool {
 					if a.currentTimeSlot != bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) && bestView.PastHalfTimeslot(time.Now().Unix()) {
+						if ok := a.GetCurrentTimeSlotProposeHistory(); ok {
+							return false
+						}
 						blks := a.GetSortedReceiveBlockByHeight(bestView.GetHeight() + 1)
 						if len(blks) == 0 {
 							return true
@@ -600,6 +603,7 @@ func (a *actorV2) run() error {
 						if a.currentTimeSlot == bestView.CalculateTimeSlot(blks[0].block.GetProposeTime()) {
 							return false
 						}
+
 						return true
 					}
 					return false
