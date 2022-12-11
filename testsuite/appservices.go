@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 func NewAppService(fullnode string, finalizedBlock bool) *AppService {
@@ -104,4 +105,62 @@ func (s *AppService) AuthorizedSubmitKey(otaPrivateKey string) {
 	if _, err := fullnodeRPC.AuthorizedSubmitKey(otaPrivateKey); err != nil {
 		panic(err)
 	}
+}
+
+func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress string, autoReStaking bool) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+	if _, err := fullnodeRPC.CreateAndSendStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: 1750000000000,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"StakingType":                  63,
+			"CandidatePaymentAddress":      candidatePaymentAddress,
+			"PrivateSeed":                  privateSeed,
+			"RewardReceiverPaymentAddress": rewardReceiverPaymentAddress,
+			"AutoReStaking":                autoReStaking,
+		},
+	); err != nil {
+		panic(err)
+	}
+}
+
+func (s *AppService) ShardUnstaking(privateKey, candidatePaymentAddress, privateSeed string) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+	if _, err := fullnodeRPC.CreateAndSendUnStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: 0,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"StopAutoStakingType":     127,
+			"CandidatePaymentAddress": candidatePaymentAddress,
+			"PrivateSeed":             privateSeed,
+		},
+	); err != nil {
+		panic(err)
+	}
+}
+
+func (s *AppService) GetBeaconBestState() (jsonresult.GetBeaconBestState, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	return fullnodeRPC.GetBeaconBestState()
+}
+
+func (s *AppService) GetCommitteeList() (*jsonresult.CommitteeListsResult, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	return fullnodeRPC.GetCommitteeList()
 }
