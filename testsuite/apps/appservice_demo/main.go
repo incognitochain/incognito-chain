@@ -5,6 +5,8 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"os"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -22,6 +24,19 @@ type Key struct {
 }
 
 func main() {
+
+	args := os.Args
+	isSkipSubmitKey := false
+	if len(args) > 2 {
+		isSkipSubmitKeyInt, err := strconv.Atoi(args[1])
+		if err != nil {
+			panic(err)
+		}
+		if isSkipSubmitKeyInt == 1 {
+			isSkipSubmitKey = true
+		}
+	}
+
 	var keys []Key
 
 	data, err := ioutil.ReadFile("accounts.json")
@@ -49,6 +64,13 @@ func main() {
 	log.Println("Will be listening to beacon height:", bHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
+		var startStakingHeight uint64
+		log.Println("Will be start staking on beacon height:", startStakingHeight)
+		if isSkipSubmitKey {
+			startStakingHeight = bHeight
+		} else {
+			startStakingHeight = bHeight + 20
+		}
 		if blk.GetBeaconHeight() == bHeight {
 			//submitkey
 			otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
@@ -75,7 +97,7 @@ func main() {
 			}
 
 			app.PreparePRVForTest(privateKey, receivers)
-		} else if blk.GetBeaconHeight() == bHeight+20 {
+		} else if blk.GetBeaconHeight() == startStakingHeight {
 			//Stake one node
 			k := keys[0]
 			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
@@ -84,14 +106,14 @@ func main() {
 			log.Printf("Start staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 				privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
 			app.ShardStaking(privateKey, k.PaymentAddress, privateSeed, k.PaymentAddress, true)
-		} else if blk.GetBeaconHeight() == bHeight+22 {
+		} else if blk.GetBeaconHeight() == startStakingHeight+2 {
 			list, err := app.GetCommitteeList()
 			if err != nil {
 				panic(err)
 			}
 			log.Println(list)
 
-		} else if blk.GetBeaconHeight() == bHeight+25 {
+		} else if blk.GetBeaconHeight() == startStakingHeight+5 {
 			//Unstake one node
 			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 			k := keys[0]
