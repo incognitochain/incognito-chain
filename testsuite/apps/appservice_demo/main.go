@@ -46,7 +46,7 @@ func main() {
 	if bHeight < 15 {
 		bHeight = 15
 	}
-	log.Println("Will be listening to block:", bHeight)
+	log.Println("Will be listening to beacon height:", bHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
 		if blk.GetBeaconHeight() == bHeight {

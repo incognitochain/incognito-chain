@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -202,6 +203,7 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 	if err != nil {
 		return errors.New(rpcERR.Error())
 	}
+	log.Println("body:", string(body))
 	resp := struct {
 		Result bool
 		Error  *ErrMsg
