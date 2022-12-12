@@ -1667,3 +1667,36 @@ func (r *RemoteRPCClient) PreparePRVForTest(
 	}
 	return resp.Result, err
 }
+
+func (r *RemoteRPCClient) GetCommitteeState(height uint64, hash string) (*jsonresult.CommiteeState, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getcommitteestate",
+		"params": []interface{}{
+			height,
+			hash,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *jsonresult.CommiteeState
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Result, err
+}

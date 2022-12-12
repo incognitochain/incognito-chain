@@ -108,7 +108,7 @@ func (s *AppService) AuthorizedSubmitKey(otaPrivateKey string) {
 	}
 }
 
-func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress string, autoReStaking bool) {
+func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress, delegate string, autoReStaking bool) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)
 	if err != nil {
@@ -126,6 +126,7 @@ func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSe
 			"CandidatePaymentAddress":      candidatePaymentAddress,
 			"PrivateSeed":                  privateSeed,
 			"RewardReceiverPaymentAddress": rewardReceiverPaymentAddress,
+			"Delegate":                     delegate,
 			"AutoReStaking":                autoReStaking,
 		},
 	); err != nil {
@@ -161,7 +162,7 @@ func (s *AppService) GetBeaconBestState() (jsonresult.GetBeaconBestState, error)
 	return fullnodeRPC.GetBeaconBestState()
 }
 
-func (s *AppService) GetCommitteeList() (*jsonresult.CommitteeListsResult, error) {
+func (s *AppService) GetCommitteeState(height uint64, hash string) (*jsonresult.CommiteeState, error) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
-	return fullnodeRPC.GetCommitteeList()
+	return fullnodeRPC.GetCommitteeState(height, hash)
 }

@@ -102,28 +102,28 @@ func main() {
 			k := keys[0]
 			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
 			privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 			log.Printf("Start staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-				privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
-			app.ShardStaking(privateKey, k.PaymentAddress, privateSeed, k.PaymentAddress, true)
+				k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
+			app.ShardStaking(k.PrivateKey, k.PaymentAddress, privateSeed, k.PaymentAddress, "", true)
 		} else if blk.GetBeaconHeight() == startStakingHeight+2 {
-			list, err := app.GetCommitteeList()
+			cs, err := app.GetCommitteeState(0, "")
 			if err != nil {
 				panic(err)
 			}
-			log.Println(list)
-
-		} else if blk.GetBeaconHeight() == startStakingHeight+5 {
-			//Unstake one node
-			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
-			k := keys[0]
-			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
-			privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-			log.Printf("Start unstake from privateKey %s for candidatePaymentAddress %s with privateSeed %s",
-				privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:])
-
-			app.ShardUnstaking(privateKey, k.PaymentAddress, privateSeed)
+			log.Println(cs)
 		}
+
+		/*} else if blk.GetBeaconHeight() == startStakingHeight+5 {*/
+		/*//Unstake one node*/
+		/*privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"*/
+		/*k := keys[0]*/
+		/*privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))*/
+		/*privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)*/
+		/*log.Printf("Start unstake from privateKey %s for candidatePaymentAddress %s with privateSeed %s",*/
+		/*privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:])*/
+
+		/*app.ShardUnstaking(privateKey, k.PaymentAddress, privateSeed)*/
+		/*}*/
 
 	})
 
