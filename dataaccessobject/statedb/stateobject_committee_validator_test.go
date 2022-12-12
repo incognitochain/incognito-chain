@@ -41,7 +41,7 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 		sDB.SetStateObject(CommitteeObjectType, key, value)
 	}
 	for key, value := range m1 {
-		sDB.SetStateObject(StakerObjectType, key, value)
+		sDB.SetStateObject(ShardStakerObjectType, key, value)
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {

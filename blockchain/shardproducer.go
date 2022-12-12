@@ -1057,7 +1057,18 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
 			}
 		case metadata.BeaconStakingMeta:
-			// BeaconStakingMeta is not supported yet
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			inst := []string{
+				instruction.STAKE_ACTION,
+				stakingMetadata.CommitteePublicKey,
+				instruction.BEACON_INST, "-1",
+				stakingMetadata.RewardReceiverPaymentAddress,
+				"true",
+			}
+			instructions = append(instructions, inst)
 			continue
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)

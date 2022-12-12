@@ -50,8 +50,8 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType = 34
 
-	StakerObjectType = 35
-
+	ShardStakerObjectType  = 35
+	BeaconStakerObjectType = 79
 	// Portal v3
 	PortalExternalTxObjectType      = 36
 	PortalConfirmProofObjectType    = 37

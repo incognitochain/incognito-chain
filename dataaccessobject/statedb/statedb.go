@@ -410,7 +410,7 @@ func (stateDB *StateDB) getCommitteeState(key common.Hash) (*CommitteeState, boo
 }
 
 func (stateDB *StateDB) getStakerInfo(key common.Hash) (*StakerInfo, bool, error) {
-	stakerObject, err := stateDB.getStateObject(StakerObjectType, key)
+	stakerObject, err := stateDB.getStateObject(ShardStakerObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
@@ -425,7 +425,7 @@ func (stateDB *StateDB) getStakerInfo(key common.Hash) (*StakerInfo, bool, error
 }
 
 func (stateDB *StateDB) getStakerObject(key common.Hash) (*StateObject, bool, error) {
-	stakerObject, err := stateDB.getStateObject(StakerObjectType, key)
+	stakerObject, err := stateDB.getStateObject(ShardStakerObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}

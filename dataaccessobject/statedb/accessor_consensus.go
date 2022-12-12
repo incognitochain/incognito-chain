@@ -622,7 +622,7 @@ func storeStakerInfo(
 			stakingTx[committeeString],
 			beaconConfirmHeight,
 		)
-		err = stateDB.SetStateObject(StakerObjectType, key, value)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, value)
 		if err != nil {
 			return err
 		}
@@ -647,7 +647,7 @@ func SaveStopAutoStakerInfo(
 		committeeString, err := stakerPubkey.ToBase58()
 		stakerInfo.autoStaking = autoStaking[committeeString]
 
-		err = stateDB.SetStateObject(StakerObjectType, key, stakerInfo)
+		err = stateDB.SetStateObject(ShardStakerObjectType, key, stakerInfo)
 		if err != nil {
 			return err
 		}
@@ -714,7 +714,7 @@ func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKe
 			return err
 		}
 		key := GetStakerInfoKey(keyBytes)
-		stateDB.MarkDeleteStateObject(StakerObjectType, key)
+		stateDB.MarkDeleteStateObject(ShardStakerObjectType, key)
 	}
 	return nil
 }

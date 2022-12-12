@@ -1343,10 +1343,10 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 			config.Param().StakingAmountShard,
 			base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	case common2.BeaconStakingMeta:
-		stakingMetadata, err = metadata.NewPromoteBeaconMetadata(
+		stakingMetadata, err = metadata.NewStakingMetadata(
 			int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
 			maxAmount,
-			base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
+			base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), true)
 	default:
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, fmt.Errorf("Staking type is not recognized %v", stakingType))
 	}
