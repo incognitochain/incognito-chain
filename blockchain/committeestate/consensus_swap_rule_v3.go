@@ -235,7 +235,7 @@ func (s *swapRuleV3) slashingBeaconSwapOut(
 	slashedVotePower uint64,
 ) {
 	sortedCommittee := committees[numberOfFixedValidators:]
-	fmt.Printf("sorted committee a %+v\n", sortedCommittee)
+	// fmt.Printf("sorted committee a %+v\n", sortedCommittee)
 	sort.Slice(sortedCommittee, func(i, j int) bool {
 		pi := uint64(0)
 		pj := uint64(0)
@@ -250,7 +250,7 @@ func (s *swapRuleV3) slashingBeaconSwapOut(
 		}
 		return pi < pj
 	})
-	fmt.Printf("sorted committee b %+v\n", sortedCommittee)
+	// fmt.Printf("sorted committee b %+v\n", sortedCommittee)
 	tmp := []string{}
 	lastIdx := -1
 	slashedVotePower = uint64(0)
@@ -279,7 +279,7 @@ func (s *swapRuleV3) slashingBeaconSwapOut(
 			break
 		}
 	}
-	fmt.Printf("sorted committee c %+v\n", sortedCommittee)
+	// fmt.Printf("sorted committee c %+v\n", sortedCommittee)
 	sortedCommittee = append(sortedCommittee[lastIdx+1:], tmp...)
 	newCommittees = append(committees[:numberOfFixedValidators], sortedCommittee...)
 	return newCommittees, slashedList, slashedVotePower

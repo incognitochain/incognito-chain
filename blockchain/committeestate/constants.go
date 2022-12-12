@@ -20,6 +20,7 @@ const (
 	swapRuleTestVersion     = 0
 	swapRuleSlashingVersion = 2
 	swapRuleDCSVersion      = 3
+	swapRuleForBeacon       = 3
 )
 
 const (

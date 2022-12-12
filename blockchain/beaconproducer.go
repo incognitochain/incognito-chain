@@ -120,7 +120,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
 	// Process new block with new view
-	_, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain)
+	_, hashes, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain)
 	if err != nil {
 		return nil, err
 	}
@@ -674,7 +674,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			case committeestate.STAKING_FLOW_V4:
 				swapShardInstructionsGenerator = curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV4)
 			}
-			swapShardInstructions, slashedChange, err := swapShardInstructionsGenerator.GenerateSwapShardInstructions(env)
+			swapShardInstructions, err := swapShardInstructionsGenerator.GenerateSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -683,7 +683,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 					instructions = append(instructions, swapShardInstruction.ToString())
 				}
 			}
-			committeeChange = slashedChange
 		}
 	}
 

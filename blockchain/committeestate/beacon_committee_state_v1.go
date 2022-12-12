@@ -115,17 +115,18 @@ func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {
 	return res
 }
 
-func (b *BeaconCommitteeStateV1) Hash(committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
+func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
 	if b.isEmpty() {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
 
-	res, err := b.beaconCommitteeStateBase.Hash(committeeChange)
+	res, err := b.beaconCommitteeStateBase.Hash()
 	if err != nil {
 		return res, err
 	}
 
 	var tempShardCandidateHash common.Hash
+	committeeChange := b.committeeChange
 	if !isNilOrShardCandidateHash(b.hashes) &&
 		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 &&
 		len(committeeChange.CurrentEpochShardCandidateAdded) == 0 && len(committeeChange.CurrentEpochShardCandidateRemoved) == 0 {
@@ -153,13 +154,13 @@ func initGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *Be
 
 // UpdateCommitteeState :
 func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
-	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
+	*BeaconCommitteeStateHash, [][]string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
 	incurredInstructions := [][]string{}
-	committeeChange := NewCommitteeChange()
+	b.committeeChange = NewCommitteeChange()
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -184,9 +185,9 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 				Logger.log.Errorf("SKIP swap instruction %+v, error %+v", inst, err)
 				continue
 			}
-			_, tempNewShardCandidates, err = b.processSwapInstruction(swapInstruction, env, committeeChange)
+			_, tempNewShardCandidates, err = b.processSwapInstruction(swapInstruction, env)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
@@ -194,7 +195,7 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
 				continue
 			}
-			b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
+			b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env)
 			// case instruction.RE_DELEGATE:
 			// 	redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
 			// 	if err != nil {
@@ -210,16 +211,16 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 				Logger.log.Error(err)
 				continue
 			}
-			committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)
+			b.committeeChange.NextEpochShardCandidateAdded = append(b.committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)
 		}
 
 	}
 	if env.IsBeaconRandomTime {
-		committeeChange.CurrentEpochShardCandidateAdded, _ = incognitokey.CommitteeBase58KeyListToStruct(b.nextEpochShardCandidate)
+		b.committeeChange.CurrentEpochShardCandidateAdded, _ = incognitokey.CommitteeBase58KeyListToStruct(b.nextEpochShardCandidate)
 		b.currentEpochShardCandidate = b.nextEpochShardCandidate
 		Logger.log.Debug("Beacon Process: CandidateShardWaitingForCurrentRandom: ", b.currentEpochShardCandidate)
 		// reset candidate list
-		committeeChange.NextEpochShardCandidateRemoved, _ = incognitokey.CommitteeBase58KeyListToStruct(b.nextEpochShardCandidate)
+		b.committeeChange.NextEpochShardCandidateRemoved, _ = incognitokey.CommitteeBase58KeyListToStruct(b.nextEpochShardCandidate)
 		b.nextEpochShardCandidate = []string{}
 	}
 	if env.IsFoundRandomNumber {
@@ -232,47 +233,46 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 		remainShardCandidates, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfShardSubstitutes, env.RandomNumber, env.AssignOffset, env.ActiveShards)
 		remainShardCandidatesStr, err := incognitokey.CommitteeBase58KeyListToStruct(remainShardCandidates)
 		if err != nil {
-			return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 		}
-		committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, remainShardCandidatesStr...)
+		b.committeeChange.NextEpochShardCandidateAdded = append(b.committeeChange.NextEpochShardCandidateAdded, remainShardCandidatesStr...)
 		// append remain candidate into shard waiting for next random list
 		b.nextEpochShardCandidate = append(b.nextEpochShardCandidate, remainShardCandidates...)
 		// assign candidate into shard pending validator list
 		for shardID, candidateList := range assignedCandidates {
 			candidateListStr, err := incognitokey.CommitteeBase58KeyListToStruct(candidateList)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange.ShardSubstituteAdded[shardID] = candidateListStr
+			b.committeeChange.ShardSubstituteAdded[shardID] = candidateListStr
 			b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], candidateList...)
 		}
-		committeeChange.CurrentEpochShardCandidateRemoved, _ = incognitokey.CommitteeBase58KeyListToStruct(b.currentEpochShardCandidate)
+		b.committeeChange.CurrentEpochShardCandidateRemoved, _ = incognitokey.CommitteeBase58KeyListToStruct(b.currentEpochShardCandidate)
 		// delete CandidateShardWaitingForCurrentRandom list
 		b.currentEpochShardCandidate = []string{}
 		// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
 	}
 
-	err := b.processAutoStakingChange(committeeChange, env)
+	err := b.processAutoStakingChange(env)
 	if err != nil {
-		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	hashes, err := b.Hash(committeeChange)
+	hashes, err := b.Hash()
 	if err != nil {
-		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	return hashes, committeeChange, incurredInstructions, nil
+	return hashes, incurredInstructions, nil
 }
 
 func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
 ) ([]string, []string, error) {
-	committeeChange := NewCommitteeChange()
-	committeeChange, err := b.beaconCommitteeStateBase.processStakeInstruction(stakeInstruction, committeeChange)
+	err := b.beaconCommitteeStateBase.processStakeInstruction(stakeInstruction)
 	if err != nil {
 		return []string{}, []string{}, err
 	}
-	newShardCandidates, _ := incognitokey.CommitteeKeyListToString(committeeChange.NextEpochShardCandidateAdded)
+	newShardCandidates, _ := incognitokey.CommitteeKeyListToString(b.committeeChange.NextEpochShardCandidateAdded)
 
 	err = statedb.StoreShardStakerInfo(
 		env.ConsensusStateDB,
@@ -295,7 +295,6 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 	stopAutoStakeInstruction *instruction.StopAutoStakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
 ) {
 	for _, committeePublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(committeePublicKey, b.getAllCandidateSubstituteCommittee()) == -1 {
@@ -307,7 +306,7 @@ func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 			// if found in committee list then turn off auto staking
 			if _, ok := b.autoStake[committeePublicKey]; ok {
 				b.autoStake[committeePublicKey] = false
-				committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, committeePublicKey)
+				b.committeeChange.StopAutoStake = append(b.committeeChange.StopAutoStake, committeePublicKey)
 			}
 		}
 	}
@@ -316,16 +315,16 @@ func (b *BeaconCommitteeStateV1) processStopAutoStakeInstruction(
 func (b *BeaconCommitteeStateV1) processSwapInstruction(
 	swapInstruction *instruction.SwapInstruction,
 	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
 ) ([]string, []string, error) {
 	newBeaconCandidates := []string{}
 	newShardCandidates := []string{}
 	if common.IndexOfUint64(env.BeaconHeight/env.EpochLengthV1, env.EpochBreakPointSwapNewKey) > -1 || swapInstruction.IsReplace {
-		err := b.processReplaceInstruction(swapInstruction, committeeChange, env)
+		err := b.processReplaceInstruction(swapInstruction, env)
 		if err != nil {
 			return newBeaconCandidates, newShardCandidates, err
 		}
 	} else {
+		committeeChange := b.committeeChange
 		Logger.log.Debug("Swap Instruction In Public Keys", swapInstruction.InPublicKeys)
 		Logger.log.Debug("Swap Instruction Out Public Keys", swapInstruction.OutPublicKeys)
 		if swapInstruction.ChainID != instruction.BEACON_CHAIN_ID {
@@ -380,16 +379,17 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				}
 			}
 		}
+		b.committeeChange = committeeChange
 	}
 	return newBeaconCandidates, newShardCandidates, nil
 }
 
 func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 	swapInstruction *instruction.SwapInstruction,
-	committeeChange *CommitteeChange,
 	env *BeaconCommitteeStateEnvironment,
 ) error {
 	removedCommittee := len(swapInstruction.InPublicKeys)
+	committeeChange := b.committeeChange
 	if swapInstruction.ChainID == instruction.BEACON_CHAIN_ID {
 		committeeChange.BeaconCommitteeReplaced[common.REPLACE_OUT] = append(committeeChange.BeaconCommitteeReplaced[common.REPLACE_OUT], swapInstruction.OutPublicKeyStructs...)
 		// add new public key to committees
@@ -430,11 +430,12 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		map[string]string{},
 		map[string]interface{}{},
 	)
+	b.committeeChange = committeeChange
 	return err
 }
 
-func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) error {
-	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.StopAutoStake)
+func (b *BeaconCommitteeStateV1) processAutoStakingChange(env *BeaconCommitteeStateEnvironment) error {
+	stopAutoStakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(b.committeeChange.StopAutoStake)
 	if err != nil {
 		return err
 	}

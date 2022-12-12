@@ -89,7 +89,7 @@ CONTINUE_VERIFY:
 	}
 
 	// Update best state with new block
-	newBestState, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, incurredInstructions, err := copiedCurView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	// Update best state with new beaconBlock
-	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock, committeeChange); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock); err2 != nil {
 		return err2
 	}
 
@@ -526,14 +526,14 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	beaconBlock *types.BeaconBlock, blockchain *BlockChain,
 ) (
 	*BeaconBestState, *committeestate.BeaconCommitteeStateHash,
-	*committeestate.CommitteeChange, [][]string,
+	[][]string,
 	error,
 ) {
 	startTimeUpdateBeaconBestState := time.Now()
 	prevBeaconBlock := curView.BestBlock
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	var isBeginRandom = false
 	var isBeaconSwap = false
@@ -576,7 +576,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
 			if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
-				return nil, nil, nil, nil, NewBlockChainError(ProcessRandomInstructionError, err)
+				return nil, nil, nil, NewBlockChainError(ProcessRandomInstructionError, err)
 			}
 			randomInstruction := instruction.ImportRandomInstructionFromString(inst)
 			beaconBestState.CurrentRandomNumber = randomInstruction.RandomNumber()
@@ -588,7 +588,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		if inst[0] == instruction.ENABLE_FEATURE {
 			enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, err
 			}
 			if beaconBestState.TriggeredFeature == nil {
 				beaconBestState.TriggeredFeature = make(map[string]uint64)
@@ -598,7 +598,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
 				} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
-					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
+					return nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 				}
 
 				//update NumberOfFixedShardBlockValidatorV2
@@ -708,9 +708,9 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		isFoundRandomInstruction, isBeginRandom, isBeaconSwap,
 	)
 
-	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
+	hashes, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
+		return nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 	Logger.log.Debugf("UpdateCommitteeState | hashes %+v", hashes)
 
@@ -733,18 +733,18 @@ func (curView *BeaconBestState) updateBeaconBestState(
 			beaconBestState.NumberOfShardBlock[shardID] = 0
 		}
 	}
-	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if beaconBestState.beaconCommitteeState.GetCommitteeChange().IsShardCommitteeChange() && beaconBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconBestState.missingSignatureCounter.CommitteeChange(beaconBestState.getNewShardCommitteeFlattenList())
 	}
 	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
+		return nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 
-	beaconBestState.removeFinishedSyncValidators(committeeChange)
+	beaconBestState.removeFinishedSyncValidators()
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
-	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
+	return beaconBestState, hashes, incurredInstructions, nil
 }
 
 func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *types.BeaconBlock, blockchain *BlockChain, db incdb.Database) error {
@@ -916,10 +916,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	curView *BeaconBestState,
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
-	committeeChange *committeestate.CommitteeChange,
 ) error {
+	committeeChange := curView.beaconCommitteeState.GetCommitteeChange()
 	startTimeProcessStoreBeaconBlock := time.Now()
-	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
+	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 	if len(committeeChange.CurrentEpochBeaconCandidateAdded) > 0 {
 		keys, _ := incognitokey.CommitteeKeyListToString(committeeChange.CurrentEpochBeaconCandidateAdded)
@@ -955,7 +955,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	err = newBestState.beaconCommitteeState.ProcessStoreCommitteeStateInfo(
 		beaconBlock,
 		curView.missingSignatureCounter.MissingSignature(),
-		committeeChange,
 		newBestState.consensusStateDB,
 		blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height),
 	)

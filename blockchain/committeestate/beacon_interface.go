@@ -11,6 +11,7 @@ import (
 )
 
 type BeaconCommitteeState interface {
+	GetCommitteeChange() *CommitteeChange
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
@@ -38,19 +39,17 @@ type BeaconCommitteeState interface {
 	Clone() BeaconCommitteeState
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,
-		*CommitteeChange,
 		[][]string,
 		error)
 	ProcessStoreCommitteeStateInfo(
 		bBlock *types.BeaconBlock,
 		signatureInfor map[string]signaturecounter.MissingSignature,
-		cChange *CommitteeChange,
 		stateDB *statedb.StateDB,
 		isEndOfEpoch bool,
 	) error
 	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
-	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
+	Hash() (*BeaconCommitteeStateHash, error)
 	GetReputation() map[string]uint64
 }
 
@@ -59,7 +58,7 @@ type AssignInstructionsGenerator interface {
 }
 
 type SwapShardInstructionsGenerator interface {
-	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, *CommitteeChange, error)
+	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 }
 
 type RandomInstructionsGenerator interface {

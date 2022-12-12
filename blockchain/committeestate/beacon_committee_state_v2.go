@@ -23,6 +23,7 @@ func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 			beaconCommitteeStateBase: beaconCommitteeStateBase{
+				committeeChange: NewCommitteeChange(),
 				shardCommittee:  make(map[byte][]string),
 				shardSubstitute: make(map[byte][]string),
 				autoStake:       make(map[string]bool),
@@ -82,11 +83,11 @@ func (b *BeaconCommitteeStateV2) UpgradeAssignRuleV3() {
 // Store information from instructions into temp stateDB in env
 // When all thing done and no problems, in commit function, we read data in statedb and update
 func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
-	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
+	*BeaconCommitteeStateHash, [][]string, error) {
 	var err error
 	incurredInstructions := [][]string{}
 	returnStakingInstruction := instruction.NewReturnStakeIns()
-	committeeChange := NewCommitteeChange()
+	b.committeeChange = NewCommitteeChange()
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	// snapshot shard common pool in beacon random time
@@ -114,68 +115,61 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 		case instruction.STAKE_ACTION:
 			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(inst)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = b.processStakeInstruction(stakeInstruction, committeeChange)
+			err = b.processStakeInstruction(stakeInstruction)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 
 		case instruction.RANDOM_ACTION:
 			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = b.processAssignWithRandomInstruction(
-				randomInstruction.RandomNumber(), env.numberOfValidator, committeeChange)
+			b.processAssignWithRandomInstruction(
+				randomInstruction.RandomNumber(), env.numberOfValidator)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
+			b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env)
 
 		case instruction.UNSTAKE_ACTION:
 			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstruction, err = b.processUnstakeInstruction(
-				unstakeInstruction, env, committeeChange, returnStakingInstruction)
+			returnStakingInstruction, err = b.processUnstakeInstruction(
+				unstakeInstruction, env, returnStakingInstruction)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstruction, err = b.processSwapShardInstruction(
-				swapShardInstruction, env.numberOfValidator, env, committeeChange, returnStakingInstruction)
+			returnStakingInstruction, err = b.processSwapShardInstruction(
+				swapShardInstruction, env.numberOfValidator, env, returnStakingInstruction)
 			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+				return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			// case instruction.RE_DELEGATE:
-			// 	redelegateInstruction, err := instruction.ValidateAndImportReDelegateInstructionFromString(inst)
-			// 	if err != nil {
-			// 		Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-			// 		continue
-			// 	}
-			// 	b.processReDelegateInstruction(redelegateInstruction, env, committeeChange)
 		}
 	}
 
-	hashes, err := b.Hash(committeeChange)
+	hashes, err := b.Hash()
 	if err != nil {
-		return hashes, committeeChange, incurredInstructions, err
+		return hashes, incurredInstructions, err
 	}
 	if !returnStakingInstruction.IsEmpty() {
 		incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
 	}
 
-	return hashes, committeeChange, incurredInstructions, nil
+	return hashes, incurredInstructions, nil
 }
 
 // Upgrade check interface method for des

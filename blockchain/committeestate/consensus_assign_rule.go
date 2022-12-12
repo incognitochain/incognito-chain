@@ -298,7 +298,7 @@ func hasEnoughActiveTimes(candidates []string, candidateStatus []byte, ruleID by
 			rejected = append(rejected, id)
 			continue
 		}
-		if stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 10) {
+		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 10) {
 			rejected = append(rejected, id)
 		} else {
 			accepted = append(accepted, id)

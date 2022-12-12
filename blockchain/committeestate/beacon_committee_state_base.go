@@ -27,6 +27,8 @@ type beaconCommitteeStateBase struct {
 
 	hashes *BeaconCommitteeStateHash
 
+	committeeChange *CommitteeChange
+
 	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
@@ -139,7 +141,6 @@ func NewBeaconCommitteeState(
 			assignRule,
 		)
 	}
-
 	return committeeState
 }
 
@@ -159,6 +160,7 @@ func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64
 
 func newBeaconCommitteeStateBase() *beaconCommitteeStateBase {
 	return &beaconCommitteeStateBase{
+		committeeChange: NewCommitteeChange(),
 		shardCommittee:  make(map[byte][]string),
 		shardSubstitute: make(map[byte][]string),
 		autoStake:       make(map[string]bool),
@@ -178,6 +180,7 @@ func newBeaconCommitteeStateBaseWithValue(
 	stakingTx map[string]common.Hash,
 ) *beaconCommitteeStateBase {
 	return &beaconCommitteeStateBase{
+		committeeChange: NewCommitteeChange(),
 		beaconCommittee: beaconCommittee,
 		shardCommittee:  shardCommittee,
 		shardSubstitute: shardSubstitute,
@@ -263,6 +266,10 @@ func (b *beaconCommitteeStateBase) reset() {
 
 func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconCommitteeStateHash) {
 	b.hashes = hashes
+}
+
+func (b beaconCommitteeStateBase) GetCommitteeChange() *CommitteeChange {
+	return b.committeeChange
 }
 
 func (b beaconCommitteeStateBase) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
@@ -402,7 +409,8 @@ func (b *beaconCommitteeStateBase) GetNumberOfActiveShards() int {
 	return len(b.shardCommittee)
 }
 
-func (b beaconCommitteeStateBase) Hash(committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
+func (b beaconCommitteeStateBase) Hash() (*BeaconCommitteeStateHash, error) {
+	committeeChange := b.committeeChange
 	var tempBeaconCandidateHash common.Hash
 	var tempShardCommitteeAndValidatorHash common.Hash
 	var tempAutoStakingHash common.Hash
@@ -543,10 +551,9 @@ func (b *beaconCommitteeStateBase) getAllSubstituteCommittees() ([]string, error
 
 func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash,
-	*CommitteeChange,
 	[][]string,
 	error) {
-	return nil, nil, [][]string{}, nil
+	return nil, [][]string{}, nil
 }
 
 func (b *beaconCommitteeStateBase) GetDelegateState() map[string]BeaconDelegatorInfo {
@@ -556,23 +563,21 @@ func (b *beaconCommitteeStateBase) GetDelegateState() map[string]BeaconDelegator
 func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(
 	bBlock *types.BeaconBlock,
 	signatureCounter map[string]signaturecounter.MissingSignature,
-	cChange *CommitteeChange,
 	stateDB *statedb.StateDB,
 	isEndOfEpoch bool,
 ) error {
 	return nil
 }
 
-func (b *beaconCommitteeStateBase) turnOffStopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
+func (b *beaconCommitteeStateBase) turnOffStopAutoStake(publicKey string) {
 	b.autoStake[publicKey] = false
-	committeeChange.AddStopAutoStake(publicKey)
-	return committeeChange
+	b.committeeChange.AddStopAutoStake(publicKey)
 }
 
 func (b *beaconCommitteeStateBase) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
-	committeeChange *CommitteeChange,
-) (*CommitteeChange, error) {
+) error {
+	committeeChange := b.committeeChange
 	var err error
 	for index, candidate := range stakeInstruction.PublicKeyStructs {
 		committeePublicKey := stakeInstruction.PublicKeys[index]
@@ -583,14 +588,13 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 	if stakeInstruction.Chain == instruction.SHARD_INST {
 		committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, stakeInstruction.PublicKeyStructs...)
 	}
-
-	return committeeChange, err
+	b.committeeChange = committeeChange
+	return err
 }
 
 func (b *beaconCommitteeStateBase) turnOffAutoStake(
 	validators, stopAutoStakeKeys []string,
-	committeeChange *CommitteeChange,
-) *CommitteeChange {
+) {
 	for _, committeePublicKey := range stopAutoStakeKeys {
 		if common.IndexOfStr(committeePublicKey, validators) == -1 {
 			// if not found then delete auto staking data for this public key if present
@@ -601,20 +605,18 @@ func (b *beaconCommitteeStateBase) turnOffAutoStake(
 			// if found in committee list then turn off auto staking
 			if autoStake, ok := b.autoStake[committeePublicKey]; ok {
 				if autoStake {
-					committeeChange = b.turnOffStopAutoStake(committeePublicKey, committeeChange)
+					b.turnOffStopAutoStake(committeePublicKey)
 				}
 			}
 		}
 	}
-	return committeeChange
 }
 
 func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	stopAutoStakeInstruction *instruction.StopAutoStakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
-) *CommitteeChange {
-	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
+) {
+	b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys)
 }
 
 func (b *beaconCommitteeStateBase) GetReputation() map[string]uint64 {

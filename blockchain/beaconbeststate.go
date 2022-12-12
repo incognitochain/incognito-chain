@@ -1244,7 +1244,8 @@ func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validator
 	return finishedSyncUserKeys, finishedSyncValidators
 }
 
-func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeChange *committeestate.CommitteeChange) {
+func (beaconBestState *BeaconBestState) removeFinishedSyncValidators() {
+	committeeChange := beaconBestState.beaconCommitteeState.GetCommitteeChange()
 	for shardID, finishSyncValidators := range committeeChange.FinishedSyncValidators {
 		finishsync.DefaultFinishSyncMsgPool.RemoveValidators(finishSyncValidators, byte(shardID))
 	}
