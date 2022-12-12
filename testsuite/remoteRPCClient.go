@@ -522,10 +522,10 @@ func (r *RemoteRPCClient) GetRewardAmountByPublicKey(publicKey string) (res map[
 	return resp.Result, err
 }
 
-func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]struct {
-	Available map[string]uint64
-	Locked    map[string]uint64
-}, err error) {
+func (r *RemoteRPCClient) GetAllRewardAmount() (
+	res map[string]map[string]uint64,
+	err error,
+) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "listrewardamount",
@@ -540,11 +540,8 @@ func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]struct {
 		return res, errors.New(rpcERR.Error())
 	}
 	resp := struct {
-		Result map[string]struct {
-			Available map[common.Hash]uint64
-			Locked    map[common.Hash]uint64
-		}
-		Error *ErrMsg
+		Result map[string]map[common.Hash]uint64
+		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
 
@@ -555,23 +552,14 @@ func (r *RemoteRPCClient) GetAllRewardAmount() (res map[string]struct {
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
-	res = map[string]struct {
-		Available map[string]uint64
-		Locked    map[string]uint64
-	}{}
+	res = map[string]map[string]uint64{}
 	resTmp := resp.Result
 	for k, v := range resTmp {
-		vNew := struct {
-			Available map[string]uint64
-			Locked    map[string]uint64
-		}{}
-		for tokenID, amount := range v.Available {
-			vNew.Available[tokenID.String()] = amount
+		vNew := map[string]uint64{}
+		for tokenID, amount := range v {
+			vNew[tokenID.String()] = amount
 		}
-		for tokenID, amount := range v.Locked {
-			vNew.Locked[tokenID.String()] = amount
-		}
-		if (len(vNew.Available) > 0) || (len(vNew.Locked) > 0) {
+		if len(vNew) > 0 {
 			res[k] = vNew
 		}
 	}

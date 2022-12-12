@@ -58,10 +58,7 @@ type ClientInterface interface {
 	GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, error)
 	GetRewardAmount(paymentAddress string) (map[string]uint64, error)
 	GetRewardAmountByPublicKey(publicKey string) (map[string]uint64, error)
-	GetAllRewardAmount() (res map[string]struct {
-		Available map[string]uint64
-		Locked    map[string]uint64
-	}, err error)
+	GetAllRewardAmount() (res map[string]map[string]uint64, err error)
 	WithdrawReward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (jsonresult.CreateTransactionResult, error)
 	CreateAndSendStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeInfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)
 	CreateAndSendStopAutoStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stopStakeInfo map[string]interface{}) (jsonresult.CreateTransactionResult, error)

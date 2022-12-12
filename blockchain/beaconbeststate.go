@@ -1030,7 +1030,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
-		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height || beaconBestState.BeaconHeight == SFV4_StartHeight {
 		if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
 			return err
 		}
@@ -1059,8 +1059,19 @@ func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 // Upgrade to v3 if current version is 2 and beacon height == staking flow v3 height
 func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 	if beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height &&
-		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
+		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height &&
+		beaconBestState.BeaconHeight != SFV4_StartHeight {
 		return nil
+	}
+	if beaconBestState.BeaconHeight == SFV4_StartHeight {
+		fmt.Println("enable v4")
+		if (beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2) && (beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V3) {
+			return nil
+		}
+		fmt.Printf("enable v4 %v %v\n", beaconBestState.beaconCommitteeState.Version(), SFV4_StartHeight)
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
+			return nil
+		}
 	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2 {

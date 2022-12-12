@@ -443,8 +443,7 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey].Available[common.PRVIDStr]
-		pkMap[acc.SelfCommitteePubkey].RewardPRVLocked = allReward[acc.PublicKey].Locked[common.PRVIDStr]
+		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey][common.PRVIDStr]
 		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
 		if ok {
 			delegate := stakerInfo.Delegate()
@@ -486,8 +485,7 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey].Available[common.PRVIDStr]
-		pkMap[acc.SelfCommitteePubkey].RewardPRVLocked = allReward[acc.PublicKey].Locked[common.PRVIDStr]
+		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey][common.PRVIDStr]
 		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
 		if ok {
 			delegate := stakerInfo.Delegate()
@@ -572,7 +570,7 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts, acc []account.Account, 
 			CurrentDelegatorsDetails: []string{},
 			Reputation:               uint(bcV4.Reputation[b]),
 			Performance:              uint(bcV4.Performance[b]),
-			RewardPRV:                allReward[bCPk].Available[common.PRVIDStr],
+			RewardPRV:                allReward[bCPk][common.PRVIDStr],
 		}
 
 		keys = append(keys, b)
@@ -595,7 +593,7 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts, acc []account.Account, 
 					CurrentDelegatorsDetails: []string{},
 					Reputation:               uint(bcV4.Reputation[b]),
 					Performance:              uint(bcV4.Performance[b]),
-					RewardPRV:                allReward[bCPk].Available[common.PRVIDStr],
+					RewardPRV:                allReward[bCPk][common.PRVIDStr],
 				}
 			}
 			infor.CurrentDelegators = info.CurrentDelegators
