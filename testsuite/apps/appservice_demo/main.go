@@ -68,7 +68,7 @@ func main() {
 	} else {
 		startStakingHeight = bHeight + 20
 	}
-	log.Println("Will be start staking on beacon height:", startStakingHeight)
+	log.Println("Will be start shard staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
 		if blk.GetBeaconHeight() == bHeight {
