@@ -40,10 +40,10 @@ active_shards: 2
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:
-  number_of_block_in_epoch: 10
+  number_of_block_in_epoch: 20
   number_of_block_in_epoch_v2: 1e9
   epoch_v2_break_point: 1e9
-  random_time: 5
+  random_time: 10
   random_time_v2: 1e9
 eth_contract_address: "0x81BFbdAa0af287125602C1afe954cBbccff0eB3A"
 bsc_contract_address: "0x9ee4E8FE2D977c8869F2e29736b21e8fc6FF830E"
@@ -64,11 +64,11 @@ consensus_param:
   consensus_v2_epoch: 1
   staking_flow_v2_height: 1
   enable_slashing_height: 1
-  lemma2_height: 1e9
+  lemma2_height: 1
   byzantine_detector_height: 1e9
-  assign_rule_v3_height: 1e9
-  enable_slashing_height_v2: 1e9
-  staking_flow_v3_height: 1e9
+  assign_rule_v3_height: 1
+  enable_slashing_height_v2: 1
+  staking_flow_v3_height: 1
   staking_flow_v4_height: 1e9
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
@@ -166,7 +166,7 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
   - enable_stake_beacon:
-      min_trigger: 15
+      min_trigger: 25
       force_trigger: 2
       require_percentage: 90
 blocktime_param:

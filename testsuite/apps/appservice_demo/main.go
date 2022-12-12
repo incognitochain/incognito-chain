@@ -27,7 +27,7 @@ func main() {
 
 	args := os.Args
 	isSkipSubmitKey := false
-	if len(args) > 2 {
+	if len(args) > 1 {
 		isSkipSubmitKeyInt, err := strconv.Atoi(args[1])
 		if err != nil {
 			panic(err)
@@ -66,38 +66,46 @@ func main() {
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 25
+		startStakingHeight = bHeight + 50
 	}
 	log.Println("Will be start shard staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
-		if blk.GetBeaconHeight() == bHeight {
-			//submitkey
-			otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
-			log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
-			app.AuthorizedSubmitKey(otaPrivateKey)
-		} else if blk.GetBeaconHeight() == bHeight+5 {
-			//convert from token v1 to token v2
-			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
-			log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
-			app.ConvertTokenV1ToV2(privateKey)
-		} else if blk.GetBeaconHeight() == bHeight+10 {
-			//submitkey to make sure
-			otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
-			log.Println("Start submitkey again to make sure for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
-			app.AuthorizedSubmitKey(otaPrivateKey)
+		if !isSkipSubmitKey {
+			if blk.GetBeaconHeight() == bHeight {
+				//submitkey
+				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
+				log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
+				app.AuthorizedSubmitKey(otaPrivateKey)
+				k := keys[0]
+				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
+				app.AuthorizedSubmitKey(k.OTAPrivateKey)
+			} else if blk.GetBeaconHeight() == bHeight+5 {
+				//convert from token v1 to token v2
+				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
+				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
+				app.ConvertTokenV1ToV2(privateKey)
+			} else if blk.GetBeaconHeight() == bHeight+10 {
+				//submitkey to make sure
+				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
+				log.Println("Start submitkey again to make sure for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
+				app.AuthorizedSubmitKey(otaPrivateKey)
+				k := keys[0]
+				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
+				app.AuthorizedSubmitKey(k.OTAPrivateKey)
+			} else if blk.GetBeaconHeight() == bHeight+20 {
+				//Send funds to 30 nodes
+				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
+				receivers := map[string]interface{}{}
+				log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
+				for _, v := range keys {
+					receivers[v.PaymentAddress] = 2750000001000
+				}
 
-		} else if blk.GetBeaconHeight() == bHeight+20 {
-			//Send funds to 30 nodes
-			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
-			receivers := map[string]interface{}{}
-			log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
-			for _, v := range keys {
-				receivers[v.PaymentAddress] = 2750000001000
+				app.PreparePRVForTest(privateKey, receivers)
 			}
-
-			app.PreparePRVForTest(privateKey, receivers)
-		} else if blk.GetBeaconHeight() == startStakingHeight {
+		}
+		if blk.GetBeaconHeight() == startStakingHeight {
 			//Stake one node
 			k := keys[0]
 			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
