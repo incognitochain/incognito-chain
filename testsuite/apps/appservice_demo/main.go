@@ -46,26 +46,30 @@ func main() {
 	if bHeight < 15 {
 		bHeight = 15
 	}
+	log.Println("Will be listening to block:", bHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
 		if blk.GetBeaconHeight() == bHeight {
 			//submitkey
 			otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
+			log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
 			app.AuthorizedSubmitKey(otaPrivateKey)
 		} else if blk.GetBeaconHeight() == bHeight+5 {
 			//convert from token v1 to token v2
 			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
+			log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 			app.ConvertTokenV1ToV2(privateKey)
 		} else if blk.GetBeaconHeight() == bHeight+10 {
 			//submitkey to make sure
 			otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
+			log.Println("Start submitkey again to make sure for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
 			app.AuthorizedSubmitKey(otaPrivateKey)
 
 		} else if blk.GetBeaconHeight() == bHeight+15 {
 			//Send funds to 30 nodes
 			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 			receivers := map[string]interface{}{}
-
+			log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
 			for _, v := range keys {
 				receivers[v.PaymentAddress] = 2750000001000
 			}
@@ -77,6 +81,8 @@ func main() {
 			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
 			privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
 			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
+			log.Printf("Start staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+				privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
 			app.ShardStaking(privateKey, k.PaymentAddress, privateSeed, k.PaymentAddress, true)
 		} else if blk.GetBeaconHeight() == bHeight+22 {
 			list, err := app.GetCommitteeList()
@@ -91,6 +97,9 @@ func main() {
 			k := keys[0]
 			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
 			privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+			log.Printf("Start unstake from privateKey %s for candidatePaymentAddress %s with privateSeed %s",
+				privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:])
+
 			app.ShardUnstaking(privateKey, k.PaymentAddress, privateSeed)
 		}
 
