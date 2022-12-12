@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	common2 "github.com/incognitochain/incognito-chain/metadata/common"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -1313,26 +1314,41 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Cannot import key set"))
 	}
 
-	stakingMetadata, err := metadata.NewStakingMetadata(
-		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
-		config.Param().StakingAmountShard,
-		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
 	if txVersion == 1 {
-		tmpFunderAddr := stakingMetadata.FunderPaymentAddress
-		tmpRecvAddr := stakingMetadata.RewardReceiverPaymentAddress
-
-		stakingMetadata.FunderPaymentAddress, err = wallet.GetPaymentAddressV1(tmpFunderAddr, false)
+		tmpFunderAddr := funderPaymentAddress
+		tmpRecvAddr := rewardReceiverPaymentAddress
+		funderPaymentAddress, err = wallet.GetPaymentAddressV1(tmpFunderAddr, false)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpFunderAddr))
 		}
 
-		stakingMetadata.RewardReceiverPaymentAddress, err = wallet.GetPaymentAddressV1(tmpRecvAddr, false)
+		rewardReceiverPaymentAddress, err = wallet.GetPaymentAddressV1(tmpRecvAddr, false)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpRecvAddr))
 		}
+	}
+
+	maxAmount := uint64(0)
+	for _, payInfor := range createRawTxParam.PaymentInfos {
+		if payInfor.Amount > maxAmount {
+			maxAmount = payInfor.Amount
+		}
+	}
+
+	var stakingMetadata metadata.Metadata
+	switch stakingType {
+	case common2.ShardStakingMeta:
+		stakingMetadata, err = metadata.NewStakingMetadata(
+			int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
+			config.Param().StakingAmountShard,
+			base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
+	case common2.BeaconStakingMeta:
+		stakingMetadata, err = metadata.NewPromoteBeaconMetadata(
+			int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
+			maxAmount,
+			base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
+	default:
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, fmt.Errorf("Staking type is not recognized %v", stakingType))
 	}
 
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
@@ -1340,13 +1356,14 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
-	Logger.log.Infof("BUGLOG creating staking transaction: txHash = %v, shardID = %v, stakingMeta = %v", txID.String(), txShardID, *stakingMetadata)
+	Logger.log.Infof("Creating shard staking transaction: txHash = %v, shardID = %v, stakingMeta = %+v", txID.String(), txShardID, stakingMetadata)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            txID.String(),
 		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
 		ShardID:         txShardID,
 	}
 	return result, nil
+
 }
 
 // handleCreateAndSendStakingTx - RPC creates staking transaction and send to network

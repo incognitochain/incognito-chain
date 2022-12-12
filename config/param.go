@@ -46,6 +46,7 @@ type param struct {
 	CommitteeSize                    committeeSize                `mapstructure:"committee_size"`
 	BlockTime                        blockTime                    `mapstructure:"block_time"`
 	StakingAmountShard               uint64                       `mapstructure:"staking_amount_shard"`
+	StakingAmountBeacon              uint64                       `mapstructure:"staking_amount_beacon"`
 	ActiveShards                     int                          `mapstructure:"active_shards"`
 	BasicReward                      uint64                       `mapstructure:"basic_reward"`
 	MaxReward                        uint64                       `mapstructure:"max_reward"`
