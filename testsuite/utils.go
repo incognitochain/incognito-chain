@@ -190,8 +190,8 @@ func (sim *NodeEngine) SendPRV(args ...interface{}) (string, error) {
 				if i%2 == 1 {
 					amount, ok := args[i+1].(uint64)
 					if !ok {
-						amountF64 := args[i+1].(uint64)
-						amount = amountF64
+						amountF64 := args[i+1].(float64)
+						amount = uint64(amountF64)
 					}
 					receivers[arg.(account.Account).PaymentAddress] = uint64(amount)
 				}
@@ -452,17 +452,13 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
 			pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
 			pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
+			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo.ActiveTimesInCommittee())
 			for idx, bPK := range bCStr {
 				if bPK == delegate {
 					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
 				}
 			}
 		}
-		stakerInfo2, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
-		if ok {
-			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo2.ActiveTimesInCommittee())
-		}
-
 		balanceMap, err := sim.RPC.API_GetBalance(acc)
 		if err != nil {
 			panic(err)
@@ -504,11 +500,11 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
 				}
 			}
+			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo.ActiveTimesInCommittee())
 			pkMap[acc.SelfCommitteePubkey].Chain = "Shard"
 		} else {
 			stakerInfo, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
 			if ok {
-				pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo.ActiveTimesInCommittee())
 				pkMap[acc.SelfCommitteePubkey].StakingAmount = stakerInfo.StakingAmount()
 				pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
 				pkMap[acc.SelfCommitteePubkey].Chain = "Beacon"

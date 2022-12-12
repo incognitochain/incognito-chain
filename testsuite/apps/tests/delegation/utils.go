@@ -32,7 +32,7 @@ func InitDelegationTest() *testsuite.NodeEngine {
 		config.Param().ConsensusParam.StakingFlowV2Height = 1
 		config.Param().ConsensusParam.AssignRuleV3Height = 1
 		config.Param().ConsensusParam.StakingFlowV3Height = 1
-		config.Param().ConsensusParam.StakingFlowV4Height = 1
+		config.Param().ConsensusParam.StakingFlowV4Height = 2
 		config.Param().CommitteeSize.MaxShardCommitteeSize = 8
 		config.Param().MaxReward = 95000000000000000
 		config.Param().BasicReward = 1386666000
