@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
@@ -1687,6 +1688,72 @@ func (r *RemoteRPCClient) GetCommitteeState(height uint64, hash string) (*jsonre
 	}
 	resp := struct {
 		Result *jsonresult.CommiteeState
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetShardStakerInfo(height uint64, stakerPubkey string) (*statedb.ShardStakerInfo, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getshardstakerinfo",
+		"params": []interface{}{
+			height,
+			stakerPubkey,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *statedb.ShardStakerInfo
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetBeaconStakerInfo(height uint64, hash string) (*statedb.BeaconStakerInfo, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbeaconstakerinfo",
+		"params": []interface{}{
+			height,
+			hash,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *statedb.BeaconStakerInfo
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)

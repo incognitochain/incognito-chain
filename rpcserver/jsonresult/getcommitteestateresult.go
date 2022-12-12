@@ -16,3 +16,10 @@ type CommiteeState struct {
 	ShardStakerInfos  map[string]*statedb.ShardStakerInfo  `json:"shardStakerInfos"`
 	BeaconStakerInfos map[string]*statedb.BeaconStakerInfo `json:"beaconStakerInfos"`
 }
+
+func (cs *CommiteeState) IsDiffFrom(target *CommiteeState) bool {
+	if cs.Root != target.Root {
+		return false
+	}
+	return true
+}

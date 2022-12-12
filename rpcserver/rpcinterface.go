@@ -395,7 +395,9 @@ var HttpHandler = map[string]httpHandler{
 
 	// get committeeByHeight
 
-	getTotalStaker: (*HttpServer).handleGetTotalStaker,
+	getShardStakerInfo:  (*HttpServer).handleGetShardStakerInfo,
+	getBeaconStakerInfo: (*HttpServer).handleGetBeaconStakerInfo,
+	getTotalStaker:      (*HttpServer).handleGetTotalStaker,
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,

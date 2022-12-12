@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 )
 
@@ -38,6 +39,7 @@ func main() {
 	}
 
 	var keys []Key
+	lastCs := &jsonresult.CommiteeState{}
 
 	data, err := ioutil.ReadFile("accounts.json")
 	if err != nil {
@@ -66,7 +68,7 @@ func main() {
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 50
+		startStakingHeight = bHeight + 20
 	}
 	log.Println("Will be start shard staking on beacon height:", startStakingHeight)
 
@@ -76,24 +78,16 @@ func main() {
 				//submitkey
 				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
 				log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
-				app.AuthorizedSubmitKey(otaPrivateKey)
+				app.SubmitKey(otaPrivateKey)
 				k := keys[0]
 				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
-				app.AuthorizedSubmitKey(k.OTAPrivateKey)
+				app.SubmitKey(k.OTAPrivateKey)
 			} else if blk.GetBeaconHeight() == bHeight+5 {
 				//convert from token v1 to token v2
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
 			} else if blk.GetBeaconHeight() == bHeight+10 {
-				//submitkey to make sure
-				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
-				log.Println("Start submitkey again to make sure for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
-				app.AuthorizedSubmitKey(otaPrivateKey)
-				k := keys[0]
-				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
-				app.AuthorizedSubmitKey(k.OTAPrivateKey)
-			} else if blk.GetBeaconHeight() == bHeight+20 {
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}
@@ -101,7 +95,6 @@ func main() {
 				for _, v := range keys {
 					receivers[v.PaymentAddress] = 2750000001000
 				}
-
 				app.PreparePRVForTest(privateKey, receivers)
 			}
 		}
@@ -113,12 +106,17 @@ func main() {
 			log.Printf("Start staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 				k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
 			app.ShardStaking(k.PrivateKey, k.PaymentAddress, privateSeed, k.PaymentAddress, "", true)
-		} else if blk.GetBeaconHeight() == startStakingHeight+2 {
+		} else if blk.GetBeaconHeight() >= startStakingHeight+2 {
+			log.Println("get committee state at beacon height:", blk.GetBeaconHeight())
 			cs, err := app.GetCommitteeState(0, "")
 			if err != nil {
 				panic(err)
 			}
-			log.Println(cs)
+			if cs.IsDiffFrom(lastCs) {
+				lastCs = new(jsonresult.CommiteeState)
+				*lastCs = *cs
+				log.Println(cs)
+			}
 		}
 
 		/*} else if blk.GetBeaconHeight() == startStakingHeight+5 {*/

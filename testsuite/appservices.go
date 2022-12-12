@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -101,9 +102,9 @@ func (s *AppService) ConvertTokenV1ToV2(privateKey string) {
 	}
 }
 
-func (s *AppService) AuthorizedSubmitKey(otaPrivateKey string) {
+func (s *AppService) SubmitKey(otaPrivateKey string) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
-	if _, err := fullnodeRPC.AuthorizedSubmitKey(otaPrivateKey); err != nil {
+	if _, err := fullnodeRPC.SubmitKey(otaPrivateKey); err != nil {
 		log.Println(err)
 	}
 }
@@ -165,4 +166,14 @@ func (s *AppService) GetBeaconBestState() (jsonresult.GetBeaconBestState, error)
 func (s *AppService) GetCommitteeState(height uint64, hash string) (*jsonresult.CommiteeState, error) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	return fullnodeRPC.GetCommitteeState(height, hash)
+}
+
+func (s *AppService) GetShardStakerInfo(height uint64, stakerPubkey string) (*statedb.ShardStakerInfo, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	return fullnodeRPC.GetShardStakerInfo(height, stakerPubkey)
+}
+
+func (s *AppService) GetBeaconStakerInfo(height uint64, stakerPubkey string) (*statedb.BeaconStakerInfo, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	return fullnodeRPC.GetBeaconStakerInfo(height, stakerPubkey)
 }
