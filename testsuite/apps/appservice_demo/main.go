@@ -66,7 +66,7 @@ func main() {
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 20
+		startStakingHeight = bHeight + 25
 	}
 	log.Println("Will be start shard staking on beacon height:", startStakingHeight)
 
@@ -87,7 +87,7 @@ func main() {
 			log.Println("Start submitkey again to make sure for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
 			app.AuthorizedSubmitKey(otaPrivateKey)
 
-		} else if blk.GetBeaconHeight() == bHeight+15 {
+		} else if blk.GetBeaconHeight() == bHeight+20 {
 			//Send funds to 30 nodes
 			privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 			receivers := map[string]interface{}{}
