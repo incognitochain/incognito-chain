@@ -54,7 +54,7 @@ type ShardStakerInfo struct {
 	beaconConfirmHeight uint64
 	delegate            string
 	hasCredit           bool
-	activeInCommittee   int
+	// activeInCommittee   int
 }
 
 func NewShardStakerInfo() *ShardStakerInfo {
@@ -76,7 +76,7 @@ func NewShardStakerInfoWithValue(
 		beaconConfirmHeight: beaconConfirmHeight,
 		delegate:            delegate,
 		hasCredit:           hasCredit,
-		activeInCommittee:   0,
+		// activeInCommittee:   0,
 	}
 }
 
@@ -98,7 +98,7 @@ func (c ShardStakerInfo) MarshalJSON() ([]byte, error) {
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		Delegate:            c.delegate,
 		HasCredit:           c.hasCredit,
-		ActiveTimes:         c.activeInCommittee,
+		// ActiveTimes:         c.activeInCommittee,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -128,7 +128,7 @@ func (c *ShardStakerInfo) UnmarshalJSON(data []byte) error {
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.delegate = temp.Delegate
 	c.hasCredit = temp.HasCredit
-	c.activeInCommittee = temp.ActiveTimes
+	// c.activeInCommittee = temp.ActiveTimes
 	return nil
 }
 
@@ -152,13 +152,13 @@ func (s *ShardStakerInfo) SetDelegate(delegate string) {
 	s.delegate = delegate
 }
 
-func (s *ShardStakerInfo) SetActiveTimesInCommittee(activeTimes int) {
-	s.activeInCommittee = activeTimes
-}
+// func (s *ShardStakerInfo) SetActiveTimesInCommittee(activeTimes int) {
+// 	s.activeInCommittee = activeTimes
+// }
 
-func (s *ShardStakerInfo) ActiveTimesInCommittee() int {
-	return s.activeInCommittee
-}
+// func (s *ShardStakerInfo) ActiveTimesInCommittee() int {
+// 	return s.activeInCommittee
+// }
 
 func (s ShardStakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
@@ -319,6 +319,7 @@ type BeaconStakerInfo struct {
 	beaconConfirmHeight uint64
 	stakingAmount       uint64
 	delegatorReward     uint64
+	activeTimesAtShard  uint
 }
 
 func NewBeaconStakerInfo() *BeaconStakerInfo {
@@ -341,6 +342,7 @@ func NewBeaconStakerInfoWithValue(
 		beaconConfirmHeight: beaconConfirmHeight,
 		stakingAmount:       stakingAmount,
 		delegatorReward:     uint64(0),
+		activeTimesAtShard:  uint(0),
 	}
 }
 
@@ -354,6 +356,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
 		StakingAmount       uint64
+		ActiveTimes         uint
 	}{
 		RewardReceiver:      c.rewardReceiver,
 		FunderAddress:       c.funderAddress,
@@ -361,6 +364,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		AutoStaking:         c.autoStaking,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		StakingAmount:       c.stakingAmount,
+		ActiveTimes:         c.activeTimesAtShard,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -378,6 +382,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
 		StakingAmount       uint64
+		ActiveTimes         uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -389,6 +394,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.stakingAmount = temp.StakingAmount
 	c.funderAddress = temp.FunderAddress
+	c.activeTimesAtShard = temp.ActiveTimes
 	return nil
 }
 
@@ -415,6 +421,11 @@ func (s *BeaconStakerInfo) SetStakingAmount(a uint64) {
 func (s *BeaconStakerInfo) SetFunderAddress(f key.PaymentAddress) {
 	s.funderAddress = f
 }
+
+func (s *BeaconStakerInfo) SetActiveTimesInCommittee(a uint) {
+	s.activeTimesAtShard = a
+}
+
 func (s *BeaconStakerInfo) AddStakingAmount(a uint64) {
 	s.stakingAmount = a
 }
@@ -441,6 +452,10 @@ func (s BeaconStakerInfo) StakingAmount() uint64 {
 
 func (s BeaconStakerInfo) BeaconConfirmHeight() uint64 {
 	return s.beaconConfirmHeight
+}
+
+func (s BeaconStakerInfo) ActiveTimesInCommittee() uint {
+	return s.activeTimesAtShard
 }
 
 type BeaconStakerObject struct {
