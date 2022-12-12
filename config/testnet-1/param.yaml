@@ -129,6 +129,10 @@ auto_enable_feature:
       min_trigger: 10892003
       force_trigger: 1000000000
       require_percentage: 90
+  - enable_stake_beacon:
+      min_trigger: 2
+      force_trigger: 2
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20": 20
