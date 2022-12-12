@@ -198,24 +198,23 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 	if err != nil {
 		return errors.New(rpcERR.Error())
 	}
-	body, err := r.sendRequest(requestBody)
+	_, err = r.sendRequest(requestBody)
 	if err != nil {
 		return errors.New(rpcERR.Error())
 	}
-	resp := struct {
-		Result bool
-		Error  *ErrMsg
-	}{}
-	//fmt.Println(string(body))
-	err = json.Unmarshal(body, &resp)
+	/*resp := struct {*/
+	/*Result bool*/
+	/*Error  *ErrMsg*/
+	/*}{}*/
+	/*err = json.Unmarshal(body, &resp)*/
 
-	if resp.Error != nil && resp.Error.StackTrace != "" {
-		return errors.New(resp.Error.StackTrace)
-	}
+	/*if resp.Error != nil && resp.Error.StackTrace != "" {*/
+	/*return errors.New(resp.Error.StackTrace)*/
+	/*}*/
 
-	if err != nil {
-		return errors.New(err.Error())
-	}
+	/*if err != nil {*/
+	/*return errors.New(err.Error())*/
+	/*}*/
 	return err
 }
 

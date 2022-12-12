@@ -62,15 +62,15 @@ func main() {
 		bHeight = 15
 	}
 	log.Println("Will be listening to beacon height:", bHeight)
+	var startStakingHeight uint64
+	if isSkipSubmitKey {
+		startStakingHeight = bHeight
+	} else {
+		startStakingHeight = bHeight + 20
+	}
+	log.Println("Will be start staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
-		var startStakingHeight uint64
-		log.Println("Will be start staking on beacon height:", startStakingHeight)
-		if isSkipSubmitKey {
-			startStakingHeight = bHeight
-		} else {
-			startStakingHeight = bHeight + 20
-		}
 		if blk.GetBeaconHeight() == bHeight {
 			//submitkey
 			otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
