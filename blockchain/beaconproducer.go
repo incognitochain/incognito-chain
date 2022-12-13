@@ -767,11 +767,11 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if !ok {
 			continue
 		}
-		Logger.log.Info("[committee-state] feature:", feature)
-		Logger.log.Info("[committee-state] autoEnableFeatureInfo:", autoEnableFeatureInfo)
 		if uint64(autoEnableFeatureInfo.MinTriggerBlockHeight) > curView.BeaconHeight {
 			continue
 		}
+		Logger.log.Info("[committee-state] feature:", feature)
+		Logger.log.Info("[committee-state] autoEnableFeatureInfo:", autoEnableFeatureInfo)
 
 		// check proposer threshold
 		invalidCondition := false
@@ -779,11 +779,13 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if featureStatReport.CommitteeStat[feature] == nil {
 			continue
 		}
+		Logger.log.Info("[committee-state] 0")
 		beaconProposerSize := len(curView.GetCommittee())
 		//if number of beacon proposer update < 95%, not generate inst
 		if featureStatReport.CommitteeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*95/100)) {
 			continue
 		}
+		Logger.log.Info("[committee-state] 1")
 
 		//if number of each shard committee update < 95%, not generate inst
 		for chainID := 0; chainID < curView.ActiveShards; chainID++ {
@@ -793,10 +795,12 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 				break
 			}
 		}
+		Logger.log.Info("[committee-state] 2")
 
 		if invalidCondition {
 			continue
 		}
+		Logger.log.Info("[committee-state] 3")
 
 		//check validator threshold
 		if featureStatReport.ValidatorStat[feature] != nil {
@@ -807,6 +811,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 				}
 			}
 		}
+		Logger.log.Info("[committee-state] 4")
 		if invalidCondition {
 			continue
 		}
