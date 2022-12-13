@@ -63,6 +63,9 @@ func main() {
 	if bHeight < 15 {
 		bHeight = 15
 	}
+
+	bHeight = bState.BeaconHeight + 1
+
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
 	if isSkipSubmitKey {
