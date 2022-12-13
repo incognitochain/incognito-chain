@@ -767,6 +767,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if !ok {
 			continue
 		}
+		Logger.log.Info("[committee-state] feature:", feature)
 		Logger.log.Info("[committee-state] autoEnableFeatureInfo:", autoEnableFeatureInfo)
 		if uint64(autoEnableFeatureInfo.MinTriggerBlockHeight) > curView.BeaconHeight {
 			continue
