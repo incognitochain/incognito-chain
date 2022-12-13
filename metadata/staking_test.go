@@ -205,7 +205,7 @@ func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 				MetadataBase:                 tt.fields.MetadataBase,
 				FunderPaymentAddress:         tt.fields.FunderPaymentAddress,
 				RewardReceiverPaymentAddress: tt.fields.RewardReceiverPaymentAddress,
-				StakingAmountShard:           tt.fields.StakingAmountShard,
+				StakingAmount:                tt.fields.StakingAmountShard,
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}
@@ -429,7 +429,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				MetadataBase:                 tt.fields.MetadataBase,
 				FunderPaymentAddress:         tt.fields.FunderPaymentAddress,
 				RewardReceiverPaymentAddress: tt.fields.RewardReceiverPaymentAddress,
-				StakingAmountShard:           tt.fields.StakingAmountShard,
+				StakingAmount:                tt.fields.StakingAmountShard,
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}
@@ -579,7 +579,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				MetadataBase:                 tt.fields.MetadataBase,
 				FunderPaymentAddress:         tt.fields.FunderPaymentAddress,
 				RewardReceiverPaymentAddress: tt.fields.RewardReceiverPaymentAddress,
-				StakingAmountShard:           tt.fields.StakingAmountShard,
+				StakingAmount:                tt.fields.StakingAmountShard,
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}

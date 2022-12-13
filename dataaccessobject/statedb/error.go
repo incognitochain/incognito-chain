@@ -165,6 +165,8 @@ const (
 	DeleteCurrentEpochBeaconCandidateError
 	DeleteAllShardSubstitutesValidatorError
 	DeleteBeaconSubstituteValidatorError
+	DeleteBeaconWaitingError
+	DeleteBeaconLockingError
 	// pdex error
 	StoreWaitingPDEContributionError
 	StorePDEPoolPairError
@@ -242,8 +244,8 @@ const (
 	InvalidStakerInfoTypeError
 	StoreMemberCommonShardPoolError
 	StoreMemberShardPoolError
-	StoreMemberCommonBeaconPoolError
-	StoreMemberBeaconPoolError
+	StoreBeaconWaitingError
+	StoreBeaconLockingError
 	DeleteMemberCommonShardPoolError
 	DeleteMemberShardPoolError
 	DeleteMemberCommonBeaconPoolError

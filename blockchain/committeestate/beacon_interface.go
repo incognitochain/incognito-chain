@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -28,7 +29,7 @@ type BeaconCommitteeState interface {
 
 	Version() int
 	AssignRuleVersion() int
-	Clone() BeaconCommitteeState
+	Clone(db *statedb.StateDB) BeaconCommitteeState
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,
 		*CommitteeChange,

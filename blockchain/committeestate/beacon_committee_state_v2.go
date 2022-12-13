@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"sync"
 
@@ -261,7 +262,7 @@ func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvi
 	}
 }
 
-func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
+func (b *BeaconCommitteeStateV2) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()

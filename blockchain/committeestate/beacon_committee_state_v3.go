@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -54,7 +55,7 @@ func (b *BeaconCommitteeStateV3) shallowCopy(newB *BeaconCommitteeStateV3) {
 	newB.syncPool = b.syncPool
 }
 
-func (b *BeaconCommitteeStateV3) Clone() BeaconCommitteeState {
+func (b *BeaconCommitteeStateV3) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()
@@ -462,4 +463,12 @@ func (b *BeaconCommitteeStateV3) getAllCandidateSubstituteCommittee() []string {
 		res = append(res, validators...)
 	}
 	return res
+}
+
+func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	stateV4 := &BeaconCommitteeStateV4{}
+	stateV4.UpgradeFromV3(b, env.ConsensusStateDB)
+	return stateV4
 }

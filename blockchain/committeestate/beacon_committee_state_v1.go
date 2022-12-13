@@ -59,7 +59,7 @@ func (b BeaconCommitteeStateV1) shallowCopy(newB *BeaconCommitteeStateV1) {
 	newB.nextEpochShardCandidate = b.nextEpochShardCandidate
 }
 
-func (b *BeaconCommitteeStateV1) Clone() BeaconCommitteeState {
+func (b *BeaconCommitteeStateV1) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()

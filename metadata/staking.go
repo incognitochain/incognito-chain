@@ -15,7 +15,7 @@ type StakingMetadata struct {
 	MetadataBase
 	FunderPaymentAddress         string
 	RewardReceiverPaymentAddress string
-	StakingAmountShard           uint64
+	StakingAmount                uint64
 	AutoReStaking                bool
 	CommitteePublicKey           string
 	// CommitteePublicKey CommitteePublicKeys of a candidate who join consensus, base58CheckEncode
@@ -42,7 +42,7 @@ func NewStakingMetadata(
 		MetadataBase:                 *metadataBase,
 		FunderPaymentAddress:         funderPaymentAddress,
 		RewardReceiverPaymentAddress: rewardReceiverPaymentAddress,
-		StakingAmountShard:           stakingAmountShard,
+		StakingAmount:                stakingAmountShard,
 		CommitteePublicKey:           committeePublicKey,
 		AutoReStaking:                autoReStaking,
 	}, nil
@@ -172,9 +172,9 @@ func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
 }
 
 func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
-	return stakingMetadata.StakingAmountShard * 3
+	return stakingMetadata.StakingAmount * 3
 }
 
 func (stakingMetadata StakingMetadata) GetShardStateAmount() uint64 {
-	return stakingMetadata.StakingAmountShard
+	return stakingMetadata.StakingAmount
 }

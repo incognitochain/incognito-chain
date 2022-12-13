@@ -8,58 +8,50 @@ import (
 	"reflect"
 )
 
+const (
+	LOCKING_BY_UNSTAKE = 1
+	LOCKING_BY_SLASH   = 2
+)
+
 type StakingInfo struct {
 	txID   common.Hash
 	amount uint64
 }
 
 type BeaconStakerInfo struct {
-	funderAddress       key.PaymentAddress
 	rewardReceiver      key.PaymentAddress
 	beaconConfirmHeight uint64
 	stakingTx           map[common.Hash]uint64
 	unstaking           bool
 	shardActiveTime     int
+	finishSync          bool
+	lockingEpoch        uint64
+	lockingReason       int
 }
 
 func NewBeaconStakerInfo() *BeaconStakerInfo {
 	return &BeaconStakerInfo{}
 }
-
-func NewBeaconStakerInfoWithValue(
-	rewardReceiver key.PaymentAddress,
-	funderAddress key.PaymentAddress,
-	stakingInfo map[common.Hash]uint64,
-	beaconConfirmHeight uint64,
-	shardActiveTime int,
-	unstaking bool,
-
-) *BeaconStakerInfo {
-	return &BeaconStakerInfo{
-		rewardReceiver:      rewardReceiver,
-		funderAddress:       funderAddress,
-		stakingTx:           stakingInfo,
-		beaconConfirmHeight: beaconConfirmHeight,
-		shardActiveTime:     shardActiveTime,
-		unstaking:           unstaking,
-	}
+func NewBeaconStakerInfoWithValue(rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, stakingTx map[common.Hash]uint64) *BeaconStakerInfo {
+	return &BeaconStakerInfo{rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, stakingTx: stakingTx}
 }
-
 func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		RewardReceiver      key.PaymentAddress
-		FunderAddress       key.PaymentAddress
 		Unstaking           bool
 		StakingInfo         map[common.Hash]uint64
 		BeaconConfirmHeight uint64
 		ShardActiveTime     int
+		LockingEpoch        uint64
+		LockingReason       int
 	}{
 		RewardReceiver:      c.rewardReceiver,
-		FunderAddress:       c.funderAddress,
 		Unstaking:           c.unstaking,
 		StakingInfo:         c.stakingTx,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		ShardActiveTime:     c.shardActiveTime,
+		LockingEpoch:        c.lockingEpoch,
+		LockingReason:       c.lockingReason,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -70,11 +62,12 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		RewardReceiver      key.PaymentAddress
-		FunderAddress       key.PaymentAddress
 		Unstaking           bool
 		StakingInfo         map[common.Hash]uint64
 		BeaconConfirmHeight uint64
 		ShardActiveTime     int
+		LockingEpoch        uint64
+		LockingReason       int
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -84,20 +77,42 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.rewardReceiver = temp.RewardReceiver
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.unstaking = temp.Unstaking
-	c.funderAddress = temp.FunderAddress
 	c.shardActiveTime = temp.ShardActiveTime
+	c.lockingEpoch = temp.LockingEpoch
+	c.lockingReason = temp.LockingReason
 	return nil
 }
 func (s *BeaconStakerInfo) SetUnstaking() {
 	s.unstaking = true
 }
+func (s *BeaconStakerInfo) SetLocking(epoch uint64, reason int) {
+	s.lockingEpoch = epoch
+	s.lockingReason = reason
+}
 
+func (s *BeaconStakerInfo) SetFinishSync() {
+	s.finishSync = true
+}
+func (s *BeaconStakerInfo) FinishSync() bool {
+	return s.finishSync
+}
 func (s *BeaconStakerInfo) IncreaseShardActiveTime() {
 	s.shardActiveTime++
+}
+func (s *BeaconStakerInfo) ResetShardActiveTime() {
+	s.shardActiveTime = 0
 }
 
 func (s *BeaconStakerInfo) AddStakingInfo(tx common.Hash, amount uint64) {
 	s.stakingTx[tx] = amount
+}
+
+func (s BeaconStakerInfo) TotalStakingAmount() uint64 {
+	total := uint64(0)
+	for _, amount := range s.stakingTx {
+		total += amount
+	}
+	return total
 }
 
 func (s BeaconStakerInfo) Unstaking() bool {
@@ -108,17 +123,18 @@ func (s BeaconStakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
 }
 
-func (s BeaconStakerInfo) FunderAddress() key.PaymentAddress {
-	return s.funderAddress
-}
-
 func (s BeaconStakerInfo) BeaconConfirmHeight() uint64 {
 	return s.beaconConfirmHeight
 }
 func (s BeaconStakerInfo) ShardActiveTime() int {
 	return s.shardActiveTime
 }
-
+func (s BeaconStakerInfo) LockingEpoch() uint64 {
+	return s.lockingEpoch
+}
+func (s BeaconStakerInfo) LockingReason() int {
+	return s.lockingReason
+}
 func (s BeaconStakerInfo) StakingInfo() map[common.Hash]uint64 {
 	res := map[common.Hash]uint64{}
 	for k, v := range s.stakingTx {
@@ -172,9 +188,6 @@ func newBeaconStakerObjectWithValue(db *StateDB, key common.Hash, data interface
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 		}
 	}
-	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.funderAddress); err != nil {
-		return nil, fmt.Errorf("%+v, got err %+v, funderAddress %v", ErrInvalidPaymentAddressType, err, newStakerInfo.funderAddress)
-	}
 	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
 		return nil, fmt.Errorf("%+v, got err %+v, rewardReceiver %v", ErrInvalidPaymentAddressType, err, newStakerInfo.rewardReceiver)
 	}
@@ -209,9 +222,6 @@ func (c *BeaconStakerObject) SetValue(data interface{}) error {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 	}
 	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.rewardReceiver); err != nil {
-		return fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
-	}
-	if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.funderAddress); err != nil {
 		return fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
 	}
 	c.stakerInfo = newStakerInfo

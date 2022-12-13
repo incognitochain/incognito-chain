@@ -279,7 +279,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						SwapoutPubKey: outPublicKey,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
-						StakingAmount: txMeta.StakingAmountShard,
+						StakingAmount: txMeta.StakingAmount,
 					}
 				}
 			case instruction.RETURN_ACTION:
@@ -318,7 +318,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						SwapoutPubKey: v,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
-						StakingAmount: txMeta.StakingAmountShard,
+						StakingAmount: txMeta.StakingAmount,
 					}
 				}
 			}

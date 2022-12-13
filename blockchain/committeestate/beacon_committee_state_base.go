@@ -45,6 +45,7 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 
 //NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
+	stateDB *statedb.StateDB,
 	version int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
@@ -118,6 +119,21 @@ func NewBeaconCommitteeState(
 			swapRule,
 			assignRule,
 		)
+	case STAKING_FLOW_V4:
+		committeeState = NewBeaconCommitteeStateV4WithValue(
+			tempBeaconCommittee,
+			tempShardCommittee,
+			tempShardSubstitute,
+			tempShardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+			tempSyncPool,
+			swapRule,
+			assignRule,
+		)
+		committeeState.(*BeaconCommitteeStateV4).RestoreBeaconCommitteeFromDB(stateDB)
 	}
 
 	return committeeState
@@ -189,7 +205,7 @@ func (b beaconCommitteeStateBase) shallowCopy(newB *beaconCommitteeStateBase) {
 }
 
 //Clone:
-func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
+func (b beaconCommitteeStateBase) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()

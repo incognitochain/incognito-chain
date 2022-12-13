@@ -58,6 +58,7 @@ var (
 	burnPrefix                         = []byte("burn-")
 	syncingValidatorsPrefix            = []byte("syncing-validators-")
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
+	beaconStakerInfoPrefix             = common.HashB([]byte("bstk-info-"))[:prefixHashKeyLength]
 
 	// pdex v3
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
@@ -215,6 +216,16 @@ func GetStakerInfoPrefix() []byte {
 func GetCommitteeTermKey(stakerPublicKey []byte) common.Hash {
 	h := common.HashH(stakerInfoPrefix)
 	final := append(h[:][:prefixHashKeyLength], common.HashH(stakerPublicKey).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
+}
+
+func GetBeaconStakerInfoKey(beaconStakerPublicKey []byte) common.Hash {
+	h := common.HashH(beaconStakerInfoPrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(beaconStakerPublicKey).Bytes()[:prefixKeyLength]...)
 	finalHash, err := common.Hash{}.NewHash(final)
 	if err != nil {
 		panic("Create key fail1")

@@ -135,9 +135,9 @@ const (
 	CurrentEpochBeaconCandidate
 	SubstituteValidator
 	CurrentValidator
-	CommonBeaconPool
+	BeaconWaitingPool
 	CommonShardPool
-	BeaconPool
+	BeaconLockingPool
 	ShardPool
 	BeaconCommittee
 	ShardCommittee

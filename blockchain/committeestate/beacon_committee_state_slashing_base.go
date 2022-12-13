@@ -67,7 +67,7 @@ func (b beaconCommitteeStateSlashingBase) shallowCopy(newB *beaconCommitteeState
 	newB.swapRule = b.swapRule
 }
 
-func (b *beaconCommitteeStateSlashingBase) Clone() BeaconCommitteeState {
+func (b *beaconCommitteeStateSlashingBase) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()

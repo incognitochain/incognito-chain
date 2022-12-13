@@ -37,6 +37,7 @@ const (
 	REDUCE_FIX_NODE               = "reduce_fix_node"
 	REDUCE_FIX_NODE_V2            = "reduce_fix_node_v2"
 	REDUCE_FIX_NODE_V3            = "reduce_fix_node_v3"
+	BEACON_STAKING_FLOW_V4        = "beacon_staking_flow_v4"
 )
 
 // BestState houses information about the current best block and other info
@@ -496,7 +497,8 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
-	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone()
+	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone(beaconBestState.consensusStateDB)
+
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
 
 	if beaconBestState.pdeStates == nil {
@@ -767,6 +769,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator: beaconBestState.NumberOfFixedShardBlockValidator,
 		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
+		MissingSignature:                 beaconBestState.missingSignatureCounter.MissingSignature(),
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
 			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
 			BeaconCommitteeAndValidatorHash: beaconBestState.BestBlock.Header.BeaconCommitteeAndValidatorRoot,
@@ -838,6 +841,10 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		config.Param().ConsensusParam.StakingFlowV2Height,
 		config.Param().ConsensusParam.StakingFlowV3Height)
 
+	if beaconBestState.TriggeredFeature[BEACON_STAKING_FLOW_V4] != 0 {
+		version = committeestate.STAKING_FLOW_V4
+	}
+
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
 	var swapRule committeestate.SwapRuleProcessor
@@ -886,7 +893,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		}
 	}
 
-	committeeState := committeestate.NewBeaconCommitteeState(
+	committeeState := committeestate.NewBeaconCommitteeState(beaconBestState.consensusStateDB,
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
 		swapRule, nextEpochShardCandidate, currentEpochShardCandidate, assignRule,
@@ -975,10 +982,13 @@ func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 // Upgrade to v2 if current version is 1 and beacon height == staking flow v2 height
 // Upgrade to v3 if current version is 2 and beacon height == staking flow v3 height
 func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
+
 	if beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height &&
-		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
+		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height &&
+		(beaconBestState.TriggeredFeature[BEACON_STAKING_FLOW_V4] == 0 || beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4) {
 		return nil
 	}
+
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2 {
 			return nil
@@ -1007,6 +1017,7 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		config.Param().ConsensusParam.AssignRuleV3Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		beaconBestState.BestBlockHash,
+		beaconBestState.consensusStateDB,
 	)
 
 	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)

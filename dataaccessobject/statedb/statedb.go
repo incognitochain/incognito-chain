@@ -409,6 +409,21 @@ func (stateDB *StateDB) getCommitteeState(key common.Hash) (*CommitteeState, boo
 	return NewCommitteeState(), false, nil
 }
 
+func (stateDB *StateDB) getBeaconStakerInfo(key common.Hash) (*BeaconStakerInfo, bool, error) {
+	stakerObject, err := stateDB.getStateObject(BeaconStakerObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if stakerObject != nil {
+		res, ok := stakerObject.GetValue().(*BeaconStakerInfo)
+		if !ok {
+			err = fmt.Errorf("Can not parse staker info")
+		}
+		return res, true, err
+	}
+	return NewBeaconStakerInfo(), false, nil
+}
+
 func (stateDB *StateDB) getStakerInfo(key common.Hash) (*StakerInfo, bool, error) {
 	stakerObject, err := stateDB.getStateObject(ShardStakerObjectType, key)
 	if err != nil {
@@ -436,7 +451,7 @@ func (stateDB *StateDB) getStakerObject(key common.Hash) (*StateObject, bool, er
 }
 
 func (stateDB *StateDB) getAllValidatorCommitteePublicKey(role int, ids []int) map[int][]*CommitteeState {
-	if role != CurrentValidator && role != SubstituteValidator {
+	if role != CurrentValidator && role != SubstituteValidator && role != BeaconWaitingPool && role != BeaconLockingPool {
 		panic("wrong expected role " + strconv.Itoa(role))
 	}
 	m := make(map[int][]*CommitteeState)
