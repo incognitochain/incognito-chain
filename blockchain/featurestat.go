@@ -39,13 +39,16 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 		return nil, nil
 	}
 
+	Logger.log.Info("[committee-state] 0")
 	validatorFromUserKeys, validatorStr := beaconView.ExtractPendingAndCommittee(validators)
 	if inSyncPool {
 		validatorFromUserKeys, validatorStr = beaconView.ExtractAllFinishSyncingValidators(validators)
 	}
+	Logger.log.Info("[committee-state] 1")
 	if len(validatorFromUserKeys) == 0 {
 		return nil, nil
 	}
+	Logger.log.Info("[committee-state] 2")
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 
@@ -53,9 +56,11 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 	for _, v := range reportFeatures {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
+	Logger.log.Info("[committee-state] 3")
 	timestamp := time.Now().Unix()
 	timestampStr := fmt.Sprintf("%v", timestamp)
 	signBytes = append(signBytes, []byte(timestampStr)...)
+	Logger.log.Info("[committee-state] 4")
 
 	for i, v := range validatorFromUserKeys {
 		dataSign := signBytes[:]
@@ -66,9 +71,11 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 		featureSyncSignatures = append(featureSyncSignatures, signature)
 		featureSyncValidators = append(featureSyncValidators, validatorStr[i])
 	}
+	Logger.log.Info("[committee-state] 5")
 	if len(featureSyncValidators) == 0 {
 		return nil, nil
 	}
+	Logger.log.Info("[committee-state] 6")
 	Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
 	msg := wire.NewMessageFeature(int(timestamp), featureSyncValidators, featureSyncSignatures, reportFeatures)
 	Logger.log.Info("[committee-state] finish CreateNewFeatureStatMessage")
