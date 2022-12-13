@@ -69,7 +69,7 @@ consensus_param:
   assign_rule_v3_height: 2
   enable_slashing_height_v2: 3
   staking_flow_v3_height: 5
-  staking_flow_v4_height: 13
+  staking_flow_v4_height: 15
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
   timeslot: 10
@@ -142,7 +142,7 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
   - unified_token_202205021100:
-      min_trigger: 5
+      min_trigger: 1e9
       force_trigger: 1000000000
       require_percentage: 90
   # - unified_token_202205051530:
@@ -150,11 +150,11 @@ auto_enable_feature:
   #     force_trigger: 1000000000
   #     require_percentage: 90
   - blocktime20:
-      min_trigger: 200000
+      min_trigger: 1e9
       force_trigger: 1000000000
       require_percentage: 90
   - blocktime10:
-      min_trigger: 10892003
+      min_trigger: 1e9
       force_trigger: 1000000000
       require_percentage: 90
   - auroraavaxbridge:

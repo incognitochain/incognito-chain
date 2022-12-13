@@ -586,18 +586,14 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 
 		if inst[0] == instruction.ENABLE_FEATURE {
-			Logger.log.Info("[committee-state] inst:", inst)
 			enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
-			Logger.log.Info("[committee-state] 0")
 			if beaconBestState.TriggeredFeature == nil {
 				beaconBestState.TriggeredFeature = make(map[string]uint64)
 			}
-			Logger.log.Info("[committee-state] 1")
 			for _, feature := range enableFeatures.Features {
-				Logger.log.Info("[committee-state] feature:", feature)
 				if common.IndexOfStr(feature, curView.getUntriggerFeature(false)) != -1 {
 					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
 				} else { //cannot find feature in untrigger feature lists(not have or already trigger cases -> unexpected condition)
@@ -606,7 +602,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				}
 
 				//update NumberOfFixedShardBlockValidatorV2
-				Logger.log.Info("[committee-state] feature 1:", feature)
 				switch feature {
 				case REDUCE_FIX_NODE:
 					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
