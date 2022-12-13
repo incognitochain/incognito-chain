@@ -33,6 +33,7 @@ type FeatureReportInfo struct {
 
 // filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
 func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, reportFeatures []string, validators []*consensus.Validator) (*wire.MessageFeature, error) {
+	Logger.log.Info("[committee-state] CreateNewFeatureStatMessage")
 
 	if len(reportFeatures) == 0 {
 		return nil, nil
@@ -70,6 +71,7 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 	}
 	Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
 	msg := wire.NewMessageFeature(int(timestamp), featureSyncValidators, featureSyncSignatures, reportFeatures)
+	Logger.log.Info("[committee-state] finish CreateNewFeatureStatMessage")
 
 	return msg, nil
 }
