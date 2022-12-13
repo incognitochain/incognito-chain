@@ -134,7 +134,7 @@ pdex_param:
 is_enable_bpv3_stats: false
 auto_enable_feature:
   - instantfinality:
-      min_trigger: 1
+      min_trigger: 1e9
       force_trigger: 1e9
       require_percentage: 90
   - maxcommitteesize48:
