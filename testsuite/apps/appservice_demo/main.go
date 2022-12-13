@@ -62,6 +62,10 @@ func main() {
 
 	app := devframework.NewAppService(*fullnode, true)
 
+	privateSeedBytes := common.HashB(common.HashB([]byte("112t8rnbJ16eRJqBrXMmafYCVyTPaW7vsNZPqrrA3L8q2wWxjueroosTZkfWeUzBm9ucsXXPRwjCR5rTQhjEksohxa2fmHj26AeyZUkjYnY9")))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	log.Println("privateSeed:", privateSeed)
+
 	bState, err := app.GetBeaconBestState()
 	if err != nil {
 		panic(err)
@@ -205,3 +209,7 @@ var fixedRewardReceivers = []string{
 	"1qVyf5hje3crq4V15NFkjQNyY2MDKjQaatPpLveCewYuKfUdqU",
 	"1ryW3G6NYsFDrAnwWh3Ck6uEMWjxDpjdS1ES4p6UtV1eGbjEX3",
 }
+
+//notes
+// map keys:
+///ZUkjYnY9 -> 45z8B1VFD
