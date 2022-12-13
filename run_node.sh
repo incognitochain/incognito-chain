@@ -3,7 +3,7 @@
 ###### MULTI_MEMBERS
 # Shard 0
 if [ "$1" == "shard0-0" ]; then
-INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnkwspf7rutf9tYXhb77N3LBTxfmU6oyE7eMQ4wyy8iH7gEZzeePsXX8fx9ZjY8ozeWySuYnWZzwACoDog4GZzViUe5kH46hGxBJzrf"  --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --rpcwslisten "0.0.0.0:19334" --relayshards ""
+INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnkwspf7rutf9tYXhb77N3LBTxfmU6oyE7eMQ4wyy8iH7gEZzeePsXX8fx9ZjY8ozeWySuYnWZzwACoDog4GZzViUe5kH46hGxBJzrf"  --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9333" --rpcwslisten "0.0.0.0:19333" --relayshards ""
 fi
 if [ "$1" == "shard0-1" ]; then
 INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnr1HRcYozjwt1Y4t1o7kAvKM876kQeN7s9jCUodhFbsrPZ1UU6vDcSSFAQMAMLz6i576gpVmyy3K4py9ao3aF7hqozCqSw6amKnUjw"  --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335" --relayshards ""
