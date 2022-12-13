@@ -29,6 +29,7 @@ func main() {
 	args := os.Args
 	isSkipSubmitKey := false
 	isOnlySubmitKey := false
+	isWatchingOnly := false
 	if len(args) > 1 {
 		t, err := strconv.Atoi(args[1])
 		if err != nil {
@@ -38,6 +39,8 @@ func main() {
 			isSkipSubmitKey = true
 		} else if t == 0 {
 			isOnlySubmitKey = true
+		} else if t == 2 {
+			isWatchingOnly = true
 		}
 	}
 
@@ -105,7 +108,7 @@ func main() {
 		if isOnlySubmitKey {
 			return
 		}
-		if blk.GetBeaconHeight() == startStakingHeight {
+		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly {
 			//Stake one node
 			k := keys[0]
 			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
