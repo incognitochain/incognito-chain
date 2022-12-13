@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -353,12 +352,10 @@ func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
-	log.Println("requestBody:", string(requestBody))
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
-	log.Println("responeBody:", string(body))
 	resp := struct {
 		Result bool
 		Error  *ErrMsg

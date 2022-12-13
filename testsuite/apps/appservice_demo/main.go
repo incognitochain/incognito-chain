@@ -28,13 +28,16 @@ func main() {
 
 	args := os.Args
 	isSkipSubmitKey := false
+	isOnlySubmitKey := false
 	if len(args) > 1 {
-		isSkipSubmitKeyInt, err := strconv.Atoi(args[1])
+		t, err := strconv.Atoi(args[1])
 		if err != nil {
 			panic(err)
 		}
-		if isSkipSubmitKeyInt == 1 {
+		if t == 1 {
 			isSkipSubmitKey = true
+		} else if t == 0 {
+			isOnlySubmitKey = true
 		}
 	}
 
@@ -64,14 +67,12 @@ func main() {
 		bHeight = 15
 	}
 
-	bHeight = bState.BeaconHeight + 1
-
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 20
+		startStakingHeight = bHeight + 30
 	}
 	log.Println("Will be start shard staking on beacon height:", startStakingHeight)
 
@@ -90,7 +91,7 @@ func main() {
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
-			} else if blk.GetBeaconHeight() == bHeight+10 {
+			} else if blk.GetBeaconHeight() == bHeight+15 {
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}
@@ -100,6 +101,9 @@ func main() {
 				}
 				app.PreparePRVForTest(privateKey, receivers)
 			}
+		}
+		if isOnlySubmitKey {
+			return
 		}
 		if blk.GetBeaconHeight() == startStakingHeight {
 			//Stake one node
