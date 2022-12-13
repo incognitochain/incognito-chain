@@ -760,11 +760,14 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 	// get valid untrigger feature
 	unTriggerFeatures := curView.getUntriggerFeature(false)
 
+	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
+
 	for _, feature := range unTriggerFeatures {
 		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
 		if !ok {
 			continue
 		}
+		Logger.log.Info("[committee-state] autoEnableFeatureInfo:", autoEnableFeatureInfo)
 		if uint64(autoEnableFeatureInfo.MinTriggerBlockHeight) > curView.BeaconHeight {
 			continue
 		}
@@ -806,6 +809,9 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if invalidCondition {
 			continue
 		}
+
+		Logger.log.Info("[committee-state] add feature:", feature)
+
 		enableFeature = append(enableFeature, feature)
 	}
 
