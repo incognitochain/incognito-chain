@@ -115,7 +115,7 @@ func main() {
 			if cs.IsDiffFrom(lastCs) {
 				lastCs = new(jsonresult.CommiteeState)
 				*lastCs = *cs
-				log.Println(cs)
+				cs.Print()
 			}
 		}
 
