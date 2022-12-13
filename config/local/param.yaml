@@ -16,7 +16,7 @@ genesis_param:
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
 
 committee_size:
-  max_shard_committee_size: 4
+  max_shard_committee_size: 5
   min_shard_committee_size: 4
   min_beacon_committee_size: 4
   max_beacon_committee_size: 7

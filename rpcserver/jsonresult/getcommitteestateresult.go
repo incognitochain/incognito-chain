@@ -1,6 +1,11 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+)
 
 type CommiteeState struct {
 	Root              string                               `json:"root"`
@@ -22,4 +27,12 @@ func (cs *CommiteeState) IsDiffFrom(target *CommiteeState) bool {
 		return false
 	}
 	return true
+}
+
+func (cs *CommiteeState) Print() {
+	b, err := json.MarshalIndent(cs, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
