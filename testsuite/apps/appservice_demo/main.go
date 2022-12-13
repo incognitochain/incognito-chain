@@ -62,10 +62,6 @@ func main() {
 
 	app := devframework.NewAppService(*fullnode, true)
 
-	privateSeedBytes := common.HashB(common.HashB([]byte("112t8rnbJ16eRJqBrXMmafYCVyTPaW7vsNZPqrrA3L8q2wWxjueroosTZkfWeUzBm9ucsXXPRwjCR5rTQhjEksohxa2fmHj26AeyZUkjYnY9")))
-	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-	log.Println("privateSeed:", privateSeed)
-
 	bState, err := app.GetBeaconBestState()
 	if err != nil {
 		panic(err)
@@ -82,7 +78,7 @@ func main() {
 	} else {
 		startStakingHeight = bHeight + 30
 	}
-	log.Println("Will be start shard staking on beacon height:", startStakingHeight)
+	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
 		if !isSkipSubmitKey {
