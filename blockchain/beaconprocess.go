@@ -602,6 +602,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				}
 
 				//update NumberOfFixedShardBlockValidatorV2
+				Logger.log.Info("[committee-state] feature:", feature)
 				switch feature {
 				case REDUCE_FIX_NODE:
 					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
