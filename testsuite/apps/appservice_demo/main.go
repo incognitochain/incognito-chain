@@ -9,8 +9,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 )
@@ -112,11 +110,9 @@ func main() {
 		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly {
 			//Stake one node
 			k := keys[0]
-			privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))
-			privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
 			log.Printf("Start staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-				k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
-			app.ShardStaking(k.PrivateKey, k.PaymentAddress, privateSeed, k.PaymentAddress, "", true)
+				k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
+			app.ShardStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
 		} else if blk.GetBeaconHeight() >= startStakingHeight+2 {
 			log.Println("get committee state at beacon height:", blk.GetBeaconHeight())
 			cs, err := app.GetCommitteeState(0, "")

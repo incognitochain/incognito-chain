@@ -2018,10 +2018,6 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 
 		for _, v := range shardSyncingValidatorsFromBeaconView[byte(chain.GetShardID())] {
 			Logger.log.Info("[committee-state] 0")
-			upk, _ := userPk.ToBase58()
-			vk, _ := v.ToBase58()
-			Logger.log.Info("[committee-state] userPk:", upk)
-			Logger.log.Info("[committee-state] syncPk:", vk)
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard syncing committee in shard state
 				Logger.log.Info("[committee-state] 1")
 				return common.SyncingRole, chain.GetShardID()
