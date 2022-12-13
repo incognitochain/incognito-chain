@@ -812,7 +812,7 @@ func (b *BeaconCommitteeStateV4) processAssignBeacon(
 		shardSubstitute:    env.shardSubstitute,
 		shardNewCandidates: env.newAllRoles,
 	}
-	beaconWaiting := env.beaconWaiting
+	beaconWaiting := []string{}
 	outPublicKeys := []string{}
 	for _, outPublicKey := range env.beaconWaiting {
 		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(env.ConsensusStateDB, outPublicKey); (err != nil) || (!has) {
