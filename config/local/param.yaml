@@ -66,9 +66,9 @@ consensus_param:
   enable_slashing_height: 1
   lemma2_height: 1
   byzantine_detector_height: 1e9
-  assign_rule_v3_height: 1
-  enable_slashing_height_v2: 1
-  staking_flow_v3_height: 1
+  assign_rule_v3_height: 2
+  enable_slashing_height_v2: 3
+  staking_flow_v3_height: 5
   staking_flow_v4_height: 1e9
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
