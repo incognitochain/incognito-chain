@@ -206,6 +206,7 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
 	stat.lock.Lock()
 	defer stat.lock.Unlock()
+	Logger.log.Info("[committee-state] stat.nodes:", stat.nodes)
 	for key, features := range stat.nodes {
 
 		Logger.log.Info("[committee-state] 100")
