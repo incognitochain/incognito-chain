@@ -1251,6 +1251,7 @@ func (serverObj *Server) GetNodeRole() string {
 	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
 		return "RELAY"
 	}
+	log.Println("[commitee-state] 10")
 	role, shardID := serverObj.GetUserMiningState()
 	switch shardID {
 	case -2:
@@ -1665,6 +1666,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	}
 	if config.Config().MiningKeys != "" || config.Config().PrivateKey != "" {
 		//Beacon: chain = -1
+		log.Println("[commitee-state] 11")
 		role, chainID := serverObj.GetUserMiningState()
 		layer := ""
 
@@ -2038,6 +2040,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 // GetUserMiningState get user mining state by latest beacon view
 // Sync latest by beacon view
 func (s *Server) GetUserMiningState() (role string, chainID int) {
+	log.Println("[commitee-state] 100")
 	userPk := s.consensusEngine.GetMiningPublicKeys()
 	if s.blockChain == nil || userPk == nil {
 		return "", -2
