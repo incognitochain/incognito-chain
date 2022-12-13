@@ -41,6 +41,7 @@ func main() {
 			isOnlySubmitKey = true
 		} else if t == 2 {
 			isWatchingOnly = true
+			isSkipSubmitKey = true
 		}
 	}
 
