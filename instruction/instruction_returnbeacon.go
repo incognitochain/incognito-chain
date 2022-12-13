@@ -154,6 +154,13 @@ func ValidateAndImportReturnBeaconStakingInstructionFromString(instruction []str
 	return ImportReturnBeaconStakingInstructionFromString(instruction)
 }
 
+func BuildReturnBeaconStakingInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateReturnBeaconStakingInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportReturnBeaconStakingInstructionFromString(instruction)
+}
+
 func ImportReturnBeaconStakingInstructionFromString(instruction []string) (*ReturnBeaconStakeInstruction, error) {
 	returnStakingIns := NewReturnBeaconStakeIns()
 	var err error

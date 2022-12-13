@@ -3,11 +3,10 @@ package committeestate
 import (
 	"fmt"
 	"math/rand"
-	"reflect"
-	"runtime"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -21,7 +20,7 @@ type AssignEnvironment struct {
 
 type AssignRuleProcessor interface {
 	Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string
-	ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte)
+	ProcessBeacon(candidates []string, env *AssignEnvironment) ([]string, []string, []string)
 	Version() int
 }
 
@@ -60,7 +59,7 @@ func (a NilAssignRule) Version() int {
 	panic("implement me")
 }
 
-func (a NilAssignRule) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte) {
+func (a NilAssignRule) ProcessBeacon(candidates []string, env *AssignEnvironment) ([]string, []string, []string) {
 	panic("implement me")
 }
 
@@ -104,7 +103,7 @@ func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand 
 	return assignedCandidates
 }
 
-func (a AssignRuleV2) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) ([]string, []string, []byte) {
+func (a AssignRuleV2) ProcessBeacon(candidates []string, env *AssignEnvironment) ([]string, []string, []string) {
 	panic("implement me")
 }
 
@@ -156,7 +155,7 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 	return m
 }
 
-type FilterBeaconRule func(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (accepted, rejected []int, newStatus []byte)
+type FilterBeaconRule func(candidates []string, env *AssignEnvironment) (accepted, rejected []int)
 
 type AssignRuleV3 struct {
 	filterBeaconRules []FilterBeaconRule
@@ -221,35 +220,53 @@ func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rando
 	return assignedCandidates
 }
 
-func (a AssignRuleV3) ProcessBeacon(candidates []string, waitingStatus []byte, env *AssignEnvironment) (
+func (a AssignRuleV3) ProcessBeacon(candidates []string, env *AssignEnvironment) (
 	toPending []string,
 	stayWaiting []string,
-	newWaitingStatus []byte,
+	shouldRemove []string,
 ) {
 	var (
 		accepted []int
 		rejected []int
 	)
-	for ruleID, rule := range a.filterBeaconRules {
-		accepted, rejected, waitingStatus = rule(candidates, waitingStatus, byte(ruleID), env)
-		// fmt.Printf("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v, status %+v\n", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected, waitingStatus)
-		Logger.log.Infof("Filter beacon candidate by rule %v, accepted idx %+v, rejected idx %+v", runtime.FuncForPC(reflect.ValueOf(rule).Pointer()).Name(), accepted, rejected)
+	processList := candidates
+	notInShard, stillInShard := notInShardCycle(processList, env)
+	Logger.log.Infof("Filter beacon candidate by rule notInShardCycle, accepted idx %+v, rejected idx %+v", notInShard, stillInShard)
+	for _, idx := range stillInShard {
+		stayWaiting = append(stayWaiting, processList[idx])
 	}
-	for idx, pk := range candidates {
-		if waitingStatus[idx] == byte(len(a.filterBeaconRules)) {
-			toPending = append(toPending, pk)
-		} else {
-			stayWaiting = append(stayWaiting, pk)
-			newWaitingStatus = append(newWaitingStatus, waitingStatus[idx])
-		}
+	processListTmp := []string{}
+	for _, idx := range notInShard {
+		processListTmp = append(processListTmp, processList[idx])
 	}
-	return toPending, stayWaiting, newWaitingStatus
+	processList = processListTmp
+	enoughTimes, notEnoughTimes := hasEnoughActiveTimes(processList, env)
+	Logger.log.Infof("Filter beacon candidate by rule hasEnoughActiveTimes, accepted idx %+v, rejected idx %+v", enoughTimes, notEnoughTimes)
+	for _, idx := range notEnoughTimes {
+		shouldRemove = append(shouldRemove, processList[idx])
+	}
+
+	processListTmp = []string{}
+	for _, idx := range enoughTimes {
+		processListTmp = append(processListTmp, processList[idx])
+	}
+	processList = processListTmp
+	accepted, rejected = hasEnoughDelegator(processList, env)
+
+	Logger.log.Infof("Filter beacon candidate by rule hasEnoughActiveTimes, accepted idx %+v, rejected idx %+v", accepted, rejected)
+	for _, idx := range rejected {
+		stayWaiting = append(stayWaiting, processListTmp[idx])
+	}
+	for _, idx := range accepted {
+		toPending = append(toPending, processListTmp[idx])
+	}
+	Logger.log.Infof("Filter beacon candidate done, to pending %+v, stay waiting %+v, should remove %+v", common.ShortPKList(toPending), common.ShortPKList(stayWaiting), common.ShortPKList(shouldRemove))
+	return toPending, stayWaiting, shouldRemove
 }
 
-func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
+func notInShardCycle(candidates []string, env *AssignEnvironment) (
 	accepted []int,
 	rejected []int,
-	newStatus []byte,
 ) {
 	allShardStakerM := map[string]interface{}{}
 	for _, pk := range env.shardNewCandidates {
@@ -266,73 +283,44 @@ func notInShardCycle(candidates []string, candidateStatus []byte, ruleID byte, e
 		}
 	}
 	for id, candidate := range candidates {
-		if candidateStatus[id] > ruleID {
-			accepted = append(accepted, id)
-			continue
-		}
-		if candidateStatus[id] < ruleID {
-			rejected = append(rejected, id)
-			continue
-		}
 		if _, has := allShardStakerM[candidate]; has {
 			rejected = append(rejected, id)
 		} else {
 			accepted = append(accepted, id)
-			candidateStatus[id]++
 		}
 	}
-	return accepted, rejected, candidateStatus
+	return accepted, rejected
 }
 
-func hasEnoughActiveTimes(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
+func hasEnoughActiveTimes(candidates []string, env *AssignEnvironment) (
 	accepted []int,
 	rejected []int,
-	newStatus []byte,
 ) {
 	for id, candidate := range candidates {
-		if candidateStatus[id] > ruleID {
-			accepted = append(accepted, id)
-			continue
-		}
-		if candidateStatus[id] < ruleID {
-			rejected = append(rejected, id)
-			continue
-		}
-		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < 10) {
+		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(env.ConsensusStateDB, candidate); (err != nil) || (!has) || (stakerInfo.ActiveTimesInCommittee() < uint(config.Param().ConsensusParam.RequiredActiveTimes)) {
 			rejected = append(rejected, id)
 		} else {
 			accepted = append(accepted, id)
-			candidateStatus[id]++
 		}
 	}
-	return accepted, rejected, candidateStatus
+	return accepted, rejected
 }
 
-func hasEnoughDelegator(candidates []string, candidateStatus []byte, ruleID byte, env *AssignEnvironment) (
+func hasEnoughDelegator(candidates []string, env *AssignEnvironment) (
 	accepted []int,
 	rejected []int,
-	newStatus []byte,
 ) {
 	for id, candidate := range candidates {
-		if candidateStatus[id] > ruleID {
-			accepted = append(accepted, id)
-			continue
-		}
-		if candidateStatus[id] < ruleID {
-			rejected = append(rejected, id)
-			continue
-		}
 		if dState, has := env.delegateState[candidate]; has {
 			//TODO remove hardcode here
 			if (dState != nil) && (dState.CurrentDelegators >= 0) {
 				accepted = append(accepted, id)
-				candidateStatus[id]++
 				continue
 			}
 		}
 		rejected = append(rejected, id)
 	}
-	return accepted, rejected, candidateStatus
+	return accepted, rejected
 }
 
 func getOrderedLowerSet(mean int, numberOfValidators []int) []int {

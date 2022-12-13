@@ -22,8 +22,6 @@ type BeaconCommitteeStateV4 struct {
 	beaconSubstitute []string
 	beaconWaiting    []string
 	beaconLocking    []*LockingInfo
-	//TODO refactor
-	waitingStatus []byte
 
 	beaconStakingAmount map[string]uint64
 	delegate            map[string]string
@@ -31,8 +29,6 @@ type BeaconCommitteeStateV4 struct {
 	bDelegateState *BeaconDelegateState
 	Performance    map[string]uint64
 	Reputation     map[string]uint64
-
-	committeeChange *CommitteeChange
 }
 
 func NewBeaconCommitteeStateV4() *BeaconCommitteeStateV4 {
@@ -77,12 +73,27 @@ func (b *BeaconCommitteeStateV4) Version() int {
 	return STAKING_FLOW_V4
 }
 
+func (b *BeaconCommitteeStateV4) GetConsensusDB() *statedb.StateDB {
+	return b.consensusDB
+}
+
+func (b *BeaconCommitteeStateV4) GetSlashedDB() *statedb.StateDB {
+	return b.slashingDB
+}
+
+func (b *BeaconCommitteeStateV4) SetConsensusDB(sDB *statedb.StateDB) {
+	b.consensusDB = sDB
+}
+
+func (b *BeaconCommitteeStateV4) SetSlashedDB(sDB *statedb.StateDB) {
+	b.slashingDB = sDB
+}
+
 // shallowCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV4) shallowCopy(newB *BeaconCommitteeStateV4) {
 	b.BeaconCommitteeStateV3.shallowCopy(newB.BeaconCommitteeStateV3)
 	newB.beaconSubstitute = b.beaconSubstitute
 	newB.beaconWaiting = b.beaconWaiting
-	newB.waitingStatus = b.waitingStatus
 	newB.beaconLocking = b.beaconLocking
 	newB.delegate = b.delegate
 	newB.beaconStakingAmount = b.beaconStakingAmount
@@ -107,8 +118,6 @@ func (b *BeaconCommitteeStateV4) clone() *BeaconCommitteeStateV4 {
 	newB.beaconSubstitute = append(newB.beaconSubstitute, b.beaconSubstitute...)
 	newB.beaconWaiting = []string{}
 	newB.beaconWaiting = append(newB.beaconWaiting, b.beaconWaiting...)
-	newB.waitingStatus = []byte{}
-	newB.waitingStatus = append(newB.waitingStatus, b.waitingStatus...)
 	newB.beaconLocking = []*LockingInfo{}
 	newB.beaconLocking = append(newB.beaconLocking, b.beaconLocking...)
 	newB.delegate = map[string]string{}
@@ -172,6 +181,8 @@ func initGenesisBeaconCommitteeStateV4(env *BeaconCommitteeStateEnvironment) *Be
 	BeaconCommitteeStateV4.initCommitteeState(env)
 	BeaconCommitteeStateV4.InitReputationState()
 	BeaconCommitteeStateV4.bDelegateState, _ = InitBeaconDelegateState(BeaconCommitteeStateV4)
+	BeaconCommitteeStateV4.consensusDB = env.ConsensusStateDB
+	BeaconCommitteeStateV4.slashingDB = env.SlashStateDB
 	return BeaconCommitteeStateV4
 }
 
@@ -183,6 +194,8 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	error,
 ) {
 	var err error
+	b.consensusDB = env.ConsensusStateDB
+	b.slashingDB = env.SlashStateDB
 	incurredInstructions := [][]string{}
 	newIInsts := []instruction.Instruction{}
 	returnStakingInstruction := instruction.NewReturnStakeIns()
@@ -230,66 +243,91 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 
 func (b *BeaconCommitteeStateV4) CommitOnBlock(
 	bBlock *types.BeaconBlock,
-	newCommitteeChange *CommitteeChange,
-	inst [][]string,
-) error {
-	env := &BeaconCommitteeStateEnvironment{
-		BeaconHeight: bBlock.GetBeaconHeight(),
+	env *BeaconCommitteeStateEnvironment,
+	consensusDB *statedb.StateDB,
+	slashedDB *statedb.StateDB,
+) (
+	*statedb.StateDB,
+	*statedb.StateDB,
+	error,
+) {
+	b.consensusDB = consensusDB
+	b.slashingDB = slashedDB
+
+	commitChanges := []func(
+		bBlock *types.BeaconBlock,
+		env *BeaconCommitteeStateEnvironment,
+	) error{
+		b.commitStaker,
+		b.commitSyncing,
+		b.commitSubstitute,
+		b.commitCommittee,
+		b.commitSlashing,
+		b.commitCommitteeInfo,
 	}
-	commitChanges := []func(bBlock *types.BeaconBlock, env *BeaconCommitteeStateEnvironment) error{
-		b.commitUpdateStaker,
-		b.commitRedelegate,
-	}
+
 	for _, commitChange := range commitChanges {
 		if err := commitChange(bBlock, env); err != nil {
-			return err
+			return nil, nil, err
 		}
 	}
-	// sDB := b.slashingDB
-	return nil
+
+	return b.consensusDB, b.slashingDB, nil
 }
 
-func (b *BeaconCommitteeStateV4) commitUpdateStaker(
+func (b *BeaconCommitteeStateV4) commitStaker(
 	bBlock *types.BeaconBlock,
 	env *BeaconCommitteeStateEnvironment,
 ) error {
 	cDB := b.consensusDB
 	stopAutoStakerKeys := b.committeeChange.StopAutoStakeKeys()
 	if len(stopAutoStakerKeys) != 0 {
-		if err := statedb.SaveStopAutoStakerInfo(cDB, stopAutoStakerKeys, b.GetAutoStaking()); err != nil {
+		if err := statedb.SaveStopAutoShardStakerInfo(cDB, stopAutoStakerKeys, b.GetAutoStaking()); err != nil {
+			return err
+		}
+		if err := statedb.SaveStopAutoStakeBeaconStaker(cDB, stopAutoStakerKeys, b.GetAutoStaking()); err != nil {
 			return err
 		}
 	}
-	if err := b.commitUpdateShardStaker(env); err != nil {
+	if err := b.commitShardStaker(env); err != nil {
 		return err
 	}
-	if err := b.commitUpdateBeaconStaker(bBlock, env); err != nil {
-		return err
-	}
-	return nil
+	return b.commitBeaconStaker(env)
 }
 
-func (b *BeaconCommitteeStateV4) commitUpdateShardStaker(
+func (b *BeaconCommitteeStateV4) commitSyncing(
+	bBlock *types.BeaconBlock,
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	return b.commitShardSyncing(env)
+}
+
+func (b *BeaconCommitteeStateV4) commitSubstitute(
+	bBlock *types.BeaconBlock,
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	if err := b.commitShardPending(env); err != nil {
+		return err
+	}
+	return b.commitBeaconPending(env)
+}
+
+func (b *BeaconCommitteeStateV4) commitCommittee(
+	bBlock *types.BeaconBlock,
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	if err := b.commitShardCommittee(env); err != nil {
+		return err
+	}
+	return b.commitBeaconCommittee(env)
+}
+
+func (b *BeaconCommitteeStateV4) commitSlashing(
+	bBlock *types.BeaconBlock,
 	env *BeaconCommitteeStateEnvironment,
 ) error {
 	cDB := b.consensusDB
 	committeeChange := b.committeeChange
-	shardStakerKeys := committeeChange.ShardStakerKeys()
-	if len(shardStakerKeys) != 0 {
-		err := statedb.StoreShardStakerInfo(
-			cDB,
-			shardStakerKeys,
-			b.GetRewardReceiver(),
-			b.GetAutoStaking(),
-			b.GetStakingTx(),
-			env.BeaconHeight,
-			b.GetDelegate(),
-			map[string]interface{}{},
-		)
-		if err != nil {
-			return err
-		}
-	}
 	for _, removedCommittee := range committeeChange.SlashingCommittee {
 		for _, stakerPubkeyStr := range removedCommittee {
 			oldD := ""
@@ -312,15 +350,161 @@ func (b *BeaconCommitteeStateV4) commitUpdateShardStaker(
 			}
 		}
 	}
-	return statedb.StoreSyncingValidators(cDB, committeeChange.SyncingPoolAdded)
+	err := statedb.StoreSlashingCommittee(b.slashingDB, bBlock.Header.Epoch-1, committeeChange.SlashingCommittee)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (b *BeaconCommitteeStateV4) commitUpdateBeaconStaker(
+func (b *BeaconCommitteeStateV4) commitCommitteeInfo(
 	bBlock *types.BeaconBlock,
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	if err := b.commitRedelegate(env); err != nil {
+		return err
+	}
+	if err := b.commitDelegateInfo(bBlock, env); err != nil {
+		return err
+	}
+	if err := b.commitAddStaking(env); err != nil {
+		return err
+	}
+	return b.commitAutoStaking(env)
+}
+
+func (b *BeaconCommitteeStateV4) commitShardStaker(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	cDB := b.consensusDB
+	committeeChange := b.committeeChange
+	shardStakerKeys := committeeChange.ShardStakerKeys()
+	if len(shardStakerKeys) != 0 {
+		err := statedb.StoreShardStakerInfo(
+			cDB,
+			shardStakerKeys,
+			b.GetRewardReceiver(),
+			b.GetAutoStaking(),
+			b.GetStakingTx(),
+			env.BeaconHeight,
+			b.GetDelegate(),
+			map[string]interface{}{},
+		)
+		if err != nil {
+			return err
+		}
+	}
+	if err := statedb.DeleteStakerInfo(cDB, committeeChange.RemovedStakers()); err != nil {
+		return err
+	}
+	if err := statedb.StoreCurrentEpochShardCandidate(cDB, committeeChange.CurrentEpochShardCandidateAdded); err != nil {
+		return err
+	}
+	if err := statedb.StoreNextEpochShardCandidate(cDB, committeeChange.NextEpochShardCandidateAdded, b.GetRewardReceiver(), b.GetAutoStaking(), b.GetStakingTx()); err != nil {
+		return err
+	}
+	if err := statedb.DeleteCurrentEpochShardCandidate(cDB, committeeChange.CurrentEpochShardCandidateRemoved); err != nil {
+		return err
+	}
+	return statedb.DeleteNextEpochShardCandidate(cDB, committeeChange.NextEpochShardCandidateRemoved)
+}
+
+func (b *BeaconCommitteeStateV4) commitShardSyncing(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	if err := statedb.StoreSyncingValidators(bStateDB, committeeChange.SyncingPoolAdded); err != nil {
+		return err
+	}
+	return statedb.DeleteSyncingValidators(bStateDB, committeeChange.SyncingPoolRemoved)
+}
+
+func (b *BeaconCommitteeStateV4) commitShardPending(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	//storeAllShardSubstitutesValidatorV3
+	allAddedValidators := committeeChange.ShardSubstituteAdded
+	for shardID, addedValidators := range allAddedValidators {
+		if len(addedValidators) == 0 {
+			continue
+		}
+		substituteValidatorList := b.GetOneShardSubstitute(shardID)
+		err := statedb.StoreOneShardSubstitutesValidatorV3(
+			bStateDB,
+			shardID,
+			substituteValidatorList,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	if err := statedb.DeleteAllShardSubstitutesValidator(bStateDB, committeeChange.ShardSubstituteRemoved); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BeaconCommitteeStateV4) commitShardCommittee(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	listEnableCredit := []incognitokey.CommitteePublicKey{}
+	for _, addedCommittee := range committeeChange.ShardCommitteeAdded {
+		for _, stakerPubkey := range addedCommittee {
+			if stakerPubkeyStr, err := stakerPubkey.ToBase58(); err != nil {
+				return err
+			} else {
+				stakerInfo, exist, err := statedb.GetShardStakerInfo(bStateDB, stakerPubkeyStr)
+				if err != nil || !exist {
+					return err
+				}
+				if !stakerInfo.HasCredit() {
+					listEnableCredit = append(listEnableCredit, stakerPubkey)
+				}
+				b.bDelegateState.AddReDelegate(stakerPubkeyStr, "", stakerInfo.Delegate())
+			}
+		}
+		if err := statedb.EnableStakerCredit(bStateDB, listEnableCredit); err != nil {
+			return err
+		}
+	}
+	if env.IsEndOfEpoch {
+		for _, outKeys := range b.shardCommittee {
+			processList := outKeys[config.Param().CommitteeSize.NumberOfFixedShardBlockValidator:]
+			processList = processList[:len(processList)]
+			b.countActiveTimes(
+				bStateDB,
+				env.MissingSignature,
+				b.beaconWaiting,
+				processList,
+			)
+		}
+	}
+	err := statedb.StoreAllShardCommittee(bStateDB, committeeChange.ShardCommitteeAdded)
+	if err != nil {
+		return err
+	}
+	err = statedb.ReplaceAllShardCommittee(bStateDB, committeeChange.ShardCommitteeReplaced)
+	if err != nil {
+		return err
+	}
+	err = statedb.DeleteAllShardCommittee(bStateDB, committeeChange.ShardCommitteeRemoved)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BeaconCommitteeStateV4) commitBeaconStaker(
 	env *BeaconCommitteeStateEnvironment,
 ) error {
 	cDB := b.consensusDB
 	beaconStakerKeys := b.committeeChange.BeaconStakerKeys()
+	cChange := b.committeeChange
 	if len(beaconStakerKeys) != 0 {
 		err := statedb.StoreBeaconStakersInfo(
 			cDB,
@@ -336,8 +520,86 @@ func (b *BeaconCommitteeStateV4) commitUpdateBeaconStaker(
 			return err
 		}
 	}
-	if env.BeaconHeight > 2 {
-		if err := b.UpdateBeaconReputationWithBlock(bBlock); err != nil {
+	if err := statedb.StoreCurrentEpochBeaconCandidate(cDB, cChange.CurrentEpochBeaconCandidateAdded); err != nil {
+		return err
+	}
+	return statedb.StoreNextEpochBeaconCandidate(cDB, cChange.NextEpochBeaconCandidateAdded, b.GetRewardReceiver(), b.GetAutoStaking(), b.GetStakingTx())
+}
+
+func (b *BeaconCommitteeStateV4) commitBeaconPending(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	//storeAllShardSubstitutesValidatorV3
+	if err := statedb.StoreBeaconSubstituteValidator(bStateDB, committeeChange.BeaconSubstituteAdded); err != nil {
+		return err
+	}
+	return statedb.DeleteBeaconSubstituteValidator(bStateDB, committeeChange.BeaconSubstituteRemoved)
+}
+
+func (b *BeaconCommitteeStateV4) commitBeaconCommittee(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	err := statedb.StoreBeaconCommittee(bStateDB, committeeChange.BeaconCommitteeAdded)
+	if err != nil {
+		return err
+	}
+	err = statedb.ReplaceBeaconCommittee(bStateDB, committeeChange.BeaconCommitteeReplaced)
+	if err != nil {
+		return err
+	}
+	err = statedb.DeleteBeaconCommittee(bStateDB, committeeChange.BeaconCommitteeRemoved)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BeaconCommitteeStateV4) commitAddStaking(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	if len(committeeChange.AddStakingInfo) > 0 {
+		for publicKey, addStakeInfo := range committeeChange.AddStakingInfo {
+			if bInfor, has, err := statedb.GetBeaconStakerInfo(bStateDB, publicKey); (!has) || (err != nil) {
+				err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", publicKey, has, err)
+				return err
+			} else {
+				b.bDelegateState.AddStakingAmount(publicKey, addStakeInfo.StakingAmount)
+				txAddStakeNew := []common.Hash{}
+				for _, v := range addStakeInfo.TxID {
+					if txHash, err := (common.Hash{}).NewHashFromStr(v); err != nil {
+						return err
+					} else {
+						txAddStakeNew = append(txAddStakeNew, *txHash)
+					}
+				}
+				txHashes := append(bInfor.TxStakingIDs(), txAddStakeNew...)
+				newAmount := bInfor.StakingAmount() + addStakeInfo.StakingAmount
+				bInfor.SetTxStakingIDs(txHashes)
+				bInfor.SetStakingAmount(newAmount)
+				if err := statedb.StoreBeaconStakerInfoObject(bStateDB, publicKey, bInfor); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (b *BeaconCommitteeStateV4) commitAutoStaking(
+	env *BeaconCommitteeStateEnvironment,
+) error {
+	bStateDB := b.consensusDB
+	committeeChange := b.committeeChange
+	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
+	if len(stopAutoStakerKeys) != 0 {
+		err := statedb.SaveStopAutoShardStakerInfo(bStateDB, stopAutoStakerKeys, b.GetAutoStaking())
+		if err != nil {
 			return err
 		}
 	}
@@ -345,7 +607,6 @@ func (b *BeaconCommitteeStateV4) commitUpdateBeaconStaker(
 }
 
 func (b *BeaconCommitteeStateV4) commitRedelegate(
-	bBlock *types.BeaconBlock,
 	env *BeaconCommitteeStateEnvironment,
 ) error {
 	bStateDB := b.consensusDB
@@ -380,38 +641,31 @@ func (b *BeaconCommitteeStateV4) commitRedelegate(
 	return nil
 }
 
-func (b *BeaconCommitteeStateV4) commitRedelegate2(
+func (b *BeaconCommitteeStateV4) commitDelegateInfo(
+	bBlock *types.BeaconBlock,
 	env *BeaconCommitteeStateEnvironment,
-	// committeeChange *CommitteeChange,
 ) error {
-	bStateDB := b.consensusDB
-	committeeChange := b.committeeChange
-	if len(committeeChange.ReDelegate) != 0 {
-		for stakerPubkeyStr, newDelegate := range committeeChange.ReDelegate {
-			if stakerInfo, exist, err := statedb.GetShardStakerInfo(bStateDB, stakerPubkeyStr); err != nil || !exist {
-				return err
-			} else {
-				if stakerInfo.HasCredit() {
-					oldD := ""
-					newD := newDelegate
-					if delegateChange, exist := b.bDelegateState.NextEpochDelegate[stakerPubkeyStr]; exist {
-						oldD = delegateChange.Old
-					} else {
-						oldD = stakerInfo.Delegate()
-					}
-					b.bDelegateState.NextEpochDelegate[stakerPubkeyStr] = struct {
-						Old string
-						New string
-					}{
-						Old: oldD,
-						New: newD,
-					}
-				}
-			}
-		}
-		if err := statedb.SaveStakerReDelegateInfo(bStateDB, committeeChange.ReDelegate); err != nil {
+	if bBlock.Header.Height > 2 {
+		if err := b.UpdateBeaconReputationWithBlock(bBlock); err != nil {
 			return err
 		}
+	}
+	for pk, _ := range b.bDelegateState.DelegateInfo {
+		perf := uint64(0)
+		if v, ok := b.Performance[pk]; ok {
+			perf = v
+		}
+		vpow := b.bDelegateState.GetBeaconCandidatePower(pk)
+		b.Reputation[pk] = perf * vpow / 1000
+	}
+	for _, newStakerBeacon := range b.committeeChange.BeaconStakerKeys() {
+		stakerKey, err := newStakerBeacon.ToBase58()
+		if err != nil {
+			return err
+		}
+		b.bDelegateState.AddBeaconCandidate(stakerKey, b.beaconStakingAmount[stakerKey])
+		b.Reputation[stakerKey] = b.beaconStakingAmount[stakerKey] / 2
+		b.Performance[stakerKey] = 500
 	}
 	return nil
 }
@@ -558,7 +812,21 @@ func (b *BeaconCommitteeStateV4) processAssignBeacon(
 		shardSubstitute:    env.shardSubstitute,
 		shardNewCandidates: env.newAllRoles,
 	}
-	acceptedCandidate, notAcceptedCandidate, waitingStatus := b.assignRule.ProcessBeacon(env.beaconWaiting, b.waitingStatus, &envAssign)
+	beaconWaiting := env.beaconWaiting
+	outPublicKeys := []string{}
+	for _, outPublicKey := range env.beaconWaiting {
+		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(env.ConsensusStateDB, outPublicKey); (err != nil) || (!has) {
+			err = errors.Errorf("Can not found staker info for pk %v at block %v - %v err %v", outPublicKey, env.BeaconHeight, env.BeaconHash, err)
+			return nil, nil, err
+		} else {
+			if stakerInfo.AutoStaking() {
+				beaconWaiting = append(beaconWaiting, outPublicKey)
+			} else {
+				outPublicKeys = append(outPublicKeys, outPublicKey)
+			}
+		}
+	}
+	acceptedCandidate, notAcceptedCandidate, shouldRemove := b.assignRule.ProcessBeacon(beaconWaiting, &envAssign)
 	if len(acceptedCandidate) != 0 {
 		acceptedCandidateStr, err := incognitokey.CommitteeBase58KeyListToStruct(acceptedCandidate)
 		if err != nil {
@@ -566,8 +834,14 @@ func (b *BeaconCommitteeStateV4) processAssignBeacon(
 		}
 		committeeChange.BeaconSubstituteAdded = append(committeeChange.BeaconSubstituteAdded, acceptedCandidateStr...)
 		committeeChange.CurrentEpochBeaconCandidateRemoved = append(committeeChange.CurrentEpochBeaconCandidateRemoved, acceptedCandidateStr...)
+		committeeChange.AddStopAutoStakes(shouldRemove)
 		b.beaconSubstitute = append(b.beaconSubstitute, acceptedCandidate...)
-		b.waitingStatus = waitingStatus
+	}
+	if len(shouldRemove) > 0 {
+		committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID] = append(committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID], shouldRemove...)
+	}
+	if len(outPublicKeys) > 0 {
+		committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID] = append(committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID], outPublicKeys...)
 	}
 	b.beaconWaiting = notAcceptedCandidate
 	b.committeeChange = committeeChange
@@ -583,18 +857,29 @@ func (b *BeaconCommitteeStateV4) processSwapAndSlashBeacon(
 ) {
 	bCStateDB := env.ConsensusStateDB
 	committeeChange := b.committeeChange
-	beaconStatus := map[string]string{}
+	beaconPending := map[string]interface{}{}
 	swapInKeys := []string{}
 	addedsubtitute := []string{}
-	for _, v := range env.beaconCommittee {
-		beaconStatus[v] = "committee"
+	beaconCommittee := env.beaconCommittee
+	beaconSubstitute := []string{}
+	for _, outPublicKey := range env.beaconSubstitute {
+		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(bCStateDB, outPublicKey); (err != nil) || (!has) {
+			err = errors.Errorf("Can not found staker info for pk %v at block %v - %v err %v", outPublicKey, env.BeaconHeight, env.BeaconHash, err)
+			return nil, nil, err
+		} else {
+			if stakerInfo.AutoStaking() {
+				beaconSubstitute = append(beaconSubstitute, outPublicKey)
+			} else {
+				outPublicKeys = append(outPublicKeys, outPublicKey)
+			}
+		}
 	}
-	for _, v := range env.beaconSubstitute {
-		beaconStatus[v] = "pending"
+	for _, v := range beaconSubstitute {
+		beaconPending[v] = nil
 	}
 	newCommittee, newSubtitute, swapOutKeys, slashedCommittee := b.swapRule.ProcessBeacon(
-		env.beaconCommittee,
-		env.beaconSubstitute,
+		beaconCommittee,
+		beaconSubstitute,
 		env.MinBeaconCommitteeSize,
 		env.MaxBeaconCommitteeSize,
 		env.NumberOfFixedBeaconBlockValidator,
@@ -602,7 +887,7 @@ func (b *BeaconCommitteeStateV4) processSwapAndSlashBeacon(
 		b.Performance,
 	)
 	for _, outPublicKey := range swapOutKeys {
-		if stakerInfo, has, err := statedb.GetShardStakerInfo(bCStateDB, outPublicKey); (err != nil) || (!has) {
+		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(bCStateDB, outPublicKey); (err != nil) || (!has) {
 			err = errors.Errorf("Can not found staker info for pk %v at block %v - %v err %v", outPublicKey, env.BeaconHeight, env.BeaconHash, err)
 			return nil, nil, err
 		} else {
@@ -615,7 +900,7 @@ func (b *BeaconCommitteeStateV4) processSwapAndSlashBeacon(
 		}
 	}
 	for _, pk := range newCommittee {
-		if beaconStatus[pk] == "pending" {
+		if _, ok := beaconPending[pk]; ok {
 			swapInKeys = append(swapInKeys, pk)
 		}
 	}
@@ -632,189 +917,13 @@ func (b *BeaconCommitteeStateV4) processSwapAndSlashBeacon(
 	if len(slashedCommittee) > 0 {
 		committeeChange.SlashingCommittee[common.BeaconChainSyncID] = append(committeeChange.SlashingCommittee[common.BeaconChainSyncID], slashedCommittee...)
 	}
+	if len(outPublicKeys) > 0 {
+		committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID] = append(committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID], outPublicKeys...)
+	}
 	b.beaconCommittee = newCommittee
 	b.beaconSubstitute = newSubtitute
 	b.committeeChange = committeeChange
 	return outPublicKeys, slashedCommittee, nil
-}
-
-// TODO refactor this code
-func (b *BeaconCommitteeStateV4) ProcessStoreCommitteeStateInfo(
-	bBlock *types.BeaconBlock,
-	signatureCounter map[string]signaturecounter.MissingSignature,
-	x *statedb.StateDB,
-	isEndOfEpoch bool,
-) error {
-	bStateDB := b.consensusDB
-	cChange := b.committeeChange
-	if len(cChange.ReDelegate) != 0 {
-		for stakerPubkeyStr, newDelegate := range cChange.ReDelegate {
-			if stakerInfo, exist, err := statedb.GetShardStakerInfo(bStateDB, stakerPubkeyStr); err != nil || !exist {
-				return err
-			} else {
-				if stakerInfo.HasCredit() {
-					oldD := ""
-					newD := newDelegate
-					if delegateChange, exist := b.bDelegateState.NextEpochDelegate[stakerPubkeyStr]; exist {
-						oldD = delegateChange.Old
-					} else {
-						oldD = stakerInfo.Delegate()
-					}
-					b.bDelegateState.NextEpochDelegate[stakerPubkeyStr] = struct {
-						Old string
-						New string
-					}{
-						Old: oldD,
-						New: newD,
-					}
-				}
-			}
-		}
-		if err := statedb.SaveStakerReDelegateInfo(bStateDB, cChange.ReDelegate); err != nil {
-			return err
-		}
-	}
-	//-
-	listEnableCredit := []incognitokey.CommitteePublicKey{}
-	for _, addedCommittee := range cChange.ShardCommitteeAdded {
-		for _, stakerPubkey := range addedCommittee {
-			if stakerPubkeyStr, err := stakerPubkey.ToBase58(); err != nil {
-				return err
-			} else {
-				stakerInfo, exist, err := statedb.GetShardStakerInfo(bStateDB, stakerPubkeyStr)
-				if err != nil || !exist {
-					return err
-				}
-				if !stakerInfo.HasCredit() {
-					listEnableCredit = append(listEnableCredit, stakerPubkey)
-				}
-				b.bDelegateState.AddReDelegate(stakerPubkeyStr, "", stakerInfo.Delegate())
-			}
-		}
-		if err := statedb.EnableStakerCredit(bStateDB, listEnableCredit); err != nil {
-			return err
-		}
-	}
-	for _, removedCommittee := range cChange.SlashingCommittee {
-		for _, stakerPubkeyStr := range removedCommittee {
-			oldD := ""
-			newD := ""
-			stakerInfo, exist, err := statedb.GetShardStakerInfo(bStateDB, stakerPubkeyStr)
-			if err != nil || !exist {
-				return err
-			}
-			if delegateChange, exist := b.bDelegateState.NextEpochDelegate[stakerPubkeyStr]; exist {
-				oldD = delegateChange.Old
-			} else {
-				oldD = stakerInfo.Delegate()
-			}
-			b.bDelegateState.NextEpochDelegate[stakerPubkeyStr] = struct {
-				Old string
-				New string
-			}{
-				Old: oldD,
-				New: newD,
-			}
-		}
-	}
-	if bBlock.Header.Height > 2 {
-		if err := b.UpdateBeaconReputationWithBlock(bBlock); err != nil {
-			return err
-		}
-	}
-	if isEndOfEpoch {
-		if err := b.bDelegateState.AcceptNextEpochChange(); err != nil {
-			return err
-		}
-		for sID, outKeys := range b.shardCommittee {
-			processList := outKeys[config.Param().CommitteeSize.NumberOfFixedShardBlockValidator:]
-			processList = processList[:len(processList)-len(cChange.ShardCommitteeAdded[sID])]
-			b.countActiveTimes(
-				bStateDB,
-				signatureCounter,
-				b.beaconWaiting,
-				processList,
-			)
-			// for _, outKey := range processList {
-			// 	if sInfor, has, err := statedb.GetBeaconStakerInfo(bStateDB, outKey); (!has) || (err != nil) {
-			// 		err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", outKey, has, err)
-			// 		return err
-			// 	} else {
-			// 		activeTimes := 0
-			// 		if votePercent, has := signatureCounter[outKey]; has {
-			// 			if votePercent.VotePercent >= 90 {
-			// 				activeTimes = sInfor.ActiveTimesInCommittee() + 1
-			// 			}
-			// 		}
-			// 		sInfor.SetActiveTimesInCommittee(activeTimes)
-			// 		if err := statedb.StoreShardStakerInfoObject(bStateDB, outKey, sInfor); err != nil {
-			// 			return err
-			// 		}
-			// 	}
-			// }
-		}
-	}
-	for _, newStakerBeacon := range cChange.BeaconStakerKeys() {
-		stakerKey, err := newStakerBeacon.ToBase58()
-		if err != nil {
-			return err
-		}
-		b.bDelegateState.AddBeaconCandidate(stakerKey, b.beaconStakingAmount[stakerKey])
-		b.Reputation[stakerKey] = b.beaconStakingAmount[stakerKey] / 2
-		b.Performance[stakerKey] = 500
-	}
-	// for _, outKeys := range cChange.SwapoutAndBackToPending {
-	// 	for _, outKey := range outKeys {
-	// 		if sInfor, has, err := statedb.GetShardStakerInfo(bStateDB, outKey); (!has) || (err != nil) {
-	// 			err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", outKey, has, err)
-	// 			return err
-	// 		} else {
-	// 			activeTimes := 0
-	// 			if votePercent, has := signatureCounter[outKey]; has {
-	// 				if votePercent.VotePercent >= 90 {
-	// 					activeTimes = sInfor.ActiveTimesInCommittee() + 1
-	// 				}
-	// 			}
-	// 			sInfor.SetActiveTimesInCommittee(activeTimes)
-	// 			if err := statedb.StoreShardStakerInfoObject(bStateDB, outKey, sInfor); err != nil {
-	// 				return err
-	// 			}
-	// 		}
-	// 	}
-	// }
-	for publicKey, addStakeInfo := range cChange.AddStakingInfo {
-		if bInfor, has, err := statedb.GetBeaconStakerInfo(bStateDB, publicKey); (!has) || (err != nil) {
-			err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", publicKey, has, err)
-			return err
-		} else {
-			b.bDelegateState.AddStakingAmount(publicKey, addStakeInfo.StakingAmount)
-			txAddStakeNew := []common.Hash{}
-			for _, v := range addStakeInfo.TxID {
-				if txHash, err := (common.Hash{}).NewHashFromStr(v); err != nil {
-					return err
-				} else {
-					txAddStakeNew = append(txAddStakeNew, *txHash)
-				}
-			}
-			txHashes := append(bInfor.TxStakingIDs(), txAddStakeNew...)
-			newAmount := bInfor.StakingAmount() + addStakeInfo.StakingAmount
-			bInfor.SetTxStakingIDs(txHashes)
-			bInfor.SetStakingAmount(newAmount)
-
-			if err := statedb.StoreBeaconStakerInfoObject(bStateDB, publicKey, bInfor); err != nil {
-				return err
-			}
-		}
-	}
-	for pk, _ := range b.bDelegateState.DelegateInfo {
-		perf := uint64(0)
-		if v, ok := b.Performance[pk]; ok {
-			perf = v
-		}
-		vpow := b.bDelegateState.GetBeaconCandidatePower(pk)
-		b.Reputation[pk] = perf * vpow / 1000
-	}
-	return nil
 }
 
 func (b BeaconCommitteeStateV4) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
@@ -870,7 +979,6 @@ func (b *BeaconCommitteeStateV4) processStakeInstruction(
 	for range newWaitingStr {
 		newWaitingStatus = append(newWaitingStatus, 0)
 	}
-	b.waitingStatus = append(b.waitingStatus, newWaitingStatus...)
 	b.beaconWaiting = append(b.beaconWaiting, newWaitingStr...)
 	return err
 }
@@ -898,18 +1006,36 @@ func (b *BeaconCommitteeStateV4) processSwapShardInstruction(
 	if err != nil {
 		return nil, err
 	}
-	enoughActivesTimes, err := b.countActiveTimes(
-		env.ConsensusStateDB,
-		env.MissingSignature,
-		env.beaconWaiting,
-		normalSwapOutCommittees,
-	)
-	if err != nil {
-		return nil, err
+	processList := normalSwapOutCommittees
+	processList = common.IntersectionString(env.beaconWaiting, processList)
+	enoughActiveTimes := []string{}
+	for _, outKey := range processList {
+		if bInfor, has, err := statedb.GetBeaconStakerInfo(b.consensusDB, outKey); (!has) || (err != nil) {
+			err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", outKey, has, err)
+			Logger.log.Error(err)
+			continue
+		} else {
+			activeTimes := bInfor.ActiveTimesInCommittee()
+			if activeTimes >= uint(config.Param().ConsensusParam.RequiredActiveTimes) {
+				enoughActiveTimes = append(enoughActiveTimes, outKey)
+				sInfor, has, err := statedb.GetShardStakerInfo(b.consensusDB, outKey)
+				if (!has) || (err != nil) {
+					Logger.log.Error(err)
+					continue
+				}
+				sInfor.SetAutoStaking(false)
+				if err := statedb.StoreShardStakerInfoObject(b.consensusDB, outKey, sInfor); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	if len(enoughActiveTimes) > 0 {
+		Logger.log.Infof("Process count actives times in committee done, force unstake list keys: %+v", common.ShortPKList(enoughActiveTimes))
 	}
 	//TODO refactor
 	enoughActivesTimesM := map[string]interface{}{}
-	for _, key := range enoughActivesTimes {
+	for _, key := range enoughActiveTimes {
 		enoughActivesTimesM[key] = nil
 	}
 
@@ -973,12 +1099,21 @@ func (b *BeaconCommitteeStateV4) processBeaconLocking(
 	error,
 ) {
 	if len(b.committeeChange.SlashingCommittee[common.BeaconChainSyncID]) > 0 {
-		slashedPK := b.committeeChange.SlashingCommittee[common.BeaconChainSyncID]
-		for _, staking := range slashedPK {
-			totalEpoch := (100 * (2000 - b.Performance[staking])) / 1000
-			fmt.Printf("Locked infor: Lock candidate %v, total epoch %v, to epoch %v, their performance %v\n", staking[len(staking)-5:], totalEpoch, env.Epoch+totalEpoch, b.Performance[staking])
+		slashedPKs := b.committeeChange.SlashingCommittee[common.BeaconChainSyncID]
+		for _, slashedPK := range slashedPKs {
+			totalEpoch := (100 * (2000 - b.Performance[slashedPK])) / 1000
+			fmt.Printf("Locked infor: Lock candidate %v by slash, total epoch %v, to epoch %v, their performance %v\n", slashedPK[len(slashedPK)-5:], totalEpoch, env.Epoch+totalEpoch, b.Performance[slashedPK])
 			totalEpoch = 5
-			b.LockNewCandidate(staking, env.Epoch+totalEpoch, common.RETURN_BY_SLASHED)
+			b.LockNewCandidate(slashedPK, env.Epoch+totalEpoch, common.RETURN_BY_SLASHED)
+		}
+	}
+	if len(b.committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID]) > 0 {
+		outPKs := b.committeeChange.OutOfCommitteeCycle[common.BeaconChainSyncID]
+		for _, outPK := range outPKs {
+			totalEpoch := (100 * (2000 - b.Performance[outPK])) / 1000
+			fmt.Printf("Locked infor: Lock candidate %v by unstake, total epoch %v, to epoch %v, their performance %v\n", outPK[len(outPK)-5:], totalEpoch, env.Epoch+totalEpoch, b.Performance[outPK])
+			totalEpoch = 5
+			b.LockNewCandidate(outPK, env.Epoch+totalEpoch, common.RETURN_BY_UNSTAKE)
 		}
 	}
 	returnLocking := b.GetReturnStakingInstruction(env.ConsensusStateDB, env.Epoch)
@@ -989,46 +1124,53 @@ func (b *BeaconCommitteeStateV4) countActiveTimes(
 	bStateDB *statedb.StateDB,
 	signatureCounter map[string]signaturecounter.MissingSignature,
 	waiting []string,
-	// env *BeaconCommitteeStateEnvironment,
 	processList []string,
 ) (
 	[]string,
 	error,
 ) {
-	if (len(processList) > 0) && (len(waiting) > 0) {
-		fmt.Printf("Start count active times for waiting %+v processList %+v\n", common.ShortPKList(waiting), common.ShortPKList(processList))
-	} else {
-		if len(processList) > 0 {
-			fmt.Printf("Start count active times for waiting %+v processList %+v\n", common.ShortPKList(waiting), common.ShortPKList(processList))
-		}
-	}
+	// if (len(processList) > 0) && (len(waiting) > 0) {
+	// 	fmt.Printf("Start count active times for waiting %+v processList %+v\n", common.ShortPKList(waiting), common.ShortPKList(processList))
+	// } else {
+	// 	if len(processList) > 0 {
+	// 		fmt.Printf("Start count active times for waiting %+v processList %+v\n", common.ShortPKList(waiting), common.ShortPKList(processList))
+	// 	}
+	// }
 	enoughActivetimes := []string{}
 	processList = common.IntersectionString(waiting, processList)
 	for _, outKey := range processList {
-		if sInfor, has, err := statedb.GetBeaconStakerInfo(bStateDB, outKey); (!has) || (err != nil) {
+		if bInfor, has, err := statedb.GetBeaconStakerInfo(bStateDB, outKey); (!has) || (err != nil) {
 			err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", outKey, has, err)
 			return nil, err
 		} else {
+			// sInfor, has, err := statedb.GetShardStakerInfo(bStateDB, outKey)
+			// if (!has) || (err != nil) {
+			// 	err = errors.Errorf("Can not get staker infor, found %v in db: %v, got err %v", outKey, has, err)
+			// 	return nil, err
+			// }
 			activeTimes := uint(0)
 			if voteInfo, has := signatureCounter[outKey]; has {
 				votePercent := 100 - voteInfo.Missing*100/voteInfo.ActualTotal
 				if votePercent >= 90 {
-					activeTimes = sInfor.ActiveTimesInCommittee() + 1
+					activeTimes = bInfor.ActiveTimesInCommittee() + 1
 				}
 			}
 			//TODO remove hardcode
-			if activeTimes >= 10 {
+			if activeTimes >= uint(config.Param().ConsensusParam.RequiredActiveTimes) {
 				enoughActivetimes = append(enoughActivetimes, outKey)
-				sInfor.SetAutoStaking(false)
+				// sInfor.SetAutoStaking(false)
+				// if err := statedb.StoreShardStakerInfoObject(bStateDB, outKey, sInfor); err != nil {
+				// 	return nil, err
+				// }
 			}
-			sInfor.SetActiveTimesInCommittee(activeTimes)
-			if err := statedb.StoreBeaconStakerInfoObject(bStateDB, outKey, sInfor); err != nil {
+			bInfor.SetActiveTimesInCommittee(activeTimes)
+			if err := statedb.StoreBeaconStakerInfoObject(bStateDB, outKey, bInfor); err != nil {
 				return nil, err
 			}
 		}
 	}
 	if len(enoughActivetimes) > 0 {
-		Logger.log.Infof("Process count actives times in committee done, force unstake list keys: %+v", enoughActivetimes)
+		Logger.log.Infof("Process count actives times in committee done, force unstake list keys: %+v", common.ShortPKList(enoughActivetimes))
 	}
 	return enoughActivetimes, nil
 }
@@ -1038,8 +1180,6 @@ func (b *BeaconCommitteeStateV4) addDataToEnvironment(env *BeaconCommitteeStateE
 	env.beaconCommittee = common.DeepCopyString(b.beaconCommittee)
 	env.beaconSubstitute = common.DeepCopyString(b.beaconSubstitute)
 	env.beaconWaiting = common.DeepCopyString(b.beaconWaiting)
-	env.waitingStatus = make([]byte, len(b.waitingStatus))
-	copy(env.waitingStatus, b.waitingStatus)
 }
 
 func (b *BeaconCommitteeStateV4) processExitShardPublicKeys(exitPKs map[byte][]string) {

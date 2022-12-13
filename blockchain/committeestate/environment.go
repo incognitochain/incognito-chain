@@ -28,6 +28,7 @@ type BeaconCommitteeStateEnvironment struct {
 	MaxBeaconCommitteeSize           int
 	MaxShardCommitteeSize            int
 	ConsensusStateDB                 *statedb.StateDB
+	SlashStateDB                     *statedb.StateDB
 	IsReplace                        bool
 	newAllRoles                      []string
 	newUnassignedCommonPool          []string
@@ -52,6 +53,7 @@ type BeaconCommitteeStateEnvironment struct {
 
 	NumberOfFixedBeaconBlockValidator int
 	IsBeaconChangeTime                bool
+	IsEndOfEpoch                      bool
 	beaconCommittee                   []string
 	beaconSubstitute                  []string
 	beaconWaiting                     []string
@@ -149,9 +151,14 @@ func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber in
 	}
 }
 
-func NewBeaconCommitteeStateEnvironmentForUpgrading(beaconHeight, stakingV2Height, assignRuleV3Height,
-	stakingV3Height uint64, beaconBlockHash common.Hash) *BeaconCommitteeStateEnvironment {
+func NewBeaconCommitteeStateEnvironmentForUpgrading(
+	beaconHeight, stakingV2Height, assignRuleV3Height, stakingV3Height uint64,
+	beaconBlockHash common.Hash,
+	consensusDB, slashDB *statedb.StateDB,
+) *BeaconCommitteeStateEnvironment {
 	return &BeaconCommitteeStateEnvironment{
+		ConsensusStateDB:   consensusDB,
+		SlashStateDB:       slashDB,
 		StakingV3Height:    stakingV3Height,
 		StakingV2Height:    stakingV2Height,
 		AssignRuleV3Height: assignRuleV3Height,

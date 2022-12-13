@@ -111,6 +111,12 @@ func ValidateAndImportInstructionFromString(inst []string) (
 		buildInstructionFromString = BuildReDelegateInstructionFromString
 	case ADD_STAKING_ACTION:
 		buildInstructionFromString = BuildAddStakingInstructionFromString
+	case RETURN_ACTION:
+		buildInstructionFromString = BuildReturnStakingInstructionFromString
+	case RETURN_BEACON_ACTION:
+		buildInstructionFromString = BuildReturnBeaconStakingInstructionFromString
+	default:
+		panic(action)
 	}
 	instStr, err = buildInstructionFromString(inst)
 	if err != nil {

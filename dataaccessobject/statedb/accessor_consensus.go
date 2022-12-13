@@ -734,7 +734,7 @@ func GetAllShardStakersInfo(
 	return stateDB.getAllShardStakersInfo(key)
 }
 
-func SaveStopAutoStakerInfo(
+func SaveStopAutoShardStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	autoStaking map[string]bool,
@@ -747,8 +747,11 @@ func SaveStopAutoStakerInfo(
 			return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
 
-		//assign auto stake value from autostaking map
+		// assign auto stake value from autostaking map
 		committeeString, err := stakerPubkey.ToBase58()
+		if err != nil {
+			return err
+		}
 		stakerInfo.autoStaking = autoStaking[committeeString]
 
 		err = stateDB.SetStateObject(ShardStakerObjectType, key, stakerInfo)
@@ -757,6 +760,32 @@ func SaveStopAutoStakerInfo(
 		}
 	}
 
+	return nil
+}
+
+func SaveStopAutoStakeBeaconStaker(
+	stateDB *StateDB,
+	committees []incognitokey.CommitteePublicKey,
+	autoStaking map[string]bool,
+) error {
+	for _, stakerPubkey := range committees {
+		pubKeyBytes, _ := stakerPubkey.RawBytes()
+		key := GetBeaconStakerInfoKey(pubKeyBytes)
+		stakerInfo, exist, err := stateDB.getBeaconStakerInfo(key)
+		if err != nil || !exist {
+			continue
+		}
+		// assign auto stake value from autostaking map
+		committeeString, err := stakerPubkey.ToBase58()
+		if err != nil {
+			return err
+		}
+		stakerInfo.autoStaking = autoStaking[committeeString]
+		err = stateDB.SetStateObject(BeaconStakerObjectType, key, stakerInfo)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

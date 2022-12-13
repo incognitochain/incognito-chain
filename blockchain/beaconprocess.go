@@ -537,6 +537,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 	var isBeginRandom = false
 	var isBeaconSwap = false
+	var isEndOfEpoch = false
 	var isFoundRandomInstruction = false
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	// signal of random parameter from beacon block
@@ -571,7 +572,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
-
+	SFV4_StartHeight = config.Param().ConsensusParam.StakingFlowV4Height
 	// processing instruction
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
@@ -701,11 +702,13 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	} else if blockchain.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 		beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
 		isBeginRandom = true
+	} else if blockchain.IsLastBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
+		isEndOfEpoch = true
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
 		beaconBlock.Body.Instructions,
-		isFoundRandomInstruction, isBeginRandom, isBeaconSwap,
+		isFoundRandomInstruction, isBeginRandom, isBeaconSwap, isEndOfEpoch,
 	)
 
 	hashes, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
@@ -799,7 +802,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false, false, false)
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
@@ -944,112 +947,119 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			}
 		}
 	}
+	if newBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
+		env := &committeestate.BeaconCommitteeStateEnvironment{
+			BeaconHeight:     beaconBlock.GetBeaconHeight(),
+			MissingSignature: curView.missingSignatureCounter.MissingSignature(),
+			IsEndOfEpoch:     blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
+		}
+		bcV4 := newBestState.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV4)
+		if newBestState.consensusStateDB, newBestState.slashStateDB, err = bcV4.CommitOnBlock(
+			beaconBlock,
+			env,
+			newBestState.consensusStateDB,
+			newBestState.slashStateDB,
+		); err != nil {
+			return err
+		}
+	} else {
 
-	//statedb===========================START
-	// Added
-	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
-	if err != nil {
-		return err
-	}
-	// curView.beaconCommitteeState.
-	err = newBestState.beaconCommitteeState.ProcessStoreCommitteeStateInfo(
-		beaconBlock,
-		curView.missingSignatureCounter.MissingSignature(),
-		newBestState.consensusStateDB,
-		blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height),
-	)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.ReplaceAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeReplaced)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.ReplaceBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeReplaced)
-	if err != nil {
-		return err
-	}
-	// Deleted
-	err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteRemoved)
-	if err != nil {
-		return err
-	}
-	err = newBestState.storeAllShardSubstitutesValidator(committeeChange.ShardSubstituteAdded)
-	if err != nil {
-		return err
-	}
-	// Remove shard reward request of old epoch
-	// this value is no longer needed because, old epoch reward has been split and send to shard
-	if blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height) {
-		err = statedb.StoreSlashingCommittee(newBestState.slashStateDB, beaconBlock.Header.Epoch-1, committeeChange.SlashingCommittee)
+		//statedb===========================START
+		// Added
+		err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
 		if err != nil {
 			return err
 		}
-		Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
+		err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateAdded)
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeAdded)
+		if err != nil {
+			return err
+		}
+		err = statedb.ReplaceAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeReplaced)
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteAdded)
+		if err != nil {
+			return err
+		}
+		err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeAdded)
+		if err != nil {
+			return err
+		}
+		err = statedb.ReplaceBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeReplaced)
+		if err != nil {
+			return err
+		}
+		// Deleted
+		err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.NextEpochShardCandidateRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolRemoved)
+		if err != nil {
+			return err
+		}
+		err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteRemoved)
+		if err != nil {
+			return err
+		}
+		err = newBestState.storeAllShardSubstitutesValidator(committeeChange.ShardSubstituteAdded)
+		if err != nil {
+			return err
+		}
+		// Remove shard reward request of old epoch
+		// this value is no longer needed because, old epoch reward has been split and send to shard
+		if blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height) {
+			err = statedb.StoreSlashingCommittee(newBestState.slashStateDB, beaconBlock.Header.Epoch-1, committeeChange.SlashingCommittee)
+			if err != nil {
+				return err
+			}
+			Logger.log.Infof("Store Slashing Committee, %+v", committeeChange.SlashingCommittee)
+		}
 	}
 	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB, newBestState)
 	if err != nil {
@@ -1457,7 +1467,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
 	if len(stopAutoStakerKeys) != 0 {
-		err := statedb.SaveStopAutoStakerInfo(beaconBestState.consensusStateDB, stopAutoStakerKeys, beaconBestState.beaconCommitteeState.GetAutoStaking())
+		err := statedb.SaveStopAutoShardStakerInfo(beaconBestState.consensusStateDB, stopAutoStakerKeys, beaconBestState.beaconCommitteeState.GetAutoStaking())
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}

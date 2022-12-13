@@ -73,6 +73,7 @@ consensus_param:
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
   timeslot: 10
+  required_active_times: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1e9
 beacon_height_break_point_burn_addr: 2

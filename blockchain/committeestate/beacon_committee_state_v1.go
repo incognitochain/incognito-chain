@@ -441,7 +441,7 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(env *BeaconCommitteeSt
 	}
 
 	if len(stopAutoStakingIncognitoKey) != 0 {
-		err := statedb.SaveStopAutoStakerInfo(env.ConsensusStateDB, stopAutoStakingIncognitoKey, b.autoStake)
+		err := statedb.SaveStopAutoShardStakerInfo(env.ConsensusStateDB, stopAutoStakingIncognitoKey, b.autoStake)
 		if err != nil {
 			return err
 		}

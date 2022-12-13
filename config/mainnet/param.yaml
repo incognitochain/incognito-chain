@@ -64,6 +64,7 @@ consensus_param:
   block_producing_v3_height: 1846560
   byzantine_detector_height: 1000000000000
   timeslot: 40
+  required_active_times: 10
   epoch_break_point_swap_new_key:
     - 1917
 beacon_height_break_point_burn_addr: 150500

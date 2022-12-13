@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -557,15 +555,6 @@ func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStat
 }
 
 func (b *beaconCommitteeStateBase) GetDelegateState() map[string]BeaconDelegatorInfo {
-	return nil
-}
-
-func (b *beaconCommitteeStateBase) ProcessStoreCommitteeStateInfo(
-	bBlock *types.BeaconBlock,
-	signatureCounter map[string]signaturecounter.MissingSignature,
-	stateDB *statedb.StateDB,
-	isEndOfEpoch bool,
-) error {
 	return nil
 }
 

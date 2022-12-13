@@ -157,6 +157,7 @@ type consensusParam struct {
 	ByzantineDetectorHeight   uint64   `mapstructure:"byzantine_detector_height"`
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
+	RequiredActiveTimes       uint64   `mapstructure:"required_active_times"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }
 

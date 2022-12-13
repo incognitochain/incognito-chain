@@ -1,10 +1,7 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -41,12 +38,6 @@ type BeaconCommitteeState interface {
 		*BeaconCommitteeStateHash,
 		[][]string,
 		error)
-	ProcessStoreCommitteeStateInfo(
-		bBlock *types.BeaconBlock,
-		signatureInfor map[string]signaturecounter.MissingSignature,
-		stateDB *statedb.StateDB,
-		isEndOfEpoch bool,
-	) error
 	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 	Hash() (*BeaconCommitteeStateHash, error)

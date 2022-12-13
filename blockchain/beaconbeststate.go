@@ -794,6 +794,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	isFoundRandomInstruction bool,
 	isBeaconRandomTime bool,
 	isBeaconSwapTime bool,
+	isEndOfEpoch bool,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	missingSignature := map[string]signaturecounter.MissingSignature{}
@@ -824,9 +825,11 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		IsFoundRandomNumber:               isFoundRandomInstruction,
 		IsBeaconRandomTime:                isBeaconRandomTime,
 		IsBeaconChangeTime:                isBeaconSwapTime,
+		IsEndOfEpoch:                      isEndOfEpoch,
 		ActiveShards:                      beaconBestState.ActiveShards,
 		MinShardCommitteeSize:             beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                  beaconBestState.consensusStateDB,
+		SlashStateDB:                      beaconBestState.slashStateDB,
 		NumberOfFixedShardBlockValidator:  beaconBestState.NumberOfFixedShardBlockValidator,
 		NumberOfFixedBeaconBlockValidator: beaconBestState.NumberOfFixedShardBlockValidator,
 		MaxShardCommitteeSize:             beaconBestState.MaxShardCommitteeSize,
@@ -1101,6 +1104,8 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		config.Param().ConsensusParam.AssignRuleV3Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		beaconBestState.BestBlockHash,
+		beaconBestState.consensusStateDB,
+		beaconBestState.slashStateDB,
 	)
 
 	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)
