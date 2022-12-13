@@ -1981,7 +1981,6 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 
 func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
 
-	Logger.log.Info("[committee-state] GetPubkeyMiningState")
 	if s.blockChain == nil || userPk == nil {
 		return "", -2
 	}
@@ -2004,10 +2003,9 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	shardCommitteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
 	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-	Logger.log.Info("[committee-state] beaconFinalView.CommitteeStateVersion():", beaconFinalView.CommitteeStateVersion())
+	//Logger.log.Info("[committee-state] beaconFinalView.CommitteeStateVersion():", beaconFinalView.CommitteeStateVersion())
 	if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
-		Logger.log.Info("[committee-state] shardSyncingValidatorsFromBeaconView:", shardSyncingValidatorsFromBeaconView)
 	}
 
 	//check if in committee of any shard
@@ -2019,7 +2017,9 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 		}
 
 		for _, v := range shardSyncingValidatorsFromBeaconView[byte(chain.GetShardID())] {
+			Logger.log.Info("[committee-state] 0")
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard syncing committee in shard state
+				Logger.log.Info("[committee-state] 1")
 				return common.SyncingRole, chain.GetShardID()
 			}
 		}
