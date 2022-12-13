@@ -435,29 +435,34 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 	}
 	pkMap := make(map[string]*AccountInfo)
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "unknown", false, 0, 0, 0, false, 0}
+		pkMap[acc.SelfCommitteePubkey] = &AccountInfo{acc.Name, "", false, 0, 0, 0, false, 0}
 	}
 	fmt.Println()
 	bBestState := chain.GetBeaconBestState()
-	bC := bBestState.GetBeaconCommittee()
-	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
+	// bC := bBestState.GetBeaconCommittee()
+	// bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 
 	for _, acc := range accounts {
 		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey][common.PRVIDStr]
 		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
 		if ok {
-			delegate := stakerInfo.Delegate()
+			// delegate := stakerInfo.Delegate()
 			// pkMap[acc.SelfCommitteePubkey].InCommittee = stakerInfo.ActiveTimesInCommittee()
-			pkMap[acc.SelfCommitteePubkey].Delegate = delegate
+			// pkMap[acc.SelfCommitteePubkey].Delegate = delegate
 			pkMap[acc.SelfCommitteePubkey].HasCredit = stakerInfo.HasCredit()
 			pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
-			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo.ActiveTimesInCommittee())
-			for idx, bPK := range bCStr {
-				if bPK == delegate {
-					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
-				}
-			}
+			// for idx, bPK := range bCStr {
+			// 	if bPK == delegate {
+			// 		pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
+			// 	}
+			// }
 		}
+		stakerInfo2, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
+		if ok {
+			pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo2.AutoStaking()
+			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo2.ActiveTimesInCommittee())
+		}
+
 		balanceMap, err := sim.RPC.API_GetBalance(acc)
 		if err != nil {
 			panic(err)
@@ -466,7 +471,7 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 	}
 	for _, acc := range accounts {
 		stakerInfo := pkMap[acc.SelfCommitteePubkey]
-		fmt.Printf("Acc: %v , Delegate: %v, Has credit %v, In committee %v, AutoStake %+v Balance %v\n", stakerInfo.Name, stakerInfo.Delegate, stakerInfo.HasCredit, stakerInfo.InCommittee, stakerInfo.AutoStake, stakerInfo.Balance)
+		fmt.Printf("Acc: %v , Has credit %v, In committee %v, AutoStake %+v Balance %v\n", stakerInfo.Name, stakerInfo.HasCredit, stakerInfo.InCommittee, stakerInfo.AutoStake, stakerInfo.Balance)
 	}
 }
 
@@ -481,11 +486,13 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 		pkMap[acc.SelfCommitteePubkey] = &StakerInfo{acc.Name, "unknown", 0, false, 0, 0, 0, false, 0, "unknown"}
 	}
 	bBestState := chain.GetBeaconBestState()
+
 	bC := bBestState.GetBeaconCommittee()
 	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 
 	for _, acc := range accounts {
 		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey][common.PRVIDStr]
+		pkMap[acc.SelfCommitteePubkey].StakingAmount = 0
 		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
 		if ok {
 			delegate := stakerInfo.Delegate()
@@ -498,16 +505,14 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 					pkMap[acc.SelfCommitteePubkey].Delegate = fmt.Sprintf("Beacon %+v", idx)
 				}
 			}
-			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo.ActiveTimesInCommittee())
 			pkMap[acc.SelfCommitteePubkey].Chain = "Shard"
-		} else {
-			stakerInfo, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
-			if ok {
-				pkMap[acc.SelfCommitteePubkey].StakingAmount = stakerInfo.StakingAmount()
-				pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo.AutoStaking()
-				pkMap[acc.SelfCommitteePubkey].Chain = "Beacon"
-			}
 		}
+		stakerInfo2, ok, _ := bBestState.GetBeaconStakerInfo(acc.SelfCommitteePubkey)
+		if ok {
+			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo2.ActiveTimesInCommittee())
+			pkMap[acc.SelfCommitteePubkey].StakingAmount += stakerInfo2.StakingAmount()
+		}
+
 		balanceMap, err := sim.RPC.API_GetBalance(acc)
 		if err != nil {
 			panic(err)
@@ -516,7 +521,8 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 	}
 	for _, acc := range accounts {
 		stakerInfo := pkMap[acc.SelfCommitteePubkey]
-		fmt.Printf("Acc: %v , Has credit %v, In committee %v, Reward %v, AutoStake %+v Balance %v\n", stakerInfo.Name, stakerInfo.HasCredit, stakerInfo.InCommittee, stakerInfo.RewardPRV, stakerInfo.AutoStake, stakerInfo.Balance)
+		k := acc.SelfCommitteePubkey
+		fmt.Printf("Acc: %v, %v, In committee %v, AutoStake %+v Balance %v, sAmount %v, Has credit %v, Reward %v\n", stakerInfo.Name, k[len(k)-5:], stakerInfo.InCommittee, stakerInfo.AutoStake, stakerInfo.Balance, stakerInfo.StakingAmount, stakerInfo.HasCredit, stakerInfo.RewardPRV)
 	}
 	return pkMap
 }
@@ -551,7 +557,14 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts, acc []account.Account, 
 		panic(err)
 	}
 	keys = []string{}
-	bcV4 := bCState.(*committeestate.BeaconCommitteeStateV4)
+	rep := map[string]uint64{}
+	per := map[string]uint64{}
+	bcV4, ok := bCState.(*committeestate.BeaconCommitteeStateV4)
+	if ok {
+		fmt.Println("aaaaaaaaaaaaa")
+		rep = bcV4.Reputation
+		per = bcV4.Performance
+	}
 	bcCommitteeStruct := bBestState.GetBeaconCommittee()
 	bcWaitingStruct := bBestState.GetCandidateBeaconWaiting()
 	bcSubstituteStruct := bBestState.GetBeaconPendingValidator()
@@ -568,8 +581,8 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts, acc []account.Account, 
 			Name:                     fmt.Sprintf("Beacon %v", index),
 			CurrentDelegators:        0,
 			CurrentDelegatorsDetails: []string{},
-			Reputation:               uint(bcV4.Reputation[b]),
-			Performance:              uint(bcV4.Performance[b]),
+			Reputation:               uint(rep[b]),
+			Performance:              uint(per[b]),
 			RewardPRV:                allReward[bCPk][common.PRVIDStr],
 		}
 
@@ -615,8 +628,8 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts, acc []account.Account, 
 			pkCandidateMap[k] = infor
 		}
 		cInfo := pkCandidateMap[k]
-		fmt.Printf("%v\tRep:%v\tDelegators: %v\tReward %+v\tDetails: %+v\tStakingAmount %+v Staking Txs %+v\n",
-			cInfo.Name, cInfo.Reputation, cInfo.CurrentDelegators, cInfo.RewardPRV, cInfo.CurrentDelegatorsDetails, cInfo.StakingAmount, cInfo.StakingTxs)
+		fmt.Printf("%v\tRep:%v\tPer:%v\tDelegators: %v\tReward %+v\tDetails: %+v\tStakingAmount %+v Staking Txs %+v\n",
+			cInfo.Name, cInfo.Reputation, cInfo.Performance, cInfo.CurrentDelegators, cInfo.RewardPRV, cInfo.CurrentDelegatorsDetails, cInfo.StakingAmount, cInfo.StakingTxs)
 	}
 	for id, value := range bcCommitteeString {
 		if len(value) > 5 {
@@ -748,7 +761,7 @@ func (node *NodeEngine) PreparePRVForTest(
 			}
 			node.RPC.API_SubmitKey(acc.PrivateKey)
 			txid, err := node.SendPRV(node.GenesisAccount, acc, amounts[id])
-			if (err == nil) && (len(txid) == 32) {
+			if err == nil {
 				done[id] = nil
 			}
 			txIDs[id] = txid
@@ -759,7 +772,7 @@ func (node *NodeEngine) PreparePRVForTest(
 		if (len(done) == len(receivers)) || (maxTries == 0) {
 			break
 		}
-		fmt.Printf("Try one more times %v", maxTries)
+		fmt.Printf("Retry one more times %v\n", maxTries)
 		node.Pause()
 	}
 	for idx, txID := range txIDs {

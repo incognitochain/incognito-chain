@@ -121,6 +121,8 @@ const (
 	AllStakersObjectType = 78
 	// Near bridge
 	BridgeNEARTxObjectType = 77
+
+	CommitteeDataObjectType = 82
 )
 
 // Prefix length

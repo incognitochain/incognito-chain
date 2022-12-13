@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/pkg/errors"
@@ -12,13 +14,17 @@ func (b *BeaconCommitteeStateV4) InitReputationState() {
 	if bs := b.GetBeaconSubstitute(); len(bs) != 0 {
 		bc = append(bc, bs...)
 	}
+	if bw := b.GetBeaconWaiting(); len(bw) != 0 {
+		bc = append(bc, bw...)
+	}
+	b.Reputation = map[string]uint64{}
 	for _, v := range bc {
 		bcPK, _ := v.ToBase58()
 		b.Performance[bcPK] = 500
 	}
 }
 
-func (b *BeaconCommitteeStateV4) UpdateBeaconReputationWithBlock(bBlock *types.BeaconBlock) error {
+func (b *BeaconCommitteeStateV4) UpdateBeaconPerformanceWithBlock(bBlock *types.BeaconBlock) error {
 	prevVal, err := consensustypes.DecodeValidationData(bBlock.Header.PreviousValidationData)
 	if err != nil {
 		return err
@@ -52,4 +58,43 @@ func (b *BeaconCommitteeStateV4) updateBeaconReputation(bCommittee []string, lis
 		}
 	}
 	return nil
+}
+
+func (b *BeaconCommitteeStateV4) BackupPerformance() []byte {
+	perfs := []uint64{}
+	for _, cPK := range b.beaconCommittee {
+		perf, ok := b.Performance[cPK]
+		if !ok {
+			perf = 500
+		}
+		perfs = append(perfs, perf)
+	}
+	res, err := json.Marshal(perfs)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func (b *BeaconCommitteeStateV4) RestorePerformance(data []byte, beaconBlocks []*types.BeaconBlock) {
+	perfs := []uint64{}
+	err := json.Unmarshal(data, &perfs)
+	if err != nil {
+		panic(err)
+	}
+	for idx, cPK := range b.beaconCommittee {
+		b.Performance[cPK] = perfs[idx]
+	}
+	for _, cPK := range b.beaconWaiting {
+		b.Performance[cPK] = 500
+	}
+	for _, cPK := range b.beaconSubstitute {
+		b.Performance[cPK] = 500
+	}
+	for _, blk := range beaconBlocks {
+		err := b.UpdateBeaconPerformanceWithBlock(blk)
+		if err != nil {
+			panic(err)
+		}
+	}
 }

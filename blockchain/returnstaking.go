@@ -69,6 +69,7 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 		beaconBlocks,
 		shardID,
 	)
+
 	errorInstructions = append(errorInstructions, errIns...)
 	if err != nil {
 		return nil, nil, err
@@ -80,7 +81,7 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 			producerPrivateKey,
 			shardID,
 		)
-		Logger.log.Debugf("Return Staking Amount %v for funder %+v of candidate %v, staking transaction hash %+v, shardID %+v, err: %v", returnAmount, returnInfo.FunderAddress.String(), returnInfo.SwapoutPubKey, txStakingHash.String(), shardID, err)
+		Logger.log.Infof("Return Staking Amount %v for funder %+v of candidate %v, staking transaction hash %+v, shardID %+v, err: %v", returnAmount, returnInfo.FunderAddress.String(), returnInfo.SwapoutPubKey, txStakingHash.String(), shardID, err)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -99,7 +100,7 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 			producerPrivateKey,
 			shardID,
 		)
-		Logger.log.Debugf("Return Staking Amount %v for pk %v of funder %+v, staking transaction hash %+v, shardID %+v, err: %v", returnAmount, returnPK, returnInfo.FunderAddress.String(), returnInfo.StakingTx, shardID, err)
+		Logger.log.Infof("Return Staking Amount %v for pk %v of funder %+v, staking transaction hash %+v, shardID %+v, err: %v", returnAmount, returnPK, returnInfo.FunderAddress.String(), returnInfo.StakingTx, shardID, err)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -301,7 +302,8 @@ func (blockchain *BlockChain) buildReturnStakingAmountForBeaconTx(
 	if err != nil {
 		return nil, 0, errors.Errorf("cannot init return staking tx. Error %v", err)
 	}
-	// returnStakingTx.SetType()
+	_, _, amount, txHash := returnStakingTx.GetTransferData()
+	fmt.Printf("Return staking tx %v amount %v\n", txHash.String(), amount)
 	return returnStakingTx, info.StakingAmount, nil
 }
 
@@ -445,26 +447,41 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 				}
 			case instruction.RETURN_BEACON_ACTION:
+				if beaconConsensusStateDB == nil {
+					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
+					if err != nil {
+						return nil, nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
+					}
+					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+					if err != nil {
+						return nil, nil, nil, err
+					}
+				}
 				returnStakingIns, err := instruction.ValidateAndImportReturnBeaconStakingInstructionFromString(l)
 				if err != nil {
 					Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
 					continue
 				}
-				for i, returnPK := range returnStakingIns.GetPublicKey() {
+				for _, returnPK := range returnStakingIns.GetPublicKey() {
+					stakerInfo, has, err := statedb.GetBeaconStakerInfo(beaconConsensusStateDB, returnPK)
+					if (!has) || (err != nil) {
+						return nil, nil, nil, err
+					}
 					rBeaconInfo := returnStakingBeaconInfo{
 						FunderAddress: privacy.PaymentAddress{},
 						SharedRandom:  []byte{},
 						StakingTx:     []metadata.Transaction{},
 						StakingAmount: 0,
 					}
-					txHashs := returnStakingIns.StakingTxHashes[i]
+					txHashs := stakerInfo.TxStakingIDs()
+					isError := false
 					for _, txHash := range txHashs {
 						_, _, txStake, err := blockchain.GetTransactionByHashWithShardID(txHash, shardID)
 						if err != nil {
 							err = NewBlockChainError(WrongShardIDError, fmt.Errorf("This staking tx %v not found in this shard %+v", txHash.String(), shardID))
-							errorInstructions = append(errorInstructions, l)
+							isError = true
 							Logger.log.Error(err)
-							continue
+							break
 						}
 						rBeaconInfo.StakingTx = append(rBeaconInfo.StakingTx, txStake)
 						metaType := txStake.GetMetadataType()
@@ -474,27 +491,29 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 							keyWallet, err := wallet.Base58CheckDeserialize(metaData.FunderPaymentAddress)
 							if err != nil {
 								Logger.log.Errorf("SA: cannot get payment address from payment %v, tx error %v, inst %+v", metaData.FunderPaymentAddress, txHash.String(), l)
-								errorInstructions = append(errorInstructions, l)
-								continue
+								isError = true
+								break
 							}
 							rBeaconInfo.StakingAmount += metaData.StakingAmount
 							rBeaconInfo.FunderAddress = keyWallet.KeySet.PaymentAddress
 							paymentShardID := common.GetShardIDFromLastByte(rBeaconInfo.FunderAddress.Pk[len(rBeaconInfo.FunderAddress.Pk)-1])
 							if paymentShardID != shardID {
 								err = NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, shardID))
-								errorInstructions = append(errorInstructions, l)
 								Logger.log.Error(err)
-								continue
+								isError = true
+								break
 							}
-							break
 						case metaCommon.AddStakingMeta:
 							metaData := txStake.GetMetadata().(*metadata.AddStakingMetadata)
 							rBeaconInfo.StakingAmount += metaData.AddStakingAmount
-							break
 						default:
 							Logger.log.Errorf("This tx %+v with metatype %v is not valid for beacon staking", txHash.String(), metaType)
-							errorInstructions = append(errorInstructions, l)
+							continue
 						}
+					}
+					if isError {
+						errorInstructions = append(errorInstructions, l)
+						continue
 					}
 					if rBeaconInfo.FunderAddress.String() != (privacy.PaymentAddress{}).String() {
 						Logger.log.Info("SA: build salary tx", rBeaconInfo.FunderAddress, shardID)

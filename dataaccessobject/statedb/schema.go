@@ -109,6 +109,7 @@ var (
 	bridgeAggVaultPrefix             = []byte("bridgeagg-vault-")
 	bridgeAggWaitUnshieldReqPrefix   = []byte("bridgeagg-waitUnshield-")
 	bridgeAggParamPrefix             = []byte("bridgeagg-param-")
+	beaconcommitteestateDataPrefix   = []byte("cmt-state-bc")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -923,6 +924,11 @@ func GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID []byte) []byte {
 
 func GetBridgeAggParamPrefix() []byte {
 	h := common.HashH(bridgeAggParamPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBeaconCommitteeStateBackupKey() []byte {
+	h := common.HashH(beaconcommitteestateDataPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

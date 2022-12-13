@@ -31,6 +31,7 @@ type BeaconCommitteeStateEnvironment struct {
 	SlashStateDB                     *statedb.StateDB
 	IsReplace                        bool
 	newAllRoles                      []string
+	newAllShardRoles                 []string
 	newUnassignedCommonPool          []string
 	newAllSubstituteCommittees       []string
 	LatestShardsState                map[byte][]types.ShardState

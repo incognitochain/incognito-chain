@@ -97,7 +97,7 @@ func (r *RPCClient) API_MintNFT(privateKey string) error {
 
 func (r *RPCClient) API_CreateConvertCoinVer1ToVer2Transaction(privateKey string) error {
 	err := r.Client.CreateConvertCoinVer1ToVer2Transaction(privateKey)
-	time.Sleep(time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	return err
 }
 

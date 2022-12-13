@@ -484,6 +484,7 @@ func (b *BeaconCommitteeStateV3) addDataToEnvironment(env *BeaconCommitteeStateE
 	for _, syncPoolValidators := range b.syncPool {
 		env.newAllRoles = append(env.newAllRoles, syncPoolValidators...)
 	}
+	env.newAllShardRoles = common.DeepCopyString(env.newAllRoles)
 	env.shardCommittee = make(map[byte][]string)
 	for shardID, committees := range b.shardCommittee {
 		env.shardCommittee[shardID] = common.DeepCopyString(committees)

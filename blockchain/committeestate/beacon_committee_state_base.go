@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -658,4 +659,12 @@ func (b beaconCommitteeStateBase) GenerateRandomInstructions(env *BeaconCommitte
 		randomNumber,
 	)
 	return randomInstruction, randomNumber
+}
+
+func (b *beaconCommitteeStateBase) Backup(env *BeaconCommitteeStateEnvironment) error {
+	return nil
+}
+
+func (b *beaconCommitteeStateBase) Restore(beaconBlocks []*types.BeaconBlock) error {
+	return nil
 }

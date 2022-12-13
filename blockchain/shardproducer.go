@@ -1193,7 +1193,6 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		addStakingIns := instruction.NewAddStakingInstructionWithValue(beaconAddStakeAmountKeys, beaconAddStakingAmount, beaconAddStakeAmounttxs)
 		// inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, addStakingIns.ToString())
-		fmt.Printf("abcxyz Create instruction add staking %+v\n", addStakingIns.ToString())
 	}
 	if len(redelegateList[0]) > 0 {
 		inst := []string{

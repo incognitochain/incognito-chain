@@ -1,14 +1,127 @@
 package committeestate
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
+type BeaconLockingState struct {
+	isChange bool
+	Data     map[string]LockingInfo
+}
+
+func NewBeaconLockingState() *BeaconLockingState {
+	return &BeaconLockingState{
+		isChange: true,
+		Data:     map[string]LockingInfo{},
+	}
+}
+
+func (b *BeaconLockingState) Backup() []byte {
+	if !b.isChange {
+		return nil
+	}
+	keys := []string{}
+	var values []struct {
+		U uint64
+		R byte
+	}
+	for k := range b.Data {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	values = make([]struct {
+		U uint64
+		R byte
+	}, len(keys))
+	for idx, k := range keys {
+		values[idx].R = b.Data[k].Reason
+		values[idx].U = b.Data[k].UnlockAtEpoch
+	}
+	dBK := struct {
+		K []string
+		V []struct {
+			U uint64
+			R byte
+		}
+	}{
+		K: keys,
+		V: values,
+	}
+
+	nextEpochInfo, err := json.Marshal(dBK)
+	if err != nil {
+		panic(err)
+		// return nil
+	}
+	return nextEpochInfo
+}
+
+func (b *BeaconLockingState) Restore(data []byte) error {
+	dBK := struct {
+		K []string
+		V []struct {
+			U uint64
+			R byte
+		}
+	}{}
+	err := json.Unmarshal(data, &dBK)
+	if err != nil {
+		panic(err)
+	}
+	b = NewBeaconLockingState()
+	b.isChange = false
+	for idx, k := range dBK.K {
+		b.Data[k] = LockingInfo{
+			Reason:        dBK.V[idx].R,
+			UnlockAtEpoch: dBK.V[idx].U,
+		}
+	}
+	return nil
+}
+
+func (b *BeaconLockingState) LockNewCandidate(pk string, unlockEpoch uint64, reason byte) {
+	b.Data[pk] = LockingInfo{UnlockAtEpoch: unlockEpoch, Reason: reason}
+	b.isChange = true
+}
+
+func (b *BeaconLockingState) UnlockCandidate(pk string) {
+	delete(b.Data, pk)
+	b.isChange = true
+}
+
+func (b *BeaconLockingState) GetReturnPK(epoch uint64) map[string]LockingInfo {
+	res := map[string]LockingInfo{}
+	for candidate, lockedCandidate := range b.Data {
+		fmt.Printf("Locking info at epoch %v of candidate %v: locked until %v\n", epoch, candidate[len(candidate)-5:], lockedCandidate.UnlockAtEpoch)
+		if lockedCandidate.UnlockAtEpoch <= epoch {
+			res[candidate] = lockedCandidate
+		}
+	}
+	if len(res) == 0 {
+		return nil
+	}
+	return res
+}
+func (b *BeaconLockingState) GetAllLockingPK() []string {
+	res := []string{}
+	for candidate, _ := range b.Data {
+		res = append(res, candidate)
+	}
+	if len(res) == 0 {
+		return nil
+	}
+	return res
+}
+
 type LockingInfo struct {
-	PublicKey     string
+	// PublicKey     string
 	UnlockAtEpoch uint64
 	Reason        byte
 }
@@ -18,35 +131,25 @@ func NewBeaconLockingInfo() *LockingInfo {
 }
 
 func (b *BeaconCommitteeStateV4) LockNewCandidate(pk string, unlockEpoch uint64, reason byte) {
-	b.beaconLocking = append(b.beaconLocking, &LockingInfo{PublicKey: pk, UnlockAtEpoch: unlockEpoch, Reason: reason})
-}
-
-func (b *BeaconCommitteeStateV4) UnlockCandidateAtIndex(id int) {
-	b.beaconLocking[id] = b.beaconLocking[len(b.beaconLocking)-1] // Copy last element to index i.
-	b.beaconLocking = b.beaconLocking[:len(b.beaconLocking)-1]    // Truncate slice.
+	b.bLockingState.LockNewCandidate(pk, unlockEpoch, reason)
 }
 
 func (b *BeaconCommitteeStateV4) GetReturnStakingInstruction(bcStateDB *statedb.StateDB, epoch uint64) *instruction.ReturnBeaconStakeInstruction {
 	returnPKs := []string{}
-	returnTxIDs := [][]string{}
+	returnAmounts := []uint64{}
 	returnReason := []byte{}
-	for _, lockedCandidate := range b.beaconLocking {
-		fmt.Printf("Locking info at epoch %v of candidate %v: locked until %v\n", epoch, lockedCandidate.PublicKey[len(lockedCandidate.PublicKey)-5:], lockedCandidate.UnlockAtEpoch)
-		if lockedCandidate.UnlockAtEpoch == epoch {
-			if info, has, err := statedb.GetBeaconStakerInfo(bcStateDB, lockedCandidate.PublicKey); (err == nil) && (has) {
-				txIDs := info.TxStakingIDs()
-				txIDsString := []string{}
-				for _, txID := range txIDs {
-					txIDsString = append(txIDsString, txID.String())
-				}
-				returnPKs = append(returnPKs, lockedCandidate.PublicKey)
-				returnTxIDs = append(returnTxIDs, txIDsString)
-				returnReason = append(returnReason, lockedCandidate.Reason)
-			}
-		}
-	}
-	if len(returnPKs) == 0 {
+	unlockInfo := b.bLockingState.GetReturnPK(epoch)
+	if unlockInfo == nil {
 		return nil
 	}
-	return instruction.NewReturnBeaconStakeInsWithValue(returnPKs, returnTxIDs, returnReason)
+	for unlockPK, unlockInfo := range unlockInfo {
+		if info, has, err := statedb.GetBeaconStakerInfo(bcStateDB, unlockPK); (err == nil) && (has) {
+			returnPKs = append(returnPKs, unlockPK)
+			returnAmounts = append(returnAmounts, info.StakingAmount())
+			returnReason = append(returnReason, unlockInfo.Reason)
+			b.bLockingState.UnlockCandidate(unlockPK)
+		}
+	}
+	b.committeeChange.AddRemovedBeaconStakers(returnPKs)
+	return instruction.NewReturnBeaconStakeInsWithValue(returnPKs, returnReason, returnAmounts)
 }

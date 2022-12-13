@@ -1,10 +1,12 @@
 package statedb
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -944,6 +946,22 @@ func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKe
 	return nil
 }
 
+func DeleteBeaconStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	return deleteBeaconStakerInfo(stateDB, stakers)
+}
+
+func deleteBeaconStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
+	for _, staker := range stakers {
+		keyBytes, err := staker.RawBytes()
+		if err != nil {
+			return err
+		}
+		key := GetBeaconStakerInfoKey(keyBytes)
+		stateDB.MarkDeleteStateObject(BeaconStakerObjectType, key)
+	}
+	return nil
+}
+
 func StoreSlashingCommittee(stateDB *StateDB, epoch uint64, slashingCommittees map[byte][]string) error {
 	for shardID, committees := range slashingCommittees {
 		key := GenerateSlashingCommitteeObjectKey(shardID, epoch)
@@ -999,4 +1017,29 @@ func DeleteAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes ma
 		}
 	}
 	return nil
+}
+
+func StoreCommitteeStateBackupData(stateDB *StateDB, cData *CommitteeData) error {
+	key := common.HashH(GetBeaconCommitteeStateBackupKey())
+	if err := stateDB.SetStateObject(BeaconStakerObjectType, key, cData); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetCommitteeStateBackupData(stateDB *StateDB) (*CommitteeData, error) {
+	key := common.HashH(GetBeaconCommitteeStateBackupKey())
+	stakerObject, err := stateDB.getStateObject(CommitteeDataObjectType, key)
+	if err != nil {
+		return nil, err
+	}
+	if stakerObject != nil {
+		res, ok := stakerObject.GetValue().(*CommitteeData)
+		if !ok {
+			err = fmt.Errorf("Can not parse CommitteeData")
+			return nil, err
+		}
+		return res, nil
+	}
+	return nil, errors.Errorf("Can not get backup data")
 }

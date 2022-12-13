@@ -183,7 +183,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeAggWaitingUnshieldReqObjectWithValue(db, hash, value)
 	case BridgeAggParamObjectType:
 		return newBridgeAggParamObjectWithValue(db, hash, value)
-
+	case CommitteeDataObjectType:
+		return newCommitteeStateDataObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -345,6 +346,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeAggWaitingUnshieldReqObject(db, hash)
 	case BridgeAggParamObjectType:
 		return newBridgeAggParamObject(db, hash)
+	case CommitteeDataObjectType:
+		return newCommitteeStateDataObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

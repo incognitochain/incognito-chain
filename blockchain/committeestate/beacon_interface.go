@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -40,6 +41,8 @@ type BeaconCommitteeState interface {
 		error)
 	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
+	Backup(env *BeaconCommitteeStateEnvironment) error
+	Restore(beaconBlocks []*types.BeaconBlock) error
 	Hash() (*BeaconCommitteeStateHash, error)
 	GetReputation() map[string]uint64
 }

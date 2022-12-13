@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -1609,11 +1610,18 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 
 	beaconview := httpServer.blockService.BlockChain.BeaconChain.GetFinalView()
 	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
-	check, ok := beaconFinalView.GetAutoStaking()[stakingMetadata.CommitteePublicKey]
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key has not staked yet"))
+	bcStateDB := beaconFinalView.GetBeaconConsensusStateDB()
+	stakerAutoStake := false
+	if bStarkerInfor, has, err := statedb.GetBeaconStakerInfo(bcStateDB, stakingMetadata.CommitteePublicKey); (!has) || (err != nil) {
+		if sStarkerInfor, has, err := statedb.GetShardStakerInfo(bcStateDB, stakingMetadata.CommitteePublicKey); (!has) || (err != nil) {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key has not staked yet"))
+		} else {
+			stakerAutoStake = sStarkerInfor.AutoStaking()
+		}
+	} else {
+		stakerAutoStake = bStarkerInfor.AutoStaking()
 	}
-	if !check {
+	if !stakerAutoStake {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key AutoStaking has been already false"))
 	}
 

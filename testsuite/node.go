@@ -518,6 +518,12 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		}
 
 		//Combine votes
+		if chainID == -1 {
+			committeeString, _ := incognitokey.CommitteeKeyListToString(committees)
+			for id, value := range committeeString {
+				committeeString[id] = value[len(value)-5:]
+			}
+		}
 		accs, err := sim.GetListAccountByCommitteePubkey(committees)
 		if err != nil {
 			panic(err)
@@ -528,7 +534,16 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 				panic(err)
 			}
 		} else {
-			err = sim.SignBlockWithCommittee(chain, block, accs, validatorIndex[chainID])
+			idxTmp := 0
+			allowValidators := []int{}
+			for idx := 0; idx < len(committees); idx++ {
+				if (idxTmp >= len(validatorIndex[chainID])) || (idx != validatorIndex[chainID][idxTmp]) {
+					allowValidators = append(allowValidators, idx)
+				} else {
+					idxTmp++
+				}
+			}
+			err = sim.SignBlockWithCommittee(chain, block, accs, allowValidators)
 			if err != nil {
 				panic(err)
 			}
@@ -544,6 +559,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
 			err = blockchain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
+
 			if err != nil {
 				panic(err)
 			} else {
@@ -676,11 +692,12 @@ func InitChainParam(cfg Config, customParam func(), postInit func(*NodeEngine)) 
 	for i := 0; i < 2; i++ {
 		node.GenerateBlock().NextRound()
 	}
-	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
-	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
+	fmt.Println(node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey))
+	fmt.Println(node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey))
 
 	for i := 0; i < 2; i++ {
 		node.GenerateBlock().NextRound()
+
 	}
 	return node
 }

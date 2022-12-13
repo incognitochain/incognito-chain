@@ -3,7 +3,6 @@ package rawdbv2
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -181,7 +180,7 @@ func GetStakingTx(db incdb.KeyValueReader, sid byte, hash common.Hash) ([]byte, 
 	keyHash := GetStakingTxKey(sid, hash)
 	data, err := db.Get(keyHash)
 	if err != nil {
-		log.Println("cannot get staking tx", sid, hash.String())
+		// log.Println("cannot get staking tx", sid, hash.String())
 		return nil, NewRawdbError(GetShardStakingTx, err)
 	}
 	return data, err

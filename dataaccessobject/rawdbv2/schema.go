@@ -9,7 +9,6 @@ var (
 	lastShardBlockKey                  = []byte("LastShardBlock" + string(splitter))
 	lastBeaconBlockKey                 = []byte("LastBeaconBlock")
 	beaconViewsPrefix                  = []byte("BeaconViews")
-	beaconNextDelegatePrefix           = []byte("BeaconNextDelegate")
 	shardBestStatePrefix               = []byte("ShardViews" + string(splitter))
 	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
 	viewPrefix                         = []byte("V" + string(splitter))
@@ -169,11 +168,6 @@ func GetBeaconViewsKey() []byte {
 	return temp
 }
 
-func GetBeaconNextDelegateKey() []byte {
-	temp := make([]byte, 0, len(beaconNextDelegatePrefix))
-	temp = append(temp, beaconNextDelegatePrefix...)
-	return temp
-}
 func GetCacheCommitteeFromBlockKey(hash common.Hash, cid int) []byte {
 	temp := make([]byte, 0, len(cacheCommitteeFromBlockPrefix))
 	temp = append(temp, cacheCommitteeFromBlockPrefix...)

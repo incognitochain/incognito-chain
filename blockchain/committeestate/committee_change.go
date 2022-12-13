@@ -30,6 +30,7 @@ type CommitteeChange struct {
 	StopAutoStake                      []string
 	ReDelegate                         map[string]string
 	RemovedStaker                      []string
+	RemovedBeaconStaker                []string
 	FinishedSyncValidators             map[byte][]string
 	SlashingCommittee                  map[byte][]string
 	OutOfCommitteeCycle                map[byte][]string
@@ -202,6 +203,19 @@ func (committeeChange *CommitteeChange) AddRemovedStakers(removedStakers []strin
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddRemovedBeaconStaker(removedStaker string) *CommitteeChange {
+	committeeChange.RemovedBeaconStaker = append(committeeChange.RemovedBeaconStaker, removedStaker)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddRemovedBeaconStakers(removedStakers []string) *CommitteeChange {
+	if len(removedStakers) == 0 {
+		return committeeChange
+	}
+	committeeChange.RemovedBeaconStaker = append(committeeChange.RemovedBeaconStaker, removedStakers...)
+	return committeeChange
+}
+
 func (committeeChange *CommitteeChange) AddStopAutoStake(stopAutoStake string) *CommitteeChange {
 	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, stopAutoStake)
 	return committeeChange
@@ -225,6 +239,12 @@ func (committeeChange *CommitteeChange) BeaconStakerKeys() []incognitokey.Commit
 func (committeeChange *CommitteeChange) RemovedStakers() []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
 	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.RemovedStaker)
+	return res
+}
+
+func (committeeChange *CommitteeChange) RemovedBeaconStakers() []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.RemovedBeaconStaker)
 	return res
 }
 

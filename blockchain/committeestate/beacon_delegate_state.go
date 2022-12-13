@@ -7,9 +7,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/pkg/errors"
 )
@@ -241,28 +239,70 @@ func (b *BeaconDelegateState) GetBeaconCandidatePower(bPK string) uint64 {
 	return res
 }
 
-func (b *BeaconDelegateState) Backup(db incdb.Database) error {
-	nextEpochInfo, err := json.Marshal(b.NextEpochDelegate)
-	if err != nil {
-		return err
+func (b *BeaconDelegateState) Backup() []byte {
+	keys := []string{}
+	var values []struct {
+		O string
+		N string
 	}
-	return rawdbv2.StoreBeaconNextDelegate(db, nextEpochInfo)
+	for k := range b.NextEpochDelegate {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	values = make([]struct {
+		O string
+		N string
+	}, len(keys))
+	for idx, k := range keys {
+		values[idx].O = b.NextEpochDelegate[k].Old
+		values[idx].N = b.NextEpochDelegate[k].New
+	}
+	dBK := struct {
+		K []string
+		V []struct {
+			O string
+			N string
+		}
+	}{
+		K: keys,
+		V: values,
+	}
+
+	nextEpochInfo, err := json.Marshal(dBK)
+	if err != nil {
+		panic(err)
+	}
+	return nextEpochInfo
 }
 
-func (b *BeaconDelegateState) Restore(bcState BeaconCommitteeState, stateDB *statedb.StateDB, db incdb.Database) error {
-	data, err := rawdbv2.GetBeaconNextDelegte(db)
+func (b *BeaconDelegateState) Restore(bcState BeaconCommitteeState, stateDB *statedb.StateDB, data []byte) error {
+	dBK := struct {
+		K []string
+		V []struct {
+			O string
+			N string
+		}
+	}{}
+	err := json.Unmarshal(data, &dBK)
 	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(data, b.NextEpochDelegate)
-	if err != nil {
-		return err
+		panic(err)
 	}
 	if b.NextEpochDelegate == nil {
 		b.NextEpochDelegate = map[string]struct {
 			Old string
 			New string
 		}{}
+		for idx, k := range dBK.K {
+			b.NextEpochDelegate[k] = struct {
+				Old string
+				New string
+			}{
+				Old: dBK.V[idx].O,
+				New: dBK.V[idx].N,
+			}
+		}
 	}
 	staker := bcState.GetAllCandidateSubstituteCommittee()
 	for _, stakerPKStr := range staker {

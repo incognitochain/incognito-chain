@@ -143,10 +143,10 @@ func ValidateAndImportReturnStakingInstructionFromString(instruction []string) (
 }
 
 func BuildReturnStakingInstructionFromString(instruction []string) (Instruction, error) {
-	if err := ValidateReturnBeaconStakingInstructionSanity(instruction); err != nil {
+	if err := ValidateReturnStakingInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
-	return ImportReturnBeaconStakingInstructionFromString(instruction)
+	return ImportReturnStakingInstructionFromString(instruction)
 }
 
 func ImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeInstruction, error) {
