@@ -36,3 +36,18 @@ func (cs *CommiteeState) Print() {
 	}
 	fmt.Println(string(b))
 }
+
+// Filter for testing only
+func (cs *CommiteeState) Filter(fixedCommiteesNodes map[int][]string, fixedRewardReceivers []string) {
+	for i, v := range fixedCommiteesNodes {
+		cs.Committee[i] = cs.Committee[i][len(v):]
+		for _, value := range v {
+			delete(cs.AutoStaking, value)
+			delete(cs.StakingTx, value)
+		}
+	}
+
+	for _, v := range fixedRewardReceivers {
+		delete(cs.RewardReceivers, v)
+	}
+}
