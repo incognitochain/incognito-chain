@@ -777,6 +777,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report(curView)
 		if featureStatReport.CommitteeStat[feature] == nil {
+			Logger.log.Info("[committee-state] return here")
 			continue
 		}
 		Logger.log.Info("[committee-state] 0")
