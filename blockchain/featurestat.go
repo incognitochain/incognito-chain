@@ -33,22 +33,18 @@ type FeatureReportInfo struct {
 
 // filter validators that is in sync pool ( inSyncPool = true), or in pending&committee (isInPool = false), then create feature stat message
 func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, reportFeatures []string, validators []*consensus.Validator) (*wire.MessageFeature, error) {
-	Logger.log.Info("[committee-state] CreateNewFeatureStatMessage")
 
 	if len(reportFeatures) == 0 {
 		return nil, nil
 	}
 
-	Logger.log.Info("[committee-state] 0")
 	validatorFromUserKeys, validatorStr := beaconView.ExtractPendingAndCommittee(validators)
 	if inSyncPool {
 		validatorFromUserKeys, validatorStr = beaconView.ExtractAllFinishSyncingValidators(validators)
 	}
-	Logger.log.Info("[committee-state] 1")
 	if len(validatorFromUserKeys) == 0 {
 		return nil, nil
 	}
-	Logger.log.Info("[committee-state] 2")
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 
@@ -56,11 +52,9 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 	for _, v := range reportFeatures {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
 	}
-	Logger.log.Info("[committee-state] 3")
 	timestamp := time.Now().Unix()
 	timestampStr := fmt.Sprintf("%v", timestamp)
 	signBytes = append(signBytes, []byte(timestampStr)...)
-	Logger.log.Info("[committee-state] 4")
 
 	for i, v := range validatorFromUserKeys {
 		dataSign := signBytes[:]
@@ -71,14 +65,11 @@ func CreateNewFeatureStatMessage(beaconView *BeaconBestState, inSyncPool bool, r
 		featureSyncSignatures = append(featureSyncSignatures, signature)
 		featureSyncValidators = append(featureSyncValidators, validatorStr[i])
 	}
-	Logger.log.Info("[committee-state] 5")
 	if len(featureSyncValidators) == 0 {
 		return nil, nil
 	}
-	Logger.log.Info("[committee-state] 6")
 	Logger.log.Infof("Send Feature Stat Message, key %+v \n signature %+v", featureSyncValidators, featureSyncSignatures)
 	msg := wire.NewMessageFeature(int(timestamp), featureSyncValidators, featureSyncSignatures, reportFeatures)
-	Logger.log.Info("[committee-state] finish CreateNewFeatureStatMessage")
 
 	return msg, nil
 }
@@ -212,13 +203,10 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 		}
 	}
 	unTriggerFeatures := beaconView.getUntriggerFeature(true)
-	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
 	stat.lock.Lock()
 	defer stat.lock.Unlock()
-	Logger.log.Info("[committee-state] stat.nodes:", stat.nodes)
 	for key, features := range stat.nodes {
 
-		Logger.log.Info("[committee-state] 100")
 		//check valid trigger feature and remove duplicate
 		featureList := map[string]bool{}
 		for _, feature := range features.Features {
@@ -228,8 +216,6 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 				}
 			}
 		}
-		Logger.log.Info("[committee-state] featureList:", featureList)
-		Logger.log.Info("[committee-state] 101")
 
 		//count
 		for feature, _ := range featureList {
