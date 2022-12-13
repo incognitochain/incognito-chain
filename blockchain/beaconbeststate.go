@@ -1332,10 +1332,6 @@ func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []stri
 			//skip default value
 			continue
 		}
-		Logger.log.Info("[committee-state] curView.TriggeredFeature:", curView.TriggeredFeature)
-		if curView.TriggeredFeature != nil {
-			Logger.log.Info("[committee-state] curView.TriggeredFeature[f]:", curView.TriggeredFeature[f])
-		}
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
 			if afterCheckPoint {
 				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {
