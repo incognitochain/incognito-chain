@@ -64,7 +64,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	bHeight := bState.BeaconHeight + 5
+	bHeight := bState.BeaconHeight + 3
 	if bHeight < 15 {
 		bHeight = 15
 	}
@@ -74,7 +74,7 @@ func main() {
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 30
+		startStakingHeight = bHeight + 15
 	}
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
 
@@ -88,12 +88,12 @@ func main() {
 				k := keys[0]
 				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
 				app.SubmitKey(k.OTAPrivateKey)
-			} else if blk.GetBeaconHeight() == bHeight+5 {
+			} else if blk.GetBeaconHeight() == bHeight+3 {
 				//convert from token v1 to token v2
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
-			} else if blk.GetBeaconHeight() == bHeight+15 {
+			} else if blk.GetBeaconHeight() == bHeight+6 {
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}

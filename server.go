@@ -2003,7 +2003,6 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	shardCommitteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
 	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-	//Logger.log.Info("[committee-state] beaconFinalView.CommitteeStateVersion():", beaconFinalView.CommitteeStateVersion())
 	if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
 	}
@@ -2017,9 +2016,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 		}
 
 		for _, v := range shardSyncingValidatorsFromBeaconView[byte(chain.GetShardID())] {
-			Logger.log.Info("[committee-state] 0")
 			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard syncing committee in shard state
-				Logger.log.Info("[committee-state] 1")
 				return common.SyncingRole, chain.GetShardID()
 			}
 		}
@@ -2065,7 +2062,6 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	beaconFinalView := s.blockChain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 	//For Shard
 	shardCandidateFromBeaconView := []incognitokey.CommitteePublicKey{}
-	log.Println("[committee-state] beaconFinalView.CommitteeStateVersion() 0:", beaconFinalView.CommitteeStateVersion())
 	if beaconFinalView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		//For Shard
 		shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
@@ -2106,10 +2102,9 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 		shardCandidateFromBeaconView = beaconFinalView.GetShardCandidate()
 		shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-		log.Println("[committee-state] beaconFinalView.CommitteeStateVersion() 1:", beaconFinalView.CommitteeStateVersion())
+		Logger.log.Info("beaconFinalView.CommitteeStateVersion():", beaconFinalView.CommitteeStateVersion())
 		if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 			shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
-			log.Println("[committee-state] shardSyncingValidatorsFromBeaconView:", shardSyncingValidatorsFromBeaconView)
 		}
 		//check if in committee or pending committee in beacon
 		for _, chain := range s.blockChain.ShardChain {

@@ -69,7 +69,7 @@ consensus_param:
   assign_rule_v3_height: 2
   enable_slashing_height_v2: 3
   staking_flow_v3_height: 5
-  staking_flow_v4_height: 1e9
+  staking_flow_v4_height: 13
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
   timeslot: 10
@@ -167,7 +167,7 @@ auto_enable_feature:
       require_percentage: 100
   - enable_stake_beacon:
       min_trigger: 11
-      force_trigger: 2
+      force_trigger: 1e9
       require_percentage: 90
 blocktime_param:
   - "blocktimedef": 5
