@@ -2006,7 +2006,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
 	}
-	Logger.log.Info("beaconFinalView.CommitteeStateVersion():", beaconFinalView.CommitteeStateVersion())
+	Logger.log.Info("[committee-state] beaconFinalView.CommitteeStateVersion():", beaconFinalView.CommitteeStateVersion())
 
 	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {
