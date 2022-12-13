@@ -203,10 +203,12 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 		}
 	}
 	unTriggerFeatures := beaconView.getUntriggerFeature(true)
+	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
 	stat.lock.Lock()
 	defer stat.lock.Unlock()
 	for key, features := range stat.nodes {
 
+		Logger.log.Info("[committee-state] 100")
 		//check valid trigger feature and remove duplicate
 		featureList := map[string]bool{}
 		for _, feature := range features.Features {
@@ -216,6 +218,8 @@ func (stat *FeatureStat) Report(beaconView *BeaconBestState) FeatureReportInfo {
 				}
 			}
 		}
+		Logger.log.Info("[committee-state] featureList:", featureList)
+		Logger.log.Info("[committee-state] 101")
 
 		//count
 		for feature, _ := range featureList {

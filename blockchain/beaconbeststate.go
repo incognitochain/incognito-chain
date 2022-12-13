@@ -1327,10 +1327,14 @@ func (beaconBestState *BeaconBestState) GetAllCurrentSlashingCommittee() map[byt
 
 func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []string {
 	unTriggerFeatures := []string{}
-	for f, _ := range config.Param().AutoEnableFeature {
+	for f := range config.Param().AutoEnableFeature {
 		if config.Param().AutoEnableFeature[f].MinTriggerBlockHeight == 0 {
 			//skip default value
 			continue
+		}
+		Logger.log.Info("[committee-state] curView.TriggeredFeature:", curView.TriggeredFeature)
+		if curView.TriggeredFeature != nil {
+			Logger.log.Info("[committee-state] curView.TriggeredFeature[f]:", curView.TriggeredFeature[f])
 		}
 		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
 			if afterCheckPoint {

@@ -760,8 +760,6 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 	// get valid untrigger feature
 	unTriggerFeatures := curView.getUntriggerFeature(false)
 
-	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
-
 	for _, feature := range unTriggerFeatures {
 		autoEnableFeatureInfo, ok := config.Param().AutoEnableFeature[feature]
 		if !ok {
@@ -771,13 +769,13 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 			continue
 		}
 
+		Logger.log.Info("[committee-state] Prepare build block:", curView.BeaconHeight+1)
 		Logger.log.Info("[committee-state] feature:", feature)
 		Logger.log.Info("[committee-state] autoEnableFeatureInfo:", autoEnableFeatureInfo)
 
 		// check proposer threshold
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report(curView)
-		Logger.log.Info("[committee-state] 100")
 		if featureStatReport.CommitteeStat[feature] == nil {
 			Logger.log.Info("[committee-state] return here")
 			continue
