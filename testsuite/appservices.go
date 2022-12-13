@@ -115,7 +115,7 @@ func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSe
 	if err != nil {
 		panic(err)
 	}
-	if _, err := fullnodeRPC.CreateAndSendStakingTransaction(
+	if resp, err := fullnodeRPC.CreateAndSendStakingTransaction(
 		privateKey,
 		map[string]interface{}{
 			bAddr: 1750000000000,
@@ -132,6 +132,8 @@ func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSe
 		},
 	); err != nil {
 		panic(err)
+	} else {
+		log.Println("shard stake with tx ", resp.TxID)
 	}
 }
 
