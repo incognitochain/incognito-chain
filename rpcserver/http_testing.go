@@ -212,6 +212,15 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		rewardReceivers = cs.GetRewardReceiver()
 		autoStaking = cs.GetAutoStaking()
 		delegateList = cs.GetDelegate()
+		for i, v := range cs.GetShardCommittee() {
+			currentValidator[int(i)] = v
+		}
+		currentValidator[-1] = cs.GetBeaconCommittee()
+		for i, v := range cs.GetShardSubstitute() {
+			substituteValidator[int(i)] = v
+		}
+		substituteValidator[-1] = cs.GetBeaconSubstitute()
+		stakingTx = cs.GetStakingTx()
 	} else {
 		if height == 0 || tempHash != "" {
 			hash, err := common.Hash{}.NewHashFromStr(tempHash)
