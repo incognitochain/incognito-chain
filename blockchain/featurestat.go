@@ -111,10 +111,10 @@ func (bc *BlockChain) SendFeatureStat() {
 	//if validator in sync pool, send feature stat for all untrigger and triggger feature, even before checkpoint
 	unTriggerFeatures := beaconView.getUntriggerFeature(false)
 	updatedFeature := unTriggerFeatures
-	Logger.log.Info("[committee-state] updatedFeature:", updatedFeature)
 	for feature, _ := range beaconView.TriggeredFeature {
 		updatedFeature = append(updatedFeature, feature)
 	}
+	Logger.log.Info("[committee-state] updatedFeature:", updatedFeature)
 	msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
 	if err != nil {
 		Logger.log.Error(err)
@@ -128,6 +128,7 @@ func (bc *BlockChain) SendFeatureStat() {
 
 	//only after checkpoint, send feature state for  validator not in sync pool
 	unTriggerFeatures = beaconView.getUntriggerFeature(true)
+	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
 	msg, err = CreateNewFeatureStatMessage(beaconView, false, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
 	if err != nil {
 		Logger.log.Error(err)
