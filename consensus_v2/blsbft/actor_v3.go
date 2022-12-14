@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"sort"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -16,9 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wire"
-	"log"
-	"sort"
-	"time"
 )
 
 //Tendermint-like consensus
@@ -112,7 +113,10 @@ func newActorV3WithValue(
 
 func (a *actorV3) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBlockInfo {
 	tmp := []*ProposeBlockInfo{}
+	a.logger.Info("[committee-state] a.receiveBlockByHash:", a.receiveBlockByHash)
 	for _, proposeInfo := range a.receiveBlockByHash {
+		a.logger.Info("[committee-state] proposeInfo.block.GetHeight():", proposeInfo.block.GetHeight())
+		a.logger.Info("[committee-state] blockHeight:", blockHeight)
 		if proposeInfo.block.GetHeight() == blockHeight {
 			tmp = append(tmp, proposeInfo)
 		}
