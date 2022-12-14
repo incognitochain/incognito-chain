@@ -210,7 +210,6 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	b.committeeChange = NewCommitteeChange()
 	b.mu.Lock()
 	defer b.mu.Unlock()
-
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		b.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
@@ -225,6 +224,10 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	}
 	b.addDataToEnvironment(env)
 	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
+	err = b.updateDelegateInfo(env)
+	if err != nil {
+		return nil, nil, err
+	}
 	iInsts := instruction.ValidateAndImportConsensusInstructionFromListString(env.BeaconInstructions)
 
 	for _, iInst := range iInsts {
@@ -280,6 +283,9 @@ func (b *BeaconCommitteeStateV4) CommitOnBlock(
 		if err := commitChange(bBlock, env); err != nil {
 			return nil, nil, err
 		}
+	}
+	if err := b.Backup(env); err != nil {
+		return nil, nil, err
 	}
 
 	return b.consensusDB, b.slashingDB, nil
@@ -374,9 +380,6 @@ func (b *BeaconCommitteeStateV4) commitCommitteeInfo(
 	env *BeaconCommitteeStateEnvironment,
 ) error {
 	if err := b.commitRedelegate(env); err != nil {
-		return err
-	}
-	if err := b.commitDelegateInfo(bBlock, env); err != nil {
 		return err
 	}
 	if err := b.commitAddStaking(env); err != nil {
@@ -675,12 +678,11 @@ func (b *BeaconCommitteeStateV4) commitRedelegate(
 	return nil
 }
 
-func (b *BeaconCommitteeStateV4) commitDelegateInfo(
-	bBlock *types.BeaconBlock,
+func (b *BeaconCommitteeStateV4) updateDelegateInfo(
 	env *BeaconCommitteeStateEnvironment,
 ) error {
-	if bBlock.Header.Height > 2 {
-		if err := b.UpdateBeaconPerformanceWithBlock(bBlock); err != nil {
+	if env.BeaconHeight > 2 {
+		if err := b.UpdateBeaconPerformanceWithValidationData(env.PreviousBlockValidationData); err != nil {
 			return err
 		}
 	}
@@ -723,7 +725,7 @@ func (b *BeaconCommitteeStateV4) Backup(env *BeaconCommitteeStateEnvironment) er
 		cData.SetBeaconLockingData(newLData)
 	}
 	if env.IsBeaconChangeTime {
-		pData := b.BackupPerformance()
+		pData := b.BackupPerformance(env.BeaconHeight)
 		cData.SetBeaconPerformanceData(pData)
 		needBackup = true
 	}
@@ -733,7 +735,7 @@ func (b *BeaconCommitteeStateV4) Backup(env *BeaconCommitteeStateEnvironment) er
 	return nil
 }
 
-func (b *BeaconCommitteeStateV4) Restore(beaconBlocks []*types.BeaconBlock) error {
+func (b *BeaconCommitteeStateV4) Restore(beaconBlocks []types.BeaconBlock) error {
 	curData, err := statedb.GetCommitteeStateBackupData(b.consensusDB)
 	if err != nil {
 		return err
