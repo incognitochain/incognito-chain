@@ -114,7 +114,6 @@ func (engine *Engine) WatchCommitteeChange() {
 	if engine.IsEnabled == 0 || engine.config == nil {
 		return
 	}
-
 	validatorGroup := make(map[int][]consensus.Validator)
 	for _, validator := range engine.validators {
 		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()

@@ -805,6 +805,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if invalidCondition {
 			continue
 		}
+
 		enableFeature = append(enableFeature, feature)
 	}
 

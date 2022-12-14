@@ -1032,6 +1032,10 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 
 func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 
+	Logger.log.Info("[committee-state] committeeState version:", beaconBestState.CommitteeStateVersion())
+	Logger.log.Info("[committee-state] beaconBestState.BeaconHeight:", beaconBestState.BeaconHeight)
+	Logger.log.Info("[committee-state] config.Param().ConsensusParam.StakingFlowV4Height:", config.Param().ConsensusParam.StakingFlowV4Height)
+
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
 		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height || beaconBestState.BeaconHeight == SFV4_StartHeight {
 		if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
@@ -1067,11 +1071,11 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		return nil
 	}
 	if beaconBestState.BeaconHeight == SFV4_StartHeight {
-		fmt.Println("enable v4")
+		Logger.log.Info("enable v4")
 		if (beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2) && (beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V3) {
 			return nil
 		}
-		fmt.Printf("enable v4 %v %v\n", beaconBestState.beaconCommitteeState.Version(), SFV4_StartHeight)
+		Logger.log.Info("enable v4 %v %v\n", beaconBestState.beaconCommitteeState.Version(), SFV4_StartHeight)
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
 			return nil
 		}
@@ -1094,9 +1098,9 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 	}
 
 	Logger.log.Infof("Try Upgrade Staking Flow, current version %+v, beacon height %+v"+
-		"Staking Flow v2 %+v, Staking Flow v3 %+v",
+		"Staking Flow v2 %+v, Staking Flow v3 %+v, Staking Flow v4 %+v",
 		beaconBestState.beaconCommitteeState.Version(), beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.StakingFlowV3Height)
+		config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.StakingFlowV3Height, config.Param().ConsensusParam.StakingFlowV4Height)
 
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
 		beaconBestState.BeaconHeight,
@@ -1344,7 +1348,7 @@ func (beaconBestState *BeaconBestState) GetAllCurrentSlashingCommittee() map[byt
 
 func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []string {
 	unTriggerFeatures := []string{}
-	for f, _ := range config.Param().AutoEnableFeature {
+	for f := range config.Param().AutoEnableFeature {
 		if config.Param().AutoEnableFeature[f].MinTriggerBlockHeight == 0 {
 			//skip default value
 			continue

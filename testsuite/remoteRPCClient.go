@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
@@ -198,24 +199,23 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 	if err != nil {
 		return errors.New(rpcERR.Error())
 	}
-	body, err := r.sendRequest(requestBody)
+	_, err = r.sendRequest(requestBody)
 	if err != nil {
 		return errors.New(rpcERR.Error())
 	}
-	resp := struct {
-		Result bool
-		Error  *ErrMsg
-	}{}
-	//fmt.Println(string(body))
-	err = json.Unmarshal(body, &resp)
+	/*resp := struct {*/
+	/*Result bool*/
+	/*Error  *ErrMsg*/
+	/*}{}*/
+	/*err = json.Unmarshal(body, &resp)*/
 
-	if resp.Error != nil && resp.Error.StackTrace != "" {
-		return errors.New(resp.Error.StackTrace)
-	}
+	/*if resp.Error != nil && resp.Error.StackTrace != "" {*/
+	/*return errors.New(resp.Error.StackTrace)*/
+	/*}*/
 
-	if err != nil {
-		return errors.New(err.Error())
-	}
+	/*if err != nil {*/
+	/*return errors.New(err.Error())*/
+	/*}*/
 	return err
 }
 
@@ -376,7 +376,7 @@ func (r *RemoteRPCClient) AuthorizedSubmitKey(otaPrivateKey string) (res bool, e
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "authorizedsubmitkey",
-		"params":  []interface{}{otaPrivateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, true},
+		"params":  []interface{}{otaPrivateKey, "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11", 0, false},
 		"id":      1,
 	})
 	if err != nil {
@@ -1653,6 +1653,105 @@ func (r *RemoteRPCClient) PreparePRVForTest(
 	}
 	if resp.Error != nil && resp.Error.StackTrace != "" {
 		return nil, fmt.Errorf(resp.Error.StackTrace)
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetCommitteeState(height uint64, hash string) (*jsonresult.CommiteeState, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getcommitteestate",
+		"params": []interface{}{
+			height,
+			hash,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *jsonresult.CommiteeState
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetShardStakerInfo(height uint64, stakerPubkey string) (*statedb.ShardStakerInfo, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getshardstakerinfo",
+		"params": []interface{}{
+			height,
+			stakerPubkey,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *statedb.ShardStakerInfo
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetBeaconStakerInfo(height uint64, hash string) (*statedb.BeaconStakerInfo, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbeaconstakerinfo",
+		"params": []interface{}{
+			height,
+			hash,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *statedb.BeaconStakerInfo
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 	return resp.Result, err
 }

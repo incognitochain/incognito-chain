@@ -929,6 +929,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		Logger.log.Infof("test stake Next epoch beacon candidata len %v, %+v", len(committeeChange.CurrentEpochBeaconCandidateAdded), keys)
 	}
 	var err error
+	Logger.log.Info("[committee-state] SFV4_StartHeight:", SFV4_StartHeight)
 	if beaconBlock.GetHeight() >= SFV4_StartHeight {
 		if beaconBlock.GetHeight() > 2 {
 			if err = blockchain.BeaconChain.ReplacePreviousValidationData(beaconBlock.GetPrevHash(), *curView.GetBlock().ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
