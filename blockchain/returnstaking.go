@@ -139,9 +139,9 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 				return err
 			}
 			_, _, txStake, err := blockchain.GetTransactionByHashWithShardID(*h, shardID)
-			_, _, amount, _ := txStake.GetTransferData()
-			if ok := mintCoin.CheckCoinValid(md.StakerAddress, md.SharedRandom, amount); !ok {
-				return errors.Errorf("mint data is invalid: Address %v; Amount %v", md.StakerAddress, mintCoin.GetValue())
+			stakingMD := txStake.GetMetadata().(*metadata.StakingMetadata)
+			if ok := mintCoin.CheckCoinValid(md.StakerAddress, md.SharedRandom, stakingMD.StakingAmount); !ok {
+				return errors.Errorf("mint data is invalid: Address %v; Amount %v, StakeAmount: %v", md.StakerAddress, mintCoin.GetValue(), stakingMD.StakingAmount)
 			}
 			rInfo := returnStakingInfo{
 				FunderAddress: md.StakerAddress,
@@ -156,8 +156,8 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			for _, txHash := range md.TxIDs {
 				h, _ := common.Hash{}.NewHashFromStr(txHash)
 				_, _, txStake, err := blockchain.GetTransactionByHashWithShardID(*h, shardID)
-				_, _, amount, _ := txStake.GetTransferData()
-				totalAmount += amount
+				stakingMD := txStake.GetMetadata().(*metadata.StakingMetadata)
+				totalAmount += stakingMD.StakingAmount
 				if err != nil {
 					err = NewBlockChainError(WrongShardIDError, fmt.Errorf("This staking tx %v not found in this shard %+v", txHash, shardID))
 					Logger.log.Error(err)

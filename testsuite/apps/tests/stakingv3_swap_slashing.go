@@ -57,7 +57,7 @@ func Test_Stakingv3() {
 		node.GenerateBlock().NextRound()
 
 		fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
-		shardIDs := []int{-1}
+		shardIDs := []int{}
 		shardIDs = append(shardIDs, node.GetBlockchain().GetShardIDs()...)
 		consensusStateDB := node.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).GetBeaconConsensusStateDB()
 		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
