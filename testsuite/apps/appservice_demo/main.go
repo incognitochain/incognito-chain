@@ -69,17 +69,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	bHeight := bState.BeaconHeight + 3
+	bHeight := bState.BeaconHeight + 5
 	if bHeight < 15 {
 		bHeight = 15
 	}
+	epochBlockTime := uint64(10)
 
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 15
+		startStakingHeight = bHeight + 20
 	}
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
 
@@ -93,12 +94,12 @@ func main() {
 				k := keys[0]
 				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
 				app.SubmitKey(k.OTAPrivateKey)
-			} else if blk.GetBeaconHeight() == bHeight+3 {
+			} else if blk.GetBeaconHeight() == bHeight+5 {
 				//convert from token v1 to token v2
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
-			} else if blk.GetBeaconHeight() == bHeight+6 {
+			} else if blk.GetBeaconHeight() == bHeight+10 {
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}
@@ -113,7 +114,7 @@ func main() {
 			}
 		}
 		if isOnlySubmitKey {
-			return
+			panic("SubmitKey done")
 		}
 		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly {
 			//Stake one node
@@ -122,7 +123,7 @@ func main() {
 				k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
 			app.ShardStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
 		} else if blk.GetBeaconHeight() >= startStakingHeight+2 {
-			if blk.GetBeaconHeight() == startStakingHeight+50+5 {
+			if blk.GetBeaconHeight() == startStakingHeight+epochBlockTime*3+5 {
 				//Stake one node
 				k := keys[0]
 				log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",

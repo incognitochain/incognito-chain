@@ -180,7 +180,7 @@ blocktime_param:
   - "blocktime10": 10
 feature_version:
   - instantfinalityv2: 9
-  - blocktime20: 9
+  - blocktime20: 10
 
 transactions_param:
   lowerbound: 15

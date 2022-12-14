@@ -25,7 +25,6 @@ send prevote for propose block that
 - not lock, or having same blockhash with lock blockhash or having POLC > lockTS (validPOLC)
 */
 func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
-
 	bestView := a.chain.GetBestView()
 
 	if proposeBlockInfo.block.GetPrevHash().String() != bestView.GetHash().String() {
@@ -49,7 +48,6 @@ func (a *actorV3) shouldPrevote(proposeBlockInfo *ProposeBlockInfo) bool {
 	if proposeBlockInfo.ValidPOLC || lockBlockHash == nil || lockBlockHash.block.Hash().String() == proposeBlockInfo.block.Hash().String() {
 		return true
 	}
-
 	return false
 }
 
