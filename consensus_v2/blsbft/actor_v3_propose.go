@@ -27,7 +27,6 @@ func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInter
 	// get block that we already send vote message (blockhash that is lock for this height)
 	var block types.BlockInterface = nil
 	lockBlockHash := a.getLockBlockHash(proposeBlockHeight)
-	a.logger.Info("[committee-state] lockBlockHash:", lockBlockHash)
 	if lockBlockHash != nil {
 		block = lockBlockHash.block
 		a.validatePreVote(lockBlockHash)

@@ -113,10 +113,7 @@ func newActorV3WithValue(
 
 func (a *actorV3) GetSortedReceiveBlockByHeight(blockHeight uint64) []*ProposeBlockInfo {
 	tmp := []*ProposeBlockInfo{}
-	a.logger.Info("[committee-state] a.receiveBlockByHash:", a.receiveBlockByHash)
 	for _, proposeInfo := range a.receiveBlockByHash {
-		a.logger.Info("[committee-state] proposeInfo.block.GetHeight():", proposeInfo.block.GetHeight())
-		a.logger.Info("[committee-state] blockHeight:", blockHeight)
 		if proposeInfo.block.GetHeight() == blockHeight {
 			tmp = append(tmp, proposeInfo)
 		}
