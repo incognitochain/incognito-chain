@@ -233,6 +233,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	previousBeaconBlock := preBlk.(*types.BeaconBlock)
 
 	if (beaconBlock.GetBeaconHeight() > SFV4_StartHeight) && (beaconBlock.GetBeaconHeight() > 2) {
+		// PreviousValidationData
+
+		Logger.log.Info("[committee-state] beaconBlock.Header.PreviousBlockHash:", beaconBlock.Header.PreviousBlockHash.String())
+		Logger.log.Info("[committee-state] previousBeaconBlock.ProposeHash():", previousBeaconBlock.ProposeHash().String())
+		Logger.log.Info("[committee-state] beaconBlock.Header.PreviousValidationData:", beaconBlock.Header.PreviousValidationData)
+
 		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 			return err
 		}

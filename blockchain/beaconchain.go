@@ -399,6 +399,9 @@ func (chain *BeaconChain) ValidatePreviousValidationData(previousBlockHash commo
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	}
 
+	// newValidationData
+	Logger.log.Info("[committee-state] newValidationData:", newValidationData)
+
 	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
 	if err != nil {
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
