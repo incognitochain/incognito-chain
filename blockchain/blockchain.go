@@ -1129,7 +1129,6 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 
 // receive feature report from other node, add to list feature stat if node is
 func (blockchain *BlockChain) ReceiveFeatureReport(timestamp int, committeePublicKeys []string, signatures [][]byte, features []string) {
-	Logger.log.Info("[commitee-state] ReceiveFeatureReport:")
 	committeePublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	signBytes := []byte{}
 
