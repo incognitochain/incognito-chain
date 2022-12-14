@@ -813,6 +813,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 			continue
 		}
 
+		Logger.log.Info("[committee-state] feature:", feature)
 		enableFeature = append(enableFeature, feature)
 	}
 
