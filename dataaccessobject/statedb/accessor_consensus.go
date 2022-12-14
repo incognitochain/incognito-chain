@@ -746,7 +746,8 @@ func SaveStopAutoShardStakerInfo(
 		key := GetShardStakerInfoKey(pubKeyBytes)
 		stakerInfo, exist, err := stateDB.getShardStakerInfo(key)
 		if err != nil || !exist {
-			return NewStatedbError(SaveStopAutoStakerInfoError, err)
+			continue
+			// return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
 
 		// assign auto stake value from autostaking map

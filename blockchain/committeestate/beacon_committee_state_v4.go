@@ -292,6 +292,8 @@ func (b *BeaconCommitteeStateV4) commitStaker(
 	cDB := b.consensusDB
 	stopAutoStakerKeys := b.committeeChange.StopAutoStakeKeys()
 	if len(stopAutoStakerKeys) != 0 {
+		keys, _ := incognitokey.CommitteeKeyListToString(stopAutoStakerKeys)
+		fmt.Printf("Got list stop auto stake %v\n", common.ShortPKList(keys))
 		if err := statedb.SaveStopAutoShardStakerInfo(cDB, stopAutoStakerKeys, b.GetAutoStaking()); err != nil {
 			return err
 		}
@@ -403,6 +405,18 @@ func (b *BeaconCommitteeStateV4) commitShardStaker(
 		if err != nil {
 			return err
 		}
+	}
+	sRemoveKeys := committeeChange.RemovedStakers()
+	sRemoveKeysStr, _ := incognitokey.CommitteeKeyListToString(sRemoveKeys)
+	bc := append(b.beaconCommittee, b.beaconSubstitute...)
+	bc = append(bc, b.beaconWaiting...)
+	shardOnlyKeys := common.ExceptString(sRemoveKeysStr, bc)
+	for _, k := range shardOnlyKeys {
+		pkStr := incognitokey.CommitteePublicKey{}
+		if err := pkStr.FromString(k); err != nil {
+			return err
+		}
+		b.deleteStakerInfo(pkStr, k)
 	}
 	if err := statedb.DeleteStakerInfo(cDB, committeeChange.RemovedStakers()); err != nil {
 		return err
@@ -532,7 +546,12 @@ func (b *BeaconCommitteeStateV4) commitBeaconStaker(
 			return err
 		}
 	}
-	if err := statedb.DeleteBeaconStakerInfo(cDB, b.committeeChange.RemovedBeaconStakers()); err != nil {
+	listRemoves := b.committeeChange.RemovedBeaconStakers()
+	listRemovesStr, _ := incognitokey.CommitteeKeyListToString(listRemoves)
+	for idx, pkStruct := range listRemoves {
+		b.deleteStakerInfo(pkStruct, listRemovesStr[idx])
+	}
+	if err := statedb.DeleteBeaconStakerInfo(cDB, listRemoves); err != nil {
 		return err
 	}
 	if err := statedb.StoreCurrentEpochBeaconCandidate(cDB, cChange.CurrentEpochBeaconCandidateAdded); err != nil {
@@ -911,17 +930,22 @@ func (b *BeaconCommitteeStateV4) processSwapAndSlashBeacon(
 	addedsubtitute := []string{}
 	beaconCommittee := env.beaconCommittee
 	beaconSubstitute := []string{}
-	for _, outPublicKey := range env.beaconSubstitute {
-		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(bCStateDB, outPublicKey); (err != nil) || (!has) {
-			err = errors.Errorf("Can not found staker info for pk %v at block %v - %v err %v", outPublicKey, env.BeaconHeight, env.BeaconHash, err)
-			return nil, nil, err
-		} else {
-			if stakerInfo.AutoStaking() {
-				beaconSubstitute = append(beaconSubstitute, outPublicKey)
+	if len(env.beaconSubstitute) > 0 {
+		fmt.Printf("Before process swap and slash: %+v\n", common.ShortPKList(env.beaconSubstitute))
+		for _, outPublicKey := range env.beaconSubstitute {
+			if stakerInfo, has, err := statedb.GetBeaconStakerInfo(bCStateDB, outPublicKey); (err != nil) || (!has) {
+				err = errors.Errorf("Can not found staker info for pk %v at block %v - %v err %v", outPublicKey, env.BeaconHeight, env.BeaconHash, err)
+				return nil, nil, err
 			} else {
-				outPublicKeys = append(outPublicKeys, outPublicKey)
+				fmt.Printf("%v-%v ", outPublicKey[len(outPublicKey)-5:], stakerInfo.AutoStaking())
+				if stakerInfo.AutoStaking() {
+					beaconSubstitute = append(beaconSubstitute, outPublicKey)
+				} else {
+					outPublicKeys = append(outPublicKeys, outPublicKey)
+				}
 			}
 		}
+		fmt.Printf("\nAfter process swap and slash: got keys out %+v, beaconSubtitute %+v\n", common.ShortPKList(outPublicKeys), common.ShortPKList(beaconSubstitute))
 	}
 	if len(outPublicKeys) > 0 {
 		if outKeysStr, err := incognitokey.CommitteeKeyListToStruct(outPublicKeys); err == nil {

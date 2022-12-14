@@ -77,16 +77,25 @@ func (addStakingMetadata AddStakingMetadata) ValidateTxWithBlockChain(tx Transac
 	if !(common.IndexOfStr(requestedPublicKey, committees) > -1) {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
 	}
-	stakerInfo, has, err := beaconViewRetriever.GetBeaconStakerInfo(requestedPublicKey)
+	var stakingTxHash common.Hash
+	bStakerInfo, has, err := beaconViewRetriever.GetBeaconStakerInfo(requestedPublicKey)
 	if err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
 	}
 	if !has {
+		// sStakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+		// if err != nil {
+		// 	return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
+		// }
+		// if !has {
 		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
+		// }
+		// stakingTxHash = sStakerInfo.TxStakingID()
+	} else {
+		stakingTxHash = bStakerInfo.TxStakingIDs()[0]
 	}
-	stakingTxHash := stakerInfo.TxStakingIDs()
 
-	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash[0])
+	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
 	if err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
 	}
