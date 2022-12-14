@@ -762,19 +762,21 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	isBeaconRandomTime bool,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
+	missingSignature := make(map[string]signaturecounter.MissingSignature)
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V2 {
 		if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeightV2 {
 			expectedTotalBlock := beaconBestState.GetExpectedTotalBlock(beaconBestState.BestBlock.GetVersion())
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithExpectedTotalBlock(expectedTotalBlock)
+			missingSignature = beaconBestState.missingSignatureCounter.MissingSignature()
 			Logger.log.Debug("Get Missing Signature with Slashing V2")
 		} else if beaconBestState.BeaconHeight >= config.Param().ConsensusParam.EnableSlashingHeight {
 			slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenaltyWithActualTotalBlock()
+			missingSignature = beaconBestState.missingSignatureCounter.MissingSignature()
 			Logger.log.Debug("Get Missing Signature with Slashing V1")
 		}
-	} else {
-		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
+
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                     beaconBestState.BeaconHeight,
 		BeaconHash:                       beaconBestState.BestBlockHash,
@@ -792,7 +794,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator: beaconBestState.NumberOfFixedShardBlockValidator,
 		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
-		MissingSignature:                 beaconBestState.missingSignatureCounter.MissingSignature(),
+		MissingSignature:                 missingSignature,
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
 			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
 			BeaconCommitteeAndValidatorHash: beaconBestState.BestBlock.Header.BeaconCommitteeAndValidatorRoot,
@@ -840,6 +842,18 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) error {
 	Logger.log.Infof("Init Beacon Committee State %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
+
+	//init version of committeeState here
+	version := committeestate.VersionByBeaconHeight(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.StakingFlowV3Height)
+
+	if beaconBestState.BestBlock.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
+		version = committeestate.STAKING_FLOW_V4
+		shardIDs = []int{} //not get beacon committee with GetAllCandidateSubstituteCommittee
+	}
+
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
@@ -856,16 +870,6 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
-	}
-
-	//init version of committeeState here
-	version := committeestate.VersionByBeaconHeight(
-		beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.StakingFlowV2Height,
-		config.Param().ConsensusParam.StakingFlowV3Height)
-
-	if beaconBestState.TriggeredFeature[BEACON_STAKING_FLOW_V4] != 0 {
-		version = committeestate.STAKING_FLOW_V4
 	}
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
@@ -977,7 +981,8 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
-		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height ||
+		(beaconBestState.TriggeredFeature[BEACON_STAKING_FLOW_V4] != 0 && beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V4) {
 		if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
 			return err
 		}

@@ -468,7 +468,10 @@ func (b *BeaconCommitteeStateV3) getAllCandidateSubstituteCommittee() []string {
 func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	stateV4 := &BeaconCommitteeStateV4{}
-	stateV4.UpgradeFromV3(b, env.ConsensusStateDB)
+	stateV4 := NewBeaconCommitteeStateV4()
+	err := stateV4.UpgradeFromV3(b, env.ConsensusStateDB)
+	if err != nil {
+		panic(err)
+	}
 	return stateV4
 }

@@ -944,7 +944,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	
+
 	err = statedb.DeleteSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolRemoved)
 	if err != nil {
 		return err
@@ -1121,10 +1121,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 	}
 
-	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
-	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
-	//	return err
-	//}
+	err2 := newBestState.tryUpgradeConsensusRule()
+	if err2 != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err2)
+	}
 
 	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
@@ -1184,11 +1184,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if err := blockchain.BeaconChain.BlockStorage.StoreBlock(beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	err2 := newBestState.tryUpgradeConsensusRule()
-	if err2 != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err2)
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
@@ -1369,7 +1364,7 @@ func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
 
 	if beaconCurView.CommitteeStateVersion() < committeestate.STAKING_FLOW_V3 {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
-	} else if beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+	} else if beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 || beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V4 {
 		return beaconCurView.storeAllShardSubstitutesValidatorV3(addedValidators)
 	}
 

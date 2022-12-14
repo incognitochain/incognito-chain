@@ -9,14 +9,14 @@ import (
 func StoreBeaconStakerInfo(
 	stateDB *StateDB,
 	committee incognitokey.CommitteePublicKey,
-	info BeaconStakerInfo,
+	info *BeaconStakerInfo,
 ) error {
 	keyBytes, err := committee.RawBytes()
 	if err != nil {
 		return err
 	}
 	key := GetBeaconStakerInfoKey(keyBytes)
-	err = stateDB.SetStateObject(ShardStakerObjectType, key, info)
+	err = stateDB.SetStateObject(BeaconStakerObjectType, key, info)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func deleteBeaconStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePu
 			return err
 		}
 		key := GetBeaconStakerInfoKey(keyBytes)
-		stateDB.MarkDeleteStateObject(ShardStakerObjectType, key)
+		stateDB.MarkDeleteStateObject(BeaconStakerObjectType, key)
 	}
 	return nil
 }

@@ -79,10 +79,9 @@ func (a *actorV3) maybeProposeBlock() error {
 	block := a.getBlockForPropose(bestView.GetHeight() + 1)
 
 	if block == nil { //this actor is for Instant Finality V2
-		if block.Type() == common.BeaconChainKey {
-			previousBlock, _ := a.chain.GetBlockByHash(*bestView.GetHash())
-			if previousBlock != nil {
-				if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
+		previousBlock, _ := a.chain.GetBlockByHash(*bestView.GetHash())
+		if previousBlock != nil {
+			if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
 					previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 					a.validateVote(previousProposeBlockInfo)
 					rawPreviousValidationData, err := a.createBLSAggregatedSignatures(
@@ -93,8 +92,7 @@ func (a *actorV3) maybeProposeBlock() error {
 					if err != nil {
 						a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
 					}
-					a.chain.ReplacePreviousValidationData(*bestView.GetHash(), *previousBlock.ProposeHash(), rawPreviousValidationData)
-				}
+				a.chain.ReplacePreviousValidationData(*bestView.GetHash(), *previousBlock.ProposeHash(), rawPreviousValidationData)
 			}
 		}
 

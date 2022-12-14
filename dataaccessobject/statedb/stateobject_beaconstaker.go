@@ -13,6 +13,13 @@ const (
 	LOCKING_BY_SLASH   = 2
 )
 
+const (
+	RETURN_BY_UNSTAKE = iota
+	RETURN_BY_SLASH
+	RETURN_BY_DUPLICATE_STAKE
+	RETURN_BY_ADDSTAKE_FAIL
+)
+
 type StakingInfo struct {
 	txID   common.Hash
 	amount uint64
@@ -103,7 +110,7 @@ func (s *BeaconStakerInfo) ResetShardActiveTime() {
 	s.shardActiveTime = 0
 }
 
-func (s *BeaconStakerInfo) AddStakingInfo(tx common.Hash, amount uint64) {
+func (s *BeaconStakerInfo) AddStaking(tx common.Hash, amount uint64) {
 	s.stakingTx[tx] = amount
 }
 
@@ -135,6 +142,7 @@ func (s BeaconStakerInfo) LockingEpoch() uint64 {
 func (s BeaconStakerInfo) LockingReason() int {
 	return s.lockingReason
 }
+
 func (s BeaconStakerInfo) StakingInfo() map[common.Hash]uint64 {
 	res := map[common.Hash]uint64{}
 	for k, v := range s.stakingTx {

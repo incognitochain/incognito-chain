@@ -304,6 +304,7 @@ func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKe
 	return list
 }
 
+//staking flow v4 will not worl with shardIDs contains -1
 func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[int][]incognitokey.CommitteePublicKey,
 	map[int][]incognitokey.CommitteePublicKey,

@@ -133,7 +133,10 @@ func NewBeaconCommitteeState(
 			swapRule,
 			assignRule,
 		)
-		committeeState.(*BeaconCommitteeStateV4).RestoreBeaconCommitteeFromDB(stateDB)
+		err := committeeState.(*BeaconCommitteeStateV4).RestoreBeaconCommitteeFromDB(stateDB)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return committeeState

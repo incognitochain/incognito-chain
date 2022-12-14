@@ -59,6 +59,8 @@ var (
 	syncingValidatorsPrefix            = []byte("syncing-validators-")
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 	beaconStakerInfoPrefix             = common.HashB([]byte("bstk-info-"))[:prefixHashKeyLength]
+	beaconWaitingPrefix                = []byte("beacon-waiting-")
+	beaconLockingPrefix                = []byte("beacon-locking-")
 
 	// pdex v3
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
@@ -190,16 +192,24 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		temp := []byte(string(currentBeaconCandidatePrefix))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
-	case SubstituteValidator:
+	case SubstituteValidator: //including beacon & shard pending
 		temp := []byte(string(substitutePrefix) + strconv.Itoa(shardID))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
-	case CurrentValidator:
+	case CurrentValidator: //including beacon & shard committee
 		temp := []byte(string(committeePrefix) + strconv.Itoa(shardID))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	case SyncingValidators:
 		temp := []byte(string(syncingValidatorsPrefix) + strconv.Itoa(shardID))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case BeaconWaitingPool:
+		temp := []byte(string(beaconWaitingPrefix) + strconv.Itoa(shardID))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case BeaconLockingPool:
+		temp := []byte(string(beaconLockingPrefix) + strconv.Itoa(shardID))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	default:

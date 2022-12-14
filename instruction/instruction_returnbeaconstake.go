@@ -15,12 +15,12 @@ type ReturnBeaconStakeInstruction struct {
 	PublicKeysStruct []incognitokey.CommitteePublicKey
 	ReturnAmounts    []uint64
 	PercentReturns   []uint
-	Reasons          []byte
+	Reasons          []int
 }
 
 func NewReturnBeaconStakeInsWithValue(
 	publicKeys []string,
-	reason []byte,
+	reason []int,
 	amounts []uint64,
 ) *ReturnBeaconStakeInstruction {
 	rsI := &ReturnBeaconStakeInstruction{}
@@ -60,7 +60,7 @@ func (rsI *ReturnBeaconStakeInstruction) SetPercentReturns(percentReturns []uint
 	return nil
 }
 
-func (rsI *ReturnBeaconStakeInstruction) SetReasons(reason []byte) error {
+func (rsI *ReturnBeaconStakeInstruction) SetReasons(reason []int) error {
 	rsI.Reasons = reason
 	return nil
 }
@@ -81,7 +81,7 @@ func (rsI *ReturnBeaconStakeInstruction) GetPublicKey() []string {
 	return rsI.PublicKeys
 }
 
-func (rsI *ReturnBeaconStakeInstruction) GetReason() []byte {
+func (rsI *ReturnBeaconStakeInstruction) GetReason() []int {
 	return rsI.Reasons
 }
 
@@ -149,13 +149,13 @@ func ImportReturnBeaconStakingInstructionFromString(instruction []string) (*Retu
 	returnStakingIns.SetPercentReturns(percentReturns)
 
 	reasonsStr := strings.Split(instruction[3], SPLITTER)
-	reasons := make([]byte, len(reasonsStr))
+	reasons := make([]int, len(reasonsStr))
 	for i, v := range reasonsStr {
 		reason, err := strconv.Atoi(v)
 		if err != nil {
 			return nil, err
 		}
-		reasons[i] = byte(reason)
+		reasons[i] = reason
 	}
 	returnStakingIns.SetReasons(reasons)
 	returnAmountsStr := strings.Split(instruction[4], SPLITTER)

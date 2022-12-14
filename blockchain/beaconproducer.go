@@ -667,6 +667,8 @@ func (curView *BeaconBestState) GenerateInstruction(
 				swapShardInstructionsGenerator = curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2)
 			} else if curView.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V3 {
 				swapShardInstructionsGenerator = curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV3)
+			} else if curView.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
+				swapShardInstructionsGenerator = curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV4)
 			}
 			swapShardInstructions, err := swapShardInstructionsGenerator.GenerateSwapShardInstructions(env)
 			if err != nil {
