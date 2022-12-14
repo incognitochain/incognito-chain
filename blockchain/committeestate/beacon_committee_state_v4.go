@@ -49,7 +49,23 @@ type BeaconCommitteeStateV4 struct {
 	bc              BlockChain
 }
 
-func GetKeyStructListFromMap(list map[string]StakerInfo) []incognitokey.CommitteePublicKey {
+func GetKeyStructListFromMapStaker(list map[string]StakerInfo) []incognitokey.CommitteePublicKey {
+	keys := []string{}
+	for k, _ := range list {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] > keys[j]
+	})
+
+	res := make([]incognitokey.CommitteePublicKey, len(keys))
+	for i, v := range keys {
+		res[i] = list[v].cpkStr
+	}
+	return res
+}
+
+func GetKeyStructListFromMapLocking(list map[string]LockingInfo) []incognitokey.CommitteePublicKey {
 	keys := []string{}
 	for k, _ := range list {
 		keys = append(keys, k)
@@ -161,12 +177,17 @@ func (s *BeaconCommitteeStateV4) RemoveBeaconLocking(cpkList []incognitokey.Comm
 }
 
 func (b *BeaconCommitteeStateV4) GetBeaconSubstitute() []incognitokey.CommitteePublicKey {
-	return GetKeyStructListFromMap(b.beaconPending)
+	return GetKeyStructListFromMapStaker(b.beaconPending)
 }
 func (b *BeaconCommitteeStateV4) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
-	return GetKeyStructListFromMap(b.beaconCommittee)
+	return GetKeyStructListFromMapStaker(b.beaconCommittee)
 }
-
+func (b *BeaconCommitteeStateV4) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
+	return GetKeyStructListFromMapStaker(b.beaconWaiting)
+}
+func (b *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePublicKey {
+	return GetKeyStructListFromMapLocking(b.beaconLocking)
+}
 func NewBeaconCommitteeStateV4WithValue(
 	beaconCommittee []string,
 	shardCommittee map[byte][]string,
@@ -698,4 +719,26 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 		newBeaconPending[candidateList[i].cpkStr] = candidateList[i].cpk
 	}
 	return slashCpk, unstakeCpk, newBeaconCommittee, newBeaconPending, nil
+}
+
+func (b BeaconCommitteeStateV4) GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+	sC := make(map[byte][]incognitokey.CommitteePublicKey)
+	sPV := make(map[byte][]incognitokey.CommitteePublicKey)
+	sSP := make(map[byte][]incognitokey.CommitteePublicKey)
+	for shardID, committee := range b.GetShardCommittee() {
+		sC[shardID] = append([]incognitokey.CommitteePublicKey{}, committee...)
+	}
+	for shardID, Substitute := range b.GetShardSubstitute() {
+		sPV[shardID] = append([]incognitokey.CommitteePublicKey{}, Substitute...)
+	}
+	for shardID, syncValidator := range b.GetSyncingValidators() {
+		sSP[shardID] = append([]incognitokey.CommitteePublicKey{}, syncValidator...)
+	}
+	bC := b.GetBeaconCommittee()
+	bPV := b.GetBeaconSubstitute()
+	bW := b.GetBeaconWaiting()
+	bL := b.GetBeaconLocking()
+	cSWFCR := b.GetCandidateShardWaitingForCurrentRandom()
+	cSWFNR := b.GetCandidateShardWaitingForNextRandom()
+	return sC, sPV, sSP, bC, bPV, bW, bL, cSWFCR, cSWFNR
 }

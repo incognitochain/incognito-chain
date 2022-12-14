@@ -1260,8 +1260,12 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 	if previousView == nil {
 		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
-		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
-		return err
+		go a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
+		time.Sleep(2 * time.Second)
+		previousView = a.chain.GetViewByHash(block.GetPrevHash())
+		if previousView == nil {
+			return fmt.Errorf("Cannot find previous view!")
+		}
 	}
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {

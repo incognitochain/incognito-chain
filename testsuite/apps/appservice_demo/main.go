@@ -29,9 +29,29 @@ func StakeShard(client *devframework.RemoteRPCClient, privateKey string, miningP
 		"RewardReceiverPaymentAddress": RewardAddr,
 		"AutoReStaking":                true,
 	})
-
 	return &txResp, err
 }
+
+func StakeBeacon(client *devframework.RemoteRPCClient, privateKey string, miningPrivateKey string, stakeAmount uint64) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+	wl, _ := wallet.Base58CheckDeserialize(privateKey)
+	RewardAddr := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+	funderPayment := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	miningWl, _ := wallet.Base58CheckDeserialize(miningPrivateKey)
+	privateSeedBytes := common.HashB(common.HashB(miningWl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+
+	txResp, err := client.CreateAndSendStakingTransaction(privateKey, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
+		"StakingType":                  float64(64),
+		"CandidatePaymentAddress":      funderPayment,
+		"PrivateSeed":                  privateSeed,
+		"RewardReceiverPaymentAddress": RewardAddr,
+		"AutoReStaking":                true,
+	})
+	return &txResp, err
+}
+
 func SendPRV(fullnodeRPC devframework.RemoteRPCClient, args ...interface{}) (string, error) {
 	var sender string
 	var receivers = make(map[string]uint64)
@@ -68,13 +88,30 @@ func mapUintToInterface(m map[string]uint64) map[string]interface{} {
 
 func main() {
 	flag.Parse()
-	fullnodeRPC := devframework.RemoteRPCClient{"http://127.0.0.1:30001"}
-	shard0RPC := devframework.RemoteRPCClient{"http://127.0.0.1:20004"}
+	fullnodeRPC := devframework.RemoteRPCClient{"http://127.0.0.1:29999"}
+	shard0RPC := devframework.RemoteRPCClient{"http://127.0.0.1:20008"}
 	var icoAccount, _ = account.NewAccountFromPrivatekey("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
+	go func() {
+		for {
+			bs, _ := fullnodeRPC.GetBeaconBestState()
+			fmt.Println("BeaconCommittee", bs.BeaconCommittee)
+			fmt.Println("BeaconPendingValidator", bs.BeaconPendingValidator)
+			fmt.Println("ShardCommittee", bs.ShardCommittee)
+			fmt.Println("ShardPendingValidator", bs.ShardPendingValidator)
+			fmt.Println("SyncingValidators", bs.SyncingValidators)
+			fmt.Println("BeaconWaiting", bs.BeaconWaiting)
+			fmt.Println("BeaconLocking", bs.BeaconLocking)
+			time.Sleep(time.Second * 5)
+		}
+	}()
+	select {}
 	account1, _ := account.GenerateAccountByShard(0, 0, "1")
 	account2, _ := account.GenerateAccountByShard(0, 1, "1")
 	account3, _ := account.GenerateAccountByShard(0, 2, "1")
-
+	account4, _ := account.GenerateAccountByShard(0, 3, "1")
+	fmt.Println(account1.MiningKey)
+	fmt.Println(account2.MiningKey)
+	fmt.Println(account3.MiningKey)
 	submitKey := func() {
 		fullnodeRPC.SubmitKey(icoAccount.PrivateKey)
 		shard0RPC.SubmitKey(icoAccount.PrivateKey)
@@ -84,6 +121,8 @@ func main() {
 		shard0RPC.SubmitKey(account2.PrivateKey)
 		fullnodeRPC.SubmitKey(account3.PrivateKey)
 		shard0RPC.SubmitKey(account3.PrivateKey)
+		fullnodeRPC.SubmitKey(account4.PrivateKey)
+		shard0RPC.SubmitKey(account4.PrivateKey)
 		fullnodeRPC.CreateConvertCoinVer1ToVer2Transaction(icoAccount.PrivateKey)
 	}
 	send_prv := func() {
@@ -93,6 +132,8 @@ func main() {
 		receiver = append(receiver, account2.PaymentAddress)
 		receiver = append(receiver, float64(100000*1e10))
 		receiver = append(receiver, account3.PaymentAddress)
+		receiver = append(receiver, float64(100000*1e10))
+		receiver = append(receiver, account4.PaymentAddress)
 		receiver = append(receiver, float64(100000*1e10))
 		tx, err := SendPRV(shard0RPC, receiver...)
 		fmt.Println(tx, err)
@@ -113,11 +154,20 @@ func main() {
 		stakeRes, err = StakeShard(&shard0RPC, icoAccount.PrivateKey, account3.PrivateKey, 1750*1e9)
 		fmt.Println(stakeRes, err)
 	}
-	submitKey()
-	time.Sleep(time.Second * 10)
-	send_prv()
-	time.Sleep(time.Second * 10)
-	stake_shard()
+
+	stake_beacon := func() {
+		res, err := shard0RPC.GetBalanceByPrivateKey(account1.PrivateKey)
+		fmt.Println(res, err)
+		stakeRes, err := StakeBeacon(&shard0RPC, account1.PrivateKey, account1.PrivateKey, 87500*1e9)
+		fmt.Println(stakeRes, err)
+	}
+	//submitKey()
+	//time.Sleep(time.Second * 10)
+	//send_prv()
+	//time.Sleep(time.Second * 10)
+	//stake_shard()
+	//time.Sleep(time.Second * 10)
+	stake_beacon()
 	return
 	stake_shard()
 	submitKey()

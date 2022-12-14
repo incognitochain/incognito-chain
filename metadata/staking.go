@@ -66,21 +66,17 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	// only stake to shard
-	return sm.Type == ShardStakingMeta
+	return sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta
 }
 
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	SC, SPV, sSP, BC, BPV, BW, BL, CSWFCR, CSWFNR := beaconViewRetriever.GetAllStakers()
+	tempStaker, err := incognitokey.CommitteeBase58KeyListToStruct([]string{stakingMetadata.CommitteePublicKey})
+	if err != nil {
+		return false, err
+	}
 	switch stakingMetadata.Type {
 	case ShardStakingMeta:
-		SC, SPV, sSP, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
-		if err != nil {
-			return false, err
-		}
-		tempStaker, err := incognitokey.CommitteeBase58KeyListToStruct([]string{stakingMetadata.CommitteePublicKey})
-		if err != nil {
-			return false, err
-		}
 		for _, committees := range SC {
 			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(committees, tempStaker)
 		}
@@ -92,22 +88,38 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 		}
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
-		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CBWFCR, tempStaker)
-		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CBWFNR, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BW, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BL, tempStaker)
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFCR, tempStaker)
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFNR, tempStaker)
 		if len(tempStaker) == 0 {
 			return false, errors.New("invalid Staker, This pubkey may staked already")
 		}
 	case BeaconStakingMeta:
-	/* Check if beacon already promote
-	- get all beacon validator
-	- make sure there is no duplicated mining public key
-	*/
+		/* Check if beacon already promote
+		- get all beacon validator
+		- make sure there is no duplicated mining public key
+		*/
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BW, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BL, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Staker, This pubkey may staked already")
+		}
+		/* Check if promoting is valid
+		- check if shard validator exist
+		*/
+		for _, committees := range SC {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(committees, tempStaker)
+		}
+		for _, validators := range SPV {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(validators, tempStaker)
+		}
+		if len(tempStaker) != 0 {
+			return false, errors.New("invalid Staker, This pubkey is not in any shard committee or validator")
+		}
 
-	/* Check if promoting is valid
-	- check if shard validator exist
-	*/
 	default:
 		return false, errors.New("Not recognized staking type")
 	}

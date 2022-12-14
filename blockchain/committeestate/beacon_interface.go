@@ -9,8 +9,11 @@ import (
 )
 
 type BeaconCommitteeState interface {
+	GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey)
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
+	GetBeaconLocking() []incognitokey.CommitteePublicKey
+	GetBeaconWaiting() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey

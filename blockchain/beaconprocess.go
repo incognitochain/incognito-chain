@@ -1364,7 +1364,7 @@ func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
 
 	if beaconCurView.CommitteeStateVersion() < committeestate.STAKING_FLOW_V3 {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
-	} else if beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 || beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V4 {
+	} else if beaconCurView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		return beaconCurView.storeAllShardSubstitutesValidatorV3(addedValidators)
 	}
 
