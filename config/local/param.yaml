@@ -138,6 +138,9 @@ auto_enable_feature:
       min_trigger: 1
       force_trigger: 1e9
       require_percentage: 90
+  - instantfinalityv2:
+      min_trigger: 2
+      require_percentage: 90
   - maxcommitteesize48:
       min_trigger: 1e9
       force_trigger: 1e9
@@ -175,6 +178,7 @@ blocktime_param:
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
+  - instantfinalityv2: 9
   - blocktime20: 9
 
 transactions_param:
