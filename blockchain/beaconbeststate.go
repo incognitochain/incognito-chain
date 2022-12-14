@@ -1059,8 +1059,19 @@ func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 // Upgrade to v3 if current version is 2 and beacon height == staking flow v3 height
 func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 	if beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height &&
-		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
+		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height &&
+		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV4Height {
 		return nil
+	}
+	Logger.log.Info("[committee-state] beaconBestState.BeaconHeight:", beaconBestState.BeaconHeight)
+	Logger.log.Info("[committee-state] config.Param().ConsensusParam.StakingFlowV3Height:", config.Param().ConsensusParam.StakingFlowV3Height)
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V3 {
+			return nil
+		}
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
+			return nil
+		}
 	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.STAKING_FLOW_V2 {
@@ -1080,9 +1091,9 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 	}
 
 	Logger.log.Infof("Try Upgrade Staking Flow, current version %+v, beacon height %+v"+
-		"Staking Flow v2 %+v, Staking Flow v3 %+v",
+		"Staking Flow v2 %+v, Staking Flow v3 %+v, Staking Flow v4 %+v",
 		beaconBestState.beaconCommitteeState.Version(), beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.StakingFlowV3Height)
+		config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.StakingFlowV3Height, config.Param().ConsensusParam.StakingFlowV4Height)
 
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
 		beaconBestState.BeaconHeight,

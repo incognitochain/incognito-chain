@@ -137,6 +137,34 @@ func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSe
 	}
 }
 
+func (s *AppService) BeaconStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress, delegate string, autoReStaking bool) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+	if resp, err := fullnodeRPC.CreateAndSendStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: 87500000000000,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"StakingType":                  64,
+			"CandidatePaymentAddress":      candidatePaymentAddress,
+			"PrivateSeed":                  privateSeed,
+			"RewardReceiverPaymentAddress": rewardReceiverPaymentAddress,
+			"Delegate":                     delegate,
+			"AutoReStaking":                autoReStaking,
+		},
+	); err != nil {
+		panic(err)
+	} else {
+		log.Println("beacon stake with tx ", resp.TxID)
+	}
+}
+
 func (s *AppService) ShardUnstaking(privateKey, candidatePaymentAddress, privateSeed string) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)

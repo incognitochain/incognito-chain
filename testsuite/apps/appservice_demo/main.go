@@ -24,6 +24,11 @@ type Key struct {
 
 func main() {
 
+	beaconCommitteesMiningKeys := map[string]bool{
+		"12UkKRgNCPWR9FrSP2z92yXyyHF1AuL11RZDzfpnqnphC6ET8Pa": true,
+		"1tkwFJt8FnTr1XEpnSmtF67xCEJWSZ24fNSsJpqUKbGDhGtLxE":  true,
+	}
+
 	args := os.Args
 	isSkipSubmitKey := false
 	isOnlySubmitKey := false
@@ -99,7 +104,10 @@ func main() {
 				receivers := map[string]interface{}{}
 				log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
 				for _, v := range keys {
-					receivers[v.PaymentAddress] = 2750000001000
+					receivers[v.PaymentAddress] = 1750000001000
+					if beaconCommitteesMiningKeys[v.MiningKey] {
+						receivers[v.PaymentAddress] = 87500000000000
+					}
 				}
 				app.PreparePRVForTest(privateKey, receivers)
 			}
@@ -110,10 +118,17 @@ func main() {
 		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly {
 			//Stake one node
 			k := keys[0]
-			log.Printf("Start staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+			log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 				k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
 			app.ShardStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
 		} else if blk.GetBeaconHeight() >= startStakingHeight+2 {
+			if blk.GetBeaconHeight() == startStakingHeight+50+5 {
+				//Stake one node
+				k := keys[0]
+				log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+					k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
+				app.BeaconStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
+			}
 			log.Println("get committee state at beacon height:", blk.GetBeaconHeight())
 			cs, err := app.GetCommitteeState(0, "")
 			if err != nil {
