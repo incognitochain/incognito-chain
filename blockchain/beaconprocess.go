@@ -232,7 +232,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	}
 	previousBeaconBlock := preBlk.(*types.BeaconBlock)
 
-	if (beaconBlock.GetBeaconHeight() >= SFV4_StartHeight) && (beaconBlock.GetBeaconHeight() > 2) {
+	if (beaconBlock.GetBeaconHeight() > SFV4_StartHeight) && (beaconBlock.GetBeaconHeight() > 2) {
 		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 			return err
 		}
