@@ -86,6 +86,8 @@ func main() {
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
 		if !isSkipSubmitKey {
+			log.Println("blk.GetBeaconHeight():", blk.GetBeaconHeight())
+			log.Println("bHeight:", bHeight)
 			if blk.GetBeaconHeight() == bHeight {
 				//submitkey
 				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
@@ -99,7 +101,8 @@ func main() {
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
-			} else if blk.GetBeaconHeight() == bHeight+15 {
+			} else if blk.GetBeaconHeight() == bHeight+10 {
+				log.Println("blk.GetBeaconHeight():", blk.GetBeaconHeight())
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}
