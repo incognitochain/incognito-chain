@@ -593,6 +593,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 
 		if inst[0] == instruction.ENABLE_FEATURE {
+			Logger.log.Info("[committee-state] instruction:", inst)
 			enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, err
@@ -600,6 +601,8 @@ func (curView *BeaconBestState) updateBeaconBestState(
 			if beaconBestState.TriggeredFeature == nil {
 				beaconBestState.TriggeredFeature = make(map[string]uint64)
 			}
+			Logger.log.Info("[committee-state] enableFeatures.Features:", enableFeatures.Features)
+			Logger.log.Info("[committee-state] curView.getUntriggerFeature(false):", curView.getUntriggerFeature(false))
 			for _, feature := range enableFeatures.Features {
 				if common.IndexOfStr(feature, curView.getUntriggerFeature(false)) != -1 {
 					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
