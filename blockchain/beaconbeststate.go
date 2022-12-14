@@ -1359,7 +1359,6 @@ func (curView *BeaconBestState) getUntriggerFeature(afterCheckPoint bool) []stri
 
 		}
 	}
-	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
 	return unTriggerFeatures
 }
 

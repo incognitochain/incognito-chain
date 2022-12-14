@@ -102,7 +102,6 @@ func (bc *BlockChain) InitFeatureStat() {
 }
 
 func (bc *BlockChain) SendFeatureStat() {
-	Logger.log.Info("[committee-state] SendFeatureStat")
 	if bc.BeaconChain.GetMultiView() == nil || bc.BeaconChain.GetBestView() == nil {
 		return
 	}
@@ -114,7 +113,6 @@ func (bc *BlockChain) SendFeatureStat() {
 	for feature, _ := range beaconView.TriggeredFeature {
 		updatedFeature = append(updatedFeature, feature)
 	}
-	Logger.log.Info("[committee-state] updatedFeature:", updatedFeature)
 	msg, err := CreateNewFeatureStatMessage(beaconView, true, updatedFeature, bc.config.ConsensusEngine.GetValidators())
 	if err != nil {
 		Logger.log.Error(err)
@@ -128,7 +126,6 @@ func (bc *BlockChain) SendFeatureStat() {
 
 	//only after checkpoint, send feature state for  validator not in sync pool
 	unTriggerFeatures = beaconView.getUntriggerFeature(true)
-	Logger.log.Info("[committee-state] unTriggerFeatures:", unTriggerFeatures)
 	msg, err = CreateNewFeatureStatMessage(beaconView, false, unTriggerFeatures, bc.config.ConsensusEngine.GetValidators())
 	if err != nil {
 		Logger.log.Error(err)
@@ -148,7 +145,6 @@ func (bc *BlockChain) SendFeatureStat() {
 		}
 	}
 	DefaultFeatureStat.lock.Unlock()
-	Logger.log.Info("[committee-state] Finish SendFeatureStat")
 }
 
 func (stat *FeatureStat) ReceiveMsg(msg *wire.MessageFeature) {
