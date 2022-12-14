@@ -1034,7 +1034,7 @@ func (beaconBestState *BeaconBestState) tryUpgradeConsensusRule() error {
 
 	Logger.log.Info("[committee-state] committeeState version:", beaconBestState.CommitteeStateVersion())
 	Logger.log.Info("[committee-state] beaconBestState.BeaconHeight:", beaconBestState.BeaconHeight)
-	Logger.log.Info("[committee-state] config.Param().ConsensusParam.StakingFlowV4Height:", config.Param().ConsensusParam.StakingFlowV4Height)
+	Logger.log.Info("[committee-state] SFV4_StartHeight:", SFV4_StartHeight)
 
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
 		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height || beaconBestState.BeaconHeight == SFV4_StartHeight {
