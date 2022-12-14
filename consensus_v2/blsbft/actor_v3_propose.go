@@ -32,7 +32,6 @@ func (a *actorV3) getBlockForPropose(proposeBlockHeight uint64) types.BlockInter
 		block = lockBlockHash.block
 		a.validatePreVote(lockBlockHash)
 	} else { //or previous valid block
-		a.logger.Info("[committee-state] lockBlockHash:", lockBlockHash)
 		for _, v := range a.GetSortedReceiveBlockByHeight(proposeBlockHeight) {
 			if v.IsValid {
 				block = v.block
