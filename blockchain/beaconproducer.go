@@ -767,16 +767,19 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		if uint64(autoEnableFeatureInfo.MinTriggerBlockHeight) > curView.BeaconHeight {
 			continue
 		}
+		Logger.log.Info("[committee-state] autoEnableFeatureInfo:", autoEnableFeatureInfo)
 
 		// check proposer threshold
 		invalidCondition := false
 		featureStatReport := DefaultFeatureStat.Report(curView)
 		if featureStatReport.CommitteeStat[feature] == nil {
+			Logger.log.Info("[committee-state] 0")
 			continue
 		}
 		beaconProposerSize := len(curView.GetCommittee())
 		//if number of beacon proposer update < 95%, not generate inst
 		if featureStatReport.CommitteeStat[feature][-1] < uint64(math.Ceil(float64(beaconProposerSize)*95/100)) {
+			Logger.log.Info("[committee-state] 1")
 			continue
 		}
 
@@ -785,11 +788,13 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 			shardCommitteeSize := len(curView.GetAShardCommittee(byte(chainID)))
 			if featureStatReport.CommitteeStat[feature][chainID] < uint64(math.Ceil(float64(shardCommitteeSize)*89/100)) {
 				invalidCondition = true
+				Logger.log.Info("[committee-state] 2")
 				break
 			}
 		}
 
 		if invalidCondition {
+			Logger.log.Info("[committee-state] 3")
 			continue
 		}
 
@@ -798,11 +803,13 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 			for chainID, size := range featureStatReport.ValidatorSize {
 				if featureStatReport.ValidatorStat[feature][chainID] < uint64(math.Ceil(float64(size*autoEnableFeatureInfo.RequiredPercentage)/100)) {
 					invalidCondition = true
+					Logger.log.Info("[committee-state] 4")
 					break
 				}
 			}
 		}
 		if invalidCondition {
+			Logger.log.Info("[committee-state] 5")
 			continue
 		}
 
@@ -814,6 +821,7 @@ func (curView *BeaconBestState) generateEnableFeatureInstructions() ([][]string,
 		inst := instruction.NewEnableFeatureInstructionWithValue(enableFeature)
 		instructions = append(instructions, inst.ToString())
 	}
+	Logger.log.Info("[committee-state] instructions:", instructions)
 	return instructions, enableFeature
 }
 
