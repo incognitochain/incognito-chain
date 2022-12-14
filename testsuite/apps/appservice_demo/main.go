@@ -76,14 +76,14 @@ func main() {
 	epochBlockTime := uint64(10)
 	submitkeyHeight := bHeight
 	convertTxHeight := bHeight + 5
-	sendFundsHeight := bHeight + 10
+	sendFundsHeight := bHeight + 15
 
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
 	if isSkipSubmitKey {
 		startStakingHeight = bHeight
 	} else {
-		startStakingHeight = bHeight + 20
+		startStakingHeight = bHeight + 25
 	}
 	startStakingBeaconHeight := startStakingHeight + epochBlockTime*3 + 5
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
