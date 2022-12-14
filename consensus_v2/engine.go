@@ -343,7 +343,6 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	//get last trigger feature that change block version
 	latestFeature := ""
 	latestTriggerHeight := uint64(0)
-	fmt.Println("[committee-state] triggerFeature:", triggerFeature)
 	for f, h := range triggerFeature {
 		if _, ok := config.Param().FeatureVersion[f]; ok {
 			if latestTriggerHeight < h {

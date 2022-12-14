@@ -235,10 +235,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	if (beaconBlock.GetBeaconHeight() > SFV4_StartHeight) && (beaconBlock.GetBeaconHeight() > 2) {
 		// PreviousValidationData
 
-		Logger.log.Info("[committee-state] beaconBlock.Header.PreviousBlockHash:", beaconBlock.Header.PreviousBlockHash.String())
-		Logger.log.Info("[committee-state] previousBeaconBlock.ProposeHash():", previousBeaconBlock.ProposeHash().String())
-		Logger.log.Info("[committee-state] beaconBlock.Header.PreviousValidationData:", beaconBlock.Header.PreviousValidationData)
-
 		if err := blockchain.BeaconChain.ValidatePreviousValidationData(beaconBlock.Header.PreviousBlockHash, *previousBeaconBlock.ProposeHash(), beaconBlock.Header.PreviousValidationData); err != nil {
 			return err
 		}
@@ -593,7 +589,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 
 		if inst[0] == instruction.ENABLE_FEATURE {
-			Logger.log.Info("[committee-state] instruction:", inst)
 			enableFeatures, err := instruction.ValidateAndImportEnableFeatureInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, err
@@ -601,8 +596,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 			if beaconBestState.TriggeredFeature == nil {
 				beaconBestState.TriggeredFeature = make(map[string]uint64)
 			}
-			Logger.log.Info("[committee-state] enableFeatures.Features:", enableFeatures.Features)
-			Logger.log.Info("[committee-state] curView.getUntriggerFeature(false):", curView.getUntriggerFeature(false))
 			for _, feature := range enableFeatures.Features {
 				if common.IndexOfStr(feature, curView.getUntriggerFeature(false)) != -1 {
 					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
