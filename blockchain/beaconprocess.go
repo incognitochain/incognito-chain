@@ -603,6 +603,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 			}
 			Logger.log.Info("[committee-state] enableFeatures.Features:", enableFeatures.Features)
 			Logger.log.Info("[committee-state] curView.getUntriggerFeature(false):", curView.getUntriggerFeature(false))
+			panic(100)
 			for _, feature := range enableFeatures.Features {
 				if common.IndexOfStr(feature, curView.getUntriggerFeature(false)) != -1 {
 					beaconBestState.TriggeredFeature[feature] = beaconBlock.GetHeight()
