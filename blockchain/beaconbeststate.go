@@ -795,6 +795,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	isBeaconRandomTime bool,
 	isBeaconSwapTime bool,
 	isEndOfEpoch bool,
+	prevValidationData string,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	missingSignature := map[string]signaturecounter.MissingSignature{}
@@ -843,7 +844,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 			AutoStakeHash:                   beaconBestState.BestBlock.Header.AutoStakingRoot,
 			ShardSyncValidatorsHash:         beaconBestState.BestBlock.Header.ShardSyncValidatorRoot,
 		},
-		MissingSignature: missingSignature,
+		PreviousBlockValidationData: prevValidationData,
+		MissingSignature:            missingSignature,
 	}
 	return env
 }
@@ -980,6 +982,23 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	beaconBestState.beaconCommitteeState = committeeState
 	if err := beaconBestState.tryUpgradeConsensusRule(); err != nil {
 		return err
+	}
+	if committeeState.Version() >= committeestate.STAKING_FLOW_V4 {
+		currentBlock := beaconBestState.BestBlock
+		tempBeaconHeight := currentBlock.Header.Height
+		firstBeaconHeightOfEpoch := GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
+		allBlocks := []types.BeaconBlock{}
+		tempBeaconBlock := currentBlock
+		for tempBeaconHeight >= firstBeaconHeightOfEpoch {
+			allBlocks = append([]types.BeaconBlock{tempBeaconBlock}, allBlocks...)
+			previousBeaconBlock, _, err := bc.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
+			if err != nil {
+				return err
+			}
+			tempBeaconBlock = *previousBeaconBlock
+			tempBeaconHeight = tempBeaconBlock.GetBeaconHeight()
+		}
+		return committeeState.Restore(allBlocks)
 	}
 	return nil
 }

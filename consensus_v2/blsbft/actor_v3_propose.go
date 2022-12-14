@@ -80,7 +80,7 @@ func (a *actorV3) maybeProposeBlock() error {
 	block := a.getBlockForPropose(bestView.GetHeight() + 1)
 	rawPreviousValidationData := ""
 	if block == nil || block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
-		if block.Type() == common.BeaconChainKey {
+		if a.chainKey == common.BeaconChainKey {
 			previousBlock, _ := a.chain.GetBlockByHash(*bestView.GetHash())
 			if previousBlock != nil {
 				if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&

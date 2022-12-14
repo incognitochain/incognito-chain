@@ -665,6 +665,6 @@ func (b *beaconCommitteeStateBase) Backup(env *BeaconCommitteeStateEnvironment) 
 	return nil
 }
 
-func (b *beaconCommitteeStateBase) Restore(beaconBlocks []*types.BeaconBlock) error {
+func (b *beaconCommitteeStateBase) Restore(beaconBlocks []types.BeaconBlock) error {
 	return nil
 }
