@@ -3,10 +3,12 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/config"
 	"log"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -88,6 +90,25 @@ func (p *ProposeBlockInfo) ValidateFixNodeMajority() bool {
 		return true
 	}
 	return false
+}
+
+func (p *ProposeBlockInfo) ValidateCommitteeVotesMajority() bool {
+	expectedVotes := 0
+	gotVotes := 0
+	expectedVotes = len(p.SigningCommittees)
+	gotVotes = p.ValidVotes
+	return (gotVotes > 2*expectedVotes/3)
+}
+
+func (p *ProposeBlockInfo) ValidateCommitteeVotesPowerMajority(prevView multiview.View) bool {
+	signingInfo := map[string]bool{}
+	for _, k := range p.SigningCommittees {
+		signingInfo[k.GetMiningKeyBase58(consensusName)] = false
+	}
+	for k, _ := range p.Votes {
+		signingInfo[k] = true
+	}
+	return ValidateCommitteeVotePowerMajority(prevView, signingInfo)
 }
 
 func (p *ProposeBlockInfo) UnmarshalJSON(data []byte) error {
