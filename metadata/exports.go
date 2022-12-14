@@ -82,6 +82,7 @@ const (
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
 	UnStakingMeta       = metadataCommon.UnStakingMeta
+	AddStakingMeta      = metadataCommon.AddStakingMeta
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = metadataCommon.BeaconSwapConfirmMeta
 	BridgeSwapConfirmMeta = metadataCommon.BridgeSwapConfirmMeta

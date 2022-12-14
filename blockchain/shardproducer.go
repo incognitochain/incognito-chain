@@ -1013,6 +1013,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeShardAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	unstaking := []string{}
+
+	addStake_cpk := []string{}
+	addStake_amount := []uint64{}
+	addStake_tx := []string{}
+
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
 	}
@@ -1069,7 +1074,6 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				"true",
 			}
 			instructions = append(instructions, inst)
-			continue
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
@@ -1086,6 +1090,14 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			if len(unstakingMetadata.CommitteePublicKey) != 0 {
 				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
 			}
+		case metadata.AddStakingMeta:
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.AddStakingMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			addStake_cpk = append(addStake_cpk, stakingMetadata.CommitteePublicKey)
+			addStake_amount = append(addStake_amount, stakingMetadata.AddStakingAmount)
+			addStake_tx = append(addStake_tx, stakingMetadata.Hash().String())
 		}
 	}
 
@@ -1125,6 +1137,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		// ["unstake" "pubkey1,pubkey2,..."]
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
+	}
+
+	if len(addStake_cpk) > 0 {
+		inst := instruction.NewAddStakingInstructionWithValue(addStake_cpk, addStake_amount, addStake_tx)
+		instructions = append(instructions, inst.ToString())
 	}
 	return instructions, pdexTxs, nil
 }

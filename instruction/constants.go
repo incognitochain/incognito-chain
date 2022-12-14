@@ -11,6 +11,8 @@ const (
 	SET_ACTION                     = "set"
 	RETURN_ACTION                  = "return"
 	UNSTAKE_ACTION                 = "unstake"
+	ADD_STAKING_ACTION             = "addstake"
+	RETURN_BEACON_ACTION           = "returnb"
 	SHARD_INST                     = "shard"
 	BEACON_INST                    = "beacon"
 	SPLITTER                       = ","

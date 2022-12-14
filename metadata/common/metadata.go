@@ -119,6 +119,7 @@ type BeaconViewRetriever interface {
 	IsValidPdexv3UnstakingAmount(incdb.Database, interface{}, string, string, uint64) error
 	IsValidPdexv3ShareAmount(incdb.Database, interface{}, string, string, uint64) error
 	BlockHash() common.Hash
+	GetAllBeaconValidatorCandidateFlattenList() []string
 }
 
 type ShardViewRetriever interface {

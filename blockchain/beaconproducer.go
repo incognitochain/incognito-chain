@@ -31,6 +31,7 @@ func (inst *duplicateKeyStakeInstruction) add(newInst *duplicateKeyStakeInstruct
 type shardInstruction struct {
 	shardStakeInstructions    []*instruction.StakeInstruction
 	beaconStakeInstructions   []*instruction.StakeInstruction
+	addStakeInstruction       []*instruction.AddStakingInstruction
 	unstakeInstructions       []*instruction.UnstakeInstruction
 	swapInstructions          map[byte][]*instruction.SwapInstruction
 	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
@@ -45,6 +46,7 @@ func newShardInstruction() *shardInstruction {
 func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruction) {
 	shardInstruction.beaconStakeInstructions = append(shardInstruction.beaconStakeInstructions, newShardInstruction.beaconStakeInstructions...)
 	shardInstruction.shardStakeInstructions = append(shardInstruction.shardStakeInstructions, newShardInstruction.shardStakeInstructions...)
+	shardInstruction.addStakeInstruction = append(shardInstruction.addStakeInstruction, newShardInstruction.addStakeInstruction...)
 	shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, newShardInstruction.unstakeInstructions...)
 	shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, newShardInstruction.stopAutoStakeInstructions...)
 	for shardID, swapInstructions := range newShardInstruction.swapInstructions {
@@ -571,6 +573,9 @@ func (curView *BeaconBestState) GenerateInstruction(
 	for _, stakeInstruction := range shardInstruction.beaconStakeInstructions {
 		instructions = append(instructions, stakeInstruction.ToString())
 	}
+	for _, stakeInstruction := range shardInstruction.addStakeInstruction {
+		instructions = append(instructions, stakeInstruction.ToString())
+	}
 	//TODO processBeaconStakeInstructionFromShardBlock (for duplicate, failing process)
 
 	// Duplicate Staking Instruction
@@ -929,6 +934,10 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 
 	for _, inst := range instructions {
 		if len(inst) > 0 {
+			if inst[0] == instruction.ADD_STAKING_ACTION {
+				tempAddStakeInstruction := instruction.ImportAddStakingInstructionFromString(inst)
+				shardInstruction.addStakeInstruction = append(shardInstruction.addStakeInstruction, tempAddStakeInstruction)
+			}
 			if inst[0] == instruction.STAKE_ACTION {
 				if err := instruction.ValidateStakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Stake Instruction Error %+v", err)
