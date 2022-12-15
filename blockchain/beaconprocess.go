@@ -434,13 +434,9 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		}
 	}
 	//=============Verify Stake Public Key
-	newBeaconCandidate, newShardCandidate := getStakingCandidate(*beaconBlock)
-	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
-		validBeaconCandidate := beaconBestState.GetValidStakers(newBeaconCandidate)
-		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
-			return NewBlockChainError(CandidateError, errors.New("beacon candidate list is INVALID"))
-		}
-	}
+	_, newShardCandidate := getStakingCandidate(*beaconBlock)
+	//valid beacon staker will be check in beacon committee state
+
 	if !reflect.DeepEqual(newShardCandidate, []string{}) {
 		validShardCandidate := beaconBestState.GetValidStakers(newShardCandidate)
 		if !reflect.DeepEqual(validShardCandidate, newShardCandidate) {
@@ -680,6 +676,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
+		beaconBlock.Header,
 		beaconBlock.Body.Instructions,
 		isFoundRandomInstruction, isBeginRandom,
 	)
@@ -775,7 +772,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,

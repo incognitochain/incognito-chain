@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math/big"
 	"reflect"
 	"sync"
@@ -46,6 +47,7 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 //NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
 	stateDB *statedb.StateDB,
+	minBeaconCommitteeSize int,
 	version int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
@@ -60,6 +62,8 @@ func NewBeaconCommitteeState(
 	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
 	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
 	assignRule AssignRuleProcessor,
+	allBeaconBlocks []types.BeaconBlock,
+	bc BlockChain,
 ) BeaconCommitteeState {
 
 	var committeeState BeaconCommitteeState
@@ -121,7 +125,7 @@ func NewBeaconCommitteeState(
 		)
 	case STAKING_FLOW_V4:
 		committeeState = NewBeaconCommitteeStateV4WithValue(
-			tempBeaconCommittee,
+			bc,
 			tempShardCommittee,
 			tempShardSubstitute,
 			tempShardCommonPool,
@@ -133,7 +137,7 @@ func NewBeaconCommitteeState(
 			swapRule,
 			assignRule,
 		)
-		err := committeeState.(*BeaconCommitteeStateV4).RestoreBeaconCommitteeFromDB(stateDB)
+		err := committeeState.(*BeaconCommitteeStateV4).RestoreBeaconCommitteeFromDB(stateDB, minBeaconCommitteeSize, allBeaconBlocks)
 		if err != nil {
 			panic(err)
 		}

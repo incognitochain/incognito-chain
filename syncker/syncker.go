@@ -72,7 +72,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	}
 
 	//init beacon sync process
-	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain)
+	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Network, synckerManager.config.Consensus, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain)
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
 
 	//init shard sync process
@@ -124,7 +124,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
 
 	if beaconChain, ok := chainValidator[-1]; ok {
-		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
+		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole && beaconChain.State.ChainID == -1) || beaconChain.State.InBeaconWaiting
 	}
 
 	synckerManager.BeaconSyncProcess.start()

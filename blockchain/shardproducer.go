@@ -1069,7 +1069,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			inst := []string{
 				instruction.STAKE_ACTION,
 				stakingMetadata.CommitteePublicKey,
-				instruction.BEACON_INST, "-1",
+				instruction.BEACON_INST, tx.Hash().String(),
 				stakingMetadata.RewardReceiverPaymentAddress,
 				"true",
 			}

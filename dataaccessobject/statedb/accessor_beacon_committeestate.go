@@ -89,6 +89,28 @@ func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey
 }
 
 /*
+Committee Data Info
+*/
+
+func StoreCommitteeData(stateDB *StateDB, data *CommitteeData) error {
+	key := GetCommitteeDataKey()
+	err := stateDB.SetStateObject(CommitteeDataObjectType, key, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetCommitteeData(stateDB *StateDB) *CommitteeData {
+	key := GetCommitteeDataKey()
+	data, exist, _ := stateDB.getCommitteeData(key)
+	if exist {
+		return data
+	}
+	return nil
+}
+
+/*
 Beacon Committee
 */
 func StoreBeaconCommittee(stateDB *StateDB, beaconCommittees []incognitokey.CommitteePublicKey) error {

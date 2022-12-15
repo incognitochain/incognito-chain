@@ -182,6 +182,10 @@ func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKe
 	return chain.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()
 }
 
+func (chain *BeaconChain) GetWaitingCommittee() []incognitokey.CommitteePublicKey {
+	return chain.GetBestView().(*BeaconBestState).GetBeaconWaiting()
+}
+
 func (chain *BeaconChain) GetCommitteeSize() int {
 	return len(chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee())
 }

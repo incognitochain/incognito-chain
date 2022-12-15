@@ -9,9 +9,10 @@ import (
 )
 
 type MiningState struct {
-	Role    string
-	Layer   string
-	ChainID int
+	Role            string
+	Layer           string
+	ChainID         int
+	InBeaconWaiting bool
 }
 
 type Validator struct {

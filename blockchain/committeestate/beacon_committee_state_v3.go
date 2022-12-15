@@ -469,7 +469,7 @@ func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) B
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	stateV4 := NewBeaconCommitteeStateV4()
-	err := stateV4.UpgradeFromV3(b, env.ConsensusStateDB)
+	err := stateV4.UpgradeFromV3(b, env.ConsensusStateDB, env.MinBeaconCommitteeSize)
 	if err != nil {
 		panic(err)
 	}

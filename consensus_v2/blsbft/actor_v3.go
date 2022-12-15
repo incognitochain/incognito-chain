@@ -801,6 +801,7 @@ func (a *actorV3) validateBlock(proposeBlockInfo *ProposeBlockInfo) error {
 	proposeBlockInfo.LastValidateTime = time.Now()
 	err := a.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.SigningCommittees, proposeBlockInfo.Committees)
 	if err != nil {
+		a.logger.Error(err)
 		return errors.New("Block is invalidated!")
 	}
 	proposeBlockInfo.IsValid = true

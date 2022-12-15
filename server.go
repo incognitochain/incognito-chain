@@ -1976,6 +1976,22 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	return nil
 }
 
+func (s *Server) IsInBeaconWaitingList(userPk *incognitokey.CommitteePublicKey) bool {
+
+	if s.blockChain == nil || userPk == nil {
+		return false
+	}
+
+	for _, v := range s.blockChain.BeaconChain.GetWaitingCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return true
+		}
+
+	}
+
+	return false
+}
+
 func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
 
 	if s.blockChain == nil || userPk == nil {

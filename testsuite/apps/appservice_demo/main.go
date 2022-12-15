@@ -9,7 +9,6 @@ import (
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"time"
 )
 
 func StakeShard(client *devframework.RemoteRPCClient, privateKey string, miningPrivateKey string, stakeAmount uint64) (*jsonresult.CreateTransactionResult, error) {
@@ -88,22 +87,22 @@ func mapUintToInterface(m map[string]uint64) map[string]interface{} {
 
 func main() {
 	flag.Parse()
-	fullnodeRPC := devframework.RemoteRPCClient{"http://127.0.0.1:29999"}
-	shard0RPC := devframework.RemoteRPCClient{"http://127.0.0.1:20008"}
+	fullnodeRPC := devframework.RemoteRPCClient{"http://127.0.0.1:30001"}
+	shard0RPC := devframework.RemoteRPCClient{"http://127.0.0.1:20004"}
 	var icoAccount, _ = account.NewAccountFromPrivatekey("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
-	go func() {
-		for {
-			bs, _ := fullnodeRPC.GetBeaconBestState()
-			fmt.Println("BeaconCommittee", bs.BeaconCommittee)
-			fmt.Println("BeaconPendingValidator", bs.BeaconPendingValidator)
-			fmt.Println("ShardCommittee", bs.ShardCommittee)
-			fmt.Println("ShardPendingValidator", bs.ShardPendingValidator)
-			fmt.Println("SyncingValidators", bs.SyncingValidators)
-			fmt.Println("BeaconWaiting", bs.BeaconWaiting)
-			fmt.Println("BeaconLocking", bs.BeaconLocking)
-			time.Sleep(time.Second * 5)
-		}
-	}()
+	//go func() {
+	//	for {
+	//		bs, _ := fullnodeRPC.GetBeaconBestState()
+	//		fmt.Println("BeaconCommittee", bs.BeaconCommittee)
+	//		fmt.Println("BeaconPendingValidator", bs.BeaconPendingValidator)
+	//		fmt.Println("ShardCommittee", bs.ShardCommittee)
+	//		fmt.Println("ShardPendingValidator", bs.ShardPendingValidator)
+	//		fmt.Println("SyncingValidators", bs.SyncingValidators)
+	//		fmt.Println("BeaconWaiting", bs.BeaconWaiting)
+	//		fmt.Println("BeaconLocking", bs.BeaconLocking)
+	//		time.Sleep(time.Second * 5)
+	//	}
+	//}()
 	select {}
 	account1, _ := account.GenerateAccountByShard(0, 0, "1")
 	account2, _ := account.GenerateAccountByShard(0, 1, "1")
@@ -172,5 +171,6 @@ func main() {
 	stake_shard()
 	submitKey()
 	send_prv()
+	stake_beacon()
 
 }

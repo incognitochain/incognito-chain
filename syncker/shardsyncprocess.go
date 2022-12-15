@@ -37,15 +37,16 @@ type ShardSyncProcess struct {
 	crossShardSyncProcess *CrossShardSyncProcess
 	blockchain            *blockchain.BlockChain
 	Network               Network
+	consensus             peerv2.ConsensusData
 	Chain                 ShardChainInterface
 	beaconChain           Chain
 	shardPool             *BlkPool
 	actionCh              chan func()
-	consensus             peerv2.ConsensusData
-	lock                  *sync.RWMutex
-	lastInsert            string
-	startSyncTime         time.Time
-	testStall             bool
+
+	lock          *sync.RWMutex
+	lastInsert    string
+	startSyncTime time.Time
+	testStall     bool
 }
 
 func NewShardSyncProcess(

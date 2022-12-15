@@ -109,6 +109,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newStakerObjectWithValue(db, hash, value)
 	case BeaconStakerObjectType:
 		return newBeaconStakerObjectWithValue(db, hash, value)
+	case CommitteeDataObjectType:
+		return newCommitteeStateDataObjectWithValue(db, hash, value)
 	case PortalV4StatusObjectType:
 		return newPortalV4StatusObjectWithValue(db, hash, value)
 	case PortalV4UTXOObjectType:
@@ -269,6 +271,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newStakerObject(db, hash)
 	case BeaconStakerObjectType:
 		return newBeaconStakerObject(db, hash)
+	case CommitteeDataObjectType:
+		return newCommitteeStateDataObject(db, hash)
 	case PortalV4StatusObjectType:
 		return newPortalV4StatusObject(db, hash)
 	case PortalV4UTXOObjectType:

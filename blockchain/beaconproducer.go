@@ -810,6 +810,22 @@ func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
 }
 
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
+	instructions := [][]string{}
+	if curView.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
+		beaconWaiting := curView.beaconCommitteeState.GetBeaconWaiting()
+		validValidator := []incognitokey.CommitteePublicKey{}
+		for _, v := range beaconWaiting {
+			validatorStr, _ := v.ToBase58()
+			if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
+				fmt.Println("add ", validatorStr, "to valid Sync val")
+				validValidator = append(validValidator, v)
+			}
+		}
+		syncVal, _ := incognitokey.CommitteeKeyListToString(validValidator)
+		beaconFinishSyncInst := instruction.NewFinishSyncInstructionWithValue(-1, syncVal)
+		instructions = append(instructions, beaconFinishSyncInst.ToString())
+	}
+
 	//get validators in sync pool that contain latest code
 	syncVal := make(map[byte][]string)
 	for shardID, validators := range curView.beaconCommitteeState.GetSyncingValidators() {
@@ -840,7 +856,6 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	}
 
 	finishSyncInstructions := finishsync.DefaultFinishSyncMsgPool.Instructions(validWaitingValidator, curView.BeaconHeight)
-	instructions := [][]string{}
 
 	for _, finishSyncInstruction := range finishSyncInstructions {
 		if !finishSyncInstruction.IsEmpty() {
@@ -946,7 +961,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					continue
 				}
 				tempStakeInstruction := instruction.ImportStakeInstructionFromString(inst)
-				if tempStakeInstruction.Chain == "-1" {
+				if tempStakeInstruction.Chain == instruction.BEACON_INST {
 					shardInstruction.beaconStakeInstructions = append(shardInstruction.beaconStakeInstructions, tempStakeInstruction)
 				} else {
 					shardInstruction.shardStakeInstructions = append(shardInstruction.shardStakeInstructions, tempStakeInstruction)

@@ -72,6 +72,9 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 	chainID := -2
 	if len(engine.validators) > 0 {
 		for _, validator := range engine.validators {
+			if validator.State.InBeaconWaiting {
+				chainValidator[-1] = validator
+			}
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]
 				if ok {
@@ -120,20 +123,21 @@ func (engine *Engine) WatchCommitteeChange() {
 		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
+		inBeaconWaiting := engine.config.Node.IsInBeaconWaitingList(validator.MiningKey.GetPublicKey())
 
 		keyBytes := validator.MiningKey.PubKey[common.BlsConsensus]
 		logKey := base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
 		log.Printf("validator key %+v, shardID %+v, role %+v \n", logKey, chainID, role)
 
 		if chainID == common.BeaconChainID {
-			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
+			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID, inBeaconWaiting}
 		} else if chainID > common.BeaconChainID {
-			validator.State = consensus.MiningState{role, common.ShardChainKey, chainID}
+			validator.State = consensus.MiningState{role, common.ShardChainKey, chainID, inBeaconWaiting}
 		} else {
 			if role != "" {
-				validator.State = consensus.MiningState{role, common.ShardChainKey, -2}
+				validator.State = consensus.MiningState{role, common.ShardChainKey, -2, inBeaconWaiting}
 			} else {
-				validator.State = consensus.MiningState{role, "", -2}
+				validator.State = consensus.MiningState{role, "", -2, inBeaconWaiting}
 			}
 		}
 
