@@ -113,15 +113,14 @@ func main() {
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
 			} else if blk.GetBeaconHeight() == sendFundsHeight {
-				log.Println("blk.GetBeaconHeight():", blk.GetBeaconHeight())
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}
 				log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
 				for _, v := range keys {
-					receivers[v.PaymentAddress] = 1750000001000
+					receivers[v.PaymentAddress] = 176000000000
 					if beaconCommitteesMiningKeys[v.MiningKey] {
-						receivers[v.PaymentAddress] = 87500000000000
+						receivers[v.PaymentAddress] = 87676000000000
 					}
 				}
 				app.PreparePRVForTest(privateKey, receivers)
