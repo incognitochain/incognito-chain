@@ -117,6 +117,15 @@ func main() {
 				k := mKeys[bKey0]
 				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
 				app.SubmitKey(k.OTAPrivateKey)
+				k = mKeys[bKey1]
+				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
+				app.SubmitKey(k.OTAPrivateKey)
+			} else if blk.GetBeaconHeight() == submitkeyHeight+5 {
+				for index := range shardMiningKeys {
+					k := mKeys[index]
+					log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
+					app.SubmitKey(k.OTAPrivateKey)
+				}
 			} else if blk.GetBeaconHeight() == convertTxHeight {
 				//convert from token v1 to token v2
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
