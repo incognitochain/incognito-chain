@@ -52,7 +52,7 @@ func main() {
 	}
 
 	var keys []Key
-	var mKeys map[string]Key
+	mKeys := map[string]Key{}
 	lastCs := &jsonresult.CommiteeState{}
 
 	data, err := ioutil.ReadFile("accounts.json")
