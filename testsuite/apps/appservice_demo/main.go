@@ -120,7 +120,7 @@ func main() {
 				for _, v := range keys {
 					receivers[v.PaymentAddress] = 176000000000
 					if beaconCommitteesMiningKeys[v.MiningKey] {
-						receivers[v.PaymentAddress] = 87676000000000
+						receivers[v.PaymentAddress] = 90000000000000
 					}
 				}
 				app.PreparePRVForTest(privateKey, receivers)
