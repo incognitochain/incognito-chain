@@ -205,8 +205,8 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		}
 		cs := bState.GetCommitteeState()
 		currentEpochShardCandidate = cs.GetCandidateShardWaitingForCurrentRandom()
+		nextEpochShardCandidate = cs.GetCandidateShardWaitingForNextRandom()
 		currentEpochBeaconCandidate = cs.GetCandidateBeaconWaitingForCurrentRandom()
-		nextEpochShardCandidate = cs.GetCandidateBeaconWaitingForCurrentRandom()
 		nextEpochBeaconCandidate = cs.GetCandidateBeaconWaitingForNextRandom()
 		syncingValidators = cs.GetSyncingValidators()
 		rewardReceivers = cs.GetRewardReceiver()
@@ -282,27 +282,28 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		paymentAddress := wl.Base58CheckSerialize(wallet.PaymentAddressType)
 		tempRewardReceiver[k] = paymentAddress
 	}
-	beaconWaitingStr, _ := incognitokey.CommitteeKeyListToString(
-		append(currentEpochBeaconCandidate, nextEpochBeaconCandidate...),
-	)
-	syncingValidatorsStr[-1] = beaconWaitingStr
+
+	nextEpochBeaconCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochBeaconCandidate)
+	currentEpochBeaconCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochBeaconCandidate)
 
 	shardStakerInfos := map[string]*statedb.ShardStakerInfo{}
 	beaconStakerInfos := map[string]*statedb.BeaconStakerInfo{}
 
 	return &jsonresult.CommiteeState{
-		Root:              beaconConsensusStateRootHash.ConsensusStateDBRootHash.String(),
-		Committee:         currentValidatorStr,
-		Substitute:        substituteValidatorStr,
-		NextCandidate:     nextEpochShardCandidateStr,
-		CurrentCandidate:  currentEpochShardCandidateStr,
-		RewardReceivers:   tempRewardReceiver,
-		AutoStaking:       autoStaking,
-		StakingTx:         tempStakingTx,
-		Syncing:           syncingValidatorsStr,
-		DelegateList:      delegateList,
-		ShardStakerInfos:  shardStakerInfos,
-		BeaconStakerInfos: beaconStakerInfos,
+		Root:                   beaconConsensusStateRootHash.ConsensusStateDBRootHash.String(),
+		Committee:              currentValidatorStr,
+		Substitute:             substituteValidatorStr,
+		NextCandidate:          nextEpochShardCandidateStr,
+		CurrentCandidate:       currentEpochShardCandidateStr,
+		RewardReceivers:        tempRewardReceiver,
+		AutoStaking:            autoStaking,
+		StakingTx:              tempStakingTx,
+		Syncing:                syncingValidatorsStr,
+		DelegateList:           delegateList,
+		ShardStakerInfos:       shardStakerInfos,
+		BeaconStakerInfos:      beaconStakerInfos,
+		CurrentBeaconCandidate: currentEpochBeaconCandidateStr,
+		NextBeaconCandidate:    nextEpochBeaconCandidateStr,
 	}, nil
 }
 
