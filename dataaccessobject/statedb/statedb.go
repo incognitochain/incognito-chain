@@ -602,8 +602,19 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 				panic(err)
 			}
 			if !has || s == nil {
-				res, err2 := v.committeePublicKey.ToBase58()
-				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+				if shardID == common.BeaconChainID {
+					s, has, err := stateDB.getBeaconStakerInfo(GetBeaconStakerInfoKey(cPKBytes))
+					if err != nil {
+						panic(err)
+					}
+					if !has || s == nil {
+						res, err2 := v.committeePublicKey.ToBase58()
+						panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+					}
+				} else {
+					res, err2 := v.committeePublicKey.ToBase58()
+					panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+				}
 			}
 			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
 			if err != nil {
@@ -629,7 +640,19 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 				panic(err)
 			}
 			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", v.committeePublicKey))
+				if shardID == common.BeaconChainID {
+					s, has, err := stateDB.getBeaconStakerInfo(GetBeaconStakerInfoKey(cPKBytes))
+					if err != nil {
+						panic(err)
+					}
+					if !has || s == nil {
+						res, err2 := v.committeePublicKey.ToBase58()
+						panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+					}
+				} else {
+					res, err2 := v.committeePublicKey.ToBase58()
+					panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+				}
 			}
 			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
 			if err != nil {
@@ -655,7 +678,19 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 				panic(err)
 			}
 			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", v.committeePublicKey))
+				if shardID == common.BeaconChainID {
+					s, has, err := stateDB.getBeaconStakerInfo(GetBeaconStakerInfoKey(cPKBytes))
+					if err != nil {
+						panic(err)
+					}
+					if !has || s == nil {
+						res, err2 := v.committeePublicKey.ToBase58()
+						panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+					}
+				} else {
+					res, err2 := v.committeePublicKey.ToBase58()
+					panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+				}
 			}
 			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
 			if err != nil {
