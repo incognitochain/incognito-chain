@@ -46,6 +46,7 @@ func main() {
 	isSkipSubmitKey := false
 	isOnlySubmitKey := false
 	isWatchingOnly := false
+	isStakingBeaconOnly := false
 	if len(args) > 1 {
 		t, err := strconv.Atoi(args[1])
 		if err != nil {
@@ -58,6 +59,9 @@ func main() {
 		} else if t == 2 {
 			isWatchingOnly = true
 			isSkipSubmitKey = true
+		} else if t == 3 {
+			isSkipSubmitKey = true
+			isStakingBeaconOnly = true
 		}
 	}
 
@@ -103,7 +107,7 @@ func main() {
 	} else {
 		startStakingHeight = bHeight + 30
 	}
-	startStakingBeaconHeight := startStakingHeight + epochBlockTime*5 + 5
+	startStakingBeaconHeight := startStakingHeight + epochBlockTime*10 + 5
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
@@ -148,7 +152,7 @@ func main() {
 		if isOnlySubmitKey && bHeight > sendFundsHeight {
 			panic("SubmitKey done")
 		}
-		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly {
+		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly && !isStakingBeaconOnly {
 			//Stake each nodes
 
 			for index := range beaconMiningKeys {
@@ -170,7 +174,7 @@ func main() {
 				//Stake beacon nodes
 				for index := range beaconMiningKeys {
 					k := mKeys[index]
-					log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+					log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 						k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
 					app.BeaconStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
 				}
