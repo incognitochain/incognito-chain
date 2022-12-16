@@ -186,8 +186,9 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	nextEpochShardCandidate := []incognitokey.CommitteePublicKey{}
 	currentEpochShardCandidate := []incognitokey.CommitteePublicKey{}
-	nextEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
 	currentEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
+	nextEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
+	beaconWaitingCandidate := []incognitokey.CommitteePublicKey{}
 	syncingValidators := make(map[byte][]incognitokey.CommitteePublicKey)
 	rewardReceivers := make(map[string]key.PaymentAddress)
 	autoStaking := make(map[string]bool)
@@ -206,8 +207,6 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		cs := bState.GetCommitteeState()
 		currentEpochShardCandidate = cs.GetCandidateShardWaitingForCurrentRandom()
 		nextEpochShardCandidate = cs.GetCandidateShardWaitingForNextRandom()
-		currentEpochBeaconCandidate = cs.GetCandidateBeaconWaitingForCurrentRandom()
-		nextEpochBeaconCandidate = cs.GetCandidateBeaconWaitingForNextRandom()
 		syncingValidators = cs.GetSyncingValidators()
 		rewardReceivers = cs.GetRewardReceiver()
 		autoStaking = cs.GetAutoStaking()
@@ -221,6 +220,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		}
 		substituteValidator[-1] = cs.GetBeaconSubstitute()
 		stakingTx = cs.GetStakingTx()
+		beaconWaitingCandidate = cs.GetBeaconWaiting()
 	} else {
 		if height == 0 || tempHash != "" {
 			hash, err := common.Hash{}.NewHashFromStr(tempHash)
@@ -252,6 +252,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 
 		currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList =
 			statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+		beaconWaitingCandidate = append(currentEpochBeaconCandidate, nextEpochBeaconCandidate...)
 	}
 
 	currentValidatorStr := make(map[int][]string)
@@ -283,27 +284,25 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempRewardReceiver[k] = paymentAddress
 	}
 
-	nextEpochBeaconCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochBeaconCandidate)
-	currentEpochBeaconCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochBeaconCandidate)
+	beaconWaitingCandidateStr, _ := incognitokey.CommitteeKeyListToString(beaconWaitingCandidate)
 
 	shardStakerInfos := map[string]*statedb.ShardStakerInfo{}
 	beaconStakerInfos := map[string]*statedb.BeaconStakerInfo{}
 
 	return &jsonresult.CommiteeState{
-		Root:                   beaconConsensusStateRootHash.ConsensusStateDBRootHash.String(),
-		Committee:              currentValidatorStr,
-		Substitute:             substituteValidatorStr,
-		NextCandidate:          nextEpochShardCandidateStr,
-		CurrentCandidate:       currentEpochShardCandidateStr,
-		RewardReceivers:        tempRewardReceiver,
-		AutoStaking:            autoStaking,
-		StakingTx:              tempStakingTx,
-		Syncing:                syncingValidatorsStr,
-		DelegateList:           delegateList,
-		ShardStakerInfos:       shardStakerInfos,
-		BeaconStakerInfos:      beaconStakerInfos,
-		CurrentBeaconCandidate: currentEpochBeaconCandidateStr,
-		NextBeaconCandidate:    nextEpochBeaconCandidateStr,
+		Root:              beaconConsensusStateRootHash.ConsensusStateDBRootHash.String(),
+		Committee:         currentValidatorStr,
+		Substitute:        substituteValidatorStr,
+		NextCandidate:     nextEpochShardCandidateStr,
+		CurrentCandidate:  currentEpochShardCandidateStr,
+		RewardReceivers:   tempRewardReceiver,
+		AutoStaking:       autoStaking,
+		StakingTx:         tempStakingTx,
+		Syncing:           syncingValidatorsStr,
+		DelegateList:      delegateList,
+		ShardStakerInfos:  shardStakerInfos,
+		BeaconStakerInfos: beaconStakerInfos,
+		BeaconWaiting:     beaconWaitingCandidateStr,
 	}, nil
 }
 
