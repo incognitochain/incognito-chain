@@ -137,7 +137,7 @@ func main() {
 				receivers := map[string]interface{}{}
 				log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
 				for _, v := range keys {
-					receivers[v.PaymentAddress] = 176000000000
+					receivers[v.PaymentAddress] = 1760000000000
 					if beaconMiningKeys[v.MiningKey] {
 						receivers[v.PaymentAddress] = 90000000000000
 					}
