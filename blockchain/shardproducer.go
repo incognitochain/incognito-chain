@@ -311,6 +311,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
 	}
+
 	crossTransactionRoot, err := CreateMerkleCrossTransaction(newShardBlock.Body.CrossTransactions)
 	if err != nil {
 		return nil, err
@@ -1071,7 +1072,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				stakingMetadata.CommitteePublicKey,
 				instruction.BEACON_INST, tx.Hash().String(),
 				stakingMetadata.RewardReceiverPaymentAddress,
-				"true",
+				"true", fmt.Sprint(stakingMetadata.StakingAmount),
 			}
 			instructions = append(instructions, inst)
 		case metadata.StopAutoStakingMeta:

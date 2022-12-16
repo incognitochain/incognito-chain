@@ -405,7 +405,11 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	Logger.log.Infof("process finish sync instruction", finishSyncInstruction.ChainID, finishSyncInstruction.PublicKeys)
+	Logger.log.Info("process finish sync instruction", finishSyncInstruction.ChainID, finishSyncInstruction.PublicKeys)
+	if finishSyncInstruction.ChainID == -1 { //do not process beacon finish sync
+		return committeeChange
+	}
+
 	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
@@ -496,4 +500,8 @@ func (b BeaconCommitteeStateV3) GetAllStaker() (map[byte][]incognitokey.Committe
 	cSWFCR := b.GetCandidateShardWaitingForCurrentRandom()
 	cSWFNR := b.GetCandidateShardWaitingForNextRandom()
 	return sC, sPV, sSP, bC, bPV, bW, bL, cSWFCR, cSWFNR
+}
+
+func (b BeaconCommitteeStateV3) IsFinishSync(string) bool {
+	panic("This should not be called")
 }

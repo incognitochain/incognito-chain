@@ -561,7 +561,25 @@ func StoreStakerInfo(
 	beaconConfirmHeight uint64,
 
 ) error {
+
 	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx, beaconConfirmHeight)
+}
+
+func StoreStakerInfoV2(
+	stateDB *StateDB,
+	committee incognitokey.CommitteePublicKey,
+	value *StakerInfo,
+) error {
+	keyBytes, err := committee.RawBytes()
+	if err != nil {
+		return err
+	}
+	key := GetStakerInfoKey(keyBytes)
+	err = stateDB.SetStateObject(ShardStakerObjectType, key, value)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetOneShardCommitteeEnterTime(

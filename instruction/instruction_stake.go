@@ -3,6 +3,7 @@ package instruction
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/math"
+	"log"
 	"reflect"
 	"strings"
 
@@ -106,7 +107,7 @@ func (s *StakeInstruction) ToString() []string {
 		}
 	}
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
-	if s.Chain != "beacon" {
+	if s.Chain == "beacon" {
 		amountStr := []string{}
 		for _, amount := range s.StakingAmount {
 			amountStr = append(amountStr, fmt.Sprintf("%v", amount))
@@ -161,6 +162,7 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	}
 
 	if (len(instruction) != 6 && instruction[2] != BEACON_INST) || (len(instruction) != 7 && instruction[2] != SHARD_INST) {
+		log.Println(len(instruction), instruction[2])
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != STAKE_ACTION {

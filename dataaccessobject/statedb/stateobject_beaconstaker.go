@@ -48,6 +48,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		Unstaking           bool
 		StakingInfo         map[common.Hash]uint64
 		BeaconConfirmHeight uint64
+		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
 		LockingReason       int
@@ -59,6 +60,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		ShardActiveTime:     c.shardActiveTime,
 		LockingEpoch:        c.lockingEpoch,
 		LockingReason:       c.lockingReason,
+		FinishSync:          c.finishSync,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -75,6 +77,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 		ShardActiveTime     int
 		LockingEpoch        uint64
 		LockingReason       int
+		FinishSync          bool
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -87,6 +90,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.shardActiveTime = temp.ShardActiveTime
 	c.lockingEpoch = temp.LockingEpoch
 	c.lockingReason = temp.LockingReason
+	c.finishSync = temp.FinishSync
 	return nil
 }
 func (s *BeaconStakerInfo) SetUnstaking() {

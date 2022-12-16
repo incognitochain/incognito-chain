@@ -273,3 +273,7 @@ func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
 	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
 	return res
 }
+
+func (b BeaconCommitteeStateV2) IsFinishSync(string) bool {
+	panic("This should not be callsed")
+}

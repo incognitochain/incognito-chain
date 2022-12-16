@@ -348,6 +348,10 @@ func (b beaconCommitteeStateBase) GetShardCommonPool() []incognitokey.CommitteeP
 	panic("do not use function of beaconCommitteeStateBase struct")
 }
 
+func (b beaconCommitteeStateBase) IsFinishSync(string) bool {
+	panic("do not use function ")
+}
+
 func (b beaconCommitteeStateBase) GetAutoStaking() map[string]bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()

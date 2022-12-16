@@ -1159,8 +1159,15 @@ func (beaconBestState *BeaconBestState) ExtractAllFinishSyncingValidators(valida
 	finishedSyncUserKeys := []*consensus.Validator{}
 	finishedSyncValidators := []string{}
 
-	for sid := 0; sid < beaconBestState.ActiveShards; sid++ {
-		syncingValidators := beaconBestState.beaconCommitteeState.GetSyncingValidators()[byte(sid)]
+	for sid := -1; sid < beaconBestState.ActiveShards; sid++ {
+		var syncingValidators []incognitokey.CommitteePublicKey
+		if sid >= 0 {
+			syncingValidators = beaconBestState.beaconCommitteeState.GetSyncingValidators()[byte(sid)]
+		}
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 && sid == -1 {
+			syncingValidators = beaconBestState.beaconCommitteeState.GetBeaconWaiting()
+		}
+
 		for _, v := range syncingValidators {
 			blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
 			for _, userKey := range validatorFromUserKeys {

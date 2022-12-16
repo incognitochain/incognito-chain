@@ -817,10 +817,13 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 		validValidator := []incognitokey.CommitteePublicKey{}
 		for _, v := range beaconWaiting {
 			validatorStr, _ := v.ToBase58()
-			if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
-				fmt.Println("add ", validatorStr, "to valid Sync val")
-				validValidator = append(validValidator, v)
+			if !curView.beaconCommitteeState.IsFinishSync(validatorStr) {
+				if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
+					fmt.Println("add ", validatorStr, "to valid Sync val")
+					validValidator = append(validValidator, v)
+				}
 			}
+
 		}
 		if len(validValidator) > 0 {
 			syncVal, _ := incognitokey.CommitteeKeyListToString(validValidator)

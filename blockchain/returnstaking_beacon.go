@@ -48,7 +48,7 @@ func (blockchain *BlockChain) buildReturnBeaconStakingAmountTx(
 	returnStakingMeta := metadata.NewReturnBeaconStaking(
 		txStaking,
 		info.FunderAddress,
-		metadata.ReturnStakingMeta,
+		metadata.ReturnBeaconStakingMeta,
 	)
 
 	txParam := transaction.TxSalaryOutputParams{

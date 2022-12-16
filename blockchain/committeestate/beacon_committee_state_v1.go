@@ -476,6 +476,10 @@ func (b *BeaconCommitteeStateV1) GenerateAssignInstructions(env *BeaconCommittee
 	return instructions
 }
 
+func (b BeaconCommitteeStateV1) IsFinishSync(string) bool {
+	panic("This should not be callsed")
+}
+
 //Upgrade check interface method for des
 func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	b.mu.RLock()

@@ -74,6 +74,7 @@ const (
 	BeaconRewardRequestMeta      = metadataCommon.BeaconRewardRequestMeta
 	BeaconSalaryResponseMeta     = metadataCommon.BeaconSalaryResponseMeta
 	ReturnStakingMeta            = metadataCommon.ReturnStakingMeta
+	ReturnBeaconStakingMeta      = metadataCommon.ReturnBeaconStakingMeta
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
