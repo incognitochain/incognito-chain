@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
@@ -20,6 +21,7 @@ type ConsensusInterface interface {
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, fixedNode int) error
 	IsCommitteeInChain(int) bool
 	GetValidators() []*consensus.Validator
+	ValidateBlockCommitteSigWithView(prevView multiview.View, block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error
 }
 
 func (c *Consensus) GeValidators() []*consensus.Validator {
@@ -73,7 +75,9 @@ func (c *Consensus) ValidateProducerSig(block types.BlockInterface, consensusTyp
 func (c *Consensus) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
 	return c.consensusEngine.ValidateBlockCommitteSig(block, committee, numFixNode)
 }
-
+func (c *Consensus) ValidateBlockCommitteSigWithView(prevView multiview.View, block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error {
+	return nil
+}
 func (c *Consensus) IsCommitteeInChain(sid int) bool {
 	return true
 }
