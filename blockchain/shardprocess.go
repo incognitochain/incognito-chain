@@ -1650,9 +1650,9 @@ func (blockchain *BlockChain) processStoreAllShardStakerInfo(
 			BLogger.log.Infof("teststore Start Store All Shard Staker, sH %v ", sBestState.ShardHeight)
 			neededUpdate = true
 			bcBestState := blockchain.GetBeaconBestState()
-			beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(bcBestState, bcBestState.GetHeight())
+			beaconConsensusRootHash, err := blockchain.GetBeaconConsensusRootHash(bcBestState, beaconBlock.GetHeight())
 			if err != nil {
-				return fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", bcBestState.GetHeight(), err)
+				return fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", beaconBlock.GetHeight(), err)
 			}
 			beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 			if err != nil {
