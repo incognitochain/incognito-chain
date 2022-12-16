@@ -173,10 +173,20 @@ func main() {
 				for _, v := range validators {
 					if !v.HasStakedBeacon {
 						if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-							log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-								v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
-							app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
-							v.HasStakedBeacon = true
+							var shouldStake bool
+							for _, committee := range cs.Committee {
+								for _, c := range committee {
+									if c == v.MiningPublicKey {
+										shouldStake = true
+									}
+								}
+							}
+							if shouldStake {
+								log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+									v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
+								app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+								v.HasStakedBeacon = true
+							}
 						}
 					}
 				}
