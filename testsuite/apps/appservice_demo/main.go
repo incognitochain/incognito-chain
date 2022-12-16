@@ -36,7 +36,7 @@ func main() {
 	bKey0 := "12UkKRgNCPWR9FrSP2z92yXyyHF1AuL11RZDzfpnqnphC6ET8Pa"
 	bKey1 := "1tkwFJt8FnTr1XEpnSmtF67xCEJWSZ24fNSsJpqUKbGDhGtLxE"
 
-	validators := map[string]Validator{
+	validators := map[string]*Validator{
 		sKey0: {},
 		sKey1: {},
 		sKey2: {},
@@ -82,7 +82,7 @@ func main() {
 
 	for _, k := range keys {
 		if _, found := validators[k.MiningKey]; found {
-			validators[k.MiningKey] = Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false}
+			validators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false}
 		}
 	}
 
