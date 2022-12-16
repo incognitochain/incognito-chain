@@ -22,6 +22,12 @@ type Key struct {
 	ValidatorPublicKey string `json:"validator_public_key"`
 }
 
+type Validator struct {
+	Key
+	HasStakedShard  bool `json:"has_staked_shard"`
+	HasStakedBeacon bool `json:"has_staked_beacon"`
+}
+
 func main() {
 	sKey0 := "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
 	sKey1 := "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"
@@ -30,16 +36,13 @@ func main() {
 	bKey0 := "12UkKRgNCPWR9FrSP2z92yXyyHF1AuL11RZDzfpnqnphC6ET8Pa"
 	bKey1 := "1tkwFJt8FnTr1XEpnSmtF67xCEJWSZ24fNSsJpqUKbGDhGtLxE"
 
-	beaconMiningKeys := map[string]bool{
-		bKey0: true,
-		bKey1: true,
-	}
-
-	shardMiningKeys := map[string]bool{
-		sKey0: true,
-		sKey1: true,
-		sKey2: true,
-		sKey3: true,
+	validators := map[string]Validator{
+		sKey0: {},
+		sKey1: {},
+		sKey2: {},
+		sKey3: {},
+		bKey0: {},
+		bKey1: {},
 	}
 
 	args := os.Args
@@ -66,7 +69,6 @@ func main() {
 	}
 
 	var keys []Key
-	mKeys := map[string]Key{}
 	lastCs := &jsonresult.CommiteeState{}
 
 	data, err := ioutil.ReadFile("accounts.json")
@@ -79,7 +81,9 @@ func main() {
 	}
 
 	for _, k := range keys {
-		mKeys[k.MiningKey] = k
+		if _, found := validators[k.MiningKey]; found {
+			validators[k.MiningKey] = Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false}
+		}
 	}
 
 	fullnode := flag.String("h", "http://localhost:8334/", "Fullnode Endpoint")
@@ -107,7 +111,7 @@ func main() {
 	} else {
 		startStakingHeight = bHeight + 30
 	}
-	startStakingBeaconHeight := startStakingHeight + epochBlockTime*10 + 5
+	startStakingBeaconHeight := startStakingHeight + epochBlockTime*3 + 5
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
@@ -117,32 +121,24 @@ func main() {
 				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
 				log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
 				app.SubmitKey(otaPrivateKey)
-				//k := keys[0]
-				k := mKeys[bKey0]
-				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
-				app.SubmitKey(k.OTAPrivateKey)
-				k = mKeys[bKey1]
-				log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
-				app.SubmitKey(k.OTAPrivateKey)
+				for _, v := range validators {
+					log.Println("Start submitkey for ota privateKey:", v.OTAPrivateKey[len(v.OTAPrivateKey)-5:])
+					app.SubmitKey(v.OTAPrivateKey)
+				}
 			} else if blk.GetBeaconHeight() == convertTxHeight {
 				//convert from token v1 to token v2
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 				app.ConvertTokenV1ToV2(privateKey)
-
-				for index := range shardMiningKeys {
-					k := mKeys[index]
-					log.Println("Start submitkey for ota privateKey:", k.OTAPrivateKey[len(k.OTAPrivateKey)-5:])
-					app.SubmitKey(k.OTAPrivateKey)
-				}
 			} else if blk.GetBeaconHeight() == sendFundsHeight {
 				//Send funds to 30 nodes
 				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 				receivers := map[string]interface{}{}
 				log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
-				for _, v := range keys {
+
+				for _, v := range validators {
 					receivers[v.PaymentAddress] = 1760000000000
-					if beaconMiningKeys[v.MiningKey] {
+					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
 						receivers[v.PaymentAddress] = 90000000000000
 					}
 				}
@@ -154,31 +150,13 @@ func main() {
 		}
 		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly && !isStakingBeaconOnly {
 			//Stake each nodes
-
-			for index := range beaconMiningKeys {
-				k := mKeys[index]
+			for _, v := range validators {
 				log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-					k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
-				app.ShardStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
+					v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
+				app.ShardStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+				v.HasStakedShard = true
 			}
-
-			for index := range shardMiningKeys {
-				k := mKeys[index]
-				log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-					k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
-				app.ShardStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
-			}
-
 		} else if blk.GetBeaconHeight() >= startStakingHeight+2 {
-			if blk.GetBeaconHeight() == startStakingBeaconHeight {
-				//Stake beacon nodes
-				for index := range beaconMiningKeys {
-					k := mKeys[index]
-					log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-						k.PrivateKey[len(k.PrivateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], k.MiningKey[len(k.MiningKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:])
-					app.BeaconStaking(k.PrivateKey, k.PaymentAddress, k.MiningKey, k.PaymentAddress, "", true)
-				}
-			}
 			log.Println("get committee state at beacon height:", blk.GetBeaconHeight())
 			cs, err := app.GetCommitteeState(0, "")
 			if err != nil {
@@ -189,6 +167,19 @@ func main() {
 				lastCs = new(jsonresult.CommiteeState)
 				*lastCs = *cs
 				cs.Print()
+			}
+			if blk.GetBeaconHeight() >= startStakingBeaconHeight {
+				//Stake beacon nodes
+				for _, v := range validators {
+					if !v.HasStakedBeacon {
+						if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
+							log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+								v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
+							app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+							v.HasStakedBeacon = true
+						}
+					}
+				}
 			}
 		}
 
