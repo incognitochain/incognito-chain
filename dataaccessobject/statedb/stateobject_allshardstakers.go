@@ -130,7 +130,7 @@ func newAllStakersObjectWithValue(db *StateDB, key common.Hash, data interface{}
 	} else {
 		newStakerInfo, ok = data.(*AllShardStakersInfo)
 		if !ok {
-			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
+			return nil, fmt.Errorf("%+v, a got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 		}
 	}
 	//TODO add SoValidation
@@ -165,7 +165,7 @@ func (c AllStakersObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (c *AllStakersObject) SetValue(data interface{}) error {
 	newStakerInfo, ok := data.(*AllShardStakersInfo)
 	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
+		return fmt.Errorf("%+v, b got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 	}
 	//TODO add SoValidation
 	// if err := SoValidation.ValidatePaymentAddressSanity(newStakerInfo.mapDelegate); err != nil {

@@ -253,7 +253,7 @@ func (a AssignRuleV3) ProcessBeacon(candidates []string, env *AssignEnvironment)
 	processList = processListTmp
 	accepted, rejected = hasEnoughDelegator(processList, env)
 
-	Logger.log.Infof("Filter beacon candidate by rule hasEnoughActiveTimes, accepted idx %+v, rejected idx %+v", accepted, rejected)
+	Logger.log.Infof("Filter beacon candidate by rule hasEnoughDelegator, accepted idx %+v, rejected idx %+v", accepted, rejected)
 	for _, idx := range rejected {
 		stayWaiting = append(stayWaiting, processListTmp[idx])
 	}

@@ -560,6 +560,18 @@ func (b *BeaconCommitteeStateV4) commitBeaconStaker(
 	if err := statedb.StoreCurrentEpochBeaconCandidate(cDB, cChange.CurrentEpochBeaconCandidateAdded); err != nil {
 		return err
 	}
+	if err := statedb.DeleteCurrentEpochBeaconCandidate(cDB, cChange.CurrentEpochBeaconCandidateRemoved); err != nil {
+		return err
+	}
+	for _, newStakerBeacon := range beaconStakerKeys {
+		stakerKey, err := newStakerBeacon.ToBase58()
+		if err != nil {
+			return err
+		}
+		b.bDelegateState.AddBeaconCandidate(stakerKey, b.beaconStakingAmount[stakerKey])
+		b.Reputation[stakerKey] = b.beaconStakingAmount[stakerKey] / 2
+		b.Performance[stakerKey] = 500
+	}
 	return statedb.StoreNextEpochBeaconCandidate(cDB, cChange.NextEpochBeaconCandidateAdded, b.GetRewardReceiver(), b.GetAutoStaking(), b.GetStakingTx())
 }
 
@@ -694,24 +706,19 @@ func (b *BeaconCommitteeStateV4) updateDelegateInfo(
 		vpow := b.bDelegateState.GetBeaconCandidatePower(pk)
 		b.Reputation[pk] = perf * vpow / 1000
 	}
-	for _, newStakerBeacon := range b.committeeChange.BeaconStakerKeys() {
-		stakerKey, err := newStakerBeacon.ToBase58()
-		if err != nil {
-			return err
-		}
-		b.bDelegateState.AddBeaconCandidate(stakerKey, b.beaconStakingAmount[stakerKey])
-		b.Reputation[stakerKey] = b.beaconStakingAmount[stakerKey] / 2
-		b.Performance[stakerKey] = 500
-	}
+
 	return nil
 }
 
 func (b *BeaconCommitteeStateV4) Backup(env *BeaconCommitteeStateEnvironment) error {
+	// return nil
+	needBackup := false
 	cData, err := statedb.GetCommitteeStateBackupData(b.consensusDB)
 	if err != nil {
-		return err
+		cData = &statedb.CommitteeData{}
+		needBackup = true
 	}
-	needBackup := false
+
 	curDData := cData.BeaconDelegateData()
 	newDData := b.bDelegateState.Backup()
 	if !bytes.Equal(curDData, newDData) {
@@ -1035,6 +1042,22 @@ func (b BeaconCommitteeStateV4) GetBeaconSubstitute() []incognitokey.CommitteePu
 		panic(err)
 	}
 	return bPKStructs
+}
+
+func (b *BeaconCommitteeStateV4) SetBeaconSubstitute(subs []incognitokey.CommitteePublicKey) {
+	bPKString, err := incognitokey.CommitteeKeyListToString(subs)
+	if err != nil {
+		panic(err)
+	}
+	b.beaconSubstitute = bPKString
+}
+
+func (b *BeaconCommitteeStateV4) SetBeaconWaiting(waiting []incognitokey.CommitteePublicKey) {
+	bPKString, err := incognitokey.CommitteeKeyListToString(waiting)
+	if err != nil {
+		panic(err)
+	}
+	b.beaconWaiting = bPKString
 }
 
 func (b *BeaconCommitteeStateV4) processStakeInstruction(

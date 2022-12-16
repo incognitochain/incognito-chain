@@ -89,26 +89,37 @@ func (b *BeaconCommitteeStateV4) BackupPerformance(blkHeight uint64) []byte {
 
 func (b *BeaconCommitteeStateV4) RestorePerformance(data []byte, beaconBlocks []types.BeaconBlock) {
 	bkPerf := BKPerf{}
-	err := json.Unmarshal(data, &bkPerf)
-	if err != nil {
-		panic(err)
-	}
-	for idx, cPK := range bkPerf.CPks {
-		b.Performance[cPK] = bkPerf.Perf[idx]
-	}
 	for _, cPK := range b.beaconWaiting {
 		b.Performance[cPK] = 500
 	}
 	for _, cPK := range b.beaconSubstitute {
 		b.Performance[cPK] = 500
 	}
+	if len(data) != 0 {
+		err := json.Unmarshal(data, &bkPerf)
+		if err != nil {
+			panic(err)
+		}
+		for idx, cPK := range bkPerf.CPks {
+			b.Performance[cPK] = bkPerf.Perf[idx]
+		}
+	}
 	for _, blk := range beaconBlocks {
 		if blk.Header.Height == bkPerf.H {
-			return
+			break
 		}
 		err := b.UpdateBeaconPerformanceWithValidationData(blk.Header.PreviousValidationData)
 		if err != nil {
 			panic(err)
 		}
 	}
+	for pk, _ := range b.bDelegateState.DelegateInfo {
+		perf := uint64(0)
+		if v, ok := b.Performance[pk]; ok {
+			perf = v
+		}
+		vpow := b.bDelegateState.GetBeaconCandidatePower(pk)
+		b.Reputation[pk] = perf * vpow / 1000
+	}
+
 }

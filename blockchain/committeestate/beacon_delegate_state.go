@@ -269,7 +269,6 @@ func (b *BeaconDelegateState) Backup() []byte {
 		K: keys,
 		V: values,
 	}
-
 	nextEpochInfo, err := json.Marshal(dBK)
 	if err != nil {
 		panic(err)
@@ -302,6 +301,21 @@ func (b *BeaconDelegateState) Restore(bcState BeaconCommitteeState, stateDB *sta
 				Old: dBK.V[idx].O,
 				New: dBK.V[idx].N,
 			}
+		}
+	}
+	bc := bcState.GetBeaconCommittee()
+	if bs := bcState.GetBeaconSubstitute(); len(bs) != 0 {
+		bc = append(bc, bs...)
+	}
+	if bw := bcState.GetBeaconWaiting(); len(bw) != 0 {
+		bc = append(bc, bw...)
+	}
+	for _, k := range bc {
+		pkString, _ := k.ToBase58()
+		if bStakerInfo, exist, err := statedb.GetBeaconStakerInfo(stateDB, pkString); (exist) && (err == nil) {
+			b.AddBeaconCandidate(pkString, bStakerInfo.StakingAmount())
+		} else {
+			panic(err)
 		}
 	}
 	staker := bcState.GetAllCandidateSubstituteCommittee()

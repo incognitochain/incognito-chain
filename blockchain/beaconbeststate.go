@@ -904,11 +904,13 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		shardIDs = append(shardIDs, i)
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate,
-		currentEpochShardCandidate, _, _, syncingValidators,
+		currentEpochShardCandidate, _, beaconWaiting, syncingValidators,
 		rewardReceivers, autoStaking, stakingTx, delegateList := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
-	delete(substituteValidator, statedb.BeaconChainID)
+	bcSub, _ := incognitokey.CommitteeKeyListToString(substituteValidator[statedb.BeaconChainID])
+	fmt.Printf("Restore beacon subtitute %+v, %v\n", common.ShortPKList(bcSub), len(beaconWaiting))
+	// delete(substituteValidator, statedb.BeaconChainID)
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range currentValidator {
 		shardCommittee[byte(k)] = v
@@ -984,6 +986,11 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		return err
 	}
 	if committeeState.Version() >= committeestate.STAKING_FLOW_V4 {
+		committeeStateV4 := committeeState.(*committeestate.BeaconCommitteeStateV4)
+		committeeStateV4.SetConsensusDB(beaconBestState.consensusStateDB)
+		committeeStateV4.SetSlashedDB(beaconBestState.slashStateDB)
+		committeeStateV4.SetBeaconSubstitute(substituteValidator[statedb.BeaconChainID])
+		committeeStateV4.SetBeaconWaiting(beaconWaiting)
 		currentBlock := beaconBestState.BestBlock
 		tempBeaconHeight := currentBlock.Header.Height
 		firstBeaconHeightOfEpoch := GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
@@ -998,7 +1005,11 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 			tempBeaconBlock = *previousBeaconBlock
 			tempBeaconHeight = tempBeaconBlock.GetBeaconHeight()
 		}
-		return committeeState.Restore(allBlocks)
+		err := committeeStateV4.Restore(allBlocks)
+		if err != nil {
+			return err
+		}
+		committeeState = committeeStateV4
 	}
 	return nil
 }
