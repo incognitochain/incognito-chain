@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -171,6 +172,10 @@ func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusT
 
 func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error {
 	return blsbft.ValidateCommitteeSig(block, committees, numFixNode)
+}
+
+func (engine *Engine) ValidateBlockCommitteSigWithView(prevView multiview.View, block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error {
+	return blsbft.ValidateCommitteeSigWithView(prevView, block, committees, numFixNode)
 }
 
 func GenMiningKeyFromPrivateKey(privateKey string) (string, error) {

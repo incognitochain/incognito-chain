@@ -8,6 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BKPerf struct {
+	H    uint64
+	CPks []string
+	Perf []uint64
+}
+
 func (b *BeaconCommitteeStateV4) InitReputationState() {
 	Logger.log.Infof("[curtest] Init reputation")
 	bc := b.GetBeaconCommittee()
@@ -24,8 +30,8 @@ func (b *BeaconCommitteeStateV4) InitReputationState() {
 	}
 }
 
-func (b *BeaconCommitteeStateV4) UpdateBeaconPerformanceWithBlock(bBlock *types.BeaconBlock) error {
-	prevVal, err := consensustypes.DecodeValidationData(bBlock.Header.PreviousValidationData)
+func (b *BeaconCommitteeStateV4) UpdateBeaconPerformanceWithValidationData(valData string) error {
+	prevVal, err := consensustypes.DecodeValidationData(valData)
 	if err != nil {
 		return err
 	}
@@ -60,7 +66,7 @@ func (b *BeaconCommitteeStateV4) updateBeaconReputation(bCommittee []string, lis
 	return nil
 }
 
-func (b *BeaconCommitteeStateV4) BackupPerformance() []byte {
+func (b *BeaconCommitteeStateV4) BackupPerformance(blkHeight uint64) []byte {
 	perfs := []uint64{}
 	for _, cPK := range b.beaconCommittee {
 		perf, ok := b.Performance[cPK]
@@ -69,32 +75,51 @@ func (b *BeaconCommitteeStateV4) BackupPerformance() []byte {
 		}
 		perfs = append(perfs, perf)
 	}
-	res, err := json.Marshal(perfs)
+	bkPerf := BKPerf{
+		H:    blkHeight,
+		Perf: perfs,
+		CPks: b.beaconCommittee,
+	}
+	res, err := json.Marshal(bkPerf)
 	if err != nil {
 		panic(err)
 	}
 	return res
 }
 
-func (b *BeaconCommitteeStateV4) RestorePerformance(data []byte, beaconBlocks []*types.BeaconBlock) {
-	perfs := []uint64{}
-	err := json.Unmarshal(data, &perfs)
-	if err != nil {
-		panic(err)
-	}
-	for idx, cPK := range b.beaconCommittee {
-		b.Performance[cPK] = perfs[idx]
-	}
+func (b *BeaconCommitteeStateV4) RestorePerformance(data []byte, beaconBlocks []types.BeaconBlock) {
+	bkPerf := BKPerf{}
 	for _, cPK := range b.beaconWaiting {
 		b.Performance[cPK] = 500
 	}
 	for _, cPK := range b.beaconSubstitute {
 		b.Performance[cPK] = 500
 	}
+	if len(data) != 0 {
+		err := json.Unmarshal(data, &bkPerf)
+		if err != nil {
+			panic(err)
+		}
+		for idx, cPK := range bkPerf.CPks {
+			b.Performance[cPK] = bkPerf.Perf[idx]
+		}
+	}
 	for _, blk := range beaconBlocks {
-		err := b.UpdateBeaconPerformanceWithBlock(blk)
+		if blk.Header.Height == bkPerf.H {
+			break
+		}
+		err := b.UpdateBeaconPerformanceWithValidationData(blk.Header.PreviousValidationData)
 		if err != nil {
 			panic(err)
 		}
 	}
+	for pk, _ := range b.bDelegateState.DelegateInfo {
+		perf := uint64(0)
+		if v, ok := b.Performance[pk]; ok {
+			perf = v
+		}
+		vpow := b.bDelegateState.GetBeaconCandidatePower(pk)
+		b.Reputation[pk] = perf * vpow / 1000
+	}
+
 }

@@ -23,7 +23,7 @@ func (a *actorV3) maybeCommit() {
 		if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
 			!proposeBlockInfo.IsCommitted {
 			//has majority votes
-			if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 && proposeBlockInfo.ValidateFixNodeMajority() {
+			if proposeBlockInfo.ValidateCommitteeVotesMajority() && proposeBlockInfo.ValidateFixNodeMajority() {
 				a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)",
 					proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees))
 				a.commitBlock(proposeBlockInfo)

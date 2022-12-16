@@ -213,8 +213,8 @@ func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDelet
 	} else {
 		Logger.log.Info("Not Build returnstaking:", publicKey)
 	}
-
-	b.deleteStakerInfo(committeePublicKeyStruct, publicKey)
+	b.committeeChange.AddRemovedStaker(publicKey)
+	// b.deleteStakerInfo(committeePublicKeyStruct, publicKey)
 
 	return returnStakingInstruction
 }
@@ -232,7 +232,6 @@ func (b *beaconCommitteeStateSlashingBase) deleteStakerInfo(committeePublicKeySt
 	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
-	b.committeeChange.AddRemovedStaker(committeePublicKey)
 }
 
 func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(

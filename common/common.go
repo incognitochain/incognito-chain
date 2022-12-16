@@ -683,6 +683,37 @@ func IntersectionString(a, b []string) (c []string) {
 	return c
 }
 
+func IntersectionInt(a, b []int) (c []int) {
+	m := make(map[int]interface{})
+
+	for _, item := range a {
+		m[item] = nil
+	}
+
+	for _, item := range b {
+		if _, ok := m[item]; ok {
+			c = append(c, item)
+		}
+	}
+	return c
+}
+
+// C in A but not in B
+func ExceptString(a, b []string) (c []string) {
+	m := make(map[string]interface{})
+
+	for _, item := range b {
+		m[item] = nil
+	}
+
+	for _, item := range a {
+		if _, ok := m[item]; !ok {
+			c = append(c, item)
+		}
+	}
+	return c
+}
+
 func LogCommitteePublickeyList(log Logger, prefix string, listPKs []string) {
 	listPKsTmp := []string{}
 	for _, value := range listPKs {

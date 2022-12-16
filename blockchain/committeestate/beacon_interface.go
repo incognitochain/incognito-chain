@@ -42,7 +42,7 @@ type BeaconCommitteeState interface {
 	GetDelegateState() map[string]BeaconDelegatorInfo
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 	Backup(env *BeaconCommitteeStateEnvironment) error
-	Restore(beaconBlocks []*types.BeaconBlock) error
+	Restore(beaconBlocks []types.BeaconBlock) error
 	Hash() (*BeaconCommitteeStateHash, error)
 	GetReputation() map[string]uint64
 }

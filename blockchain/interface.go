@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-core/peer"
 
@@ -41,6 +42,7 @@ type ConsensusEngine interface {
 	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int, produceTimeSlot int64, proposeTimeSlot int64) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error
+	ValidateBlockCommitteSigWithView(prevView multiview.View, block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error
 	GetCurrentMiningPublicKey() (string, string)
 	GetAllMiningPublicKeys() []string
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)

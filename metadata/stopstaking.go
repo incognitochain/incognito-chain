@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 type StopAutoStakingMetadata struct {
@@ -35,8 +36,8 @@ func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) 
 	}
 	metadataBase := NewMetadataBaseWithSignature(stopStakingType)
 	return &StopAutoStakingMetadata{
-		MetadataBaseWithSignature:       *metadataBase,
-		CommitteePublicKey: committeePublicKey,
+		MetadataBaseWithSignature: *metadataBase,
+		CommitteePublicKey:        committeePublicKey,
 	}, nil
 }
 
@@ -53,11 +54,11 @@ func (stopAutoStakingMetadata *StopAutoStakingMetadata) ValidateMetadataByItself
 	return (stopAutoStakingMetadata.Type == StopAutoStakingMeta)
 }
 
-//ValidateTxWithBlockChain Validate Condition to Request Stop AutoStaking With Blockchain
-//- Requested Committee Publickey is in candidate, pending validator,
-//- Requested Committee Publickey is in staking tx list,
-//- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
-//- Not yet requested to stop auto-restaking
+// ValidateTxWithBlockChain Validate Condition to Request Stop AutoStaking With Blockchain
+// - Requested Committee Publickey is in candidate, pending validator,
+// - Requested Committee Publickey is in staking tx list,
+// - Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
+// - Not yet requested to stop auto-restaking
 func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	stopStakingMetadata, ok := tx.GetMetadata().(*StopAutoStakingMetadata)
 	if !ok {
@@ -72,14 +73,23 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 	if !(common.IndexOfStr(requestedPublicKey, committees) > -1) {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
 	}
-	stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+	var stakingTxHash common.Hash
+	bStakerInfo, has, err := beaconViewRetriever.GetBeaconStakerInfo(requestedPublicKey)
 	if err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
 	}
 	if !has {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
+		sStakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+		if err != nil {
+			return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
+		}
+		if !has {
+			return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
+		}
+		stakingTxHash = sStakerInfo.TxStakingID()
+	} else {
+		stakingTxHash = bStakerInfo.TxStakingIDs()[0]
 	}
-	stakingTxHash := stakerInfo.TxStakingID()
 
 	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
 	if err != nil {

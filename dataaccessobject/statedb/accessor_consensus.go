@@ -746,7 +746,8 @@ func SaveStopAutoShardStakerInfo(
 		key := GetShardStakerInfoKey(pubKeyBytes)
 		stakerInfo, exist, err := stateDB.getShardStakerInfo(key)
 		if err != nil || !exist {
-			return NewStatedbError(SaveStopAutoStakerInfoError, err)
+			continue
+			// return NewStatedbError(SaveStopAutoStakerInfoError, err)
 		}
 
 		// assign auto stake value from autostaking map
@@ -1021,7 +1022,7 @@ func DeleteAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes ma
 
 func StoreCommitteeStateBackupData(stateDB *StateDB, cData *CommitteeData) error {
 	key := common.HashH(GetBeaconCommitteeStateBackupKey())
-	if err := stateDB.SetStateObject(BeaconStakerObjectType, key, cData); err != nil {
+	if err := stateDB.SetStateObject(CommitteeDataObjectType, key, cData); err != nil {
 		return err
 	}
 	return nil

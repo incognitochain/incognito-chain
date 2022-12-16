@@ -136,18 +136,27 @@ func (b *BeaconCommitteeStateV4) LockNewCandidate(pk string, unlockEpoch uint64,
 
 func (b *BeaconCommitteeStateV4) GetReturnStakingInstruction(bcStateDB *statedb.StateDB, epoch uint64) *instruction.ReturnBeaconStakeInstruction {
 	returnPKs := []string{}
+	processList := []string{}
 	returnAmounts := []uint64{}
 	returnReason := []byte{}
 	unlockInfo := b.bLockingState.GetReturnPK(epoch)
 	if unlockInfo == nil {
 		return nil
 	}
-	for unlockPK, unlockInfo := range unlockInfo {
+	for unlockPK, _ := range unlockInfo {
+		processList = append(processList, unlockPK)
+	}
+	sort.Slice(processList, func(i, j int) bool {
+		return processList[i] < processList[j]
+	})
+	for _, unlockPK := range processList {
+		unlockInfo := unlockInfo[unlockPK]
 		if info, has, err := statedb.GetBeaconStakerInfo(bcStateDB, unlockPK); (err == nil) && (has) {
 			returnPKs = append(returnPKs, unlockPK)
 			returnAmounts = append(returnAmounts, info.StakingAmount())
 			returnReason = append(returnReason, unlockInfo.Reason)
 			b.bLockingState.UnlockCandidate(unlockPK)
+			fmt.Printf("Unlock beacon staker %v\n", unlockPK[len(unlockPK)-5:])
 		}
 	}
 	b.committeeChange.AddRemovedBeaconStakers(returnPKs)

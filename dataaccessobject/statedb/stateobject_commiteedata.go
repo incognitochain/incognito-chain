@@ -35,9 +35,11 @@ func (c CommitteeData) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		BDlg []byte
 		BLck []byte
+		BPer []byte
 	}{
 		BDlg: c.bDelegateData,
 		BLck: c.bLockingData,
+		BPer: c.bPerformance,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -49,6 +51,7 @@ func (c *CommitteeData) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		BDlg []byte
 		BLck []byte
+		BPer []byte
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -56,6 +59,7 @@ func (c *CommitteeData) UnmarshalJSON(data []byte) error {
 	}
 	c.bDelegateData = temp.BDlg
 	c.bLockingData = temp.BLck
+	c.bPerformance = temp.BPer
 	return nil
 }
 
@@ -125,7 +129,7 @@ func newCommitteeStateDataObjectWithValue(db *StateDB, key common.Hash, data int
 	} else {
 		committeeData, ok = data.(*CommitteeData)
 		if !ok {
-			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
+			return nil, fmt.Errorf("%+v, c got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 		}
 	}
 	return &CommitteeStateDataObject{
@@ -156,7 +160,7 @@ func (c CommitteeStateDataObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (c *CommitteeStateDataObject) SetValue(data interface{}) error {
 	committeeData, ok := data.(*CommitteeData)
 	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
+		return fmt.Errorf("%+v, d got type %+v", ErrInvalidStakerInfoType, reflect.TypeOf(data))
 	}
 	c.stateInfo = committeeData
 	return nil

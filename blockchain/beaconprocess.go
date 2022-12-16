@@ -186,7 +186,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	Logger.log.Infof("List instruction of block %v epoch %v:", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	for _, inst := range beaconBlock.Body.Instructions {
-		Logger.log.Infof("Instruction block %v: %+v", beaconBlock.Header.Height, inst)
+		Logger.log.Debugf("Instruction block %v: %+v", beaconBlock.Header.Height, inst)
 	}
 
 	Logger.log.Infof("BEACON | Finish Insert new Beacon Block %+v, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
@@ -710,7 +710,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
 		beaconBlock.Body.Instructions,
-		isFoundRandomInstruction, isBeginRandom, isBeaconSwap, isEndOfEpoch,
+		isFoundRandomInstruction, isBeginRandom, isBeaconSwap, isEndOfEpoch, beaconBlock.Header.PreviousValidationData,
 	)
 
 	hashes, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
@@ -804,7 +804,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false, false, false, "")
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
@@ -951,9 +951,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	if newBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
 		env := &committeestate.BeaconCommitteeStateEnvironment{
-			BeaconHeight:     beaconBlock.GetBeaconHeight(),
-			MissingSignature: curView.missingSignatureCounter.MissingSignature(),
-			IsEndOfEpoch:     blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
+			BeaconHeight:       beaconBlock.GetBeaconHeight(),
+			MissingSignature:   curView.missingSignatureCounter.MissingSignature(),
+			IsEndOfEpoch:       blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
+			IsBeaconChangeTime: blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
 		}
 		bcV4 := newBestState.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV4)
 		if newBestState.consensusStateDB, newBestState.slashStateDB, err = bcV4.CommitOnBlock(
