@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/math"
 	"reflect"
 	"strings"
 
@@ -23,6 +24,7 @@ type StakeInstruction struct {
 	RewardReceivers       []string
 	RewardReceiverStructs []privacy.PaymentAddress
 	AutoStakingFlag       []bool
+	StakingAmount         []uint64
 }
 
 func NewStakeInstructionWithValue(
@@ -104,6 +106,13 @@ func (s *StakeInstruction) ToString() []string {
 		}
 	}
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
+	if s.Chain != "beacon" {
+		amountStr := []string{}
+		for _, amount := range s.StakingAmount {
+			amountStr = append(amountStr, fmt.Sprintf("%v", amount))
+		}
+		stakeInstructionStr = append(stakeInstructionStr, strings.Join(amountStr, SPLITTER))
+	}
 	return stakeInstructionStr
 }
 
@@ -131,6 +140,15 @@ func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 	}
 	stakeInstruction.SetAutoStakingFlag(autoStakeFlags)
 	stakeInstruction.SetChain(instruction[2])
+	if stakeInstruction.Chain == "beacon" {
+		amount := []uint64{}
+		amountStr := strings.Split(instruction[6], SPLITTER)
+		for _, amounts := range amountStr {
+			a, _ := math.ParseUint64(amounts)
+			amount = append(amount, a)
+		}
+		stakeInstruction.StakingAmount = amount
+	}
 	return stakeInstruction
 }
 
@@ -138,15 +156,17 @@ func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 // beaconprocess.go: 1122 - 1165
 // beaconproducer.go: 386
 func ValidateStakeInstructionSanity(instruction []string) error {
-	if len(instruction) != 6 {
+	if instruction[2] != SHARD_INST && instruction[2] != BEACON_INST {
+		return fmt.Errorf("invalid chain id, %+v", instruction)
+	}
+
+	if (len(instruction) != 6 && instruction[2] != BEACON_INST) || (len(instruction) != 7 && instruction[2] != SHARD_INST) {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != STAKE_ACTION {
 		return fmt.Errorf("invalid stake action, %+v", instruction)
 	}
-	if instruction[2] != SHARD_INST && instruction[2] != BEACON_INST {
-		return fmt.Errorf("invalid chain id, %+v", instruction)
-	}
+
 	publicKeys := strings.Split(instruction[1], SPLITTER)
 	txStakes := strings.Split(instruction[3], SPLITTER)
 	for _, txStake := range txStakes {

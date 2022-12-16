@@ -63,7 +63,6 @@ func NewBeaconCommitteeState(
 	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
 	assignRule AssignRuleProcessor,
 	allBeaconBlocks []types.BeaconBlock,
-	bc BlockChain,
 ) BeaconCommitteeState {
 
 	var committeeState BeaconCommitteeState
@@ -125,7 +124,6 @@ func NewBeaconCommitteeState(
 		)
 	case STAKING_FLOW_V4:
 		committeeState = NewBeaconCommitteeStateV4WithValue(
-			bc,
 			tempShardCommittee,
 			tempShardSubstitute,
 			tempShardCommonPool,
@@ -273,25 +271,7 @@ func (b beaconCommitteeStateBase) GetBeaconWaiting() []incognitokey.CommitteePub
 }
 
 func (b beaconCommitteeStateBase) GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
-	sC := make(map[byte][]incognitokey.CommitteePublicKey)
-	sPV := make(map[byte][]incognitokey.CommitteePublicKey)
-	sSP := make(map[byte][]incognitokey.CommitteePublicKey)
-	for shardID, committee := range b.GetShardCommittee() {
-		sC[shardID] = append([]incognitokey.CommitteePublicKey{}, committee...)
-	}
-	for shardID, Substitute := range b.GetShardSubstitute() {
-		sPV[shardID] = append([]incognitokey.CommitteePublicKey{}, Substitute...)
-	}
-	for shardID, syncValidator := range b.GetSyncingValidators() {
-		sSP[shardID] = append([]incognitokey.CommitteePublicKey{}, syncValidator...)
-	}
-	bC := b.GetBeaconCommittee()
-	bPV := b.GetBeaconSubstitute()
-	bW := []incognitokey.CommitteePublicKey{}
-	bL := []incognitokey.CommitteePublicKey{}
-	cSWFCR := b.GetCandidateShardWaitingForCurrentRandom()
-	cSWFNR := b.GetCandidateShardWaitingForNextRandom()
-	return sC, sPV, sSP, bC, bPV, bW, bL, cSWFCR, cSWFNR
+	panic("This should be called from >= beaconCommitteeStateV3 ")
 }
 
 func (b beaconCommitteeStateBase) GetBeaconCommittee() []incognitokey.CommitteePublicKey {

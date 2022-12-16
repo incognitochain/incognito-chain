@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math"
 	"sort"
 
@@ -821,9 +822,11 @@ func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 				validValidator = append(validValidator, v)
 			}
 		}
-		syncVal, _ := incognitokey.CommitteeKeyListToString(validValidator)
-		beaconFinishSyncInst := instruction.NewFinishSyncInstructionWithValue(-1, syncVal)
-		instructions = append(instructions, beaconFinishSyncInst.ToString())
+		if len(validValidator) > 0 {
+			syncVal, _ := incognitokey.CommitteeKeyListToString(validValidator)
+			beaconFinishSyncInst := instruction.NewFinishSyncInstructionWithValue(-1, syncVal)
+			instructions = append(instructions, beaconFinishSyncInst.ToString())
+		}
 	}
 
 	//get validators in sync pool that contain latest code
@@ -900,10 +903,27 @@ func (curView *BeaconBestState) filterAndVerifyFinishSyncInstruction(instruction
 
 			//verify staker have valid waiting time
 			for _, validator := range inst.PublicKeys {
-				info, exists, err := curView.GetStakerInfo(validator)
-				if !exists || err != nil {
-					fmt.Println("finishSyncInstructions", v[2])
-					panic("Error when generateFinishSyncInstruction. This must not occur!")
+				var info *statedb.StakerInfo
+				exists := true
+				if inst.ChainID == -1 {
+					stringList, _ := incognitokey.CommitteeKeyListToString(curView.GetBeaconWaiting())
+					for _, cpkStr := range inst.PublicKeys {
+						if common.IndexOfStr(cpkStr, stringList) == -1 {
+							exists = false
+							break
+						}
+					}
+					if !exists {
+						fmt.Printf("finishSyncInstructions +%v", inst)
+						panic("Error when generateFinishSyncInstruction. This must not occur!")
+					}
+					continue //do not need half cycle
+				} else {
+					info, exists, err = curView.GetStakerInfo(validator)
+					if !exists || err != nil {
+						fmt.Println("finishSyncInstructions", v[2])
+						panic("Error when generateFinishSyncInstruction. This must not occur!")
+					}
 				}
 
 				//loop sync pool, check if validator is exist and having valid waiting time

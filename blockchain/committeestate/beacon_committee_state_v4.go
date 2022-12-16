@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"reflect"
 	"runtime"
@@ -21,10 +20,6 @@ const (
 	INCREASE_PERFORMING = 1015
 	DECREASE_PERFORMING = 965
 )
-
-type BlockChain interface {
-	GetTransactionByHash(txHash common.Hash) (byte, common.Hash, uint64, int, metadata.Transaction, error)
-}
 
 type StakerInfo struct {
 	cpkStr        incognitokey.CommitteePublicKey
@@ -59,7 +54,6 @@ type BeaconCommitteeStateV4 struct {
 	beaconWaiting   map[string]*StakerInfo
 	beaconLocking   map[string]*LockingInfo
 	stateDB         *statedb.StateDB
-	bc              BlockChain
 }
 
 func GetKeyStructListFromMapStaker(list map[string]*StakerInfo) []incognitokey.CommitteePublicKey {
@@ -147,7 +141,6 @@ func (b *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePubl
 	return GetKeyStructListFromMapLocking(b.beaconLocking)
 }
 func NewBeaconCommitteeStateV4WithValue(
-	bc BlockChain,
 	shardCommittee map[byte][]string,
 	shardSubstitute map[byte][]string,
 	shardCommonPool []string,
@@ -168,7 +161,6 @@ func NewBeaconCommitteeStateV4WithValue(
 	}
 	stateV4 := NewBeaconCommitteeStateV4()
 	stateV4.BeaconCommitteeStateV3 = stateV3
-	stateV4.bc = bc
 	return stateV4
 }
 
@@ -251,7 +243,6 @@ func (b *BeaconCommitteeStateV4) Clone(cloneState *statedb.StateDB) BeaconCommit
 	newState := NewBeaconCommitteeStateV4()
 	newState.stateDB = cloneState
 	newState.BeaconCommitteeStateV3 = b.BeaconCommitteeStateV3.clone()
-	newState.bc = b.bc
 	for k, v := range b.beaconCommittee {
 		infoClone := *v
 		newState.beaconCommittee[k] = &infoClone
@@ -559,32 +550,30 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 
 	for _, inst := range env.BeaconInstructions {
 		if inst[0] == instruction.STAKE_ACTION && inst[2] == "beacon" {
-			//TODO: validate staker pubkey
-			beaconStakeInst := instruction.ImportInitStakeInstructionFromString(inst)
-
-			for i, _ := range beaconStakeInst.TxStakeHashes {
-				_, _, _, _, stakingTx, err := s.bc.GetTransactionByHash(beaconStakeInst.TxStakeHashes[i])
-				if err != nil {
-					return nil, fmt.Errorf("Cannot find staking tx %v", beaconStakeInst.TxStakeHashes[i].String())
-				}
-				stakingMetadata := stakingTx.GetMetadata().(*metadata.StakingMetadata)
+			beaconStakeInst := instruction.ImportStakeInstructionFromString(inst)
+			for i, txHash := range beaconStakeInst.TxStakeHashes {
+				//_, _, _, _, stakingTx, err := s.bc.GetTransactionByHash(beaconStakeInst.TxStakeHashes[i])
+				//if err != nil {
+				//	return nil, fmt.Errorf("Cannot find staking tx %v", beaconStakeInst.TxStakeHashes[i].String())
+				//}
+				//stakingMetadata := stakingTx.GetMetadata().(*metadata.StakingMetadata)
 
 				//return staking if already exist
-				_, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakeInst.PublicKeys[i])
-				if exist {
-					return_cpk = append(return_cpk, beaconStakeInst.PublicKeys[i])
-					return_amount = append(return_amount, stakingMetadata.StakingAmount)
-					return_reason = append(return_reason, statedb.RETURN_BY_DUPLICATE_STAKE)
-					continue
-				}
+				//_, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakeInst.PublicKeys[i])
+				//if exist {
+				//	return_cpk = append(return_cpk, beaconStakeInst.PublicKeys[i])
+				//	return_amount = append(return_amount, stakingMetadata.StakingAmount)
+				//	return_reason = append(return_reason, statedb.RETURN_BY_DUPLICATE_STAKE)
+				//	continue
+				//}
 
 				var key incognitokey.CommitteePublicKey
 				key.FromString(beaconStakeInst.PublicKeys[i])
 				stakingInfo := map[common.Hash]uint64{}
-				stakingInfo[*stakingMetadata.Hash()] = stakingMetadata.StakingAmount
+				stakingInfo[txHash] = beaconStakeInst.StakingAmount[i]
 				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, stakingInfo)
 				statedb.StoreBeaconStakerInfo(s.stateDB, key, info)
-				s.beaconWaiting[beaconStakeInst.PublicKeys[i]] = &StakerInfo{key, stakingMetadata.StakingAmount, false, 500, 0, false}
+				s.beaconWaiting[beaconStakeInst.PublicKeys[i]] = &StakerInfo{key, beaconStakeInst.StakingAmount[i], false, 500, 0, false}
 				statedb.StoreBeaconWaiting(s.stateDB, []incognitokey.CommitteePublicKey{key})
 			}
 		}

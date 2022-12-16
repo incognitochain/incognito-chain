@@ -932,7 +932,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	committeeState := committeestate.NewBeaconCommitteeState(beaconBestState.consensusStateDB, beaconBestState.MinBeaconCommitteeSize,
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
-		swapRule, nextEpochShardCandidate, currentEpochShardCandidate, assignRule, allBeaconBlockInEpoch, bc,
+		swapRule, nextEpochShardCandidate, currentEpochShardCandidate, assignRule, allBeaconBlockInEpoch,
 	)
 
 	beaconBestState.beaconCommitteeState = committeeState
@@ -1049,16 +1049,15 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 		beaconBestState.beaconCommitteeState.Version(), beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height, config.Param().ConsensusParam.StakingFlowV3Height)
 
-	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
-		beaconBestState.BeaconHeight,
-		config.Param().ConsensusParam.StakingFlowV2Height,
-		config.Param().ConsensusParam.AssignRuleV3Height,
-		config.Param().ConsensusParam.StakingFlowV3Height,
-		beaconBestState.BestBlockHash,
-		beaconBestState.consensusStateDB,
-		beaconBestState.MinBeaconCommitteeSize,
-	)
-
+	env := &committeestate.BeaconCommitteeStateEnvironment{
+		StakingV3Height:        config.Param().ConsensusParam.StakingFlowV3Height,
+		StakingV2Height:        config.Param().ConsensusParam.StakingFlowV2Height,
+		AssignRuleV3Height:     config.Param().ConsensusParam.AssignRuleV3Height,
+		BeaconHash:             beaconBestState.BestBlockHash,
+		BeaconHeight:           beaconBestState.BeaconHeight,
+		ConsensusStateDB:       beaconBestState.consensusStateDB,
+		MinBeaconCommitteeSize: beaconBestState.MinBeaconCommitteeSize,
+	}
 	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)
 	beaconBestState.beaconCommitteeState = committeeState
 
