@@ -910,14 +910,13 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	delete(currentValidator, statedb.BeaconChainID)
 	bcSub, _ := incognitokey.CommitteeKeyListToString(substituteValidator[statedb.BeaconChainID])
 	fmt.Printf("Restore beacon subtitute %+v, %v\n", common.ShortPKList(bcSub), len(beaconWaiting))
-	// delete(substituteValidator, statedb.BeaconChainID)
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	for k, v := range currentValidator {
-		shardCommittee[byte(k)] = v
+	for cID := 0; cID < beaconBestState.ActiveShards; cID++ {
+		shardCommittee[byte(cID)] = currentValidator[cID]
 	}
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
-	for k, v := range substituteValidator {
-		shardSubstitute[byte(k)] = v
+	for cID := 0; cID < beaconBestState.ActiveShards; cID++ {
+		shardSubstitute[byte(cID)] = substituteValidator[cID]
 	}
 
 	//init version of committeeState here
