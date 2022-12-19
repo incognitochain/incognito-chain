@@ -37,20 +37,28 @@ func main() {
 	sKey5 := "12DdGt6ckrDmUcfhj6thfP3S5ajJLwjKjxDNsLXTVaJ1FL9hpZE"
 	sKey6 := "12UkKRgNCPWR9FrSP2z92yXyyHF1AuL11RZDzfpnqnphC6ET8Pa"
 	sKey7 := "1tkwFJt8FnTr1XEpnSmtF67xCEJWSZ24fNSsJpqUKbGDhGtLxE"
-	bKey0 := "12C8AJzbBCo8Z2tjLaSEUv5G4KZEq8MEWubVh9LPg9KynY83X7u"
-	bKey1 := "1FBpchyQkch8BojMUCtxNpBp3v3aYwFHjk41836m3ooeKVpf34"
+	sKey8 := "12C8AJzbBCo8Z2tjLaSEUv5G4KZEq8MEWubVh9LPg9KynY83X7u"
+	sKey9 := "1FBpchyQkch8BojMUCtxNpBp3v3aYwFHjk41836m3ooeKVpf34"
+	sKey10 := "12nLs1ftPJuqQZy29mExUUx7K1ZDWreTYxtCr7E44EoCK6rP4ET"
+	sKey11 := "12crV4U6fJsh1zd8Kk24yiu7A85WhGdKZiZrMaLBLn99ohJgZba"
+	bKey0 := "1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s"
+	bKey1 := "1nyeG4mpkSHi6omj1zTNdQxUkXv8eitpNp8y9RgHyMdv4ifWTQ"
 
 	validators := map[string]*Validator{
-		sKey0: {},
-		sKey1: {},
-		sKey2: {},
-		sKey3: {},
-		sKey4: {},
-		sKey5: {},
-		sKey6: {},
-		sKey7: {},
-		bKey0: {},
-		bKey1: {},
+		sKey0:  {},
+		sKey1:  {},
+		sKey2:  {},
+		sKey3:  {},
+		sKey4:  {},
+		sKey5:  {},
+		sKey6:  {},
+		sKey7:  {},
+		sKey8:  {},
+		sKey9:  {},
+		sKey10: {},
+		sKey11: {},
+		bKey0:  {},
+		bKey1:  {},
 	}
 
 	args := os.Args
