@@ -55,12 +55,12 @@ func (cs *CommiteeState) Filter(fixedCommiteesNodes map[int][]string, fixedRewar
 	cs.DelegateList = map[string]string{}
 	cs.AutoStaking = map[string]bool{}
 	cs.RewardReceivers = map[string]string{}
+	cs.StakingTx = map[string]string{}
 
 	for i, v := range cs.Committee {
 		t := []string{}
 		for _, value := range v {
-			value = value[:len(value)-5]
-			t = append(t, value)
+			t = append(t, value[len(value)-5:])
 		}
 		cs.Committee[i] = t
 	}
@@ -68,8 +68,7 @@ func (cs *CommiteeState) Filter(fixedCommiteesNodes map[int][]string, fixedRewar
 	for i, v := range cs.Substitute {
 		t := []string{}
 		for _, value := range v {
-			value = value[:len(value)-5]
-			t = append(t, value)
+			t = append(t, value[len(value)-5:])
 		}
 		cs.Substitute[i] = t
 	}
@@ -77,30 +76,26 @@ func (cs *CommiteeState) Filter(fixedCommiteesNodes map[int][]string, fixedRewar
 	for i, v := range cs.Syncing {
 		t := []string{}
 		for _, value := range v {
-			value = value[:len(value)-5]
-			t = append(t, value)
+			t = append(t, value[len(value)-5:])
 		}
 		cs.Syncing[i] = t
 	}
 
 	t := []string{}
 	for _, value := range cs.BeaconWaiting {
-		value = value[:len(value)-5]
-		t = append(t, value)
+		t = append(t, value[len(value)-5:])
 	}
 	cs.BeaconWaiting = t
 
 	t = []string{}
 	for _, value := range cs.NextCandidate {
-		value = value[:len(value)-5]
-		t = append(t, value)
+		t = append(t, value[len(value)-5:])
 	}
 	cs.NextCandidate = t
 
 	t = []string{}
 	for _, value := range cs.CurrentCandidate {
-		value = value[:len(value)-5]
-		t = append(t, value)
+		t = append(t, value[len(value)-5:])
 	}
 	cs.CurrentCandidate = t
 }
