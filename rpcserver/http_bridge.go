@@ -426,7 +426,7 @@ func processBurningReq(
 		if errNewParam != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 		}
-		rawTx, rpcErr := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+		rawTx, rpcErr := httpServer.txService.BuildRawTransaction(createRawTxParam, meta.(metadata.Metadata))
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)
 			return nil, rpcErr
@@ -434,7 +434,7 @@ func processBurningReq(
 		byteArrays, err2 = json.Marshal(rawTx)
 		txHash = rawTx.Hash().String()
 	} else {
-		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta.(metadata.Metadata))
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)
 			return nil, rpcErr
@@ -1049,6 +1049,36 @@ func (httpServer *HttpServer) handleCreateAndSendBurningNearRequest(params inter
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+// burn prv for pdao purpose
+// createBridgeAggBurnForCallTransaction
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPRVVoteReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningPRVRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		true,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPRVVoteRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPRVVoteReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}

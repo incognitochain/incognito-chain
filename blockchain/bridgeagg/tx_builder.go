@@ -1,9 +1,11 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -291,7 +293,7 @@ func buildIssuingReshieldResponse(
 	} else {
 		tokenID = *issuingReshieldAcceptedInst.UnifiedTokenID
 	}
-	if tokenID == common.PRVCoinID {
+	if tokenID == common.PRVCoinID && !bytes.Equal(issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID, common.Hex2Bytes(config.Param().PRVERC20ContractAddressStr)) {
 		Logger.log.Errorf("cannot reshield prv via bridge")
 		return nil, fmt.Errorf("cannot reshield prv via bridge")
 	}

@@ -50,7 +50,7 @@ ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
 aurora_contract_address: "0x14D0cf3bC307aA15DA40Aa4c8cc2A2a81eF96B3a"
 avax_contract_address: "0x30fb06E97a6CD370BCE994A88C428F9F3aB6Ec28"
 near_contract_address: "incognito.prv.testnet"
-prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
+prv_erc20_contract_address: "0xa0904E2F05D1108063Ac7CfB7719bD6518FDBDF4"
 prv_bep20_contract_address: "0x0C61C7F99DeE0270a5934F1520d109dc44A51d6c"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
 centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
@@ -159,8 +159,12 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
   - nearbridge:
-      min_trigger: 1e9
-      force_trigger: 1e9
+      min_trigger: 1
+      force_trigger: 1
+      require_percentage: 100
+  - pdao:
+      min_trigger: 1
+      force_trigger: 1
       require_percentage: 100
 blocktime_param:
   - "blocktimedef": 10

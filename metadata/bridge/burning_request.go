@@ -125,6 +125,10 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		return false, false, fmt.Errorf("feature with metadata %v not enabled yet", bReq.Type)
 	}
 
+	if shardViewRetriever.GetTriggeredFeature()["pdao"] != 0 && bReq.Type == metadataCommon.BurningPRVERC20RequestMeta {
+		return false, false, fmt.Errorf("feature deprecated with metadata %v, please burn with new metatype", bReq.Type)
+	}
+
 	return true, true, nil
 }
 
