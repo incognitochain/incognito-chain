@@ -563,6 +563,7 @@ func (a *actorV2) run() error {
 					continue
 				}
 				a.currentTime = time.Now().Unix()
+				a.logger.Info("[committee-state] chainName:", a.chain.GetChainName())
 				bestView := a.chain.GetBestView()
 				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
 
