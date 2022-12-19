@@ -34,6 +34,7 @@ func (s *TSManager) updateNewAnchor(previousEndTime int64, startTime int64, star
 }
 
 func (s *TSManager) updateCurrentInfo(version int, currentTS int64, currentProposeTime int64) {
+	Logger.log.Infof("[commitee-state] version: %v, currentTS: %v, currentProposeTime: %v \n", version, currentTS, currentProposeTime)
 	s.CurrentBlockVersion = version
 	s.CurrentBlockTS = currentTS
 	s.CurrentProposeTime = currentProposeTime
@@ -50,7 +51,7 @@ func (s *TSManager) getCurrentTS() int64 {
 func (s *TSManager) calculateTimeslot(t int64) int64 {
 	checkpoint := s.getLatestAnchor()
 
-	Logger.log.Infof("blockVersion: %v, blockTs: %v, proposeTime: %v", s.CurrentBlockVersion, s.CurrentBlockTS, s.CurrentProposeTime)
+	Logger.log.Infof("blockVersion: %v, blockTs: %v, proposeTime: %v \n", s.CurrentBlockVersion, s.CurrentBlockTS, s.CurrentProposeTime)
 
 	for i := len(s.Anchors) - 1; i >= 0; i-- {
 		if t >= s.Anchors[i].PreviousEndTime {
