@@ -178,7 +178,7 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 		shardID := byte(i)
 		tempCommittees := common.DeepCopyString(b.shardCommittee[shardID])
 		tempSubstitutes := common.DeepCopyString(b.shardSubstitute[shardID])
-
+		Logger.log.Infof("GenerateSwapShardInstructions for shard %v, committee %+v substitutes %+v, %v %v %v\n", shardID, common.ShortPKList(tempCommittees), common.ShortPKList(tempSubstitutes), env.MinShardCommitteeSize, env.MaxShardCommitteeSize, env.NumberOfFixedShardBlockValidator)
 		swapShardInstruction, _, _, slashedCommittee, _ := b.swapRule.Process(
 			shardID,
 			tempCommittees,

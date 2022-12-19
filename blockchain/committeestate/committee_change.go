@@ -102,21 +102,21 @@ func (committeeChange *CommitteeChange) AddShardSubstituteRemoved(shardID byte, 
 	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddBeaconSubstituteAdded(shardID byte, shardSubstituteAdded []string) *CommitteeChange {
-	if len(shardSubstituteAdded) == 0 {
+func (committeeChange *CommitteeChange) AddBeaconSubstituteAdded(shardID byte, beaconSubstituteAdded []string) *CommitteeChange {
+	if len(beaconSubstituteAdded) == 0 {
 		return committeeChange
 	}
-	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteAdded)
-	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(beaconSubstituteAdded)
+	committeeChange.BeaconSubstituteAdded = append(committeeChange.BeaconSubstituteAdded, temp...)
 	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddBeaconSubstituteRemoved(shardID byte, shardSubstituteRemoved []string) *CommitteeChange {
-	if len(shardSubstituteRemoved) == 0 {
+func (committeeChange *CommitteeChange) AddBeaconSubstituteRemoved(shardID byte, beaconSubstituteRemoved []string) *CommitteeChange {
+	if len(beaconSubstituteRemoved) == 0 {
 		return committeeChange
 	}
-	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteRemoved)
-	committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID], temp...)
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(beaconSubstituteRemoved)
+	committeeChange.BeaconSubstituteRemoved = append(committeeChange.BeaconSubstituteRemoved, temp...)
 	return committeeChange
 }
 
@@ -129,11 +129,11 @@ func (committeeChange *CommitteeChange) AddShardCommitteeAdded(shardID byte, sha
 	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddShardCommitteeRemoved(shardID byte, ShardCommitteeRemoved []string) *CommitteeChange {
-	if len(ShardCommitteeRemoved) == 0 {
+func (committeeChange *CommitteeChange) AddShardCommitteeRemoved(shardID byte, shardCommitteeRemoved []string) *CommitteeChange {
+	if len(shardCommitteeRemoved) == 0 {
 		return committeeChange
 	}
-	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(ShardCommitteeRemoved)
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardCommitteeRemoved)
 	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], temp...)
 	return committeeChange
 }
@@ -147,11 +147,11 @@ func (committeeChange *CommitteeChange) AddBeaconCommitteeAdded(shardID byte, sh
 	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddBeaconCommitteeRemoved(shardID byte, ShardCommitteeRemoved []string) *CommitteeChange {
-	if len(ShardCommitteeRemoved) == 0 {
+func (committeeChange *CommitteeChange) AddBeaconCommitteeRemoved(shardID byte, shardCommitteeRemoved []string) *CommitteeChange {
+	if len(shardCommitteeRemoved) == 0 {
 		return committeeChange
 	}
-	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(ShardCommitteeRemoved)
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardCommitteeRemoved)
 	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], temp...)
 	return committeeChange
 }

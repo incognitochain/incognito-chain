@@ -890,13 +890,20 @@ func (b *BeaconCommitteeStateV4) processAssignBeacon(
 		shardNewCandidates: env.newAllShardRoles,
 	}
 	beaconWaiting := []string{}
+	slashedShard := map[string]interface{}{}
+	for _, slashedPKs := range committeeChange.SlashingCommittee {
+		for _, slashedPK := range slashedPKs {
+			slashedShard[slashedPK] = nil
+		}
+	}
 	outPublicKeys := []string{}
 	for _, outPublicKey := range env.beaconWaiting {
 		if stakerInfo, has, err := statedb.GetBeaconStakerInfo(env.ConsensusStateDB, outPublicKey); (err != nil) || (!has) {
 			err = errors.Errorf("Can not found staker info for pk %v at block %v - %v err %v", outPublicKey, env.BeaconHeight, env.BeaconHash, err)
 			return nil, nil, err
 		} else {
-			if stakerInfo.AutoStaking() {
+			_, isSlashed := slashedShard[outPublicKey]
+			if (stakerInfo.AutoStaking()) && (!isSlashed) {
 				beaconWaiting = append(beaconWaiting, outPublicKey)
 			} else {
 				outPublicKeys = append(outPublicKeys, outPublicKey)
@@ -1261,7 +1268,7 @@ func (b *BeaconCommitteeStateV4) addDataToEnvironment(env *BeaconCommitteeStateE
 
 func (b *BeaconCommitteeStateV4) GetAllCandidateSubstituteCommittee() []string {
 	res := b.BeaconCommitteeStateV3.GetAllCandidateSubstituteCommittee()
-	res = append(res, b.beaconWaiting...)
 	res = append(res, b.beaconSubstitute...)
+	res = append(res, b.beaconWaiting...)
 	return res
 }

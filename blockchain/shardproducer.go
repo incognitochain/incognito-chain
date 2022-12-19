@@ -1124,7 +1124,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				beaconAddStakeAmountKeys = append(beaconAddStakeAmountKeys, addStakingMetadata.CommitteePublicKey)
 				beaconAddStakingAmount = append(beaconAddStakingAmount, addStakingMetadata.AddStakingAmount)
 				beaconAddStakeAmounttxs = append(beaconAddStakeAmounttxs, tx.Hash().String())
-				fmt.Println(beaconAddStakeAmountKeys, beaconAddStakingAmount, beaconAddStakeAmounttxs)
+				// fmt.Println(beaconAddStakeAmountKeys, beaconAddStakingAmount, beaconAddStakeAmounttxs)
 			}
 		}
 	}
