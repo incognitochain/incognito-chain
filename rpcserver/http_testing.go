@@ -196,6 +196,8 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	delegateList := map[string]string{}
 
 	if height == 0 && tempHash == "" {
+		//TODO: @tin uncommet these line of codes for production
+
 		bState := httpServer.GetBlockchain().GetBeaconBestState()
 		beaconConsensusStateRootHash, err1 = blockchain.GetBeaconRootsHashByBlockHash(
 			httpServer.config.BlockChain.GetBeaconChainDatabase(),
@@ -208,9 +210,11 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		currentEpochShardCandidate = cs.GetCandidateShardWaitingForCurrentRandom()
 		nextEpochShardCandidate = cs.GetCandidateShardWaitingForNextRandom()
 		syncingValidators = cs.GetSyncingValidators()
-		rewardReceivers = cs.GetRewardReceiver()
-		autoStaking = cs.GetAutoStaking()
-		delegateList = cs.GetDelegate()
+
+		//rewardReceivers = cs.GetRewardReceiver()
+		//autoStaking = cs.GetAutoStaking()
+		//delegateList = cs.GetDelegate()
+
 		for i, v := range cs.GetShardCommittee() {
 			currentValidator[int(i)] = v
 		}
