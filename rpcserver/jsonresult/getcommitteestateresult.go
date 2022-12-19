@@ -51,4 +51,56 @@ func (cs *CommiteeState) Filter(fixedCommiteesNodes map[int][]string, fixedRewar
 	for _, v := range fixedRewardReceivers {
 		delete(cs.RewardReceivers, v)
 	}
+
+	cs.DelegateList = map[string]string{}
+	cs.AutoStaking = map[string]bool{}
+	cs.RewardReceivers = map[string]string{}
+
+	for i, v := range cs.Committee {
+		t := []string{}
+		for _, value := range v {
+			value = value[:len(value)-5]
+			t = append(t, value)
+		}
+		cs.Committee[i] = t
+	}
+
+	for i, v := range cs.Substitute {
+		t := []string{}
+		for _, value := range v {
+			value = value[:len(value)-5]
+			t = append(t, value)
+		}
+		cs.Substitute[i] = t
+	}
+
+	for i, v := range cs.Syncing {
+		t := []string{}
+		for _, value := range v {
+			value = value[:len(value)-5]
+			t = append(t, value)
+		}
+		cs.Syncing[i] = t
+	}
+
+	t := []string{}
+	for _, value := range cs.BeaconWaiting {
+		value = value[:len(value)-5]
+		t = append(t, value)
+	}
+	cs.BeaconWaiting = t
+
+	t = []string{}
+	for _, value := range cs.NextCandidate {
+		value = value[:len(value)-5]
+		t = append(t, value)
+	}
+	cs.NextCandidate = t
+
+	t = []string{}
+	for _, value := range cs.CurrentCandidate {
+		value = value[:len(value)-5]
+		t = append(t, value)
+	}
+	cs.CurrentCandidate = t
 }
