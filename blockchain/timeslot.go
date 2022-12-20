@@ -34,7 +34,6 @@ func (s *TSManager) updateNewAnchor(previousEndTime int64, startTime int64, star
 }
 
 func (s *TSManager) updateCurrentInfo(version int, currentTS int64, currentProposeTime int64) {
-	Logger.log.Infof("[commitee-state] version: %v, currentTS: %v, currentProposeTime: %v \n", version, currentTS, currentProposeTime)
 	s.CurrentBlockVersion = version
 	s.CurrentBlockTS = currentTS
 	s.CurrentProposeTime = currentProposeTime
