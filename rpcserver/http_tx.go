@@ -1612,14 +1612,14 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
 	bcStateDB := beaconFinalView.GetBeaconConsensusStateDB()
 	stakerAutoStake := false
-	if bStarkerInfor, has, err := statedb.GetBeaconStakerInfo(bcStateDB, stakingMetadata.CommitteePublicKey); (!has) || (err != nil) {
+	if bStarkerInfo, has, err := statedb.GetBeaconStakerInfo(bcStateDB, stakingMetadata.CommitteePublicKey); (!has) || (err != nil) {
 		if sStarkerInfor, has, err := statedb.GetShardStakerInfo(bcStateDB, stakingMetadata.CommitteePublicKey); (!has) || (err != nil) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key has not staked yet"))
 		} else {
 			stakerAutoStake = sStarkerInfor.AutoStaking()
 		}
 	} else {
-		stakerAutoStake = bStarkerInfor.AutoStaking()
+		stakerAutoStake = bStarkerInfo.AutoStaking()
 	}
 	if !stakerAutoStake {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key AutoStaking has been already false"))

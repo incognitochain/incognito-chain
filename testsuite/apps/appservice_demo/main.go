@@ -24,9 +24,8 @@ type Key struct {
 
 type Validator struct {
 	Key
-	ActiveTimesInCommittee int
-	HasStakedShard         bool `json:"has_staked_shard"`
-	HasStakedBeacon        bool `json:"has_staked_beacon"`
+	HasStakedShard  bool `json:"has_staked_shard"`
+	HasStakedBeacon bool `json:"has_staked_beacon"`
 }
 
 func main() {
@@ -34,7 +33,7 @@ func main() {
 	isOnlySubmitKey := false
 	isWatchingOnly := false
 	isStakingBeaconOnly := false
-	requiredActiveTimes := 2
+	requiredActiveTimes := uint(2)
 
 	sKey0 := "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
 	sKey1 := "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"
@@ -131,7 +130,7 @@ func main() {
 	} else {
 		startStakingHeight = bHeight + 40
 	}
-	startStakingBeaconHeight := startStakingHeight + epochBlockTime*3 + 5
+	startStakingBeaconHeight := startStakingHeight + epochBlockTime + 5
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
@@ -193,10 +192,14 @@ func main() {
 				for _, v := range validators {
 					if !v.HasStakedBeacon {
 						if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
+							bcStakerInfo, err := app.GetBeaconStakerInfo(blk.GetBeaconHeight(), v.MiningPublicKey)
+							if err != nil {
+								panic(err)
+							}
 							var shouldStake bool
 							for _, committee := range cs.Committee {
 								for _, c := range committee {
-									if c == v.MiningPublicKey && v.ActiveTimesInCommittee >= requiredActiveTimes {
+									if c == v.MiningPublicKey && bcStakerInfo.ActiveTimesInCommittee() >= requiredActiveTimes {
 										shouldStake = true
 									}
 								}

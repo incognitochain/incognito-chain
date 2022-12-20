@@ -207,3 +207,8 @@ func (s *AppService) GetBeaconStakerInfo(height uint64, stakerPubkey string) (*s
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	return fullnodeRPC.GetBeaconStakerInfo(height, stakerPubkey)
 }
+
+/*func (s *AppService) GetBeaconStakerInfo(height uint64, stakerPubkey string) (*statedb.BeaconStakerInfo, error) {*/
+/*fullnodeRPC := RemoteRPCClient{s.Fullnode}*/
+/*return fullnodeRPC.GetBeaconStakerInfo(height, stakerPubkey)*/
+/*}*/
