@@ -226,6 +226,7 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	b.setBeaconCommitteeStateHashes(env.PreviousBlockHashes)
 	err = b.updateDelegateInfo(env)
 	if err != nil {
+		Logger.log.Error("[committee-state] err:", err)
 		return nil, nil, err
 	}
 	iInsts := instruction.ValidateAndImportConsensusInstructionFromListString(env.BeaconInstructions)
@@ -233,6 +234,7 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	for _, iInst := range iInsts {
 		returnStakingInstruction, err = b.processInstruction(env, returnStakingInstruction, iInst)
 		if err != nil {
+			Logger.log.Error("[committee-state] err:", err)
 			return nil, nil, err
 		}
 	}
@@ -241,6 +243,7 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	}
 	newIInsts, err = b.processAtSpecialTime(env, newIInsts)
 	if err != nil {
+		Logger.log.Error("[committee-state] err:", err)
 		return nil, nil, err
 	}
 
@@ -249,6 +252,7 @@ func (b *BeaconCommitteeStateV4) UpdateCommitteeState(
 	}
 	hashes, err := b.Hash()
 	if err != nil {
+		Logger.log.Error("[committee-state] err:", err)
 		return hashes, incurredInstructions, err
 	}
 	return hashes, incurredInstructions, nil
