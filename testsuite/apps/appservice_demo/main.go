@@ -168,19 +168,16 @@ func main() {
 				//Stake beacon nodes
 				for _, v := range validators {
 					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-						log.Printf("v.HasStakedBeacon %v, v.MiningKey: %s \n", v.HasStakedBeacon, v.MiningKey)
 						if !v.HasStakedBeacon {
 							var shouldStake bool
 							for _, committee := range cs.Committee {
 								for _, c := range committee {
 									miningPublicKey := v.MiningPublicKey[len(v.MiningPublicKey)-5:]
-									log.Printf("committee %s, miningPublicKey: %s \n", c, miningPublicKey)
 									if c == miningPublicKey {
 										shouldStake = true
 									}
 								}
 							}
-							log.Println("shouldStake:", shouldStake)
 							if shouldStake {
 								v.BeaconStaking(app)
 							}
