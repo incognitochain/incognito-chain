@@ -699,6 +699,7 @@ func (b *BeaconCommitteeStateV4) updateDelegateInfo(
 ) error {
 	if env.BeaconHeight > 2 {
 		if err := b.UpdateBeaconPerformanceWithValidationData(env.PreviousBlockValidationData); err != nil {
+			Logger.log.Errorf("Update beacon performance got err, prev block valdiattion data %v, block height %v block hash %v", env.PreviousBlockValidationData, env.BeaconHeight, env.BeaconHash.String())
 			return err
 		}
 	}
