@@ -53,7 +53,7 @@ func (bReq BurningPRVRequest) ValidateTxWithBlockChain(tx metadataCommon.Transac
 
 func (bReq BurningPRVRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	if shardViewRetriever.GetTriggeredFeature()["pdao"] == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("Feature not enabled yet"))
+		return false, false, fmt.Errorf("Feature not enabled yet")
 	}
 
 	if bReq.BurningAmount == 0 {
@@ -75,7 +75,7 @@ func (bReq BurningPRVRequest) ValidateSanityData(chainRetriever metadataCommon.C
 	}
 
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("invalid data %s, expect hex string", bReq.RemoteAddress))
+		return false, false, fmt.Errorf("invalid data %s, expect hex string", bReq.RemoteAddress)
 	}
 
 	if bReq.RedepositReceiver.IsValid() && bReq.RedepositReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
