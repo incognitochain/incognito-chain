@@ -173,8 +173,9 @@ func main() {
 							var shouldStake bool
 							for _, committee := range cs.Committee {
 								for _, c := range committee {
-									log.Printf("committee %s, v.MiningPublicKey: %s \n", c, v.MiningPublicKey)
-									if c == v.MiningPublicKey {
+									miningPublicKey := v.MiningPublicKey[len(v.MiningPublicKey)-5:]
+									log.Printf("committee %s, miningPublicKey: %s \n", c, miningPublicKey)
+									if c == miningPublicKey {
 										shouldStake = true
 									}
 								}
