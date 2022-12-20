@@ -121,7 +121,7 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 func (httpServer *HttpServer) handleGetBeaconStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := uint64(arrayParams[0].(float64))
-	stakerPubkey := arrayParams[0].(string)
+	stakerPubkey := arrayParams[1].(string)
 
 	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
 		height,

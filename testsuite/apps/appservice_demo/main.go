@@ -24,11 +24,18 @@ type Key struct {
 
 type Validator struct {
 	Key
-	HasStakedShard  bool `json:"has_staked_shard"`
-	HasStakedBeacon bool `json:"has_staked_beacon"`
+	ActiveTimesInCommittee int
+	HasStakedShard         bool `json:"has_staked_shard"`
+	HasStakedBeacon        bool `json:"has_staked_beacon"`
 }
 
 func main() {
+	isSkipSubmitKey := false
+	isOnlySubmitKey := false
+	isWatchingOnly := false
+	isStakingBeaconOnly := false
+	requiredActiveTimes := 2
+
 	sKey0 := "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
 	sKey1 := "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"
 	sKey2 := "1HVbZV6og9wvd1KGSoQakVMNoeWLJzLrYDZ7spyoAR4tFwDXAL"
@@ -62,10 +69,7 @@ func main() {
 	}
 
 	args := os.Args
-	isSkipSubmitKey := false
-	isOnlySubmitKey := false
-	isWatchingOnly := false
-	isStakingBeaconOnly := false
+
 	if len(args) > 1 {
 		t, err := strconv.Atoi(args[1])
 		if err != nil {
@@ -192,7 +196,7 @@ func main() {
 							var shouldStake bool
 							for _, committee := range cs.Committee {
 								for _, c := range committee {
-									if c == v.MiningPublicKey {
+									if c == v.MiningPublicKey && v.ActiveTimesInCommittee >= requiredActiveTimes {
 										shouldStake = true
 									}
 								}

@@ -84,7 +84,6 @@ type ShardBestState struct {
 }
 
 func (shardBestState *ShardBestState) CalculateTimeSlot(t int64) int64 {
-	Logger.log.Info("[committee-state] t:", t)
 	return shardBestState.TSManager.calculateTimeslot(t)
 }
 
