@@ -113,7 +113,6 @@ type BeaconBestState struct {
 }
 
 func (beaconBestState *BeaconBestState) CalculateTimeSlot(t int64) int64 {
-	Logger.log.Info("[committee-state] t:", t)
 	return beaconBestState.TSManager.calculateTimeslot(t)
 }
 func (beaconBestState *BeaconBestState) GetCurrentTimeSlot() int64 {

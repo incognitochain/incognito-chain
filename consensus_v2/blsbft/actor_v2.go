@@ -563,12 +563,8 @@ func (a *actorV2) run() error {
 					continue
 				}
 				a.currentTime = time.Now().Unix()
-				a.logger.Info("[committee-state] chainName:", a.chain.GetChainName())
 				bestView := a.chain.GetBestView()
 				currentTimeSlot := bestView.CalculateTimeSlot(a.currentTime)
-				a.logger.Info("[committee-state] bestView height: %v hash: %s currentTime: %v currentTimeSlot: %v \n",
-					bestView.GetHeight(), bestView.GetHash().String(), a.currentTime, currentTimeSlot)
-
 				newTimeSlot := false
 				if a.currentTimeSlot != currentTimeSlot {
 					newTimeSlot = true
@@ -582,12 +578,8 @@ func (a *actorV2) run() error {
 
 				signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
 				if err != nil {
-					a.logger.Info("[committee-state] getCommitteesAndCommitteeViewHash err:", err)
 					continue
 				}
-				tempKeys, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-				a.logger.Info("[committee-state] signingCommittees:", common.ShortPKList(tempKeys))
-
 				userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
 				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
 					bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
