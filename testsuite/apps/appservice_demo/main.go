@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	allArgs                = "all"
 	submitkeyArg           = "submitkey"
 	stakingShardArg        = "staking-shard"
 	stakingBeaconArg       = "staking-beacon"
@@ -80,6 +81,12 @@ func main() {
 	if len(args) > 1 {
 		t := args[1:]
 		for _, v := range t {
+			if v == allArgs {
+				shouldSubmitKey = true
+				shouldStakeShard = true
+				shouldStakeBeacon = true
+				break
+			}
 			if v == submitkeyArg {
 				shouldSubmitKey = true
 			} else if v == stakingShardArg {
@@ -90,10 +97,6 @@ func main() {
 				shouldStopAutoStakeBeacon = true
 			}
 		}
-	} else {
-		shouldStakeBeacon = true
-		shouldStakeShard = true
-		shouldSubmitKey = true
 	}
 
 	var keys []Key
