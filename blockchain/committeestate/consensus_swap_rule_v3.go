@@ -35,8 +35,15 @@ func (s *swapRuleV3) ProcessBeacon(
 	} else {
 		maxSwapout += len(substitutes)
 	}
-	totalVotePower := uint64(10)
+	totalVotePower := uint64(0)
+	for _, pk := range committees {
+		votePower, ok := reputation[pk]
+		if ok {
+			totalVotePower += votePower
+		}
+	}
 	slashedVotePower := uint64(0)
+	Logger.log.Debugf("Process swap beacon 1, env: min %v max %v n.o. fixed nodes %v max swapout %v, subs %v, cmt %v, total vote power %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(substitutes), common.ShortPKList(committees), totalVotePower)
 	newCommittees, slashedList, slashedVotePower = s.slashingBeaconSwapOut(
 		committees,
 		maxSwapout,
@@ -47,6 +54,7 @@ func (s *swapRuleV3) ProcessBeacon(
 	)
 	totalVotePower -= slashedVotePower
 	maxSwapout -= len(slashedList)
+	Logger.log.Debugf("Process swap beacon 2, env: min %v max %v n.o. fixed nodes %v max swapout %v, slashed %v, slashed votepower %v total vote power %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(slashedList), slashedVotePower, totalVotePower)
 	newCommittees, swapOutList, newSubstitutes = s.beaconSwapOut(
 		newCommittees,
 		substitutes,
@@ -56,6 +64,7 @@ func (s *swapRuleV3) ProcessBeacon(
 		reputation,
 		totalVotePower,
 	)
+	Logger.log.Debugf("Process swap beacon 3, env: min %v max %v n.o. fixed nodes %v max swapout %v, new cmt %v, new subs %v swapout %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(newCommittees), common.ShortPKList(newSubstitutes), common.ShortPKList(swapOutList))
 	return newCommittees, newSubstitutes, swapOutList, slashedList
 }
 
@@ -307,6 +316,23 @@ func (s *swapRuleV3) beaconSwapOut(
 		}
 		return pi < pj
 	})
+	sort.Slice(substitutes, func(i, j int) bool {
+		pi := uint64(0)
+		pj := uint64(0)
+		if _, ok := reputation[substitutes[i]]; ok {
+			pi = reputation[substitutes[i]]
+		}
+		if _, ok := reputation[substitutes[j]]; ok {
+			pj = reputation[substitutes[j]]
+		}
+		return pi < pj
+	})
+	for _, pk := range sortedCommittee {
+		Logger.log.Debugf("swapbeacon process committee: key %v, rep %v", pk[len(pk)-5:], reputation[pk])
+	}
+	for _, pk := range substitutes {
+		Logger.log.Debugf("swapbeacon process pending: key %v, rep %v", pk[len(pk)-5:], reputation[pk])
+	}
 	swappedInIndex := -1
 	for idx, key := range sortedCommittee {
 		if idx+1 > maxSwapOut {

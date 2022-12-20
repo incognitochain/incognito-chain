@@ -1072,6 +1072,14 @@ func (b *BeaconCommitteeStateV4) SetBeaconWaiting(waiting []incognitokey.Committ
 	b.beaconWaiting = bPKString
 }
 
+func (b BeaconCommitteeStateV4) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	bPKStructs, err := incognitokey.CommitteeKeyListToStruct(b.beaconWaiting)
+	if err != nil {
+		panic(err)
+	}
+	return bPKStructs
+}
+
 func (b *BeaconCommitteeStateV4) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
 ) error {
