@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	allArgs                = "all"
+	//allArgs                = "all"
 	submitkeyArg           = "submitkey"
 	stakingShardArg        = "staking-shard"
 	stakingBeaconArg       = "staking-beacon"
@@ -81,12 +81,12 @@ func main() {
 	if len(args) > 1 {
 		t := args[1:]
 		for _, v := range t {
-			if v == allArgs {
-				shouldSubmitKey = true
-				shouldStakeShard = true
-				shouldStakeBeacon = true
-				break
-			}
+			/*if v == allArgs {*/
+			/*shouldSubmitKey = true*/
+			/*shouldStakeShard = true*/
+			/*shouldStakeBeacon = true*/
+			/*break*/
+			/*}*/
 			if v == submitkeyArg {
 				shouldSubmitKey = true
 			} else if v == stakingShardArg {
@@ -97,6 +97,10 @@ func main() {
 				shouldStopAutoStakeBeacon = true
 			}
 		}
+	} else {
+		shouldSubmitKey = true
+		shouldStakeShard = true
+		shouldStakeBeacon = true
 	}
 
 	var keys []Key
@@ -138,9 +142,9 @@ func main() {
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
 	if shouldSubmitKey {
-		startStakingHeight = bHeight
-	} else {
 		startStakingHeight = bHeight + 40
+	} else {
+		startStakingHeight = bHeight
 	}
 	startStakingBeaconHeight := startStakingHeight + epochBlockTime + 5
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
