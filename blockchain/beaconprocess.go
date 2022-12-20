@@ -715,6 +715,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	hashes, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
+		Logger.log.Errorf("UpdateCommitteeState got err %v, prev block valdiattion data %v, block height %v block hash %v, block validation data %v %v ", err.Error(), env.PreviousBlockValidationData, env.BeaconHeight, env.BeaconHash.String(), beaconBlock.ValidationData, beaconBlock.Header.PreviousValidationData)
 		return nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 	Logger.log.Debugf("UpdateCommitteeState | hashes %+v", hashes)

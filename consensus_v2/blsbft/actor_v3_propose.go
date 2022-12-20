@@ -3,7 +3,6 @@ package blsbft
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/pkg/errors"
 )
 
 func CreateProposeBFTMessage(block types.BlockInterface, peerID string) (*BFTPropose, error) {
@@ -81,7 +81,7 @@ func (a *actorV3) maybeProposeBlock() error {
 	rawPreviousValidationData := ""
 	if block == nil || block.GetVersion() < types.INSTANT_FINALITY_VERSION_V2 {
 		if a.chainKey == common.BeaconChainKey {
-			previousBlock, _ := a.chain.GetBlockByHash(*bestView.GetHash())
+			previousBlock, err := a.chain.GetBlockByHash(*bestView.GetHash())
 			if previousBlock != nil {
 				if previousProposeBlockInfo, ok := a.GetReceiveBlockByHash(previousBlock.ProposeHash().String()); ok &&
 					previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
@@ -95,6 +95,9 @@ func (a *actorV3) maybeProposeBlock() error {
 						a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
 					}
 				}
+			} else {
+				err = errors.Errorf("Cannot get beacon block by hash %v height %v, err %v", bestView.GetHash().String(), bestView.GetHeight(), err)
+				return NewConsensusError(BlockCreationError, err)
 			}
 		}
 		ctx := context.Background()
