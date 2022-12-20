@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	//allArgs                = "all"
 	submitkeyArg           = "submitkey"
 	stakingShardArg        = "staking-shard"
 	stakingBeaconArg       = "staking-beacon"
@@ -81,12 +80,6 @@ func main() {
 	if len(args) > 1 {
 		t := args[1:]
 		for _, v := range t {
-			/*if v == allArgs {*/
-			/*shouldSubmitKey = true*/
-			/*shouldStakeShard = true*/
-			/*shouldStakeBeacon = true*/
-			/*break*/
-			/*}*/
 			if v == submitkeyArg {
 				shouldSubmitKey = true
 			} else if v == stakingShardArg {
@@ -175,16 +168,18 @@ func main() {
 				//Stake beacon nodes
 				for _, v := range validators {
 					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-						log.Println("v.HasStakedBeacon:", v.HasStakedBeacon)
+						log.Printf("v.HasStakedBeacon %v, v.MiningKey: %s \n", v.HasStakedBeacon, v.MiningKey)
 						if !v.HasStakedBeacon {
 							var shouldStake bool
 							for _, committee := range cs.Committee {
 								for _, c := range committee {
+									log.Printf("committee %s, v.MiningPublicKey: %s \n", c, v.MiningPublicKey)
 									if c == v.MiningPublicKey {
 										shouldStake = true
 									}
 								}
 							}
+							log.Println("shouldStake:", shouldStake)
 							if shouldStake {
 								v.BeaconStaking(app)
 							}
