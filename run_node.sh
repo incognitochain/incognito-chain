@@ -167,3 +167,18 @@ fi
 if [ "$1" == "beacon-candidate1" ]; then
 INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roC9ZD1hwDqR4NKb3K8wsWPQhknpfXEA7cvCrtBF7PWV92jdgNhRNqyJ6EHUfkAqaacJfutoQ9NELhccC6NHZNpD3XXchvMbch8x9kQ"  --datadir "data/beacon-candidate1" --listen "0.0.0.0:9468" --externaladdress "0.0.0.0:9468" --norpcauth --rpclisten "0.0.0.0:9368" --relayshards "all"
 fi
+if [ "$1" == "beacon-candidate2" ]; then
+INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roCwh9gtkyrTnU6kPpVmejtLUHUbzJwXycgg2C8WTM7Mu9uK7n927HRnybCLN6mG3AoCwgzU7eLhPyYYJiW3B39ULHVmmQ6w36WePXk"  --datadir "data/beacon-candidate1" --listen "0.0.0.0:9469" --externaladdress "0.0.0.0:9469" --norpcauth --rpclisten "0.0.0.0:9369" --relayshards "all"
+fi
+if [ "$1" == "beacon-candidate3" ]; then
+INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roD3c7hcfk5r8nJCzhjJhhbhvCjDUxMFyYz7kRBK5jvNirwwhzz5FwPSYYeMUUPdnECJRxzL2xAR3yALSmPKG6iCh5fPcRegWyCWJgE"  --datadir "data/beacon-candidate1" --listen "0.0.0.0:9470" --externaladdress "0.0.0.0:9470" --norpcauth --rpclisten "0.0.0.0:9370" --relayshards "all"
+fi
+if [ "$1" == "beacon-candidate4" ]; then
+INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roDLfR4Eqwz4Pf1ZZKcByF3TT4X4C2MzNpJhHHP4ZpHTGAh7VNX2TmQjhYhftKYo8ftmrRrttbqL8wJMgCdMUp8CMuFXxtVKKP9ieK2"  --datadir "data/beacon-candidate1" --listen "0.0.0.0:9471" --externaladdress "0.0.0.0:9471" --norpcauth --rpclisten "0.0.0.0:9371" --relayshards "all"
+fi
+if [ "$1" == "beacon-candidate5" ]; then
+INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roDm5xchtS1o9ajrGaEacDzmzMbifVy4KVBc1m8PRoq8fQhxGNgxLTkHe2CRZ4b9djkt9vWGPG5zxq4jsPnoTYUnZdx1qFe2CvDBW41"  --datadir "data/beacon-candidate1" --listen "0.0.0.0:9472" --externaladdress "0.0.0.0:9472" --norpcauth --rpclisten "0.0.0.0:9372" --relayshards "all"
+fi
+if [ "$1" == "beacon-candidate6" ]; then
+INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworkers=0 --indexeraccesstoken="0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11" --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roFHKqEkcG9w5nzZpqEMysoUEvooanNE7SLb2HHPSvR6cnjpTodqwWpzYBjtfuskunGLcvQPU9m9QinnnHpSeUtqakfCeFL45NRRUwH"  --datadir "data/beacon-candidate1" --listen "0.0.0.0:9473" --externaladdress "0.0.0.0:9473" --norpcauth --rpclisten "0.0.0.0:9373" --relayshards "all"
+fi

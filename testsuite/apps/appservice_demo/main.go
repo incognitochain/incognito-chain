@@ -49,7 +49,11 @@ const (
 	sKey10 = "12nLs1ftPJuqQZy29mExUUx7K1ZDWreTYxtCr7E44EoCK6rP4ET"
 	sKey11 = "12crV4U6fJsh1zd8Kk24yiu7A85WhGdKZiZrMaLBLn99ohJgZba"
 	bKey0  = "1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s"
-	bKey1  = "1nyeG4mpkSHi6omj1zTNdQxUkXv8eitpNp8y9RgHyMdv4ifWTQ"
+	bKey1  = "12F2sX5PptkKroF2tJztML3CU2MZRmoUXX5znAqLJWqmDL916eZ"
+	bKey2  = "12TKYy4n44MXpUmKHQuTNhNFwGjkSxpJHaATL5vL4e78btDPGPw"
+	bKey3  = "1EnCA7Jrb9NsvnXc6JxGDkds85VeE3zMRcoxHe4EnKfsUGVS3f"
+	bKey4  = "1267P2JH7yU2Bw3fmz2dp51AgKwr7aqAZmPBg2bpLoXb3YwiCBq"
+	bKey5  = "126ySw8rdeAbcfozNe3i9TRXNowrMmkoPsjWWKadSGfzuhzjP2n"
 )
 
 func main() {
@@ -57,6 +61,9 @@ func main() {
 	shouldStakeShard := false
 	shouldStakeBeacon := false
 	shouldStopAutoStakeBeacon := false
+
+	shardKeys := []string{sKey0, sKey1, sKey2, sKey3, sKey4, sKey5, sKey6, sKey7, sKey8, sKey9, sKey10, sKey11}
+	beaconKeys := []string{bKey0, bKey1, bKey2, bKey3, bKey4, bKey5}
 
 	validators := map[string]*Validator{
 		sKey0:  {},
@@ -73,6 +80,10 @@ func main() {
 		sKey11: {},
 		bKey0:  {},
 		bKey1:  {},
+		bKey2:  {},
+		bKey3:  {},
+		bKey4:  {},
+		bKey5:  {},
 	}
 
 	args := os.Args
@@ -148,7 +159,7 @@ func main() {
 			submitkeys(
 				blk.GetBeaconHeight(),
 				submitkeyHeight, convertTxHeight, sendFundsHeight,
-				validators, app,
+				validators, shardKeys, beaconKeys, app,
 			)
 		}
 		if shouldStakeShard {
@@ -166,21 +177,20 @@ func main() {
 					panic(err)
 				}
 				//Stake beacon nodes
-				for _, v := range validators {
-					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-						if !v.HasStakedBeacon {
-							var shouldStake bool
-							for _, committee := range cs.Committee {
-								for _, c := range committee {
-									miningPublicKey := v.MiningPublicKey[len(v.MiningPublicKey)-5:]
-									if c == miningPublicKey {
-										shouldStake = true
-									}
+				for _, k := range beaconKeys {
+					v := validators[k]
+					if !v.HasStakedBeacon {
+						var shouldStake bool
+						for _, committee := range cs.Committee {
+							for _, c := range committee {
+								miningPublicKey := v.MiningPublicKey[len(v.MiningPublicKey)-5:]
+								if c == miningPublicKey {
+									shouldStake = true
 								}
 							}
-							if shouldStake {
-								v.BeaconStaking(app)
-							}
+						}
+						if shouldStake {
+							v.BeaconStaking(app)
 						}
 					}
 				}
@@ -225,6 +235,7 @@ func (v *Validator) BeaconStaking(app *devframework.AppService) {
 func submitkeys(
 	beaconHeight, submitkeyHeight, convertTxHeight, sendFundsHeight uint64,
 	validators map[string]*Validator,
+	shardKeys, beaconKeys []string,
 	app *devframework.AppService,
 ) {
 	if beaconHeight == submitkeyHeight {
@@ -232,7 +243,8 @@ func submitkeys(
 		otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
 		log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
 		app.SubmitKey(otaPrivateKey)
-		for _, v := range validators {
+		for _, k := range shardKeys {
+			v := validators[k]
 			log.Println("Start submitkey for ota privateKey:", v.OTAPrivateKey[len(v.OTAPrivateKey)-5:])
 			app.SubmitKey(v.OTAPrivateKey)
 		}
@@ -241,17 +253,24 @@ func submitkeys(
 		privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 		log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
 		app.ConvertTokenV1ToV2(privateKey)
+		for _, k := range beaconKeys {
+			v := validators[k]
+			log.Println("Start submitkey for ota privateKey:", v.OTAPrivateKey[len(v.OTAPrivateKey)-5:])
+			app.SubmitKey(v.OTAPrivateKey)
+		}
 	} else if beaconHeight == sendFundsHeight {
 		//Send funds to 30 nodes
 		privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 		receivers := map[string]interface{}{}
 		log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
 
-		for _, v := range validators {
+		for _, k := range beaconKeys {
+			v := validators[k]
+			receivers[v.PaymentAddress] = 90000000000000
+		}
+		for _, k := range shardKeys {
+			v := validators[k]
 			receivers[v.PaymentAddress] = 1760000000000
-			if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-				receivers[v.PaymentAddress] = 90000000000000
-			}
 		}
 		app.PreparePRVForTest(privateKey, receivers)
 	}

@@ -19,7 +19,7 @@ committee_size:
   max_shard_committee_size: 8
   min_shard_committee_size: 4
   min_beacon_committee_size: 4
-  max_beacon_committee_size: 5
+  max_beacon_committee_size: 8
   init_shard_committee_size: 4
   init_beacon_committee_size: 4
   shard_committee_size_key_list_v2: 4
