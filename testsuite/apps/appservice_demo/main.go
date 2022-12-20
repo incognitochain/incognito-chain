@@ -3,14 +3,21 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
+)
+
+const (
+	submitkeyArg           = "submitkey"
+	stakingShardArg        = "staking-shard"
+	stakingBeaconArg       = "staking-beacon"
+	stopAutoStakeBeaconArg = "stop-auto-stake-beacon"
 )
 
 type Key struct {
@@ -28,26 +35,28 @@ type Validator struct {
 	HasStakedBeacon bool `json:"has_staked_beacon"`
 }
 
-func main() {
-	isSkipSubmitKey := false
-	isOnlySubmitKey := false
-	isWatchingOnly := false
-	isStakingBeaconOnly := false
+const (
+	sKey0  = "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
+	sKey1  = "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"
+	sKey2  = "1HVbZV6og9wvd1KGSoQakVMNoeWLJzLrYDZ7spyoAR4tFwDXAL"
+	sKey3  = "1dn4HYLrBu6Q9FZNM9WjEAkrWURPqB95BzSVzUcJpY2bBMk6rz"
+	sKey4  = "1Kc6WCsxEa9BxwFbnbSiboADfW9FL2NUN7NWwM7PvY48B3ow9m"
+	sKey5  = "12DdGt6ckrDmUcfhj6thfP3S5ajJLwjKjxDNsLXTVaJ1FL9hpZE"
+	sKey6  = "12UkKRgNCPWR9FrSP2z92yXyyHF1AuL11RZDzfpnqnphC6ET8Pa"
+	sKey7  = "1tkwFJt8FnTr1XEpnSmtF67xCEJWSZ24fNSsJpqUKbGDhGtLxE"
+	sKey8  = "12C8AJzbBCo8Z2tjLaSEUv5G4KZEq8MEWubVh9LPg9KynY83X7u"
+	sKey9  = "1FBpchyQkch8BojMUCtxNpBp3v3aYwFHjk41836m3ooeKVpf34"
+	sKey10 = "12nLs1ftPJuqQZy29mExUUx7K1ZDWreTYxtCr7E44EoCK6rP4ET"
+	sKey11 = "12crV4U6fJsh1zd8Kk24yiu7A85WhGdKZiZrMaLBLn99ohJgZba"
+	bKey0  = "1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s"
+	bKey1  = "1nyeG4mpkSHi6omj1zTNdQxUkXv8eitpNp8y9RgHyMdv4ifWTQ"
+)
 
-	sKey0 := "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
-	sKey1 := "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"
-	sKey2 := "1HVbZV6og9wvd1KGSoQakVMNoeWLJzLrYDZ7spyoAR4tFwDXAL"
-	sKey3 := "1dn4HYLrBu6Q9FZNM9WjEAkrWURPqB95BzSVzUcJpY2bBMk6rz"
-	sKey4 := "1Kc6WCsxEa9BxwFbnbSiboADfW9FL2NUN7NWwM7PvY48B3ow9m"
-	sKey5 := "12DdGt6ckrDmUcfhj6thfP3S5ajJLwjKjxDNsLXTVaJ1FL9hpZE"
-	sKey6 := "12UkKRgNCPWR9FrSP2z92yXyyHF1AuL11RZDzfpnqnphC6ET8Pa"
-	sKey7 := "1tkwFJt8FnTr1XEpnSmtF67xCEJWSZ24fNSsJpqUKbGDhGtLxE"
-	sKey8 := "12C8AJzbBCo8Z2tjLaSEUv5G4KZEq8MEWubVh9LPg9KynY83X7u"
-	sKey9 := "1FBpchyQkch8BojMUCtxNpBp3v3aYwFHjk41836m3ooeKVpf34"
-	sKey10 := "12nLs1ftPJuqQZy29mExUUx7K1ZDWreTYxtCr7E44EoCK6rP4ET"
-	sKey11 := "12crV4U6fJsh1zd8Kk24yiu7A85WhGdKZiZrMaLBLn99ohJgZba"
-	bKey0 := "1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s"
-	bKey1 := "1nyeG4mpkSHi6omj1zTNdQxUkXv8eitpNp8y9RgHyMdv4ifWTQ"
+func main() {
+	shouldSubmitKey := false
+	shouldStakeShard := false
+	shouldStakeBeacon := false
+	shouldStopAutoStakeBeacon := false
 
 	validators := map[string]*Validator{
 		sKey0:  {},
@@ -69,21 +78,22 @@ func main() {
 	args := os.Args
 
 	if len(args) > 1 {
-		t, err := strconv.Atoi(args[1])
-		if err != nil {
-			panic(err)
+		t := args[1:]
+		for _, v := range t {
+			if v == submitkeyArg {
+				shouldSubmitKey = true
+			} else if v == stakingShardArg {
+				shouldStakeShard = true
+			} else if v == stakingBeaconArg {
+				shouldStakeBeacon = true
+			} else if v == stopAutoStakeBeaconArg {
+				shouldStopAutoStakeBeacon = true
+			}
 		}
-		if t == 1 {
-			isSkipSubmitKey = true
-		} else if t == 0 {
-			isOnlySubmitKey = true
-		} else if t == 2 {
-			isWatchingOnly = true
-			isSkipSubmitKey = true
-		} else if t == 3 {
-			isSkipSubmitKey = true
-			isStakingBeaconOnly = true
-		}
+	} else {
+		shouldStakeBeacon = true
+		shouldStakeShard = true
+		shouldSubmitKey = true
 	}
 
 	var keys []Key
@@ -124,73 +134,41 @@ func main() {
 
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
-	if isSkipSubmitKey {
+	if shouldSubmitKey {
 		startStakingHeight = bHeight
 	} else {
 		startStakingHeight = bHeight + 40
 	}
 	startStakingBeaconHeight := startStakingHeight + epochBlockTime + 5
 	log.Println("Will be starting shard staking on beacon height:", startStakingHeight)
+	log.Println("Will be starting beacon staking on beacon height:", startStakingBeaconHeight)
 
 	app.OnBeaconBlock(bHeight, func(blk types.BeaconBlock) {
-		if !isSkipSubmitKey {
-			if blk.GetBeaconHeight() == submitkeyHeight {
-				//submitkey
-				otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
-				log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
-				app.SubmitKey(otaPrivateKey)
+		if shouldSubmitKey {
+			submitkeys(
+				blk.GetBeaconHeight(),
+				submitkeyHeight, convertTxHeight, sendFundsHeight,
+				validators, app,
+			)
+		}
+		if shouldStakeShard {
+			if blk.GetBeaconHeight() == startStakingHeight {
+				//Stake each nodes
 				for _, v := range validators {
-					log.Println("Start submitkey for ota privateKey:", v.OTAPrivateKey[len(v.OTAPrivateKey)-5:])
-					app.SubmitKey(v.OTAPrivateKey)
+					v.ShardStaking(app)
 				}
-			} else if blk.GetBeaconHeight() == convertTxHeight {
-				//convert from token v1 to token v2
-				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
-				log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
-				app.ConvertTokenV1ToV2(privateKey)
-			} else if blk.GetBeaconHeight() == sendFundsHeight {
-				//Send funds to 30 nodes
-				privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
-				receivers := map[string]interface{}{}
-				log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
-
-				for _, v := range validators {
-					receivers[v.PaymentAddress] = 1760000000000
-					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-						receivers[v.PaymentAddress] = 90000000000000
-					}
-				}
-				app.PreparePRVForTest(privateKey, receivers)
 			}
 		}
-		if isOnlySubmitKey && bHeight > sendFundsHeight {
-			panic("SubmitKey done")
-		}
-		if blk.GetBeaconHeight() == startStakingHeight && !isWatchingOnly && !isStakingBeaconOnly {
-			//Stake each nodes
-			for _, v := range validators {
-				log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-					v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
-				app.ShardStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
-				v.HasStakedShard = true
-			}
-		} else if blk.GetBeaconHeight() >= startStakingHeight+2 {
-			log.Println("get committee state at beacon height:", blk.GetBeaconHeight())
-			cs, err := app.GetCommitteeState(0, "")
-			if err != nil {
-				panic(err)
-			}
-			cs.Filter(fixedCommiteesNodes, fixedRewardReceivers)
-			if cs.IsDiffFrom(lastCs) {
-				lastCs = new(jsonresult.CommiteeState)
-				*lastCs = *cs
-				cs.Print()
-			}
+		if shouldStakeBeacon {
 			if blk.GetBeaconHeight() >= startStakingBeaconHeight {
-
+				cs, err := getCSByHeight(blk.GetBeaconHeight(), app)
+				if err != nil {
+					panic(err)
+				}
 				//Stake beacon nodes
 				for _, v := range validators {
 					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
+						log.Println("v.HasStakedBeacon:", v.HasStakedBeacon)
 						if !v.HasStakedBeacon {
 							var shouldStake bool
 							for _, committee := range cs.Committee {
@@ -201,10 +179,7 @@ func main() {
 								}
 							}
 							if shouldStake {
-								log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
-									v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
-								app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
-								v.HasStakedBeacon = true
+								v.BeaconStaking(app)
 							}
 						} else {
 
@@ -213,10 +188,89 @@ func main() {
 				}
 			}
 		}
-
+		if shouldStopAutoStakeBeacon {
+			v := validators[bKey0]
+			resp, err := app.StopAutoStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(resp)
+		}
+		cs, err := getCSByHeight(blk.GetBeaconHeight(), app)
+		if err != nil {
+			panic(err)
+		}
+		if cs.IsDiffFrom(lastCs) {
+			lastCs = new(jsonresult.CommiteeState)
+			*lastCs = *cs
+			cs.Print()
+		}
 	})
 
 	select {}
+}
+
+func (v *Validator) ShardStaking(app *devframework.AppService) {
+	log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+		v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
+	app.ShardStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+	v.HasStakedShard = true
+}
+
+func (v *Validator) BeaconStaking(app *devframework.AppService) {
+	log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+		v.PrivateKey[len(v.PrivateKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:], v.MiningKey[len(v.MiningKey)-5:], v.PaymentAddress[len(v.PaymentAddress)-5:])
+	app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+	v.HasStakedBeacon = true
+}
+
+func submitkeys(
+	beaconHeight, submitkeyHeight, convertTxHeight, sendFundsHeight uint64,
+	validators map[string]*Validator,
+	app *devframework.AppService,
+) {
+	if beaconHeight == submitkeyHeight {
+		//submitkey
+		otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
+		log.Println("Start submitkey for ota privateKey:", otaPrivateKey[len(otaPrivateKey)-5:])
+		app.SubmitKey(otaPrivateKey)
+		for _, v := range validators {
+			log.Println("Start submitkey for ota privateKey:", v.OTAPrivateKey[len(v.OTAPrivateKey)-5:])
+			app.SubmitKey(v.OTAPrivateKey)
+		}
+	} else if beaconHeight == convertTxHeight {
+		//convert from token v1 to token v2
+		privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
+		log.Println("Start convert token v1 to v2 for privateKey:", privateKey[len(privateKey)-5:])
+		app.ConvertTokenV1ToV2(privateKey)
+	} else if beaconHeight == sendFundsHeight {
+		//Send funds to 30 nodes
+		privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
+		receivers := map[string]interface{}{}
+		log.Println("Start send funds from privateKey:", privateKey[len(privateKey)-5:])
+
+		for _, v := range validators {
+			receivers[v.PaymentAddress] = 1760000000000
+			if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
+				receivers[v.PaymentAddress] = 90000000000000
+			}
+		}
+		app.PreparePRVForTest(privateKey, receivers)
+	}
+}
+
+func StopAutoStake() {
+
+}
+
+func getCSByHeight(beaconHeight uint64, app *devframework.AppService) (*jsonresult.CommiteeState, error) {
+	log.Println("get committee state at beacon height:", beaconHeight)
+	cs, err := app.GetCommitteeState(0, "")
+	if err != nil {
+		return nil, err
+	}
+	cs.Filter(fixedCommiteesNodes, fixedRewardReceivers)
+	return cs, nil
 }
 
 var fixedCommiteesNodes = map[int][]string{
