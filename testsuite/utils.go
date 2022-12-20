@@ -41,6 +41,8 @@ const (
 	SHARD_VALS   = "s_committee"
 	SHARD_SLASH  = "s_slashed"
 	SHARD_NORMAL = "s_normal"
+	BEACON_PEND  = "b_pending"
+	BEACON_VALS  = "b_committee"
 )
 
 type AccountInfo struct {
@@ -303,7 +305,7 @@ func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
 func (sim *NodeEngine) ShowAccountsInfo(infos map[string]*AccountInfo) {
 	fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", sim.GetBlockchain().BeaconChain.CurrentHeight(), sim.GetBlockchain().BeaconChain.GetEpoch())
 	infosByPool := map[string]map[int][]*AccountInfo{}
-	poolNames := []string{SHARD_NORMAL, SHARD_WAIT, SHARD_SYNC, SHARD_PEND, SHARD_VALS, SHARD_SLASH}
+	poolNames := []string{SHARD_NORMAL, SHARD_WAIT, SHARD_SYNC, SHARD_PEND, SHARD_VALS, SHARD_SLASH, BEACON_PEND, BEACON_VALS}
 	for _, name := range poolNames {
 		infosByPool[name] = map[int][]*AccountInfo{}
 		for _, info := range infos {
@@ -327,6 +329,12 @@ func (sim *NodeEngine) ShowAccountsInfo(infos map[string]*AccountInfo) {
 		case SHARD_NORMAL, SHARD_WAIT:
 			fmt.Printf("\t")
 			for _, v := range infoByCIDs[-2] {
+				fmt.Printf(" %v ", v.Name)
+			}
+			fmt.Println()
+		case BEACON_PEND, BEACON_VALS:
+			fmt.Printf("\t")
+			for _, v := range infoByCIDs[-1] {
 				fmt.Printf(" %v ", v.Name)
 			}
 			fmt.Println()
@@ -357,6 +365,12 @@ func (sim *NodeEngine) GetAccountPosition(accounts []account.Account, bcView *bl
 	shardCommitteeList := make(map[int][]string)
 	shardSyncingList := make(map[int][]string)
 	shardSlashingList := sim.bc.GetBeaconBestState().GetAllCurrentSlashingCommittee()
+	bPending := chain.BeaconChain.GetBeaconPendingList()
+	// bWaiting := chain.BeaconChain.GetBeaconWaitingList()
+	bCommittee := chain.BeaconChain.GetCommittee()
+	beaconPendingList, _ := incognitokey.CommitteeKeyListToString(bPending)
+	beaconCommitteeList, _ := incognitokey.CommitteeKeyListToString(bCommittee)
+	// beaconWaitingList, _ := incognitokey.CommitteeKeyListToString(bWaiting)
 
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[common.BlsConsensus][common.GetShardChainKey(byte(sid))])
@@ -364,6 +378,29 @@ func (sim *NodeEngine) GetAccountPosition(accounts []account.Account, bcView *bl
 		shardSyncingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetSyncingValidators()[byte(sid)])
 
 	}
+
+	// for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+	tmp = ""
+	for _, pk := range beaconPendingList {
+		if pkMap[pk] != nil && pkMap[pk].Name != "" {
+			tmp += pkMap[pk].Name + " "
+			pkMap[pk].Queue = BEACON_PEND
+			pkMap[pk].CID = -1
+		} else {
+			tmp += "@@ "
+		}
+	}
+	tmp = ""
+	for _, pk := range beaconCommitteeList {
+		if pkMap[pk] != nil && pkMap[pk].Name != "" {
+			tmp += pkMap[pk].Name + " "
+			pkMap[pk].Queue = BEACON_VALS
+			pkMap[pk].CID = -1
+		} else {
+			tmp += "@@ "
+		}
+	}
+	// }
 
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		tmp = ""
@@ -414,6 +451,7 @@ func (sim *NodeEngine) GetAccountPosition(accounts []account.Account, bcView *bl
 			}
 		}
 	}
+
 	return pkMap
 }
 
@@ -511,6 +549,7 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 		if ok {
 			pkMap[acc.SelfCommitteePubkey].InCommittee = int(stakerInfo2.ActiveTimesInCommittee())
 			pkMap[acc.SelfCommitteePubkey].StakingAmount += stakerInfo2.StakingAmount()
+			pkMap[acc.SelfCommitteePubkey].AutoStake = stakerInfo2.AutoStaking()
 		}
 
 		balanceMap, err := sim.RPC.API_GetBalance(acc)
