@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/pkg/errors"
 )
@@ -105,6 +106,9 @@ func (b *BeaconCommitteeStateV4) RestorePerformance(data []byte, beaconBlocks []
 		}
 	}
 	for _, blk := range beaconBlocks {
+		if blk.Header.Height <= config.Param().ConsensusParam.StakingFlowV4Height {
+			continue
+		}
 		if blk.Header.Height == bkPerf.H {
 			break
 		}
