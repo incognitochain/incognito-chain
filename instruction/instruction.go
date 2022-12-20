@@ -32,6 +32,7 @@ func IsConsensusInstruction(action string) bool {
 	return action == RANDOM_ACTION ||
 		action == SWAP_ACTION ||
 		action == STAKE_ACTION ||
+		action == BEACON_STAKE_ACTION ||
 		action == ASSIGN_ACTION ||
 		action == STOP_AUTO_STAKE_ACTION ||
 		action == SET_ACTION ||

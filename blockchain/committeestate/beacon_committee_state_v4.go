@@ -20,7 +20,7 @@ const (
 	DEFAULT_PERFORMING  = 500
 	INCREASE_PERFORMING = 1015
 	DECREASE_PERFORMING = 965
-	MIN_ACTIVE_SHARD    = 3
+	MIN_ACTIVE_SHARD    = 30
 	MIN_PERFORMANCE     = 200
 	LOCKING_PERIOD      = 3
 )
@@ -105,9 +105,9 @@ func (b *BeaconCommitteeStateV4) UpgradeFromV3(stateV3 *BeaconCommitteeStateV3, 
 		if !exists {
 			return fmt.Errorf("Cannot find cpk %v", cpk)
 		}
-		stakingTx := map[common.Hash]uint64{}
-		stakingTx[info.TxStakingID()] = 0
-		beaconInfo := statedb.NewBeaconStakerInfoWithValue(info.RewardReceiver(), 1, stakingTx)
+		stakingTx := map[common.Hash]statedb.StakingTxInfo{}
+		stakingTx[info.TxStakingID()] = statedb.StakingTxInfo{0, 1}
+		beaconInfo := statedb.NewBeaconStakerInfoWithValue(info.RewardReceiver(), info.RewardReceiver(), 1, stakingTx)
 		err := statedb.StoreBeaconStakerInfo(stateDB, cpk, beaconInfo)
 		if err != nil {
 
@@ -306,6 +306,15 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 		instructions = append(instructions, inst...)
 	}
 
+	//udpate beacon state
+	beaconValidators := append(s.GetBeaconCommittee(), s.GetBeaconSubstitute()...)
+	beaconValidators = append(beaconValidators, s.GetBeaconLocking()...)
+	beaconValidatorList, _ := incognitokey.CommitteeKeyListToString(beaconValidators)
+	stateHash.BeaconCommitteeAndValidatorHash, _ = common.GenerateHashFromStringArray(beaconValidatorList)
+
+	beaconCandidateList, _ := incognitokey.CommitteeKeyListToString(s.GetBeaconWaiting())
+	stateHash.BeaconCandidateHash, _ = common.GenerateHashFromStringArray(beaconCandidateList)
+
 	return stateHash, changes, instructions, nil
 }
 
@@ -357,6 +366,11 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommi
 
 //Process shard active time
 func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
+	for cpkStr, _ := range s.beaconWaiting {
+		if _, ok := env.MissingSignature[cpkStr]; ok {
+			log.Println(env.BeaconHeight, cpkStr, env.MissingSignature[cpkStr])
+		}
+	}
 	if !firstBlockEpoch(env.BeaconHeight) {
 		return nil, nil
 	}
@@ -367,7 +381,13 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitte
 			return nil, fmt.Errorf("Cannot find cpk %v", cpkStr)
 		}
 
-		if sig, ok := env.MissingSignature[cpkStr]; ok {
+		if sig, ok := env.MissingSignature[cpkStr]; ok && sig.ActualTotal != 0 {
+			if sig.ActualTotal == 0 {
+				log.Println(cpkStr)
+				log.Println(env.MissingSignature[cpkStr])
+				log.Println(env.BeaconHeight)
+				panic(1)
+			}
 			//update shard active time
 			if (sig.Missing*100)/sig.ActualTotal > 20 {
 				staker.ResetShardActiveTime()
@@ -581,7 +601,7 @@ func (s *BeaconCommitteeStateV4) ProcessAssignBeaconPending(env *BeaconCommittee
 			return nil, fmt.Errorf("Cannot find stakerInfo %v", cpk)
 		}
 		_, shardExist, _ := statedb.GetStakerInfo(s.stateDB, cpk)
-		log.Println("ProcessAssignBeaconPending", staker.FinishSync(), staker.ShardActiveTime(), MIN_ACTIVE_SHARD, shardExist)
+		log.Println("ProcessAssignBeaconPending", staker.FinishSync(), staker.ShardActiveTime(), MIN_ACTIVE_SHARD, shardExist, staker)
 		if staker.FinishSync() && staker.ShardActiveTime() >= MIN_ACTIVE_SHARD && !shardExist {
 			delete(s.beaconWaiting, cpk)
 			statedb.DeleteBeaconWaiting(s.stateDB, []incognitokey.CommitteePublicKey{stakerInfo.cpkStr})
@@ -602,9 +622,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 	return_reason := []int{}
 
 	for _, inst := range env.BeaconInstructions {
-		if inst[0] == instruction.STAKE_ACTION && inst[2] == "beacon" {
-			beaconStakeInst := instruction.ImportStakeInstructionFromString(inst)
-			log.Println(beaconStakeInst)
+		if inst[0] == instruction.BEACON_STAKE_ACTION {
+
+			beaconStakeInst := instruction.ImportBeaconStakeInstructionFromString(inst)
+
 			for i, txHash := range beaconStakeInst.TxStakeHashes {
 				//return staking if already exist
 				_, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakeInst.PublicKeys[i])
@@ -617,15 +638,17 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 
 				var key incognitokey.CommitteePublicKey
 				key.FromString(beaconStakeInst.PublicKeys[i])
-				stakingInfo := map[common.Hash]uint64{}
-				stakingInfo[txHash] = beaconStakeInst.StakingAmount[i]
-				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, stakingInfo)
+				stakingInfo := map[common.Hash]statedb.StakingTxInfo{}
+				stakingInfo[txHash] = statedb.StakingTxInfo{beaconStakeInst.StakingAmount[i], env.BeaconHeight}
+				//log.Println("stake ", stakingInfo)
+				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.FunderAddressStructs[i], beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, stakingInfo)
 				statedb.StoreBeaconStakerInfo(s.stateDB, key, info)
 				s.beaconWaiting[beaconStakeInst.PublicKeys[i]] = &StakerInfo{key, beaconStakeInst.StakingAmount[i], false, 500, 0, false}
 				statedb.StoreBeaconWaiting(s.stateDB, []incognitokey.CommitteePublicKey{key})
 			}
 		}
 	}
+
 	if len(return_cpk) == 0 {
 		return nil, nil
 	}
@@ -652,36 +675,25 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 					return_amount = append(return_amount, addStakeInst.StakingAmount[i])
 					continue
 				}
-				if _, ok := s.beaconLocking[cpk]; ok {
-					Logger.log.Errorf("Add staking to locking beacon staker", cpk)
-					return_cpk = append(return_cpk, cpk)
-					return_reason = append(return_reason, statedb.RETURN_BY_ADDSTAKE_FAIL)
-					return_amount = append(return_amount, addStakeInst.StakingAmount[i])
-					continue
-				}
 
 				stakingTxHash, err := common.Hash{}.NewHashFromStr(addStakeInst.StakingTxIDs[i])
 				if err != nil {
-					Logger.log.Errorf("Convert staking tx hash fail %v", addStakeInst.StakingTxIDs[i])
-					continue
+					return nil, fmt.Errorf("Cannot convert staing tx hash, %v", addStakeInst.StakingTxIDs[i])
 				}
-				info.AddStaking(*stakingTxHash, addStakeInst.StakingAmount[i])
+				//log.Println("addstake ", stakingInfo)
+				info.AddStaking(*stakingTxHash, env.BeaconHeight, addStakeInst.StakingAmount[i])
 				var key incognitokey.CommitteePublicKey
 				key.FromString(cpk)
 				statedb.StoreBeaconStakerInfo(s.stateDB, key, info)
 				if staker, ok := s.beaconCommittee[cpk]; ok {
 					staker.stakingAmount = info.TotalStakingAmount()
-					s.beaconCommittee[cpk] = staker
 				}
 				if staker, ok := s.beaconWaiting[cpk]; ok {
 					staker.stakingAmount = info.TotalStakingAmount()
-					s.beaconWaiting[cpk] = staker
 				}
 				if staker, ok := s.beaconPending[cpk]; ok {
 					staker.stakingAmount = info.TotalStakingAmount()
-					s.beaconPending[cpk] = staker
 				}
-
 			}
 		}
 	}
@@ -694,22 +706,42 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 
 //unstaking instruction -> set unstake
 func (s *BeaconCommitteeStateV4) ProcessBeaconUnstake(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-
 	for _, inst := range env.BeaconInstructions {
+		unstakeCPKs := []incognitokey.CommitteePublicKey{}
+		if inst[0] == instruction.STOP_AUTO_STAKE_ACTION {
+			unstakeInst, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
+			if err != nil {
+				return nil, err
+			}
+			unstakeCPKs = unstakeInst.CommitteePublicKeysStruct
+		}
 		if inst[0] == instruction.UNSTAKE_ACTION {
-			unstakeInst := instruction.NewUnstakeInstructionWithValue(inst)
-			for _, cpk := range unstakeInst.CommitteePublicKeys {
-				info, exists, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
-				if !exists {
-					Logger.log.Errorf("Cannot find %v in beacon staker", cpk)
-					continue
-				}
-				info.SetUnstaking()
-				var key incognitokey.CommitteePublicKey
-				key.FromString(cpk)
-				statedb.StoreBeaconStakerInfo(s.stateDB, key, info)
+			unstakeInst, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
+			if err != nil {
+				return nil, err
+			}
+			unstakeCPKs = unstakeInst.CommitteePublicKeysStruct
+		}
+		for _, cpk := range unstakeCPKs {
+			cpkStr, _ := cpk.ToBase58()
+			info, exists, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpkStr)
+			if !exists {
+				Logger.log.Errorf("Cannot find %v in beacon staker", cpkStr)
+				continue
+			}
+			info.SetUnstaking()
+			statedb.StoreBeaconStakerInfo(s.stateDB, cpk, info)
+			if staker, ok := s.beaconCommittee[cpkStr]; ok {
+				staker.unstake = true
+			}
+			if staker, ok := s.beaconWaiting[cpkStr]; ok {
+				staker.unstake = true
+			}
+			if staker, ok := s.beaconPending[cpkStr]; ok {
+				staker.unstake = true
 			}
 		}
+
 	}
 	return nil, nil
 }

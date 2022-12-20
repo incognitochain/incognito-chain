@@ -156,12 +156,16 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			for _, txHash := range md.TxIDs {
 				h, _ := common.Hash{}.NewHashFromStr(txHash)
 				_, _, txStake, err := blockchain.GetTransactionByHashWithShardID(*h, shardID)
-				stakingMD := txStake.GetMetadata().(*metadata.StakingMetadata)
-				totalAmount += stakingMD.StakingAmount
 				if err != nil {
 					err = NewBlockChainError(WrongShardIDError, fmt.Errorf("This staking tx %v not found in this shard %+v", txHash, shardID))
 					Logger.log.Error(err)
 					return err
+				}
+				if stakingMD, ok := txStake.GetMetadata().(*metadata.StakingMetadata); ok {
+					totalAmount += stakingMD.StakingAmount
+				}
+				if stakingMD, ok := txStake.GetMetadata().(*metadata.AddStakingMetadata); ok {
+					totalAmount += stakingMD.AddStakingAmount
 				}
 				txStakes = append(txStakes, txStake)
 			}
@@ -417,7 +421,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
 					continue
 				}
-				for _, returnPK := range returnStakingIns.GetPublicKey() {
+				for i, returnPK := range returnStakingIns.GetPublicKey() {
 					stakerInfo, has, err := statedb.GetBeaconStakerInfo(beaconConsensusStateDB, returnPK)
 					if (!has) || (err != nil) {
 						return nil, nil, nil, err
@@ -428,9 +432,9 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						StakingTx:     nil,
 						StakingAmount: 0,
 					}
-					txHashs := stakerInfo.StakingInfo()
+					txHashs := stakerInfo.StakingTxList()
 					isError := false
-					for txHash, _ := range txHashs {
+					for _, txHash := range txHashs {
 						_, _, txStake, err := blockchain.GetTransactionByHashWithShardID(txHash, shardID)
 						if err != nil {
 							err = NewBlockChainError(WrongShardIDError, fmt.Errorf("This staking tx %v not found in this shard %+v", txHash.String(), shardID))
@@ -466,6 +470,12 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 							continue
 						}
 					}
+					if returnStakingIns.ReturnAmounts[i] != rBeaconInfo.StakingAmount {
+						err = fmt.Errorf("Build return beacon staking error. Amount not consistent! Beacon:%v Shard:%v", returnStakingIns.ReturnAmounts[i], rBeaconInfo.StakingAmount)
+						Logger.log.Error(err)
+						return nil, nil, nil, err
+					}
+
 					if isError {
 						errorInstructions = append(errorInstructions, l)
 						continue

@@ -5,6 +5,7 @@ const (
 	SWAP_ACTION                    = "swap"
 	RANDOM_ACTION                  = "random"
 	STAKE_ACTION                   = "stake"
+	BEACON_STAKE_ACTION            = "bstake"
 	ASSIGN_ACTION                  = "assign"
 	ASSIGN_SYNC_ACTION             = "assignsync"
 	STOP_AUTO_STAKE_ACTION         = "stopautostake"

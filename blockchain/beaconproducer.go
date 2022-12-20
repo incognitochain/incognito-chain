@@ -31,7 +31,7 @@ func (inst *duplicateKeyStakeInstruction) add(newInst *duplicateKeyStakeInstruct
 
 type shardInstruction struct {
 	shardStakeInstructions    []*instruction.StakeInstruction
-	beaconStakeInstructions   []*instruction.StakeInstruction
+	beaconStakeInstructions   []*instruction.BeaconStakeInstruction
 	addStakeInstruction       []*instruction.AddStakingInstruction
 	unstakeInstructions       []*instruction.UnstakeInstruction
 	swapInstructions          map[byte][]*instruction.SwapInstruction
@@ -577,7 +577,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 	for _, stakeInstruction := range shardInstruction.addStakeInstruction {
 		instructions = append(instructions, stakeInstruction.ToString())
 	}
-	//TODO processBeaconStakeInstructionFromShardBlock (for duplicate, failing process)
 
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
@@ -978,18 +977,21 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 				tempAddStakeInstruction := instruction.ImportAddStakingInstructionFromString(inst)
 				shardInstruction.addStakeInstruction = append(shardInstruction.addStakeInstruction, tempAddStakeInstruction)
 			}
+			if inst[0] == instruction.BEACON_STAKE_ACTION {
+				if err := instruction.ValidateBeaconStakeInstructionSanity(inst); err != nil {
+					Logger.log.Errorf("SKIP Stake Instruction Error %+v", err)
+					continue
+				}
+				tempStakeInstruction := instruction.ImportBeaconStakeInstructionFromString(inst)
+				shardInstruction.beaconStakeInstructions = append(shardInstruction.beaconStakeInstructions, tempStakeInstruction)
+			}
 			if inst[0] == instruction.STAKE_ACTION {
 				if err := instruction.ValidateStakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Stake Instruction Error %+v", err)
 					continue
 				}
 				tempStakeInstruction := instruction.ImportStakeInstructionFromString(inst)
-				if tempStakeInstruction.Chain == instruction.BEACON_INST {
-					shardInstruction.beaconStakeInstructions = append(shardInstruction.beaconStakeInstructions, tempStakeInstruction)
-				} else {
-					shardInstruction.shardStakeInstructions = append(shardInstruction.shardStakeInstructions, tempStakeInstruction)
-				}
-
+				shardInstruction.shardStakeInstructions = append(shardInstruction.shardStakeInstructions, tempStakeInstruction)
 			}
 			if inst[0] == instruction.SWAP_ACTION {
 				// validate swap instruction

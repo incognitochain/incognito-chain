@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
+	"sort"
 )
 
 const (
@@ -25,10 +26,16 @@ type StakingInfo struct {
 	amount uint64
 }
 
+type StakingTxInfo struct {
+	Amount              uint64
+	BeaconConfirmHeight uint64
+}
+
 type BeaconStakerInfo struct {
+	funderAddress       key.PaymentAddress
 	rewardReceiver      key.PaymentAddress
 	beaconConfirmHeight uint64
-	stakingTx           map[common.Hash]uint64
+	stakingTx           map[common.Hash]StakingTxInfo
 	unstaking           bool
 	shardActiveTime     int
 	finishSync          bool
@@ -39,20 +46,22 @@ type BeaconStakerInfo struct {
 func NewBeaconStakerInfo() *BeaconStakerInfo {
 	return &BeaconStakerInfo{}
 }
-func NewBeaconStakerInfoWithValue(rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, stakingTx map[common.Hash]uint64) *BeaconStakerInfo {
-	return &BeaconStakerInfo{rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, stakingTx: stakingTx}
+func NewBeaconStakerInfoWithValue(funderAddress, rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, stakingTx map[common.Hash]StakingTxInfo) *BeaconStakerInfo {
+	return &BeaconStakerInfo{funderAddress: funderAddress, rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, stakingTx: stakingTx}
 }
 func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		RewardReceiver      key.PaymentAddress
+		FunderAddress       key.PaymentAddress
 		Unstaking           bool
-		StakingInfo         map[common.Hash]uint64
+		StakingInfo         map[common.Hash]StakingTxInfo
 		BeaconConfirmHeight uint64
 		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
 		LockingReason       int
 	}{
+		FunderAddress:       c.funderAddress,
 		RewardReceiver:      c.rewardReceiver,
 		Unstaking:           c.unstaking,
 		StakingInfo:         c.stakingTx,
@@ -70,9 +79,10 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 
 func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
+		FunderAddress       key.PaymentAddress
 		RewardReceiver      key.PaymentAddress
 		Unstaking           bool
-		StakingInfo         map[common.Hash]uint64
+		StakingInfo         map[common.Hash]StakingTxInfo
 		BeaconConfirmHeight uint64
 		ShardActiveTime     int
 		LockingEpoch        uint64
@@ -91,6 +101,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.lockingEpoch = temp.LockingEpoch
 	c.lockingReason = temp.LockingReason
 	c.finishSync = temp.FinishSync
+	c.funderAddress = temp.FunderAddress
 	return nil
 }
 func (s *BeaconStakerInfo) SetUnstaking() {
@@ -114,14 +125,14 @@ func (s *BeaconStakerInfo) ResetShardActiveTime() {
 	s.shardActiveTime = 0
 }
 
-func (s *BeaconStakerInfo) AddStaking(tx common.Hash, amount uint64) {
-	s.stakingTx[tx] = amount
+func (s *BeaconStakerInfo) AddStaking(tx common.Hash, height uint64, amount uint64) {
+	s.stakingTx[tx] = StakingTxInfo{amount, height}
 }
 
 func (s BeaconStakerInfo) TotalStakingAmount() uint64 {
 	total := uint64(0)
-	for _, amount := range s.stakingTx {
-		total += amount
+	for _, info := range s.stakingTx {
+		total += info.Amount
 	}
 	return total
 }
@@ -132,6 +143,10 @@ func (s BeaconStakerInfo) Unstaking() bool {
 
 func (s BeaconStakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
+}
+
+func (s BeaconStakerInfo) FunderAddress() key.PaymentAddress {
+	return s.funderAddress
 }
 
 func (s BeaconStakerInfo) BeaconConfirmHeight() uint64 {
@@ -147,12 +162,20 @@ func (s BeaconStakerInfo) LockingReason() int {
 	return s.lockingReason
 }
 
-func (s BeaconStakerInfo) StakingInfo() map[common.Hash]uint64 {
-	res := map[common.Hash]uint64{}
-	for k, v := range s.stakingTx {
-		res[k] = v
+func (s BeaconStakerInfo) StakingTxList() []common.Hash {
+	res := []common.Hash{}
+	for txID, _ := range s.stakingTx {
+		res = append(res, txID)
 	}
-	return s.stakingTx
+	sort.Slice(res, func(i, j int) bool {
+		tx1 := res[i]
+		tx2 := res[j]
+		if s.stakingTx[tx1].BeaconConfirmHeight == s.stakingTx[tx2].BeaconConfirmHeight {
+			return tx1.String() < tx2.String()
+		}
+		return s.stakingTx[tx1].BeaconConfirmHeight < s.stakingTx[tx2].BeaconConfirmHeight
+	})
+	return res
 }
 
 type BeaconStakerObject struct {

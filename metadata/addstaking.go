@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type AddStakingMetadata struct {
@@ -52,7 +51,7 @@ func (addStakingMetadata *AddStakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	if (addStakingMetadata.AddStakingAmount%1750 != 0) || (addStakingMetadata.AddStakingAmount < 1750) {
+	if (addStakingMetadata.AddStakingAmount%(common.SHARD_STAKING_AMOUNT) != 0) || (addStakingMetadata.AddStakingAmount < (common.SHARD_STAKING_AMOUNT)) {
 		return false
 	}
 	return (addStakingMetadata.Type == AddStakingMeta)
@@ -69,37 +68,22 @@ func (addStakingMetadata AddStakingMetadata) ValidateTxWithBlockChain(tx Transac
 		return false, NewMetadataTxError(StopAutoStakingRequestTypeAssertionError, fmt.Errorf("Expect *AddStakingMetadata type but get %+v", reflect.TypeOf(tx.GetMetadata())))
 	}
 	requestedPublicKey := addStakingMetadataFromTx.CommitteePublicKey
-	committees := beaconViewRetriever.GetAllBeaconValidatorCandidateFlattenList()
 
-	// if not found
-	if !(common.IndexOfStr(requestedPublicKey, committees) > -1) {
-		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
-	}
 	stakerInfo, has, err := statedb.GetBeaconStakerInfo(beaconViewRetriever.GetBeaconConsensusStateDB(), requestedPublicKey)
 	if err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
 	}
 	if !has {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
-	}
-	stakingTxHash := stakerInfo.StakingInfo()
-	var oneStakingTxHash common.Hash
-	for k, _ := range stakingTxHash {
-		oneStakingTxHash = k
-	}
-	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(oneStakingTxHash)
-	if err != nil {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
+		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found", requestedPublicKey))
 	}
 
-	stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
-	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
-	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
-	if err != nil || funderWallet == nil {
-		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	lockStaker := beaconViewRetriever.GetBeaconLocking()
+	lockStakerStr, _ := incognitokey.CommitteeKeyListToString(lockStaker)
+	if common.IndexOfStr(requestedPublicKey, lockStakerStr) != -1 {
+		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v is in locking state", requestedPublicKey))
 	}
 
-	if ok, err := addStakingMetadataFromTx.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
+	if ok, err := addStakingMetadataFromTx.MetadataBaseWithSignature.VerifyMetadataSignature(stakerInfo.FunderAddress().Pk, tx); !ok || err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 	return true, nil

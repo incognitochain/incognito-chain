@@ -317,6 +317,9 @@ type ReProposeBlockInfo struct {
 
 func createReProposeHashSignature(chain Chain, privateKey []byte, block types.BlockInterface) (string, error) {
 	previousView := chain.GetViewByHash(block.GetPrevHash())
+	if previousView == nil {
+		return "", fmt.Errorf("Cannot find previous view")
+	}
 	reProposeBlockInfo := newReProposeBlockInfo(
 		block.GetPrevHash(),
 		block.GetProducer(),

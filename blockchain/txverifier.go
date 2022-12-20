@@ -363,6 +363,10 @@ func (v *TxsVerifier) filterSpamStake(
 		metaType := tx.GetMetadataType()
 		pk := ""
 		switch metaType {
+		case metadata.AddStakingMeta:
+			if meta, ok := tx.GetMetadata().(*metadata.AddStakingMetadata); ok {
+				pk = meta.CommitteePublicKey
+			}
 		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
 			if meta, ok := tx.GetMetadata().(*metadata.StakingMetadata); ok {
 				pk = meta.CommitteePublicKey

@@ -926,6 +926,12 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 			// assume that stake instruction already been validated by beacon committee
 
 			switch l[0] {
+			case instruction.BEACON_STAKE_ACTION:
+				beaconStakeInst := instruction.ImportBeaconStakeInstructionFromString(l)
+				for i, cpk := range beaconStakeInst.PublicKeys {
+					stakingTx[cpk] = beaconStakeInst.TxStakes[i]
+				}
+				instructions = append(instructions, l)
 			case instruction.STAKE_ACTION:
 				if l[2] == "shard" {
 					shard := strings.Split(l[1], ",")
@@ -945,26 +951,6 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 							stakingTx[newShardCandidates[i]] = v
 						}
 						instructions = append(instructions, l)
-					}
-				}
-				if l[2] == "beacon" {
-					beacon := strings.Split(l[1], ",")
-					newBeaconCandidates := []string{}
-					newBeaconCandidates = append(newBeaconCandidates, beacon...)
-					if len(l) == 6 {
-						for i, v := range strings.Split(l[3], ",") {
-							txHash, err := common.Hash{}.NewHashFromStr(v)
-							if err != nil {
-								continue
-							}
-							_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
-							if err != nil {
-								continue
-							}
-							// if transaction belong to this shard then add to shard beststate
-							stakingTx[newBeaconCandidates[i]] = v
-						}
-						// instructions = append(instructions, l)
 					}
 				}
 
@@ -1068,11 +1054,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
 			inst := []string{
-				instruction.STAKE_ACTION,
+				instruction.BEACON_STAKE_ACTION,
 				stakingMetadata.CommitteePublicKey,
 				instruction.BEACON_INST, tx.Hash().String(),
 				stakingMetadata.RewardReceiverPaymentAddress,
-				"true", fmt.Sprint(stakingMetadata.StakingAmount),
+				"true", fmt.Sprint(stakingMetadata.StakingAmount), stakingMetadata.FunderPaymentAddress,
 			}
 			instructions = append(instructions, inst)
 		case metadata.StopAutoStakingMeta:
@@ -1098,7 +1084,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			}
 			addStake_cpk = append(addStake_cpk, stakingMetadata.CommitteePublicKey)
 			addStake_amount = append(addStake_amount, stakingMetadata.AddStakingAmount)
-			addStake_tx = append(addStake_tx, stakingMetadata.Hash().String())
+			addStake_tx = append(addStake_tx, tx.Hash().String())
 		}
 	}
 

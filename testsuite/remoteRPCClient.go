@@ -3,6 +3,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -485,6 +486,102 @@ func (r *RemoteRPCClient) WithdrawReward(privateKey string, receivers map[string
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) StopAutoStake(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createunstaketransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, stakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		fmt.Println(string(body))
+		return res, err
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) Unstake(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createunstaketransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, stakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		fmt.Println(string(body))
+		return res, err
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) AddStake(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, stakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendaddstakingtransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, stakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		fmt.Println(string(body))
+		return res, err
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
 	return resp.Result, err
 }
 

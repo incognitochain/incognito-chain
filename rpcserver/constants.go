@@ -98,6 +98,7 @@ const (
 	listCommitments                            = "listcommitments"
 	listCommitmentIndices                      = "listcommitmentindices"
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
+	createAndSendAddStakingTransaction         = "createandsendaddstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
 	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"

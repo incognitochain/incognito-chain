@@ -632,3 +632,7 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }
+
+func (beaconBestState *BeaconBestState) GetBeaconStakerInfo(stakerPubkey string) (*statedb.BeaconStakerInfo, bool, error) {
+	return statedb.GetBeaconStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+}
