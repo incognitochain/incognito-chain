@@ -33,7 +33,6 @@ func main() {
 	isOnlySubmitKey := false
 	isWatchingOnly := false
 	isStakingBeaconOnly := false
-	requiredActiveTimes := uint(2)
 
 	sKey0 := "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
 	sKey1 := "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"
@@ -188,18 +187,15 @@ func main() {
 				cs.Print()
 			}
 			if blk.GetBeaconHeight() >= startStakingBeaconHeight {
+
 				//Stake beacon nodes
 				for _, v := range validators {
-					if !v.HasStakedBeacon {
-						if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
-							bcStakerInfo, err := app.GetBeaconStakerInfo(blk.GetBeaconHeight(), v.MiningPublicKey)
-							if err != nil {
-								panic(err)
-							}
+					if v.MiningKey == bKey0 || v.MiningKey == bKey1 {
+						if !v.HasStakedBeacon {
 							var shouldStake bool
 							for _, committee := range cs.Committee {
 								for _, c := range committee {
-									if c == v.MiningPublicKey && bcStakerInfo.ActiveTimesInCommittee() >= requiredActiveTimes {
+									if c == v.MiningPublicKey {
 										shouldStake = true
 									}
 								}
@@ -210,47 +206,15 @@ func main() {
 								app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
 								v.HasStakedBeacon = true
 							}
+						} else {
+
 						}
 					}
 				}
 			}
 		}
 
-		/*} else if blk.GetBeaconHeight() == startStakingHeight+5 {*/
-		/*//Unstake one node*/
-		/*privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"*/
-		/*k := keys[0]*/
-		/*privateSeedBytes := common.HashB(common.HashB([]byte(k.PrivateKey)))*/
-		/*privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)*/
-		/*log.Printf("Start unstake from privateKey %s for candidatePaymentAddress %s with privateSeed %s",*/
-		/*privateKey[len(privateKey)-5:], k.PaymentAddress[len(k.PaymentAddress)-5:], privateSeed[len(privateSeed)-5:])*/
-
-		/*app.ShardUnstaking(privateKey, k.PaymentAddress, privateSeed)*/
-		/*}*/
-
 	})
-
-	//app.OnBeaconBlock(8664, func(blk types.BeaconBlock) {
-	//	for sid, states := range blk.Body.ShardState {
-	//		fmt.Println("Shard ", sid)
-	//		for _, s := range states {
-	//			fmt.Println(s.Height, s.Hash.String())
-	//			fmt.Println(s.ValidationData, s.PreviousValidationData)
-	//		}
-	//	}
-	//})
-
-	/*app.OnShardBlock(0, 8650, func(blk types.ShardBlock) {*/
-	/*shardID := blk.GetShardID()*/
-	/*fmt.Println("blk", blk.GetHeight(), shardID, blk.GetVersion())*/
-	/*})*/
-
-	//for j := 0; j < 8; j++ {
-	//	app.OnShardBlock(j, 2, func(blk types.ShardBlock) {
-	//		shardID := blk.GetShardID()
-	//		fmt.Println("blk", shardID, blk.GetHeight())
-	//	})
-	//}
 
 	select {}
 }

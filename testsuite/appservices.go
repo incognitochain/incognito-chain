@@ -208,7 +208,23 @@ func (s *AppService) GetBeaconStakerInfo(height uint64, stakerPubkey string) (*s
 	return fullnodeRPC.GetBeaconStakerInfo(height, stakerPubkey)
 }
 
-/*func (s *AppService) GetBeaconStakerInfo(height uint64, stakerPubkey string) (*statedb.BeaconStakerInfo, error) {*/
-/*fullnodeRPC := RemoteRPCClient{s.Fullnode}*/
-/*return fullnodeRPC.GetBeaconStakerInfo(height, stakerPubkey)*/
-/*}*/
+func (s *AppService) StopAutoStaking(privateKey, candidatePaymentAddress, privateSeed string) (jsonresult.CreateTransactionResult, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+	return fullnodeRPC.CreateAndSendStopAutoStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: 100,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"StopAutoStakingType":     127,
+			"CandidatePaymentAddress": candidatePaymentAddress,
+			"PrivateSeed":             privateSeed,
+		},
+	)
+}
