@@ -181,8 +181,6 @@ func main() {
 							if shouldStake {
 								v.BeaconStaking(app)
 							}
-						} else {
-
 						}
 					}
 				}
