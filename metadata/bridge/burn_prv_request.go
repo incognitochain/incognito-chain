@@ -78,7 +78,7 @@ func (bReq BurningPRVRequest) ValidateSanityData(chainRetriever metadataCommon.C
 		return false, false, fmt.Errorf("invalid data %s, expect hex string", bReq.RemoteAddress)
 	}
 
-	if bReq.RedepositReceiver.IsValid() && bReq.RedepositReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+	if bReq.RedepositReceiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("otaReceiver shardID is different from txShardID"))
 	}
 
