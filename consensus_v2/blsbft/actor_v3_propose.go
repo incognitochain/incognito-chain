@@ -3,7 +3,7 @@ package blsbft
 import (
 	"context"
 	"encoding/json"
-	"errors"
+
 	"fmt"
 	"time"
 
@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/pkg/errors"
 )
 
 func CreateProposeBFTMessage(block types.BlockInterface, peerID string) (*BFTPropose, error) {
@@ -92,8 +93,16 @@ func (a *actorV3) maybeProposeBlock() error {
 						previousProposeBlockInfo.block.GetValidationField(),
 						previousProposeBlockInfo.Votes)
 					if err != nil {
-						a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+						err = errors.Errorf("Create BLS Aggregated Signature for previous block propose info, height %v error %v", previousProposeBlockInfo.block.GetHeight(), err)
+						return err
 					}
+					signingCommitteeString, err := incognitokey.CommitteeKeyListToString(signingCommittees)
+					blockHashStr := previousProposeBlockInfo.block.ProposeHash().String()
+					tmpValData := previousProposeBlockInfo.block.GetValidationField()
+					if err != nil {
+						return err
+					}
+					a.logger.Infof("debugvalidation Prev validation data: %+v - %v - %v", common.ShortPKList(signingCommitteeString), blockHashStr, tmpValData)
 				}
 			}
 		}

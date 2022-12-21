@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"sort"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -16,9 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wire"
-	"log"
-	"sort"
-	"time"
 )
 
 //Tendermint-like consensus
@@ -387,6 +388,12 @@ func (a *actorV3) createBLSAggregatedSignatures(
 	if err != nil {
 		return "", err
 	}
+	logline := "debugvalIdx idx for blockhash " + blockHash.String() + " "
+	for _, idx := range validatorIdx {
+		pkStr, _ := committees[idx].ToBase58()
+		logline += fmt.Sprintf("key %v - idx %v", pkStr[len(pkStr)-5:], idx)
+	}
+	a.logger.Info(logline)
 
 	valData, err := consensustypes.DecodeValidationData(tempValidationData)
 	if err != nil {
