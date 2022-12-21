@@ -18,10 +18,10 @@ import (
 
 // whoever can send this type of tx
 type BurningRequest struct {
-	BurnerAddress privacy.PaymentAddress
-	BurningAmount uint64 // must be equal to vout value
+	BurnerAddress privacy.PaymentAddress // unused
+	BurningAmount uint64                 // must be equal to vout value
 	TokenID       common.Hash
-	TokenName     string
+	TokenName     string // unused
 	RemoteAddress string
 	metadataCommon.MetadataBase
 }

@@ -14,12 +14,12 @@ import (
 )
 
 type BurningPRVRequest struct {
-	BurnerAddress     privacy.PaymentAddress
-	BurningAmount     uint64 // must be equal to vout value
+	BurnerAddress     privacy.PaymentAddress // unused
+	BurningAmount     uint64                 // must be equal to vout value
 	TokenID           common.Hash
-	TokenName         string
+	TokenName         string // unused
 	RemoteAddress     string
-	RedepositReceiver privacy.OTAReceiver `json:"RedepositReceiver,omitempty"`
+	RedepositReceiver *privacy.OTAReceiver `json:"RedepositReceiver,omitempty"`
 	metadataCommon.MetadataBase
 }
 
@@ -41,7 +41,7 @@ func NewBurningPRVRequest(
 		TokenID:           tokenID,
 		TokenName:         tokenName,
 		RemoteAddress:     remoteAddress,
-		RedepositReceiver: redepositReceiver,
+		RedepositReceiver: &redepositReceiver,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil

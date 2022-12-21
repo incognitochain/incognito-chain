@@ -171,7 +171,7 @@ func NewBurningRequestMetadata(
 	networkID uint,
 	expectedAmount uint64,
 	isDepositToSC *bool,
-) (interface{}, *RPCError) {
+) (metadata.Metadata, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -191,7 +191,7 @@ func NewBurningRequestMetadata(
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
-	var meta interface{}
+	var meta metadata.Metadata
 	if burningMetaType == metadata.BurningPRVRequestMeta {
 		var recv privacy.OTAReceiver
 		err = recv.FromAddress(paymentAddr)

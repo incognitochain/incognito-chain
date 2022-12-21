@@ -295,8 +295,8 @@ func buildIssuingReshieldResponse(
 		tokenID = *issuingReshieldAcceptedInst.UnifiedTokenID
 	}
 	if tokenID == common.PRVCoinID && !bytes.Equal(issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID, common2.HexToAddress(config.Param().PRVERC20ContractAddressStr).Bytes()) {
-		Logger.log.Errorf("cannot reshield prv via bridge ", issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID, common2.HexToAddress(config.Param().PRVERC20ContractAddressStr).Bytes())
-		return nil, fmt.Errorf("cannot reshield prv via bridge")
+		Logger.log.Errorf("reshield incorrect PRV ERC20 address ", issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID, common2.HexToAddress(config.Param().PRVERC20ContractAddressStr).Bytes())
+		return nil, fmt.Errorf("reshield incorrect PRV ERC20 address")
 	}
 	issuingReshieldRes := metadataBridge.NewIssuingReshieldResponse(
 		issuingReshieldAcceptedInst.TxReqID,

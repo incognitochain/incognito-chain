@@ -426,7 +426,7 @@ func processBurningReq(
 		if errNewParam != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 		}
-		rawTx, rpcErr := httpServer.txService.BuildRawTransaction(createRawTxParam, meta.(metadata.Metadata))
+		rawTx, rpcErr := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)
 			return nil, rpcErr
@@ -434,7 +434,7 @@ func processBurningReq(
 		byteArrays, err2 = json.Marshal(rawTx)
 		txHash = rawTx.Hash().String()
 	} else {
-		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta.(metadata.Metadata))
+		customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 		if rpcErr != nil {
 			Logger.log.Error(rpcErr)
 			return nil, rpcErr
