@@ -699,12 +699,12 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
-		isBeaconSwap = true
 		// Before get random from bitcoin
 	} else if blockchain.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 		beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
 		isBeginRandom = true
 	} else if blockchain.IsLastBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
+		isBeaconSwap = true
 		isEndOfEpoch = true
 	}
 
@@ -955,7 +955,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			BeaconHeight:       beaconBlock.GetBeaconHeight(),
 			MissingSignature:   curView.missingSignatureCounter.MissingSignature(),
 			IsEndOfEpoch:       blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
-			IsBeaconChangeTime: blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
+			IsBeaconChangeTime: blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetBeaconHeight()),
 		}
 		bcV4 := newBestState.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV4)
 		if newBestState.consensusStateDB, newBestState.slashStateDB, err = bcV4.CommitOnBlock(
