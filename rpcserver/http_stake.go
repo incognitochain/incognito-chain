@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -116,56 +115,4 @@ func (httpServer *HttpServer) handleCreateRawUnstakeTransaction(params interface
 	}
 
 	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetBeaconStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	height := uint64(arrayParams[0].(float64))
-	stakerPubkey := arrayParams[1].(string)
-
-	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
-		height,
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	res, found, err := statedb.GetBeaconStakerInfo(stateDB, stakerPubkey)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	if !found {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("Not found"))
-	}
-	return res, nil
-}
-
-func (httpServer *HttpServer) handleGetShardStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	height := uint64(arrayParams[0].(float64))
-	stakerPubkey := arrayParams[1].(string)
-
-	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
-		height,
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	res, found, err := statedb.GetShardStakerInfo(stateDB, stakerPubkey)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	if !found {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("Not found"))
-	}
-	return res, nil
 }
