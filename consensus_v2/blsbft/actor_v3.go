@@ -388,6 +388,12 @@ func (a *actorV3) createBLSAggregatedSignatures(
 	if err != nil {
 		return "", err
 	}
+	logline := "debugvalIdx idx for blockhash " + blockHash.String() + " "
+	for _, idx := range validatorIdx {
+		pkStr, _ := committees[idx].ToBase58()
+		logline += fmt.Sprintf("key %v - idx %v", pkStr[len(pkStr)-5:], idx)
+	}
+	a.logger.Info(logline)
 
 	valData, err := consensustypes.DecodeValidationData(tempValidationData)
 	if err != nil {

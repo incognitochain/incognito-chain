@@ -3,6 +3,7 @@ package blsbft
 import (
 	"context"
 	"encoding/json"
+
 	"fmt"
 	"time"
 
@@ -92,8 +93,16 @@ func (a *actorV3) maybeProposeBlock() error {
 						previousProposeBlockInfo.block.GetValidationField(),
 						previousProposeBlockInfo.Votes)
 					if err != nil {
-						a.logger.Error("Create BLS Aggregated Signature for previous block propose info, height ", previousProposeBlockInfo.block.GetHeight(), " error", err)
+						err = errors.Errorf("Create BLS Aggregated Signature for previous block propose info, height %v error %v", previousProposeBlockInfo.block.GetHeight(), err)
+						return err
 					}
+					signingCommitteeString, err := incognitokey.CommitteeKeyListToString(signingCommittees)
+					blockHashStr := previousProposeBlockInfo.block.ProposeHash().String()
+					tmpValData := previousProposeBlockInfo.block.GetValidationField()
+					if err != nil {
+						return err
+					}
+					a.logger.Infof("debugvalidation Prev validation data: %+v - %v - %v", common.ShortPKList(signingCommitteeString), blockHashStr, tmpValData)
 				}
 			} else {
 				err = errors.Errorf("Cannot get beacon block by hash %v height %v, err %v", bestView.GetHash().String(), bestView.GetHeight(), err)
