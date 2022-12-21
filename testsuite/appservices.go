@@ -29,8 +29,9 @@ func (s *AppService) OnBeaconBlock(fromBlk uint64, f func(block types.BeaconBloc
 		for {
 			data, err := fullnodeRPC.GetBlocksFromHeight(-1, uint64(fromBlk), 50)
 			if err != nil || len(data.([]types.BeaconBlock)) == 0 {
-				fmt.Println(err)
-				time.Sleep(time.Minute)
+				//fmt.Println(err)
+				//time.Sleep(time.Minute)
+				time.Sleep(time.Second * 10)
 				continue
 			}
 			for _, blk := range data.([]types.BeaconBlock) {
