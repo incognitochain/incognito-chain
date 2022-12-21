@@ -65,7 +65,7 @@ func (bReq BurningPRVRequest) ValidateSanityData(chainRetriever metadataCommon.C
 		return false, false, fmt.Errorf("it is not transaction burn. Error %v", err)
 	}
 
-	if !bytes.Equal(burnedTokenID[:], bReq.TokenID[:]) {
+	if !bytes.Equal(burnedTokenID[:], bReq.TokenID[:]) || bReq.TokenID.String() != common.PRVIDStr {
 		return false, false, fmt.Errorf("wrong request info's token id and token burned")
 	}
 
