@@ -43,6 +43,35 @@ type BeaconStakerInfo struct {
 	lockingReason       int
 }
 
+func (c BeaconStakerInfo) ToString() string {
+	stakingTxs := map[string]StakingTxInfo{}
+	for tx, info := range c.stakingTx {
+		stakingTxs[tx.String()] = info
+	}
+	data, _ := json.Marshal(struct {
+		RewardReceiver      string
+		FunderAddress       string
+		Unstaking           bool
+		StakingInfo         map[string]StakingTxInfo
+		BeaconConfirmHeight uint64
+		FinishSync          bool
+		ShardActiveTime     int
+		LockingEpoch        uint64
+		LockingReason       int
+	}{
+		FunderAddress:       c.funderAddress.String(),
+		RewardReceiver:      c.rewardReceiver.String(),
+		Unstaking:           c.unstaking,
+		StakingInfo:         stakingTxs,
+		BeaconConfirmHeight: c.beaconConfirmHeight,
+		ShardActiveTime:     c.shardActiveTime,
+		LockingEpoch:        c.lockingEpoch,
+		LockingReason:       c.lockingReason,
+		FinishSync:          c.finishSync,
+	})
+	return string(data)
+}
+
 func NewBeaconStakerInfo() *BeaconStakerInfo {
 	return &BeaconStakerInfo{}
 }
@@ -118,12 +147,6 @@ func (s *BeaconStakerInfo) SetFinishSync() {
 func (s *BeaconStakerInfo) FinishSync() bool {
 	return s.finishSync
 }
-func (s *BeaconStakerInfo) IncreaseShardActiveTime() {
-	s.shardActiveTime++
-}
-func (s *BeaconStakerInfo) ResetShardActiveTime() {
-	s.shardActiveTime = 0
-}
 
 func (s *BeaconStakerInfo) AddStaking(tx common.Hash, height uint64, amount uint64) {
 	s.stakingTx[tx] = StakingTxInfo{amount, height}
@@ -155,6 +178,11 @@ func (s BeaconStakerInfo) BeaconConfirmHeight() uint64 {
 func (s BeaconStakerInfo) ShardActiveTime() int {
 	return s.shardActiveTime
 }
+
+func (s *BeaconStakerInfo) SetShardActiveTime(t int) {
+	s.shardActiveTime = t
+}
+
 func (s BeaconStakerInfo) LockingEpoch() uint64 {
 	return s.lockingEpoch
 }
