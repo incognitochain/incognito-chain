@@ -634,8 +634,20 @@ func (chain *BeaconChain) GetSigningCommittees(
 }
 
 func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
-	committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
-	return committees, nil
+	viewByBlock := chain.multiView.GetViewByHash(*block.Hash())
+	if viewByBlock != nil {
+		return viewByBlock.GetCommittee(), nil
+	}
+	bcRootHash, err := chain.Blockchain.GetBeaconConsensusRootHash(chain.GetFinalViewState(), block.GetHeight())
+	if err != nil {
+		return nil, err
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(chain.GetChainDatabase()))
+	if err != nil {
+		Logger.log.Error("Cannot restore shard, beacon not ready!")
+		return nil, err
+	}
+	return statedb.GetBeaconCommittee(beaconConsensusStateDB), nil
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() int {
