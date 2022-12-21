@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
@@ -144,6 +145,10 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	}
 
 	if err := validateBLSSig(block.ProposeHash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		fmt.Println("block.ProposeHash():", block.ProposeHash().String())
+		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+		fmt.Printf("This validation Idx %v is not valid with this committee %v\n", valData.ValidatiorsIdx, committeeStr)
+		fmt.Println("valData.AggSig:", base58.Encode(valData.AggSig))
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil

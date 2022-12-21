@@ -15,4 +15,16 @@ type Validator struct {
 	HasStakedBeacon       bool   `json:"has_staked_beacon"`
 	StakeShardFromHeight  uint64 `json:"stake_shard_from_height"`
 	StakeBeaconFromHeight uint64 `json:"stake_beacon_from_height"`
+	Role                  int    `json:"role"`
 }
+
+const (
+	NormalRole = iota
+	ShardCandidateRole
+	ShardSyncingRole
+	ShardPendingRole
+	ShardCommitteeRole
+	BeaconWaitingRole
+	BeaconPendingRole
+	BeaconCommitteeRole
+)

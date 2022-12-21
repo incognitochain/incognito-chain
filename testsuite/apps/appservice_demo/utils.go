@@ -23,8 +23,7 @@ func (v *Validator) BeaconStaking(app *devframework.AppService) {
 
 func submitkeys(
 	beaconHeight, submitkeyHeight, convertTxHeight, sendFundsHeight uint64,
-	validators map[string]*Validator,
-	shardKeys, beaconKeys []string,
+	shardValidators, beaconValidators map[string]*Validator,
 	app *devframework.AppService,
 ) {
 	if beaconHeight == submitkeyHeight {
@@ -32,8 +31,7 @@ func submitkeys(
 		otaPrivateKey := "14yJXBcq3EZ8dGh2DbL3a78bUUhWHDN579fMFx6zGVBLhWGzr2V4ZfUgjGHXkPnbpcvpepdzqAJEKJ6m8Cfq4kYiqaeSRGu37ns87ss"
 		log.Println("Start submitkey for ota privateKey:", shortKey(otaPrivateKey))
 		app.SubmitKey(otaPrivateKey)
-		for _, k := range shardKeys {
-			v := validators[k]
+		for _, v := range shardValidators {
 			log.Println("Start submitkey for ota privateKey:", shortKey(v.OTAPrivateKey))
 			app.SubmitKey(v.OTAPrivateKey)
 		}
@@ -42,8 +40,7 @@ func submitkeys(
 		privateKey := "112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or"
 		log.Println("Start convert token v1 to v2 for privateKey:", shortKey(privateKey))
 		app.ConvertTokenV1ToV2(privateKey)
-		for _, k := range beaconKeys {
-			v := validators[k]
+		for _, v := range beaconValidators {
 			log.Println("Start submitkey for ota privateKey:", shortKey(v.OTAPrivateKey))
 			app.SubmitKey(v.OTAPrivateKey)
 		}
@@ -53,12 +50,10 @@ func submitkeys(
 		receivers := map[string]interface{}{}
 		log.Println("Start send funds from privateKey:", shortKey(privateKey))
 
-		for _, k := range beaconKeys {
-			v := validators[k]
+		for _, v := range beaconValidators {
 			receivers[v.PaymentAddress] = 90000000000000
 		}
-		for _, k := range shardKeys {
-			v := validators[k]
+		for _, v := range shardValidators {
 			receivers[v.PaymentAddress] = 1760000000000
 		}
 		app.PreparePRVForTest(privateKey, receivers)
@@ -73,4 +68,80 @@ func getCSByHeight(beaconHeight uint64, app *devframework.AppService) (*jsonresu
 	}
 	cs.Filter(fixedCommiteesNodes, fixedRewardReceivers)
 	return cs, nil
+}
+
+func updateRole(shardValidators, beaconValidators map[string]*Validator, cs *jsonresult.CommiteeState) {
+	bvs := map[string]string{}
+	for _, v := range beaconValidators {
+		bvs[shortKey(v.MiningPublicKey)] = v.MiningKey
+	}
+	svs := map[string]string{}
+	for _, v := range shardValidators {
+		svs[shortKey(v.MiningPublicKey)] = v.MiningKey
+	}
+	for i, v := range cs.Committee {
+		if i == -1 {
+			for _, c := range v {
+				k := bvs[c]
+				beaconValidators[k].Role = BeaconCommitteeRole
+			}
+		} else {
+			for _, c := range v {
+				if k, found := bvs[c]; found {
+					beaconValidators[k].Role = ShardCommitteeRole
+				}
+				if k, found := svs[c]; found {
+					shardValidators[k].Role = ShardCommitteeRole
+				}
+			}
+		}
+	}
+	for i, v := range cs.Substitute {
+		if i == -1 {
+			for _, c := range v {
+				k := bvs[c]
+				beaconValidators[k].Role = BeaconPendingRole
+			}
+		} else {
+			for _, c := range v {
+				if k, found := bvs[c]; found {
+					beaconValidators[k].Role = ShardPendingRole
+				}
+				if k, found := svs[c]; found {
+					shardValidators[k].Role = ShardPendingRole
+				}
+			}
+		}
+	}
+	for _, v := range cs.Syncing {
+		for _, c := range v {
+			if k, found := bvs[c]; found {
+				beaconValidators[k].Role = ShardSyncingRole
+			}
+			if k, found := svs[c]; found {
+				shardValidators[k].Role = ShardSyncingRole
+			}
+		}
+	}
+	for _, v := range cs.NextCandidate {
+		if k, found := bvs[v]; found {
+			beaconValidators[k].Role = ShardCandidateRole
+		}
+		if k, found := svs[v]; found {
+			shardValidators[k].Role = ShardCandidateRole
+		}
+	}
+	for _, v := range cs.CurrentCandidate {
+		if k, found := bvs[v]; found {
+			beaconValidators[k].Role = ShardCandidateRole
+		}
+		if k, found := svs[v]; found {
+			shardValidators[k].Role = ShardCandidateRole
+		}
+	}
+	for _, v := range cs.BeaconWaiting {
+		if k, found := bvs[v]; found {
+			beaconValidators[k].Role = BeaconWaitingRole
+		}
+	}
 }
