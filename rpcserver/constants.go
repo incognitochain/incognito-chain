@@ -420,7 +420,9 @@ const (
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
 
-	getTotalStaker = "gettotalstaker"
+	getShardStakerInfo  = "getshardstakerinfo"
+	getBeaconStakerInfo = "getbeaconstakerinfo"
+	getTotalStaker      = "gettotalstaker"
 
 	// validator state
 	getValKeyState = "getvalkeystate"
