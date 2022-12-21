@@ -162,11 +162,6 @@ func main() {
 							v.StakeBeaconFromHeight = blk.GetBeaconHeight()
 						}
 					} else {
-						if blk.GetBeaconHeight() >= v.StakeBeaconFromHeight+3 {
-							if v.Role == ShardCommitteeRole {
-								v.shouldInBeaconWaiting(cs)
-							}
-						}
 					}
 				}
 			}
