@@ -445,8 +445,10 @@ const (
 	// stake
 	unstake = "createunstaketransaction"
 
-	connectionStatus = "getconnectionstatus"
-
+	connectionStatus        = "getconnectionstatus"
+	getBeaconStaker         = "getbeaconstaker"
+	getShardStaker          = "getshardstaker"
+	getBeaconCommitteeState = "getbeaconcommitteestate"
 	// prune
 	prune          = "pruneState"
 	getPruneState  = "getPruneState"

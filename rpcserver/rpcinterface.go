@@ -420,7 +420,10 @@ var HttpHandler = map[string]httpHandler{
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 
-	connectionStatus: (*HttpServer).handleGetConnectionStatus,
+	connectionStatus:        (*HttpServer).handleGetConnectionStatus,
+	getBeaconStaker:         (*HttpServer).handleGetBeaconStakerInfo,
+	getShardStaker:          (*HttpServer).handleGetShardStakerInfo,
+	getBeaconCommitteeState: (*HttpServer).handleGetBeaconCommitteeState,
 
 	// prune
 	prune:          (*HttpServer).handlePrune,
