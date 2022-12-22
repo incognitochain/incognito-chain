@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -19,6 +20,8 @@ var (
 	shouldStakeBeacon         bool
 	shouldStopAutoStakeBeacon bool
 	shouldAddStakingBeacon    bool
+	shouldWatchValidator      bool
+	watchBeaconIndex          int
 	shardValidators           map[string]*Validator
 	beaconValidators          map[string]*Validator
 	keys                      []Key
@@ -53,7 +56,7 @@ func init() {
 
 	if len(args) > 1 {
 		t := args[1:]
-		for _, v := range t {
+		for i, v := range t {
 			if v == submitkeyArg {
 				shouldSubmitKey = true
 			} else if v == stakingShardArg {
@@ -64,6 +67,13 @@ func init() {
 				shouldStopAutoStakeBeacon = true
 			} else if v == addStakingBeaconArg {
 				shouldAddStakingBeacon = true
+			} else if v == watchValidatorArg {
+				var err error
+				shouldWatchValidator = true
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	} else {
@@ -71,6 +81,7 @@ func init() {
 		shouldStakeShard = true
 		shouldStakeBeacon = true
 		//shouldAddStakingBeacon = true
+		shouldWatchValidator = true
 	}
 
 	data, err := ioutil.ReadFile("accounts.json")
@@ -84,10 +95,10 @@ func init() {
 
 	for _, k := range keys {
 		if _, found := shardValidators[k.MiningKey]; found {
-			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
+			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActualActionsIndex: map[string]uint64{}, ExpectActionsIndex: map[string]uint64{}}
 		}
 		if _, found := beaconValidators[k.MiningKey]; found {
-			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
+			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActualActionsIndex: map[string]uint64{}, ExpectActionsIndex: map[string]uint64{}}
 		}
 	}
 }
@@ -163,7 +174,6 @@ func main() {
 						}
 						if shouldStake {
 							v.BeaconStaking(app)
-							v.ActionsIndex[stakingBeaconArg] = blk.GetBeaconHeight()
 						}
 					} else {
 					}
@@ -190,6 +200,12 @@ func main() {
 				fmt.Println(resp)
 			}
 		}
+		if shouldWatchValidator {
+			v := beaconValidators[bIndexes[watchBeaconIndex]]
+			if err := v.watch(blk.GetBeaconHeight(), epochBlockTime); err != nil {
+				panic(err)
+			}
+		}
 		cs, err := getCSByHeight(blk.GetBeaconHeight(), app)
 		if err != nil {
 			panic(err)
@@ -197,8 +213,9 @@ func main() {
 		if cs.IsDiffFrom(lastCs) {
 			lastCs = new(jsonresult.CommiteeState)
 			*lastCs = *cs
-			updateRole(shardValidators, beaconValidators, cs)
-			runTestcases(shardValidators, beaconValidators, blk.GetBeaconHeight())
+			if err = updateRole(shardValidators, beaconValidators, cs); err != nil {
+				panic(err)
+			}
 			cs.Print()
 		}
 	})

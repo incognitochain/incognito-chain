@@ -14,7 +14,8 @@ type Validator struct {
 	HasStakedShard       bool              `json:"has_staked_shard"`
 	HasStakedBeacon      bool              `json:"has_staked_beacon"`
 	StakeShardFromHeight uint64            `json:"stake_shard_from_height"`
-	ActionsIndex         map[string]uint64 `json:"actions_index"`
+	ExpectActionsIndex   map[string]uint64 `json:"expect_actions_index"`
+	ActualActionsIndex   map[string]uint64 `json:"actual_actions_index"`
 	Role                 int               `json:"role"`
 }
 

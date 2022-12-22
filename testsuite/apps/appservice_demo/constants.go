@@ -6,6 +6,7 @@ const (
 	stakingBeaconArg       = "staking-beacon"
 	stopAutoStakeBeaconArg = "stop-auto-stake-beacon"
 	addStakingBeaconArg    = "add-staking-beacon"
+	watchValidatorArg      = "watch-validator"
 )
 
 const (
@@ -63,4 +64,12 @@ var fixedRewardReceivers = []string{
 	"1i2qrYwZzgNrjvFpmDmCVG72Vnaye4FPzLYPk5cpjgy8QCo4oa",
 	"1qVyf5hje3crq4V15NFkjQNyY2MDKjQaatPpLveCewYuKfUdqU",
 	"1ryW3G6NYsFDrAnwWh3Ck6uEMWjxDpjdS1ES4p6UtV1eGbjEX3",
+}
+
+var bIndexes = []string{
+	"1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s",
+	"12F2sX5PptkKroF2tJztML3CU2MZRmoUXX5znAqLJWqmDL916eZ",
+	"12TKYy4n44MXpUmKHQuTNhNFwGjkSxpJHaATL5vL4e78btDPGPw",
+	"1267P2JH7yU2Bw3fmz2dp51AgKwr7aqAZmPBg2bpLoXb3YwiCBq",
+	"126ySw8rdeAbcfozNe3i9TRXNowrMmkoPsjWWKadSGfzuhzjP2n",
 }
