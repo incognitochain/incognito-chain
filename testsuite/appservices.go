@@ -229,3 +229,8 @@ func (s *AppService) StopAutoStaking(privateKey, candidatePaymentAddress, privat
 		},
 	)
 }
+
+func (s *AppService) AddStaking(privateKey string, receivers map[string]interface{}, addStakeInfo map[string]interface{}) (jsonresult.CreateTransactionResult, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	return fullnodeRPC.CreateAndSendAddStakingTransaction(privateKey, receivers, -1, 1, addStakeInfo)
+}
