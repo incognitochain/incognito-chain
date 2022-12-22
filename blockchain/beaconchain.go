@@ -405,12 +405,12 @@ func (chain *BeaconChain) ValidatePreviousValidationData(previousBlockHash commo
 		return NewBlockChainError(ReplacePreviousValidationDataError, err)
 	}
 
-	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
-		Logger.log.Infof("BEACON | Shard Height %+v, Replace Previous ValidationData new number of signatures %+v (old %+v)",
-			bcBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx))
-	} else {
-		return nil
-	}
+	// if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
+	Logger.log.Infof("BEACON | Beacon Height %+v, Replace Previous ValidationData new number of signatures %+v - %+v (old %+v - %+v)",
+		bcBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx), decodedNewValidationData.ValidatiorsIdx, decodedOldValidationData.ValidatiorsIdx)
+	// } else {
+	// 	return nil
+	// }
 
 	// validate block
 	bcBlock.ValidationData = newValidationData
@@ -418,6 +418,8 @@ func (chain *BeaconChain) ValidatePreviousValidationData(previousBlockHash commo
 	if err != nil {
 		return err
 	}
+	committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
+	Logger.log.Infof("debugvalidation Validate prev validation data with committee %+v of block %v", common.ShortPKList(committeesStr), bcBlock.Hash().String())
 	if err = chain.ValidateBlockSignatures(bcBlock, committees, config.Param().CommitteeSize.NumberOfFixedBeaconBlockValidator); err != nil {
 		return err
 	}
