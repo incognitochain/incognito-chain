@@ -5,6 +5,7 @@ const (
 	stakingShardArg        = "staking-shard"
 	stakingBeaconArg       = "staking-beacon"
 	stopAutoStakeBeaconArg = "stop-auto-stake-beacon"
+	addStakingBeaconArg    = "add-staking-beacon"
 )
 
 const (

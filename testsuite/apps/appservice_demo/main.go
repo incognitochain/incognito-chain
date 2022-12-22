@@ -18,6 +18,7 @@ var (
 	shouldStakeShard          bool
 	shouldStakeBeacon         bool
 	shouldStopAutoStakeBeacon bool
+	shouldAddStakingBeacon    bool
 	shardValidators           map[string]*Validator
 	beaconValidators          map[string]*Validator
 	keys                      []Key
@@ -61,12 +62,15 @@ func init() {
 				shouldStakeBeacon = true
 			} else if v == stopAutoStakeBeaconArg {
 				shouldStopAutoStakeBeacon = true
+			} else if v == addStakingBeaconArg {
+				shouldAddStakingBeacon = true
 			}
 		}
 	} else {
 		shouldSubmitKey = true
 		shouldStakeShard = true
 		shouldStakeBeacon = true
+		shouldAddStakingBeacon = true
 	}
 
 	data, err := ioutil.ReadFile("accounts.json")
@@ -168,11 +172,23 @@ func main() {
 		}
 		if shouldStopAutoStakeBeacon {
 			v := beaconValidators[bKey0]
-			resp, err := app.StopAutoStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
-			if err != nil {
-				panic(err)
+			if v.Role == BeaconCommitteeRole {
+				resp, err := app.StopAutoStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println(resp)
 			}
-			fmt.Println(resp)
+		}
+		if shouldAddStakingBeacon {
+			v := beaconValidators[bKey0]
+			if v.Role == BeaconCommitteeRole {
+				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, 100000000000)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println(resp)
+			}
 		}
 		cs, err := getCSByHeight(blk.GetBeaconHeight(), app)
 		if err != nil {
