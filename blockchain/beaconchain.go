@@ -414,7 +414,7 @@ func (chain *BeaconChain) ValidatePreviousValidationData(previousBlockHash commo
 
 	// validate block
 	bcBlock.ValidationData = newValidationData
-	committees, err := chain.GetCommitteeV2(bcBlock)
+	committees, err := chain.GetCommitteeByHash(bcBlock.GetPrevHash(), bcBlock.GetBeaconHeight()-1)
 	if err != nil {
 		return err
 	}
@@ -647,7 +647,24 @@ func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognit
 	}
 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(chain.GetChainDatabase()))
 	if err != nil {
-		Logger.log.Error("Cannot restore shard, beacon not ready!")
+		Logger.log.Error("Cannot get beacon consensus statedb!,", err.Error())
+		return nil, err
+	}
+	return statedb.GetBeaconCommittee(beaconConsensusStateDB), nil
+}
+
+func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight uint64) ([]incognitokey.CommitteePublicKey, error) {
+	viewByBlock := chain.multiView.GetViewByHash(blockHash)
+	if viewByBlock != nil {
+		return viewByBlock.GetCommittee(), nil
+	}
+	bcRootHash, err := chain.Blockchain.GetBeaconConsensusRootHash(chain.GetFinalViewState(), blockHeight)
+	if err != nil {
+		return nil, err
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(chain.GetChainDatabase()))
+	if err != nil {
+		Logger.log.Error("Cannot get beacon consensus statedb!,", err.Error())
 		return nil, err
 	}
 	return statedb.GetBeaconCommittee(beaconConsensusStateDB), nil
