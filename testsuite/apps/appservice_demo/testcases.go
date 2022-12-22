@@ -10,6 +10,10 @@ func shortKey(src string) string {
 	return src[len(src)-5:]
 }
 
+func runTestcases(shardValidators, beaconValidators map[string]*Validator, beaconHeight uint64) {
+
+}
+
 func (v *Validator) shouldInBeaconWaiting(cs *jsonresult.CommiteeState) {
 	k := shortKey(v.MiningPublicKey)
 	for _, c := range cs.BeaconWaiting {

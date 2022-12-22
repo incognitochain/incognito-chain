@@ -70,7 +70,7 @@ func init() {
 		shouldSubmitKey = true
 		shouldStakeShard = true
 		shouldStakeBeacon = true
-		shouldAddStakingBeacon = true
+		//shouldAddStakingBeacon = true
 	}
 
 	data, err := ioutil.ReadFile("accounts.json")
@@ -84,10 +84,10 @@ func init() {
 
 	for _, k := range keys {
 		if _, found := shardValidators[k.MiningKey]; found {
-			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false}
+			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string][]uint64{}}
 		}
 		if _, found := beaconValidators[k.MiningKey]; found {
-			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false}
+			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string][]uint64{}}
 		}
 	}
 }
@@ -163,7 +163,7 @@ func main() {
 						}
 						if shouldStake {
 							v.BeaconStaking(app)
-							v.StakeBeaconFromHeight = blk.GetBeaconHeight()
+							v.ActionsIndex[stakingBeaconArg] = blk.GetBeaconHeight()
 						}
 					} else {
 					}
@@ -198,6 +198,7 @@ func main() {
 			lastCs = new(jsonresult.CommiteeState)
 			*lastCs = *cs
 			updateRole(shardValidators, beaconValidators, cs)
+			runTestcases(shardValidators, beaconValidators, blk.GetBeaconHeight())
 			cs.Print()
 		}
 	})

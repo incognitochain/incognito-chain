@@ -11,11 +11,11 @@ type Key struct {
 
 type Validator struct {
 	Key
-	HasStakedShard        bool   `json:"has_staked_shard"`
-	HasStakedBeacon       bool   `json:"has_staked_beacon"`
-	StakeShardFromHeight  uint64 `json:"stake_shard_from_height"`
-	StakeBeaconFromHeight uint64 `json:"stake_beacon_from_height"`
-	Role                  int    `json:"role"`
+	HasStakedShard       bool              `json:"has_staked_shard"`
+	HasStakedBeacon      bool              `json:"has_staked_beacon"`
+	StakeShardFromHeight uint64            `json:"stake_shard_from_height"`
+	ActionsIndex         map[string]uint64 `json:"actions_index"`
+	Role                 int               `json:"role"`
 }
 
 const (
