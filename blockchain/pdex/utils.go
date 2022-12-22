@@ -1026,3 +1026,21 @@ func getSortedPoolPairIDs(poolPairs map[string]*PoolPairState) []string {
 	})
 	return keys
 }
+
+func validateTokenIDsByPoolPairID(tokenIDs []common.Hash, poolPairID string) error {
+	// poolPairID has been verified before
+	temp := strings.Split(poolPairID, "-")
+	if len(temp) != 3 {
+		return fmt.Errorf("Length is invalid")
+	}
+	for _, tokenID := range tokenIDs {
+		if tokenID.String() == temp[0] {
+			continue
+		}
+		if tokenID.String() == temp[1] {
+			continue
+		}
+		return fmt.Errorf("token %s is not in pool %s", tokenID.String(), poolPairID)
+	}
+	return nil
+}

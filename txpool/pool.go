@@ -266,7 +266,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 
 func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 	tp.CData.locker.Lock()
-	tp.CData.locker.Unlock()
+	defer tp.CData.locker.Unlock()
 	txH := validTx.tx.Hash().String()
 	tp.Data.TxByHash[txH] = validTx.tx
 	tp.Data.TxInfos[txH] = TxInfo{
@@ -282,7 +282,7 @@ func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 
 func (tp *TxsPool) removeDoubleSpendTx(txH string) {
 	tp.CData.locker.Lock()
-	tp.CData.locker.Unlock()
+	defer tp.CData.locker.Unlock()
 	delete(tp.Data.TxByHash, txH)
 	delete(tp.Data.TxInfos, txH)
 	if keyList, ok := tp.CData.CoinsByTxHash[txH]; ok {
@@ -422,7 +422,7 @@ func (tp *TxsPool) FilterWithNewView(
 			txsToRemove = append(txsToRemove, txsValid[k].Hash().String())
 			txsValid[k] = nil
 		}
-		if info, ok := tp.Data.TxInfos[txHash]; ok {
+		if info, ok := txsData.TxInfos[txHash]; ok {
 			txsValid = insertTxIntoList(
 				mapForChkDbSpend,
 				TxInfoDetail{
@@ -450,18 +450,12 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	cView metadata.ChainRetriever,
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
-	maxSize uint64,
-	maxTime time.Duration,
-	getTxsDuration time.Duration,
-	maxTxs int64,
+	ctx PrefetchInterface,
 ) []metadata.Transaction {
-	//TODO Timeout
-	timeOut := time.After(getTxsDuration)
-	Logger.Infof("Has %v time for crawling max %v txs for shard %v\n", getTxsDuration, maxTxs, sView.GetShardID())
-	st := time.Now()
+
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
-	stopCh := make(chan interface{}, 2)
+	stopCh := make(chan interface{})
 	go tp.getTxsFromPool(txDetailCh, stopCh)
 	curSize := uint64(0)
 	curTime := 0 * time.Millisecond
@@ -469,19 +463,48 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Index  uint
 		Detail TxInfoDetail
 	}{}
+	maxTime := ctx.GetMaxTime()
+	maxSize := ctx.GetMaxSize()
 	mapForChkDbStake := map[string]interface{}{}
+	collectedTx := map[string]bool{}
 	defer func() {
-		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v for shard %v \n", len(res), curSize, curTime, maxSize, maxTime, sView.GetShardID())
+		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v for shard %v \n", len(res), curSize, curTime, maxSize, sView.GetShardID())
+		if stopCh != nil {
+			close(stopCh)
+		}
+		removeNilTx(&res)
 	}()
 	limitTxAction := map[int]int{}
 	for {
 		select {
+		case <-ctx.Done():
+			return res
+		default:
+		}
+
+		select {
+		case <-ctx.Done():
+			return res
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
-				removeNilTx(&res)
-				return res
+				close(stopCh)
+				stopCh = make(chan interface{})
+				txDetailCh = make(chan *TxInfoDetail, 1024)
+				go func() {
+					time.Sleep(time.Millisecond * 100)
+					tp.getTxsFromPool(txDetailCh, stopCh)
+				}()
+				continue
 			}
+			//already inserted
+			if _, ok := collectedTx[txDetails.Tx.Hash().String()]; ok {
+				continue
+			}
+
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
+			if curSize+txDetails.Size > maxSize {
+				continue
+			}
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -504,29 +527,28 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				sView.GetBeaconHeight(),
 			)
 			if !ok || err != nil {
-				Logger.Errorf("[txTracing]Validate tx %v return error %v\n", txDetails.Hash, err)
+				Logger.Info("[txTracing]Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
-			Logger.Debugf("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
+			Logger.Infof("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
 			isDoubleSpend, needToReplace, removedInfo, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
 			if isDoubleSpend && !needToReplace {
 				continue
 			}
-			if len(res)+1 > int(maxTxs) {
-				return res
-			}
+
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
-			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
+			Logger.Infof("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
 			for k := range removeIdx {
 				res[k] = nil
 			}
 			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
-		case <-timeOut:
-			stopCh <- nil
-			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
-			removeNilTx(&res)
-			return res
+			collectedTx[txDetails.Tx.Hash().String()] = true
+			ctx.DecreaseNumTXRemain()
+			if ctx.GetNumTxRemain() <= 0 {
+				return res
+			}
+
 		}
 	}
 }
@@ -835,7 +857,9 @@ func (tp *TxsPool) getTxsFromPool(
 ) {
 	tp.action <- func(tpTemp *TxsPool) {
 		defer func() {
-			close(txCh)
+			if txCh != nil {
+				close(txCh)
+			}
 			Logger.Debug("tx channel is closed")
 		}()
 		for k, v := range tpTemp.Data.TxByHash {
@@ -856,13 +880,14 @@ func (tp *TxsPool) getTxsFromPool(
 					txDetails.Tx = v
 					Logger.Debugf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
 					if txCh != nil {
-						txCh <- txDetails
+						select {
+						case txCh <- txDetails:
+						case <-time.NewTimer(time.Second * 10).C:
+							return
+						}
 					}
 				}
 			}
-		}
-		if txCh != nil {
-			txCh <- nil
 		}
 	}
 

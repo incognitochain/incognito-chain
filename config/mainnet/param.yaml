@@ -95,8 +95,9 @@ ftm_param:
     - "https://fantom-mainnet.public.blastapi.io"
 aurora_param:
   host:
-    - "https://mainnet.aurora.dev"
+    - "https://nd-779-760-011.p2pify.com/caabeca56964b78c96ca321790c30777"
     - "https://aurora-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+    - "https://aurora-mainnet.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
 avax_param:
   host:
     - "https://api.avax.network/ext/bc/C/rpc"
@@ -149,6 +150,12 @@ auto_enable_feature:
       require_percentage: 75
   - nearbridge:
       min_trigger: 2403039
+      require_percentage: 75
+  - burnfee95:
+      min_trigger: 2640920
+      require_percentage: 75
+  - aurorahotfix:
+      min_trigger: 2640920
       require_percentage: 75
 blocktime_param:
   - "blocktimedef": 40

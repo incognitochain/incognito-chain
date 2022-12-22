@@ -3,6 +3,11 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -10,10 +15,6 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
-	"net"
-	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -207,7 +208,7 @@ func (sim *NodeEngine) Init() {
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
 			mempool.DefaultEstimateFeeMinRegisteredBlocks,
-			config.Config().LimitFee)
+			config.Config().LimitFee, config.Config().MinFeePerTx, 0)
 	}
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
@@ -313,7 +314,7 @@ func (sim *NodeEngine) Init() {
 
 	sim.param = activeNetParams
 	sim.bc = &bc
-	sim.consensus = &cs
+	//sim.consensus = &cs
 	sim.txpool = &txpoolV1
 	sim.temppool = &temppool
 	sim.btcrd = &btcrd
@@ -604,11 +605,11 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			//	fmt.Println(committee.Name)
 			//}
 		}
-		for _, committeeID := range committeeIndex {
-			vote, _ := blsbft.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
-			vote.IsValid = 1
-			votes[vote.Validator] = vote
-		}
+		//for _, committeeID := range committeeIndex {
+		//	vote, _ := blsbft.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
+		//	vote.IsValid = 1
+		//	votes[vote.Validator] = vote
+		//}
 		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committeePubKey, common.BlsConsensus)
 		aggSig, brigSigs, validatorIdx, portalSigs, err := blsbft.CombineVotes(votes, committeeBLSString)
 

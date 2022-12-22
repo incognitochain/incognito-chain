@@ -590,6 +590,42 @@ func (a *actorV2) run() error {
 					userKeySet,
 				)
 
+				latestBlockInCurrentTS := a.currentTimeSlot == bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				noProposeBlockInCurrentTS := func() bool {
+					if a.currentTimeSlot != bestView.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) && bestView.PastHalfTimeslot(time.Now().Unix()) {
+						if ok := a.GetCurrentTimeSlotProposeHistory(); ok {
+							return false
+						}
+						blks := a.GetSortedReceiveBlockByHeight(bestView.GetHeight() + 1)
+						if len(blks) == 0 {
+							return true
+						}
+						if a.currentTimeSlot == bestView.CalculateTimeSlot(blks[0].block.GetProposeTime()) {
+							return false
+						}
+
+						return true
+					}
+					return false
+				}
+				nextProposer := func() bool {
+					nextTS := a.currentTimeSlot + 1
+					nextProposerPk, _ := a.chain.GetProposerByTimeSlotFromCommitteeList(
+						nextTS,
+						committees,
+					)
+					for _, userKey := range userKeySet {
+						userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+						if nextProposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
+							return true
+						}
+					}
+					return false
+				}
+				if (latestBlockInCurrentTS || noProposeBlockInCurrentTS()) && nextProposer() {
+					a.chain.CollectTxs(bestView)
+				}
+
 				if newTimeSlot { //for logging
 					a.logger.Info("")
 					a.logger.Info("======================================================")
@@ -1503,12 +1539,11 @@ func (a *actorV2) validateBlock(bestViewHeight uint64, proposeBlockInfo *Propose
 	lastVotedBlock, isVoted := a.GetVoteHistory(bestViewHeight + 1)
 	blockProduceTimeSlot := a.chain.GetBestView().CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
+	proposeBlockInfo.LastValidateTime = time.Now()
 	isValid, err := a.ruleDirector.builder.ValidatorRule().ValidateBlock(lastVotedBlock, isVoted, proposeBlockInfo)
 	if err != nil {
 		return err
 	}
-
-	proposeBlockInfo.LastValidateTime = time.Now()
 
 	if !isValid {
 		a.logger.Debugf("can't vote for this block %v height %v timeslot %v",

@@ -96,6 +96,7 @@ func (sp *stateProducerV2) addLiquidity(
 			poolPairID = waitingContribution.PoolPairID()
 		}
 		rootPoolPair, found := poolPairs[poolPairID]
+
 		if !found || rootPoolPair == nil {
 			if waitingContribution.PoolPairID() == utils.EmptyString {
 				newPoolPair := initPoolPairState(waitingContribution, incomingContribution)
@@ -143,7 +144,25 @@ func (sp *stateProducerV2) addLiquidity(
 				res = append(res, insts...)
 				continue
 			}
+
+		} else {
+			err := validateTokenIDsByPoolPairID(
+				[]common.Hash{waitingContribution.TokenID(), incomingContribution.TokenID()},
+				poolPairID,
+			)
+			if err != nil {
+				insts, err := v2utils.BuildRefundAddLiquidityInstructions(
+						waitingContributionState, incomingContributionState,
+				)
+				if err != nil {
+						return res, poolPairs, waitingContributions, err
+				}
+				Logger.log.Warnf("tx %v add token not in pool", tx.Hash().String())
+				res = append(res, insts...)
+				continue
+			}
 		}
+
 		token0Contribution, token1Contribution := rootPoolPair.getContributionsByOrder(
 			&waitingContribution, &incomingContribution,
 		)
