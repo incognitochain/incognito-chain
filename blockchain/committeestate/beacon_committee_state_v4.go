@@ -44,10 +44,36 @@ type StakerInfo struct {
 	EnterTime     time.Time
 }
 
+func (s StakerInfo) MarshalJSON() ([]byte, error) {
+	cpk, _ := s.cpkStr.ToBase58()
+	type Alias StakerInfo
+	x := struct {
+		CPK string
+		Alias
+	}{
+		CPK:   cpk,
+		Alias: (Alias)(s),
+	}
+	return json.Marshal(x)
+}
+
 type LockingInfo struct {
 	cpkStr        incognitokey.CommitteePublicKey
 	LockingEpoch  uint64
 	LockingReason int
+}
+
+func (s LockingInfo) MarshalJSON() ([]byte, error) {
+	cpk, _ := s.cpkStr.ToBase58()
+	type Alias LockingInfo
+	x := struct {
+		CPK string
+		Alias
+	}{
+		CPK:   cpk,
+		Alias: (Alias)(s),
+	}
+	return json.Marshal(x)
 }
 
 type BeaconCommitteeStateV4 struct {
@@ -279,28 +305,32 @@ func (b *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePubl
 
 func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() string {
 	type StateData struct {
-		Committee map[string]StakerInfo
-		Pending   map[string]StakerInfo
-		Waiting   map[string]StakerInfo
-		Locking   map[string]LockingInfo
+		Committee []StakerInfo
+		Pending   []StakerInfo
+		Waiting   []StakerInfo
+		Locking   []LockingInfo
 	}
 	data := &StateData{
-		Committee: make(map[string]StakerInfo),
-		Pending:   make(map[string]StakerInfo),
-		Waiting:   make(map[string]StakerInfo),
-		Locking:   make(map[string]LockingInfo),
+		Committee: []StakerInfo{},
+		Pending:   []StakerInfo{},
+		Waiting:   []StakerInfo{},
+		Locking:   []LockingInfo{}}
+
+	for _, v := range s.GetBeaconCommittee() {
+		cpk, _ := v.ToBase58()
+		data.Committee = append(data.Committee, *s.beaconCommittee[cpk])
 	}
-	for k, v := range s.beaconCommittee {
-		data.Committee[k] = *v
+	for _, v := range s.GetBeaconSubstitute() {
+		cpk, _ := v.ToBase58()
+		data.Pending = append(data.Pending, *s.beaconPending[cpk])
 	}
-	for k, v := range s.beaconPending {
-		data.Pending[k] = *v
+	for _, v := range s.GetBeaconWaiting() {
+		cpk, _ := v.ToBase58()
+		data.Waiting = append(data.Waiting, *s.beaconWaiting[cpk])
 	}
-	for k, v := range s.beaconWaiting {
-		data.Waiting[k] = *v
-	}
-	for k, v := range s.beaconLocking {
-		data.Locking[k] = *v
+	for _, v := range s.GetBeaconLocking() {
+		cpk, _ := v.ToBase58()
+		data.Locking = append(data.Locking, *s.beaconLocking[cpk])
 	}
 	b, _ := json.Marshal(data)
 	return string(b)
@@ -424,6 +454,7 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 	//udpate beacon state
 	beaconValidators := append(s.GetBeaconCommittee(), s.GetBeaconSubstitute()...)
 	beaconValidators = append(beaconValidators, s.GetBeaconLocking()...)
+
 	beaconValidatorList, _ := incognitokey.CommitteeKeyListToString(beaconValidators)
 	stateHash.BeaconCommitteeAndValidatorHash, _ = common.GenerateHashFromStringArray(beaconValidatorList)
 

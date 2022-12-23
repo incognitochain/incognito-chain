@@ -319,6 +319,7 @@ func (f *FlatFileManager) Append(data []byte) (uint64, error) {
 		return 0, err
 	}
 	_, err = f.currentFD.Write(data)
+	f.currentFD.Sync()
 
 	addedItemIndex := f.currentFile*f.fileSizeLimit + f.currentFileSize
 	f.currentFileSize++
