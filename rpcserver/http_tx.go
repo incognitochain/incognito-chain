@@ -1683,7 +1683,7 @@ func (httpServer *HttpServer) handleCreateRawAddStakingTransaction(params interf
 	}
 
 	//Get staking type
-	addStakingAmount, ok := data["AddStakingAmount"].(uint64)
+	addStakingAmount, ok := data["AddStakingAmount"].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Add Staking Amount Transaction %+v, type %+v", data["AddStakingAmount"], reflect.TypeOf(data["AddStakingAmount"]).String()))
 	}
