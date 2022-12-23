@@ -23,11 +23,11 @@ const (
 	sKey10 = "12nLs1ftPJuqQZy29mExUUx7K1ZDWreTYxtCr7E44EoCK6rP4ET"
 	sKey11 = "12crV4U6fJsh1zd8Kk24yiu7A85WhGdKZiZrMaLBLn99ohJgZba"
 	bKey0  = "1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s"
-	bKey1  = "12F2sX5PptkKroF2tJztML3CU2MZRmoUXX5znAqLJWqmDL916eZ"
-	bKey2  = "12TKYy4n44MXpUmKHQuTNhNFwGjkSxpJHaATL5vL4e78btDPGPw"
-	bKey3  = "1EnCA7Jrb9NsvnXc6JxGDkds85VeE3zMRcoxHe4EnKfsUGVS3f"
-	bKey4  = "1267P2JH7yU2Bw3fmz2dp51AgKwr7aqAZmPBg2bpLoXb3YwiCBq"
-	bKey5  = "126ySw8rdeAbcfozNe3i9TRXNowrMmkoPsjWWKadSGfzuhzjP2n"
+	bKey1  = "1nyeG4mpkSHi6omj1zTNdQxUkXv8eitpNp8y9RgHyMdv4ifWTQ"
+	bKey2  = "12F2sX5PptkKroF2tJztML3CU2MZRmoUXX5znAqLJWqmDL916eZ"
+	bKey3  = "12TKYy4n44MXpUmKHQuTNhNFwGjkSxpJHaATL5vL4e78btDPGPw"
+	bKey4  = "1EnCA7Jrb9NsvnXc6JxGDkds85VeE3zMRcoxHe4EnKfsUGVS3f"
+	bKey5  = "1267P2JH7yU2Bw3fmz2dp51AgKwr7aqAZmPBg2bpLoXb3YwiCBq"
 )
 
 var fixedCommiteesNodes = map[int][]string{
@@ -68,8 +68,9 @@ var fixedRewardReceivers = []string{
 
 var bIndexes = []string{
 	"1ybFGPehhSWCMzyvHwVZBqrtFBTV3H9MgQfhHbNR5rZApH836s",
+	"1nyeG4mpkSHi6omj1zTNdQxUkXv8eitpNp8y9RgHyMdv4ifWTQ",
 	"12F2sX5PptkKroF2tJztML3CU2MZRmoUXX5znAqLJWqmDL916eZ",
 	"12TKYy4n44MXpUmKHQuTNhNFwGjkSxpJHaATL5vL4e78btDPGPw",
+	"1EnCA7Jrb9NsvnXc6JxGDkds85VeE3zMRcoxHe4EnKfsUGVS3f",
 	"1267P2JH7yU2Bw3fmz2dp51AgKwr7aqAZmPBg2bpLoXb3YwiCBq",
-	"126ySw8rdeAbcfozNe3i9TRXNowrMmkoPsjWWKadSGfzuhzjP2n",
 }
