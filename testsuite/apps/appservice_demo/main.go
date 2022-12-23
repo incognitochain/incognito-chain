@@ -126,6 +126,9 @@ func main() {
 		panic(err)
 	}
 	bHeight := bState.BeaconHeight + 5
+	if shouldAddStakingBeacon {
+		bHeight = bState.BeaconHeight + 1
+	}
 	if bHeight < 15 {
 		bHeight = 15
 	}
@@ -201,7 +204,7 @@ func main() {
 			}
 		}
 		if shouldAddStakingBeacon {
-			v := beaconValidators[bKey0]
+			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconCommitteeRole {
 				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, 100000000000)
 				if err != nil {
