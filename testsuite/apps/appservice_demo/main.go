@@ -98,7 +98,6 @@ func init() {
 		shouldStakeBeacon = false
 		shouldWatchValidator = false
 	}
-	log.Println("shouldAddStakingBeacon:", shouldAddStakingBeacon)
 
 	data, err := ioutil.ReadFile("accounts.json")
 	if err != nil {
@@ -210,7 +209,7 @@ func main() {
 		if shouldAddStakingBeacon {
 			log.Println("watchBeaconIndex:", watchBeaconIndex)
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
-			if v.Role == BeaconCommitteeRole {
+			if v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole {
 				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, 100000000000)
 				if err != nil {
 					panic(err)
