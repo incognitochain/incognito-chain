@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -54,8 +55,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
 
-	estimateFeeCoinPerKb := uint64(0)
-	estimateTxSizeInKb := uint64(0)
+	result := &jsonresult.EstimateFeeResult{}
 	if len(outCoins) > 0 {
 		// param #2: list receiver
 		receiversPaymentAddressStrParam := make(map[string]interface{})
@@ -91,16 +91,15 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 
 		var err2 error
 		ver, err := transaction.GetTxVersionFromCoins(outCoins)
-		if err!=nil{
+		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 		}
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(int(ver),
+		result, err2 = httpServer.txService.EstimateFee(int(ver),
 			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customPrivacyTokenParam, int64(beaconHeight))
 		if err2 != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidTxFeeError, err2)
 		}
 	}
-	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
 	return result, nil
 }
 
@@ -155,11 +154,11 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 
 	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 
-	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, int64(beaconHeight))
+	estimateFeeCoinPerKb, minFeePerTx, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, int64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0, 0, minFeePerTx)
 	return result, nil
 }

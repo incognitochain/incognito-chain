@@ -70,7 +70,8 @@ func (bReq BurnForCallRequest) ValidateSanityData(chainRetriever metadataCommon.
 
 	tokenIDs := []common.Hash{bReq.BurnTokenID}
 	for _, d := range bReq.Data {
-		if (d.ExternalNetworkID == common.AVAXNetworkID || d.ExternalNetworkID == common.AURORANetworkID) && shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
+		if (d.ExternalNetworkID == common.AVAXNetworkID && shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0) ||
+			(d.ExternalNetworkID == common.AURORANetworkID && shardViewRetriever.GetTriggeredFeature()["aurorahotfix"] == 0) {
 			return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, fmt.Errorf("request with metadata %d not enabled yet", d.ExternalNetworkID))
 		}
 

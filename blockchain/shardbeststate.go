@@ -83,6 +83,10 @@ type ShardBestState struct {
 	shardCommitteeState        committeestate.ShardCommitteeState
 }
 
+func (shardBestState *ShardBestState) PastHalfTimeslot(t int64) bool {
+	return shardBestState.TSManager.pastHalfTimeslot(t)
+}
+
 func (shardBestState *ShardBestState) CalculateTimeSlot(t int64) int64 {
 	return shardBestState.TSManager.calculateTimeslot(t)
 }

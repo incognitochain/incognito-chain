@@ -112,6 +112,10 @@ type BeaconBestState struct {
 	LastBlockProcessBridge uint64
 }
 
+func (beaconBestState *BeaconBestState) PastHalfTimeslot(t int64) bool {
+	return false
+}
+
 func (beaconBestState *BeaconBestState) CalculateTimeSlot(t int64) int64 {
 	return beaconBestState.TSManager.calculateTimeslot(t)
 }

@@ -29,6 +29,7 @@ type View interface {
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 	GetProposerLength() int
 	CompareCommitteeFromBlock(View) int
+	PastHalfTimeslot(int64) bool
 }
 
 type MultiView interface {

@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -141,7 +143,6 @@ func CreateAccounts(rpc *devframework.RemoteRPCClient, seed string, size int) []
 }
 
 func main() {
-	fullnode := flag.String("h", "http://51.91.220.58:9335/", "Fullnode Endpoint")
 	flag.Parse()
 	fullnodeRPC := devframework.RemoteRPCClient{"http://127.0.0.1:30001"}
 	shard0RPC := devframework.RemoteRPCClient{"http://127.0.0.1:20004"}

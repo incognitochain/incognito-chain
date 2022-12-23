@@ -367,7 +367,7 @@ func (serverObj *Server) NewServer(
 					serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
-						cfg.LimitFee)
+						cfg.LimitFee, cfg.MinFeePerTx, cfg.SpecifiedFeePerTx)
 				} else {
 					serverObj.feeEstimator[byte(shardID)] = feeEstimator
 				}
@@ -377,7 +377,7 @@ func (serverObj *Server) NewServer(
 				serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
-					cfg.LimitFee)
+					cfg.LimitFee, cfg.MinFeePerTx, cfg.SpecifiedFeePerTx)
 			}
 		}
 	} else {

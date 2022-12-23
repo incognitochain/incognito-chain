@@ -97,7 +97,7 @@ func (a *actorV3) maybeProposeBlock() error {
 		}
 
 		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
+		ctx, cancel := context.WithTimeout(ctx, (time.Duration(bestView.GetCurrentTimeSlot())*time.Second)/2)
 		defer cancel()
 		a.logger.Info("CreateNewBlock version", a.blockVersion)
 		block, err = a.chain.CreateNewBlock(a.blockVersion, b58Str, 1, a.currentTime, committees, committeeViewHash)

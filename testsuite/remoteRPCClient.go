@@ -47,6 +47,56 @@ func (r *RemoteRPCClient) IsInstantFinality(chainID int) (res bool, err error) {
 	return resp.Result, err
 }
 
+func (r *RemoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbootstrapstatedb",
+		"params":  []interface{}{checkpoint, cid, dbType, offset},
+		"id":      1,
+	})
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	//TODO: stream body and then parse
+	return nil
+}
+
+func (r *RemoteRPCClient) CreateRawTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createtransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, err
+}
+
 func (r *RemoteRPCClient) GetAllViewDetail(chainID int) (res []jsonresult.GetViewResult, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
@@ -217,10 +267,6 @@ func (r *RemoteRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey stri
 	return err
 }
 
-func (r *RemoteRPCClient) GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error) {
-	panic("implement me")
-}
-
 func (r *RemoteRPCClient) CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error) {
 	panic("implement me")
 }
@@ -290,54 +336,65 @@ func (r *RemoteRPCClient) GetBlocksFromHeight(shardID int, from uint64, num int)
 	}
 }
 
-func (r *RemoteRPCClient) GetLatestBackup() (res blockchain.BootstrapProcess, err error) {
-	requestBody, err := json.Marshal(map[string]interface{}{
+func (r *RemoteRPCClient) GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
-		"method":  "getlatestbackup",
 		"params":  []interface{}{},
+		"method":  "getmempoolinfo",
 		"id":      1,
 	})
-	if err != nil {
-		return res, err
+	if rpcERR != nil {
+		return nil, errors.New(rpcERR.Error())
 	}
 	body, err := r.sendRequest(requestBody)
-
 	if err != nil {
-		return res, err
+		return nil, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result *jsonresult.GetMempoolInfo
+		Error  *ErrMsg
+	}{}
+	//fmt.Println(string(body))
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
 	}
 
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	return resp.Result, nil
+}
+
+func (r *RemoteRPCClient) SendRawTransaction(data string) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "sendtransaction",
+		"params":  []interface{}{data},
+		"id":      1,
+	})
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
 	resp := struct {
-		Result blockchain.BootstrapProcess
+		Result jsonresult.CreateTransactionResult
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+
 	if resp.Error != nil && resp.Error.StackTrace != "" {
 		return res, errors.New(resp.Error.StackTrace)
 	}
-	if err != nil {
-		return res, err
-	}
-	return resp.Result, nil
 
-}
-
-func (r *RemoteRPCClient) GetStateDB(checkpoint string, cid int, dbType int, offset uint64, f func([]byte)) error {
-	requestBody, err := json.Marshal(map[string]interface{}{
-		"jsonrpc": "1.0",
-		"method":  "getbootstrapstatedb",
-		"params":  []interface{}{checkpoint, cid, dbType, offset},
-		"id":      1,
-	})
-	if err != nil {
-		return err
-	}
-	resp, err := http.Post(r.Endpoint, "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	//TODO: stream body and then parse
-	return nil
+	return resp.Result, err
 }
 
 func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
@@ -352,7 +409,7 @@ func (r *RemoteRPCClient) SubmitKey(privateKey string) (res bool, err error) {
 	}
 	body, err := r.sendRequest(requestBody)
 	if err != nil {
-		return res, errors.New(rpcERR.Error())
+		return res, err
 	}
 	resp := struct {
 		Result bool
@@ -1067,7 +1124,14 @@ func (r *RemoteRPCClient) GetShardBestState(sid int) (res jsonresult.GetShardBes
 	return resp.Result, err
 }
 
-func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *jsonresult.TransactionDetail, err error) {
+type TXDetail struct {
+	*jsonresult.TransactionDetail
+	Proof                         interface{}
+	ProofDetail                   interface{}
+	PrivacyCustomTokenProofDetail interface{}
+}
+
+func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *TXDetail, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",
 		"method":  "gettransactionbyhash",
@@ -1081,8 +1145,9 @@ func (r *RemoteRPCClient) GetTransactionByHash(transactionHash string) (res *jso
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
 	}
+
 	resp := struct {
-		Result *jsonresult.TransactionDetail
+		Result *TXDetail
 		Error  *ErrMsg
 	}{}
 	err = json.Unmarshal(body, &resp)
