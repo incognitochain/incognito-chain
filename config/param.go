@@ -158,6 +158,7 @@ type consensusParam struct {
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	RequiredActiveTimes       uint64   `mapstructure:"required_active_times"`
+	LowestPerformance         uint64   `mapstructure:"lowest_performance"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }
 

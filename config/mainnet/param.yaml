@@ -65,6 +65,7 @@ consensus_param:
   byzantine_detector_height: 1000000000000
   timeslot: 40
   required_active_times: 10
+  lowest_performance: 300
   epoch_break_point_swap_new_key:
     - 1917
 beacon_height_break_point_burn_addr: 150500

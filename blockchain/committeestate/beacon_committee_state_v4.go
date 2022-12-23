@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -703,12 +704,14 @@ func (b *BeaconCommitteeStateV4) updateDelegateInfo(
 			return err
 		}
 	}
+	Logger.log.Infof("Start update delegate info epoch %v %v", env.BeaconHeight, env.Epoch)
 	for pk, _ := range b.bDelegateState.DelegateInfo {
 		perf := uint64(0)
 		if v, ok := b.Performance[pk]; ok {
 			perf = v
 		}
 		vpow := b.bDelegateState.GetBeaconCandidatePower(pk)
+		Logger.log.Infof("delegate info key %+v %+v %+v", pk[len(pk)-5:], perf, vpow)
 		b.Reputation[pk] = perf * vpow / 1000
 	}
 
@@ -1078,6 +1081,36 @@ func (b BeaconCommitteeStateV4) GetCandidateBeaconWaitingForCurrentRandom() []in
 		panic(err)
 	}
 	return bPKStructs
+}
+
+func sortStakersByReputation(
+	stakers []string,
+	isAscending bool,
+	reputation map[string]uint64,
+	performance map[string]uint64,
+) ([]string, error) {
+	for _, staker := range stakers {
+		if _, ok := reputation[staker]; !ok {
+			return nil, errors.Errorf("Can not find key %v in map reputation", staker)
+		}
+		if _, ok := performance[staker]; !ok {
+			return nil, errors.Errorf("Can not find key %v in map performance", staker)
+		}
+	}
+	sort.Slice(stakers, func(i, j int) bool {
+		pi := performance[stakers[i]]
+		pj := performance[stakers[j]]
+		ri := reputation[stakers[i]]
+		rj := reputation[stakers[j]]
+		if pi == pj {
+			if ri == rj {
+				return isAscending != (stakers[i] < stakers[j])
+			}
+			return isAscending != (ri < rj)
+		}
+		return isAscending != (pi < pj)
+	})
+	return stakers, nil
 }
 
 func (b *BeaconCommitteeStateV4) processStakeInstruction(
