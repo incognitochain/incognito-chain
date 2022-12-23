@@ -196,7 +196,7 @@ func main() {
 			}
 		}
 		if shouldStopAutoStakeBeacon {
-			v := beaconValidators[bKey0]
+			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconCommitteeRole {
 				resp, err := app.StopAutoStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
 				if err != nil {
@@ -208,7 +208,7 @@ func main() {
 		if shouldAddStakingBeacon {
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole {
-				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 100000000000)
+				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 175000000000)
 				if err != nil {
 					panic(err)
 				}

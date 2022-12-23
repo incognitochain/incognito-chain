@@ -51,7 +51,7 @@ func submitkeys(
 		log.Println("Start send funds from privateKey:", shortKey(privateKey))
 
 		for _, v := range beaconValidators {
-			receivers[v.PaymentAddress] = 90000000000000
+			receivers[v.PaymentAddress] = 270000000000000
 		}
 		for _, v := range shardValidators {
 			receivers[v.PaymentAddress] = 1760000000000
