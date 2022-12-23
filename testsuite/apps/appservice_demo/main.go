@@ -205,12 +205,10 @@ func main() {
 				fmt.Println(resp)
 			}
 		}
-		log.Println("shouldAddStakingBeacon:", shouldAddStakingBeacon)
 		if shouldAddStakingBeacon {
-			log.Println("watchBeaconIndex:", watchBeaconIndex)
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole {
-				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, 100000000000)
+				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 100000000000)
 				if err != nil {
 					panic(err)
 				}

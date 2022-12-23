@@ -230,7 +230,7 @@ func (s *AppService) StopAutoStaking(privateKey, candidatePaymentAddress, privat
 	)
 }
 
-func (s *AppService) AddStaking(privateKey, privateSeed string, amount uint64) (jsonresult.CreateTransactionResult, error) {
+func (s *AppService) AddStaking(privateKey, privateSeed, candidatePaymentAddress string, amount uint64) (jsonresult.CreateTransactionResult, error) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)
 	if err != nil {
@@ -245,8 +245,9 @@ func (s *AppService) AddStaking(privateKey, privateSeed string, amount uint64) (
 		-1,
 		0,
 		map[string]interface{}{
-			"AddStakingAmount": amount,
-			"PrivateSeed":      privateSeed,
+			"AddStakingAmount":        amount,
+			"PrivateSeed":             privateSeed,
+			"CandidatePaymentAddress": candidatePaymentAddress,
 		},
 	)
 }
