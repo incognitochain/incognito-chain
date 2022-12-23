@@ -101,7 +101,7 @@ type ChainRetriever interface {
 
 type BeaconViewRetriever interface {
 	GetHeight() uint64
-	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
+	GetAllStakers() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetAutoStakingList() map[string]bool
 	// GetAllBridgeTokens() ([]common.Hash, error)
@@ -109,6 +109,7 @@ type BeaconViewRetriever interface {
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
 	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
+	GetBeaconStakerInfo(stakerPubkey string) (*statedb.BeaconStakerInfo, bool, error)
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
@@ -119,6 +120,7 @@ type BeaconViewRetriever interface {
 	IsValidPdexv3UnstakingAmount(incdb.Database, interface{}, string, string, uint64) error
 	IsValidPdexv3ShareAmount(incdb.Database, interface{}, string, string, uint64) error
 	BlockHash() common.Hash
+	GetBeaconLocking() []incognitokey.CommitteePublicKey
 }
 
 type ShardViewRetriever interface {

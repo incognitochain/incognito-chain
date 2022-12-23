@@ -98,6 +98,7 @@ const (
 	listCommitments                            = "listcommitments"
 	listCommitmentIndices                      = "listcommitmentindices"
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
+	createAndSendAddStakingTransaction         = "createandsendaddstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
 	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
@@ -444,8 +445,10 @@ const (
 	// stake
 	unstake = "createunstaketransaction"
 
-	connectionStatus = "getconnectionstatus"
-
+	connectionStatus        = "getconnectionstatus"
+	getBeaconStaker         = "getbeaconstaker"
+	getShardStaker          = "getshardstaker"
+	getBeaconCommitteeState = "getbeaconcommitteestate"
 	// prune
 	prune          = "pruneState"
 	getPruneState  = "getPruneState"

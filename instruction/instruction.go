@@ -32,6 +32,7 @@ func IsConsensusInstruction(action string) bool {
 	return action == RANDOM_ACTION ||
 		action == SWAP_ACTION ||
 		action == STAKE_ACTION ||
+		action == BEACON_STAKE_ACTION ||
 		action == ASSIGN_ACTION ||
 		action == STOP_AUTO_STAKE_ACTION ||
 		action == SET_ACTION ||
@@ -42,7 +43,9 @@ func IsConsensusInstruction(action string) bool {
 		action == FINISH_SYNC_ACTION ||
 		action == SHARD_INST ||
 		action == BEACON_INST ||
-		action == RETURN_ACTION
+		action == RETURN_ACTION ||
+		action == RETURN_BEACON_ACTION ||
+		action == ADD_STAKING_ACTION
 }
 
 // the order of instruction must always be maintain
@@ -76,28 +79,122 @@ func (i *CommitteeStateInstruction) ValidateAndFilterStakeInstructionsV1(v *View
 }
 
 func ValidateAndImportInstructionFromString(inst []string) (
-	Instruction,
-	error,
+	instStr Instruction,
+	err error,
 ) {
-	switch inst[0] {
-	case STAKE_ACTION:
-		stakeInstruction, err := ValidateAndImportStakeInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP stake instruction %+v, error %+v", inst, err)
-		}
-		return stakeInstruction, nil
-	case SWAP_ACTION:
-		swapInstruction, err := ValidateAndImportSwapInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP swap instruction %+v, error %+v", inst, err)
-		}
-		return swapInstruction, nil
-	case STOP_AUTO_STAKE_ACTION:
-		stopAutoStakeInstruction, err := ValidateAndImportStopAutoStakeInstructionFromString(inst)
-		if err != nil {
-			return nil, errors.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
-		}
-		return stopAutoStakeInstruction, nil
+	action := inst[0]
+	var buildInstructionFromString func(x []string) (Instruction, error)
+	if !IsConsensusInstruction(action) {
+		return nil, errors.Errorf("this inst %v is not Consensus instruction", inst)
 	}
-	return nil, nil
+	switch action {
+	case STAKE_ACTION:
+		buildInstructionFromString = BuildStakeInstructionFromString
+	case RANDOM_ACTION:
+		buildInstructionFromString = BuildRandomInstructionFromString
+	case STOP_AUTO_STAKE_ACTION:
+		buildInstructionFromString = BuildStopAutoStakeInstructionFromString
+	case SWAP_ACTION:
+		buildInstructionFromString = BuildSwapInstructionFromString
+	case SWAP_SHARD_ACTION:
+		buildInstructionFromString = BuildSwapShardInstructionFromString
+	case FINISH_SYNC_ACTION:
+		buildInstructionFromString = BuildFinishSyncInstructionFromString
+	case UNSTAKE_ACTION:
+		buildInstructionFromString = BuildUnstakeInstructionFromString
+	case ADD_STAKING_ACTION:
+		buildInstructionFromString = BuildAddStakingInstructionFromString
+	case RETURN_ACTION:
+		buildInstructionFromString = BuildReturnStakingInstructionFromString
+	case RETURN_BEACON_ACTION:
+		buildInstructionFromString = BuildReturnBeaconStakingInstructionFromString
+	default:
+		panic(action)
+	}
+	instStr, err = buildInstructionFromString(inst)
+	if err != nil {
+		return nil, errors.Errorf("SKIP %v instruction %+v, error %+v", action, inst, err)
+	}
+	return instStr, nil
+}
+
+func ValidateAndImportConsensusInstructionFromListString(insts [][]string) []Instruction {
+	iInsts := []Instruction{}
+	for _, instString := range insts {
+		iInst, err := ValidateAndImportInstructionFromString(instString)
+		if err != nil {
+			Logger.Log.Error(err)
+			continue
+		}
+		iInsts = append(iInsts, iInst)
+	}
+	return iInsts
+}
+
+func BuildStakeInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateStakeInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportStakeInstructionFromString(instruction), nil
+}
+func BuildRandomInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateRandomInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportRandomInstructionFromString(instruction), nil
+}
+func BuildStopAutoStakeInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateStopAutoStakeInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportStopAutoStakeInstructionFromString(instruction), nil
+}
+
+func BuildSwapInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateSwapInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportSwapInstructionFromString(instruction), nil
+}
+
+func BuildSwapShardInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateSwapShardInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportSwapShardInstructionFromString(instruction), nil
+}
+
+func BuildFinishSyncInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateFinishSyncInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportFinishSyncInstructionFromString(instruction)
+}
+
+func BuildUnstakeInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateUnstakeInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportUnstakeInstructionFromString(instruction), nil
+}
+
+func BuildAddStakingInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateAddStakingInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportAddStakingInstructionFromString(instruction), nil
+}
+
+func BuildReturnStakingInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateReturnStakingInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportReturnStakingInstructionFromString(instruction)
+}
+
+func BuildReturnBeaconStakingInstructionFromString(instruction []string) (Instruction, error) {
+	if err := ValidateReturnBeaconStakingInstructionSanity(instruction); err != nil {
+		return nil, err
+	}
+	return ImportReturnBeaconStakingInstructionFromString(instruction)
 }

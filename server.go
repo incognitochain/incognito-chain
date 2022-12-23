@@ -1976,6 +1976,30 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	return nil
 }
 
+func (s *Server) IsBeaconFullnode(userPk *incognitokey.CommitteePublicKey) bool {
+
+	if s.blockChain == nil || userPk == nil {
+		return false
+	}
+
+	for _, v := range s.blockChain.BeaconChain.GetWaitingCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return true
+		}
+	}
+	for _, v := range s.blockChain.BeaconChain.GetBeaconPendingList() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return true
+		}
+	}
+	for _, v := range s.blockChain.BeaconChain.GetCommittee() {
+		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (role string, chainID int) {
 
 	if s.blockChain == nil || userPk == nil {
@@ -2000,7 +2024,7 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	shardCommitteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
 	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-	if beaconFinalView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+	if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
 	}
 
@@ -2098,7 +2122,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 		shardCandidateFromBeaconView = beaconFinalView.GetShardCandidate()
 		shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
-		if beaconFinalView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+		if beaconFinalView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 			shardSyncingValidatorsFromBeaconView = beaconFinalView.GetSyncingValidators()
 		}
 		//check if in committee or pending committee in beacon

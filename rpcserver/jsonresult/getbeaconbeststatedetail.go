@@ -24,6 +24,8 @@ type GetBeaconBestStateDetail struct {
 	BeaconProposerIndex                    int                                          `json:"BeaconProposerIndex"`
 	BeaconCommittee                        []incognitokey.CommitteeKeyString            `json:"BeaconCommittee"`
 	BeaconPendingValidator                 []incognitokey.CommitteeKeyString            `json:"BeaconPendingValidator"`
+	BeaconWaiting                          []incognitokey.CommitteeKeyString            `json:"BeaconWaiting"`
+	BeaconLocking                          []incognitokey.CommitteeKeyString            `json:"BeaconLocking"`
 	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteeKeyString            `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
 	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteeKeyString            `json:"CandidateBeaconWaitingForCurrentRandom"`
 	CandidateShardWaitingForNextRandom     []incognitokey.CommitteeKeyString            `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
@@ -83,6 +85,14 @@ func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBes
 
 	result.BeaconPendingValidator = make([]incognitokey.CommitteeKeyString, len(data.GetBeaconPendingValidator()))
 	copy(result.BeaconPendingValidator, tempBeaconPendingValidator)
+
+	tempBeaconLocking := incognitokey.CommitteeKeyListToStringList(data.GetBeaconLocking())
+	result.BeaconLocking = make([]incognitokey.CommitteeKeyString, len(data.GetBeaconLocking()))
+	copy(result.BeaconLocking, tempBeaconLocking)
+
+	tempBeaconWaiting := incognitokey.CommitteeKeyListToStringList(data.GetBeaconWaiting())
+	result.BeaconWaiting = make([]incognitokey.CommitteeKeyString, len(data.GetBeaconWaiting()))
+	copy(result.BeaconWaiting, tempBeaconWaiting)
 
 	tempCandidateShardWaitingForCurrentRandom := incognitokey.CommitteeKeyListToStringList(data.GetCandidateShardWaitingForCurrentRandom())
 

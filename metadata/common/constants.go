@@ -21,6 +21,7 @@ const (
 	BeaconRewardRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
+	ReturnBeaconStakingMeta      = 46
 	IncDAORewardRequestMeta      = 42
 
 	WithDrawRewardRequestMeta  = 44
@@ -31,6 +32,7 @@ const (
 	StopAutoStakingMeta = 127
 	BeaconStakingMeta   = 64
 	UnStakingMeta       = 210
+	AddStakingMeta      = 360
 
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = 70
@@ -260,6 +262,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingAuroraResponseMeta,
 	IssuingAvaxResponseMeta,
 	ReturnStakingMeta,
+	ReturnBeaconStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
 	PDECrossPoolTradeResponseMeta,

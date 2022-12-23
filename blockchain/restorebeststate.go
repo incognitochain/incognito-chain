@@ -21,7 +21,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 		return err
 	}
 	//best block
-	block, _, err := blockchain.GetBeaconBlockByHash(beaconBestState.BestBlockHash)
+	block, _, err := blockchain.GetBeaconBlockByHashWithLatestValidationData(beaconBestState.BestBlockHash)
 	if err != nil || block == nil {
 		return err
 	}

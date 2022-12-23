@@ -5,6 +5,7 @@ package externalmocks
 import (
 	committeestate "github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	common "github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	incognitokey "github.com/incognitochain/incognito-chain/incognitokey"
 
@@ -33,7 +34,7 @@ func (_m *BeaconCommitteeState) AssignRuleVersion() int {
 }
 
 // Clone provides a mock function with given fields:
-func (_m *BeaconCommitteeState) Clone() committeestate.BeaconCommitteeState {
+func (_m *BeaconCommitteeState) Clone(db *statedb.StateDB) committeestate.BeaconCommitteeState {
 	ret := _m.Called()
 
 	var r0 committeestate.BeaconCommitteeState

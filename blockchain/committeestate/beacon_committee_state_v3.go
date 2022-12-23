@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -54,7 +55,7 @@ func (b *BeaconCommitteeStateV3) shallowCopy(newB *BeaconCommitteeStateV3) {
 	newB.syncPool = b.syncPool
 }
 
-func (b *BeaconCommitteeStateV3) Clone() BeaconCommitteeState {
+func (b *BeaconCommitteeStateV3) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()
@@ -404,7 +405,11 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	Logger.log.Infof("process finish sync instruction", finishSyncInstruction.ChainID, finishSyncInstruction.PublicKeys)
+	Logger.log.Info("process finish sync instruction", finishSyncInstruction.ChainID, finishSyncInstruction.PublicKeys)
+	if finishSyncInstruction.ChainID == -1 { //do not process beacon finish sync
+		return committeeChange
+	}
+
 	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
@@ -462,4 +467,41 @@ func (b *BeaconCommitteeStateV3) getAllCandidateSubstituteCommittee() []string {
 		res = append(res, validators...)
 	}
 	return res
+}
+
+func (b *BeaconCommitteeStateV3) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	stateV4 := NewBeaconCommitteeStateV4()
+	err := stateV4.UpgradeFromV3(b, env.ConsensusStateDB, env.MinBeaconCommitteeSize)
+	if err != nil {
+		panic(err)
+	}
+	return stateV4
+}
+
+func (b BeaconCommitteeStateV3) GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+	sC := make(map[byte][]incognitokey.CommitteePublicKey)
+	sPV := make(map[byte][]incognitokey.CommitteePublicKey)
+	sSP := make(map[byte][]incognitokey.CommitteePublicKey)
+	for shardID, committee := range b.GetShardCommittee() {
+		sC[shardID] = append([]incognitokey.CommitteePublicKey{}, committee...)
+	}
+	for shardID, Substitute := range b.GetShardSubstitute() {
+		sPV[shardID] = append([]incognitokey.CommitteePublicKey{}, Substitute...)
+	}
+	for shardID, syncValidator := range b.GetSyncingValidators() {
+		sSP[shardID] = append([]incognitokey.CommitteePublicKey{}, syncValidator...)
+	}
+	bC := b.GetBeaconCommittee()
+	bPV := b.GetBeaconSubstitute()
+	bW := []incognitokey.CommitteePublicKey{}
+	bL := []incognitokey.CommitteePublicKey{}
+	cSWFCR := b.GetCandidateShardWaitingForCurrentRandom()
+	cSWFNR := b.GetCandidateShardWaitingForNextRandom()
+	return sC, sPV, sSP, bC, bPV, bW, bL, cSWFCR, cSWFNR
+}
+
+func (b BeaconCommitteeStateV3) IsFinishSync(string) bool {
+	panic("This should not be called")
 }

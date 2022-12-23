@@ -2600,7 +2600,7 @@ func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(param
 func isTxRelateCommittee(tx metadata.Transaction) bool {
 	if tx.GetMetadata() != nil {
 		switch tx.GetMetadata().GetType() {
-		case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+		case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta, metadata.AddStakingMeta:
 			return true
 		}
 	}

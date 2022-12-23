@@ -1,6 +1,8 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
 	"time"
 
@@ -42,6 +44,13 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 
 	//if validator root hash change -> break into chunks
 	for i, v := range blocks {
+		//if beacon staking flow v4, chunk every new epoch
+		if _, ok := v.(*types.BeaconBlock); ok && v.GetVersion() >= int(config.Param().FeatureVersion[blockchain.BEACON_STAKING_FLOW_V4]) {
+			if i != 0 && v.GetHeight()%config.Param().EpochParam.NumberOfBlockInEpoch == 1 {
+				sameCommitteeBlock = blocks[:i]
+				break
+			}
+		}
 		if validatorRootHashChange(v) {
 			if i == 0 {
 				sameCommitteeBlock = blocks[:1]
@@ -50,7 +59,6 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			}
 			break
 		}
-
 	}
 
 	//check block height is sequential

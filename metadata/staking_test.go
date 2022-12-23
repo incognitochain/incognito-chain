@@ -205,7 +205,7 @@ func TestStakingMetadata_ValidateMetadataByItself(t *testing.T) {
 				MetadataBase:                 tt.fields.MetadataBase,
 				FunderPaymentAddress:         tt.fields.FunderPaymentAddress,
 				RewardReceiverPaymentAddress: tt.fields.RewardReceiverPaymentAddress,
-				StakingAmountShard:           tt.fields.StakingAmountShard,
+				StakingAmount:                tt.fields.StakingAmountShard,
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}
@@ -429,7 +429,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 				MetadataBase:                 tt.fields.MetadataBase,
 				FunderPaymentAddress:         tt.fields.FunderPaymentAddress,
 				RewardReceiverPaymentAddress: tt.fields.RewardReceiverPaymentAddress,
-				StakingAmountShard:           tt.fields.StakingAmountShard,
+				StakingAmount:                tt.fields.StakingAmountShard,
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}
@@ -452,15 +452,15 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 	SC := make(map[byte][]incognitokey.CommitteePublicKey)
 	SPV := make(map[byte][]incognitokey.CommitteePublicKey)
 	happyCaseBeaconRetriever := &metadataCommonMocks.BeaconViewRetriever{}
-	happyCaseBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
+	happyCaseBeaconRetriever.On("GetAllStakers").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			nil)
 	stakeAlreadyBeaconRetriever := &metadataCommonMocks.BeaconViewRetriever{}
-	stakeAlreadyBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
+	stakeAlreadyBeaconRetriever.On("GetAllStakers").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{validCommitteePublicKeyStructs[0]}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			nil)
 	getCommitteeErrorBeaconRetriever := &metadataCommonMocks.BeaconViewRetriever{}
-	getCommitteeErrorBeaconRetriever.On("GetAllCommitteeValidatorCandidate").
+	getCommitteeErrorBeaconRetriever.On("GetAllStakers").
 		Return(SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{},
 			errors.New("get committee error"))
 
@@ -579,7 +579,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 				MetadataBase:                 tt.fields.MetadataBase,
 				FunderPaymentAddress:         tt.fields.FunderPaymentAddress,
 				RewardReceiverPaymentAddress: tt.fields.RewardReceiverPaymentAddress,
-				StakingAmountShard:           tt.fields.StakingAmountShard,
+				StakingAmount:                tt.fields.StakingAmountShard,
 				AutoReStaking:                tt.fields.AutoReStaking,
 				CommitteePublicKey:           tt.fields.CommitteePublicKey,
 			}

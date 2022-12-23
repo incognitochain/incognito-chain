@@ -66,7 +66,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		},
 		FunderPaymentAddress:         validPaymentAddresses[0],
 		RewardReceiverPaymentAddress: validPaymentAddresses[0],
-		StakingAmountShard:           1750000000000,
+		StakingAmount:                1750000000000,
 		AutoReStaking:                false,
 		CommitteePublicKey:           validCommitteePublicKeys[0],
 	}
@@ -85,7 +85,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		},
 		FunderPaymentAddress:         validPaymentAddresses[1],
 		RewardReceiverPaymentAddress: validPaymentAddresses[1],
-		StakingAmountShard:           1750000000000,
+		StakingAmount:                1750000000000,
 		AutoReStaking:                true,
 		CommitteePublicKey:           validCommitteePublicKeys[1],
 	}
@@ -103,7 +103,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		},
 		FunderPaymentAddress:         validPaymentAddresses[2],
 		RewardReceiverPaymentAddress: validPaymentAddresses[2],
-		StakingAmountShard:           1750000000000,
+		StakingAmount:                1750000000000,
 		AutoReStaking:                false,
 		CommitteePublicKey:           validCommitteePublicKeys[2],
 	}
@@ -168,7 +168,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		},
 		FunderPaymentAddress:         validPaymentAddresses[0],
 		RewardReceiverPaymentAddress: validPaymentAddresses[0],
-		StakingAmountShard:           1750000000000,
+		StakingAmount:                1750000000000,
 		AutoReStaking:                false,
 		CommitteePublicKey:           validCommitteePublicKeys[0],
 	}
@@ -186,7 +186,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		},
 		FunderPaymentAddress:         validPaymentAddresses[1],
 		RewardReceiverPaymentAddress: validPaymentAddresses[1],
-		StakingAmountShard:           1750000000000,
+		StakingAmount:                1750000000000,
 		AutoReStaking:                true,
 		CommitteePublicKey:           validCommitteePublicKeys[1],
 	}
@@ -204,7 +204,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		},
 		FunderPaymentAddress:         validPaymentAddresses[2],
 		RewardReceiverPaymentAddress: validPaymentAddresses[2],
-		StakingAmountShard:           1750000000000,
+		StakingAmount:                1750000000000,
 		AutoReStaking:                false,
 		CommitteePublicKey:           validCommitteePublicKeys[2],
 	}

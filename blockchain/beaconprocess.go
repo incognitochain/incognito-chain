@@ -315,10 +315,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		Logger.log.Error(err)
 		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
-	//dequeueInst, err := filterDequeueInstruction(beaconBlock.Body.Instructions, instruction.OUTDATED_DEQUEUE_REASON)
-	if err != nil {
-		return NewBlockChainError(GetDequeueInstructionError, err)
-	}
+
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
@@ -437,13 +434,9 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		}
 	}
 	//=============Verify Stake Public Key
-	newBeaconCandidate, newShardCandidate := getStakingCandidate(*beaconBlock)
-	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
-		validBeaconCandidate := beaconBestState.GetValidStakers(newBeaconCandidate)
-		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
-			return NewBlockChainError(CandidateError, errors.New("beacon candidate list is INVALID"))
-		}
-	}
+	_, newShardCandidate := getStakingCandidate(*beaconBlock)
+	//valid beacon staker will be check in beacon committee state
+
 	if !reflect.DeepEqual(newShardCandidate, []string{}) {
 		validShardCandidate := beaconBestState.GetValidStakers(newShardCandidate)
 		if !reflect.DeepEqual(validShardCandidate, newShardCandidate) {
@@ -683,6 +676,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
+		beaconBlock.Header,
 		beaconBlock.Body.Instructions,
 		isFoundRandomInstruction, isBeginRandom,
 	)
@@ -778,7 +772,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
@@ -919,14 +913,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateAdded, newBestState.GetRewardReceiver(), newBestState.GetAutoStaking(), newBestState.GetStakingTx())
-	if err != nil {
-		return err
-	}
+
 	err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeAdded)
 	if err != nil {
 		return err
@@ -935,14 +922,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeAdded)
-	if err != nil {
-		return err
-	}
+
 	err = statedb.ReplaceBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeReplaced)
 	if err != nil {
 		return err
@@ -956,26 +936,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochBeaconCandidateRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.NextEpochBeaconCandidateRemoved)
-	if err != nil {
-		return err
-	}
+
 	err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.BeaconSubstituteRemoved)
-	if err != nil {
-		return err
-	}
-	err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeRemoved)
-	if err != nil {
-		return err
-	}
+
 	err = statedb.DeleteSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolRemoved)
 	if err != nil {
 		return err
@@ -1152,10 +1118,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 	}
 
-	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
-	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
-	//	return err
-	//}
+	err2 := newBestState.tryUpgradeConsensusRule()
+	if err2 != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err2)
+	}
 
 	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
@@ -1215,11 +1181,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if err := blockchain.BeaconChain.BlockStorage.StoreBlock(beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	err2 := newBestState.tryUpgradeConsensusRule()
-	if err2 != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err2)
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
@@ -1400,7 +1361,7 @@ func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
 
 	if beaconCurView.CommitteeStateVersion() < committeestate.STAKING_FLOW_V3 {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
-	} else if beaconCurView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+	} else if beaconCurView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 		return beaconCurView.storeAllShardSubstitutesValidatorV3(addedValidators)
 	}
 

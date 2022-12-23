@@ -2,14 +2,19 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type BeaconCommitteeState interface {
+	GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey)
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
+	GetBeaconLocking() []incognitokey.CommitteePublicKey
+	GetBeaconWaiting() []incognitokey.CommitteePublicKey
+	IsFinishSync(string) bool
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
@@ -28,14 +33,13 @@ type BeaconCommitteeState interface {
 
 	Version() int
 	AssignRuleVersion() int
-	Clone() BeaconCommitteeState
+	Clone(db *statedb.StateDB) BeaconCommitteeState
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,
 		*CommitteeChange,
 		[][]string,
 		error)
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
-	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
 }
 
 type AssignInstructionsGenerator interface {

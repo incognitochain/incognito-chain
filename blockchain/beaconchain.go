@@ -3,8 +3,11 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"path"
 	"sync"
 	"time"
@@ -12,7 +15,6 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -167,18 +169,12 @@ func (chain *BeaconChain) GetLastCommittee() []incognitokey.CommitteePublicKey {
 	return append(result, v.GetCommittee()...)
 }
 
-func (chain *BeaconChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
-	bcStateRootHash := chain.GetBestView().(*BeaconBestState).ConsensusStateDBRootHash
-	bcDB := chain.Blockchain.GetBeaconChainDatabase()
-	bcStateDB, err := statedb.NewWithPrefixTrie(bcStateRootHash, statedb.NewDatabaseAccessWarper(bcDB))
-	if err != nil {
-		return nil, err
-	}
-	return statedb.GetBeaconCommittee(bcStateDB), nil
-}
-
 func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	return chain.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()
+}
+
+func (chain *BeaconChain) GetWaitingCommittee() []incognitokey.CommitteePublicKey {
+	return chain.GetBestView().(*BeaconBestState).GetBeaconWaiting()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
@@ -196,6 +192,66 @@ func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
+}
+
+// this is call when create new block
+func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, previousCommittees []incognitokey.CommitteePublicKey, newValidationData string) error {
+	if hasBlock := chain.BlockStorage.IsExisted(previousBlockHash); !hasBlock {
+		// This block is not inserted yet, no need to replace
+		Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db " + previousBlockHash.String())
+		return nil
+	}
+
+	blk, err := chain.GetBlockByHash(previousBlockHash)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+	beaconBlock := blk.(*types.BeaconBlock)
+
+	if !previousProposeHash.IsEqual(beaconBlock.ProposeHash()) {
+		Logger.log.Errorf("Replace previous validation data fail! Propose hash not correct, data for" + previousProposeHash.String() + " got " + beaconBlock.ProposeHash().String())
+		return nil
+	}
+
+	decodedOldValidationData, err := consensustypes.DecodeValidationData(beaconBlock.ValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	decodedNewValidationData, err := consensustypes.DecodeValidationData(newValidationData)
+	if err != nil {
+		return NewBlockChainError(ReplacePreviousValidationDataError, err)
+	}
+
+	if len(decodedNewValidationData.ValidatiorsIdx) > len(decodedOldValidationData.ValidatiorsIdx) {
+		Logger.log.Infof("Beacon | Height %+v, Replace Previous ValidationData new number of signatures %+v (old %+v)",
+			beaconBlock.Header.Height, len(decodedNewValidationData.ValidatiorsIdx), len(decodedOldValidationData.ValidatiorsIdx))
+	} else {
+		return nil
+	}
+
+	// validate block before rewrite to
+	replaceBlockHash := *beaconBlock.Hash()
+	beaconBlock.ValidationData = newValidationData
+
+	if err != nil {
+		return err
+	}
+	if err = chain.ValidateBlockSignatures(beaconBlock, previousCommittees, chain.GetBestView().GetProposerLength()); err != nil {
+		return err
+	}
+	//rewrite to database
+	if err = chain.BlockStorage.ReplaceBlock(beaconBlock); err != nil {
+		return err
+	}
+	//update multiview
+	view := chain.multiView.GetViewByHash(replaceBlockHash)
+	if view != nil {
+		view.ReplaceBlock(beaconBlock)
+	} else {
+		fmt.Println("Cannot find beacon view", replaceBlockHash.String())
+	}
+	return nil
 }
 
 func (chain *BeaconChain) CreateNewBlock(
@@ -325,53 +381,6 @@ func (chain *BeaconChain) GetBlockConsensusData() map[int]types.BlockConsensusDa
 		}
 	}
 	return consensusData
-}
-
-func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusData types.BlockConsensusData) error {
-	if consensusData.ValidationData == "" {
-		return nil
-	}
-	replaceBlockHash := consensusData.BlockHash
-	//retrieve block from database and replace consensus field
-	beaconBlk, _, _ := chain.Blockchain.GetBeaconBlockByHash(replaceBlockHash)
-	if beaconBlk == nil {
-		return fmt.Errorf("Cannot find beacon block%v", replaceBlockHash.String())
-	}
-	if beaconBlk.GetVersion() < types.INSTANT_FINALITY_VERSION {
-		return nil
-	}
-	beaconBlk.Header.Proposer = consensusData.Proposer
-	beaconBlk.Header.ProposeTime = consensusData.ProposerTime
-	beaconBlk.Header.FinalityHeight = consensusData.FinalityHeight
-	beaconBlk.ValidationData = consensusData.ValidationData
-
-	// validate block before replace
-	committees, err := chain.GetCommitteeV2(beaconBlk)
-	if err != nil {
-		return err
-	}
-	if err = chain.ValidateBlockSignatures(beaconBlk, committees, chain.GetBestView().GetProposerLength()); err != nil {
-		return err
-	}
-
-	//replace block if improve finality
-	if ok, err := chain.multiView.ReplaceBlockIfImproveFinality(beaconBlk); !ok {
-		return err
-	}
-	b, _ := json.Marshal(consensusData)
-	Logger.log.Info("Replace beacon block improving finality", string(b))
-
-	//rewrite to database
-	err = chain.BlockStorage.StoreBlock(beaconBlk)
-	if err != nil {
-		return err
-	}
-	return nil
-
-}
-
-func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, proposeBlockHash common.Hash, newValidationData string) error {
-	panic("this function is not supported on beacon chain")
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, s string) error {
@@ -550,8 +559,31 @@ func (chain *BeaconChain) GetSigningCommittees(
 }
 
 func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
-	committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
-	return committees, nil
+	if block.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
+		height := block.GetHeight()
+		beaconConsensusStateRootHash, err := chain.Blockchain.GetBeaconRootsHashFromBlockHeight(
+			height - 1, //the previous height statedb store the committee of current height
+		)
+		if err != nil {
+			return nil, err
+		}
+		stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(chain.GetDatabase()))
+		if err != nil {
+			return nil, err
+		}
+
+		stateV4 := committeestate.NewBeaconCommitteeStateV4()
+		err = stateV4.RestoreBeaconCommitteeFromDB(stateDB, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize, nil)
+		if err != nil {
+			return nil, err
+		}
+		return stateV4.GetBeaconCommittee(), nil
+	} else {
+		committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
+		return committees, nil
+	}
+
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() int {

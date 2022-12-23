@@ -833,9 +833,9 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 // 	return blockchain.config.NodeMode
 // }
 
-func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
+func (blockchain *BlockChain) GetWantedShard(isBeaconFullnode bool) map[byte]struct{} {
 	res := map[byte]struct{}{}
-	if isBeaconCommittee {
+	if isBeaconFullnode {
 		for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
 			res[sID] = struct{}{}
 		}
