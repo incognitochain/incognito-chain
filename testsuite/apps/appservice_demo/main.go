@@ -98,6 +98,7 @@ func init() {
 		shouldStakeBeacon = false
 		shouldWatchValidator = false
 	}
+	log.Println("shouldAddStakingBeacon:", shouldAddStakingBeacon)
 
 	data, err := ioutil.ReadFile("accounts.json")
 	if err != nil {
