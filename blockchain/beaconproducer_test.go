@@ -62,7 +62,7 @@ func initLog() {
 
 var (
 	key0                                                         = "121VhftSAygpEJZ6i9jGkCVwX5W7tZY6McnoXxZ3xArZQcKduS78P6F6B6T8sjNkoxN7pfjJruViCG3o4X5CiEtHCv9Ufnqp7W3qB9WkuSbGnEKtsNNGpHxJEpdEw4saeueY6kRhqFDcF2NQjgocGLyZsc5Ea6KPBj56kMtUtfcois8pBuFPn2udAsSza7HpkiW7e9kYmzu6Nqnca2jPc8ugCJYHsQDtjmzENC1tje2dfFzCnfkHqam8342bF2wEJgiEwTkkZBY2uLkbQT2X39tSsfzmbqjfrEExjorhFA5yx2ZpKrsA4H9sE34Khy8RradfGCK4L6J4gz1G7YQJ1v2hihEsw3D2fp5ktUh46sicTLmTQ2sfzjnNgMq5uAZ2cJx3HeNiETJ65RVR9J71ujLzdw8xDZvbAPRsdB11Hj2KgKFR"
-	key                                                          = "121VhftSAygpEJZ6i9jGkEKLMQTKTiiHzeUfeuhpQCcLZtys8FazpWwytpHebkAwgCxvqgUUF13fcSMtp5dgV1YkbRMj3z42TW2EebzAaiGg2DkGPodckN2UsbqhVDibpMgJUHVkLXardemfLdgUqWGtymdxaaRyPM38BAZcLpo2pAjxKv5vG5Uh9zHMkn7ZHtdNHmBmhG8B46UeiGBXYTwhyMe9KGS83jCMPAoUwHhTEXj5qQh6586dHjVxwEkRzp7SKn9iG1FFWdJ97xEkP2ezAapNQ46quVrMggcHFvoZofs1xdd4o5vAmPKnPTZtGTKunFiTWGnpSG9L6r5QpcmapqvRrK5SiuFhNM5DqgzUeHBb7fTfoiWd2N29jkbTGSq8CPUSjx3zdLR9sZguvPdnAA8g25cFPGSZt8aEnFJoPRzM"
+	key1                                                         = "121VhftSAygpEJZ6i9jGkEKLMQTKTiiHzeUfeuhpQCcLZtys8FazpWwytpHebkAwgCxvqgUUF13fcSMtp5dgV1YkbRMj3z42TW2EebzAaiGg2DkGPodckN2UsbqhVDibpMgJUHVkLXardemfLdgUqWGtymdxaaRyPM38BAZcLpo2pAjxKv5vG5Uh9zHMkn7ZHtdNHmBmhG8B46UeiGBXYTwhyMe9KGS83jCMPAoUwHhTEXj5qQh6586dHjVxwEkRzp7SKn9iG1FFWdJ97xEkP2ezAapNQ46quVrMggcHFvoZofs1xdd4o5vAmPKnPTZtGTKunFiTWGnpSG9L6r5QpcmapqvRrK5SiuFhNM5DqgzUeHBb7fTfoiWd2N29jkbTGSq8CPUSjx3zdLR9sZguvPdnAA8g25cFPGSZt8aEnFJoPRzM"
 	key2                                                         = "121VhftSAygpEJZ6i9jGkEqPGAXcmKffwMbzpwxnEfzJxen4oZKPukWAUBbqvV5xPnowZ2eQmAj2mEebG2oexebQPh1MPFC6vEZAk6i7AiRPrZmfaRrRVrBp4WXnVJmL3xK4wzTfkR2rZkhUmSZm112TTyhDNkDQSaBGJkexrPbryqUygazCA2eyo6LnK5qs7jz2RhhsWqUTQ3sQJUuFcYdf2pSnYwhqZqphDCSRizDHeysaua5L7LwS8fY7KZHhPgTuFjvUWWnWSRTmV8u1dTY5kcmMdDZsPiyN9WfqjgVoTFNALjFG8U4GMvzV3kKwVVjuPMsM2XqyPDVpdNQUgLnv2bJS8Tr22A9NgF1FQfWyAny1DYyY3N5H3tfCggsybzZXzrbYPPgokvEynac91y8hPkRdgKW1e7FHzuBnEisPuKzy"
 	key3                                                         = "121VhftSAygpEJZ6i9jGkGLcYhJBeaJTGY5aFjqQA2WwyxU69Utrviuy9AJ3ATkeEyigVGScQUZw22cD1HeFKiyASYAs82WEamujt3nefYA9FPhURBpRTn6jDmGKUdb4QNbs7HVCJkRRaL9aktg1yaQaZE8TJFg2UeE9tBqUdmvD8fy36aDCYM5W86jaTVCXeEJQWPxUunP2EEL3e283PJ8zqPeBkpoFvkvhB28Hk3oRDeCCTC7QhbaV18ayKeToYqAxoUMBBihanfA33ixeX1daeKpajLCgDZ6jrfphwdYwQbf7dMcZ2NVvQ1a5JUCTJUZypwgKRt8tnTAKCowt2L1KNGP4NJJZm61cfHAGbKRyG9QxCJgK2SdMKsKPVefZSc9LbVaB7VeBby5LHxvMoCD7bN7g1HYRp4BX9n1fZJUeEkVa"
 	key4                                                         = "121VhftSAygpEJZ6i9jGkDjJj7e2cfgQvrLsPsmLhGMmGD9U9Knffa1MZAw79EijnpueVfTStN2VYt5jRqEr2DTjVqzUinwHVKWH4Tg4szHUntiBdWeqzNC4E8iiwC9Y2KtcRr3hBkpfqvyuBvchigatrigRvFVWu8H2RQqjvopLL51DQ4LFD87L9Zgj9HhasMeyr6f37yirs47JgtGs4BM7EhhpM5zD3TCsFabPphtwDKnfuLMaGzoAw5fM8zEXvdLMuohk96oayjdYothncdtZom17DxB1Mmw535eEjxBwz9ELoZRKk3LYiheSd4xGN9QsxrT2WnZCTd8B5QktARte5S91QYvRMixKC8UEuovQhXt8jMZNkq7CmMeXoybfYdmNaAHuqbY1QeUT2AgaqPho4ay3z5eeKRhnB28H18RGWQ1L"
@@ -72,7 +72,7 @@ var (
 	paymentAddreessKey0                                          = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
 )
 
-//initPublicKey init incognito public key for testing by base 58 string
+// initPublicKey init incognito public key for testing by base 58 string
 func initPublicKey() {
 	incKey0 = new(incognitokey.CommitteePublicKey)
 	incKey = new(incognitokey.CommitteePublicKey)
@@ -82,7 +82,7 @@ func initPublicKey() {
 	incKey5 = new(incognitokey.CommitteePublicKey)
 	incKey6 = new(incognitokey.CommitteePublicKey)
 
-	err := incKey.FromBase58(key)
+	err := incKey.FromBase58(key1)
 	if err != nil {
 		panic(err)
 	}
@@ -132,7 +132,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
-			key:  true,
+			key1: true,
 			key2: true,
 			key3: true,
 			key4: true,
@@ -145,7 +145,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
-			key:  true,
+			key1: true,
 			key2: false,
 			key3: false,
 			key4: false,
@@ -158,7 +158,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
-			key:  false,
+			key1: false,
 			key2: true,
 			key3: true,
 			key4: true,
@@ -171,7 +171,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: true,
-			key:  true,
+			key1: true,
 		}).
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey})
@@ -181,7 +181,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: false,
-			key:  true,
+			key1: true,
 		}).
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{})
@@ -191,7 +191,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 		On("GetAutoStaking").
 		Return(map[string]bool{
 			key0: true,
-			key:  true,
+			key1: true,
 		}).
 		On("GetCandidateShardWaitingForNextRandom").
 		Return([]incognitokey.CommitteePublicKey{})
@@ -295,7 +295,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 					[]string{
 						instruction.SWAP_ACTION,
 						key0,
-						key,
+						key1,
 						instruction.SHARD_INST,
 						"0",
 						"",
@@ -309,7 +309,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 						&instruction.SwapInstruction{
 							InPublicKeys:        []string{key0},
 							InPublicKeyStructs:  []incognitokey.CommitteePublicKey{*incKey0},
-							OutPublicKeys:       []string{key},
+							OutPublicKeys:       []string{key1},
 							OutPublicKeyStructs: []incognitokey.CommitteePublicKey{*incKey},
 							ChainID:             0,
 							PunishedPublicKeys:  "",
@@ -389,14 +389,14 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				instructions: [][]string{
 					[]string{
 						instruction.STOP_AUTO_STAKE_ACTION,
-						strings.Join([]string{key0, key}, ","),
+						strings.Join([]string{key0, key1}, ","),
 					},
 				},
 			},
 			want: &shardInstruction{
 				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
 					&instruction.StopAutoStakeInstruction{
-						CommitteePublicKeys:       []string{key},
+						CommitteePublicKeys:       []string{key1},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey},
 					},
 				},
@@ -428,14 +428,14 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				instructions: [][]string{
 					[]string{
 						instruction.UNSTAKE_ACTION,
-						strings.Join([]string{key0, key}, ","),
+						strings.Join([]string{key0, key1}, ","),
 					},
 				},
 			},
 			want: &shardInstruction{
 				unstakeInstructions: []*instruction.UnstakeInstruction{
 					&instruction.UnstakeInstruction{
-						CommitteePublicKeys:       []string{key},
+						CommitteePublicKeys:       []string{key1},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey},
 					},
 				},
@@ -450,14 +450,14 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				instructions: [][]string{
 					[]string{
 						instruction.UNSTAKE_ACTION,
-						strings.Join([]string{key0, key, key2, key3, key4}, ","),
+						strings.Join([]string{key0, key1, key2, key3, key4}, ","),
 					},
 				},
 			},
 			want: &shardInstruction{
 				unstakeInstructions: []*instruction.UnstakeInstruction{
 					&instruction.UnstakeInstruction{
-						CommitteePublicKeys: []string{key, key2, key3, key4},
+						CommitteePublicKeys: []string{key1, key2, key3, key4},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
 							*incKey, *incKey2, *incKey3, *incKey4,
 						},
@@ -474,14 +474,14 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				instructions: [][]string{
 					[]string{
 						instruction.UNSTAKE_ACTION,
-						strings.Join([]string{key0, key, key2, key3, key4}, ","),
+						strings.Join([]string{key0, key1, key2, key3, key4}, ","),
 					},
 				},
 			},
 			want: &shardInstruction{
 				unstakeInstructions: []*instruction.UnstakeInstruction{
 					&instruction.UnstakeInstruction{
-						CommitteePublicKeys: []string{key0, key},
+						CommitteePublicKeys: []string{key0, key1},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
 							*incKey0, *incKey,
 						},
@@ -498,14 +498,14 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				instructions: [][]string{
 					[]string{
 						instruction.STOP_AUTO_STAKE_ACTION,
-						strings.Join([]string{key0, key, key2, key3, key4}, ","),
+						strings.Join([]string{key0, key1, key2, key3, key4}, ","),
 					},
 				},
 			},
 			want: &shardInstruction{
 				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
 					&instruction.StopAutoStakeInstruction{
-						CommitteePublicKeys: []string{key, key2, key3, key4},
+						CommitteePublicKeys: []string{key1, key2, key3, key4},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
 							*incKey, *incKey2, *incKey3, *incKey4,
 						},
@@ -522,14 +522,14 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				instructions: [][]string{
 					[]string{
 						instruction.STOP_AUTO_STAKE_ACTION,
-						strings.Join([]string{key0, key, key2, key3, key4}, ","),
+						strings.Join([]string{key0, key1, key2, key3, key4}, ","),
 					},
 				},
 			},
 			want: &shardInstruction{
 				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
 					&instruction.StopAutoStakeInstruction{
-						CommitteePublicKeys: []string{key},
+						CommitteePublicKeys: []string{key1},
 						CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
 							*incKey,
 						},
@@ -656,14 +656,14 @@ func TestBeaconBestState_processStopAutoStakeInstructionFromShardBlock(t *testin
 			args: args{
 				shardInstructions: &shardInstruction{
 					stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
-						instruction.NewStopAutoStakeInstructionWithValue([]string{key}),
+						instruction.NewStopAutoStakeInstructionWithValue([]string{key1}),
 					},
 				},
-				allCommitteeValidatorCandidate: []string{key},
+				allCommitteeValidatorCandidate: []string{key1},
 			},
 			want: &shardInstruction{
 				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
-					instruction.NewStopAutoStakeInstructionWithValue([]string{key}),
+					instruction.NewStopAutoStakeInstructionWithValue([]string{key1}),
 				},
 			},
 		},

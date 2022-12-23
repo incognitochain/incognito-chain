@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/pkg/errors"
@@ -167,7 +168,9 @@ func (b *BeaconDelegateState) AddStakingAmount(newCandidate string, stakingAmoun
 	if _, ok := b.DelegateInfo[newCandidate]; !ok {
 		Logger.log.Infof("Added staking amount to unexist candidate %v %v", newCandidate, stakingAmount)
 		b.DelegateInfo[newCandidate] = NewBeaconDelegatorInfo()
+		b.DelegateInfo[newCandidate].AddStakingAmount(stakingAmount)
 	}
+	Logger.log.Infof("Added staking amount to candidate %v %v", newCandidate[len(newCandidate)-5:], stakingAmount)
 	b.DelegateInfo[newCandidate].AddStakingAmount(stakingAmount)
 }
 
@@ -233,7 +236,7 @@ func (b *BeaconDelegateState) Hash() common.Hash {
 func (b *BeaconDelegateState) GetBeaconCandidatePower(bPK string) uint64 {
 	res := uint64(0)
 	if info, ok := b.DelegateInfo[bPK]; ok {
-		res = info.StakingAmount / 1750000000000
+		res = info.StakingAmount / config.Param().StakingAmountShard
 		res += uint64(info.CurrentDelegators)
 	}
 	return res
