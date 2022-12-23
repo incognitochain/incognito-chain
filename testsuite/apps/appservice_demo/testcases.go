@@ -52,7 +52,7 @@ func updateRole(shardValidators, beaconValidators map[string]*Validator, cs *jso
 		} else {
 			for _, c := range v {
 				if k, found := bvs[c]; found {
-					if beaconValidators[k].Role != ShardCommitteeRole {
+					if beaconValidators[k].Role != ShardCommitteeRole && beaconValidators[k].Role != BeaconWaitingRole {
 						if beaconValidators[k].Role != ShardPendingRole {
 							return fmt.Errorf("key %s is not ShardPendingRole when switch to ShardCommitteeRole", shortKey(beaconValidators[k].MiningPublicKey))
 						}

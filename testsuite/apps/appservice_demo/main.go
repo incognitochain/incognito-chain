@@ -21,6 +21,7 @@ var (
 	shouldStopAutoStakeBeacon bool
 	shouldAddStakingBeacon    bool
 	shouldWatchValidator      bool
+	shouldWatchOnly           bool
 	watchBeaconIndex          int
 	shardValidators           map[string]*Validator
 	beaconValidators          map[string]*Validator
@@ -74,6 +75,8 @@ func init() {
 				if err != nil {
 					panic(err)
 				}
+			} else if v == shouldWatchOnlyArg {
+				shouldWatchOnly = true
 			}
 		}
 	} else {
@@ -82,6 +85,13 @@ func init() {
 		shouldStakeBeacon = true
 		//shouldAddStakingBeacon = true
 		shouldWatchValidator = true
+	}
+
+	if shouldWatchOnly {
+		shouldSubmitKey = false
+		shouldStakeShard = false
+		shouldStakeBeacon = false
+		shouldWatchValidator = false
 	}
 
 	data, err := ioutil.ReadFile("accounts.json")

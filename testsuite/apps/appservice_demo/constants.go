@@ -7,6 +7,7 @@ const (
 	stopAutoStakeBeaconArg = "stop-auto-stake-beacon"
 	addStakingBeaconArg    = "add-staking-beacon"
 	watchValidatorArg      = "watch-validator"
+	shouldWatchOnlyArg     = "watch-only"
 )
 
 const (
