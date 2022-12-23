@@ -1011,6 +1011,11 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 				tempStopAutoStakeInstruction := instruction.ImportStopAutoStakeInstructionFromString(inst)
 				for i := 0; i < len(tempStopAutoStakeInstruction.CommitteePublicKeys); i++ {
 					v := tempStopAutoStakeInstruction.CommitteePublicKeys[i]
+					_, has, _ := beaconBestState.GetBeaconStakerInfo(v)
+					if has {
+						continue
+					}
+
 					check, ok := beaconBestState.GetAutoStakingList()[v]
 					if !ok {
 						Logger.log.Errorf("[stop-autoStaking] Committee %s is not found or has already been unstaked:", v)
@@ -1026,12 +1031,16 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
-					Logger.log.Errorf("[unstaking] SKIP Stop Auto Stake Instruction Error %+v", err)
+					Logger.log.Errorf("[unstaking] SKIP Un Stake Instruction Error %+v", err)
 					continue
 				}
 				tempUnstakeInstruction := instruction.ImportUnstakeInstructionFromString(inst)
 				for i := 0; i < len(tempUnstakeInstruction.CommitteePublicKeys); i++ {
 					v := tempUnstakeInstruction.CommitteePublicKeys[i]
+					_, has, _ := beaconBestState.GetBeaconStakerInfo(v)
+					if has {
+						continue
+					}
 					index := common.IndexOfStr(v, waitingValidatorsList)
 					if index == -1 {
 						check, ok := beaconBestState.GetAutoStakingList()[v]

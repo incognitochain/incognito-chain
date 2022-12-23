@@ -470,16 +470,18 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 							continue
 						}
 					}
+
+					if isError {
+						errorInstructions = append(errorInstructions, l)
+						continue
+					}
+
 					if returnStakingIns.ReturnAmounts[i] != rBeaconInfo.StakingAmount {
 						err = fmt.Errorf("Build return beacon staking error. Amount not consistent! Beacon:%v Shard:%v", returnStakingIns.ReturnAmounts[i], rBeaconInfo.StakingAmount)
 						Logger.log.Error(err)
 						return nil, nil, nil, err
 					}
 
-					if isError {
-						errorInstructions = append(errorInstructions, l)
-						continue
-					}
 					if rBeaconInfo.FunderAddress.String() != (privacy.PaymentAddress{}).String() {
 						Logger.log.Info("SA: build salary tx", rBeaconInfo.FunderAddress, shardID)
 						forBeacon[returnPK] = rBeaconInfo

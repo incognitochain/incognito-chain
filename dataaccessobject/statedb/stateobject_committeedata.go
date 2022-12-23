@@ -9,7 +9,7 @@ import (
 )
 
 type CommitteeData struct {
-	Score []uint64 //this is in order of statedb get all beacon committee result
+	CommitteeScore map[string]uint64 //this is in order of statedb get all beacon committee result
 }
 
 func NewCommitteeData() *CommitteeData {
@@ -18,9 +18,9 @@ func NewCommitteeData() *CommitteeData {
 
 func (c CommitteeData) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Score []uint64
+		Score map[string]uint64
 	}{
-		Score: c.Score,
+		Score: c.CommitteeScore,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -30,13 +30,13 @@ func (c CommitteeData) MarshalJSON() ([]byte, error) {
 
 func (c *CommitteeData) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Score []uint64
+		Score map[string]uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	c.Score = temp.Score
+	c.CommitteeScore = temp.Score
 	return nil
 }
 

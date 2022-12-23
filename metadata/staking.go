@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -93,7 +92,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFCR, tempStaker)
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFNR, tempStaker)
 		if len(tempStaker) == 0 {
-			return false, errors.New("invalid Staker, This pubkey may staked already")
+			return false, errors.New("invalid Shard Staker, This pubkey may staked already")
 		}
 	case BeaconStakingMeta:
 		/* Check if beacon already promote
@@ -101,11 +100,20 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 		- make sure there is no duplicated mining public key
 		*/
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BC")
+		}
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BP")
+		}
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BW, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BW")
+		}
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BL, tempStaker)
 		if len(tempStaker) == 0 {
-			return false, errors.New("invalid Staker, This pubkey may staked already")
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BL")
 		}
 		/* Check if promoting is valid
 		- check if shard validator exist

@@ -384,7 +384,7 @@ func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface
 		if linkView == nil {
 			return errors.New("InsertWithPrevValidationData fail! Cannot find previous block hash" + block.GetPrevHash().String())
 		}
-		if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), newValidationData); err != nil {
+		if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), nil, newValidationData); err != nil {
 			return err
 		}
 	}
@@ -434,7 +434,7 @@ func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusDat
 }
 
 // this is only call when insert block successfully, the previous block is replace
-func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, _ []incognitokey.CommitteePublicKey, newValidationData string) error {
 	if hasBlock := chain.BlockStorage.IsExisted(previousBlockHash); !hasBlock {
 		// This block is not inserted yet, no need to replace
 		Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db " + previousBlockHash.String())

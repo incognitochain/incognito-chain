@@ -564,24 +564,8 @@ func (beaconBestState *BeaconBestState) GetAutoStakingList() map[string]bool {
 	return m
 }
 
-func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenList() []string {
-	return beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
-}
-
 func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
 	return beaconBestState.beaconCommitteeState.GetAllCandidateSubstituteCommittee()
-}
-
-func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateMap() map[string]struct{} {
-
-	list := beaconBestState.beaconCommitteeState.GetAllCandidateSubstituteCommittee()
-
-	m := make(map[string]struct{})
-	for _, v := range list {
-		m[v] = struct{}{}
-	}
-
-	return m
 }
 
 func (beaconBestState *BeaconBestState) GetHash() *common.Hash {
@@ -762,6 +746,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
 		NumberOfFixedShardBlockValidator: beaconBestState.NumberOfFixedShardBlockValidator,
 		MaxShardCommitteeSize:            beaconBestState.MaxShardCommitteeSize,
+		MaxBeaconCommitteeSize:           beaconBestState.MaxBeaconCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
 		MissingSignature:                 missingSignature,
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{

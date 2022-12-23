@@ -6,9 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -267,10 +266,11 @@ func (httpServer *HttpServer) handleGetBeaconCommitteeState(params interface{}, 
 	}
 
 	allBeaconBlockInEpoch := []types.BeaconBlock{}
-	firstBeaconHeightOfEpoch := blockchain.GetFirstBeaconHeightInEpoch(height / 350)
+
 	currentBlock, _ := httpServer.config.BlockChain.GetBeaconBlockByHeight(height)
 	tempBeaconBlock := *currentBlock[0]
 	tempBeaconHeight := tempBeaconBlock.GetBeaconHeight()
+	firstBeaconHeightOfEpoch := blockchain.GetFirstBeaconHeightInEpoch(tempBeaconBlock.GetCurrentEpoch())
 	for tempBeaconHeight > firstBeaconHeightOfEpoch { //dont need to get the first block, we dont count prevValidation data for this block
 		allBeaconBlockInEpoch = append([]types.BeaconBlock{tempBeaconBlock}, allBeaconBlockInEpoch...)
 		previousBeaconBlock, _, err := httpServer.config.BlockChain.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)

@@ -28,7 +28,7 @@ type BeaconPeerState struct {
 
 type BeaconSyncProcess struct {
 	status              string //stop, running
-	isCommittee         bool
+	isBeaconFullnode    bool   //could be committee, pending, waiting
 	isCatchUp           bool
 	beaconPeerStates    map[string]BeaconPeerState //sender -> state
 	beaconPeerStateCh   chan *wire.MessagePeerState

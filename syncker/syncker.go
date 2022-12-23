@@ -124,7 +124,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	chainValidator := synckerManager.config.Consensus.GetOneValidatorForEachConsensusProcess()
 
 	if beaconChain, ok := chainValidator[-1]; ok {
-		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole && beaconChain.State.ChainID == -1) || beaconChain.State.InBeaconWaiting
+		synckerManager.BeaconSyncProcess.isBeaconFullnode = beaconChain.State.IsBeaconFullnode
 	}
 
 	synckerManager.BeaconSyncProcess.start()
@@ -138,7 +138,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 	}
 
 	wg := sync.WaitGroup{}
-	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isCommittee)
+	wantedShard := synckerManager.config.Blockchain.GetWantedShard(synckerManager.BeaconSyncProcess.isBeaconFullnode)
 	for chainID, _ := range chainValidator {
 		wantedShard[byte(chainID)] = struct{}{}
 	}

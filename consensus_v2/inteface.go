@@ -26,7 +26,7 @@ type NodeInterface interface {
 	GetPrivateKey() string
 	GetUserMiningState() (role string, chainID int)
 	GetPubkeyMiningState(*incognitokey.CommitteePublicKey) (role string, chainID int)
-	IsInBeaconWaitingList(*incognitokey.CommitteePublicKey) bool
+	IsBeaconFullnode(*incognitokey.CommitteePublicKey) bool
 	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 	GetSelfPeerID() peer.ID
 }
