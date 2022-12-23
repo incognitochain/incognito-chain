@@ -3,10 +3,10 @@ package committeestate
 import (
 	"fmt"
 	"math/big"
-	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
@@ -29,23 +29,25 @@ func (s *swapRuleV3) ProcessBeacon(
 	swapOutList []string,
 	slashedList []string,
 ) {
+	committeeClone := append([]string{}, committees...)
+	substitutesClone := append([]string{}, substitutes...)
 	maxSwapout := len(committees) - minCommitteeSize
 	if len(substitutes) > (minCommitteeSize - numberOfFixedValidators) {
-		maxSwapout = len(committees) - numberOfFixedValidators
+		maxSwapout = len(committeeClone) - numberOfFixedValidators
 	} else {
-		maxSwapout += len(substitutes)
+		maxSwapout += len(substitutesClone)
 	}
 	totalVotePower := uint64(0)
-	for _, pk := range committees {
+	for _, pk := range committeeClone {
 		votePower, ok := reputation[pk]
 		if ok {
 			totalVotePower += votePower
 		}
 	}
 	slashedVotePower := uint64(0)
-	Logger.log.Debugf("Process swap beacon 1, env: min %v max %v n.o. fixed nodes %v max swapout %v, subs %v, cmt %v, total vote power %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(substitutes), common.ShortPKList(committees), totalVotePower)
-	newCommittees, slashedList, slashedVotePower = s.slashingBeaconSwapOut(
-		committees,
+	Logger.log.Infof("Process swap beacon 1, env: min %v max %v n.o. fixed nodes %v max swapout %v, subs %v, cmt %v, total vote power %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(substitutes), common.ShortPKList(committees), totalVotePower)
+	committeeClone, slashedList, slashedVotePower = s.slashingBeaconSwapOut(
+		committeeClone,
 		maxSwapout,
 		numberOfFixedValidators,
 		reputation,
@@ -54,17 +56,44 @@ func (s *swapRuleV3) ProcessBeacon(
 	)
 	totalVotePower -= slashedVotePower
 	maxSwapout -= len(slashedList)
-	Logger.log.Debugf("Process swap beacon 2, env: min %v max %v n.o. fixed nodes %v max swapout %v, slashed %v, slashed votepower %v total vote power %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(slashedList), slashedVotePower, totalVotePower)
-	newCommittees, swapOutList, newSubstitutes = s.beaconSwapOut(
-		newCommittees,
-		substitutes,
+	Logger.log.Infof("Process swap beacon 2, env: min %v max %v n.o. fixed nodes %v max swapout %v, slashed %v, slashed votepower %v total vote power %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(slashedList), slashedVotePower, totalVotePower)
+	committeeClone, swapOutList, substitutesClone = s.beaconSwapOut(
+		committeeClone,
+		substitutesClone,
 		numberOfFixedValidators,
 		maxCommitteeSize,
 		maxSwapout,
 		reputation,
 		totalVotePower,
 	)
-	Logger.log.Debugf("Process swap beacon 3, env: min %v max %v n.o. fixed nodes %v max swapout %v, new cmt %v, new subs %v swapout %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(newCommittees), common.ShortPKList(newSubstitutes), common.ShortPKList(swapOutList))
+	Logger.log.Infof("Process swap beacon 3, env: min %v max %v n.o. fixed nodes %v max swapout %v, new cmt %v, new subs %v swapout %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(committeeClone), common.ShortPKList(substitutesClone), common.ShortPKList(swapOutList))
+	committeeM := map[string]interface{}{}
+	substituteM := map[string]interface{}{}
+	newCommittees = []string{}
+	newSubstitutes = []string{}
+	for _, pk := range committeeClone {
+		committeeM[pk] = nil
+	}
+	for _, pk := range substitutesClone {
+		substituteM[pk] = nil
+	}
+	for _, pk := range committees {
+		if _, ok := committeeM[pk]; ok {
+			newCommittees = append(newCommittees, pk)
+		}
+		if _, ok := substituteM[pk]; ok {
+			newSubstitutes = append(newSubstitutes, pk)
+		}
+	}
+	for _, pk := range substitutes {
+		if _, ok := committeeM[pk]; ok {
+			newCommittees = append(newCommittees, pk)
+		}
+		if _, ok := substituteM[pk]; ok {
+			newSubstitutes = append(newSubstitutes, pk)
+		}
+	}
+	Logger.log.Infof("Process swap beacon done, env: min %v max %v n.o. fixed nodes %v max swapout %v, new cmt %v, new subs %v swapout %v", minCommitteeSize, maxCommitteeSize, numberOfFixedValidators, maxSwapout, common.ShortPKList(newCommittees), common.ShortPKList(newSubstitutes), common.ShortPKList(swapOutList))
 	return newCommittees, newSubstitutes, swapOutList, slashedList
 }
 
@@ -243,25 +272,12 @@ func (s *swapRuleV3) slashingBeaconSwapOut(
 	slashedList []string,
 	slashedVotePower uint64,
 ) {
-	sortedCommittee := committees[numberOfFixedValidators:]
-	// fmt.Printf("sorted committee a %+v\n", sortedCommittee)
-	sort.Slice(sortedCommittee, func(i, j int) bool {
-		pi := uint64(0)
-		pj := uint64(0)
-		if _, ok := performance[sortedCommittee[i]]; ok {
-			pi = performance[sortedCommittee[i]]
-		}
-		if _, ok := performance[sortedCommittee[j]]; ok {
-			pj = performance[sortedCommittee[j]]
-		}
-		if pi == pj {
-			return sortedCommittee[i] < sortedCommittee[j]
-		}
-		return pi < pj
-	})
-	// fmt.Printf("sorted committee b %+v\n", sortedCommittee)
-	tmp := []string{}
-	lastIdx := -1
+	sortedCommittee := append([]string{}, committees[numberOfFixedValidators:]...)
+	sortedCommittee, err := sortStakersByReputation(sortedCommittee, true, reputation, performance)
+	if err != nil {
+		panic(err)
+	}
+	slashed := map[string]interface{}{}
 	slashedVotePower = uint64(0)
 	for idx, pk := range sortedCommittee {
 		pi := uint64(0)
@@ -273,24 +289,27 @@ func (s *swapRuleV3) slashingBeaconSwapOut(
 			votePower = reputation[sortedCommittee[idx]]
 		}
 		//TODO: remove hardcode constant
-		if pi < 300 {
+		if pi < config.Param().ConsensusParam.LowestPerformance {
 			if votePower+uint64(slashedVotePower) < totalVotePower/3 {
 				if len(slashedList) == maxSlashedValidator {
 					break
 				}
 				slashedVotePower += votePower
-				slashedList = append(slashedList, pk)
-				lastIdx = idx
-			} else {
-				tmp = append(tmp, pk)
+				slashed[pk] = nil
 			}
 		} else {
 			break
 		}
 	}
-	// fmt.Printf("sorted committee c %+v\n", sortedCommittee)
-	sortedCommittee = append(sortedCommittee[lastIdx+1:], tmp...)
-	newCommittees = append(committees[:numberOfFixedValidators], sortedCommittee...)
+	notSlashed := []string{}
+	for _, pk := range committees[numberOfFixedValidators:] {
+		if _, ok := slashed[pk]; ok {
+			slashedList = append(slashedList, pk)
+		} else {
+			notSlashed = append(notSlashed, pk)
+		}
+	}
+	newCommittees = append(committees[:numberOfFixedValidators], notSlashed...)
 	return newCommittees, slashedList, slashedVotePower
 }
 
@@ -304,34 +323,21 @@ func (s *swapRuleV3) beaconSwapOut(
 	swapOut []string,
 	newSubtitute []string,
 ) {
-	sortedCommittee := committee[numberOfFixedValidators:]
-	sort.Slice(sortedCommittee, func(i, j int) bool {
-		pi := uint64(0)
-		pj := uint64(0)
-		if _, ok := reputation[sortedCommittee[i]]; ok {
-			pi = reputation[sortedCommittee[i]]
-		}
-		if _, ok := reputation[sortedCommittee[j]]; ok {
-			pj = reputation[sortedCommittee[j]]
-		}
-		return pi < pj
-	})
-	sort.Slice(substitutes, func(i, j int) bool {
-		pi := uint64(0)
-		pj := uint64(0)
-		if _, ok := reputation[substitutes[i]]; ok {
-			pi = reputation[substitutes[i]]
-		}
-		if _, ok := reputation[substitutes[j]]; ok {
-			pj = reputation[substitutes[j]]
-		}
-		return pi < pj
-	})
+	var err error
+	sortedCommittee := append([]string{}, committee[numberOfFixedValidators:]...)
+	sortedCommittee, err = sortStakersByReputation(sortedCommittee, true, reputation, reputation)
+	if err != nil {
+		panic(err)
+	}
+	substitutes, err = sortStakersByReputation(substitutes, false, reputation, reputation)
+	if err != nil {
+		panic(err)
+	}
 	for _, pk := range sortedCommittee {
-		Logger.log.Debugf("swapbeacon process committee: key %v, rep %v", pk[len(pk)-5:], reputation[pk])
+		Logger.log.Infof("swapbeacon process committee: key %v, rep %v", pk[len(pk)-5:], reputation[pk])
 	}
 	for _, pk := range substitutes {
-		Logger.log.Debugf("swapbeacon process pending: key %v, rep %v", pk[len(pk)-5:], reputation[pk])
+		Logger.log.Infof("swapbeacon process pending: key %v, rep %v", pk[len(pk)-5:], reputation[pk])
 	}
 	swappedInIndex := -1
 	for idx, key := range sortedCommittee {
@@ -345,8 +351,9 @@ func (s *swapRuleV3) beaconSwapOut(
 			break
 		}
 	}
-	newCommittee = append(committee[:numberOfFixedValidators], sortedCommittee[len(swapOut):]...)
-	sortedCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
+	newCommittee = append([]string{}, committee[:numberOfFixedValidators]...)
+	newCommittee = append(newCommittee, sortedCommittee[len(swapOut):]...)
+	newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
 	substitutes = substitutes[swappedInIndex+1:]
 	if (len(substitutes) > 0) && (len(newCommittee) < maxCommitteeSize) {
 		if len(substitutes) > maxCommitteeSize-len(newCommittee) {
@@ -354,9 +361,9 @@ func (s *swapRuleV3) beaconSwapOut(
 		} else {
 			swappedInIndex = len(substitutes) - 1
 		}
+		newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
+		substitutes = substitutes[swappedInIndex+1:]
 	}
-	newCommittee = append(newCommittee, substitutes[:swappedInIndex+1]...)
-	substitutes = substitutes[swappedInIndex+1:]
 	newSubtitute = substitutes
 	return
 }
