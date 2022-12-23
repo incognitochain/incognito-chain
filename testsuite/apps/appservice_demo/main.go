@@ -68,6 +68,11 @@ func init() {
 				shouldStopAutoStakeBeacon = true
 			} else if v == addStakingBeaconArg {
 				shouldAddStakingBeacon = true
+				var err error
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
 			} else if v == watchValidatorArg {
 				var err error
 				shouldWatchValidator = true
