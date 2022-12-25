@@ -855,6 +855,8 @@ func IsBurningConfirmMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BurningNearConfirmMeta:
 		return true
+	case metadataCommon.BurningPRVRequestConfirmMeta:
+		return true
 	default:
 		return false
 	}

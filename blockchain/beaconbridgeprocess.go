@@ -22,8 +22,8 @@ import (
 // NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
 type BurningReqAction struct {
-	Meta          metadataBridge.BurningRequest `json:"meta"`
-	RequestedTxID *common.Hash                  `json:"RequestedTxID"`
+	Meta          metadataBridge.BurningPRVRequest `json:"meta"`
+	RequestedTxID *common.Hash                     `json:"RequestedTxID"`
 }
 
 func (blockchain *BlockChain) processBridgeInstructions(curView *BeaconBestState, block *types.BeaconBlock, bridgeAggUnshieldTxIDs map[string]bool) error {

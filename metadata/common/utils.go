@@ -250,6 +250,7 @@ func buildMetaInfo() {
 		IssuingPLGRequestMeta,
 		BurningPRVERC20RequestMeta,
 		BurningPRVBEP20RequestMeta,
+		BurningPRVRequestMeta,
 
 		ShardStakingMeta,
 		BeaconStakingMeta,
@@ -788,6 +789,8 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 	case BurningAvaxForDepositToSCRequestMeta:
 		return true
 	case BurningNearRequestMeta:
+		return true
+	case BurningPRVRequestMeta:
 		return true
 	default:
 		return false

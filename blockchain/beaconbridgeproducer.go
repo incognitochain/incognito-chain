@@ -123,6 +123,10 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningNearConfirmMeta, inst, beaconHeight, common.NEARPrefix)
 			newInst = [][]string{burningConfirm}
 
+		case metadata.BurningPRVRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningPRVEVMConfirmInst(metadata.BurningPRVRequestConfirmMeta, inst, beaconHeight, config.Param().PRVERC20ContractAddressStr)
+			newInst = [][]string{burningConfirm}
 		default:
 			continue
 		}
@@ -216,7 +220,7 @@ func buildBurningPRVEVMConfirmInst(
 	// Convert height to big.Int to get bytes later
 	h := big.NewInt(0).SetUint64(height)
 
-	return []string{
+	results := []string{
 		strconv.Itoa(burningMetaType),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(tokenID[:], 0x00),
@@ -224,6 +228,14 @@ func buildBurningPRVEVMConfirmInst(
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
 		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
-		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
-	}, nil
+	}
+	if burningMetaType == metadata.BurningPRVRequestConfirmMeta {
+		reAddrStr, err := burningReqAction.Meta.RedepositReceiver.String()
+		if err != nil {
+			return nil, errors.New("PRV EVM: invalid RedepositReceiver address")
+		}
+		results = append(results, reAddrStr)
+	}
+	results = append(results, base58.Base58Check{}.Encode(h.Bytes(), 0x00))
+	return results, nil
 }
