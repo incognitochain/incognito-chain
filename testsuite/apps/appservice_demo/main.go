@@ -155,14 +155,14 @@ func main() {
 	}
 
 	for i, staker := range beaconStaker {
-		fmt.Println("Beacon", i, staker.SelfCommitteePubkey, staker.MiningKey)
+		beaconStakerBalance, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
+		fmt.Println("Beacon", i, int(float64(beaconStakerBalance)*1e-9), staker.SelfCommitteePubkey, staker.MiningKey)
 	}
 
 	submitKey := func() {
 		fullnodeRPC.SubmitKey(icoAccount.PrivateKey)
 		shard0RPC.SubmitKey(icoAccount.PrivateKey)
 		shard0RPC.CreateConvertCoinVer1ToVer2Transaction(icoAccount.PrivateKey)
-
 	}
 
 	send_prv := func() {
@@ -187,15 +187,10 @@ func main() {
 			fmt.Println(stakeRes, err)
 		}
 		fmt.Println("Stake shard", beaconStaker[0].SelfCommitteePubkey)
-		beaconStakerBalance, _ := shard0RPC.GetBalanceByPrivateKey(beaconStaker[0].PrivateKey)
-
-		fmt.Println("BeaconStaker", int(float64(beaconStakerBalance)*1e-9))
 		stakeRes, err := StakeShard(&shard0RPC, beaconStaker[0].PrivateKey, beaconStaker[0].PrivateKey, 1750*1e9)
 		fmt.Println(stakeRes, err)
 
 		fmt.Println("Stake shard", beaconStaker[1].SelfCommitteePubkey)
-		beaconStakerBalance, _ = shard0RPC.GetBalanceByPrivateKey(beaconStaker[1].PrivateKey)
-		fmt.Println("BeaconStaker", float64(beaconStakerBalance)*1e-9)
 		stakeRes, err = StakeShard(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey, 1750*1e9)
 		fmt.Println(stakeRes, err)
 
@@ -245,7 +240,7 @@ func main() {
 			}
 			time.Sleep(time.Second * 5)
 		}
-
+		time.Sleep(time.Second * 10)
 		stakeRes, err := StakeBeacon(&shard0RPC, beaconStaker[0].PrivateKey, beaconStaker[0].PrivateKey, 92750*1e9)
 		fmt.Println(stakeRes, err)
 		stakeRes, err = StakeBeacon(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey, 91000*1e9)
@@ -313,26 +308,26 @@ func main() {
 	}
 
 	unstake := func() {
-		//stakeRes, err := UnStake(&shard0RPC, beaconStaker[0].PrivateKey, beaconStaker[0].PrivateKey)
-		//fmt.Println(stakeRes, err)
-		//stakeRes, err = UnStake(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey)
-		//fmt.Println(stakeRes, err)
-		stakeRes, err := UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[2].PrivateKey)
+		stakeRes, err := UnStake(&shard0RPC, beaconStaker[0].PrivateKey, beaconStaker[0].PrivateKey)
 		fmt.Println(stakeRes, err)
-		stakeRes, err = UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[3].PrivateKey)
+		stakeRes, err = UnStake(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey)
 		fmt.Println(stakeRes, err)
+		//stakeRes, err := UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[2].PrivateKey)
+		//fmt.Println(stakeRes, err)
+		//stakeRes, err = UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[3].PrivateKey)
+		//fmt.Println(stakeRes, err)
 	}
 
-	//submitKey()
-	//time.Sleep(time.Second * 15)
-	//send_prv()
-	//time.Sleep(time.Second * 10)
-	//stake_shard()
-	//stake_beacon()
-	//add_stake()
+	submitKey()
+	time.Sleep(time.Second * 15)
+	send_prv()
+	time.Sleep(time.Second * 10)
+	stake_shard()
+	stake_beacon()
+	add_stake()
 
 	//time.Sleep(time.Second * 10)
-	unstake()
+	//unstake()
 	go func() {
 		for {
 			bs, _ := fullnodeRPC.GetBeaconBestState()

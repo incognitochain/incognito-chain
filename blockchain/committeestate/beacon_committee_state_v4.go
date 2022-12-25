@@ -44,10 +44,29 @@ type StakerInfo struct {
 	EnterTime     time.Time
 }
 
+type StakerInfoDetail struct {
+	CPK             string
+	StakingAmount   uint64
+	Unstake         bool
+	Performance     uint64
+	EpochScore      uint64 // -> sorted list
+	FixedNode       bool
+	FinishSync      bool
+	ShardActiveTime int
+}
+
 type LockingInfo struct {
 	cpkStr        incognitokey.CommitteePublicKey
 	LockingEpoch  uint64
 	LockingReason int
+}
+
+type LockingInfoDetail struct {
+	CPK           string
+	LockingEpoch  uint64
+	LockingReason int
+	ReleaseEpoch  uint64
+	ReleaseAmount uint64
 }
 
 type BeaconCommitteeStateV4 struct {
@@ -279,28 +298,68 @@ func (b *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePubl
 
 func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() string {
 	type StateData struct {
-		Committee map[string]StakerInfo
-		Pending   map[string]StakerInfo
-		Waiting   map[string]StakerInfo
-		Locking   map[string]LockingInfo
+		Committee []StakerInfoDetail
+		Pending   []StakerInfoDetail
+		Waiting   []StakerInfoDetail
+		Locking   []LockingInfoDetail
 	}
 	data := &StateData{
-		Committee: make(map[string]StakerInfo),
-		Pending:   make(map[string]StakerInfo),
-		Waiting:   make(map[string]StakerInfo),
-		Locking:   make(map[string]LockingInfo),
+		Committee: []StakerInfoDetail{},
+		Pending:   []StakerInfoDetail{},
+		Waiting:   []StakerInfoDetail{},
+		Locking:   []LockingInfoDetail{}}
+
+	getStakerDetail := func(cpk string) StakerInfoDetail {
+		stakerInfo, has, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		if !has {
+			return StakerInfoDetail{}
+		}
+		detail := StakerInfoDetail{
+			cpk,
+			(*s.beaconCommittee[cpk]).StakingAmount,
+			(*s.beaconCommittee[cpk]).Unstake,
+			(*s.beaconCommittee[cpk]).Performance,
+			(*s.beaconCommittee[cpk]).EpochScore,
+			(*s.beaconCommittee[cpk]).FixedNode,
+			stakerInfo.FinishSync(),
+			stakerInfo.ShardActiveTime(),
+		}
+		return detail
 	}
-	for k, v := range s.beaconCommittee {
-		data.Committee[k] = *v
+
+	getLockingDetail := func(cpk string) LockingInfoDetail {
+		stakerInfo, has, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		if !has {
+			return LockingInfoDetail{}
+		}
+		detail := LockingInfoDetail{
+			cpk,
+			(*s.beaconLocking[cpk]).LockingEpoch,
+			(*s.beaconLocking[cpk]).LockingReason,
+			(*s.beaconLocking[cpk]).LockingEpoch + LOCKING_PERIOD,
+			stakerInfo.TotalStakingAmount(),
+		}
+		return detail
 	}
-	for k, v := range s.beaconPending {
-		data.Pending[k] = *v
+	for _, v := range s.GetBeaconCommittee() {
+		cpk, _ := v.ToBase58()
+		detail := getStakerDetail(cpk)
+		data.Committee = append(data.Committee, detail)
 	}
-	for k, v := range s.beaconWaiting {
-		data.Waiting[k] = *v
+	for _, v := range s.GetBeaconSubstitute() {
+		cpk, _ := v.ToBase58()
+		detail := getStakerDetail(cpk)
+		data.Pending = append(data.Pending, detail)
 	}
-	for k, v := range s.beaconLocking {
-		data.Locking[k] = *v
+	for _, v := range s.GetBeaconWaiting() {
+		cpk, _ := v.ToBase58()
+		detail := getStakerDetail(cpk)
+		data.Waiting = append(data.Waiting, detail)
+	}
+	for _, v := range s.GetBeaconLocking() {
+		cpk, _ := v.ToBase58()
+		detail := getLockingDetail(cpk)
+		data.Locking = append(data.Locking, detail)
 	}
 	b, _ := json.Marshal(data)
 	return string(b)
@@ -424,6 +483,7 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 	//udpate beacon state
 	beaconValidators := append(s.GetBeaconCommittee(), s.GetBeaconSubstitute()...)
 	beaconValidators = append(beaconValidators, s.GetBeaconLocking()...)
+
 	beaconValidatorList, _ := incognitokey.CommitteeKeyListToString(beaconValidators)
 	stateHash.BeaconCommitteeAndValidatorHash, _ = common.GenerateHashFromStringArray(beaconValidatorList)
 
