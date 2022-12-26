@@ -52,9 +52,9 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, _, err := GetKeySetFromPrivateKeyParams(keyStr)
-	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil{
+	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil {
 		return false, NewRPCError(InvalidSenderViewingKeyError, fmt.Errorf("OTA key not found, error: %v", err))
-	}else{
+	} else {
 		otaKey = keySet.OTAKey
 	}
 
@@ -152,6 +152,7 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 	if err != nil {
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
+	Logger.log.Info("[committee-state] len(outcoints):", len(outcoints))
 
 	balance := uint64(0)
 	for _, out := range outcoints {

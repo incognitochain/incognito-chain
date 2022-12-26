@@ -136,8 +136,8 @@ func main() {
 	}
 	epochBlockTime := uint64(10)
 	submitkeyHeight := bHeight
-	convertTxHeight := bHeight + 5
-	sendFundsHeight := bHeight + 15
+	convertTxHeight := bHeight + 10
+	sendFundsHeight := bHeight + 20
 
 	log.Println("Will be listening to beacon height:", bHeight)
 	var startStakingHeight uint64
