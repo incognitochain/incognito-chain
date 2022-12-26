@@ -1752,3 +1752,33 @@ func (r *RemoteRPCClient) GetBeaconStakerInfo(height uint64, hash string) (*stat
 	}
 	return resp.Result, err
 }
+
+func (r *RemoteRPCClient) CreateAndSendAddStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, addStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendaddstakingtransaction",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, addStakeInfo},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
