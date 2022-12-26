@@ -398,6 +398,10 @@ func (beaconBestState *BeaconBestState) Hash() common.Hash {
 	return common.Hash{}
 }
 
+func (beaconBestState *BeaconBestState) GetCommitteeState() committeestate.BeaconCommitteeState {
+	return beaconBestState.beaconCommitteeState
+}
+
 func (beaconBestState *BeaconBestState) GetShardCandidate() []incognitokey.CommitteePublicKey {
 	current := beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForCurrentRandom()
 	next := beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForNextRandom()

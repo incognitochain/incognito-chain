@@ -1,9 +1,10 @@
 package statedb
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -304,7 +305,7 @@ func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKe
 	return list
 }
 
-//staking flow v4 will not worl with shardIDs contains -1
+// staking flow v4 will not worl with shardIDs contains -1
 func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[int][]incognitokey.CommitteePublicKey,
 	map[int][]incognitokey.CommitteePublicKey,
@@ -316,7 +317,9 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[string]key.PaymentAddress,
 	map[string]bool,
 	map[string]common.Hash,
+	map[string]string,
 ) {
+	delegateList := map[string]string{}
 	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate,
 		tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate,
 		tempSyncingValidators,
@@ -394,7 +397,7 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 		currentEpochBeaconCandidate = append(currentEpochBeaconCandidate, candidate.CommitteePublicKey())
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList
 }
 
 func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*CommitteeState {
@@ -601,7 +604,7 @@ func GetAllStaker(stateDB *StateDB, shardIDs []int) int {
 	return stateDB.getAllStaker(shardIDs)
 }
 
-//DeleteStakerInfo :
+// DeleteStakerInfo :
 func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
 	return deleteStakerInfo(stateDB, stakers)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
@@ -26,6 +27,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -180,35 +182,79 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	var beaconConsensusStateRootHash = &blockchain.BeaconRootHash{}
 	var err1 error = nil
 
-	if height == 0 || tempHash != "" {
-		hash, err := common.Hash{}.NewHashFromStr(tempHash)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
+	currentValidator := make(map[int][]incognitokey.CommitteePublicKey)
+	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
+	nextEpochShardCandidate := []incognitokey.CommitteePublicKey{}
+	currentEpochShardCandidate := []incognitokey.CommitteePublicKey{}
+	currentEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
+	nextEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
+	beaconWaitingCandidate := []incognitokey.CommitteePublicKey{}
+	syncingValidators := make(map[byte][]incognitokey.CommitteePublicKey)
+	rewardReceivers := make(map[string]key.PaymentAddress)
+	autoStaking := make(map[string]bool)
+	stakingTx := map[string]common.Hash{}
+	delegateList := map[string]string{}
+
+	if height == 0 && tempHash == "" {
+		bState := httpServer.GetBlockchain().GetBeaconBestState()
 		beaconConsensusStateRootHash, err1 = blockchain.GetBeaconRootsHashByBlockHash(
 			httpServer.config.BlockChain.GetBeaconChainDatabase(),
-			*hash,
+			bState.BestBlockHash,
 		)
 		if err1 != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 		}
+		cs := bState.GetCommitteeState()
+		currentEpochShardCandidate = cs.GetCandidateShardWaitingForCurrentRandom()
+		nextEpochShardCandidate = cs.GetCandidateShardWaitingForNextRandom()
+		syncingValidators = cs.GetSyncingValidators()
+		rewardReceivers = cs.GetRewardReceiver()
+		autoStaking = cs.GetAutoStaking()
+		//delegateList = cs.GetDelegate()
+		for i, v := range cs.GetShardCommittee() {
+			currentValidator[int(i)] = v
+		}
+		currentValidator[-1] = cs.GetBeaconCommittee()
+		for i, v := range cs.GetShardSubstitute() {
+			substituteValidator[int(i)] = v
+		}
+		substituteValidator[-1] = cs.GetBeaconSubstitute()
+		stakingTx = cs.GetStakingTx()
+		beaconWaitingCandidate = cs.GetBeaconWaiting()
 	} else {
-		beaconConsensusStateRootHash, err1 = httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
-			height,
-		)
-		if err1 != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+		if height == 0 || tempHash != "" {
+			hash, err := common.Hash{}.NewHashFromStr(tempHash)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+			}
+			beaconConsensusStateRootHash, err1 = blockchain.GetBeaconRootsHashByBlockHash(
+				httpServer.config.BlockChain.GetBeaconChainDatabase(),
+				*hash,
+			)
+			if err1 != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+			}
+		} else {
+			beaconConsensusStateRootHash, err1 = httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
+				height,
+			)
+			if err1 != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+			}
 		}
-	}
-	shardIDs := []int{-1}
-	shardIDs = append(shardIDs, httpServer.config.BlockChain.GetShardIDs()...)
-	stateDB, err2 := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
-	if err2 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+		shardIDs := []int{-1}
+		shardIDs = append(shardIDs, httpServer.config.BlockChain.GetShardIDs()...)
+		stateDB, err2 := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+		if err2 != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+		}
+
+		currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList =
+			statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+		beaconWaitingCandidate = append(currentEpochBeaconCandidate, nextEpochBeaconCandidate...)
 	}
 
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
 	currentValidatorStr := make(map[int][]string)
 	for shardID, v := range currentValidator {
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
@@ -237,16 +283,26 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		paymentAddress := wl.Base58CheckSerialize(wallet.PaymentAddressType)
 		tempRewardReceiver[k] = paymentAddress
 	}
-	return map[string]interface{}{
-		"root":             beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		"committee":        currentValidatorStr,
-		"substitute":       substituteValidatorStr,
-		"nextCandidate":    nextEpochShardCandidateStr,
-		"currentCandidate": currentEpochShardCandidateStr,
-		"rewardReceivers":  tempRewardReceiver,
-		"autoStaking":      autoStaking,
-		"stakingTx":        tempStakingTx,
-		"syncing":          syncingValidatorsStr,
+
+	beaconWaitingCandidateStr, _ := incognitokey.CommitteeKeyListToString(beaconWaitingCandidate)
+
+	//shardStakerInfos := map[string]*statedb.ShardStakerInfo{}
+	beaconStakerInfos := map[string]*statedb.BeaconStakerInfo{}
+
+	return &jsonresult.CommiteeState{
+		Root:             beaconConsensusStateRootHash.ConsensusStateDBRootHash.String(),
+		Committee:        currentValidatorStr,
+		Substitute:       substituteValidatorStr,
+		NextCandidate:    nextEpochShardCandidateStr,
+		CurrentCandidate: currentEpochShardCandidateStr,
+		RewardReceivers:  tempRewardReceiver,
+		AutoStaking:      autoStaking,
+		StakingTx:        tempStakingTx,
+		Syncing:          syncingValidatorsStr,
+		DelegateList:     delegateList,
+		//ShardStakerInfos:  shardStakerInfos,
+		BeaconStakerInfos: beaconStakerInfos,
+		BeaconWaiting:     beaconWaitingCandidateStr,
 	}, nil
 }
 
