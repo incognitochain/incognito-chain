@@ -29,8 +29,9 @@ func (s *AppService) OnBeaconBlock(fromBlk uint64, f func(block types.BeaconBloc
 		for {
 			data, err := fullnodeRPC.GetBlocksFromHeight(-1, uint64(fromBlk), 50)
 			if err != nil || len(data.([]types.BeaconBlock)) == 0 {
-				fmt.Println(err)
-				time.Sleep(time.Minute)
+				//fmt.Println(err)
+				//time.Sleep(time.Minute)
+				time.Sleep(time.Second * 10)
 				continue
 			}
 			for _, blk := range data.([]types.BeaconBlock) {
@@ -165,28 +166,28 @@ func (s *AppService) BeaconStaking(privateKey, candidatePaymentAddress, privateS
 	}
 }
 
-/*func (s *AppService) ShardUnstaking(privateKey, candidatePaymentAddress, privateSeed string) {*/
-/*fullnodeRPC := RemoteRPCClient{s.Fullnode}*/
-/*bAddr, err := fullnodeRPC.GetBurningAddress(1)*/
-/*if err != nil {*/
-/*panic(err)*/
-/*}*/
-/*if _, err := fullnodeRPC.CreateAndSendUnStakingTransaction(*/
-/*privateKey,*/
-/*map[string]interface{}{*/
-/*bAddr: 0,*/
-/*},*/
-/*-1,*/
-/*0,*/
-/*map[string]interface{}{*/
-/*"StopAutoStakingType":     127,*/
-/*"CandidatePaymentAddress": candidatePaymentAddress,*/
-/*"PrivateSeed":             privateSeed,*/
-/*},*/
-/*); err != nil {*/
-/*panic(err)*/
-/*}*/
-/*}*/
+func (s *AppService) ShardUnstaking(privateKey, candidatePaymentAddress, privateSeed string) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+	if _, err := fullnodeRPC.CreateAndSendUnStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: 0,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"StopAutoStakingType":     127,
+			"CandidatePaymentAddress": candidatePaymentAddress,
+			"PrivateSeed":             privateSeed,
+		},
+	); err != nil {
+		panic(err)
+	}
+}
 
 func (s *AppService) GetBeaconBestState() (jsonresult.GetBeaconBestState, error) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
@@ -198,12 +199,55 @@ func (s *AppService) GetCommitteeState(height uint64, hash string) (*jsonresult.
 	return fullnodeRPC.GetCommitteeState(height, hash)
 }
 
-/*func (s *AppService) GetShardStakerInfo(height uint64, stakerPubkey string) (*statedb.ShardStakerInfo, error) {*/
-/*fullnodeRPC := RemoteRPCClient{s.Fullnode}*/
-/*return fullnodeRPC.GetShardStakerInfo(height, stakerPubkey)*/
-/*}*/
+func (s *AppService) GetShardStakerInfo(height uint64, stakerPubkey string) (*statedb.ShardStakerInfo, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	return fullnodeRPC.GetShardStakerInfo(height, stakerPubkey)
+}
 
 func (s *AppService) GetBeaconStakerInfo(height uint64, stakerPubkey string) (*statedb.BeaconStakerInfo, error) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	return fullnodeRPC.GetBeaconStakerInfo(height, stakerPubkey)
+}
+
+func (s *AppService) StopAutoStaking(privateKey, candidatePaymentAddress, privateSeed string) (jsonresult.CreateTransactionResult, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+	return fullnodeRPC.CreateAndSendStopAutoStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: 100,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"StopAutoStakingType":     127,
+			"CandidatePaymentAddress": candidatePaymentAddress,
+			"PrivateSeed":             privateSeed,
+		},
+	)
+}
+
+func (s *AppService) AddStaking(privateKey, privateSeed, candidatePaymentAddress string, amount uint64) (jsonresult.CreateTransactionResult, error) {
+	fullnodeRPC := RemoteRPCClient{s.Fullnode}
+	bAddr, err := fullnodeRPC.GetBurningAddress(1)
+	if err != nil {
+		panic(err)
+	}
+
+	return fullnodeRPC.CreateAndSendAddStakingTransaction(
+		privateKey,
+		map[string]interface{}{
+			bAddr: amount,
+		},
+		-1,
+		0,
+		map[string]interface{}{
+			"AddStakingAmount":        amount,
+			"PrivateSeed":             privateSeed,
+			"CandidatePaymentAddress": candidatePaymentAddress,
+		},
+	)
 }
