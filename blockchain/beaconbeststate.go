@@ -821,7 +821,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate,
 		currentEpochShardCandidate, _, _, syncingValidators,
-		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
+		rewardReceivers, autoStaking, stakingTx, _ := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
 	delete(substituteValidator, statedb.BeaconChainID)
@@ -858,7 +858,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 			dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
 			consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
 			snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-				_, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+				_, _, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
 			snapshotShardCommonPool, _ := incognitokey.CommitteeKeyListToString(snapshotNextEpochShardCandidate)
 			snapshotShardCommittee := make(map[byte][]string)
 			snapshotShardSubstitute := make(map[byte][]string)
