@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/testsuite/rpcclient"
-	"io/ioutil"
-	"net/http"
 )
 
 type RemoteRPCClient struct {
@@ -1618,6 +1620,135 @@ func (r *RemoteRPCClient) DefragmentAccountToken(privateKey string, receiver map
 
 	if err != nil {
 		return res, errors.New(rpcERR.Error())
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) PreparePRVForTest(
+	privateKey string, receivers map[string]interface{},
+) (res *jsonresult.CreateTransactionResult, err error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "createandsendtransaction",
+		"params":  []interface{}{privateKey, receivers, -1, 0},
+		"id":      1,
+	})
+	if err != nil {
+
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, fmt.Errorf(resp.Error.StackTrace)
+	}
+	return resp.Result, err
+}
+
+func (r *RemoteRPCClient) GetCommitteeState(height uint64, hash string) (*jsonresult.CommiteeState, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getcommitteestate",
+		"params": []interface{}{
+			height,
+			hash,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *jsonresult.CommiteeState
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Result, err
+}
+
+/*func (r *RemoteRPCClient) GetShardStakerInfo(height uint64, stakerPubkey string) (*statedb.ShardStakerInfo, error) {*/
+/*requestBody, err := json.Marshal(map[string]interface{}{*/
+/*"jsonrpc": "1.0",*/
+/*"method":  "getshardstakerinfo",*/
+/*"params": []interface{}{*/
+/*height,*/
+/*stakerPubkey,*/
+/*},*/
+/*"id": 1,*/
+/*})*/
+/*if err != nil {*/
+/*return nil, err*/
+/*}*/
+/*body, err := r.sendRequest(requestBody)*/
+/*if err != nil {*/
+/*return nil, err*/
+/*}*/
+/*resp := struct {*/
+/*Result *statedb.ShardStakerInfo*/
+/*Error  *ErrMsg*/
+/*}{}*/
+/*err = json.Unmarshal(body, &resp)*/
+
+/*if resp.Error != nil && resp.Error.StackTrace != "" {*/
+/*return nil, errors.New(resp.Error.StackTrace)*/
+/*}*/
+
+/*if err != nil {*/
+/*return nil, err*/
+/*}*/
+/*return resp.Result, err*/
+/*}*/
+
+func (r *RemoteRPCClient) GetBeaconStakerInfo(height uint64, hash string) (*statedb.BeaconStakerInfo, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "getbeaconstakerinfo",
+		"params": []interface{}{
+			height,
+			hash,
+		},
+		"id": 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return nil, err
+	}
+	resp := struct {
+		Result *statedb.BeaconStakerInfo
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return nil, errors.New(resp.Error.StackTrace)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 	return resp.Result, err
 }
