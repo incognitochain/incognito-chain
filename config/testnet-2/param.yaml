@@ -16,10 +16,10 @@ genesis_param:
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
 
 committee_size:
-  max_shard_committee_size: 32
+  max_shard_committee_size: 8
   min_shard_committee_size: 4
   min_beacon_committee_size: 4
-  max_beacon_committee_size: 4
+  max_beacon_committee_size: 6
   init_shard_committee_size: 4
   init_beacon_committee_size: 4
   shard_committee_size_key_list_v2: 4
@@ -34,14 +34,14 @@ block_time:
   min_shard_block_interval: 10s
   max_shard_block_creation: 6s
 staking_amount_shard: 1750000000000
-active_shards: 8
+active_shards: 2
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:
-  number_of_block_in_epoch: 100
+  number_of_block_in_epoch: 10
   number_of_block_in_epoch_v2: 1000000000000
   epoch_v2_break_point: 1000000000000
-  random_time: 50
+  random_time: 5
   random_time_v2: 1000000000000
 eth_contract_address: "0xc157CC3077ddfa425bae12d2F3002668971A4e3d"
 bsc_contract_address: "0x3534C0a523b3A862c06C8CAF61de230f9b408f51"
@@ -59,25 +59,25 @@ swap_committee_param:
   swap_offset: 1
   assign_offset: 2
 consensus_param:
-  consensus_v2_epoch: 15290
-  staking_flow_v2_height: 2051863
-  enable_slashing_height: 2087789
-  assign_rule_v3_height: 3023315
-  enable_slashing_height_v2: 3068072
-  staking_flow_v3_height: 3335020
-  force_not_use_burned_coins: 4211505
-  lemma2_height: 3790429
+  consensus_v2_epoch: 1
+  staking_flow_v2_height: 1
+  enable_slashing_height: 1
+  assign_rule_v3_height: 1
+  enable_slashing_height_v2: 1
+  staking_flow_v3_height: 1
+  force_not_use_burned_coins: 1
+  lemma2_height: 1
   block_producing_v3_height: 3791509
   byzantine_detector_height: 1000000000000
-  timeslot: 10
+  timeslot: 5
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1280
 beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 2085
 replace_staking_tx_height: 1
-bc_height_break_point_new_zkp: 1148608
-bc_height_break_point_privacy_v2: 2798322
-coin_v2_lowest_height: 2400000
+bc_height_break_point_new_zkp: 1
+bc_height_break_point_privacy_v2: 1
+coin_v2_lowest_height: 1
 enable_feature_flags:
   - PortalRelaying: 1
   - PortalV3: 0
@@ -135,13 +135,13 @@ auto_enable_feature:
       min_trigger: 4617622
       require_percentage: 90
   - instantfinalityv2:
-      min_trigger: 5167674
+      min_trigger: 2
       require_percentage: 90
   - reduce_fix_node:
       min_trigger: 5647323
       require_percentage: 90
   - beacon_staking_flow_v4:
-      min_trigger: 1e9
+      min_trigger: 12
       require_percentage: 90
   - reduce_fix_node_v2:
       min_trigger: 5647323
@@ -195,7 +195,7 @@ auto_enable_feature:
       min_trigger: 5776355
       require_percentage: 90
 blocktime_param:
-  - "blocktimedef": 10
+  - "blocktimedef": 5
   - "blocktime30s_23_8": 30
   - "blocktime15s_30_8": 15
 feature_version:
@@ -205,6 +205,7 @@ feature_version:
   - reduce_fix_node: 12
   - reduce_fix_node_v2: 13
   - reduce_fix_node_v3: 14
+  - beacon_staking_flow_v4: 15
 transactions_param:
   lowerbound: 15
   upperbound: 100
