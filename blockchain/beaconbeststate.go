@@ -807,7 +807,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 		config.Param().ConsensusParam.StakingFlowV2Height,
 		config.Param().ConsensusParam.StakingFlowV3Height)
 
-	if beaconBestState.BestBlock.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
+	if config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4] != 0 && beaconBestState.BestBlock.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
 		version = committeestate.STAKING_FLOW_V4
 		shardIDs = []int{} //not get beacon committee with GetAllCandidateSubstituteCommittee
 	}

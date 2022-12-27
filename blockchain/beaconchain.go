@@ -564,7 +564,7 @@ func (chain *BeaconChain) GetSigningCommittees(
 }
 
 func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
-	if block.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
+	if config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4] != 0 && block.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
 		height := block.GetHeight()
 		beaconConsensusStateRootHash, err := chain.Blockchain.GetBeaconRootsHashFromBlockHeight(
 			height - 1, //the previous height statedb store the committee of current height
