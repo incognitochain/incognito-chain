@@ -145,6 +145,9 @@ auto_enable_feature:
   - blocktime20s_15_9:
       min_trigger: 2275826
       require_percentage: 85
+  - blocktime15s_27_12:
+        min_trigger: 1e9
+        require_percentage: 85
   - auroraavaxbridge:
       min_trigger: 2403039
       require_percentage: 75
@@ -160,10 +163,12 @@ auto_enable_feature:
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
+  - "blocktime15s_27_12": 15
 feature_version:
   - instantfinalityv2: 9
   - blocktime20s_15_9: 10
   - reduce_fix_node_v3: 11
+  - blocktime15s_27_12: 12
 transactions_param:
   lowerbound: 15
   upperbound: 100
