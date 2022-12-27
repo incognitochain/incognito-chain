@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -239,10 +238,6 @@ func verifyParam(p *param) error {
 
 	if p.CommitteeSize.NumberOfFixedShardBlockValidatorV2 == 0 {
 		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2")
-	}
-
-	if p.FeatureVersion[blockchain.BEACON_STAKING_FLOW_V4] == 0 {
-		return fmt.Errorf("Expected having FeatureVersion of beacon_staking_flow_v4")
 	}
 
 	return nil
