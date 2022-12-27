@@ -631,6 +631,7 @@ func VerifyProofAndParseAuroraReceipt(
 		if minedBlock.Header.ChunkReceiptsRoot.String() != receiptRootEVMStr {
 			return nil, errors.New("Root on evm chain and native chain not match")
 		}
+		break
 	}
 
 	if !hostActive {
@@ -853,6 +854,8 @@ func IsBurningConfirmMetaType(metaType int) bool {
 	case metadataCommon.BurningAvaxConfirmMeta, metadataCommon.BurningAvaxConfirmForDepositToSCMeta:
 		return true
 	case metadataCommon.BurningNearConfirmMeta:
+		return true
+	case metadataCommon.BurningPRVRequestConfirmMeta:
 		return true
 	default:
 		return false

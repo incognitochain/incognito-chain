@@ -250,6 +250,7 @@ func buildMetaInfo() {
 		IssuingPLGRequestMeta,
 		BurningPRVERC20RequestMeta,
 		BurningPRVBEP20RequestMeta,
+		BurningPRVRequestMeta,
 
 		ShardStakingMeta,
 		BeaconStakingMeta,
@@ -789,6 +790,8 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 		return true
 	case BurningNearRequestMeta:
 		return true
+	case BurningPRVRequestMeta:
+		return true
 	default:
 		return false
 	}
@@ -798,6 +801,16 @@ func IsBridgeUnshieldMetaType(metadataType int) bool {
 func IsBridgeAggUnshieldMetaType(metadataType int) bool {
 	switch metadataType {
 	case BurningUnifiedTokenRequestMeta, BurnForCallRequestMeta:
+		return true
+	default:
+		return false
+	}
+}
+
+// NOTE: append metadata types need to specify network fee
+func IsSpecifiedFeeMetaType(metaType int) bool {
+	switch metaType {
+	case InitTokenRequestMeta:
 		return true
 	default:
 		return false

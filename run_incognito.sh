@@ -27,7 +27,7 @@ if [ -z "$NODE_PORT" ]; then
 fi
 
 if [ -z "$LIMIT_FEE" ]; then
-    LIMIT_FEE=1;
+    LIMIT_FEE=1000000;
 fi
 
 if [ -z "$LOG_LEVEL" ]; then

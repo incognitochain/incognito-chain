@@ -584,13 +584,18 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				}
 
 				//update NumberOfFixedShardBlockValidatorV2
-				if feature == REDUCE_FIX_NODE {
+				switch feature {
+				case REDUCE_FIX_NODE:
 					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
-				}
-				if feature == REDUCE_FIX_NODE_V2 {
+				case REDUCE_FIX_NODE_V2:
 					SFV3_MinShardCommitteeSize = 4
 					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				case REDUCE_FIX_NODE_V3:
+					SFV3_MinShardCommitteeSize = 4
+					beaconBestState.MinShardCommitteeSize = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
 				}
+
 			}
 		}
 	}
@@ -1086,6 +1091,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningAvaxConfirmMeta),
 		strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurningNearConfirmMeta),
+		strconv.Itoa(metadata.BurningPRVRequestConfirmMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)

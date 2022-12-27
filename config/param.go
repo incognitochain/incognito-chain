@@ -104,6 +104,7 @@ type genesisParam struct {
 	SelectShardNodeSerializedPubkeyV2           map[uint64][]string
 	PreSelectShardNodeSerializedPaymentAddress  []string
 	SelectShardNodeSerializedPaymentAddressV2   map[uint64][]string
+	AllFoundationNode                           map[string]bool
 }
 
 type committeeSize struct {
@@ -292,11 +293,13 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 		panic(err)
 	}
 
+	p.GenesisParam.AllFoundationNode = make(map[string]bool)
 	for i := 0; i < p.CommitteeSize.InitBeaconCommitteeSize; i++ {
 		p.GenesisParam.PreSelectBeaconNodeSerializedPubkey =
 			append(p.GenesisParam.PreSelectBeaconNodeSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
 		p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress =
 			append(p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		p.GenesisParam.AllFoundationNode[keylist.Beacon[i].CommitteePublicKey] = true
 	}
 
 	for i := 0; i < p.ActiveShards; i++ {
@@ -305,6 +308,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 				append(p.GenesisParam.PreSelectShardNodeSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
 			p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress =
 				append(p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			p.GenesisParam.AllFoundationNode[keylist.Shard[i][j].CommitteePublicKey] = true
 		}
 	}
 	for _, v := range keylistV2 {
@@ -313,6 +317,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 				append(p.GenesisParam.SelectBeaconNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].CommitteePublicKey)
 			p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
 				append(p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].PaymentAddress)
+			p.GenesisParam.AllFoundationNode[v.Beacon[i].CommitteePublicKey] = true
 		}
 		for i := 0; i < p.ActiveShards; i++ {
 			for j := 0; j < p.CommitteeSize.ShardCommitteeSizeKeyListV2; j++ {
@@ -320,6 +325,7 @@ func (p *param) LoadKey(key1 []byte, key2 []byte) {
 					append(p.GenesisParam.SelectShardNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].CommitteePublicKey)
 				p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
 					append(p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].PaymentAddress)
+				p.GenesisParam.AllFoundationNode[v.Shard[i][j].CommitteePublicKey] = true
 			}
 		}
 	}

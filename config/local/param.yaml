@@ -25,15 +25,16 @@ committee_size:
   shard_committee_size_key_list_v2: 4
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
+  number_of_fixed_shard_validators_v2: 4
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
-  min_beacon_block_interval: 40s
-  max_beacon_block_creation: 20s
-  min_shard_block_interval: 40s
-  max_shard_block_creation: 20s
+  min_beacon_block_interval: 10s
+  max_beacon_block_creation: 5s
+  min_shard_block_interval: 10s
+  max_shard_block_creation: 5s
 staking_amount_shard: 1750000000000
-active_shards: 2
+active_shards: 1
 basic_reward: 400000000
 max_reward: 95000000000000000
 epoch_param:
@@ -49,7 +50,7 @@ ftm_contract_address: "0x526768A37feD86Fd8D5D72ca78913DFF64AC5E15"
 aurora_contract_address: "0x14D0cf3bC307aA15DA40Aa4c8cc2A2a81eF96B3a"
 avax_contract_address: "0x30fb06E97a6CD370BCE994A88C428F9F3aB6Ec28"
 near_contract_address: "incognito.prv.testnet"
-prv_erc20_contract_address: "0xAbFf10a3F834517Fa106f4BAA4b4CB8D608517F7"
+prv_erc20_contract_address: "0xa0904E2F05D1108063Ac7CfB7719bD6518FDBDF4"
 prv_bep20_contract_address: "0x0C61C7F99DeE0270a5934F1520d109dc44A51d6c"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
 centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
@@ -65,7 +66,7 @@ consensus_param:
   byzantine_detector_height: 1e9
   assign_rule_v3_height: 1e9
   enable_slashing_height_v2: 1e9
-  staking_flow_v3_height: 1e9
+  staking_flow_v3_height: 11
   force_not_use_burned_coins: 1
   block_producing_v3_height: 1e9
   timeslot: 10
@@ -158,11 +159,15 @@ auto_enable_feature:
       force_trigger: 1e9
       require_percentage: 100
   - nearbridge:
-      min_trigger: 1e9
-      force_trigger: 1e9
+      min_trigger: 1
+      force_trigger: 1
+      require_percentage: 100
+  - pdao:
+      min_trigger: 1
+      force_trigger: 1
       require_percentage: 100
 blocktime_param:
-  - "blocktimedef": 40
+  - "blocktimedef": 10
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
@@ -170,7 +175,7 @@ feature_version:
 
 transactions_param:
   lowerbound: 15
-  upperbound: 100
+  upperbound: 1000
 bridge_agg_param:
   admin_address: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
   base_decimal: 9 # Use only one time DONOT edit this after deployed

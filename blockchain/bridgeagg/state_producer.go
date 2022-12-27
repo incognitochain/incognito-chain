@@ -5,6 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,8 +18,6 @@ import (
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math/big"
-	"strconv"
 )
 
 type stateProducer struct{}
@@ -396,7 +397,8 @@ func (sp *stateProducer) handleWaitingUnshieldReqs(
 			// build unshield inst with filled status
 			// unshield requests in waiting list isDepositToSC is always false
 			filledInst := buildUnshieldInst(unifiedTokenID, false, waitingUnshieldReq, common.FilledStatusStr, common.BridgeShardID)
-			insts = append(burningConfirmInsts, filledInst)
+			insts = append(insts, burningConfirmInsts...)
+			insts = append(insts, filledInst)
 		}
 	}
 

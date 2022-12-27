@@ -250,6 +250,8 @@ func (blockchain *BlockChain) InitChainState() error {
 		txDB := sBestState.GetCopiedTransactionStateDB()
 
 		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
+		blockchain.ShardChain[shardID].PreFetchTx.BestView = blockchain.ShardChain[shardID].GetBestView().(*ShardBestState)
+
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 
@@ -651,7 +653,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 
 		//check config
 		for feature, height := range v.TriggeredFeature {
-			if feature == REDUCE_FIX_NODE_V2 {
+			if feature == REDUCE_FIX_NODE_V3 || feature == REDUCE_FIX_NODE_V2 {
 				SFV3_MinShardCommitteeSize = 4
 			}
 			if value, ok := config.Param().AutoEnableFeature[feature]; !ok {

@@ -3,10 +3,8 @@ package blsbft
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
@@ -88,7 +86,8 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 		return NewConsensusError(UnExpectedError, err)
 	}
 
-	if block.GetVersion() >= int(config.Param().FeatureVersion[blockchain.REDUCE_FIX_NODE]) {
+	reduceFixNodeVersion := GetLatestReduceFixNodeVersion()
+	if reduceFixNodeVersion != 0 && block.GetVersion() >= reduceFixNodeVersion {
 		cnt := 0
 		for _, v := range valData.ValidatiorsIdx {
 			if v < numFixNode {
