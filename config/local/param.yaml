@@ -173,6 +173,7 @@ blocktime_param:
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
+  - beacon_staking_flow_v4: 10
 
 transactions_param:
   lowerbound: 15
