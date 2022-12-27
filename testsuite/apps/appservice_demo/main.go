@@ -208,7 +208,7 @@ func main() {
 		if shouldAddStakingBeacon {
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole {
-				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 175000000000)
+				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 175000000000000)
 				if err != nil {
 					panic(err)
 				}
