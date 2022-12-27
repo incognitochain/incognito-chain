@@ -385,6 +385,7 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() string {
 
 func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.StateDB, minBeaconCommitteeSize int, allBeaconBlock []types.BeaconBlock) error {
 	s.stateDB = stateDB
+	s.config = NewBeaconCommitteeStateV4Config(1)
 	commitee := statedb.GetBeaconCommittee(stateDB)
 	commiteeData := statedb.GetCommitteeData(stateDB)
 	//
