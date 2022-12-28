@@ -19,6 +19,8 @@ import (
 )
 
 type BeaconCommitteeStateV4Config struct {
+	MAX_SCORE           uint64
+	MIN_SCORE           uint64
 	DEFAULT_PERFORMING  uint64
 	INCREASE_PERFORMING uint64
 	DECREASE_PERFORMING uint64
@@ -30,6 +32,8 @@ type BeaconCommitteeStateV4Config struct {
 
 func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 	return BeaconCommitteeStateV4Config{
+		MAX_SCORE:           1000,
+		MIN_SCORE:           100,
 		DEFAULT_PERFORMING:  500,
 		INCREASE_PERFORMING: 1015,
 		DECREASE_PERFORMING: 965,
@@ -402,7 +406,7 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 		}
 		s.beaconCommittee[cpkStr] = &StakerInfo{cpkStr: cpk, Unstake: info.Unstaking(), StakingAmount: info.TotalStakingAmount()}
 		s.beaconCommittee[cpkStr].EpochScore = commiteeData.CommitteeScore[cpkStr]
-		s.beaconCommittee[cpkStr].Performance = s.config.DEFAULT_PERFORMING
+		s.beaconCommittee[cpkStr].Performance = commiteeData.CommitteeScore[cpkStr]
 		s.beaconCommittee[cpkStr].EnterTime = time.Now() //the list is already sort, this use execution time to know which committee go first
 		if index < minBeaconCommitteeSize {
 			s.beaconCommittee[cpkStr].FixedNode = true
@@ -529,16 +533,16 @@ func (s *BeaconCommitteeStateV4) updateBeaconPerformance(previousData string) er
 			if common.IndexOfInt(index, prevValidationData.ValidatiorsIdx) == -1 {
 				cpkStr, _ := cpk.ToBase58()
 				stakerInfo := s.beaconCommittee[cpkStr]
-				stakerInfo.Performance = (stakerInfo.Performance * s.config.DECREASE_PERFORMING) / 1000
-				if stakerInfo.Performance < 100 {
-					stakerInfo.Performance = 100
+				stakerInfo.Performance = (stakerInfo.Performance * s.config.DECREASE_PERFORMING) / s.config.MAX_SCORE
+				if stakerInfo.Performance < s.config.MIN_SCORE {
+					stakerInfo.Performance = s.config.MIN_SCORE
 				}
 			} else {
 				cpkStr, _ := cpk.ToBase58()
 				stakerInfo := s.beaconCommittee[cpkStr]
-				stakerInfo.Performance = (stakerInfo.Performance * s.config.INCREASE_PERFORMING) / 1000
-				if stakerInfo.Performance > 1000 {
-					stakerInfo.Performance = 1000
+				stakerInfo.Performance = (stakerInfo.Performance * s.config.INCREASE_PERFORMING) / s.config.MAX_SCORE
+				if stakerInfo.Performance > s.config.MAX_SCORE {
+					stakerInfo.Performance = s.config.MAX_SCORE
 				}
 			}
 		}
@@ -547,14 +551,6 @@ func (s *BeaconCommitteeStateV4) updateBeaconPerformance(previousData string) er
 }
 
 func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-	//reset if is first block epoch
-	if firstBlockEpoch(env.BeaconHeight) {
-		for _, stakerInfo := range s.beaconCommittee {
-			stakerInfo.Performance = s.config.DEFAULT_PERFORMING
-		}
-		return nil, nil
-	}
-
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
 }
 
@@ -702,7 +698,6 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 			}
 		} else { // old committee
 			stakerInfo.EpochScore = stakerInfo.Performance * stakerInfo.StakingAmount
-			stakerInfo.Performance = s.config.DEFAULT_PERFORMING
 		}
 	}
 
