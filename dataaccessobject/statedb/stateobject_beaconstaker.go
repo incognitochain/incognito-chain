@@ -35,6 +35,7 @@ type BeaconStakerInfo struct {
 	funderAddress       key.PaymentAddress
 	rewardReceiver      key.PaymentAddress
 	beaconConfirmHeight uint64
+	beaconConfirmTime   int64
 	stakingTx           map[common.Hash]StakingTxInfo
 	unstaking           bool
 	shardActiveTime     int
@@ -54,6 +55,7 @@ func (c BeaconStakerInfo) ToString() string {
 		Unstaking           bool
 		StakingInfo         map[string]StakingTxInfo
 		BeaconConfirmHeight uint64
+		BeaconConfirmTime   int64
 		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
@@ -64,6 +66,7 @@ func (c BeaconStakerInfo) ToString() string {
 		Unstaking:           c.unstaking,
 		StakingInfo:         stakingTxs,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
+		BeaconConfirmTime:   c.beaconConfirmTime,
 		ShardActiveTime:     c.shardActiveTime,
 		LockingEpoch:        c.lockingEpoch,
 		LockingReason:       c.lockingReason,
@@ -75,8 +78,8 @@ func (c BeaconStakerInfo) ToString() string {
 func NewBeaconStakerInfo() *BeaconStakerInfo {
 	return &BeaconStakerInfo{}
 }
-func NewBeaconStakerInfoWithValue(funderAddress, rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, stakingTx map[common.Hash]StakingTxInfo) *BeaconStakerInfo {
-	return &BeaconStakerInfo{funderAddress: funderAddress, rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, stakingTx: stakingTx}
+func NewBeaconStakerInfoWithValue(funderAddress, rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, beaconConfirmTime int64, stakingTx map[common.Hash]StakingTxInfo) *BeaconStakerInfo {
+	return &BeaconStakerInfo{funderAddress: funderAddress, rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, beaconConfirmTime: beaconConfirmTime, stakingTx: stakingTx}
 }
 func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
@@ -175,6 +178,10 @@ func (s BeaconStakerInfo) FunderAddress() key.PaymentAddress {
 func (s BeaconStakerInfo) BeaconConfirmHeight() uint64 {
 	return s.beaconConfirmHeight
 }
+func (s BeaconStakerInfo) BeaconConfirmTime() int64 {
+	return s.beaconConfirmTime
+}
+
 func (s BeaconStakerInfo) ShardActiveTime() int {
 	return s.shardActiveTime
 }

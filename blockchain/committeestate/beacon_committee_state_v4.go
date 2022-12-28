@@ -23,6 +23,7 @@ type BeaconCommitteeStateV4Config struct {
 	INCREASE_PERFORMING uint64
 	DECREASE_PERFORMING uint64
 	MIN_ACTIVE_SHARD    int
+	MIN_WAITING_PERIOD  int64
 	MIN_PERFORMANCE     uint64
 	LOCKING_PERIOD      uint64
 }
@@ -33,6 +34,7 @@ func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 		INCREASE_PERFORMING: 1015,
 		DECREASE_PERFORMING: 965,
 		MIN_ACTIVE_SHARD:    2,
+		MIN_WAITING_PERIOD:  60, //seconds
 		MIN_PERFORMANCE:     370,
 		LOCKING_PERIOD:      3,
 	}
@@ -273,7 +275,7 @@ func (s *BeaconCommitteeStateV4) UpgradeFromV3(stateV3 *BeaconCommitteeStateV3, 
 		}
 		stakingTx := map[common.Hash]statedb.StakingTxInfo{}
 		stakingTx[info.TxStakingID()] = statedb.StakingTxInfo{0, 1}
-		beaconInfo := statedb.NewBeaconStakerInfoWithValue(info.RewardReceiver(), info.RewardReceiver(), 1, stakingTx)
+		beaconInfo := statedb.NewBeaconStakerInfoWithValue(info.RewardReceiver(), info.RewardReceiver(), 1, 1, stakingTx)
 		err := statedb.StoreBeaconStakerInfo(stateDB, cpk, beaconInfo)
 		if err != nil {
 
@@ -751,8 +753,13 @@ func (s *BeaconCommitteeStateV4) ProcessAssignBeaconPending(env *BeaconCommittee
 			return nil, fmt.Errorf("Cannot find stakerInfo %v", cpk)
 		}
 		_, shardExist, _ := statedb.GetStakerInfo(s.stateDB, cpk)
-		log.Printf("ProcessAssignBeaconPending %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
-		if staker.FinishSync() && staker.ShardActiveTime() >= s.config.MIN_ACTIVE_SHARD && !shardExist {
+		log.Printf("ProcessAssignBeaconPending %v %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), staker.BeaconConfirmTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
+
+		if env.BeaconHeader.Timestamp < staker.BeaconConfirmTime()+s.config.MIN_WAITING_PERIOD && staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
+			continue
+		}
+
+		if staker.FinishSync() && !shardExist {
 			if err := s.removeFromPool(WAITING_POOL, cpk); err != nil {
 				return nil, err
 			}
@@ -791,7 +798,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 				}
 				stakingInfo := map[common.Hash]statedb.StakingTxInfo{}
 				stakingInfo[txHash] = statedb.StakingTxInfo{beaconStakeInst.StakingAmount[i], env.BeaconHeight}
-				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.FunderAddressStructs[i], beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, stakingInfo)
+				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.FunderAddressStructs[i], beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, env.BeaconHeader.Timestamp, stakingInfo)
 				if err := statedb.StoreBeaconStakerInfo(s.stateDB, key, info); err != nil {
 					return nil, err
 				}
