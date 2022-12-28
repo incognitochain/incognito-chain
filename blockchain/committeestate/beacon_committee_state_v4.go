@@ -3,6 +3,12 @@ package committeestate
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
+	"runtime"
+	"sort"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -11,11 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"log"
-	"reflect"
-	"runtime"
-	"sort"
-	"time"
 )
 
 const (
@@ -542,7 +543,7 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommi
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
 }
 
-//Process shard active time
+// Process shard active time
 func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	for cpkStr, _ := range s.beaconWaiting {
 		if _, ok := env.MissingSignature[cpkStr]; ok {
@@ -596,7 +597,7 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitte
 	return nil, nil
 }
 
-//Process slash, unstake and swap
+// Process slash, unstake and swap
 func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	if !lastBlockEpoch(env.BeaconHeight) {
 		return nil, nil
@@ -728,7 +729,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconFinishSyncInstruction(env *BeaconC
 	return nil, nil
 }
 
-//Process assign beacon pending (sync, sync valid time)
+// Process assign beacon pending (sync, sync valid time)
 func (s *BeaconCommitteeStateV4) ProcessAssignBeaconPending(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	//if finish sync & enough valid time & shard staker is unstaked -> update role to pending
 	for cpk, stakerInfo := range s.beaconWaiting {
@@ -750,9 +751,9 @@ func (s *BeaconCommitteeStateV4) ProcessAssignBeaconPending(env *BeaconCommittee
 	return nil, nil
 }
 
-//Process stake instruction
-//-> update waiting
-//-> store beacon staker info
+// Process stake instruction
+// -> update waiting
+// -> store beacon staker info
 func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	returnStakingList := [][]string{}
 	return_cpk := []string{}
@@ -798,7 +799,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 	return returnStakingList, nil
 }
 
-//Process add stake amount
+// Process add stake amount
 func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	returnStakingInstList := [][]string{}
 	return_cpk := []string{}
@@ -830,7 +831,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 	return returnStakingInstList, nil
 }
 
-//unstaking instruction -> set unstake
+// unstaking instruction -> set unstake
 func (s *BeaconCommitteeStateV4) ProcessBeaconUnstake(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	for _, inst := range env.BeaconInstructions {
 
@@ -861,7 +862,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnstake(env *BeaconCommitteeStateE
 	return nil, nil
 }
 
-//Process return staking amount (unlocking)
+// Process return staking amount (unlocking)
 func (s *BeaconCommitteeStateV4) ProcessBeaconUnlocking(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	if !lastBlockEpoch(env.BeaconHeight) {
 		return nil, nil

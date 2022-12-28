@@ -21,6 +21,7 @@ type CommiteeState struct {
 	DelegateList     map[string]string `json:"delegateList"`
 	//ShardStakerInfos  map[string]*statedb.ShardStakerInfo  `json:"shardStakerInfos"`
 	BeaconStakerInfos map[string]*statedb.BeaconStakerInfo `json:"beaconStakerInfos"`
+	BeaconLocking     []string                             `json:"beaconLocking"`
 }
 
 func (cs *CommiteeState) IsDiffFrom(target *CommiteeState) bool {

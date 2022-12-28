@@ -1,13 +1,13 @@
 package main
 
 const (
-	submitkeyArg           = "submitkey"
-	stakingShardArg        = "staking-shard"
-	stakingBeaconArg       = "staking-beacon"
-	stopAutoStakeBeaconArg = "stop-auto-stake-beacon"
-	addStakingBeaconArg    = "add-staking-beacon"
-	watchValidatorArg      = "watch-validator"
-	shouldWatchOnlyArg     = "watch-only"
+	submitkeyArg        = "submitkey"
+	stakingShardArg     = "staking-shard"
+	stakingBeaconArg    = "staking-beacon"
+	unstakingBeaconArg  = "unstaking-beacon"
+	addStakingBeaconArg = "add-staking-beacon"
+	watchValidatorArg   = "watch-validator"
+	shouldWatchOnlyArg  = "watch-only"
 )
 
 const (

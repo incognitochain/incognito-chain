@@ -15,17 +15,17 @@ import (
 )
 
 var (
-	shouldSubmitKey           bool
-	shouldStakeShard          bool
-	shouldStakeBeacon         bool
-	shouldStopAutoStakeBeacon bool
-	shouldAddStakingBeacon    bool
-	shouldWatchValidator      bool
-	shouldWatchOnly           bool
-	watchBeaconIndex          int
-	shardValidators           map[string]*Validator
-	beaconValidators          map[string]*Validator
-	keys                      []Key
+	shouldSubmitKey        bool
+	shouldStakeShard       bool
+	shouldStakeBeacon      bool
+	shouldUnstakeBeacon    bool
+	shouldAddStakingBeacon bool
+	shouldWatchValidator   bool
+	shouldWatchOnly        bool
+	watchBeaconIndex       int
+	shardValidators        map[string]*Validator
+	beaconValidators       map[string]*Validator
+	keys                   []Key
 )
 
 func init() {
@@ -64,8 +64,8 @@ func init() {
 				shouldStakeShard = true
 			} else if v == stakingBeaconArg {
 				shouldStakeBeacon = true
-			} else if v == stopAutoStakeBeaconArg {
-				shouldStopAutoStakeBeacon = true
+			} else if v == unstakingBeaconArg {
+				shouldUnstakeBeacon = true
 			} else if v == addStakingBeaconArg {
 				shouldAddStakingBeacon = true
 				var err error
@@ -110,10 +110,10 @@ func init() {
 
 	for _, k := range keys {
 		if _, found := shardValidators[k.MiningKey]; found {
-			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActualActionsIndex: map[string]uint64{}, ExpectActionsIndex: map[string]uint64{}}
+			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
 		}
 		if _, found := beaconValidators[k.MiningKey]; found {
-			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActualActionsIndex: map[string]uint64{}, ExpectActionsIndex: map[string]uint64{}}
+			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
 		}
 	}
 }
@@ -163,6 +163,7 @@ func main() {
 				//Stake each nodes
 				for _, v := range shardValidators {
 					v.ShardStaking(app)
+
 				}
 				for _, v := range beaconValidators {
 					v.ShardStaking(app)
@@ -195,24 +196,26 @@ func main() {
 				}
 			}
 		}
-		if shouldStopAutoStakeBeacon {
+		if shouldUnstakeBeacon {
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconCommitteeRole {
-				resp, err := app.StopAutoStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
-				if err != nil {
-					panic(err)
+				if _, found := v.ActionsIndex[unstakingBeaconArg]; !found {
+					app.Unstaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
+					v.ActionsIndex[unstakingBeaconArg] = blk.GetBeaconHeight()
 				}
-				fmt.Println(resp)
 			}
 		}
 		if shouldAddStakingBeacon {
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole {
-				resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 175000000000000)
-				if err != nil {
-					panic(err)
+				if _, found := v.ActionsIndex[addStakingBeaconArg]; !found {
+					resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 175000000000000)
+					if err != nil {
+						panic(err)
+					}
+					v.ActionsIndex[addStakingBeaconArg] = blk.GetBeaconHeight()
+					fmt.Println(resp)
 				}
-				fmt.Println(resp)
 			}
 		}
 		if shouldWatchValidator {

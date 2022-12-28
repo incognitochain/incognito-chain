@@ -152,7 +152,6 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 	if err != nil {
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	Logger.log.Info("[committee-state] len(outcoints):", len(outcoints))
 
 	balance := uint64(0)
 	for _, out := range outcoints {

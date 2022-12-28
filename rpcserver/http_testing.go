@@ -194,6 +194,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	autoStaking := make(map[string]bool)
 	stakingTx := map[string]common.Hash{}
 	delegateList := map[string]string{}
+	beaconLocking := []incognitokey.CommitteePublicKey{}
 
 	if height == 0 && tempHash == "" {
 		bState := httpServer.GetBlockchain().GetBeaconBestState()
@@ -221,6 +222,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		substituteValidator[-1] = cs.GetBeaconSubstitute()
 		stakingTx = cs.GetStakingTx()
 		beaconWaitingCandidate = cs.GetBeaconWaiting()
+		beaconLocking = cs.GetBeaconLocking()
 	} else {
 		if height == 0 || tempHash != "" {
 			hash, err := common.Hash{}.NewHashFromStr(tempHash)
@@ -285,6 +287,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	}
 
 	beaconWaitingCandidateStr, _ := incognitokey.CommitteeKeyListToString(beaconWaitingCandidate)
+	beaconLockingStr, _ := incognitokey.CommitteeKeyListToString(beaconLocking)
 
 	//shardStakerInfos := map[string]*statedb.ShardStakerInfo{}
 	beaconStakerInfos := map[string]*statedb.BeaconStakerInfo{}
@@ -303,6 +306,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		//ShardStakerInfos:  shardStakerInfos,
 		BeaconStakerInfos: beaconStakerInfos,
 		BeaconWaiting:     beaconWaitingCandidateStr,
+		BeaconLocking:     beaconLockingStr,
 	}, nil
 }
 

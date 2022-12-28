@@ -423,13 +423,11 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
-	Logger.log.Info("[committee-state] len(plainCoins):", len(plainCoins))
 	// remove out coin in mem pool
 	plainCoins, err = txService.filterMemPoolOutcoinsToSpent(plainCoins)
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
-	Logger.log.Info("[committee-state] len(plainCoins):", len(plainCoins))
 	if len(plainCoins) == 0 && totalAmmount > 0 {
 		return nil, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
 	}
