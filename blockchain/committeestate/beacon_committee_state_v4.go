@@ -2,6 +2,12 @@ package committeestate
 
 import (
 	"fmt"
+	"log"
+	"reflect"
+	"runtime"
+	"sort"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -10,11 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"log"
-	"reflect"
-	"runtime"
-	"sort"
-	"time"
 )
 
 type BeaconCommitteeStateV4Config struct {
@@ -44,7 +45,7 @@ func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 }
 
 const (
-	COMMITEE_POOL = iota
+	COMMITTEE_POOL = iota
 	PENDING_POOL
 	WAITING_POOL
 	LOCKING_POOL
@@ -217,7 +218,7 @@ func (s *BeaconCommitteeStateV4) removeFromPool(pool int, cpk string) error {
 		return err
 	}
 	switch pool {
-	case COMMITEE_POOL:
+	case COMMITTEE_POOL:
 		delete(s.beaconCommittee, cpk)
 		if err := statedb.DeleteBeaconCommittee(s.stateDB, []incognitokey.CommitteePublicKey{cpkStruct}); err != nil {
 			return err
@@ -245,7 +246,7 @@ func (s *BeaconCommitteeStateV4) removeFromPool(pool int, cpk string) error {
 
 func (s *BeaconCommitteeStateV4) addToPool(pool int, cpk string, stakerInfo *StakerInfo) error {
 	switch pool {
-	case COMMITEE_POOL:
+	case COMMITTEE_POOL:
 		s.beaconCommittee[cpk] = stakerInfo
 		if err := statedb.StoreBeaconCommittee(s.stateDB, []incognitokey.CommitteePublicKey{stakerInfo.cpkStr}); err != nil {
 			return err
@@ -312,6 +313,22 @@ func (s *BeaconCommitteeStateV4) GetBeaconWaiting() []incognitokey.CommitteePubl
 
 func (s *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePublicKey {
 	return GetKeyStructListFromMapLocking(s.beaconLocking)
+}
+
+func (s *BeaconCommitteeStateV4) FilterLockingStaker(staker []incognitokey.CommitteePublicKey) []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	for _, k := range staker {
+		kString, err := k.ToBase58()
+		if err != nil {
+			return []incognitokey.CommitteePublicKey{}
+		}
+		if info, ok := s.beaconLocking[kString]; ok {
+			if info.LockingReason != statedb.RETURN_BY_SLASH {
+				res = append(res, info.cpkStr)
+			}
+		}
+	}
+	return res
 }
 
 type StateDataDetail struct {
@@ -474,7 +491,7 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 	var instructions [][]string
 	var err error
 
-	if _, err := s.ProcessCountShardActiveTime(env); err != nil {
+	if _, err := s.ProcessCountShardActiveTime(env); err != nil { //Review Count shard active times after process committee state for shard
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -556,14 +573,14 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommi
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
 }
 
-//Process shard active time
+// Process shard active time
 func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	for cpkStr, _ := range s.beaconWaiting {
 		if _, ok := env.MissingSignature[cpkStr]; ok {
 			log.Println(env.BeaconHeight, cpkStr, env.MissingSignature[cpkStr])
 		}
 	}
-	if !firstBlockEpoch(env.BeaconHeight) {
+	if !firstBlockEpoch(env.BeaconHeight) { //Review Using BeaconCommitteeStateEnvironment?
 		return nil, nil
 	}
 
@@ -599,7 +616,7 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitte
 	return nil, nil
 }
 
-//Process slash, unstake and swap
+// Process slash, unstake and swap
 func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	if !lastBlockEpoch(env.BeaconHeight) {
 		return nil, nil
@@ -620,7 +637,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 		if err = s.setLocking(cpk, env.Epoch, statedb.LOCKING_BY_SLASH); err != nil {
 			return nil, err
 		}
-		if err = s.removeFromPool(COMMITEE_POOL, cpk); err != nil {
+		if err = s.removeFromPool(COMMITTEE_POOL, cpk); err != nil {
 			return nil, err
 		}
 		if err = s.removeFromPool(PENDING_POOL, cpk); err != nil {
@@ -636,7 +653,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 		if err = s.setLocking(cpk, env.Epoch, statedb.LOCKING_BY_UNSTAKE); err != nil {
 			return nil, err
 		}
-		if err = s.removeFromPool(COMMITEE_POOL, cpk); err != nil {
+		if err = s.removeFromPool(COMMITTEE_POOL, cpk); err != nil {
 			return nil, err
 		}
 		if err = s.removeFromPool(PENDING_POOL, cpk); err != nil {
@@ -664,7 +681,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 			if err = s.addToPool(PENDING_POOL, k, stakerInfo); err != nil {
 				return nil, err
 			}
-			if err = s.removeFromPool(COMMITEE_POOL, k); err != nil {
+			if err = s.removeFromPool(COMMITTEE_POOL, k); err != nil {
 				return nil, err
 			}
 			if err = s.removeFromPool(WAITING_POOL, k); err != nil {
@@ -681,7 +698,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 			stakerInfo = s.getStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
 			stakerInfo.Performance = s.config.DEFAULT_PERFORMING
-			if err = s.addToPool(COMMITEE_POOL, k, stakerInfo); err != nil {
+			if err = s.addToPool(COMMITTEE_POOL, k, stakerInfo); err != nil {
 				return nil, err
 			}
 			if err = s.removeFromPool(PENDING_POOL, k); err != nil {
@@ -730,7 +747,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconFinishSyncInstruction(env *BeaconC
 	return nil, nil
 }
 
-//Process assign beacon pending (sync, sync valid time)
+// Process assign beacon pending (sync, sync valid time)
 func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 
 	for cpk, stakerInfo := range s.beaconWaiting {
@@ -765,9 +782,9 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommit
 	return nil, nil
 }
 
-//Process stake instruction
-//-> update waiting
-//-> store beacon staker info
+// Process stake instruction
+// -> update waiting
+// -> store beacon staker info
 func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	returnStakingList := [][]string{}
 	return_cpk := []string{}
@@ -813,7 +830,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 	return returnStakingList, nil
 }
 
-//Process add stake amount
+// Process add stake amount
 func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	returnStakingInstList := [][]string{}
 	return_cpk := []string{}
@@ -845,7 +862,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 	return returnStakingInstList, nil
 }
 
-//unstaking instruction -> set unstake
+// unstaking instruction -> set unstake
 func (s *BeaconCommitteeStateV4) ProcessBeaconUnstakeInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	for _, inst := range env.BeaconInstructions {
 
@@ -876,7 +893,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnstakeInstruction(env *BeaconComm
 	return nil, nil
 }
 
-//Process return staking amount (unlocking)
+// Process return staking amount (unlocking)
 func (s *BeaconCommitteeStateV4) ProcessBeaconUnlocking(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	if !lastBlockEpoch(env.BeaconHeight) {
 		return nil, nil
@@ -1024,6 +1041,7 @@ func (s *BeaconCommitteeStateV4) Version() int {
 	return STAKING_FLOW_V4
 }
 
+// Review Should we use get/set for newState.stateDB?
 func (s *BeaconCommitteeStateV4) Clone(cloneState *statedb.StateDB) BeaconCommitteeState {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

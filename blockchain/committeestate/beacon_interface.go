@@ -13,6 +13,7 @@ type BeaconCommitteeState interface {
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetBeaconLocking() []incognitokey.CommitteePublicKey
+	FilterLockingStaker(staker []incognitokey.CommitteePublicKey) []incognitokey.CommitteePublicKey
 	GetBeaconWaiting() []incognitokey.CommitteePublicKey
 	IsFinishSync(string) bool
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
