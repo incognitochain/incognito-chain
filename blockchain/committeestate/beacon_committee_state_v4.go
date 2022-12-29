@@ -488,10 +488,10 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 
 	processFuncs := []func(*BeaconCommitteeStateEnvironment) ([][]string, error){
 		s.ProcessUpdateBeaconPerformance,
-		s.ProcessBeaconUnstake,
+		s.ProcessBeaconUnstakeInstruction,
 		s.ProcessBeaconSwapAndSlash,
 		s.ProcessBeaconFinishSyncInstruction,
-		s.ProcessAssignBeaconPending,
+		s.ProcessBeaconWaitingCondition,
 		s.ProcessBeaconStakeInstruction,
 		s.ProcessBeaconAddStakingAmountInstruction,
 		s.ProcessBeaconUnlocking,
@@ -576,7 +576,7 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitte
 		if sig, ok := env.MissingSignature[cpkStr]; ok && sig.ActualTotal != 0 {
 			//update shard active time
 			if (sig.Missing*100)/sig.ActualTotal > 20 {
-				s.setShardActiveTime(cpkStr, 0)
+				s.setShardActiveTime(cpkStr, staker.ShardActiveTime()-2)
 			} else {
 				s.setShardActiveTime(cpkStr, staker.ShardActiveTime()+1)
 			}
@@ -595,11 +595,6 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitte
 			}
 		}
 
-		//if this staker not have valid active time, and not stake shard any more -> unstake beacon
-		_, exists, _ := statedb.GetStakerInfo(s.stateDB, cpkStr)
-		if !exists && staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
-			s.setUnstake(cpkStr)
-		}
 	}
 	return nil, nil
 }
@@ -736,16 +731,24 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconFinishSyncInstruction(env *BeaconC
 }
 
 //Process assign beacon pending (sync, sync valid time)
-func (s *BeaconCommitteeStateV4) ProcessAssignBeaconPending(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-	//if finish sync & enough valid time & shard staker is unstaked -> update role to pending
+func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
+
 	for cpk, stakerInfo := range s.beaconWaiting {
+		//Check 1: waiting -> unstake
+		//if this staker not have valid active time, and not stake shard any more -> unstake beacon
 		staker, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return nil, fmt.Errorf("Cannot find stakerInfo %v", cpk)
 		}
 		_, shardExist, _ := statedb.GetStakerInfo(s.stateDB, cpk)
-		log.Printf("ProcessAssignBeaconPending %v %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), staker.BeaconConfirmTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
+		if !shardExist && staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
+			s.setUnstake(cpk)
+			continue
+		}
 
+		//Check 2: waiting -> pending
+		//if finish sync & enough valid time & shard staker is unstaked -> update role to pending
+		log.Printf("ProcessBeaconWaitingCondition %v %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), staker.BeaconConfirmTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
 		if env.BeaconHeader.Timestamp < staker.BeaconConfirmTime()+s.config.MIN_WAITING_PERIOD || staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
 			continue
 		}
@@ -843,7 +846,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 }
 
 //unstaking instruction -> set unstake
-func (s *BeaconCommitteeStateV4) ProcessBeaconUnstake(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
+func (s *BeaconCommitteeStateV4) ProcessBeaconUnstakeInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	for _, inst := range env.BeaconInstructions {
 
 		unstakeCPKs := []string{}
