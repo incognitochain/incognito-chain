@@ -25,6 +25,9 @@ type CommiteeState struct {
 }
 
 func (cs *CommiteeState) IsDiffFrom(target *CommiteeState) bool {
+	if target == nil {
+		return true
+	}
 	if cs.Root != target.Root {
 		return true
 	}
