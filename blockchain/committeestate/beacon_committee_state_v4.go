@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"log"
+	"math"
 	"reflect"
 	"runtime"
 	"sort"
@@ -948,49 +949,135 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 
 	//swap pending <-> committee
 	type CandidateInfo struct {
-		cpk    incognitokey.CommitteePublicKey
-		cpkStr string
-		score  uint64
+		cpk          incognitokey.CommitteePublicKey
+		cpkStr       string
+		score        uint64
+		stakingPower int64
+		currentRole  string
 	}
-	candidateList := []CandidateInfo{}
+	pendingList := []CandidateInfo{}
 	for cpk, stakerInfo := range s.beaconPending {
 		if !slashCpk[cpk] && !unstakeCpk[cpk] {
 			score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
-			candidateList = append(candidateList, CandidateInfo{stakerInfo.cpkStr, cpk, score})
+			pendingList = append(pendingList, CandidateInfo{stakerInfo.cpkStr, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "pending"})
 		}
 	}
 
 	fixNode := []CandidateInfo{}
+	committeeList := []CandidateInfo{}
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if !slashCpk[cpk] && !unstakeCpk[cpk] {
 			score := stakerInfo.Performance * stakerInfo.StakingAmount
 			if !stakerInfo.FixedNode {
-				candidateList = append(candidateList, CandidateInfo{stakerInfo.cpkStr, cpk, score})
+				committeeList = append(committeeList, CandidateInfo{stakerInfo.cpkStr, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "committee"})
 			} else {
-				fixNode = append(fixNode, CandidateInfo{stakerInfo.cpkStr, cpk, score})
+				fixNode = append(fixNode, CandidateInfo{stakerInfo.cpkStr, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "committee"})
 			}
 		}
 	}
 
 	//sort candidate list
-	sort.Slice(candidateList, func(i, j int) bool {
-		return candidateList[i].score > candidateList[j].score
+	sort.Slice(committeeList, func(i, j int) bool {
+		return committeeList[i].score < committeeList[j].score
 	})
+	sort.Slice(pendingList, func(i, j int) bool {
+		return pendingList[i].score > pendingList[j].score
+	})
+
+	//add to committeeSlot
+	swapInStakingPower := func(candidates []CandidateInfo) (int64, int64) {
+		swapIn := int64(0)
+		total := int64(0)
+		for _, c := range candidates {
+			if c.currentRole == "pending" {
+				swapIn += c.stakingPower
+			}
+			total += c.stakingPower
+		}
+		return swapIn, total
+	}
+
+	for j := 0; j < len(pendingList); j++ {
+		swapIn, total := swapInStakingPower(append(committeeList, pendingList[j]))
+		if len(committeeList) < env.MaxBeaconCommitteeSize && (swapIn < total/3 || true) {
+			committeeList = append(committeeList, pendingList[j])        //append pending j
+			pendingList = append(pendingList[0:j], pendingList[j+1:]...) //remove pending j
+			j--
+		}
+	}
+
+	endSwapIn := false
+	//find pending candidate to replace committee with the smallest score
+	if len(pendingList) > 0 {
+		for true {
+			if endSwapIn {
+				break
+			}
+			for j := 0; j < len(pendingList); j++ {
+				//no candidate in committee
+				if len(committeeList) == 0 {
+					endSwapIn = true
+					break
+				}
+
+				//if we swap all old committee list
+				if committeeList[0].currentRole != "committee" {
+					endSwapIn = true
+					break
+				}
+
+				//if we swap all old pending list
+				if pendingList[j].currentRole != "pending" {
+					endSwapIn = true
+					break
+				}
+
+				//if commitee[0] score is better the best pending candidate score
+				if committeeList[0].score >= pendingList[j].score {
+					endSwapIn = true
+					break
+				}
+
+				//check we can swap
+				swapIn, total := swapInStakingPower(append(committeeList[1:], pendingList[j]))
+				execSwap := false
+				if swapIn < total/3 {
+					execSwap = true
+					committeeList = append(committeeList[1:], pendingList[j])    //append pending j
+					pendingList = append(pendingList[0:j], pendingList[j+1:]...) //remove pending j
+					j--
+					pendingList = append(pendingList, committeeList[0])
+				}
+
+				//if cannot find any pending candidate that can swap committee[0]
+				if !execSwap && j == len(pendingList)-1 {
+					endSwapIn = true
+					break
+				}
+			}
+		}
+	}
+
+	//re-sort the swap list
+	sort.Slice(committeeList, func(i, j int) bool {
+		return committeeList[i].score < committeeList[j].score
+	})
+	sort.Slice(pendingList, func(i, j int) bool {
+		return pendingList[i].score > pendingList[j].score
+	})
+
 	newBeaconCommittee := map[string]incognitokey.CommitteePublicKey{}
 	newBeaconPending := map[string]incognitokey.CommitteePublicKey{}
 	//fixed node
 	for i, _ := range fixNode {
 		newBeaconCommittee[fixNode[i].cpkStr] = fixNode[i].cpk
 	}
-
 	//other candidate
-
-	for i := 0; i < env.MaxBeaconCommitteeSize-len(fixNode) && i < len(candidateList); i++ {
-		log.Println("candidateList", i, len(candidateList))
-		newBeaconCommittee[candidateList[i].cpkStr] = candidateList[i].cpk
+	for _, candidate := range committeeList {
+		newBeaconCommittee[candidate.cpkStr] = candidate.cpk
 	}
-	for i := env.MaxBeaconCommitteeSize - len(fixNode); i < len(candidateList); i++ {
-		newBeaconPending[candidateList[i].cpkStr] = candidateList[i].cpk
+	for _, candidate := range pendingList {
+		newBeaconPending[candidate.cpkStr] = candidate.cpk
 	}
 	log.Println("fixNode", len(fixNode))
 	log.Println("newBeaconCommittee", len(newBeaconCommittee))
