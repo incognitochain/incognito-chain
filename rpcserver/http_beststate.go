@@ -251,7 +251,7 @@ func (httpServer *HttpServer) handleGetBeaconCommitteeState(params interface{}, 
 	arrayParams := common.InterfaceSlice(params)
 	height := uint64(arrayParams[0].(float64))
 	if height == 0 {
-		height = httpServer.config.BlockChain.GetBeaconBestState().GetHeight()
+		return httpServer.config.BlockChain.GetBeaconBestState().GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).DebugBeaconCommitteeState(), nil
 	}
 	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
 		height,
