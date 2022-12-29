@@ -83,14 +83,16 @@ func updateRole(shardValidators, beaconValidators map[string]*Validator, cs *jso
 			for _, c := range v {
 				if k, found := bvs[c]; found {
 					role := beaconValidators[k].Role
-					if role != ShardPendingRole && role != ShardSyncingRole {
+					if role != ShardPendingRole && role != ShardSyncingRole && role != ShardCommitteeRole {
 						return fmt.Errorf("beacon key %s is role %v when switch to ShardPendingRole", shortKey(beaconValidators[k].MiningPublicKey), role)
 					}
-					beaconValidators[k].Role = ShardPendingRole
+					if role != BeaconWaitingRole {
+						beaconValidators[k].Role = ShardPendingRole
+					}
 				}
 				if k, found := svs[c]; found {
 					role := shardValidators[k].Role
-					if role != ShardPendingRole && role != ShardSyncingRole {
+					if role != ShardPendingRole && role != ShardSyncingRole && role != ShardCommitteeRole {
 						return fmt.Errorf("shard key %s is role %v when switch to ShardPendingRole", shortKey(shardValidators[k].MiningPublicKey), role)
 					}
 					shardValidators[k].Role = ShardPendingRole
