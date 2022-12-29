@@ -186,8 +186,8 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	nextEpochShardCandidate := []incognitokey.CommitteePublicKey{}
 	currentEpochShardCandidate := []incognitokey.CommitteePublicKey{}
-	currentEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
-	nextEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
+	//currentEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
+	//nextEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
 	beaconWaiting := []incognitokey.CommitteePublicKey{}
 	syncingValidators := make(map[byte][]incognitokey.CommitteePublicKey)
 	rewardReceivers := make(map[string]key.PaymentAddress)
@@ -252,7 +252,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 		}
 
-		currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList, beaconWaiting, beaconLocking =
+		currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList, beaconWaiting, beaconLocking =
 			statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
 	}
 
