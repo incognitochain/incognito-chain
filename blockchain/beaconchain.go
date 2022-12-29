@@ -3,12 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -577,18 +577,36 @@ func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognit
 		if err != nil {
 			return nil, err
 		}
-
-		stateV4 := committeestate.NewBeaconCommitteeStateV4()
-		err = stateV4.RestoreBeaconCommitteeFromDB(stateDB, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize, nil)
-		if err != nil {
-			return nil, err
-		}
-		return stateV4.GetBeaconCommittee(), nil
+		//Review Just get committee, no need to restore
+		return statedb.GetBeaconCommittee(stateDB), nil
+		// stateV4 := committeestate.NewBeaconCommitteeStateV4()
+		// err = stateV4.RestoreBeaconCommitteeFromDB(stateDB, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize, nil)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// return stateV4.GetBeaconCommittee(), nil
 	} else {
 		committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
 		return committees, nil
 	}
 
+}
+
+func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight uint64) ([]incognitokey.CommitteePublicKey, error) {
+	viewByBlock := chain.multiView.GetViewByHash(blockHash)
+	if viewByBlock != nil {
+		return viewByBlock.GetCommittee(), nil
+	}
+	bcRootHash, err := chain.Blockchain.GetBeaconConsensusRootHash(chain.GetFinalViewState(), blockHeight)
+	if err != nil {
+		return nil, err
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(bcRootHash, statedb.NewDatabaseAccessWarper(chain.GetChainDatabase()))
+	if err != nil {
+		Logger.log.Error("Cannot get beacon consensus statedb!,", err.Error())
+		return nil, err
+	}
+	return statedb.GetBeaconCommittee(beaconConsensusStateDB), nil
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() int {

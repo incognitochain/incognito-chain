@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -147,8 +148,14 @@ func main() {
 	fullnodeRPC := devframework.RemoteRPCClient{"http://127.0.0.1:30001"}
 	shard0RPC := devframework.RemoteRPCClient{"http://127.0.0.1:20004"}
 	var icoAccount, _ = account.NewAccountFromPrivatekey("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
-	stakers := CreateAccounts(&shard0RPC, "seed", 20)
+	stakers := CreateAccounts(&shard0RPC, "seed", 10)
 	beaconStaker := CreateAccounts(&shard0RPC, "xxxx", 4)
+
+	f1, _ := account.NewAccountFromPrivatekey("112t8rnXCerQX2RRd8KhPfsFCj2rrBYUx42FZJKgRFcdBfg36Mid3ygKyMn5LSc5LBHsxqapRaN6xMav7bGhA6VtGUzNNYuA9Y78CB5oGkti")
+	f2, _ := account.NewAccountFromPrivatekey("112t8rnXYgxipKvTJJfHg7tQhcdmA2R1jPpCPmXg37Xi1VfgrFzWFuNy4U6828q1yfbD7VEdutD63HfVYAqL6U32joXVjqdkfUP52LnNGXda")
+	f3, _ := account.NewAccountFromPrivatekey("112t8rnXe3Jxg5d1Rejg2fB1NwnqNsr94RCT3PX14h5NNDjrdgLeEWFkqcMNamKCHask1Gx46g5WYZDKHKx7kzLVD7h1cgvU6NxNijkyGmA9")
+	f4, _ := account.NewAccountFromPrivatekey("112t8rnY2gqonwhnhGD6rKeEXkbJDB7DHUtZQKC8SfLci6ABb5eCEj4o7ezWBZWaGbu7CJ1R1mrADGqmRjugg42GeA6jhaXbNDeP2HUr8udw")
+	fixNode := []account.Account{f1, f2, f3, f4}
 
 	for i, staker := range stakers {
 		fmt.Println("Shard", i, staker.MiningKey)
@@ -165,10 +172,18 @@ func main() {
 	for i, staker := range beaconStaker {
 		accounts = append(accounts, AccountData{staker.PrivateKey, staker.MiningKey, staker.MiningPubkey, staker.PaymentAddress, staker.SelfCommitteePubkey})
 		beaconStakerBalance, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
-		fmt.Println("Beacon", i, int(float64(beaconStakerBalance)*1e-9), staker.SelfCommitteePubkey, staker.MiningKey)
+		publicKeyString := base58.Base58Check{}.Encode(staker.Keyset.PaymentAddress.Pk, common.ZeroByte)
+		s, _ := json.Marshal(staker.Keyset.PaymentAddress)
+		fmt.Println("Beacon", i, int(float64(beaconStakerBalance)*1e-9), staker.SelfCommitteePubkey, publicKeyString, string(s))
 	}
 
 	submitKey := func() {
+		for _, acc := range fixNode {
+			fmt.Println(acc.SelfCommitteePubkey)
+			fullnodeRPC.SubmitKey(acc.PrivateKey)
+			shard0RPC.SubmitKey(acc.PrivateKey)
+		}
+
 		fullnodeRPC.SubmitKey(icoAccount.PrivateKey)
 		shard0RPC.SubmitKey(icoAccount.PrivateKey)
 		shard0RPC.CreateConvertCoinVer1ToVer2Transaction(icoAccount.PrivateKey)
@@ -176,9 +191,13 @@ func main() {
 
 	send_prv := func() {
 		receiver := []interface{}{icoAccount.PrivateKey}
+		for _, fnode := range fixNode {
+			receiver = append(receiver, fnode.PaymentAddress)
+			receiver = append(receiver, float64(100000*1e10))
+		}
 		for _, bstaker := range beaconStaker {
 			receiver = append(receiver, bstaker.PaymentAddress)
-			receiver = append(receiver, float64(100000*1e10))
+			receiver = append(receiver, float64(300000*1e9))
 		}
 		for _, staker := range stakers {
 			receiver = append(receiver, staker.PaymentAddress)
@@ -262,6 +281,13 @@ func main() {
 
 	}
 
+	add_stake_fixnode := func() {
+		for _, acc := range fixNode {
+			stakeRes, err := AddStake(&fullnodeRPC, acc.PrivateKey, acc.PrivateKey, 2*87500*1e9)
+			fmt.Println(stakeRes, err)
+		}
+	}
+
 	add_stake := func() {
 		var pendingStaker string
 		for {
@@ -330,12 +356,13 @@ func main() {
 	submitKey()
 	time.Sleep(time.Second * 15)
 	send_prv()
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 15)
+	add_stake_fixnode()
 	stake_shard()
 	stake_beacon()
 	add_stake()
-
 	//time.Sleep(time.Second * 10)
+
 	//unstake()
 	go func() {
 		for {
@@ -399,6 +426,6 @@ func main() {
 	stake_beacon()
 	add_stake()
 	unstake()
-
+	add_stake_fixnode()
 	select {}
 }
