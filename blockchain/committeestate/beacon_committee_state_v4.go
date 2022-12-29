@@ -1,7 +1,6 @@
 package committeestate
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -129,6 +128,7 @@ func NewBeaconCommitteeStateV4() *BeaconCommitteeStateV4 {
 		beaconPending:   make(map[string]*StakerInfo),
 		beaconWaiting:   make(map[string]*StakerInfo),
 		beaconLocking:   make(map[string]*LockingInfo),
+		config:          NewBeaconCommitteeStateV4Config(1),
 	}
 }
 
@@ -314,14 +314,16 @@ func (s *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePubl
 	return GetKeyStructListFromMapLocking(s.beaconLocking)
 }
 
-func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() string {
-	type StateData struct {
-		Committee []StakerInfoDetail
-		Pending   []StakerInfoDetail
-		Waiting   []StakerInfoDetail
-		Locking   []LockingInfoDetail
-	}
-	data := &StateData{
+type StateDataDetail struct {
+	Committee []StakerInfoDetail
+	Pending   []StakerInfoDetail
+	Waiting   []StakerInfoDetail
+	Locking   []LockingInfoDetail
+}
+
+func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
+
+	data := &StateDataDetail{
 		Committee: []StakerInfoDetail{},
 		Pending:   []StakerInfoDetail{},
 		Waiting:   []StakerInfoDetail{},
@@ -385,8 +387,8 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() string {
 		detail := getLockingDetail(cpk)
 		data.Locking = append(data.Locking, detail)
 	}
-	b, _ := json.Marshal(data)
-	return string(b)
+
+	return data
 }
 
 func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.StateDB, minBeaconCommitteeSize int, allBeaconBlock []types.BeaconBlock) error {
@@ -572,12 +574,6 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env *BeaconCommitte
 		}
 
 		if sig, ok := env.MissingSignature[cpkStr]; ok && sig.ActualTotal != 0 {
-			if sig.ActualTotal == 0 {
-				log.Println(cpkStr)
-				log.Println(env.MissingSignature[cpkStr])
-				log.Println(env.BeaconHeight)
-				panic(1)
-			}
 			//update shard active time
 			if (sig.Missing*100)/sig.ActualTotal > 20 {
 				s.setShardActiveTime(cpkStr, 0)
@@ -750,7 +746,7 @@ func (s *BeaconCommitteeStateV4) ProcessAssignBeaconPending(env *BeaconCommittee
 		_, shardExist, _ := statedb.GetStakerInfo(s.stateDB, cpk)
 		log.Printf("ProcessAssignBeaconPending %v %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), staker.BeaconConfirmTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
 
-		if env.BeaconHeader.Timestamp < staker.BeaconConfirmTime()+s.config.MIN_WAITING_PERIOD && staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
+		if env.BeaconHeader.Timestamp < staker.BeaconConfirmTime()+s.config.MIN_WAITING_PERIOD || staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
 			continue
 		}
 

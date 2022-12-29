@@ -154,7 +154,16 @@ func main() {
 		fmt.Println("Shard", i, staker.MiningKey)
 	}
 
+	type AccountData struct {
+		PrivateKey       string
+		PrivateMiningKey string
+		PublicMiningKey  string
+		PaymentAddress   string
+		Cpk              string
+	}
+	accounts := []AccountData{}
 	for i, staker := range beaconStaker {
+		accounts = append(accounts, AccountData{staker.PrivateKey, staker.MiningKey, staker.MiningPubkey, staker.PaymentAddress, staker.SelfCommitteePubkey})
 		beaconStakerBalance, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
 		fmt.Println("Beacon", i, int(float64(beaconStakerBalance)*1e-9), staker.SelfCommitteePubkey, staker.MiningKey)
 	}

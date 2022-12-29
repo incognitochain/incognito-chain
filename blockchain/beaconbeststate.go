@@ -1314,3 +1314,7 @@ func (curView *BeaconBestState) GetShardProposerLength() int {
 func (x *BeaconBestState) CompareCommitteeFromBlock(_y multiview.View) int {
 	return 0
 }
+
+func (x *BeaconBestState) GetBeaconCommitteeState() committeestate.BeaconCommitteeState {
+	return x.beaconCommitteeState
+}
