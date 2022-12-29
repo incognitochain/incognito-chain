@@ -124,7 +124,7 @@ func main() {
 	flag.Parse()
 
 	app := devframework.NewAppService(*fullnode, true)
-	lastCs := &jsonresult.CommiteeState{}
+	var lastCs *jsonresult.CommiteeState
 
 	bState, err := app.GetBeaconBestState()
 	if err != nil {
@@ -229,11 +229,17 @@ func main() {
 			panic(err)
 		}
 		if cs.IsDiffFrom(lastCs) {
+			if lastCs == nil {
+				if err = updateRole(shardValidators, beaconValidators, cs, true); err != nil {
+					panic(err)
+				}
+			} else {
+				if err = updateRole(shardValidators, beaconValidators, cs, false); err != nil {
+					panic(err)
+				}
+			}
 			lastCs = new(jsonresult.CommiteeState)
 			*lastCs = *cs
-			if err = updateRole(shardValidators, beaconValidators, cs); err != nil {
-				panic(err)
-			}
 			cs.Print()
 		}
 	})

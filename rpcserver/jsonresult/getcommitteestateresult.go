@@ -99,4 +99,10 @@ func (cs *CommiteeState) Filter(fixedCommiteesNodes map[int][]string, fixedRewar
 		t = append(t, value[len(value)-5:])
 	}
 	cs.CurrentCandidate = t
+
+	t = []string{}
+	for _, value := range cs.BeaconLocking {
+		t = append(t, value[len(value)-5:])
+	}
+	cs.BeaconLocking = t
 }
