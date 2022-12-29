@@ -18,6 +18,7 @@ var (
 	shouldSubmitKey        bool
 	shouldStakeShard       bool
 	shouldStakeBeacon      bool
+	shouldStop             bool
 	shouldUnstakeBeacon    bool
 	shouldAddStakingBeacon bool
 	shouldWatchValidator   bool
@@ -60,14 +61,19 @@ func init() {
 		for i, v := range t {
 			if v == submitkeyArg {
 				shouldSubmitKey = true
+				shouldStop = true
 			} else if v == stakingShardArg {
 				shouldStakeShard = true
+				shouldStop = true
 			} else if v == stakingBeaconArg {
 				shouldStakeBeacon = true
+				shouldStop = true
 			} else if v == unstakingBeaconArg {
 				shouldUnstakeBeacon = true
+				shouldStop = true
 			} else if v == addStakingBeaconArg {
 				shouldAddStakingBeacon = true
+				shouldStop = true
 				var err error
 				watchBeaconIndex, err = strconv.Atoi(t[i+1])
 				if err != nil {
@@ -76,6 +82,7 @@ func init() {
 			} else if v == watchValidatorArg {
 				var err error
 				shouldWatchValidator = true
+				shouldStop = true
 				watchBeaconIndex, err = strconv.Atoi(t[i+1])
 				if err != nil {
 					panic(err)
@@ -168,6 +175,9 @@ func main() {
 				for _, v := range beaconValidators {
 					v.ShardStaking(app)
 				}
+				if shouldStop {
+					panic("Finish staking shard")
+				}
 			}
 		}
 		if shouldStakeBeacon {
@@ -194,6 +204,9 @@ func main() {
 					} else {
 					}
 				}
+				if shouldStop {
+					panic("Finish staking beacon")
+				}
 			}
 		}
 		if shouldUnstakeBeacon {
@@ -202,6 +215,9 @@ func main() {
 				if _, found := v.ActionsIndex[unstakingBeaconArg]; !found {
 					app.Unstaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
 					v.ActionsIndex[unstakingBeaconArg] = blk.GetBeaconHeight()
+				}
+				if shouldStop {
+					panic("Finish add staking beacon")
 				}
 			}
 		}
@@ -215,6 +231,9 @@ func main() {
 					}
 					v.ActionsIndex[addStakingBeaconArg] = blk.GetBeaconHeight()
 					fmt.Println(resp)
+				}
+				if shouldStop {
+					panic("Finish add staking beacon")
 				}
 			}
 		}
