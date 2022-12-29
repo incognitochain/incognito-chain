@@ -95,8 +95,8 @@ ftm_param:
     - "https://fantom-mainnet.public.blastapi.io"
 aurora_param:
   host:
-    - "https://nd-779-760-011.p2pify.com/caabeca56964b78c96ca321790c30777"
     - "https://aurora-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+    - "https://nd-779-760-011.p2pify.com/caabeca56964b78c96ca321790c30777"
     - "https://aurora-mainnet.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
 avax_param:
   host:
