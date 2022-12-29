@@ -188,7 +188,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	currentEpochShardCandidate := []incognitokey.CommitteePublicKey{}
 	currentEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
 	nextEpochBeaconCandidate := []incognitokey.CommitteePublicKey{}
-	beaconWaitingCandidate := []incognitokey.CommitteePublicKey{}
+	beaconWaiting := []incognitokey.CommitteePublicKey{}
 	syncingValidators := make(map[byte][]incognitokey.CommitteePublicKey)
 	rewardReceivers := make(map[string]key.PaymentAddress)
 	autoStaking := make(map[string]bool)
@@ -221,7 +221,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		}
 		substituteValidator[-1] = cs.GetBeaconSubstitute()
 		stakingTx = cs.GetStakingTx()
-		beaconWaitingCandidate = cs.GetBeaconWaiting()
+		beaconWaiting = cs.GetBeaconWaiting()
 		beaconLocking = cs.GetBeaconLocking()
 	} else {
 		if height == 0 || tempHash != "" {
@@ -252,9 +252,8 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 		}
 
-		currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList =
+		currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx, delegateList, beaconWaiting, beaconLocking =
 			statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
-		beaconWaitingCandidate = append(currentEpochBeaconCandidate, nextEpochBeaconCandidate...)
 	}
 
 	currentValidatorStr := make(map[int][]string)
@@ -286,8 +285,8 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempRewardReceiver[k] = paymentAddress
 	}
 
-	beaconWaitingCandidateStr, _ := incognitokey.CommitteeKeyListToString(beaconWaitingCandidate)
 	beaconLockingStr, _ := incognitokey.CommitteeKeyListToString(beaconLocking)
+	beaconWaitingStr, _ := incognitokey.CommitteeKeyListToString(beaconWaiting)
 
 	//shardStakerInfos := map[string]*statedb.ShardStakerInfo{}
 	beaconStakerInfos := map[string]*statedb.BeaconStakerInfo{}
@@ -305,7 +304,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		DelegateList:     delegateList,
 		//ShardStakerInfos:  shardStakerInfos,
 		BeaconStakerInfos: beaconStakerInfos,
-		BeaconWaiting:     beaconWaitingCandidateStr,
+		BeaconWaiting:     beaconWaitingStr,
 		BeaconLocking:     beaconLockingStr,
 	}, nil
 }
