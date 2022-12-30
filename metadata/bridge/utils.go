@@ -547,7 +547,7 @@ func VerifyProofAndParseAuroraReceipt(
 	for _, h := range auroraHosts {
 		unstructuredResult, err = getAURORATransactionReceipt(h, txHash)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		if unstructuredResult != nil {
 			break
