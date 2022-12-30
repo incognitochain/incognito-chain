@@ -68,7 +68,7 @@ func (iReq IssuingEVMAuroraRequest) ValidateTxWithBlockChain(tx metadataCommon.T
 }
 
 func (iReq IssuingEVMAuroraRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	if shardViewRetriever.GetTriggeredFeature()["pdao"] == 0 {
+	if shardViewRetriever.GetTriggeredFeature()["aurorahotfix_2"] == 0 {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature disabled until pdao enabled"))
 	}
 
