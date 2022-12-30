@@ -2,20 +2,19 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"log"
 	"math"
 	"sort"
 )
 
 type CandidateInfo struct {
-	cpk          incognitokey.CommitteePublicKey
-	cpkStr       string
-	score        uint64
-	stakingPower int64
-	currentRole  string
+	cpk         incognitokey.CommitteePublicKey
+	cpkStr      string
+	score       uint64
+	votingPower int64
+	currentRole string
 }
 
-func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, fixNodeStakingPower int64, committeeSlot int) ([]CandidateInfo, []CandidateInfo) {
+func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, fixNodeVotingPower int64, committeeSlot int) ([]CandidateInfo, []CandidateInfo) {
 	//sort candidate list
 	sort.Slice(committeeList, func(i, j int) bool {
 		return committeeList[i].score < committeeList[j].score
@@ -25,86 +24,76 @@ func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, 
 	})
 
 	//add to committeeSlot
-	swapInStakingPower := func(candidates []CandidateInfo) (int64, int64) {
+	swapInVotingPower := func(candidates []CandidateInfo) (int64, int64) {
 		swapIn := int64(0)
-		total := fixNodeStakingPower
+		total := fixNodeVotingPower
 		for _, c := range candidates {
 			if c.currentRole == "pending" {
-				swapIn += c.stakingPower
+				swapIn += c.votingPower
 			}
-			total += c.stakingPower
+			total += c.votingPower
 		}
 		return swapIn, total
 	}
 
 	for j := 0; j < len(pendingList); j++ {
-		swapIn, total := swapInStakingPower(append(committeeList, pendingList[j]))
+		swapIn, total := swapInVotingPower(append(committeeList, pendingList[j]))
 		if len(committeeList) < committeeSlot && swapIn < total/3 {
 			committeeList = append(committeeList, pendingList[j])        //append pending j
 			pendingList = append(pendingList[0:j], pendingList[j+1:]...) //remove pending j
 			j--
 		}
 	}
-
-	endSwapIn := false
 	//find pending candidate to replace committee with the smallest score
 	if len(pendingList) > 0 {
-		for true {
-			if endSwapIn {
+
+		for j := 0; j < len(pendingList); j++ {
+			//no candidate in committee
+			if len(committeeList) == 0 {
+
 				break
 			}
-			for j := 0; j < len(pendingList); j++ {
-				//no candidate in committee
-				if len(committeeList) == 0 {
-					endSwapIn = true
-					break
-				}
 
-				//if we swap all old committee list
-				if committeeList[0].currentRole != "committee" {
-					endSwapIn = true
-					break
-				}
+			//if we swap all old committee list
+			if committeeList[0].currentRole != "committee" {
+				break
+			}
 
-				//if we swap all old pending list
-				if pendingList[j].currentRole != "pending" {
-					endSwapIn = true
-					break
-				}
+			//if we swap all old pending list
+			if pendingList[j].currentRole != "pending" {
+				break
+			}
 
-				//if commitee[0] score is better the best pending candidate score
-				if committeeList[0].score >= pendingList[j].score {
-					endSwapIn = true
-					break
-				}
+			//if commitee[0] score is better the best pending candidate score
+			if committeeList[0].score >= pendingList[j].score {
+				break
+			}
 
-				//check we can swap
-				swapIn, total := swapInStakingPower(append(committeeList[1:], pendingList[j]))
-				execSwap := false
-				if swapIn < total/3 {
-					execSwap = true
-					committeeList = append(committeeList[1:], pendingList[j])    //append pending j
-					pendingList = append(pendingList[0:j], pendingList[j+1:]...) //remove pending j
-					j--
-					pendingList = append(pendingList, committeeList[0])
+			//check we can swap
+			swapIn, total := swapInVotingPower(append(committeeList[1:], pendingList[j]))
+			if swapIn < total/3 {
+				swapCommittee := committeeList[0]
+				swapPending := pendingList[j]
+				committeeList = append(committeeList[1:], swapPending)
+				newPendingList := []CandidateInfo{}
+				for k, p := range pendingList {
+					if j != k {
+						newPendingList = append(newPendingList, p)
+					}
 				}
-
-				//if cannot find any pending candidate that can swap committee[0]
-				if !execSwap && j == len(pendingList)-1 {
-					endSwapIn = true
-					break
-				}
+				pendingList = append(newPendingList, swapCommittee)
+				j--
 			}
 		}
 	}
 
-	//re-sort the swap list
 	sort.Slice(committeeList, func(i, j int) bool {
-		return committeeList[i].score < committeeList[j].score
+		return committeeList[i].score > committeeList[j].score
 	})
 	sort.Slice(pendingList, func(i, j int) bool {
 		return pendingList[i].score > pendingList[j].score
 	})
+
 	return pendingList, committeeList
 }
 
@@ -151,7 +140,7 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 	}
 
 	committeeList := []CandidateInfo{}
-	fixNodeStakingPower := int64(0)
+	fixNodeVotingPower := int64(0)
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if !slashCpk[cpk] && !unstakeCpk[cpk] {
 			score := stakerInfo.Performance * stakerInfo.StakingAmount
@@ -159,12 +148,12 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 				committeeList = append(committeeList, CandidateInfo{stakerInfo.cpkStr, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "committee"})
 			} else {
 				newBeaconCommittee[cpk] = stakerInfo.cpkStr
-				fixNodeStakingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
+				fixNodeVotingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
 			}
 		}
 	}
 
-	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNodeStakingPower, env.MaxBeaconCommitteeSize-len(newBeaconCommittee))
+	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNodeVotingPower, env.MaxBeaconCommitteeSize-len(newBeaconCommittee))
 
 	//other candidate
 	for _, candidate := range committeeList {
@@ -174,7 +163,5 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 		newBeaconPending[candidate.cpkStr] = candidate.cpk
 	}
 
-	log.Println("newBeaconCommittee", len(newBeaconCommittee))
-	log.Println("newBeaconPending", len(newBeaconPending))
 	return slashCpk, unstakeCpk, newBeaconCommittee, newBeaconPending, nil
 }
