@@ -220,7 +220,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			name: "8 Shards 8 Candidates Random Number: [500000 .. 1000000] Current Total Validators: [300 .. 400]",
 			args: args{
 				candidates: []string{
-					key, key2, key3, key4, key5, key6, key7, key8,
+					key1, key2, key3, key4, key5, key6, key7, key8,
 				},
 				numberOfValidators: []int{
 					19, 54, 20, 2, 67, 81, 80, 11,
@@ -229,7 +229,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			},
 			want: map[byte][]string{
 				0: {
-					key, key5,
+					key1, key5,
 				},
 				1: {
 					key8,
@@ -252,7 +252,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			name: "8 Shards 8 Candidates Random Number: [0 .. 500000] Current Total Validators: [300 .. 400]",
 			args: args{
 				candidates: []string{
-					key, key2, key3, key4, key5, key6, key7, key8,
+					key1, key2, key3, key4, key5, key6, key7, key8,
 				},
 				numberOfValidators: []int{
 					19, 54, 20, 2, 67, 81, 80, 11,
@@ -261,7 +261,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			},
 			want: map[byte][]string{
 				0: {
-					key,
+					key1,
 					key2,
 					key8,
 				},
@@ -277,7 +277,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			name: "8 Shards 8 Candidates Random Number: [1000000 .. 2000000] Current Total Validators: [300 .. 400]",
 			args: args{
 				candidates: []string{
-					key, key2, key3, key4, key5, key6, key7, key8,
+					key1, key2, key3, key4, key5, key6, key7, key8,
 				},
 				numberOfValidators: []int{
 					19, 54, 20, 2, 67, 81, 80, 11,
@@ -294,7 +294,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 					key3,
 				},
 				3: {
-					key,
+					key1,
 				},
 				7: {
 					key2,
@@ -306,7 +306,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			name: "8 Shards 8 Candidates Random Number: [500000 .. 1000000] Current Total Validators: [200 .. 300]",
 			args: args{
 				candidates: []string{
-					key, key2, key3, key4, key5, key6, key7, key8,
+					key1, key2, key3, key4, key5, key6, key7, key8,
 				},
 				numberOfValidators: []int{
 					50, 33, 29, 47, 15, 2, 25, 64,
@@ -321,7 +321,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 					key2, key3, key4,
 				},
 				4: {
-					key, key7,
+					key1, key7,
 				},
 				5: {
 					key5,
@@ -335,7 +335,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			name: "8 Shards 8 Candidates Random Number: [0 .. 500000] Current Total Validators: [200 .. 300]",
 			args: args{
 				candidates: []string{
-					key, key2, key3, key4, key5, key6, key7, key8,
+					key1, key2, key3, key4, key5, key6, key7, key8,
 				},
 				numberOfValidators: []int{
 					50, 33, 29, 47, 15, 2, 25, 64,
@@ -347,7 +347,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 					key4,
 				},
 				2: {
-					key,
+					key1,
 				},
 				5: {
 					key7, key8,
@@ -361,7 +361,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 			name: "8 Shards 8 Candidates Random Number: [1000000 .. 2000000] Current Total Validators: [200 .. 300]",
 			args: args{
 				candidates: []string{
-					key,
+					key1,
 					key2,
 					key3,
 					key4,
@@ -380,7 +380,7 @@ func Test_AssignRuleV2_Process(t *testing.T) {
 					key7,
 				},
 				4: {
-					key,
+					key1,
 					key3,
 					key5,
 					key8,
@@ -782,7 +782,7 @@ func TestAssignRuleV3_Mainnet(t *testing.T) {
 
 }
 
-//TestAssignRuleV3_SimulationBalanceNumberOfValidator case 1
+// TestAssignRuleV3_SimulationBalanceNumberOfValidator case 1
 // assume no new candidates
 // 1. re-assign 40
 // 2. swap out each shard 5 => 40
@@ -812,7 +812,7 @@ func TestAssignRuleV3_SimulationBalanceNumberOfValidator_1(t *testing.T) {
 	t.Log(counter, numberOfValidators)
 }
 
-//TestAssignRuleV3_SimulationBalanceNumberOfValidator case 2
+// TestAssignRuleV3_SimulationBalanceNumberOfValidator case 2
 // 1. 5 new candidates
 // 2. re-assign 40
 // 3. swap out each shard 5 => 40
@@ -842,7 +842,7 @@ func TestAssignRuleV3_SimulationBalanceNumberOfValidator_2(t *testing.T) {
 	t.Log(counter, numberOfValidators)
 }
 
-//BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 1
+// BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 1
 // 1. NO new candidates
 // 2. re-assign 40
 // 3. swap out each shard 5 => 40
@@ -891,7 +891,7 @@ func BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator_1(b *testing.B) {
 	b.Log(sum/len(counters), maxCounter)
 }
 
-//BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 2
+// BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator case 2
 // 1. 5 new candidates
 // 2. re-assign 40
 // 3. swap out each shard 5 => 40

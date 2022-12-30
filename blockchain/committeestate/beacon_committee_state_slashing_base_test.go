@@ -1,13 +1,14 @@
 package committeestate
 
 import (
+	"reflect"
+	"sync"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"sync"
-	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -48,18 +49,18 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 					},
 					shardSubstitute: map[byte][]string{
 						0: []string{
-							key,
+							key1,
 						},
 					},
 					autoStake: map[string]bool{
-						key:  true,
+						key1: true,
 						key8: false,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						incKey.GetIncKeyBase58(): paymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
-						key:  *hash,
+						key1: *hash,
 						key6: *hash6,
 					},
 					hashes: NewBeaconCommitteeStateHash(),
@@ -82,18 +83,18 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 					},
 					shardSubstitute: map[byte][]string{
 						0: []string{
-							key,
+							key1,
 						},
 					},
 					autoStake: map[string]bool{
-						key:  true,
+						key1: true,
 						key8: false,
 					},
 					rewardReceiver: map[string]privacy.PaymentAddress{
 						incKey.GetIncKeyBase58(): paymentAddress,
 					},
 					stakingTx: map[string]common.Hash{
-						key:  *hash,
+						key1: *hash,
 						key6: *hash6,
 					},
 					hashes: NewBeaconCommitteeStateHash(),
