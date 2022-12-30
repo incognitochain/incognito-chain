@@ -220,6 +220,19 @@ func (httpServer *HttpServer) handleGetNearBurnProof(
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
 }
 
+// handleGetPRVBurnProof returns a proof of a tx burning pPRV vote ( Ethereum )
+func (httpServer *HttpServer) handleGetPRVBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	onBeacon, height, txID, err := parseGetBurnProofParams(params, httpServer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	confirmMeta := metadata.BurningPRVRequestConfirmMeta
+	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer, true)
+}
+
 func parseGetBurnProofParams(params interface{}, httpServer *HttpServer) (bool, uint64, *common.Hash, error) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {
