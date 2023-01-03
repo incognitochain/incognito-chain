@@ -446,7 +446,10 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 			return
 		}
 		msgPropose.PeerID = msgBFT.PeerID
-		a.proposeMessageCh <- msgPropose
+
+		if a.proposeMessageCh != nil {
+			a.proposeMessageCh <- msgPropose
+		}
 	case MSG_VOTE:
 		var msgVote BFTVote
 		err := json.Unmarshal(msgBFT.Content, &msgVote)
@@ -454,7 +457,9 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 			a.logger.Error(err)
 			return
 		}
-		a.voteMessageCh <- msgVote
+		if a.voteMessageCh != nil {
+			a.voteMessageCh <- msgVote
+		}
 	default:
 		a.logger.Criticalf("Unknown BFT message type %+v", msgBFT)
 		return

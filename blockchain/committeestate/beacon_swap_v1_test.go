@@ -16,37 +16,37 @@ import (
 func Test_beacon_swap_v1(t *testing.T) {
 
 	type args struct {
-		pendingList         []CandidateInfo
-		committeeList       []CandidateInfo
-		fixNodeStakingPower int64
-		maxCommitteeSize    int
+		pendingList      []CandidateInfoV1
+		committeeList    []CandidateInfoV1
+		numberFixNode    int
+		maxCommitteeSize int
 	}
 
 	type testcase struct {
 		name  string
 		args  args
-		want  []CandidateInfo
-		want1 []CandidateInfo
+		want  []CandidateInfoV1
+		want1 []CandidateInfoV1
 	}
 
 	testcase1 := func() testcase {
 		name := "swap in all until max"
 		args := args{
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "1", 500, 50, "pending"},
-				{incognitokey.CommitteePublicKey{}, "2", 500, 1500, "pending"},
-				{incognitokey.CommitteePublicKey{}, "3", 500, 500, "pending"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "1", 500, "pending"},
+				{incognitokey.CommitteePublicKey{}, "2", 500, "pending"},
+				{incognitokey.CommitteePublicKey{}, "3", 500, "pending"},
 			},
-			[]CandidateInfo{},
-			3000,
+			[]CandidateInfoV1{},
+			4,
 			2,
 		}
-		newpendingList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "2", 500, 1500, "pending"},
+		newpendingList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "2", 500, "pending"},
+			{incognitokey.CommitteePublicKey{}, "3", 500, "pending"},
 		}
-		newCommitteeList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "1", 500, 50, "pending"},
-			{incognitokey.CommitteePublicKey{}, "3", 500, 500, "pending"},
+		newCommitteeList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "1", 500, "pending"},
 		}
 		return testcase{
 			name, args, newpendingList, newCommitteeList,
@@ -55,24 +55,24 @@ func Test_beacon_swap_v1(t *testing.T) {
 	testcase2 := func() testcase {
 		name := "swap in all until max 2"
 		args := args{
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "1", 500, 50, "pending"},
-				{incognitokey.CommitteePublicKey{}, "2", 500, 1500, "pending"},
-				{incognitokey.CommitteePublicKey{}, "3", 500, 500, "pending"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "1", 500, "pending"},
+				{incognitokey.CommitteePublicKey{}, "2", 500, "pending"},
+				{incognitokey.CommitteePublicKey{}, "3", 500, "pending"},
 			},
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "4", 500, 500, "committee"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "4", 500, "committee"},
 			},
-			3000,
+			4,
 			2,
 		}
-		newpendingList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "2", 500, 1500, "pending"},
-			{incognitokey.CommitteePublicKey{}, "3", 500, 500, "pending"},
+		newpendingList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "2", 500, "pending"},
+			{incognitokey.CommitteePublicKey{}, "3", 500, "pending"},
 		}
-		newCommitteeList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "4", 500, 500, "committee"},
-			{incognitokey.CommitteePublicKey{}, "1", 500, 50, "pending"},
+		newCommitteeList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "4", 500, "committee"},
+			{incognitokey.CommitteePublicKey{}, "1", 500, "pending"},
 		}
 		return testcase{
 			name, args, newpendingList, newCommitteeList,
@@ -81,26 +81,26 @@ func Test_beacon_swap_v1(t *testing.T) {
 	testcase3 := func() testcase {
 		name := "no swap (no higher score)"
 		args := args{
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "1", 400, 100, "pending"},
-				{incognitokey.CommitteePublicKey{}, "2", 500, 200, "pending"},
-				{incognitokey.CommitteePublicKey{}, "3", 450, 500, "pending"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "1", 400, "pending"},
+				{incognitokey.CommitteePublicKey{}, "2", 500, "pending"},
+				{incognitokey.CommitteePublicKey{}, "3", 450, "pending"},
 			},
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "4", 500, 50, "committee"},
-				{incognitokey.CommitteePublicKey{}, "5", 500, 50, "committee"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "4", 500, "committee"},
+				{incognitokey.CommitteePublicKey{}, "5", 500, "committee"},
 			},
-			3000,
+			4,
 			2,
 		}
-		newpendingList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "2", 500, 200, "pending"},
-			{incognitokey.CommitteePublicKey{}, "3", 450, 500, "pending"},
-			{incognitokey.CommitteePublicKey{}, "1", 400, 100, "pending"},
+		newpendingList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "2", 500, "pending"},
+			{incognitokey.CommitteePublicKey{}, "3", 450, "pending"},
+			{incognitokey.CommitteePublicKey{}, "1", 400, "pending"},
 		}
-		newCommitteeList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "4", 500, 50, "committee"},
-			{incognitokey.CommitteePublicKey{}, "5", 500, 50, "committee"},
+		newCommitteeList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "4", 500, "committee"},
+			{incognitokey.CommitteePublicKey{}, "5", 500, "committee"},
 		}
 		return testcase{
 			name, args, newpendingList, newCommitteeList,
@@ -108,28 +108,57 @@ func Test_beacon_swap_v1(t *testing.T) {
 	}
 
 	testcase4 := func() testcase {
-		name := "swap normal"
+		name := "swap normal 1"
 		args := args{
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "1", 600, 100, "pending"},
-				{incognitokey.CommitteePublicKey{}, "2", 700, 200, "pending"},
-				{incognitokey.CommitteePublicKey{}, "3", 450, 500, "pending"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "1", 600, "pending"},
+				{incognitokey.CommitteePublicKey{}, "2", 700, "pending"},
+				{incognitokey.CommitteePublicKey{}, "3", 450, "pending"},
 			},
-			[]CandidateInfo{
-				{incognitokey.CommitteePublicKey{}, "4", 550, 50, "committee"},
-				{incognitokey.CommitteePublicKey{}, "5", 500, 50, "committee"},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "5", 500, "committee"},
+				{incognitokey.CommitteePublicKey{}, "4", 550, "committee"},
 			},
-			3000,
+			4,
 			2,
 		}
-		newpendingList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "4", 550, 50, "committee"},
-			{incognitokey.CommitteePublicKey{}, "5", 500, 50, "committee"},
-			{incognitokey.CommitteePublicKey{}, "3", 450, 500, "pending"},
+		newpendingList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "1", 600, "pending"},
+			{incognitokey.CommitteePublicKey{}, "5", 500, "committee"},
+			{incognitokey.CommitteePublicKey{}, "3", 450, "pending"},
 		}
-		newCommitteeList := []CandidateInfo{
-			{incognitokey.CommitteePublicKey{}, "2", 700, 200, "pending"},
-			{incognitokey.CommitteePublicKey{}, "1", 600, 100, "pending"},
+		newCommitteeList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "2", 700, "pending"},
+			{incognitokey.CommitteePublicKey{}, "4", 550, "committee"},
+		}
+		return testcase{
+			name, args, newpendingList, newCommitteeList,
+		}
+	}
+
+	testcase5 := func() testcase {
+		name := "swap normal 1"
+		args := args{
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "1", 600, "pending"},
+				{incognitokey.CommitteePublicKey{}, "2", 700, "pending"},
+				{incognitokey.CommitteePublicKey{}, "3", 450, "pending"},
+			},
+			[]CandidateInfoV1{
+				{incognitokey.CommitteePublicKey{}, "5", 500, "committee"},
+				{incognitokey.CommitteePublicKey{}, "4", 550, "committee"},
+			},
+			5,
+			2,
+		}
+		newpendingList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "4", 550, "committee"},
+			{incognitokey.CommitteePublicKey{}, "5", 500, "committee"},
+			{incognitokey.CommitteePublicKey{}, "3", 450, "pending"},
+		}
+		newCommitteeList := []CandidateInfoV1{
+			{incognitokey.CommitteePublicKey{}, "2", 700, "pending"},
+			{incognitokey.CommitteePublicKey{}, "1", 600, "pending"},
 		}
 		return testcase{
 			name, args, newpendingList, newCommitteeList,
@@ -140,14 +169,15 @@ func Test_beacon_swap_v1(t *testing.T) {
 		testcase2(),
 		testcase3(),
 		testcase4(),
+		testcase5(),
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := beacon_swap_v1(tt.args.pendingList, tt.args.committeeList, tt.args.fixNodeStakingPower, tt.args.maxCommitteeSize)
+			got, got1 := beacon_swap_v1(tt.args.pendingList, tt.args.committeeList, tt.args.numberFixNode, tt.args.maxCommitteeSize)
 			fmt.Println("pending", got)
 			fmt.Println("committee", got1)
-			assert.Equalf(t, tt.want, got, "beacon_swap_v1(%v, %v, %v, %v)", tt.args.pendingList, tt.args.committeeList, tt.args.fixNodeStakingPower, tt.args.maxCommitteeSize)
-			assert.Equalf(t, tt.want1, got1, "beacon_swap_v1(%v, %v, %v, %v)", tt.args.pendingList, tt.args.committeeList, tt.args.fixNodeStakingPower, tt.args.maxCommitteeSize)
+			assert.Equalf(t, tt.want, got, "beacon_swap_v1(%v, %v, %v, %v)", tt.args.pendingList, tt.args.committeeList, tt.args.numberFixNode, tt.args.maxCommitteeSize)
+			assert.Equalf(t, tt.want1, got1, "beacon_swap_v1(%v, %v, %v, %v)", tt.args.pendingList, tt.args.committeeList, tt.args.numberFixNode, tt.args.maxCommitteeSize)
 		})
 	}
 }
