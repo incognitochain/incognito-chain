@@ -8,36 +8,16 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+type CommitteeBeginEPochInfo struct {
+	Score       uint64
+	Performance uint64
+}
 type CommitteeData struct {
-	CommitteeScore map[string]uint64 //this is in order of statedb get all beacon committee result
+	BeginEpochInfo map[string]CommitteeBeginEPochInfo //this is in order of statedb get all beacon committee result
 }
 
 func NewCommitteeData() *CommitteeData {
 	return &CommitteeData{}
-}
-
-func (c CommitteeData) MarshalJSON() ([]byte, error) {
-	data, err := json.Marshal(struct {
-		Score map[string]uint64
-	}{
-		Score: c.CommitteeScore,
-	})
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func (c *CommitteeData) UnmarshalJSON(data []byte) error {
-	temp := struct {
-		Score map[string]uint64
-	}{}
-	err := json.Unmarshal(data, &temp)
-	if err != nil {
-		return err
-	}
-	c.CommitteeScore = temp.Score
-	return nil
 }
 
 type CommitteeStateDataObject struct {

@@ -14,7 +14,9 @@ type CandidateInfo struct {
 	currentRole string
 }
 
-func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, fixNodeVotingPower int64, committeeSlot int) ([]CandidateInfo, []CandidateInfo) {
+//swap in to empty committee slot (new committee < 1/3 new total size)
+//swap lowest score in committee (new committee < 1/3 new total size)
+func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, numberOfFixNode int, committeeSlot int) ([]CandidateInfo, []CandidateInfo) {
 	//sort candidate list
 	sort.Slice(committeeList, func(i, j int) bool {
 		return committeeList[i].score < committeeList[j].score
@@ -24,14 +26,14 @@ func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, 
 	})
 
 	//add to committeeSlot
-	swapInVotingPower := func(candidates []CandidateInfo) (int64, int64) {
-		swapIn := int64(0)
-		total := fixNodeVotingPower
+	swapInVotingPower := func(candidates []CandidateInfo) (int, int) {
+		swapIn := int(0)
+		total := numberOfFixNode
 		for _, c := range candidates {
 			if c.currentRole == "pending" {
-				swapIn += c.votingPower
+				swapIn++
 			}
-			total += c.votingPower
+			total++
 		}
 		return swapIn, total
 	}
@@ -97,63 +99,31 @@ func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, 
 	return pendingList, committeeList
 }
 
-func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnvironment) (
-	map[string]bool, map[string]bool,
-	map[string]incognitokey.CommitteePublicKey, map[string]incognitokey.CommitteePublicKey,
-	error) {
-
-	//slash
-	slashCpk := map[string]bool{}
-	for cpk, stakerInfo := range s.beaconCommittee {
-		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
-			slashCpk[cpk] = true
-		}
-	}
-
-	//unstake
-	unstakeCpk := map[string]bool{}
-	for cpk, stakerInfo := range s.beaconCommittee {
-		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = true
-		}
-	}
-	for cpk, stakerInfo := range s.beaconPending {
-		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = true
-		}
-	}
-	for cpk, stakerInfo := range s.beaconWaiting {
-		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = true
-		}
-	}
+func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnvironment) (map[string]incognitokey.CommitteePublicKey, map[string]incognitokey.CommitteePublicKey) {
 
 	//swap pending <-> committee
 	newBeaconCommittee := map[string]incognitokey.CommitteePublicKey{}
 	newBeaconPending := map[string]incognitokey.CommitteePublicKey{}
 	pendingList := []CandidateInfo{}
 	for cpk, stakerInfo := range s.beaconPending {
-		if !slashCpk[cpk] && !unstakeCpk[cpk] {
-			score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
-			pendingList = append(pendingList, CandidateInfo{stakerInfo.cpkStr, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "pending"})
-		}
+		score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
+		pendingList = append(pendingList, CandidateInfo{stakerInfo.cpkStruct, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "pending"})
+
 	}
 
 	committeeList := []CandidateInfo{}
 	fixNodeVotingPower := int64(0)
 	for cpk, stakerInfo := range s.beaconCommittee {
-		if !slashCpk[cpk] && !unstakeCpk[cpk] {
-			score := stakerInfo.Performance * stakerInfo.StakingAmount
-			if !stakerInfo.FixedNode {
-				committeeList = append(committeeList, CandidateInfo{stakerInfo.cpkStr, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "committee"})
-			} else {
-				newBeaconCommittee[cpk] = stakerInfo.cpkStr
-				fixNodeVotingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
-			}
+		score := stakerInfo.Performance * stakerInfo.StakingAmount
+		if !stakerInfo.FixedNode {
+			committeeList = append(committeeList, CandidateInfo{stakerInfo.cpkStruct, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "committee"})
+		} else {
+			newBeaconCommittee[cpk] = stakerInfo.cpkStruct
+			fixNodeVotingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
 		}
 	}
-
-	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNodeVotingPower, env.MaxBeaconCommitteeSize-len(newBeaconCommittee))
+	fixNode := len(newBeaconCommittee)
+	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNode, env.MaxBeaconCommitteeSize-len(newBeaconCommittee))
 
 	//other candidate
 	for _, candidate := range committeeList {
@@ -163,5 +133,5 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 		newBeaconPending[candidate.cpkStr] = candidate.cpk
 	}
 
-	return slashCpk, unstakeCpk, newBeaconCommittee, newBeaconPending, nil
+	return newBeaconCommittee, newBeaconPending
 }
