@@ -6,17 +6,16 @@ import (
 	"sort"
 )
 
-type CandidateInfo struct {
+type CandidateInfoV1 struct {
 	cpk         incognitokey.CommitteePublicKey
 	cpkStr      string
 	score       uint64
-	votingPower int64
 	currentRole string
 }
 
 //swap in to empty committee slot (new committee < 1/3 new total size)
 //swap lowest score in committee (new committee < 1/3 new total size)
-func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, numberOfFixNode int, committeeSlot int) ([]CandidateInfo, []CandidateInfo) {
+func beacon_swap_v1(pendingList []CandidateInfoV1, committeeList []CandidateInfoV1, numberOfFixNode int, committeeSlot int) ([]CandidateInfoV1, []CandidateInfoV1) {
 	//sort candidate list
 	sort.Slice(committeeList, func(i, j int) bool {
 		return committeeList[i].score < committeeList[j].score
@@ -26,7 +25,7 @@ func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, 
 	})
 
 	//add to committeeSlot
-	swapInVotingPower := func(candidates []CandidateInfo) (int, int) {
+	swapInVotingPower := func(candidates []CandidateInfoV1) (int, int) {
 		swapIn := int(0)
 		total := numberOfFixNode
 		for _, c := range candidates {
@@ -40,7 +39,7 @@ func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, 
 
 	for j := 0; j < len(pendingList); j++ {
 		swapIn, total := swapInVotingPower(append(committeeList, pendingList[j]))
-		if len(committeeList) < committeeSlot && swapIn < total/3 {
+		if len(committeeList) < committeeSlot && swapIn*3 < total {
 			committeeList = append(committeeList, pendingList[j])        //append pending j
 			pendingList = append(pendingList[0:j], pendingList[j+1:]...) //remove pending j
 			j--
@@ -73,11 +72,11 @@ func beacon_swap_v1(pendingList []CandidateInfo, committeeList []CandidateInfo, 
 
 			//check we can swap
 			swapIn, total := swapInVotingPower(append(committeeList[1:], pendingList[j]))
-			if swapIn < total/3 {
+			if swapIn*3 < total {
 				swapCommittee := committeeList[0]
 				swapPending := pendingList[j]
 				committeeList = append(committeeList[1:], swapPending)
-				newPendingList := []CandidateInfo{}
+				newPendingList := []CandidateInfoV1{}
 				for k, p := range pendingList {
 					if j != k {
 						newPendingList = append(newPendingList, p)
@@ -104,19 +103,19 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 	//swap pending <-> committee
 	newBeaconCommittee := map[string]incognitokey.CommitteePublicKey{}
 	newBeaconPending := map[string]incognitokey.CommitteePublicKey{}
-	pendingList := []CandidateInfo{}
+	pendingList := []CandidateInfoV1{}
 	for cpk, stakerInfo := range s.beaconPending {
 		score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
-		pendingList = append(pendingList, CandidateInfo{stakerInfo.cpkStruct, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "pending"})
+		pendingList = append(pendingList, CandidateInfoV1{stakerInfo.cpkStruct, cpk, score, "pending"})
 
 	}
 
-	committeeList := []CandidateInfo{}
+	committeeList := []CandidateInfoV1{}
 	fixNodeVotingPower := int64(0)
 	for cpk, stakerInfo := range s.beaconCommittee {
 		score := stakerInfo.Performance * stakerInfo.StakingAmount
 		if !stakerInfo.FixedNode {
-			committeeList = append(committeeList, CandidateInfo{stakerInfo.cpkStruct, cpk, score, int64(math.Sqrt(float64(stakerInfo.StakingAmount))), "committee"})
+			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpk, score, "committee"})
 		} else {
 			newBeaconCommittee[cpk] = stakerInfo.cpkStruct
 			fixNodeVotingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
