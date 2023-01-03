@@ -8,6 +8,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/privacy/key"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -315,20 +317,22 @@ func (s *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePubl
 	return GetKeyStructListFromMapLocking(s.beaconLocking)
 }
 
-func (s *BeaconCommitteeStateV4) FilterLockingStaker(staker []incognitokey.CommitteePublicKey) []incognitokey.CommitteePublicKey {
-	res := []incognitokey.CommitteePublicKey{}
+func (s *BeaconCommitteeStateV4) GetNonSlashingRewardReceiver(staker []incognitokey.CommitteePublicKey) ([]key.PaymentAddress, error) {
+	res := []key.PaymentAddress{}
 	for _, k := range staker {
 		kString, err := k.ToBase58()
 		if err != nil {
-			return []incognitokey.CommitteePublicKey{}
+			return []key.PaymentAddress{}, fmt.Errorf("Base58 error")
 		}
-		if info, ok := s.beaconLocking[kString]; ok {
-			if info.LockingReason != statedb.RETURN_BY_SLASH {
-				res = append(res, info.cpkStr)
-			}
+		info, exists, _ := statedb.GetBeaconStakerInfo(s.stateDB, kString)
+		if !exists || info == nil {
+			return []key.PaymentAddress{}, fmt.Errorf(kString + "not found!")
+		}
+		if info.LockingReason() != statedb.RETURN_BY_SLASH {
+			res = append(res, info.RewardReceiver())
 		}
 	}
-	return res
+	return res, nil
 }
 
 type StateDataDetail struct {

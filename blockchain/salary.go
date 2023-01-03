@@ -4,7 +4,8 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+
 	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -556,7 +557,13 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 
 	if len(totalRewardForBeacon) > 0 {
 		committeeOfEpoch, err := blockchain.GetBeaconCommitteeOfEpoch(epoch)
-		committeeGotReward := curView.beaconCommitteeState.FilterLockingStaker(committeeOfEpoch)
+		if err != nil {
+			return nil, nil, rewardForPdex, err
+		}
+		committeeGotReward, err := curView.beaconCommitteeState.GetNonSlashingRewardReceiver(committeeOfEpoch)
+		if err != nil {
+			return nil, nil, rewardForPdex, err
+		}
 		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon, committeeGotReward)
 		if err != nil {
 			return nil, nil, rewardForPdex, err
@@ -585,17 +592,14 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 }
 
 // buildInstRewardForBeacons create reward instruction for beacons
-func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, committee []incognitokey.CommitteePublicKey) ([][]string, error) {
+func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, rewardReceiver []key.PaymentAddress) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(len(beaconBestState.GetBeaconCommittee()))
+		baseRewards[key] = value / uint64(len(rewardReceiver))
 	}
-	for _, beaconpublickey := range committee {
-		//Review Get wrong committee here
-		//Review We must get non-slashing committee here by get committee from prev view of prev view and locking info from cur view
-		// indicate reward pubkey
-		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, beaconpublickey.GetNormalKey())
+	for _, receiver := range rewardReceiver {
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, receiver.Pk)
 		if err != nil {
 			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
 			return nil, err

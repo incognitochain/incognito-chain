@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
@@ -268,8 +269,14 @@ func (b beaconCommitteeStateBase) GetBeaconLocking() []incognitokey.CommitteePub
 	return nil
 }
 
-func (b beaconCommitteeStateBase) FilterLockingStaker(staker []incognitokey.CommitteePublicKey) []incognitokey.CommitteePublicKey {
-	return nil
+func (b beaconCommitteeStateBase) GetNonSlashingRewardReceiver(staker []incognitokey.CommitteePublicKey) ([]key.PaymentAddress, error) {
+	rewardReceiver := []key.PaymentAddress{}
+	for _, committee := range b.beaconCommittee {
+		k := incognitokey.CommitteePublicKey{}
+		k.FromString(committee)
+		rewardReceiver = append(rewardReceiver, key.PaymentAddress{Pk: k.GetNormalKey()})
+	}
+	return rewardReceiver, nil
 }
 
 func (b beaconCommitteeStateBase) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
