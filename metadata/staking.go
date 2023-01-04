@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -47,8 +49,27 @@ func NewStakingMetadata(
 	}, nil
 }
 
-//	+ no need to IsInBase58ShortFormat because error is already check below by FromString
-//	+ what IsInBase58ShortFormat does is the same as FromString does but for an array
+func (meta *StakingMetadata) Hash() *common.Hash {
+	if meta.Type == ShardStakingMeta {
+		return meta.MetadataBase.Hash()
+	}
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	data = append(data, []byte(meta.FunderPaymentAddress)...)
+	data = append(data, []byte(meta.RewardReceiverPaymentAddress)...)
+	data = append(data, []byte(fmt.Sprintf("%v", meta.StakingAmount))...)
+	data = append(data, []byte(meta.CommitteePublicKey)...)
+	data = append(data, []byte(fmt.Sprintf("%v", meta.AutoReStaking))...)
+	hash := common.HashH(data)
+	return &hash
+}
+
+func (meta *StakingMetadata) HashWithoutSig() *common.Hash {
+	return meta.Hash()
+}
+
+// + no need to IsInBase58ShortFormat because error is already check below by FromString
+// + what IsInBase58ShortFormat does is the same as FromString does but for an array
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	rewardReceiverPaymentAddress := sm.RewardReceiverPaymentAddress
 	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
@@ -157,7 +178,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if stakingMetadata.Type == ShardStakingMeta && amount != common.SHARD_STAKING_AMOUNT {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount < common.BEACON_MIN_STAKING_AMOUNT {
+	if stakingMetadata.Type == BeaconStakingMeta && (amount < common.BEACON_MIN_STAKING_AMOUNT) && (amount%common.SHARD_STAKING_AMOUNT != 0) {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 	if stakingMetadata.Type == BeaconStakingMeta && !stakingMetadata.AutoReStaking {

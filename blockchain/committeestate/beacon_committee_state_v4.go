@@ -199,13 +199,13 @@ func (s *BeaconCommitteeStateV4) addStakingTx(cpk string, tx common.Hash, amount
 	return fmt.Errorf("Cannot find cpk %v in memstate", cpk)
 }
 
-func (s *BeaconCommitteeStateV4) setLocking(cpk string, epoch uint64, reason int) error {
+func (s *BeaconCommitteeStateV4) setLocking(cpk string, epoch, unlockEpoch uint64, reason int) error {
 	if stakerInfo := s.getStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
 		}
-		info.SetLocking(epoch, reason)
+		info.SetLocking(epoch, unlockEpoch, reason)
 		s.beaconLocking[cpk] = &LockingInfo{stakerInfo.cpkStruct, epoch, reason}
 		if err := statedb.StoreBeaconLocking(s.stateDB, []incognitokey.CommitteePublicKey{stakerInfo.cpkStruct}); err != nil {
 			return err
@@ -623,18 +623,18 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 		return nil, nil
 	}
 
-	slashCpk := make(map[string]bool)
-	unstakeCpk := make(map[string]bool)
+	slashCpk := make(map[string]uint64)
+	unstakeCpk := make(map[string]uint64)
 	var err error
 
 	//slash
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
-			slashCpk[cpk] = true
+			slashCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10 // 100*(2-stakerInfo.Performance/1000); stakerInfo.Performance in range [100,1000]
 		}
 	}
-	for cpk, _ := range slashCpk {
-		if err = s.setLocking(cpk, env.Epoch, statedb.LOCKING_BY_SLASH); err != nil {
+	for cpk, unlockEpoch := range slashCpk {
+		if err = s.setLocking(cpk, env.Epoch, unlockEpoch, statedb.LOCKING_BY_SLASH); err != nil {
 			return nil, err
 		}
 		if err = s.removeFromPool(COMMITTEE_POOL, cpk); err != nil {
@@ -645,22 +645,22 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//unstake
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = true
+			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
 		}
 	}
 
 	for cpk, stakerInfo := range s.beaconPending {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = true
+			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
 		}
 	}
 	for cpk, stakerInfo := range s.beaconWaiting {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = true
+			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
 		}
 	}
-	for cpk, _ := range unstakeCpk {
-		if err = s.setLocking(cpk, env.Epoch, statedb.LOCKING_BY_UNSTAKE); err != nil {
+	for cpk, unlockEpoch := range unstakeCpk {
+		if err = s.setLocking(cpk, env.Epoch, unlockEpoch, statedb.LOCKING_BY_UNSTAKE); err != nil {
 			return nil, err
 		}
 		if err = s.removeFromPool(COMMITTEE_POOL, cpk); err != nil {
@@ -916,7 +916,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnlocking(env *BeaconCommitteeStat
 			Logger.log.Errorf("Cannot find %v in beacon staker", cpk)
 			continue
 		}
-		if env.Epoch >= info.LockingEpoch()+s.config.LOCKING_PERIOD {
+		// if env.Epoch >= info.LockingEpoch()+s.config.LOCKING_PERIOD {
+		if env.Epoch >= info.UnlockingEpoch() {
 			return_cpk = append(return_cpk, cpk)
 			switch lockingInfo.LockingReason {
 			case statedb.LOCKING_BY_SLASH:

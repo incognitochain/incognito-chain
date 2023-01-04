@@ -3,10 +3,11 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
 const (
@@ -41,6 +42,7 @@ type BeaconStakerInfo struct {
 	shardActiveTime     int
 	finishSync          bool
 	lockingEpoch        uint64
+	unlockingEpoch      uint64
 	lockingReason       int
 }
 
@@ -59,6 +61,7 @@ func (c BeaconStakerInfo) ToString() string {
 		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
+		UnlockingEpoch      uint64
 		LockingReason       int
 	}{
 		FunderAddress:       c.funderAddress.String(),
@@ -69,6 +72,7 @@ func (c BeaconStakerInfo) ToString() string {
 		BeaconConfirmTime:   c.beaconConfirmTime,
 		ShardActiveTime:     c.shardActiveTime,
 		LockingEpoch:        c.lockingEpoch,
+		UnlockingEpoch:      c.unlockingEpoch,
 		LockingReason:       c.lockingReason,
 		FinishSync:          c.finishSync,
 	})
@@ -92,6 +96,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
+		UnlockingEpoch      uint64
 		LockingReason       int
 	}{
 		FunderAddress:       c.funderAddress,
@@ -102,6 +107,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		BeaconConfirmTime:   c.beaconConfirmTime,
 		ShardActiveTime:     c.shardActiveTime,
 		LockingEpoch:        c.lockingEpoch,
+		UnlockingEpoch:      c.unlockingEpoch,
 		LockingReason:       c.lockingReason,
 		FinishSync:          c.finishSync,
 	})
@@ -121,6 +127,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 		BeaconConfirmTime   int64
 		ShardActiveTime     int
 		LockingEpoch        uint64
+		UnlockingEpoch      uint64
 		LockingReason       int
 		FinishSync          bool
 	}{}
@@ -135,6 +142,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.unstaking = temp.Unstaking
 	c.shardActiveTime = temp.ShardActiveTime
 	c.lockingEpoch = temp.LockingEpoch
+	c.unlockingEpoch = temp.UnlockingEpoch
 	c.lockingReason = temp.LockingReason
 	c.finishSync = temp.FinishSync
 	c.funderAddress = temp.FunderAddress
@@ -143,8 +151,9 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 func (s *BeaconStakerInfo) SetUnstaking() {
 	s.unstaking = true
 }
-func (s *BeaconStakerInfo) SetLocking(epoch uint64, reason int) {
+func (s *BeaconStakerInfo) SetLocking(epoch, unlockEpoch uint64, reason int) {
 	s.lockingEpoch = epoch
+	s.unlockingEpoch = unlockEpoch
 	s.lockingReason = reason
 }
 
@@ -197,6 +206,11 @@ func (s *BeaconStakerInfo) SetShardActiveTime(t int) {
 func (s BeaconStakerInfo) LockingEpoch() uint64 {
 	return s.lockingEpoch
 }
+
+func (s BeaconStakerInfo) UnlockingEpoch() uint64 {
+	return s.unlockingEpoch
+}
+
 func (s BeaconStakerInfo) LockingReason() int {
 	return s.lockingReason
 }
