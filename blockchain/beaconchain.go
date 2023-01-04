@@ -609,6 +609,21 @@ func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight 
 	return statedb.GetBeaconCommittee(beaconConsensusStateDB), nil
 }
 
+func (chain *BeaconChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
+	beaconConsensusStateRootHash, err := chain.Blockchain.GetBeaconRootsHashFromBlockHeight(
+		h - 1, //the previous height statedb store the committee of current height
+	)
+	if err != nil {
+		return nil, err
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(chain.GetDatabase()))
+	if err != nil {
+		return nil, err
+	}
+	return statedb.GetBeaconCommittee(stateDB), nil
+}
+
 func (chain *BeaconChain) CommitteeStateVersion() int {
 	return chain.GetBestView().(*BeaconBestState).beaconCommitteeState.Version()
 }
