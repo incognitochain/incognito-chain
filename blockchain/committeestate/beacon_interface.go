@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
 type BeaconCommitteeState interface {
@@ -13,6 +14,7 @@ type BeaconCommitteeState interface {
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetBeaconLocking() []incognitokey.CommitteePublicKey
+	GetNonSlashingRewardReceiver(staker []incognitokey.CommitteePublicKey) ([]key.PaymentAddress, error)
 	GetBeaconWaiting() []incognitokey.CommitteePublicKey
 	IsFinishSync(string) bool
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey

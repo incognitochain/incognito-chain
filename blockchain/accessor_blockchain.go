@@ -628,6 +628,16 @@ func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash
 	return bRH, err
 }
 
+func (blockchain *BlockChain) GetBeaconCommitteeOfEpoch(epoch uint64) ([]incognitokey.CommitteePublicKey, error) {
+	lastHeightOfEpoch := blockchain.GetLastBeaconHeightInEpoch(epoch)
+	blkHeightForGetCmt := lastHeightOfEpoch - 1
+	blkHashForGetCmt, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), blkHeightForGetCmt)
+	if err != nil {
+		return nil, err
+	}
+	return blockchain.BeaconChain.GetCommitteeByHash(*blkHashForGetCmt, blkHeightForGetCmt)
+}
+
 // GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
