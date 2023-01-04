@@ -1,5 +1,6 @@
 package main
 
+// single action
 const (
 	submitkeyArg        = "submitkey"
 	stakingShardArg     = "staking-shard"
@@ -9,6 +10,10 @@ const (
 	watchValidatorArg   = "watch-validator"
 	shouldWatchOnlyArg  = "watch-only"
 )
+
+// test cases by feature
+
+const ()
 
 const (
 	sKey0  = "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"

@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"os"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
@@ -74,4 +78,115 @@ func getCSByHeight(beaconHeight uint64, app *devframework.AppService) (*jsonresu
 	}
 	cs.Filter(fixedCommiteesNodes, fixedRewardReceivers)
 	return cs, nil
+}
+
+func readData() {
+	shardValidators = map[string]*Validator{
+		sKey0:  {},
+		sKey1:  {},
+		sKey2:  {},
+		sKey3:  {},
+		sKey4:  {},
+		sKey5:  {},
+		sKey6:  {},
+		sKey7:  {},
+		sKey8:  {},
+		sKey9:  {},
+		sKey10: {},
+		sKey11: {},
+	}
+
+	beaconValidators = map[string]*Validator{
+		bKey0: {},
+		bKey1: {},
+		bKey2: {},
+		bKey3: {},
+		bKey4: {},
+		bKey5: {},
+	}
+
+	args := os.Args
+
+	if len(args) > 1 {
+		t := args[1:]
+		for i, v := range t {
+			if v == submitkeyArg {
+				shouldSubmitKey = true
+				shouldStop = true
+			} else if v == stakingShardArg {
+				shouldStakeShard = true
+				shouldStop = true
+				var err error
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
+			} else if v == stakingBeaconArg {
+				shouldStakeBeacon = true
+				shouldStop = true
+				var err error
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
+			} else if v == unstakingBeaconArg {
+				shouldUnstakeBeacon = true
+				shouldStop = true
+				var err error
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
+			} else if v == addStakingBeaconArg {
+				shouldAddStakingBeacon = true
+				shouldStop = true
+				var err error
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
+			} else if v == watchValidatorArg {
+				var err error
+				shouldWatchValidator = true
+				shouldStop = true
+				watchBeaconIndex, err = strconv.Atoi(t[i+1])
+				if err != nil {
+					panic(err)
+				}
+			} else if v == shouldWatchOnlyArg {
+				shouldWatchOnly = true
+			}
+		}
+	} else {
+		shouldSubmitKey = true
+		shouldStakeShard = true
+		shouldStakeBeacon = true
+		//shouldAddStakingBeacon = true
+		shouldWatchValidator = true
+	}
+
+	if shouldWatchOnly {
+		shouldSubmitKey = false
+		shouldStakeShard = false
+		shouldStakeBeacon = false
+		shouldWatchValidator = false
+	}
+
+	data, err := ioutil.ReadFile("accounts.json")
+	if err != nil {
+		panic(err)
+	}
+
+	if err := json.Unmarshal(data, &keys); err != nil {
+		panic(err)
+	}
+
+	for _, k := range keys {
+		if _, found := shardValidators[k.MiningKey]; found {
+			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
+		}
+		if _, found := beaconValidators[k.MiningKey]; found {
+			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
+		}
+	}
 }
