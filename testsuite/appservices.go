@@ -110,11 +110,11 @@ func (s *AppService) SubmitKey(otaPrivateKey string) {
 	}
 }
 
-func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress, delegate string, autoReStaking bool) {
+func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress, delegate string, autoReStaking bool) error {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if resp, err := fullnodeRPC.CreateAndSendStakingTransaction(
 		privateKey,
@@ -132,17 +132,18 @@ func (s *AppService) ShardStaking(privateKey, candidatePaymentAddress, privateSe
 			"AutoReStaking":                autoReStaking,
 		},
 	); err != nil {
-		panic(err)
+		return err
 	} else {
 		log.Println("shard stake with tx ", resp.TxID)
 	}
+	return nil
 }
 
-func (s *AppService) BeaconStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress, delegate string, autoReStaking bool) {
+func (s *AppService) BeaconStaking(privateKey, candidatePaymentAddress, privateSeed, rewardReceiverPaymentAddress, delegate string, autoReStaking bool) error {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if resp, err := fullnodeRPC.CreateAndSendStakingTransaction(
 		privateKey,
@@ -160,17 +161,18 @@ func (s *AppService) BeaconStaking(privateKey, candidatePaymentAddress, privateS
 			"AutoReStaking":                autoReStaking,
 		},
 	); err != nil {
-		panic(err)
+		return err
 	} else {
 		log.Println("beacon stake with tx ", resp.TxID)
 	}
+	return nil
 }
 
-func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed string) {
+func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed string) error {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if resp, err := fullnodeRPC.CreateAndSendUnstakingTransaction(
 		privateKey,
@@ -189,6 +191,7 @@ func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed 
 	} else {
 		log.Println("beacon stake with tx ", resp.TxID)
 	}
+	return nil
 }
 
 func (s *AppService) GetBeaconBestState() (jsonresult.GetBeaconBestState, error) {

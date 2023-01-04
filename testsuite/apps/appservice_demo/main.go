@@ -184,16 +184,21 @@ func main() {
 			if blk.GetBeaconHeight() == startStakingHeight {
 				if shouldStop {
 					v := beaconValidators[bIndexes[watchBeaconIndex]]
-					v.ShardStaking(app)
+					if err := v.ShardStaking(app); err != nil {
+						panic(err)
+					}
 					panic("Finish staking shard")
 				}
 				//Stake each nodes
 				for _, v := range shardValidators {
-					v.ShardStaking(app)
-
+					if err := v.ShardStaking(app); err != nil {
+						panic(err)
+					}
 				}
 				for _, v := range beaconValidators {
-					v.ShardStaking(app)
+					if err := v.ShardStaking(app); err != nil {
+						panic(err)
+					}
 				}
 			}
 		}

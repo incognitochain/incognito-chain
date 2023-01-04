@@ -7,18 +7,24 @@ import (
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 )
 
-func (v *Validator) ShardStaking(app *devframework.AppService) {
+func (v *Validator) ShardStaking(app *devframework.AppService) error {
 	log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 		shortKey(v.PrivateKey), shortKey(v.PaymentAddress), shortKey(v.MiningKey), shortKey(v.PaymentAddress))
-	app.ShardStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+	if err := app.ShardStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true); err != nil {
+		return err
+	}
 	v.HasStakedShard = true
+	return nil
 }
 
-func (v *Validator) BeaconStaking(app *devframework.AppService) {
+func (v *Validator) BeaconStaking(app *devframework.AppService) error {
 	log.Printf("Start beacon staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 		shortKey(v.PrivateKey), shortKey(v.PaymentAddress), shortKey(v.MiningKey), shortKey(v.PaymentAddress))
-	app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true)
+	if err := app.BeaconStaking(v.PrivateKey, v.PaymentAddress, v.MiningKey, v.PaymentAddress, "", true); err != nil {
+		return err
+	}
 	v.HasStakedBeacon = true
+	return nil
 }
 
 func submitkeys(
