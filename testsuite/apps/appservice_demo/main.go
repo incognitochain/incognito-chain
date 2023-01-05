@@ -175,7 +175,11 @@ func main() {
 			lastCs = new(jsonresult.CommiteeState)
 		}
 		if cs.IsDiffFrom(lastCs) {
-			if err = updateRole(shardValidators, beaconValidators, cs, false); err != nil {
+			isInit := false
+			if shouldWatchOnly {
+				isInit = true
+			}
+			if err = updateRole(shardValidators, beaconValidators, cs, isInit); err != nil {
 				panic(err)
 			}
 			*lastCs = *cs
