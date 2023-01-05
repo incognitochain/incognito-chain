@@ -207,7 +207,7 @@ func readData() {
 		shouldStakeShard = true
 		shouldStakeBeacon = true
 		//shouldAddStakingBeacon = true
-		shouldWatchValidator = true
+		shouldWatchValidator = false
 	}
 
 	if shouldWatchOnly {
