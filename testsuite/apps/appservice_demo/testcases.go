@@ -37,12 +37,28 @@ func (v *Validator) watch(beaconHeight uint64, app *devframework.AppService) err
 	}
 	for key, value := range v.ActionsIndex {
 		if key == addStakingBeaconArg {
+			// Beacon staker info: StakingAmount must increase, staking tx is registered
 			if beaconHeight > value.Height && beaconHeight-value.Height > 3 {
 				stakerInfo, err := app.GetBeaconStakerInfo(beaconHeight, v.MiningPublicKey)
 				if err != nil {
 					panic(err)
 				}
-
+				shouldPanic := true
+				for _, h := range stakerInfo.StakingTxList() {
+					if h.String() == value.TxHash {
+						shouldPanic = false
+						s, err := app.GetBeaconStakerInfo(value.Height-1, v.MiningPublicKey)
+						if err != nil {
+							panic(err)
+						}
+						if s.TotalStakingAmount() >= stakerInfo.TotalStakingAmount() {
+							panic("Total staking amount is not change")
+						}
+					}
+				}
+				if shouldPanic {
+					panic("Not found staking tx")
+				}
 			}
 		}
 	}
