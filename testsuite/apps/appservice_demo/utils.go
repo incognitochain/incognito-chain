@@ -131,6 +131,9 @@ func readState(app *devframework.AppService) {
 		if err = updateRole(shardValidators, beaconValidators, cs, true); err != nil {
 			panic(err)
 		}
+		if lastCs == nil {
+			lastCs = new(jsonresult.CommiteeState)
+		}
 		*lastCs = *cs
 		cs.Print()
 		if err = writeState(shardValidators, beaconValidators); err != nil {
