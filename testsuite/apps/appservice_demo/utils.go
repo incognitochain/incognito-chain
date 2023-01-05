@@ -109,21 +109,21 @@ func writeState(shardValidators, beaconValidators map[string]*Validator) error {
 }
 
 func readState() {
-	svs, err := ioutil.ReadFile("shard-state.json")
-	if err != nil {
-		panic(err)
+	svs, err0 := ioutil.ReadFile("shard-state.json")
+	if err0 == nil {
+		if err := json.Unmarshal(svs, &shardValidators); err != nil {
+			panic(err)
+		}
 	}
-	bvs, err := ioutil.ReadFile("beacon-state.json")
-	if err != nil {
-		panic(err)
+	bvs, err1 := ioutil.ReadFile("beacon-state.json")
+	if err1 == nil {
+		if err := json.Unmarshal(bvs, &beaconValidators); err != nil {
+			panic(err)
+		}
 	}
-	if err := json.Unmarshal(svs, &shardValidators); err != nil {
-		panic(err)
+	if err0 == nil && err1 == nil {
+		updateRole(shardValidators, beaconValidators, lastCs, true)
 	}
-	if err := json.Unmarshal(bvs, &beaconValidators); err != nil {
-		panic(err)
-	}
-	updateRole(shardValidators, beaconValidators, lastCs, true)
 }
 
 func readData() {
