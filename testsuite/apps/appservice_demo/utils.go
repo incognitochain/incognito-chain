@@ -248,5 +248,5 @@ func readData(app *devframework.AppService) {
 		}
 	}
 
-	readState()
+	readState(app)
 }
