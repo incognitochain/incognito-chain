@@ -874,11 +874,13 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
 	bcDB := blockchain.GetBeaconChainDatabase()
 	rootHash, err := rawdbv2.GetBeaconRootsHash(bcDB, blockHash)
 	if err != nil {
+		err = errors.Errorf("Can not get beacon root hash %v from db %v", blockHash.String(), err)
 		return nil, err
 	}
 	bRH := &BeaconRootHash{}
 	err = json.Unmarshal(rootHash, bRH)
 	if err != nil {
+		err = errors.Errorf("Can not unmarshal beacon root hash %v from db %v", rootHash, err)
 		return nil, err
 	}
 
@@ -901,6 +903,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee, includePdexv3, includeBridgeAgg)
 	if err != nil {
 		Logger.log.Error(err)
+		err = errors.Errorf("Can not unmarshal beacon root hash %v from db %v", rootHash, err)
 	}
 	return beaconView, err
 }

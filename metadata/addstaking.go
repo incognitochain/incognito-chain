@@ -29,7 +29,12 @@ func (meta *AddStakingMetadata) Hash() *common.Hash {
 }
 
 func (meta *AddStakingMetadata) HashWithoutSig() *common.Hash {
-	return meta.MetadataBase.Hash()
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	data = append(data, []byte(meta.CommitteePublicKey)...)
+	data = append(data, []byte(fmt.Sprintf("%v", meta.AddStakingAmount))...)
+	hash := common.HashH(data)
+	return &hash
 }
 
 func NewAddStakingMetadata(committeePublicKey string, addStakingAmount uint64) (*AddStakingMetadata, error) {
@@ -51,7 +56,7 @@ func (addStakingMetadata *AddStakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	if (addStakingMetadata.AddStakingAmount%(common.SHARD_STAKING_AMOUNT) != 0) || (addStakingMetadata.AddStakingAmount < (common.SHARD_STAKING_AMOUNT)) {
+	if (addStakingMetadata.AddStakingAmount%common.SHARD_STAKING_AMOUNT != 0) || (addStakingMetadata.AddStakingAmount < (3 * common.SHARD_STAKING_AMOUNT)) {
 		return false
 	}
 	return (addStakingMetadata.Type == AddStakingMeta)
@@ -65,26 +70,26 @@ func (addStakingMetadata *AddStakingMetadata) ValidateMetadataByItself() bool {
 func (addStakingMetadata AddStakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	addStakingMetadataFromTx, ok := tx.GetMetadata().(*AddStakingMetadata)
 	if !ok {
-		return false, NewMetadataTxError(StopAutoStakingRequestTypeAssertionError, fmt.Errorf("Expect *AddStakingMetadata type but get %+v", reflect.TypeOf(tx.GetMetadata())))
+		return false, NewMetadataTxError(ConsensusMetadataTypeAssertionError, fmt.Errorf("Expect *AddStakingMetadata type but get %+v", reflect.TypeOf(tx.GetMetadata())))
 	}
 	requestedPublicKey := addStakingMetadataFromTx.CommitteePublicKey
 
 	stakerInfo, has, err := statedb.GetBeaconStakerInfo(beaconViewRetriever.GetBeaconConsensusStateDB(), requestedPublicKey)
 	if err != nil {
-		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
+		return false, NewMetadataTxError(AddStakingRequestNotInCommitteeListError, err)
 	}
 	if !has {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found", requestedPublicKey))
+		return false, NewMetadataTxError(AddStakingCommitteeNotFoundError, fmt.Errorf("No Committee Publickey %+v found", requestedPublicKey))
 	}
 
 	lockStaker := beaconViewRetriever.GetBeaconLocking()
 	lockStakerStr, _ := incognitokey.CommitteeKeyListToString(lockStaker)
 	if common.IndexOfStr(requestedPublicKey, lockStakerStr) != -1 {
-		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v is in locking state", requestedPublicKey))
+		return false, NewMetadataTxError(AddStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v is in locking state", requestedPublicKey))
 	}
 
 	if ok, err := addStakingMetadataFromTx.MetadataBaseWithSignature.VerifyMetadataSignature(stakerInfo.FunderAddress().Pk, tx); !ok || err != nil {
-		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
+		return false, NewMetadataTxError(ConsensusMetadataInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 	return true, nil
 }
@@ -98,12 +103,12 @@ func (addStakingMetadata AddStakingMetadata) ValidateSanityData(chainRetriever C
 		return false, false, errors.New("Error Cannot get burn data from tx")
 	}
 	if !isBurned {
-		return false, false, errors.New("Error StopAutoStaking tx should be a burn tx")
+		return false, false, errors.New("Error AddStaking tx should be a burn tx")
 	}
 	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
-		return false, false, errors.New("Error StopAutoStaking tx should transfer PRV only")
+		return false, false, errors.New("Error AddStaking tx should transfer PRV only")
 	}
-	if addStakingMetadata.Type != AddStakingMeta && (burnCoin.GetValue()%1750 != 0) && (burnCoin.GetValue() < 1750*3) {
+	if addStakingMetadata.Type != AddStakingMeta && (burnCoin.GetValue()%common.SHARD_STAKING_AMOUNT != 0) && (burnCoin.GetValue() < common.SHARD_STAKING_AMOUNT*3) {
 		return false, false, errors.New("receiver amount invalid: " + fmt.Sprintln(burnCoin.GetValue()))
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
@@ -111,7 +116,7 @@ func (addStakingMetadata AddStakingMetadata) ValidateSanityData(chainRetriever C
 		return false, false, err
 	}
 	if !CommitteePublicKey.CheckSanityData() {
-		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
+		return false, false, errors.New("Invalid Committee Public Key of Candidate who join consensus")
 	}
 	return true, true, nil
 }

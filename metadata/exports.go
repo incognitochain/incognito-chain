@@ -268,6 +268,10 @@ const (
 	StopAutoStakingRequestTypeAssertionError                   = metadataCommon.StopAutoStakingRequestTypeAssertionError
 	StopAutoStakingRequestAlreadyStopError                     = metadataCommon.StopAutoStakingRequestAlreadyStopError
 	WrongIncognitoDAOPaymentAddressError                       = metadataCommon.WrongIncognitoDAOPaymentAddressError
+	ConsensusMetadataTypeAssertionError                        = metadataCommon.ConsensusMetadataTypeAssertionError
+	ConsensusMetadataInvalidTransactionSenderError             = metadataCommon.StopAutoStakingRequestInvalidTransactionSenderError
+	AddStakingRequestNotInCommitteeListError                   = metadataCommon.AddStakingNotInCommitteeListError
+	AddStakingCommitteeNotFoundError                           = metadataCommon.AddStakingCommitteeNotFoundError
 	// pde
 	PDEWithdrawalRequestFromMapError    = metadataCommon.PDEWithdrawalRequestFromMapError
 	CouldNotGetExchangeRateError        = metadataCommon.CouldNotGetExchangeRateError
