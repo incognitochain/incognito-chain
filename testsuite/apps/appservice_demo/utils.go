@@ -228,10 +228,10 @@ func readData() {
 
 	for _, k := range keys {
 		if _, found := shardValidators[k.MiningKey]; found {
-			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
+			shardValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]Action{}}
 		}
 		if _, found := beaconValidators[k.MiningKey]; found {
-			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
+			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]Action{}}
 		}
 	}
 
