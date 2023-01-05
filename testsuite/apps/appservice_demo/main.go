@@ -171,11 +171,13 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		if lastCs == nil {
+			lastCs = new(jsonresult.CommiteeState)
+		}
 		if cs.IsDiffFrom(lastCs) {
 			if err = updateRole(shardValidators, beaconValidators, cs, false); err != nil {
 				panic(err)
 			}
-			lastCs = new(jsonresult.CommiteeState)
 			*lastCs = *cs
 			cs.Print()
 			if err = writeState(shardValidators, beaconValidators); err != nil {
