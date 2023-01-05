@@ -32,12 +32,12 @@ var (
 )
 
 func main() {
-	readData()
 	fullnode := flag.String("h", "http://localhost:8334/", "Fullnode Endpoint")
 	flag.Parse()
 
 	app := devframework.NewAppService(*fullnode, true)
 
+	readData(app)
 	bState, err := app.GetBeaconBestState()
 	if err != nil {
 		panic(err)
