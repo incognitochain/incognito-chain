@@ -31,7 +31,7 @@ func (s *AppService) OnBeaconBlock(fromBlk uint64, f func(block types.BeaconBloc
 			if err != nil || len(data.([]types.BeaconBlock)) == 0 {
 				//fmt.Println(err)
 				//time.Sleep(time.Minute)
-				time.Sleep(time.Second * 10)
+				time.Sleep(time.Second * 6)
 				continue
 			}
 			for _, blk := range data.([]types.BeaconBlock) {
@@ -168,11 +168,11 @@ func (s *AppService) BeaconStaking(privateKey, candidatePaymentAddress, privateS
 	return nil
 }
 
-func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed string) error {
+func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed string) (string, error) {
 	fullnodeRPC := RemoteRPCClient{s.Fullnode}
 	bAddr, err := fullnodeRPC.GetBurningAddress(1)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if resp, err := fullnodeRPC.CreateAndSendUnstakingTransaction(
 		privateKey,
@@ -187,11 +187,11 @@ func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed 
 			"PrivateSeed":             privateSeed,
 		},
 	); err != nil {
-		panic(err)
+		return "", err
 	} else {
 		log.Println("beacon stake with tx ", resp.TxID)
+		return resp.TxID, nil
 	}
-	return nil
 }
 
 func (s *AppService) GetBeaconBestState() (jsonresult.GetBeaconBestState, error) {

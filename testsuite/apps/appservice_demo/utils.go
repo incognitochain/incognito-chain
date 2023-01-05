@@ -11,6 +11,16 @@ import (
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 )
 
+func (v *Validator) AddStaking(app *devframework.AppService, amount uint64) error {
+	log.Printf("Start add staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
+		shortKey(v.PrivateKey), shortKey(v.PaymentAddress), shortKey(v.MiningKey), shortKey(v.PaymentAddress))
+	_, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, amount)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (v *Validator) ShardStaking(app *devframework.AppService) error {
 	log.Printf("Start shard staking from privateKey %s for candidatePaymentAddress %s with privateSeed %s rewardReceiver %s",
 		shortKey(v.PrivateKey), shortKey(v.PaymentAddress), shortKey(v.MiningKey), shortKey(v.PaymentAddress))
@@ -78,6 +88,42 @@ func getCSByHeight(beaconHeight uint64, app *devframework.AppService) (*jsonresu
 	}
 	cs.Filter(fixedCommiteesNodes, fixedRewardReceivers)
 	return cs, nil
+}
+
+func writeState(shardValidators, beaconValidators map[string]*Validator) error {
+	svs, err := json.Marshal(shardValidators)
+	if err != nil {
+		return err
+	}
+	bvs, err := json.Marshal(beaconValidators)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile("shard-state.json", svs, 0644); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile("beacon-state.json", bvs, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func readState() {
+	svs, err := ioutil.ReadFile("shard-state.json")
+	if err != nil {
+		panic(err)
+	}
+	bvs, err := ioutil.ReadFile("beacon-state.json")
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(svs, &shardValidators); err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(bvs, &beaconValidators); err != nil {
+		panic(err)
+	}
+	updateRole(shardValidators, beaconValidators, lastCs, true)
 }
 
 func readData() {
@@ -148,7 +194,6 @@ func readData() {
 			} else if v == watchValidatorArg {
 				var err error
 				shouldWatchValidator = true
-				shouldStop = true
 				watchBeaconIndex, err = strconv.Atoi(t[i+1])
 				if err != nil {
 					panic(err)
@@ -189,4 +234,6 @@ func readData() {
 			beaconValidators[k.MiningKey] = &Validator{Key: k, HasStakedShard: false, HasStakedBeacon: false, ActionsIndex: map[string]uint64{}}
 		}
 	}
+
+	readState()
 }

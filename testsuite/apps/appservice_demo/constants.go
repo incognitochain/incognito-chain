@@ -13,8 +13,6 @@ const (
 
 // test cases by feature
 
-const ()
-
 const (
 	sKey0  = "12DuNECQJWcHM1CtK942EAHNLMFUR5aB5SSEEhsDZs7vxvq9aCj"
 	sKey1  = "12G1n7hQHVeGZQxQuSVaBMj8kgzrgtbLZBtNDU8NPCnuzb98UbJ"

@@ -2,31 +2,52 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	devframework "github.com/incognitochain/incognito-chain/testsuite"
 )
 
 func shortKey(src string) string {
 	return src[len(src)-5:]
 }
 
-func (v *Validator) watch(beaconHeight, epochBlockTime uint64) error {
-	if beaconHeight%epochBlockTime == 1 {
-
-	}
-	return nil
-}
-
-func (v *Validator) shouldInBeaconWaiting(cs *jsonresult.CommiteeState) {
-	k := shortKey(v.MiningPublicKey)
-	for _, c := range cs.BeaconWaiting {
-		if c == k {
-			return
+func (v *Validator) watch(beaconHeight uint64, app *devframework.AppService) error {
+	if v.Role != NormalRole {
+		// stake shard must not in shard or beacon validator
+		if err := v.ShardStaking(app); err == nil {
+			panic("Expect error with shard staking")
 		}
 	}
-	log.Printf("key %s is not in beacon waiting list\n", k)
-	panic("Stop")
+	if v.Role == ShardPendingRole || v.Role == ShardCommitteeRole {
+		// Validator must not in pending or shard committee
+		if err := v.BeaconStaking(app); err == nil {
+			panic("Expect error with beacon staking")
+		}
+	}
+	if v.Role == BeaconCommitteeRole || v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole || v.Role == BeaconLockingRole {
+		// Validator must not stake beacon
+		// Validator must not is in beacon locking
+		if err := v.BeaconStaking(app); err == nil {
+			panic("Expect error with beacon staking")
+		}
+		// Validator must add stake amount % 1750 = 0
+		if err := v.AddStaking(app, 175000*1e9+100); err == nil {
+			panic("Expect error with add staking")
+		}
+	}
+	for key, value := range v.ActionsIndex {
+		if key == addStakingBeaconArg {
+			if beaconHeight > value.Height && beaconHeight-value.Height > 3 {
+				stakerInfo, err := app.GetBeaconStakerInfo(beaconHeight, v.MiningPublicKey)
+				if err != nil {
+					panic(err)
+				}
+
+			}
+		}
+	}
+
+	return nil
 }
 
 func updateRole(shardValidators, beaconValidators map[string]*Validator, cs *jsonresult.CommiteeState, isInit bool) error {
@@ -159,5 +180,15 @@ func updateRole(shardValidators, beaconValidators map[string]*Validator, cs *jso
 			beaconValidators[k].Role = BeaconWaitingRole
 		}
 	}
+	for _, v := range cs.BeaconLocking {
+		if k, found := bvs[v]; found {
+			role := beaconValidators[k].Role
+			if role != BeaconLockingRole && role != ShardCommitteeRole && !isInit {
+				return fmt.Errorf("beacon key %s is role %v when switch to BeaconLockingRole", shortKey(beaconValidators[k].MiningPublicKey), role)
+			}
+			beaconValidators[k].Role = BeaconLockingRole
+		}
+	}
+
 	return nil
 }
