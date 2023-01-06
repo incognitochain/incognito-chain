@@ -354,7 +354,7 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 			cpk,
 			(*s.beaconLocking[cpk]).LockingEpoch,
 			(*s.beaconLocking[cpk]).LockingReason,
-			(*s.beaconLocking[cpk]).LockingEpoch + s.config.LOCKING_PERIOD,
+			stakerInfo.UnlockingEpoch(),
 			stakerInfo.TotalStakingAmount(),
 		}
 		return detail
