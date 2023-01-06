@@ -37,6 +37,7 @@ type BeaconStakerInfo struct {
 	rewardReceiver      key.PaymentAddress
 	beaconConfirmHeight uint64
 	beaconConfirmTime   int64
+	enterTime           int64 //non-consistent value, help sorting committee list
 	stakingTx           map[common.Hash]StakingTxInfo
 	unstaking           bool
 	shardActiveTime     int
@@ -58,6 +59,7 @@ func (c BeaconStakerInfo) ToString() string {
 		StakingInfo         map[string]StakingTxInfo
 		BeaconConfirmHeight uint64
 		BeaconConfirmTime   int64
+		EnterTime           int64
 		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
@@ -70,6 +72,7 @@ func (c BeaconStakerInfo) ToString() string {
 		StakingInfo:         stakingTxs,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		BeaconConfirmTime:   c.beaconConfirmTime,
+		EnterTime:           c.enterTime,
 		ShardActiveTime:     c.shardActiveTime,
 		LockingEpoch:        c.lockingEpoch,
 		UnlockingEpoch:      c.unlockingEpoch,
@@ -82,8 +85,8 @@ func (c BeaconStakerInfo) ToString() string {
 func NewBeaconStakerInfo() *BeaconStakerInfo {
 	return &BeaconStakerInfo{}
 }
-func NewBeaconStakerInfoWithValue(funderAddress, rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, beaconConfirmTime int64, stakingTx map[common.Hash]StakingTxInfo) *BeaconStakerInfo {
-	return &BeaconStakerInfo{funderAddress: funderAddress, rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, beaconConfirmTime: beaconConfirmTime, stakingTx: stakingTx}
+func NewBeaconStakerInfoWithValue(funderAddress, rewardReceiver key.PaymentAddress, beaconConfirmHeight uint64, beaconConfirmTime int64, enterTime int64, stakingTx map[common.Hash]StakingTxInfo) *BeaconStakerInfo {
+	return &BeaconStakerInfo{funderAddress: funderAddress, rewardReceiver: rewardReceiver, beaconConfirmHeight: beaconConfirmHeight, beaconConfirmTime: beaconConfirmTime, enterTime: enterTime, stakingTx: stakingTx}
 }
 func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
@@ -93,6 +96,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		StakingInfo         map[common.Hash]StakingTxInfo
 		BeaconConfirmHeight uint64
 		BeaconConfirmTime   int64
+		EnterTime           int64
 		FinishSync          bool
 		ShardActiveTime     int
 		LockingEpoch        uint64
@@ -105,6 +109,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		StakingInfo:         c.stakingTx,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		BeaconConfirmTime:   c.beaconConfirmTime,
+		EnterTime:           c.enterTime,
 		ShardActiveTime:     c.shardActiveTime,
 		LockingEpoch:        c.lockingEpoch,
 		UnlockingEpoch:      c.unlockingEpoch,
@@ -125,6 +130,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 		StakingInfo         map[common.Hash]StakingTxInfo
 		BeaconConfirmHeight uint64
 		BeaconConfirmTime   int64
+		EnterTime           int64
 		ShardActiveTime     int
 		LockingEpoch        uint64
 		UnlockingEpoch      uint64
@@ -146,6 +152,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.lockingReason = temp.LockingReason
 	c.finishSync = temp.FinishSync
 	c.funderAddress = temp.FunderAddress
+	c.enterTime = temp.EnterTime
 	return nil
 }
 func (s *BeaconStakerInfo) SetUnstaking() {
@@ -160,6 +167,11 @@ func (s *BeaconStakerInfo) SetLocking(epoch, unlockEpoch uint64, reason int) {
 func (s *BeaconStakerInfo) SetFinishSync() {
 	s.finishSync = true
 }
+
+func (s BeaconStakerInfo) GetEnterTime() int64 {
+	return s.enterTime
+}
+
 func (s *BeaconStakerInfo) FinishSync() bool {
 	return s.finishSync
 }

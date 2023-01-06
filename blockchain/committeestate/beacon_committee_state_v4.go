@@ -61,7 +61,7 @@ type StakerInfo struct {
 	Performance     uint64
 	EpochScore      uint64 // -> sorted list
 	FixedNode       bool
-	enterTime       time.Time
+	enterTime       int64
 	FinishSync      bool
 	ShardActiveTime int
 }
@@ -283,7 +283,7 @@ func (s *BeaconCommitteeStateV4) UpgradeFromV3(stateV3 *BeaconCommitteeStateV3, 
 		}
 		stakingTx := map[common.Hash]statedb.StakingTxInfo{}
 		stakingTx[info.TxStakingID()] = statedb.StakingTxInfo{0, 1}
-		beaconInfo := statedb.NewBeaconStakerInfoWithValue(info.RewardReceiver(), info.RewardReceiver(), 1, 1, stakingTx)
+		beaconInfo := statedb.NewBeaconStakerInfoWithValue(info.RewardReceiver(), info.RewardReceiver(), 1, 1, time.Now().UnixNano(), stakingTx)
 		err := statedb.StoreBeaconStakerInfo(stateDB, cpk, beaconInfo)
 		if err != nil {
 
@@ -399,7 +399,7 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 		s.beaconCommittee[cpkStr] = &StakerInfo{cpkStruct: cpk, CPK: cpkStr, Unstake: info.Unstaking(), StakingAmount: info.TotalStakingAmount(), FinishSync: info.FinishSync(), ShardActiveTime: info.ShardActiveTime()}
 		s.beaconCommittee[cpkStr].EpochScore = commiteeData.BeginEpochInfo[cpkStr].Score
 		s.beaconCommittee[cpkStr].Performance = commiteeData.BeginEpochInfo[cpkStr].Performance
-		s.beaconCommittee[cpkStr].enterTime = time.Now() //the list is already sort, this use execution time to know which committee go first
+		s.beaconCommittee[cpkStr].enterTime = info.GetEnterTime()
 		if index < minBeaconCommitteeSize {
 			s.beaconCommittee[cpkStr].FixedNode = true
 		}
@@ -426,7 +426,7 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 			EpochScore:      commiteeData.BeginEpochInfo[cpkStr].Score,
 			StakingAmount:   info.TotalStakingAmount(),
 			Performance:     s.config.DEFAULT_PERFORMING,
-			enterTime:       time.Now(), //the list is already sort, this use execution time to know which committee go first
+			enterTime:       info.GetEnterTime(),
 			FinishSync:      info.FinishSync(),
 			ShardActiveTime: info.ShardActiveTime(),
 		}
@@ -444,7 +444,7 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 		}
 		s.beaconWaiting[cpkStr] = &StakerInfo{cpkStruct: cpk, CPK: cpkStr, Unstake: info.Unstaking(),
 			StakingAmount: info.TotalStakingAmount(), Performance: s.config.DEFAULT_PERFORMING,
-			enterTime:       time.Now(), //the list is already sort, this use execution time to know which committee go first
+			enterTime:       info.GetEnterTime(),
 			FinishSync:      info.FinishSync(),
 			ShardActiveTime: info.ShardActiveTime()}
 	}
@@ -815,13 +815,13 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 				}
 				stakingInfo := map[common.Hash]statedb.StakingTxInfo{}
 				stakingInfo[txHash] = statedb.StakingTxInfo{beaconStakeInst.StakingAmount[i], env.BeaconHeight}
-				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.FunderAddressStructs[i], beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, env.BeaconHeader.Timestamp, stakingInfo)
+				info := statedb.NewBeaconStakerInfoWithValue(beaconStakeInst.FunderAddressStructs[i], beaconStakeInst.RewardReceiverStructs[i], env.BeaconHeight, env.BeaconHeader.Timestamp, time.Now().UnixNano(), stakingInfo)
 				if err := statedb.StoreBeaconStakerInfo(s.stateDB, key, info); err != nil {
 					return nil, err
 				}
 
 				newStakerInfo := &StakerInfo{key, beaconStakeInst.PublicKeys[i], beaconStakeInst.StakingAmount[i],
-					false, 500, 0, false, time.Now(),
+					false, 500, 0, false, time.Now().UnixNano(),
 					false, 0}
 				if err := s.addToPool(WAITING_POOL, beaconStakeInst.PublicKeys[i], newStakerInfo); err != nil {
 					return nil, err
@@ -1005,11 +1005,11 @@ func GetKeyStructListFromMapStaker(list map[string]*StakerInfo) []incognitokey.C
 		}
 	}
 	sort.Slice(fixNode, func(i, j int) bool {
-		return fixNode[i].enterTime.UnixNano() < fixNode[j].enterTime.UnixNano()
+		return fixNode[i].enterTime < fixNode[j].enterTime
 	})
 	sort.Slice(keys, func(i, j int) bool {
 		if keys[i].EpochScore == keys[j].EpochScore {
-			return keys[i].enterTime.UnixNano() < keys[j].enterTime.UnixNano()
+			return keys[i].enterTime < keys[j].enterTime
 		}
 		return keys[i].EpochScore > keys[j].EpochScore
 	})
