@@ -268,6 +268,10 @@ func GetDetailInfo(tx metadata.Transaction) DetailInfo {
 		for _, req := range md.Data {
 			info.Amount += req.BurningAmount
 		}
+	case 349:
+		info.MetaName = "BurnForCallResponseMeta"
+		md, _ := tx.GetMetadata().(*bridge.BurnForCallResponse)
+		info.PreviousLinkTx = md.RequestedTxID.String()
 	case 266:
 		info.MetaName = "PortalV4SubmitConfirmedTxMeta"
 	case 63:
@@ -337,14 +341,14 @@ func main() {
 	app := devframework.NewAppService(INCOGNITO_FULLNODE, true)
 
 	latestCheckpoint := map[int]uint64{
-		0: 1698080,
-		1: 1698080,
-		2: 1698080,
-		3: 1698080,
-		4: 1698080,
-		5: 1698080,
-		6: 1698080,
-		7: 1698080,
+		0: 2690907,
+		1: 2694413,
+		2: 2693447,
+		3: 2686293,
+		4: 2689368,
+		5: 2686304,
+		6: 2690925,
+		7: 2688256,
 	}
 
 	for i := 0; i < config.Param().ActiveShards; i++ {
@@ -380,7 +384,7 @@ func main() {
 					metadataStr = string(bytes)
 				}
 				//fmt.Println(metadataType, metadataStr)
-				whiteListMap := []int{25, 81, 94, 261, 263, 282, 288, 284, 292, 245, 45, 41, 251, 290, 286, 300, 294, 342, 251, 271, 273, 328, 332, 352, 355, 336, 344, 346, 350}
+				whiteListMap := []int{25, 81, 94, 261, 263, 282, 288, 284, 292, 245, 45, 41, 251, 290, 286, 300, 294, 342, 251, 271, 273, 328, 332, 352, 355, 336, 344, 346, 349, 350}
 				switch tx.(type) {
 				case (*transaction.TxVersion2):
 					for _, coin := range tx.GetProof().GetOutputCoins() {
@@ -394,7 +398,7 @@ func main() {
 							}
 						} else {
 							if len(tx.(*transaction.TxVersion2).SigPubKey) == 0 {
-								fmt.Println(tx.GetMetadataType(), tx.Hash().String())
+								fmt.Println(tx.GetMetadataType(), tx.Hash().String(), err)
 								panic(1)
 							} else if len(tx.(*transaction.TxVersion2).SigPubKey) != 32 {
 								fmt.Println(tx.GetMetadataType(), tx.Hash().String())
@@ -415,7 +419,7 @@ func main() {
 							}
 						} else {
 							if len(tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey) == 0 {
-								fmt.Println(tx.GetMetadataType(), tx.Hash().String())
+								fmt.Println(tx.GetMetadataType(), tx.Hash().String(), err)
 								panic(1)
 							} else if len(tx.(*transaction.TxTokenVersion2).GetTxNormal().(*transaction.TxVersion2).SigPubKey) != 32 { // ma len != 0
 								fmt.Println(tx.GetMetadataType(), tx.Hash().String())
