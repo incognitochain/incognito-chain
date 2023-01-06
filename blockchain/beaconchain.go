@@ -601,8 +601,10 @@ func (chain *BeaconChain) GetNumberOfFixedNode(
 
 func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight uint64) ([]incognitokey.CommitteePublicKey, error) {
 	viewByBlock := chain.multiView.GetViewByHash(blockHash)
+	committee1 := []incognitokey.CommitteePublicKey{}
 	if viewByBlock != nil {
-		return viewByBlock.GetCommittee(), nil
+		// return viewByBlock.GetCommittee(), nil
+		committee1 = viewByBlock.GetCommittee()
 	}
 	bcRootHash, err := chain.Blockchain.GetBeaconConsensusRootHash(chain.GetFinalViewState(), blockHeight)
 	if err != nil {
@@ -618,6 +620,10 @@ func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight 
 	if (blockHeight > v4Height) && (len(committee[chain.GetNumberOfFixedNode(blockHeight):]) != 0) {
 		committeeData := statedb.GetCommitteeData(beaconConsensusStateDB)
 		sortList := append([]incognitokey.CommitteePublicKey{}, committee[chain.GetNumberOfFixedNode(blockHeight):]...)
+		for _, v := range sortList {
+			vSt, _ := v.ToBase58()
+			Logger.log.Infof("debug score %v - %v", vSt[len(vSt)-5:], committeeData.BeginEpochInfo[vSt].Score)
+		}
 		sort.Slice(sortList, func(i, j int) bool {
 			keyA, err := sortList[i].ToBase58()
 			if err != nil {
@@ -640,6 +646,23 @@ func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight 
 		committee = append(committee[:chain.GetNumberOfFixedNode(blockHeight)], sortList...)
 
 	}
+	committee1String, err := incognitokey.CommitteeKeyListToString(committee1)
+	if err != nil {
+		return nil, err
+	}
+	committeeString, err := incognitokey.CommitteeKeyListToString(committee)
+	if err != nil {
+		return nil, err
+	}
+	logline := fmt.Sprintf("Computer committee and compare:\nMem:")
+	for _, v := range committee1String {
+		logline += fmt.Sprintf(" %v", v[len(v)-5:])
+	}
+	logline += fmt.Sprintf("\nDB:")
+	for _, v := range committeeString {
+		logline += fmt.Sprintf(" %v", v[len(v)-5:])
+	}
+	Logger.log.Info(logline)
 	return committee, nil
 }
 
