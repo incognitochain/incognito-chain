@@ -32,12 +32,12 @@ var (
 )
 
 func main() {
-	readData()
 	fullnode := flag.String("h", "http://localhost:8334/", "Fullnode Endpoint")
 	flag.Parse()
 
 	app := devframework.NewAppService(*fullnode, true)
 
+	readData(app)
 	bState, err := app.GetBeaconBestState()
 	if err != nil {
 		panic(err)
@@ -175,7 +175,11 @@ func main() {
 			lastCs = new(jsonresult.CommiteeState)
 		}
 		if cs.IsDiffFrom(lastCs) {
-			if err = updateRole(shardValidators, beaconValidators, cs, false); err != nil {
+			isInit := false
+			if shouldWatchOnly {
+				isInit = true
+			}
+			if err = updateRole(shardValidators, beaconValidators, cs, isInit); err != nil {
 				panic(err)
 			}
 			*lastCs = *cs
