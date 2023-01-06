@@ -1,9 +1,11 @@
 package statedb
 
 import (
+	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"sort"
 )
 
 func StoreBeaconStakerInfo(
@@ -127,9 +129,13 @@ func GetBeaconCommittee(stateDB *StateDB) []incognitokey.CommitteePublicKey {
 		return tempBeaconCommitteeStates[i].EnterTime() < tempBeaconCommitteeStates[j].EnterTime()
 	})
 	list := []incognitokey.CommitteePublicKey{}
+	logline := "debugscore"
 	for _, tempBeaconCommitteeState := range tempBeaconCommitteeStates {
+		v, _ := tempBeaconCommitteeState.committeePublicKey.ToBase58()
+		logline += fmt.Sprintf(" %v-%v ", v[len(v)-5:], tempBeaconCommitteeState.enterTime)
 		list = append(list, tempBeaconCommitteeState.CommitteePublicKey())
 	}
+	fmt.Println(logline)
 	return list
 }
 func DeleteBeaconCommittee(stateDB *StateDB, beaconCommittees []incognitokey.CommitteePublicKey) error {
