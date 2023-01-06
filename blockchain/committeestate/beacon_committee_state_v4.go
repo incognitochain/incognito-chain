@@ -530,13 +530,31 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 func (s *BeaconCommitteeStateV4) commiteeAndPendingHash() common.Hash {
 	type Data struct {
 		Config          BeaconCommitteeStateV4Config
-		BeaconCommittee map[string]*StakerInfo
-		BeaconPending   map[string]*StakerInfo
+		BeaconCommittee []*StakerInfo
+		BeaconPending   []*StakerInfo
 	}
+	beaconCommittee := s.GetBeaconCommittee()
+	beaconPending := s.GetBeaconSubstitute()
 	data := Data{
-		s.config,
-		s.beaconCommittee,
-		s.beaconPending,
+		Config:          s.config,
+		BeaconCommittee: []*StakerInfo{},
+		BeaconPending:   []*StakerInfo{},
+	}
+	for _, v := range beaconCommittee {
+		vStr, _ := v.ToBase58()
+		stakerInfo := s.getStakerInfo(vStr)
+		if stakerInfo == nil {
+			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
+		}
+		data.BeaconCommittee = append(data.BeaconCommittee, stakerInfo)
+	}
+	for _, v := range beaconPending {
+		vStr, _ := v.ToBase58()
+		stakerInfo := s.getStakerInfo(vStr)
+		if stakerInfo == nil {
+			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
+		}
+		data.BeaconPending = append(data.BeaconPending, stakerInfo)
 	}
 	b, _ := json.Marshal(data)
 	hash := common.HashH(b)
@@ -545,13 +563,31 @@ func (s *BeaconCommitteeStateV4) commiteeAndPendingHash() common.Hash {
 func (s *BeaconCommitteeStateV4) waitingAndSlashingHash() common.Hash {
 	type Data struct {
 		Config        BeaconCommitteeStateV4Config
-		BeaconWaiting map[string]*StakerInfo
-		BeaconLocking map[string]*LockingInfo
+		BeaconWaiting []*StakerInfo
+		BeaconLocking []*LockingInfo
 	}
+	beaconWaiting := s.GetBeaconWaiting()
+	beaconLocking := s.GetBeaconLocking()
 	data := Data{
-		s.config,
-		s.beaconWaiting,
-		s.beaconLocking,
+		Config:        s.config,
+		BeaconWaiting: []*StakerInfo{},
+		BeaconLocking: []*LockingInfo{},
+	}
+	for _, v := range beaconWaiting {
+		vStr, _ := v.ToBase58()
+		stakerInfo := s.getStakerInfo(vStr)
+		if stakerInfo == nil {
+			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
+		}
+		data.BeaconWaiting = append(data.BeaconWaiting, stakerInfo)
+	}
+	for _, v := range beaconLocking {
+		vStr, _ := v.ToBase58()
+		stakerLockingInfo, ok := s.beaconLocking[vStr]
+		if !ok {
+			panic(fmt.Sprintf("Can not get staker locking info of this pk %v", vStr))
+		}
+		data.BeaconLocking = append(data.BeaconLocking, stakerLockingInfo)
 	}
 	b, _ := json.Marshal(data)
 	hash := common.HashH(b)
