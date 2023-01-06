@@ -397,7 +397,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		return err
 	}
 	if isVerifySig {
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee()); err != nil {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee(), beaconBestState.GetProposerLength()); err != nil {
 			return err
 		}
 	}
@@ -582,6 +582,20 @@ func (curView *BeaconBestState) updateBeaconBestState(
 					Logger.log.Warnf("This source code does not contain new feature or already trigger the feature! Feature:" + feature)
 					return nil, nil, nil, nil, NewBlockChainError(OutdatedCodeError, errors.New("Expected having feature "+feature))
 				}
+
+				//update NumberOfFixedShardBlockValidatorV2
+				switch feature {
+				case REDUCE_FIX_NODE:
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				case REDUCE_FIX_NODE_V2:
+					SFV3_MinShardCommitteeSize = 4
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				case REDUCE_FIX_NODE_V3:
+					SFV3_MinShardCommitteeSize = 4
+					beaconBestState.MinShardCommitteeSize = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+					beaconBestState.NumberOfFixedShardBlockValidator = config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2
+				}
+
 			}
 		}
 	}
@@ -597,7 +611,6 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	//checkpoint timeslot
 	curTS := beaconBestState.CalculateTimeSlot(beaconBlock.GetProposeTime())
 	for feature, _ := range config.Param().BlockTimeParam {
-
 		if triggerHeight, ok := beaconBestState.TriggeredFeature[feature]; ok {
 			if triggerHeight == beaconBlock.GetHeight() {
 				beaconBestState.TSManager.updateNewAnchor(beaconBlock.GetProposeTime(), beaconBlock.GetProposeTime(), curTS, int(config.Param().BlockTimeParam[feature]), feature, triggerHeight)
@@ -1078,6 +1091,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		strconv.Itoa(metadata.BurningAvaxConfirmMeta),
 		strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta),
 		strconv.Itoa(metadata.BurningNearConfirmMeta),
+		strconv.Itoa(metadata.BurningPRVRequestConfirmMeta),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)

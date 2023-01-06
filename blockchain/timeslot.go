@@ -68,3 +68,11 @@ func (s *TSManager) calculateTimeslot(t int64) int64 {
 
 	return checkpoint.StartTimeslot + rangeTS/int64(checkpoint.Timeslot)
 }
+
+func (s *TSManager) pastHalfTimeslot(t int64) bool {
+	lastAnchor := s.getLatestAnchor()
+	if (t-lastAnchor.StartTime)%s.getCurrentTS() < s.getCurrentTS()/2 {
+		return false
+	}
+	return true
+}

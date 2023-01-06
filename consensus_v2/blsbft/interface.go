@@ -63,11 +63,9 @@ type Chain interface {
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	InsertWithPrevValidationData(types.BlockInterface, string) error
 	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
-	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 	GetChainDatabase() incdb.Database
-
 	//for new syncker
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64
@@ -85,6 +83,7 @@ type Chain interface {
 	) []incognitokey.CommitteePublicKey
 	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
 	GetBlockByHash(hash common.Hash) (types.BlockInterface, error)
+	CollectTxs(view multiview.View)
 }
 
 type CommitteeChainHandler interface {

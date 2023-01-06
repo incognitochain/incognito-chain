@@ -23,6 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -294,13 +295,14 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	beaconHeight := beaconState.BeaconHeight
-	realFee, _, _, err := txService.EstimateFee(2, unitFeeNativeToken, false, candidatePlainCoins,
+	estFeeRes, err := txService.EstimateFee(2, unitFeeNativeToken, false, candidatePlainCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
 		nil, int64(beaconHeight))
 	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
+	realFee := estFeeRes.EstimateFee
 
 	// Set the fee to be higher for making sure tx will be confirmed
 	// This is a work-around solution only, and it only applies to the case where unitFeeNativeToken < 0.
@@ -362,13 +364,15 @@ func (txService TxService) chooseCoinsVer1ByKeyset(keySet *incognitokey.KeySet, 
 	}
 	beaconHeight := beaconState.BeaconHeight
 	paymentInfos := coin.CreatePaymentInfosFromPlainCoinsAndAddress(plainCoins, keySet.PaymentAddress, []byte{})
-	realFee, _, _, err := txService.EstimateFee(2, unitFeeNativeToken, false, plainCoins,
+	estFeeRes, err := txService.EstimateFee(2, unitFeeNativeToken, false, plainCoins,
 		paymentInfos, shardIDSender, numBlock, false,
 		metadataParam,
 		nil, int64(beaconHeight))
 	if err != nil {
 		return nil, nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
+	realFee := estFeeRes.EstimateFee
+
 	if paymentInfos[0].Amount < realFee {
 		return nil, nil, 0, NewRPCError(RejectInvalidTxFeeTooLargeError, err)
 	}
@@ -449,13 +453,14 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	}
 	beaconHeight := beaconState.BeaconHeight
 	ver, err := transaction.GetTxVersionFromCoins(candidatePlainCoins)
-	realFee, _, _, err := txService.EstimateFee(int(ver), unitFeeNativeToken, false, candidatePlainCoins,
+	estFeeRes, err := txService.EstimateFee(int(ver), unitFeeNativeToken, false, candidatePlainCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam,
 		privacyCustomTokenParams, int64(beaconHeight))
 	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
+	realFee := estFeeRes.EstimateFee
 	if totalAmmount == 0 && realFee == 0 {
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
@@ -498,7 +503,7 @@ func (txService TxService) EstimateFee(
 	numBlock uint64, hasPrivacy bool,
 	metadata metadata.Metadata,
 	privacyCustomTokenParams *transaction.TokenParam,
-	beaconHeight int64) (uint64, uint64, uint64, error) {
+	beaconHeight int64) (*jsonresult.EstimateFeeResult, error) {
 	if numBlock == 0 {
 		numBlock = 1000
 	}
@@ -514,28 +519,48 @@ func (txService TxService) EstimateFee(
 	} else {
 		tokenId = nil
 	}
-	estimateFeeCoinPerKb, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId, beaconHeight)
+	estimateFeeCoinPerKb, _, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId, beaconHeight)
 	if err != nil {
-		return 0, 0, 0, err
+		return nil, err
 	}
 	if txService.Wallet != nil {
 		estimateFeeCoinPerKb += uint64(txService.Wallet.GetConfig().IncrementalFee)
 	}
+
 	limitFee := uint64(0)
+	minFeePerTx := uint64(0)
+	specifiedFeeTx := uint64(0)
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFeeForNativeToken()
+		minFeePerTx = feeEstimator.GetMinFeePerTx()
+		specifiedFeeTx = feeEstimator.GetSpecifiedFeeTx()
+	}
+	if metadata != nil && metadataCommon.IsSpecifiedFeeMetaType(metadata.GetType()) && minFeePerTx < specifiedFeeTx {
+		minFeePerTx = specifiedFeeTx
 	}
 	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(version, len(candidatePlainCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
-	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb, nil
+	if realFee < minFeePerTx {
+		realFee = minFeePerTx
+	}
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb, realFee, minFeePerTx)
+	return result, nil
 }
 
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 // if tokenID != nil: return fee per kb for pToken (return error if there is no exchange rate between pToken and native token)
 // if tokenID == nil: return fee per kb for native token
-func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash, beaconHeight int64) (uint64, error) {
+func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash, beaconHeight int64) (uint64, uint64, error) {
+	// get limit fee for native token
+	limitFee := uint64(0)
+	minFeePerTx := uint64(0)
+	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
+		limitFee = feeEstimator.GetLimitFeeForNativeToken()
+		minFeePerTx = feeEstimator.GetMinFeePerTx()
+	}
+
 	if defaultFee == 0 {
-		return uint64(defaultFee), nil
+		return uint64(defaultFee), minFeePerTx, nil
 	}
 	unitFee := uint64(1)
 	if defaultFee == -1 {
@@ -550,24 +575,20 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		// get default fee (in native token or in ptoken)
 		unitFee = uint64(defaultFee)
 	}
-	// get limit fee for native token
-	limitFee := uint64(0)
-	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-		limitFee = feeEstimator.GetLimitFeeForNativeToken()
-	}
+
 	if tokenId == nil {
 		// check with limit fee
 		if unitFee < limitFee {
 			unitFee = limitFee
 		}
-		return unitFee, nil
+		return unitFee, minFeePerTx, nil
 	} else {
 		// convert limit fee native token to limit fee ptoken
 		beaconStateDB, err := txService.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), txService.BlockChain.GetBeaconChainDatabase())
 		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, beaconStateDB)
 		limitFeePToken := uint64(math.Ceil(limitFeePTokenTmp))
 		if err != nil {
-			return uint64(0), err
+			return uint64(0), minFeePerTx, err
 		}
 		// check with limit fee ptoken
 		if unitFee < limitFeePToken {
@@ -576,7 +597,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		// add extra fee to make sure tx is confirmed
 		// extra fee = unitFee * 10%
 		unitFee += uint64(math.Ceil(float64(unitFee) * float64(0.1)))
-		return unitFee, nil
+		return unitFee, minFeePerTx, nil
 	}
 }
 
@@ -2203,8 +2224,9 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	if err != nil {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
-	realFee, _, _, _ := txService.EstimateFee(int(ver),
+	estFeeRes, _ := txService.EstimateFee(int(ver),
 		estimateFeeCoinPerKb, isGetPTokenFee, plainCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, int64(beaconHeight))
+	realFee := estFeeRes.EstimateFee
 	if len(plainCoins) == 0 {
 		realFee = 0
 	}

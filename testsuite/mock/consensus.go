@@ -70,8 +70,8 @@ func (c *Consensus) ValidateProducerSig(block types.BlockInterface, consensusTyp
 	return c.consensusEngine.ValidateProducerSig(block, consensusType)
 }
 
-func (c *Consensus) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	return c.consensusEngine.ValidateBlockCommitteSig(block, committee)
+func (c *Consensus) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
+	return c.consensusEngine.ValidateBlockCommitteSig(block, committee, numFixNode)
 }
 
 func (c *Consensus) IsCommitteeInChain(sid int) bool {

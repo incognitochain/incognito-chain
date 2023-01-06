@@ -3,6 +3,11 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -10,10 +15,6 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
-	"net"
-	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -207,7 +208,7 @@ func (sim *NodeEngine) Init() {
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
 			mempool.DefaultEstimateFeeMinRegisteredBlocks,
-			config.Config().LimitFee)
+			config.Config().LimitFee, config.Config().MinFeePerTx, 0)
 	}
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)

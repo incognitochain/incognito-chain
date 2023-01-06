@@ -68,8 +68,8 @@ func (iReq IssuingEVMAuroraRequest) ValidateTxWithBlockChain(tx metadataCommon.T
 }
 
 func (iReq IssuingEVMAuroraRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	if shardViewRetriever.GetTriggeredFeature()["auroraavaxbridge"] == 0 {
-		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature not enabled"))
+	if shardViewRetriever.GetTriggeredFeature()["pdao"] == 0 {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.UnexpectedError, errors.New("Feature disabled until pdao enabled"))
 	}
 
 	if iReq.TxHash.IsZeroValue() || iReq.IncTokenID.IsZeroValue() {

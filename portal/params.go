@@ -397,7 +397,7 @@ var mainnetPortalParam = PortalParams{
 			},
 			PortalTokens: initPortalTokensV4ForMainNet(),
 			DefaultFeeUnshields: map[string]uint64{
-				MainnetPortalV4BTCID: 30000, // nano pbtc
+				MainnetPortalV4BTCID: 50000, // nano pbtc
 			},
 			MinShieldAmts: map[string]uint64{
 				MainnetPortalV4BTCID: 100000, // nano pbtc
@@ -411,7 +411,7 @@ var mainnetPortalParam = PortalParams{
 			MinUTXOsInVault: map[string]uint64{
 				MainnetPortalV4BTCID: 500,
 			},
-			BatchNumBlks:                45, // ~ 30 mins
+			BatchNumBlks:                90, // ~ 30 mins
 			PortalReplacementAddress:    "12sgiLdxrrmWx1qyoqxemoKdjAvUko8txG8isq3woUK73ocB4dtjaFzZVmCYQYcchzNEkptAzCK3tZF55xQvx4gcT82KzXCkMXFMbdP1A3kkhQ3NhxKpqufayLbBJ2v7MCdfkS8wvfrLXdhAXAMG",
 			MaxFeePercentageForEachStep: 25, // ~ 25% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,

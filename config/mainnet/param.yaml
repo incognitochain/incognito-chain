@@ -16,6 +16,7 @@ committee_size:
   shard_committee_size_key_list_v2: 22
   beacon_committee_size_key_list_v2: 7
   number_of_fixed_shard_block_validators: 22
+  number_of_fixed_shard_validators_v2: 16
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
@@ -39,7 +40,7 @@ plg_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 ftm_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 aurora_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
 avax_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
-prv_erc20_contract_address: "0xB64fde8f199F073F41c132B9eC7aD5b61De0B1B7"
+prv_erc20_contract_address: "0x6722ec501bE09fb221bCC8a46F9660868d0a6c63"
 prv_bep20_contract_address: "0xB64fde8f199F073F41c132B9eC7aD5b61De0B1B7"
 near_contract_address: "incognito_chain.near"
 dao_address: "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" # community fund
@@ -94,8 +95,9 @@ ftm_param:
     - "https://fantom-mainnet.public.blastapi.io"
 aurora_param:
   host:
-    - "https://mainnet.aurora.dev"
     - "https://aurora-mainnet.infura.io/v3/9bc873177cf74a03a35739e45755a9ac"
+    - "https://nd-779-760-011.p2pify.com/caabeca56964b78c96ca321790c30777"
+    - "https://aurora-mainnet.infura.io/v3/3544588d65864af7aaab0e945ec54a01"
 avax_param:
   host:
     - "https://api.avax.network/ext/bc/C/rpc"
@@ -129,6 +131,9 @@ auto_enable_feature:
       min_trigger: 2230077
       force_trigger: 1e9
       require_percentage: 85
+  - reduce_fix_node_v3:
+      min_trigger: 2507098
+      require_percentage: 85
   - maxcommitteesize48:
       min_trigger: 1892003
       force_trigger: 1000000000
@@ -140,18 +145,33 @@ auto_enable_feature:
   - blocktime20s_15_9:
       min_trigger: 2275826
       require_percentage: 85
+  - blocktime15s_27_12:
+      min_trigger: 2668878
+      require_percentage: 75
   - auroraavaxbridge:
       min_trigger: 2403039
       require_percentage: 75
   - nearbridge:
       min_trigger: 2403039
       require_percentage: 75
+  - burnfee95:
+      min_trigger: 2640920
+      require_percentage: 75
+  - aurorahotfix:
+      min_trigger: 2640920
+      require_percentage: 75
+  - pdao:
+      min_trigger: 2668878
+      require_percentage: 75
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
+  - "blocktime15s_27_12": 15
 feature_version:
   - instantfinalityv2: 9
   - blocktime20s_15_9: 10
+  - reduce_fix_node_v3: 11
+  - blocktime15s_27_12: 12
 transactions_param:
   lowerbound: 15
   upperbound: 100

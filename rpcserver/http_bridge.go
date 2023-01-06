@@ -1055,3 +1055,33 @@ func (httpServer *HttpServer) handleCreateAndSendBurningNearRequest(params inter
 
 	return sendResult, nil
 }
+
+// burn prv for pdao purpose
+// createBridgeAggBurnForCallTransaction
+func (httpServer *HttpServer) handleCreateRawTxWithBurningPRVVoteReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningPRVRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+		true,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningPRVVoteRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningPRVVoteReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}

@@ -171,7 +171,7 @@ func NewBurningRequestMetadata(
 	networkID uint,
 	expectedAmount uint64,
 	isDepositToSC *bool,
-) (*metadataBridge.BurningRequest, *RPCError) {
+) (metadata.Metadata, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -191,19 +191,40 @@ func NewBurningRequestMetadata(
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
-	meta, err := metadataBridge.NewBurningRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenIDHash,
-		tokenName,
-		remoteAddress,
-		burningMetaType,
-	)
+	var meta metadata.Metadata
+	if burningMetaType == metadata.BurningPRVRequestMeta {
+		var recv privacy.OTAReceiver
+		err = recv.FromAddress(paymentAddr)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+		meta, err = metadataBridge.NewBurningPRVRequest(
+			paymentAddr,
+			uint64(voutsAmount),
+			*tokenIDHash,
+			tokenName,
+			remoteAddress,
+			recv,
+			burningMetaType,
+		)
+		if version == 1 {
+			meta.(*metadataBridge.BurningPRVRequest).BurnerAddress.OTAPublic = nil
+		}
+	} else {
+		meta, err = metadataBridge.NewBurningRequest(
+			paymentAddr,
+			uint64(voutsAmount),
+			*tokenIDHash,
+			tokenName,
+			remoteAddress,
+			burningMetaType,
+		)
+		if version == 1 {
+			meta.(*metadataBridge.BurningRequest).BurnerAddress.OTAPublic = nil
+		}
+	}
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
-	}
-	if version == 1 {
-		meta.BurnerAddress.OTAPublic = nil
 	}
 
 	return meta, nil

@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 	"strconv"
 
@@ -47,7 +49,8 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 		strconv.Itoa(metadata.BurningPLGConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningPLGConfirmMeta),
 		strconv.Itoa(metadata.BurningFantomConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningFantomConfirmMeta),
 		strconv.Itoa(metadata.BurningAuroraConfirmMeta), strconv.Itoa(metadata.BurningAvaxConfirmMeta),
-		strconv.Itoa(metadata.BurningAuroraConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta):
+		strconv.Itoa(metadata.BurningAuroraConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningAvaxConfirmForDepositToSCMeta),
+		strconv.Itoa(metadata.BurningPRVRequestConfirmMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {
@@ -145,13 +148,11 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
 	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
 	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
-	height, _, errHeight := base58.Base58Check{}.Decode(inst[7])
-	if err := common.CheckError(errMeta, errShard, errToken, errAddr, errAmount, errTx, errIncToken, errHeight); err != nil {
+	if err := common.CheckError(errMeta, errShard, errToken, errAddr, errAmount, errTx, errIncToken); err != nil {
 		err = errors.Wrapf(err, "inst: %+v", inst)
 		BLogger.log.Error(err)
 		return nil, err
 	}
-
 	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType)
@@ -161,6 +162,26 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
 	flatten = append(flatten, incTokenID...)
+	var heightStr string
+	if metaType == metadata.BurningPRVRequestConfirmMeta {
+		if len(inst) < 9 {
+			return nil, errors.New("invalid length of BurningPRVRequestConfirmMeta inst")
+		}
+		var r privacy.OTAReceiver
+		err := r.FromString(inst[7])
+		if err != nil {
+			return nil, fmt.Errorf("invalid recv %v with error %v", inst[7], err)
+		}
+		redepositAddr, _ := r.Bytes()
+		flatten = append(flatten, redepositAddr...)
+		heightStr = inst[8]
+	} else {
+		heightStr = inst[7]
+	}
+	height, _, err := base58.Base58Check{}.Decode(heightStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid beacon height %v with error %v", heightStr, err)
+	}
 	flatten = append(flatten, toBytes32BigEndian(height)...)
 	return flatten, nil
 }

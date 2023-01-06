@@ -380,7 +380,7 @@ func (actorV1 *actorV1) run() error {
 
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
-						err = ValidateCommitteeSig(actorV1.roundData.block, actorV1.roundData.committee)
+						err = ValidateCommitteeSig(actorV1.roundData.block, actorV1.roundData.committee, actorV1.chain.GetBestView().GetProposerLength())
 						if err != nil {
 							actorV1.logger.Error(err)
 							actorV1.logger.Errorf("actorV1.RoundData.Block.GetValidationField()=%+v\n", actorV1.roundData.block.GetValidationField())

@@ -140,7 +140,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	// Create db for mempool and use it
 	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.MempoolDir))
 	if err != nil {
-		Logger.log.Error("could not open connection to leveldb")
+		Logger.log.Error("could not open connection to leveldb! Clear mempool DB")
 		Logger.log.Error(err)
 		panic(err)
 	}

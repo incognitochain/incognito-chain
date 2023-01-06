@@ -3,11 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -350,7 +351,7 @@ func (chain *BeaconChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDa
 	if err != nil {
 		return err
 	}
-	if err = chain.ValidateBlockSignatures(beaconBlk, committees); err != nil {
+	if err = chain.ValidateBlockSignatures(beaconBlk, committees, chain.GetBestView().GetProposerLength()); err != nil {
 		return err
 	}
 
@@ -381,6 +382,10 @@ func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(block ty
 }
 func (chain *BeaconChain) InsertWithPrevValidationData(types.BlockInterface, string) error {
 	panic("this function is not supported on beacon chain")
+}
+
+func (chain *BeaconChain) CollectTxs(view multiview.View) {
+	return
 }
 
 func (chain *BeaconChain) GetBlockByHash(hash common.Hash) (types.BlockInterface, error) {
@@ -416,12 +421,12 @@ func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, signi
 // 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 // }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numOfFixNode int) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees, numOfFixNode); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
@@ -512,7 +517,7 @@ func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.Portal
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
-//CommitteesByShardID ...
+// CommitteesByShardID ...
 var CommitteeFromBlockCache, _ = lru.New(500)
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
@@ -538,8 +543,7 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shard
 		cache.Add(cacheKey, committees)
 		return committees, err
 	}
-
-	return committees, nil
+	return committees, fmt.Errorf("Cannot find committee from shardID %v viewHash %v", shardID, hash.String())
 }
 
 func (chain *BeaconChain) GetSigningCommittees(
