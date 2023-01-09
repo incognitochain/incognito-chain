@@ -69,11 +69,11 @@ func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 			DEFAULT_PERFORMING:  500,
 			INCREASE_PERFORMING: 1015,
 			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    3,
-			MIN_WAITING_PERIOD:  60 * 60, //seconds
+			MIN_ACTIVE_SHARD:    2,
+			MIN_WAITING_PERIOD:  60, //seconds
 			MIN_PERFORMANCE:     370,
-			LOCKING_PERIOD:      10,
-			LOCKING_FACTOR:      5,
+			LOCKING_PERIOD:      2,
+			LOCKING_FACTOR:      1,
 		}
 	}
 }
@@ -218,14 +218,14 @@ func (s *BeaconCommitteeStateV4) setEnterTime(cpk string, t int64) error {
 	return fmt.Errorf("Cannot find cpk %v in memstate", cpk)
 }
 
-func (s *BeaconCommitteeStateV4) setFinishSync(cpk string) error {
+func (s *BeaconCommitteeStateV4) setFinishSync(cpk string, b bool) error {
 	if stakerInfo := s.getStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
 		}
-		info.SetFinishSync()
-		stakerInfo.FinishSync = true
+		info.SetFinishSync(b)
+		stakerInfo.FinishSync = b
 		return statedb.StoreBeaconStakerInfo(s.stateDB, stakerInfo.cpkStruct, info)
 	}
 	return fmt.Errorf("Cannot find cpk %v in memstate", cpk)
@@ -360,6 +360,22 @@ func (s *BeaconCommitteeStateV4) GetBeaconCommittee() []incognitokey.CommitteePu
 
 func (s *BeaconCommitteeStateV4) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
 	return GetKeyStructListFromMapStaker(s.beaconWaiting)
+}
+
+//result is not consistent
+func (s *BeaconCommitteeStateV4) GetUnsyncBeaconValidator() []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	for _, v := range s.beaconWaiting {
+		if !v.FinishSync {
+			res = append(res, v.cpkStruct)
+		}
+	}
+	for _, v := range s.beaconPending {
+		if !v.FinishSync {
+			res = append(res, v.cpkStruct)
+		}
+	}
+	return res
 }
 
 func (s *BeaconCommitteeStateV4) GetBeaconLocking() []incognitokey.CommitteePublicKey {
@@ -768,6 +784,9 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 			stakerInfo = s.getStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
 			stakerInfo.Performance = s.config.DEFAULT_PERFORMING
+			log.Println("disable finish sync", false, k)
+			s.setFinishSync(k, false)
+
 			if err = s.addToPool(PENDING_POOL, k, stakerInfo); err != nil {
 				return nil, err
 			}
@@ -828,7 +847,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconFinishSyncInstruction(env *BeaconC
 				return nil, err
 			}
 			for _, cpk := range finishSyncInst.PublicKeys {
-				if err = s.setFinishSync(cpk); err != nil {
+				log.Println("set finish sync", cpk)
+				if err = s.setFinishSync(cpk, true); err != nil {
 					return nil, err
 				}
 			}

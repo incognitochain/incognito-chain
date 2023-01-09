@@ -159,8 +159,8 @@ func (s *BeaconStakerInfo) SetLocking(epoch, unlockEpoch uint64, reason int) {
 	s.lockingReason = reason
 }
 
-func (s *BeaconStakerInfo) SetFinishSync() {
-	s.finishSync = true
+func (s *BeaconStakerInfo) SetFinishSync(b bool) {
+	s.finishSync = b
 }
 
 func (s *BeaconStakerInfo) SetEnterTime(t int64) {
