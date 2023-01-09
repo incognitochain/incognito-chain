@@ -42,7 +42,7 @@ func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 		DECREASE_PERFORMING: 965,
 		MIN_ACTIVE_SHARD:    2,
 		MIN_WAITING_PERIOD:  60, //seconds
-		MIN_PERFORMANCE:     450,
+		MIN_PERFORMANCE:     400,
 		LOCKING_PERIOD:      3,
 	}
 }
