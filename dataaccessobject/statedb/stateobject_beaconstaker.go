@@ -163,6 +163,10 @@ func (s *BeaconStakerInfo) SetFinishSync() {
 	s.finishSync = true
 }
 
+func (s *BeaconStakerInfo) SetEnterTime(t int64) {
+	s.enterTime = t
+}
+
 func (s BeaconStakerInfo) GetEnterTime() int64 {
 	return s.enterTime
 }
