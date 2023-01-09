@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"sort"
 	"sync"
 	"time"
 
@@ -592,6 +593,12 @@ func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognit
 
 }
 
+func (chain *BeaconChain) GetNumberOfFixedNode(
+	blockHeight uint64,
+) int {
+	return config.Param().CommitteeSize.NumberOfFixedBeaconBlockValidator
+}
+
 func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight uint64) ([]incognitokey.CommitteePublicKey, error) {
 	viewByBlock := chain.multiView.GetViewByHash(blockHash)
 	if viewByBlock != nil {
@@ -606,22 +613,42 @@ func (chain *BeaconChain) GetCommitteeByHash(blockHash common.Hash, blockHeight 
 		Logger.log.Error("Cannot get beacon consensus statedb!,", err.Error())
 		return nil, err
 	}
-	return statedb.GetBeaconCommittee(beaconConsensusStateDB), nil
+	committee := statedb.GetBeaconCommittee(beaconConsensusStateDB)
+	v4Height := chain.GetFinalViewState().TriggeredFeature[BEACON_STAKING_FLOW_V4]
+	if (blockHeight > v4Height) && (len(committee[chain.GetNumberOfFixedNode(blockHeight):]) != 0) {
+		committeeData := statedb.GetCommitteeData(beaconConsensusStateDB)
+		sortList := append([]incognitokey.CommitteePublicKey{}, committee[chain.GetNumberOfFixedNode(blockHeight):]...)
+		sort.Slice(sortList, func(i, j int) bool {
+			keyA, err := sortList[i].ToBase58()
+			if err != nil {
+				panic(err)
+			}
+			keyB, err := sortList[j].ToBase58()
+			if err != nil {
+				panic(err)
+			}
+			scoreA := uint64(0)
+			if info, ok := committeeData.BeginEpochInfo[keyA]; ok {
+				scoreA = info.Score
+			}
+			scoreB := uint64(0)
+			if info, ok := committeeData.BeginEpochInfo[keyB]; ok {
+				scoreB = info.Score
+			}
+			return scoreA < scoreB
+		})
+		committee = append(committee[:chain.GetNumberOfFixedNode(blockHeight)], sortList...)
+
+	}
+	return committee, nil
 }
 
 func (chain *BeaconChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
-	beaconConsensusStateRootHash, err := chain.Blockchain.GetBeaconRootsHashFromBlockHeight(
-		h - 1, //the previous height statedb store the committee of current height
-	)
+	blockHash, err := chain.Blockchain.GetBeaconBlockHashByHeight(chain.GetFinalViewState(), chain.GetBestView(), h)
 	if err != nil {
 		return nil, err
 	}
-	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(chain.GetDatabase()))
-	if err != nil {
-		return nil, err
-	}
-	return statedb.GetBeaconCommittee(stateDB), nil
+	return chain.GetCommitteeByHash(*blockHash, h)
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() int {

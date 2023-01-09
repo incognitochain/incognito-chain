@@ -3,12 +3,13 @@ package committeestate
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"log"
 	"reflect"
 	"runtime"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -345,7 +346,7 @@ func (s *BeaconCommitteeStateV4) GetNonSlashingRewardReceiver(staker []incognito
 		if !exists || info == nil {
 			return []key.PaymentAddress{}, fmt.Errorf(kString + "not found!")
 		}
-		if info.LockingReason() != statedb.RETURN_BY_SLASH {
+		if info.LockingReason() != statedb.BY_SLASH {
 			res = append(res, info.RewardReceiver())
 		}
 	}
@@ -369,7 +370,7 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 			cpk,
 			(*s.beaconLocking[cpk]).LockingEpoch,
 			(*s.beaconLocking[cpk]).LockingReason,
-			(*s.beaconLocking[cpk]).LockingEpoch + s.config.LOCKING_PERIOD,
+			stakerInfo.UnlockingEpoch(),
 			stakerInfo.TotalStakingAmount(),
 		}
 		return detail
@@ -529,13 +530,31 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 func (s *BeaconCommitteeStateV4) commiteeAndPendingHash() common.Hash {
 	type Data struct {
 		Config          BeaconCommitteeStateV4Config
-		BeaconCommittee map[string]*StakerInfo
-		BeaconPending   map[string]*StakerInfo
+		BeaconCommittee []*StakerInfo
+		BeaconPending   []*StakerInfo
 	}
+	beaconCommittee := s.GetBeaconCommittee()
+	beaconPending := s.GetBeaconSubstitute()
 	data := Data{
-		s.config,
-		s.beaconCommittee,
-		s.beaconPending,
+		Config:          s.config,
+		BeaconCommittee: []*StakerInfo{},
+		BeaconPending:   []*StakerInfo{},
+	}
+	for _, v := range beaconCommittee {
+		vStr, _ := v.ToBase58()
+		stakerInfo := s.getStakerInfo(vStr)
+		if stakerInfo == nil {
+			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
+		}
+		data.BeaconCommittee = append(data.BeaconCommittee, stakerInfo)
+	}
+	for _, v := range beaconPending {
+		vStr, _ := v.ToBase58()
+		stakerInfo := s.getStakerInfo(vStr)
+		if stakerInfo == nil {
+			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
+		}
+		data.BeaconPending = append(data.BeaconPending, stakerInfo)
 	}
 	b, _ := json.Marshal(data)
 	hash := common.HashH(b)
@@ -544,13 +563,31 @@ func (s *BeaconCommitteeStateV4) commiteeAndPendingHash() common.Hash {
 func (s *BeaconCommitteeStateV4) waitingAndSlashingHash() common.Hash {
 	type Data struct {
 		Config        BeaconCommitteeStateV4Config
-		BeaconWaiting map[string]*StakerInfo
-		BeaconLocking map[string]*LockingInfo
+		BeaconWaiting []*StakerInfo
+		BeaconLocking []*LockingInfo
 	}
+	beaconWaiting := s.GetBeaconWaiting()
+	beaconLocking := s.GetBeaconLocking()
 	data := Data{
-		s.config,
-		s.beaconWaiting,
-		s.beaconLocking,
+		Config:        s.config,
+		BeaconWaiting: []*StakerInfo{},
+		BeaconLocking: []*LockingInfo{},
+	}
+	for _, v := range beaconWaiting {
+		vStr, _ := v.ToBase58()
+		stakerInfo := s.getStakerInfo(vStr)
+		if stakerInfo == nil {
+			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
+		}
+		data.BeaconWaiting = append(data.BeaconWaiting, stakerInfo)
+	}
+	for _, v := range beaconLocking {
+		vStr, _ := v.ToBase58()
+		stakerLockingInfo, ok := s.beaconLocking[vStr]
+		if !ok {
+			panic(fmt.Sprintf("Can not get staker locking info of this pk %v", vStr))
+		}
+		data.BeaconLocking = append(data.BeaconLocking, stakerLockingInfo)
 	}
 	b, _ := json.Marshal(data)
 	hash := common.HashH(b)
@@ -646,11 +683,11 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//slash
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
-			slashCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10 // 100*(2-stakerInfo.Performance/1000); stakerInfo.Performance in range [100,1000]
+			slashCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 	for cpk, unlockEpoch := range slashCpk {
-		if err = s.setLocking(cpk, env.Epoch, unlockEpoch, statedb.LOCKING_BY_SLASH); err != nil {
+		if err = s.setLocking(cpk, env.Epoch, unlockEpoch, statedb.BY_SLASH); err != nil {
 			return nil, err
 		}
 		if err = s.removeFromPool(COMMITTEE_POOL, cpk); err != nil {
@@ -661,22 +698,22 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//unstake
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
+			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 
 	for cpk, stakerInfo := range s.beaconPending {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
+			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 	for cpk, stakerInfo := range s.beaconWaiting {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
+			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 	for cpk, unlockEpoch := range unstakeCpk {
-		if err = s.setLocking(cpk, env.Epoch, unlockEpoch, statedb.LOCKING_BY_UNSTAKE); err != nil {
+		if err = s.setLocking(cpk, env.Epoch, unlockEpoch, statedb.BY_UNSTAKE); err != nil {
 			return nil, err
 		}
 		if err = s.removeFromPool(COMMITTEE_POOL, cpk); err != nil {
@@ -822,7 +859,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 				if exist {
 					return_cpk = append(return_cpk, beaconStakeInst.PublicKeys[i])
 					return_amount = append(return_amount, beaconStakeInst.StakingAmount[i])
-					return_reason = append(return_reason, statedb.RETURN_BY_DUPLICATE_STAKE)
+					return_reason = append(return_reason, statedb.BY_DUPLICATE_STAKE)
 					continue
 				}
 				var key incognitokey.CommitteePublicKey
@@ -866,7 +903,9 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 				}
 				err = s.addStakingTx(cpk, *stakingTxHash, addStakeInst.StakingAmount[i], env.BeaconHeight)
 				if err != nil {
-					return nil, fmt.Errorf("Add Staking tx error, %v", err.Error())
+					err = fmt.Errorf("Add Staking tx error, %v", err.Error())
+					Logger.log.Error(err)
+					return nil, err
 				}
 			}
 		}
@@ -924,10 +963,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnlocking(env *BeaconCommitteeStat
 		if env.Epoch >= info.UnlockingEpoch() {
 			return_cpk = append(return_cpk, cpk)
 			switch lockingInfo.LockingReason {
-			case statedb.LOCKING_BY_SLASH:
-				return_reason = append(return_reason, statedb.RETURN_BY_SLASH)
-			case statedb.LOCKING_BY_UNSTAKE:
-				return_reason = append(return_reason, statedb.RETURN_BY_UNSTAKE)
+			case statedb.BY_SLASH:
+				return_reason = append(return_reason, statedb.BY_SLASH)
+			case statedb.BY_UNSTAKE:
+				return_reason = append(return_reason, statedb.BY_UNSTAKE)
 			}
 			return_amount = append(return_amount, info.TotalStakingAmount())
 			if err := s.removeFromPool(LOCKING_POOL, cpk); err != nil {
@@ -1073,4 +1112,9 @@ func (s *BeaconCommitteeStateV4) GetAllCandidateSubstituteCommittee() []string {
 		stateV3Res = append(stateV3Res, cpk)
 	}
 	return stateV3Res
+}
+func getTotalLockingEpoch(perf, factor uint64) uint64 {
+	rawLockingPeriod := (2000 - perf) / 100
+
+	return rawLockingPeriod * factor
 }

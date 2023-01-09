@@ -118,6 +118,7 @@ type committeeSize struct {
 	BeaconCommitteeSizeKeyListV2       int            `mapstructure:"beacon_committee_size_key_list_v2"`
 	NumberOfFixedShardBlockValidator   int            `mapstructure:"number_of_fixed_shard_block_validators"`
 	NumberOfFixedShardBlockValidatorV2 int            `mapstructure:"number_of_fixed_shard_validators_v2"`
+	NumberOfFixedBeaconBlockValidator  int            `mapstructure:"number_of_fixed_beacon_block_validators"`
 	IncreaseMaxShardCommitteeSize      map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
@@ -153,6 +154,7 @@ type consensusParam struct {
 	Lemma2Height              uint64   `mapstructure:"lemma2_height"`
 	ByzantineDetectorHeight   uint64   `mapstructure:"byzantine_detector_height"`
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
+	LockingPeriodFactor       uint64   `mapstructure:"locking_period_factor"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }
