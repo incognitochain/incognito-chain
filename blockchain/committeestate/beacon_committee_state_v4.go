@@ -683,7 +683,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//slash
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
-			slashCpk[cpk] = env.Epoch + 20 - stakerInfo.Performance/100 // 100*(2-stakerInfo.Performance/1000); stakerInfo.Performance in range [100,1000]
+			slashCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 	for cpk, unlockEpoch := range slashCpk {
@@ -698,18 +698,18 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//unstake
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
+			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 
 	for cpk, stakerInfo := range s.beaconPending {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
+			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 	for cpk, stakerInfo := range s.beaconWaiting {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + (2000-stakerInfo.Performance)/10
+			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
 		}
 	}
 	for cpk, unlockEpoch := range unstakeCpk {
@@ -1112,4 +1112,9 @@ func (s *BeaconCommitteeStateV4) GetAllCandidateSubstituteCommittee() []string {
 		stateV3Res = append(stateV3Res, cpk)
 	}
 	return stateV3Res
+}
+func getTotalLockingEpoch(perf, factor uint64) uint64 {
+	rawLockingPeriod := (2000 - perf) / 100
+
+	return rawLockingPeriod * factor
 }
