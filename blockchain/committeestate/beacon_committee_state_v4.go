@@ -31,19 +31,50 @@ type BeaconCommitteeStateV4Config struct {
 	MIN_WAITING_PERIOD  int64
 	MIN_PERFORMANCE     uint64
 	LOCKING_PERIOD      uint64
+	LOCKING_FACTOR      float64
 }
 
 func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
-	return BeaconCommitteeStateV4Config{
-		MAX_SCORE:           1000,
-		MIN_SCORE:           100,
-		DEFAULT_PERFORMING:  500,
-		INCREASE_PERFORMING: 1015,
-		DECREASE_PERFORMING: 965,
-		MIN_ACTIVE_SHARD:    2,
-		MIN_WAITING_PERIOD:  60, //seconds
-		MIN_PERFORMANCE:     370,
-		LOCKING_PERIOD:      3,
+	switch config.Config().Network() {
+	case "mainnet":
+		return BeaconCommitteeStateV4Config{
+			MAX_SCORE:           1000,
+			MIN_SCORE:           100,
+			DEFAULT_PERFORMING:  500,
+			INCREASE_PERFORMING: 1015,
+			DECREASE_PERFORMING: 965,
+			MIN_ACTIVE_SHARD:    10,
+			MIN_WAITING_PERIOD:  60 * 60 * 24 * 3, //seconds : 3 days
+			MIN_PERFORMANCE:     100,
+			LOCKING_PERIOD:      160,
+			LOCKING_FACTOR:      5,
+		}
+	case "local":
+		return BeaconCommitteeStateV4Config{
+			MAX_SCORE:           1000,
+			MIN_SCORE:           100,
+			DEFAULT_PERFORMING:  500,
+			INCREASE_PERFORMING: 1015,
+			DECREASE_PERFORMING: 965,
+			MIN_ACTIVE_SHARD:    2,
+			MIN_WAITING_PERIOD:  60, //seconds
+			MIN_PERFORMANCE:     370,
+			LOCKING_PERIOD:      2,
+			LOCKING_FACTOR:      1,
+		}
+	default:
+		return BeaconCommitteeStateV4Config{
+			MAX_SCORE:           1000,
+			MIN_SCORE:           100,
+			DEFAULT_PERFORMING:  500,
+			INCREASE_PERFORMING: 1015,
+			DECREASE_PERFORMING: 965,
+			MIN_ACTIVE_SHARD:    3,
+			MIN_WAITING_PERIOD:  60 * 60, //seconds
+			MIN_PERFORMANCE:     370,
+			LOCKING_PERIOD:      10,
+			LOCKING_FACTOR:      5,
+		}
 	}
 }
 
@@ -683,7 +714,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//slash
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
-			slashCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
+			slashCpk[cpk] = env.Epoch + s.getTotalLockingEpoch(stakerInfo.Performance)
 		}
 	}
 	for cpk, unlockEpoch := range slashCpk {
@@ -698,18 +729,18 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//unstake
 	for cpk, stakerInfo := range s.beaconCommittee {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
+			unstakeCpk[cpk] = env.Epoch + s.getTotalLockingEpoch(stakerInfo.Performance)
 		}
 	}
 
 	for cpk, stakerInfo := range s.beaconPending {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
+			unstakeCpk[cpk] = env.Epoch + s.getTotalLockingEpoch(stakerInfo.Performance)
 		}
 	}
 	for cpk, stakerInfo := range s.beaconWaiting {
 		if stakerInfo.Unstake && !stakerInfo.FixedNode {
-			unstakeCpk[cpk] = env.Epoch + getTotalLockingEpoch(stakerInfo.Performance, config.Param().ConsensusParam.LockingPeriodFactor)
+			unstakeCpk[cpk] = env.Epoch + s.getTotalLockingEpoch(stakerInfo.Performance)
 		}
 	}
 	for cpk, unlockEpoch := range unstakeCpk {
@@ -1113,8 +1144,6 @@ func (s *BeaconCommitteeStateV4) GetAllCandidateSubstituteCommittee() []string {
 	}
 	return stateV3Res
 }
-func getTotalLockingEpoch(perf, factor uint64) uint64 {
-	rawLockingPeriod := (2000 - perf) / 100
-
-	return rawLockingPeriod * factor
+func (s BeaconCommitteeStateV4) getTotalLockingEpoch(perf uint64) uint64 {
+	return s.config.LOCKING_PERIOD + uint64(s.config.LOCKING_FACTOR*float64(s.config.MAX_SCORE-perf)/float64(s.config.MIN_SCORE))
 }
