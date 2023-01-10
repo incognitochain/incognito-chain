@@ -217,7 +217,7 @@ func buildReturnStakingInstruction(
 	publicKey string,
 	txStake string,
 ) *instruction.ReturnStakeInstruction {
-	returnStakingInstruction.AddNewRequest(publicKey, txStake, reason)
+	returnStakingInstruction.AddNewRequest(publicKey, txStake)
 	return returnStakingInstruction
 }
 
