@@ -983,7 +983,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				stakingMetadata.CommitteePublicKey,
 				instruction.BEACON_INST, tx.Hash().String(),
 				stakingMetadata.RewardReceiverPaymentAddress,
-				"true", fmt.Sprint(stakingMetadata.StakingAmount), stakingMetadata.FunderPaymentAddress,
+				"true", fmt.Sprint(stakingMetadata.StakingAmountShard), stakingMetadata.FunderPaymentAddress,
 			}
 			instructions = append(instructions, inst)
 		case metadata.StopAutoStakingMeta:

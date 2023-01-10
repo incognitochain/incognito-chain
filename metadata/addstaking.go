@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 type AddStakingMetadata struct {
@@ -108,8 +108,8 @@ func (addStakingMetadata AddStakingMetadata) ValidateSanityData(chainRetriever C
 	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
 		return false, false, errors.New("Error AddStaking tx should transfer PRV only")
 	}
-	if addStakingMetadata.Type != AddStakingMeta && (burnCoin.GetValue()%common.SHARD_STAKING_AMOUNT != 0) && (burnCoin.GetValue() < common.SHARD_STAKING_AMOUNT*3) {
-		return false, false, errors.New("receiver amount invalid: " + fmt.Sprintln(burnCoin.GetValue()))
+	if (addStakingMetadata.Type != AddStakingMeta) || (burnCoin.GetValue()%common.SHARD_STAKING_AMOUNT != 0) || (burnCoin.GetValue() < common.SHARD_STAKING_AMOUNT*3) || (burnCoin.GetValue() != addStakingMetadata.AddStakingAmount) {
+		return false, false, errors.Errorf("receiver amount invalid: %v, addStakeMeta %+v ", fmt.Sprint(burnCoin.GetValue()), addStakingMetadata)
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	if err := CommitteePublicKey.FromString(addStakingMetadata.CommitteePublicKey); err != nil {
