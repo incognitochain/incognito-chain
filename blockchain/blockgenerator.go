@@ -165,26 +165,29 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 				return
 			}
 			if len(beaconBlocks) > 0 {
+				responseTxsBeacon, errInstructions, err := blockChain.config.BlockGen.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, &tempPrivateKey, shardID)
 				for _, bBlock := range beaconBlocks {
-					responseTxsBeacon, errInstructions, err := blockChain.config.BlockGen.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, &tempPrivateKey, shardID)
-					if err != nil {
-						s.Error = err.Error()
-						Logger.log.Error("Error during get response tx from beacon instruction", err)
-						break
-					}
-					if len(errInstructions) > 0 {
-						s.Error = fmt.Sprintf("Error instruction: %+v", errInstructions)
-						Logger.log.Error("List error instructions, which can not create tx", errInstructions)
-					}
-					s.BeaconBlocks = append(s.BeaconBlocks, bBlock)
-					for _, tx := range responseTxsBeacon {
-						s.ResponseTxs[*tx.Hash()] = tx
-					}
-					s.Ctx.NumTxRemain -= int64(len(responseTxsBeacon))
-					if s.Ctx.NumTxRemain < 0 {
-						break
-					}
+					Logger.log.Info("debugprefetch: add beacon block ", bBlock.GetBeaconHeight())
 				}
+				Logger.log.Info("debugprefetch: number of reponse tx ", len(responseTxsBeacon))
+				if err != nil {
+					s.Error = err.Error()
+					Logger.log.Error("Error during get response tx from beacon instruction", err)
+					return
+				}
+				if len(errInstructions) > 0 {
+					s.Error = fmt.Sprintf("Error instruction: %+v", errInstructions)
+					Logger.log.Error("List error instructions, which can not create tx", errInstructions)
+				}
+				s.BeaconBlocks = append(s.BeaconBlocks, beaconBlocks...)
+				for _, tx := range responseTxsBeacon {
+					s.ResponseTxs[*tx.Hash()] = tx
+				}
+				s.Ctx.NumTxRemain -= int64(len(responseTxsBeacon))
+				if s.Ctx.NumTxRemain < 0 {
+					return
+				}
+
 			}
 		}
 	}()

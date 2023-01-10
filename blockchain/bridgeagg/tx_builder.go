@@ -1,9 +1,12 @@
 package bridgeagg
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	common2 "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -291,9 +294,9 @@ func buildIssuingReshieldResponse(
 	} else {
 		tokenID = *issuingReshieldAcceptedInst.UnifiedTokenID
 	}
-	if tokenID == common.PRVCoinID {
-		Logger.log.Errorf("cannot reshield prv via bridge")
-		return nil, fmt.Errorf("cannot reshield prv via bridge")
+	if tokenID == common.PRVCoinID && !bytes.Equal(issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID, common2.HexToAddress(config.Param().PRVERC20ContractAddressStr).Bytes()) {
+		Logger.log.Errorf("reshield incorrect PRV ERC20 address ", issuingReshieldAcceptedInst.ReshieldData.ExternalTokenID, common2.HexToAddress(config.Param().PRVERC20ContractAddressStr).Bytes())
+		return nil, fmt.Errorf("reshield incorrect PRV ERC20 address")
 	}
 	issuingReshieldRes := metadataBridge.NewIssuingReshieldResponse(
 		issuingReshieldAcceptedInst.TxReqID,

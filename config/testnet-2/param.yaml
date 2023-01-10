@@ -48,7 +48,7 @@ eth_contract_address: "0xc157CC3077ddfa425bae12d2F3002668971A4e3d"
 bsc_contract_address: "0x3534C0a523b3A862c06C8CAF61de230f9b408f51"
 plg_contract_address: "0x76318093c374e39B260120EBFCe6aBF7f75c8D28"
 ftm_contract_address: "0x76318093c374e39B260120EBFCe6aBF7f75c8D28"
-prv_erc20_contract_address: "0x89b147db2f49c3bc03b3e737453457bEecb3D572"
+prv_erc20_contract_address: "0x4cB607c24Ac252A0cE4b2e987eC4413dA0F1e3Ae"
 prv_bep20_contract_address: "0xB49E8844a72CF1ce885aEf13F82BeeAEEFc01527"
 aurora_contract_address: "0x4cF1d43999606858BaC64B7DbFC196fb4A6853af"
 avax_contract_address: "0x01f6549BeF494C8b0B00C2790577AcC1A3Fa0Bd0"
@@ -177,6 +177,9 @@ auto_enable_feature:
   - blocktime15s_30_8:
       min_trigger: 5289626
       require_percentage: 90
+  - blocktime10s_27_12:
+      min_trigger: 5963026
+      require_percentage: 90
   - auroraavaxbridge:
       min_trigger: 5505400
       require_percentage: 90
@@ -195,10 +198,14 @@ auto_enable_feature:
   - aurorahotfix:
       min_trigger: 5776355
       require_percentage: 90
+  - pdao:
+      min_trigger: 5926003
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30
   - "blocktime15s_30_8": 15
+  - "blocktime10s_27_12": 10
 feature_version:
   - instantfinalityv2: 9
   - blocktime30s_23_8: 10
@@ -206,6 +213,7 @@ feature_version:
   - reduce_fix_node: 12
   - reduce_fix_node_v2: 13
   - reduce_fix_node_v3: 14
+  - blocktime10s_27_12: 15
 transactions_param:
   lowerbound: 15
   upperbound: 100

@@ -246,6 +246,10 @@ const (
 	IssuingNearResponseMeta = 336
 	BurningNearRequestMeta  = 337
 	BurningNearConfirmMeta  = 163
+
+	// pdao feature
+	BurningPRVRequestMeta        = 338
+	BurningPRVRequestConfirmMeta = 164
 )
 
 var minerCreatedMetaTypes = []int{
@@ -409,6 +413,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningAuroraConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningAvaxConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningNearConfirmMeta),
+	strconv.Itoa(BurningPRVRequestConfirmMeta),
 }
 
 var portalV4MetaTypes = []int{

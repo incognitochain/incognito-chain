@@ -18,10 +18,10 @@ import (
 
 // whoever can send this type of tx
 type BurningRequest struct {
-	BurnerAddress privacy.PaymentAddress
-	BurningAmount uint64 // must be equal to vout value
+	BurnerAddress privacy.PaymentAddress // unused
+	BurningAmount uint64                 // must be equal to vout value
 	TokenID       common.Hash
-	TokenName     string
+	TokenName     string // unused
 	RemoteAddress string
 	metadataCommon.MetadataBase
 }
@@ -123,6 +123,10 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever metadataCommon.Chai
 		((bReq.Type == metadataCommon.BurningAuroraRequestMeta || bReq.Type == metadataCommon.BurningAuroraForDepositToSCRequestMeta) &&
 			shardViewRetriever.GetTriggeredFeature()["aurorahotfix"] == 0) {
 		return false, false, fmt.Errorf("feature with metadata %v not enabled yet", bReq.Type)
+	}
+
+	if shardViewRetriever.GetTriggeredFeature()["pdao"] != 0 && bReq.Type == metadataCommon.BurningPRVERC20RequestMeta {
+		return false, false, fmt.Errorf("feature deprecated with metadata %v, please burn with new metatype", bReq.Type)
 	}
 
 	return true, true, nil

@@ -239,6 +239,9 @@ const (
 	IssuingNearResponseMeta = metadataCommon.IssuingNearResponseMeta
 	BurningNearRequestMeta  = metadataCommon.BurningNearRequestMeta
 	BurningNearConfirmMeta  = metadataCommon.BurningNearConfirmMeta
+
+	BurningPRVRequestMeta        = metadataCommon.BurningPRVRequestMeta
+	BurningPRVRequestConfirmMeta = metadataCommon.BurningPRVRequestConfirmMeta
 )
 
 // export error codes
