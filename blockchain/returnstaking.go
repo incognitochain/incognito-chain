@@ -139,9 +139,13 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 				return err
 			}
 			_, _, txStake, err := blockchain.GetTransactionByHashWithShardID(*h, shardID)
-			stakingMD := txStake.GetMetadata().(*metadata.StakingMetadata)
-			if ok := mintCoin.CheckCoinValid(md.StakerAddress, md.SharedRandom, stakingMD.StakingAmount); !ok {
-				return errors.Errorf("mint data is invalid: Address %v; Amount %v, StakeAmount: %v", md.StakerAddress, mintCoin.GetValue(), stakingMD.StakingAmount)
+			_, burnCoin, _, err := txStake.GetTxBurnData()
+			if err != nil {
+				return err
+			}
+			stakedAmount := burnCoin.GetValue()
+			if ok := mintCoin.CheckCoinValid(md.StakerAddress, md.SharedRandom, stakedAmount); !ok {
+				return errors.Errorf("mint data is invalid: Address %v; Amount %v, StakeAmount: %v", md.StakerAddress, mintCoin.GetValue(), stakedAmount)
 			}
 			rInfo := returnStakingInfo{
 				FunderAddress: md.StakerAddress,
@@ -161,16 +165,16 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 					Logger.log.Error(err)
 					return err
 				}
-				if stakingMD, ok := txStake.GetMetadata().(*metadata.StakingMetadata); ok {
-					totalAmount += stakingMD.StakingAmount
+				_, burnCoin, _, err := txStake.GetTxBurnData()
+				if err != nil {
+					return err
 				}
-				if stakingMD, ok := txStake.GetMetadata().(*metadata.AddStakingMetadata); ok {
-					totalAmount += stakingMD.AddStakingAmount
-				}
+				stakedAmount := burnCoin.GetValue()
+				totalAmount += stakedAmount
 				txStakes = append(txStakes, txStake)
 			}
 			if ok := mintCoin.CheckCoinValid(md.StakerAddress, md.SharedRandom, totalAmount); !ok {
-				return errors.Errorf("mint data is invalid: Address %v; Amount %v", md.StakerAddress, mintCoin.GetValue())
+				return errors.Errorf("mint data is invalid: Address %v; Amount %v; totalAmount %v", md.StakerAddress, mintCoin.GetValue(), totalAmount)
 			}
 			rInfo := returnStakingBeaconInfo{
 				FunderAddress: md.StakerAddress,

@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 type StakingMetadata struct {
@@ -175,6 +175,12 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("Error Staking tx should transfer PRV only")
 	}
 	amount := burnCoin.GetValue()
+	if (stakingMetadata.Type != ShardStakingMeta) && (stakingMetadata.Type != BeaconStakingMeta) {
+		return false, false, errors.New("invalid Staking Type")
+	}
+	if amount != stakingMetadata.StakingAmount {
+		return false, false, errors.Errorf("invalid Staking Amount, metaData staking amount %v, burn amount %v", stakingMetadata.StakingAmount, amount)
+	}
 	if stakingMetadata.Type == ShardStakingMeta && amount != common.SHARD_STAKING_AMOUNT {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
