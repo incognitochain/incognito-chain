@@ -55,7 +55,7 @@ type Chain interface {
 	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, previousCommittees []incognitokey.CommitteePublicKey, newValidationData string) error
 	CheckExistedBlk(block types.BlockInterface) bool
-	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
+	GetCommitteeForSync(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
 	CommitteeStateVersion() int
 }
 

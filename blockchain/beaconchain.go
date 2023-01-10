@@ -564,33 +564,8 @@ func (chain *BeaconChain) GetSigningCommittees(
 	return append([]incognitokey.CommitteePublicKey{}, committees...)
 }
 
-func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
-	if config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4] != 0 && block.GetVersion() >= int(config.Param().FeatureVersion[BEACON_STAKING_FLOW_V4]) {
-		height := block.GetHeight()
-		beaconConsensusStateRootHash, err := chain.Blockchain.GetBeaconRootsHashFromBlockHeight(
-			height - 1, //the previous height statedb store the committee of current height
-		)
-		if err != nil {
-			return nil, err
-		}
-		stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-			statedb.NewDatabaseAccessWarper(chain.GetDatabase()))
-		if err != nil {
-			return nil, err
-		}
-		//Review Just get committee, no need to restore
-		return statedb.GetBeaconCommittee(stateDB), nil
-		// stateV4 := committeestate.NewBeaconCommitteeStateV4()
-		// err = stateV4.RestoreBeaconCommitteeFromDB(stateDB, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize, nil)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// return stateV4.GetBeaconCommittee(), nil
-	} else {
-		committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
-		return committees, nil
-	}
-
+func (chain *BeaconChain) GetCommitteeForSync(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
 }
 
 func (chain *BeaconChain) GetNumberOfFixedNode(
