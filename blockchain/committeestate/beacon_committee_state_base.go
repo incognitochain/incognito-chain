@@ -288,7 +288,7 @@ func (b beaconCommitteeStateBase) GetUnsyncBeaconValidator() []incognitokey.Comm
 }
 
 func (b beaconCommitteeStateBase) GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
-	panic("This should be called from >= beaconCommitteeStateV3 ")
+	panic("This should be called from >= beaconCommitteeStateV4 ")
 }
 
 func (b beaconCommitteeStateBase) GetBeaconCommittee() []incognitokey.CommitteePublicKey {

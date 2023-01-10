@@ -632,7 +632,30 @@ func (beaconBestState *BeaconBestState) BlockHash() common.Hash {
 }
 
 func (beaconBestState *BeaconBestState) GetAllStakers() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
-	return beaconBestState.beaconCommitteeState.GetAllStaker()
+	if beaconBestState.beaconCommitteeState.Version() < committeestate.STAKING_FLOW_V4 {
+		sC := make(map[byte][]incognitokey.CommitteePublicKey)
+		sPV := make(map[byte][]incognitokey.CommitteePublicKey)
+		sSP := make(map[byte][]incognitokey.CommitteePublicKey)
+		for shardID, committee := range beaconBestState.GetShardCommittee() {
+			sC[shardID] = append([]incognitokey.CommitteePublicKey{}, committee...)
+		}
+		for shardID, Substitute := range beaconBestState.GetShardPendingValidator() {
+			sPV[shardID] = append([]incognitokey.CommitteePublicKey{}, Substitute...)
+		}
+		for shardID, syncValidator := range beaconBestState.GetSyncingValidators() {
+			sSP[shardID] = append([]incognitokey.CommitteePublicKey{}, syncValidator...)
+		}
+		bC := beaconBestState.beaconCommitteeState.GetBeaconCommittee()
+		bPV := beaconBestState.beaconCommitteeState.GetBeaconSubstitute()
+		cBWFCR := beaconBestState.beaconCommitteeState.GetCandidateBeaconWaitingForCurrentRandom()
+		cBWFNR := beaconBestState.beaconCommitteeState.GetCandidateBeaconWaitingForNextRandom()
+		cSWFCR := beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForCurrentRandom()
+		cSWFNR := beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForNextRandom()
+		return sC, sPV, sSP, bC, bPV, cBWFCR, cBWFNR, cSWFCR, cSWFNR
+	} else {
+		return beaconBestState.beaconCommitteeState.GetAllStaker()
+	}
+
 }
 
 func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []string {
