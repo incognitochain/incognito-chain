@@ -77,13 +77,6 @@ func main() {
 		}
 		if shouldStakeShard {
 			if blk.GetBeaconHeight() == startStakingHeight {
-				if shouldStop {
-					v := beaconValidators[bIndexes[watchBeaconIndex]]
-					if err := v.ShardStaking(app); err != nil {
-						panic(err)
-					}
-					panic("Finish staking shard")
-				}
 				//Stake each nodes
 				for _, v := range shardValidators {
 					if err := v.ShardStaking(app); err != nil {
@@ -95,15 +88,17 @@ func main() {
 						panic(err)
 					}
 				}
+				if shouldStop {
+					v := beaconValidators[bIndexes[watchBeaconIndex]]
+					if err := v.ShardStaking(app); err != nil {
+						panic(err)
+					}
+					panic("Finish staking shard")
+				}
 			}
 		}
 		if shouldStakeBeacon {
 			if blk.GetBeaconHeight() >= startStakingBeaconHeight {
-				if shouldStop {
-					v := beaconValidators[bIndexes[watchBeaconIndex]]
-					v.BeaconStaking(app)
-					panic("Finish staking beacon")
-				}
 				cs, err := getCSByHeight(blk.GetBeaconHeight(), app)
 				if err != nil {
 					panic(err)
@@ -126,16 +121,16 @@ func main() {
 					} else {
 					}
 				}
+				if shouldStop {
+					v := beaconValidators[bIndexes[watchBeaconIndex]]
+					v.BeaconStaking(app)
+					panic("Finish staking beacon")
+				}
 			}
 		}
 		if shouldUnstakeBeacon {
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconCommitteeRole {
-				if shouldStop {
-					//v := beaconValidators[bIndexes[watchBeaconIndex]]
-					//v.ShardStaking(app)
-					panic("Finish staking shard")
-				}
 				if _, found := v.ActionsIndex[unstakingBeaconArg]; !found {
 					txHash, err := app.Unstaking(v.PrivateKey, v.PaymentAddress, v.MiningKey)
 					if err != nil {
@@ -145,6 +140,11 @@ func main() {
 						Height: blk.GetBeaconHeight(),
 						TxHash: txHash,
 					}
+				}
+				if shouldStop {
+					//v := beaconValidators[bIndexes[watchBeaconIndex]]
+					//v.ShardStaking(app)
+					panic("Finish staking shard")
 				}
 			}
 		}
