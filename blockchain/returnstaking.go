@@ -367,7 +367,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						SwapoutPubKey: outPublicKey,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
-						StakingAmount: txMeta.StakingAmount,
+						StakingAmount: txMeta.StakingAmountShard,
 					}
 				}
 			case instruction.RETURN_ACTION:
@@ -406,7 +406,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						SwapoutPubKey: v,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
-						StakingAmount: txMeta.StakingAmount,
+						StakingAmount: txMeta.StakingAmountShard,
 					}
 				}
 			case instruction.RETURN_BEACON_ACTION:
@@ -457,7 +457,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 								isError = true
 								break
 							}
-							rBeaconInfo.StakingAmount += metaData.StakingAmount
+							rBeaconInfo.StakingAmount += metaData.StakingAmountShard
 							rBeaconInfo.FunderAddress = keyWallet.KeySet.PaymentAddress
 							paymentShardID := common.GetShardIDFromLastByte(rBeaconInfo.FunderAddress.Pk[len(rBeaconInfo.FunderAddress.Pk)-1])
 							if paymentShardID != shardID {

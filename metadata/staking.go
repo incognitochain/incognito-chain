@@ -16,7 +16,7 @@ type StakingMetadata struct {
 	MetadataBase
 	FunderPaymentAddress         string
 	RewardReceiverPaymentAddress string
-	StakingAmount                uint64
+	StakingAmountShard           uint64
 	AutoReStaking                bool
 	CommitteePublicKey           string
 	// CommitteePublicKey CommitteePublicKeys of a candidate who join consensus, base58CheckEncode
@@ -43,7 +43,7 @@ func NewStakingMetadata(
 		MetadataBase:                 *metadataBase,
 		FunderPaymentAddress:         funderPaymentAddress,
 		RewardReceiverPaymentAddress: rewardReceiverPaymentAddress,
-		StakingAmount:                stakingAmountShard,
+		StakingAmountShard:           stakingAmountShard,
 		CommitteePublicKey:           committeePublicKey,
 		AutoReStaking:                autoReStaking,
 	}, nil
@@ -57,7 +57,7 @@ func (meta *StakingMetadata) Hash() *common.Hash {
 	data := []byte(record)
 	data = append(data, []byte(meta.FunderPaymentAddress)...)
 	data = append(data, []byte(meta.RewardReceiverPaymentAddress)...)
-	data = append(data, []byte(fmt.Sprintf("%v", meta.StakingAmount))...)
+	data = append(data, []byte(fmt.Sprintf("%v", meta.StakingAmountShard))...)
 	data = append(data, []byte(meta.CommitteePublicKey)...)
 	data = append(data, []byte(fmt.Sprintf("%v", meta.AutoReStaking))...)
 	hash := common.HashH(data)
@@ -178,8 +178,8 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if (stakingMetadata.Type != ShardStakingMeta) && (stakingMetadata.Type != BeaconStakingMeta) {
 		return false, false, errors.New("invalid Staking Type")
 	}
-	if amount != stakingMetadata.StakingAmount {
-		return false, false, errors.Errorf("invalid Staking Amount, metaData staking amount %v, burn amount %v", stakingMetadata.StakingAmount, amount)
+	if amount != stakingMetadata.StakingAmountShard {
+		return false, false, errors.Errorf("invalid Staking Amount, metaData staking amount %v, burn amount %v", stakingMetadata.StakingAmountShard, amount)
 	}
 	if stakingMetadata.Type == ShardStakingMeta && amount != common.SHARD_STAKING_AMOUNT {
 		return false, false, errors.New("invalid Stake Shard Amount")
@@ -219,9 +219,9 @@ func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
 }
 
 func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
-	return stakingMetadata.StakingAmount * 3
+	return stakingMetadata.StakingAmountShard * 3
 }
 
 func (stakingMetadata StakingMetadata) GetShardStateAmount() uint64 {
-	return stakingMetadata.StakingAmount
+	return stakingMetadata.StakingAmountShard
 }
