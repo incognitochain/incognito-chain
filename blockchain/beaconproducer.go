@@ -3,9 +3,10 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -589,9 +590,14 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
 		if len(stakeInstruction.TxStakes) > 0 {
+			reasones := make([]byte, len(stakeInstruction.TxStakes))
+			for i := 0; i < len(stakeInstruction.TxStakes); i++ {
+				reasones[i] = statedb.BY_DUPLICATE_STAKE
+			}
 			returnStakingIns := instruction.NewReturnStakeInsWithValue(
 				stakeInstruction.PublicKeys,
 				stakeInstruction.TxStakes,
+				reasones,
 			)
 			instructions = append(instructions, returnStakingIns.ToString())
 		}

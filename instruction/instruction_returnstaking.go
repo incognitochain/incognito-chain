@@ -26,12 +26,16 @@ type ReturnStakeInstruction struct {
 func NewReturnStakeInsWithValue(
 	publicKeys []string,
 	txStake []string,
+	reasones []byte,
 ) *ReturnStakeInstruction {
 	rsI := &ReturnStakeInstruction{}
 	rsI, _ = rsI.SetPublicKeys(publicKeys)
 	rsI, _ = rsI.SetStakingTXIDs(txStake)
 	for _, _ = range publicKeys {
 		rsI.PercentReturns = append(rsI.PercentReturns, 100)
+	}
+	if len(reasones) != 0 {
+		rsI.SetReasons(reasones)
 	}
 	return rsI
 }
@@ -124,7 +128,7 @@ func (rsI *ReturnStakeInstruction) ToString() []string {
 	return returnStakeInsStr
 }
 
-func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx string) {
+func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx string, reason byte) {
 	rsI.PublicKeys = append(rsI.PublicKeys, publicKey)
 	publicKeyStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{publicKey})
 	rsI.PublicKeysStruct = append(rsI.PublicKeysStruct, publicKeyStruct[0])
@@ -132,7 +136,7 @@ func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx str
 	stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingTx)
 	rsI.StakingTxHashes = append(rsI.StakingTxHashes, *stakingTxHash)
 	rsI.PercentReturns = append(rsI.PercentReturns, 100)
-	rsI.Reasons = append(rsI.Reasons, 255)
+	rsI.Reasons = append(rsI.Reasons, reason)
 }
 
 func ValidateAndImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeInstruction, error) {
