@@ -144,7 +144,7 @@ func main() {
 				if shouldStop {
 					//v := beaconValidators[bIndexes[watchBeaconIndex]]
 					//v.ShardStaking(app)
-					panic("Finish staking shard")
+					panic("Finish unstaking beacon")
 				}
 			}
 		}
