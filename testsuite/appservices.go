@@ -182,7 +182,7 @@ func (s *AppService) Unstaking(privateKey, candidatePaymentAddress, privateSeed 
 		-1,
 		0,
 		map[string]interface{}{
-			"UnStakingType":           127,
+			"UnStakingType":           210,
 			"CandidatePaymentAddress": candidatePaymentAddress,
 			"PrivateSeed":             privateSeed,
 		},
