@@ -120,21 +120,21 @@ func (engine *Engine) WatchCommitteeChange() {
 		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
-		isBeaconFullnode := engine.config.Node.IsBeaconFullnode(validator.MiningKey.GetPublicKey())
+		isBeaconFullnode, beaconRole := engine.config.Node.IsBeaconFullnode(validator.MiningKey.GetPublicKey())
 
 		//keyBytes := validator.MiningKey.PubKey[common.BlsConsensus]
 		//logKey := base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
 		//log.Printf("validator key %+v, shardID %+v, role %+v \n", logKey, chainID, role)
 
 		if chainID == common.BeaconChainID {
-			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID, isBeaconFullnode}
+			validator.State = consensus.MiningState{beaconRole, common.BeaconChainKey, common.BeaconChainID, isBeaconFullnode}
 		} else if chainID > common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.ShardChainKey, chainID, isBeaconFullnode}
 		} else {
 			if role != "" {
-				validator.State = consensus.MiningState{role, common.ShardChainKey, -2, isBeaconFullnode}
+				validator.State = consensus.MiningState{role, common.ShardChainKey, -2, false}
 			} else {
-				validator.State = consensus.MiningState{role, "", -2, isBeaconFullnode}
+				validator.State = consensus.MiningState{role, "", -2, false}
 			}
 		}
 
