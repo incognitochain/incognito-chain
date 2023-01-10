@@ -671,6 +671,9 @@ func (s *BeaconCommitteeStateV4) updateBeaconPerformance(previousData string) er
 }
 
 func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
+	if firstBlockEpoch(env.BeaconHeight) {
+		return nil, nil
+	}
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
 }
 
