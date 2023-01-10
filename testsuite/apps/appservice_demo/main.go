@@ -151,9 +151,6 @@ func main() {
 		if shouldAddStakingBeacon {
 			v := beaconValidators[bIndexes[watchBeaconIndex]]
 			if v.Role == BeaconPendingRole || v.Role == BeaconWaitingRole {
-				if shouldStop {
-					panic("Finish add staking beacon")
-				}
 				if _, found := v.ActionsIndex[addStakingBeaconArg]; !found {
 					resp, err := app.AddStaking(v.PrivateKey, v.MiningKey, v.PaymentAddress, 175000*1e9)
 					if err != nil {
@@ -164,6 +161,9 @@ func main() {
 						TxHash: resp.TxID,
 					}
 					fmt.Println(resp)
+				}
+				if shouldStop {
+					panic("Finish add staking beacon")
 				}
 			}
 		}
