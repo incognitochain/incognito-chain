@@ -820,9 +820,9 @@ func (curView *BeaconBestState) halfPendingCycleEpoch(sid byte) uint64 {
 func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
 	instructions := [][]string{}
 	if curView.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 {
-		beaconWaiting := curView.beaconCommitteeState.GetBeaconWaiting()
+		unsyncBeacon := curView.beaconCommitteeState.GetUnsyncBeaconValidator()
 		validValidator := []incognitokey.CommitteePublicKey{}
-		for _, v := range beaconWaiting {
+		for _, v := range unsyncBeacon {
 			validatorStr, _ := v.ToBase58()
 			if !curView.beaconCommitteeState.IsFinishSync(validatorStr) {
 				if DefaultFeatureStat.IsContainLatestFeature(curView, validatorStr) {
@@ -916,7 +916,7 @@ func (curView *BeaconBestState) filterAndVerifyFinishSyncInstruction(instruction
 				var info *statedb.StakerInfo
 				exists := true
 				if inst.ChainID == -1 {
-					stringList, _ := incognitokey.CommitteeKeyListToString(curView.GetBeaconWaiting())
+					stringList, _ := incognitokey.CommitteeKeyListToString(curView.beaconCommitteeState.GetUnsyncBeaconValidator())
 					for _, cpkStr := range inst.PublicKeys {
 						if common.IndexOfStr(cpkStr, stringList) == -1 {
 							exists = false
@@ -936,7 +936,7 @@ func (curView *BeaconBestState) filterAndVerifyFinishSyncInstruction(instruction
 					}
 				}
 
-				//loop sync pool, check if validator is exist and having valid waiting time
+				//loop shard sync pool, check if validator is exist and having valid waiting time
 				exist := false
 				for sid, vals := range syncValidators {
 					if common.IndexOfStr(validator, vals) != -1 {

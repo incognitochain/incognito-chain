@@ -77,14 +77,14 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	committees := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
-		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		committees, err = chain.GetCommitteeForSync(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
 	}
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
+		signingCommittees, err := chain.GetCommitteeForSync(sameCommitteeBlock[i])
 		if err != nil {
 			continue
 		}

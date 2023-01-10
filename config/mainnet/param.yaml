@@ -20,7 +20,6 @@ committee_size:
   number_of_fixed_beacon_block_validators: 7
   increase_max_shard_committee_size:
     - 1000000000000: 48
-  locking_period_factor: 10
 block_time:
   min_beacon_block_interval: 40s
   max_beacon_block_creation: 10s

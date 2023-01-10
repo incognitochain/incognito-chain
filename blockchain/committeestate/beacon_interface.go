@@ -16,6 +16,7 @@ type BeaconCommitteeState interface {
 	GetBeaconLocking() []incognitokey.CommitteePublicKey
 	GetNonSlashingRewardReceiver(staker []incognitokey.CommitteePublicKey) ([]key.PaymentAddress, error)
 	GetBeaconWaiting() []incognitokey.CommitteePublicKey
+	GetUnsyncBeaconValidator() []incognitokey.CommitteePublicKey
 	IsFinishSync(string) bool
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey

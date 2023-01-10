@@ -1135,7 +1135,7 @@ func (beaconBestState *BeaconBestState) ExtractAllFinishSyncingValidators(valida
 			syncingValidators = beaconBestState.beaconCommitteeState.GetSyncingValidators()[byte(sid)]
 		}
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 && sid == -1 {
-			syncingValidators = beaconBestState.beaconCommitteeState.GetBeaconWaiting()
+			syncingValidators = beaconBestState.beaconCommitteeState.GetUnsyncBeaconValidator()
 		}
 
 		for _, v := range syncingValidators {
@@ -1162,7 +1162,7 @@ func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validator
 	syncingValidators := beaconBestState.beaconCommitteeState.GetSyncingValidators()[shardID]
 
 	if beaconBestState.beaconCommitteeState.Version() == committeestate.STAKING_FLOW_V4 && shardID == 255 {
-		syncingValidators = append(syncingValidators, beaconBestState.beaconCommitteeState.GetBeaconWaiting()...)
+		syncingValidators = append(syncingValidators, beaconBestState.beaconCommitteeState.GetUnsyncBeaconValidator()...)
 	}
 
 	finishedSyncUserKeys := []*consensus.Validator{}
