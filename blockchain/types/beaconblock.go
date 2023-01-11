@@ -3,7 +3,6 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/config"
 	"strconv"
 
@@ -349,7 +348,7 @@ func (header *BeaconHeader) toString() string {
 		}
 	}
 
-	if header.Version >= int(config.Param().FeatureVersion[blockchain.BEACON_STAKING_FLOW_V4]) && header.PreviousValidationData != "" {
+	if header.Version >= int(config.Param().FeatureVersion[config.BEACON_STAKING_FLOW_V4]) && header.PreviousValidationData != "" {
 		res += header.PreviousValidationData
 	}
 	return res
