@@ -77,4 +77,3 @@ run_new_local.sh
 *.txt
 *.log
 logs/
-log/

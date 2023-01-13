@@ -1,0 +1,34 @@
+syntax = "proto3";
+option go_package = "log/proto";
+
+enum FeatureID {
+    FEATURE_CONSENSUS_BEACON = 0;
+    FEATURE_CONSENSUS_SHARD = 1;
+}
+
+message CheckPoint {
+    uint64 BlockHeight = 1;
+    string BlockHash = 2;
+}
+
+message RangeCheckPoint {
+    CheckPoint From = 1;
+    CheckPoint To = 2;
+}
+
+message RequestLogByFeature {
+    RangeCheckPoint CheckPoint = 1;
+    FeatureID ID = 2;
+}
+
+message FeatureLog {
+    int64 Timestamp = 1; 
+    FeatureID ID = 2;
+    CheckPoint CheckPoint = 3;
+    bytes Data = 4;
+}
+
+service StreamLog {
+    rpc StreamFeatureLog(RangeCheckPoint) returns (stream FeatureLog) {}
+    rpc StreamFeatureLogByFeature(RequestLogByFeature) returns (stream FeatureLog) {}
+}
