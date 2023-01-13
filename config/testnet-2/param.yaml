@@ -142,7 +142,7 @@ auto_enable_feature:
       min_trigger: 5647323
       require_percentage: 90
   - beacon_staking_flow_v4:
-      min_trigger: 1e9
+      min_trigger: 6110375
       require_percentage: 90
   - reduce_fix_node_v2:
       min_trigger: 5647323
@@ -214,6 +214,7 @@ feature_version:
   - reduce_fix_node_v2: 13
   - reduce_fix_node_v3: 14
   - blocktime10s_27_12: 15
+  - beacon_staking_flow_v4 : 16
 transactions_param:
   lowerbound: 15
   upperbound: 100

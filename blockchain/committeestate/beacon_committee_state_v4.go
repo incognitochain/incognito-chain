@@ -69,11 +69,11 @@ func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 			DEFAULT_PERFORMING:  500,
 			INCREASE_PERFORMING: 1015,
 			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    2,
-			MIN_WAITING_PERIOD:  60, //seconds
-			MIN_PERFORMANCE:     370,
-			LOCKING_PERIOD:      2,
-			LOCKING_FACTOR:      1,
+			MIN_ACTIVE_SHARD:    4,
+			MIN_WAITING_PERIOD:  60 * 60, //seconds
+			MIN_PERFORMANCE:     100,
+			LOCKING_PERIOD:      4,
+			LOCKING_FACTOR:      2,
 		}
 	}
 }

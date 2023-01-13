@@ -241,6 +241,10 @@ func verifyParam(p *param) error {
 		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2")
 	}
 
+	if p.FeatureVersion[BEACON_STAKING_FLOW_V4] == 0 {
+		return fmt.Errorf("Expected having config BEACON_STAKING_FLOW_V4")
+	}
+
 	return nil
 }
 

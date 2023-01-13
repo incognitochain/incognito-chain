@@ -12,30 +12,25 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-// ReturnStakeInstruction :
-// format: "return", "key1,key2,key3", "1231231,312312321,12312321", "100,100,100,100", "0,0,0,1"
+//ReturnStakeInstruction :
+// format: "return", "key1,key2,key3", "1231231,312312321,12312321", "100,100,100,100"
 type ReturnStakeInstruction struct {
 	PublicKeys       []string
 	PublicKeysStruct []incognitokey.CommitteePublicKey
 	StakingTXIDs     []string
 	StakingTxHashes  []common.Hash
 	PercentReturns   []uint
-	Reasons          []byte
 }
 
 func NewReturnStakeInsWithValue(
 	publicKeys []string,
 	txStake []string,
-	reasones []byte,
 ) *ReturnStakeInstruction {
 	rsI := &ReturnStakeInstruction{}
 	rsI, _ = rsI.SetPublicKeys(publicKeys)
 	rsI, _ = rsI.SetStakingTXIDs(txStake)
 	for _, _ = range publicKeys {
 		rsI.PercentReturns = append(rsI.PercentReturns, 100)
-	}
-	if len(reasones) != 0 {
-		rsI.SetReasons(reasones)
 	}
 	return rsI
 }
@@ -83,11 +78,6 @@ func (rsI *ReturnStakeInstruction) SetPercentReturns(percentReturns []uint) erro
 	return nil
 }
 
-func (rsI *ReturnStakeInstruction) SetReasons(reason []byte) error {
-	rsI.Reasons = reason
-	return nil
-}
-
 func (rsI *ReturnStakeInstruction) GetType() string {
 	return RETURN_ACTION
 }
@@ -104,10 +94,6 @@ func (rsI *ReturnStakeInstruction) GetPublicKey() []string {
 	return rsI.PublicKeys
 }
 
-func (rsI *ReturnStakeInstruction) GetReason() []byte {
-	return rsI.Reasons
-}
-
 func (rsI *ReturnStakeInstruction) ToString() []string {
 	returnStakeInsStr := []string{RETURN_ACTION}
 	returnStakeInsStr = append(returnStakeInsStr, strings.Join(rsI.PublicKeys, SPLITTER))
@@ -117,18 +103,10 @@ func (rsI *ReturnStakeInstruction) ToString() []string {
 		percentReturnsStr[i] = strconv.Itoa(int(v))
 	}
 	returnStakeInsStr = append(returnStakeInsStr, strings.Join(percentReturnsStr, SPLITTER))
-	if len(rsI.Reasons) != 0 {
-		reasonStrs := make([]string, len(rsI.Reasons))
-		for i, v := range rsI.Reasons {
-			reasonStrs[i] = strconv.Itoa(int(v))
-		}
-		returnStakeInsStr = append(returnStakeInsStr, strings.Join(reasonStrs, SPLITTER))
-
-	}
 	return returnStakeInsStr
 }
 
-func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx string, reason byte) {
+func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx string) {
 	rsI.PublicKeys = append(rsI.PublicKeys, publicKey)
 	publicKeyStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{publicKey})
 	rsI.PublicKeysStruct = append(rsI.PublicKeysStruct, publicKeyStruct[0])
@@ -136,7 +114,6 @@ func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx str
 	stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingTx)
 	rsI.StakingTxHashes = append(rsI.StakingTxHashes, *stakingTxHash)
 	rsI.PercentReturns = append(rsI.PercentReturns, 100)
-	rsI.Reasons = append(rsI.Reasons, reason)
 }
 
 func ValidateAndImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeInstruction, error) {
@@ -169,23 +146,11 @@ func ImportReturnStakingInstructionFromString(instruction []string) (*ReturnStak
 		percentReturns[i] = uint(tempPercent)
 	}
 	returnStakingIns.SetPercentReturns(percentReturns)
-	if len(instruction) == 5 {
-		reasonsStr := strings.Split(instruction[4], SPLITTER)
-		reasons := make([]byte, len(reasonsStr))
-		for i, v := range reasonsStr {
-			reason, err := strconv.Atoi(v)
-			if err != nil {
-				return nil, err
-			}
-			reasons[i] = byte(reason)
-		}
-		returnStakingIns.SetReasons(reasons)
-	}
 	return returnStakingIns, err
 }
 
 func ValidateReturnStakingInstructionSanity(instruction []string) error {
-	if (len(instruction) != 4) && (len(instruction) != 5) {
+	if len(instruction) != 4 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != RETURN_ACTION {
