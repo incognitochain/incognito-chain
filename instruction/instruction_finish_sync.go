@@ -8,29 +8,39 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 var (
 	ErrFinishSyncInstruction = errors.New("finish sync instruction error")
 )
 
-//FinishSyncInstruction :
+// FinishSyncInstruction :
 // format: "finish_sync", "0", "key1,key2"
 type FinishSyncInstruction struct {
 	ChainID          int
 	PublicKeys       []string
 	PublicKeysStruct []incognitokey.CommitteePublicKey
+	instructionBase
 }
 
 func NewFinishSyncInstructionWithValue(chainID int, publicKeys []string) *FinishSyncInstruction {
-	finishSyncInstruction := &FinishSyncInstruction{}
+	finishSyncInstruction := NewFinishSyncInstruction()
 	finishSyncInstruction.SetChainID(chainID)
+	if chainID == BEACON_CHAIN_ID {
+		finishSyncInstruction.featureID = proto.FID_CONSENSUS_BEACON
+	}
 	finishSyncInstruction.SetPublicKeys(publicKeys)
 	return finishSyncInstruction
 }
 
 func NewFinishSyncInstruction() *FinishSyncInstruction {
-	return &FinishSyncInstruction{}
+	return &FinishSyncInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (f *FinishSyncInstruction) GetType() string {
@@ -83,7 +93,7 @@ func ImportFinishSyncInstructionFromString(instruction []string) (*FinishSyncIns
 	return finishSyncInstruction, err
 }
 
-//ValidateFinishSyncInstructionSanity ...
+// ValidateFinishSyncInstructionSanity ...
 func ValidateFinishSyncInstructionSanity(instruction []string) error {
 	if len(instruction) != 3 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrFinishSyncInstruction, instruction)

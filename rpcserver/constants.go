@@ -121,6 +121,8 @@ const (
 	getBlockHeader                               = "getheader"
 	getCrossShardBlock                           = "getcrossshardblock"
 	getBlocksFromHeight                          = "getblocksfromheight"
+	getLogsFromHeight                            = "getlogsfromheight"
+	getLogsFromHeightByFID                       = "getlogsfromheightbyfid"
 	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
 	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
 	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"

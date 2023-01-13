@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/pruner"
 
 	"github.com/incognitochain/incognito-chain/config"
+	inclog "github.com/incognitochain/incognito-chain/log"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/portal"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -137,6 +138,10 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	rawdb_consensus.SetConsensusDatabase(consensusDB)
+	enableFLog := os.Getenv("ENABLE_FLOG")
+	if enableFLog != "" {
+		inclog.FLogManager.Init()
+	}
 	// Create db for mempool and use it
 	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.MempoolDir))
 	if err != nil {

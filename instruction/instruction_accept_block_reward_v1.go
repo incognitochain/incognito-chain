@@ -2,8 +2,9 @@ package instruction
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	// "errors"
 

@@ -63,6 +63,8 @@ var HttpHandler = map[string]httpHandler{
 	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 	getBlocksFromHeight:         (*HttpServer).handleGetBlocksFromHeight,
+	getLogsFromHeight:           (*HttpServer).handleGetLogsFromHeight,
+	getLogsFromHeightByFID:      (*HttpServer).handleGetLogsFromHeightByFID,
 
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,

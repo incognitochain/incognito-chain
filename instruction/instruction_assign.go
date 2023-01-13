@@ -8,30 +8,37 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 var (
 	ErrAssignInstruction = errors.New("assign instruction error")
 )
 
-//AssignInstruction :
-//Assign instruction format:
+// AssignInstruction :
+// Assign instruction format:
 // ["assign action", publickeys, shard or beacon chain, shard_id]
 type AssignInstruction struct {
 	ChainID               int
 	ShardCandidates       []string
 	ShardCandidatesStruct []incognitokey.CommitteePublicKey
+	instructionBase
 }
 
 func NewAssignInstructionWithValue(chainID int, shardCandidates []string) *AssignInstruction {
-	assignInstruction := &AssignInstruction{}
+	assignInstruction := NewAssignInstruction()
 	assignInstruction.SetChainID(chainID)
 	assignInstruction.SetShardCandidates(shardCandidates)
 	return assignInstruction
 }
 
 func NewAssignInstruction() *AssignInstruction {
-	return &AssignInstruction{}
+	return &AssignInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (a *AssignInstruction) GetType() string {
@@ -86,7 +93,7 @@ func ImportAssignInstructionFromString(instruction []string) (*AssignInstruction
 	return assignIntruction, err
 }
 
-//ValidateAssignInstructionSanity ...
+// ValidateAssignInstructionSanity ...
 func ValidateAssignInstructionSanity(instruction []string) error {
 	if len(instruction) != 4 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrAssignInstruction, instruction)

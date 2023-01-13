@@ -7,17 +7,24 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
-//UnstakeInstruction : Hold and verify data for unstake action
+// UnstakeInstruction : Hold and verify data for unstake action
 type UnstakeInstruction struct {
 	CommitteePublicKeys       []string
 	CommitteePublicKeysStruct []incognitokey.CommitteePublicKey
+	instructionBase
 }
 
-//NewUnstakeInstructionWithValue : Constructor with value
+// NewUnstakeInstructionWithValue : Constructor with value
 func NewUnstakeInstructionWithValue(committeePublicKeys []string) *UnstakeInstruction {
-	unstakeInstruction := &UnstakeInstruction{}
+	unstakeInstruction := &UnstakeInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 	unstakeInstruction.SetCommitteePublicKeys(committeePublicKeys)
 	return unstakeInstruction
 }
@@ -35,17 +42,17 @@ func (unstakeInstruction *UnstakeInstruction) SetCommitteePublicKeys(publicKeys 
 	return nil
 }
 
-//NewUnstakeInstruction : Default constructor
+// NewUnstakeInstruction : Default constructor
 func NewUnstakeInstruction() *UnstakeInstruction {
 	return &UnstakeInstruction{}
 }
 
-//GetType : Get type of unstake instruction
+// GetType : Get type of unstake instruction
 func (unstakeIns *UnstakeInstruction) GetType() string {
 	return UNSTAKE_ACTION
 }
 
-//ToString : Convert class to string
+// ToString : Convert class to string
 func (unstakeIns *UnstakeInstruction) ToString() []string {
 	unstakeInstructionStr := []string{UNSTAKE_ACTION}
 	unstakeInstructionStr = append(unstakeInstructionStr, strings.Join(unstakeIns.CommitteePublicKeys, SPLITTER))
@@ -57,7 +64,7 @@ func (unstakeIns *UnstakeInstruction) IsEmpty() bool {
 		len(unstakeIns.CommitteePublicKeysStruct) == 0 && len(unstakeIns.CommitteePublicKeys) == 0
 }
 
-//ValidateAndImportUnstakeInstructionFromString : Validate and import unstake instruction from string
+// ValidateAndImportUnstakeInstructionFromString : Validate and import unstake instruction from string
 func ValidateAndImportUnstakeInstructionFromString(instruction []string) (*UnstakeInstruction, error) {
 	if err := ValidateUnstakeInstructionSanity(instruction); err != nil {
 		return nil, err
@@ -65,7 +72,7 @@ func ValidateAndImportUnstakeInstructionFromString(instruction []string) (*Unsta
 	return ImportUnstakeInstructionFromString(instruction), nil
 }
 
-//ImportUnstakeInstructionFromString : Import unstake instruction from string
+// ImportUnstakeInstructionFromString : Import unstake instruction from string
 func ImportUnstakeInstructionFromString(instruction []string) *UnstakeInstruction {
 	unstakeInstruction := NewUnstakeInstruction()
 	if len(instruction) > 1 {
@@ -78,7 +85,7 @@ func ImportUnstakeInstructionFromString(instruction []string) *UnstakeInstructio
 	return unstakeInstruction
 }
 
-//ValidateUnstakeInstructionSanity : Validate unstake instruction data type
+// ValidateUnstakeInstructionSanity : Validate unstake instruction data type
 func ValidateUnstakeInstructionSanity(instruction []string) error {
 	if instruction == nil {
 		return fmt.Errorf("Instruction is null")
@@ -96,7 +103,7 @@ func ValidateUnstakeInstructionSanity(instruction []string) error {
 	return nil
 }
 
-//InsertIntoStateDB : insert unstake instruction to statedb
+// InsertIntoStateDB : insert unstake instruction to statedb
 func (unstakeIns *UnstakeInstruction) InsertIntoStateDB(sDB *statedb.StateDB) error {
 	return nil
 }

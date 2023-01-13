@@ -15,6 +15,7 @@ const (
 	BY_SLASH
 	BY_DUPLICATE_STAKE
 	BY_ADDSTAKE_FAIL
+	BY_SWAP
 )
 
 type StakingInfo struct {

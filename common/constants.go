@@ -90,6 +90,11 @@ const (
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
 	IncKeyType      = "inc"
+
+	ProcessInsert   = "insert"
+	ProcessProduce  = "produce"
+	ProcessValidate = "validate"
+	ProcessInit     = "init"
 )
 
 const (

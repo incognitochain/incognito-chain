@@ -10,9 +10,10 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
-//ReturnStakeInstruction :
+// ReturnStakeInstruction :
 // format: "return", "key1,key2,key3", "1231231,312312321,12312321", "100,100,100,100"
 type ReturnStakeInstruction struct {
 	PublicKeys       []string
@@ -20,13 +21,14 @@ type ReturnStakeInstruction struct {
 	StakingTXIDs     []string
 	StakingTxHashes  []common.Hash
 	PercentReturns   []uint
+	instructionBase
 }
 
 func NewReturnStakeInsWithValue(
 	publicKeys []string,
 	txStake []string,
 ) *ReturnStakeInstruction {
-	rsI := &ReturnStakeInstruction{}
+	rsI := NewReturnStakeIns()
 	rsI, _ = rsI.SetPublicKeys(publicKeys)
 	rsI, _ = rsI.SetStakingTXIDs(txStake)
 	for _, _ = range publicKeys {
@@ -36,7 +38,12 @@ func NewReturnStakeInsWithValue(
 }
 
 func NewReturnStakeIns() *ReturnStakeInstruction {
-	return &ReturnStakeInstruction{}
+	return &ReturnStakeInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (rsI *ReturnStakeInstruction) IsEmpty() bool {

@@ -3,9 +3,10 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -120,7 +121,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
 	// Process new block with new view
-	_, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain)
+	_, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain, common.ProcessProduce)
 	if err != nil {
 		return nil, err
 	}

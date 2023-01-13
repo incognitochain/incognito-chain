@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 type AddStakingInstruction struct {
@@ -14,19 +15,29 @@ type AddStakingInstruction struct {
 	StakingAmount             []uint64
 	StakingTxIDs              []string
 	CommitteePublicKeysStruct []incognitokey.CommitteePublicKey
+	instructionBase
 }
 
 func NewAddStakingInstructionWithValue(publicKeys []string, stakingAmount []uint64, txIDs []string) *AddStakingInstruction {
 	res := &AddStakingInstruction{
 		StakingAmount: stakingAmount,
 		StakingTxIDs:  txIDs,
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
 	}
 	res.SetPublicKeys(publicKeys)
 	return res
 }
 
 func NewAddStakingInstruction() *AddStakingInstruction {
-	return &AddStakingInstruction{}
+	return &AddStakingInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (s *AddStakingInstruction) GetType() string {

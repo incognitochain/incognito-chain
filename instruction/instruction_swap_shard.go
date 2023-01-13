@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
-//SwapShardInstruction Shard Swap Instruction
+// SwapShardInstruction Shard Swap Instruction
 type SwapShardInstruction struct {
 	InPublicKeys        []string
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
@@ -17,6 +18,7 @@ type SwapShardInstruction struct {
 	OutPublicKeyStructs []incognitokey.CommitteePublicKey
 	ChainID             int // which shard
 	Type                int // sub type of swap shard instruction
+	instructionBase
 }
 
 func NewSwapShardInstructionWithValue(
@@ -25,6 +27,10 @@ func NewSwapShardInstructionWithValue(
 	swapShardInstruction := &SwapShardInstruction{
 		ChainID: chainID,
 		Type:    typeIns,
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
 	}
 	swapShardInstruction, _ = swapShardInstruction.SetInPublicKeys(inPublicKeys)
 	swapShardInstruction, _ = swapShardInstruction.SetOutPublicKeys(outPublicKeys)
@@ -32,7 +38,12 @@ func NewSwapShardInstructionWithValue(
 }
 
 func NewSwapShardInstruction() *SwapShardInstruction {
-	return &SwapShardInstruction{}
+	return &SwapShardInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func NewSwapShardInstructionWithShardID(chainID int) *SwapShardInstruction {

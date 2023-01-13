@@ -87,7 +87,7 @@ CONTINUE_VERIFY:
 	}
 
 	// Update best state with new block
-	newBestState, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(beaconBlock, blockchain, common.ProcessValidate)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	// Update best state with new beaconBlock
-	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain, common.ProcessInsert)
 	if err != nil {
 		return err
 	}
@@ -499,7 +499,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 Update Beststate with new Block
 */
 func (curView *BeaconBestState) updateBeaconBestState(
-	beaconBlock *types.BeaconBlock, blockchain *BlockChain,
+	beaconBlock *types.BeaconBlock, blockchain *BlockChain, process string,
 ) (
 	*BeaconBestState, *committeestate.BeaconCommitteeStateHash,
 	*committeestate.CommitteeChange, [][]string,
@@ -679,6 +679,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		beaconBlock.Header,
 		beaconBlock.Body.Instructions,
 		isFoundRandomInstruction, isBeginRandom,
+		process,
 	)
 
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
@@ -772,7 +773,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false, common.ProcessInit)
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,

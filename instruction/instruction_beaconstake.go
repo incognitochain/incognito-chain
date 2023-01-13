@@ -2,19 +2,21 @@ package instruction
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/math"
 	"log"
 	"reflect"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common/math"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//BeaconStakeInstruction :
-//BeaconStakeInstruction Format:
+// BeaconStakeInstruction :
+// BeaconStakeInstruction Format:
 // ["STAKE_ACTION", list_public_keys, chain or beacon, list_txs, list_reward_addresses, list_autostaking_status(boolean)]
 type BeaconStakeInstruction struct {
 	PublicKeys            []string
@@ -28,10 +30,16 @@ type BeaconStakeInstruction struct {
 	StakingAmount         []uint64
 	FunderAddress         []string
 	FunderAddressStructs  []privacy.PaymentAddress
+	instructionBase
 }
 
 func NewBeaconStakeInstruction() *BeaconStakeInstruction {
-	return &BeaconStakeInstruction{}
+	return &BeaconStakeInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_BEACON,
+			logOnly:   false,
+		},
+	}
 }
 
 func (s *BeaconStakeInstruction) IsEmpty() bool {

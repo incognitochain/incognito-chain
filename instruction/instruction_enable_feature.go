@@ -4,25 +4,39 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 var (
 	ErrEnableFeatureInstruction = errors.New("enable feature instruction error")
 )
 
-//FeatureEnableInstruction :
+// FeatureEnableInstruction :
 // format: "finish_sync", "0", "key1,key2"
 type EnableFeatureInstruction struct {
 	Features []string
+	instructionBase
 }
 
 func NewEnableFeatureInstructionWithValue(feature []string) *EnableFeatureInstruction {
-	featureEnableInstruction := &EnableFeatureInstruction{feature}
+	featureEnableInstruction := &EnableFeatureInstruction{
+		feature,
+		instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 	return featureEnableInstruction
 }
 
 func NewEnableFeatureInstruction() *EnableFeatureInstruction {
-	return &EnableFeatureInstruction{}
+	return &EnableFeatureInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (f *EnableFeatureInstruction) GetType() string {
@@ -54,7 +68,7 @@ func ImportEnableFeatureInstructionFromString(instruction []string) (*EnableFeat
 	return featureEnableInstruction, nil
 }
 
-//ValidateFeatureEnableInstructionSanity ...
+// ValidateFeatureEnableInstructionSanity ...
 func ValidateEnableFeatureInstructionSanity(instruction []string) error {
 	if len(instruction) != 2 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrEnableFeatureInstruction, instruction)

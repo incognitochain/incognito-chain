@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 type ShardReceiveRewardV3 struct {
@@ -15,10 +16,16 @@ type ShardReceiveRewardV3 struct {
 	epoch    uint64
 	shardID  byte
 	subsetID byte
+	instructionBase
 }
 
 func NewShardReceiveRewardV3() *ShardReceiveRewardV3 {
-	return &ShardReceiveRewardV3{}
+	return &ShardReceiveRewardV3{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func NewShardReceiveRewardV3WithValue(
@@ -30,6 +37,10 @@ func NewShardReceiveRewardV3WithValue(
 		epoch:    epoch,
 		shardID:  shardID,
 		subsetID: subsetID,
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
 	}
 }
 
@@ -46,7 +57,7 @@ func (shardSubsetReward *ShardReceiveRewardV3) ShardID() byte {
 	return shardSubsetReward.shardID
 }
 
-//read only function
+// read only function
 func (shardSubsetReward *ShardReceiveRewardV3) Reward() map[common.Hash]uint64 {
 	return shardSubsetReward.reward
 }

@@ -8,12 +8,13 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//StakeInstruction :
-//StakeInstruction Format:
+// StakeInstruction :
+// StakeInstruction Format:
 // ["STAKE_ACTION", list_public_keys, chain or beacon, list_txs, list_reward_addresses, list_autostaking_status(boolean)]
 type StakeInstruction struct {
 	PublicKeys            []string
@@ -24,15 +25,19 @@ type StakeInstruction struct {
 	RewardReceivers       []string
 	RewardReceiverStructs []privacy.PaymentAddress
 	AutoStakingFlag       []bool
+	instructionBase
 }
 
 func NewStakeInstructionWithValue(
 	publicKeys []string, chain string,
 	txStakes []string, rewardReceivers []string,
 	autoStakingFlag []bool) *StakeInstruction {
-	stakeInstruction := &StakeInstruction{}
+	stakeInstruction := NewStakeInstruction()
 	stakeInstruction.SetPublicKeys(publicKeys)
 	stakeInstruction.SetChain(chain)
+	if chain == BEACON_INST {
+		stakeInstruction.instructionBase.featureID = proto.FID_CONSENSUS_BEACON
+	}
 	stakeInstruction.SetTxStakes(txStakes)
 	stakeInstruction.SetRewardReceivers(rewardReceivers)
 	stakeInstruction.SetAutoStakingFlag(autoStakingFlag)
@@ -40,7 +45,12 @@ func NewStakeInstructionWithValue(
 }
 
 func NewStakeInstruction() *StakeInstruction {
-	return &StakeInstruction{}
+	return &StakeInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (s *StakeInstruction) IsEmpty() bool {

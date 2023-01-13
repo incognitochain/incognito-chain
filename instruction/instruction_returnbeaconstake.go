@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 type ReturnBeaconStakeInstruction struct {
@@ -16,6 +17,7 @@ type ReturnBeaconStakeInstruction struct {
 	ReturnAmounts    []uint64
 	PercentReturns   []uint
 	Reasons          []int
+	instructionBase
 }
 
 func NewReturnBeaconStakeInsWithValue(
@@ -23,7 +25,7 @@ func NewReturnBeaconStakeInsWithValue(
 	reason []int,
 	amounts []uint64,
 ) *ReturnBeaconStakeInstruction {
-	rsI := &ReturnBeaconStakeInstruction{}
+	rsI := NewReturnBeaconStakeIns()
 	rsI, _ = rsI.SetPublicKeys(publicKeys)
 	for _, _ = range publicKeys {
 		rsI.PercentReturns = append(rsI.PercentReturns, 100)
@@ -34,7 +36,12 @@ func NewReturnBeaconStakeInsWithValue(
 }
 
 func NewReturnBeaconStakeIns() *ReturnBeaconStakeInstruction {
-	return &ReturnBeaconStakeInstruction{}
+	return &ReturnBeaconStakeInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_BEACON,
+			logOnly:   false,
+		},
+	}
 }
 
 func (rsI *ReturnBeaconStakeInstruction) IsEmpty() bool {

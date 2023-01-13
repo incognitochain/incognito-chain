@@ -3,11 +3,14 @@ package instruction
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
-//Random Instruction which get nonce from bitcoin block
+// Random Instruction which get nonce from bitcoin block
 type RandomInstruction struct {
 	randomNumber int64
+	instructionBase
 }
 
 func (s *RandomInstruction) RandomNumber() int64 {
@@ -15,11 +18,22 @@ func (s *RandomInstruction) RandomNumber() int64 {
 }
 
 func NewRandomInstructionWithValue(btcNonce int64) *RandomInstruction {
-	return &RandomInstruction{randomNumber: btcNonce}
+	return &RandomInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+		randomNumber: btcNonce,
+	}
 }
 
 func NewRandomInstruction() *RandomInstruction {
-	s := &RandomInstruction{}
+	s := &RandomInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 	return s
 }
 

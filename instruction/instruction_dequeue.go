@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 var (
@@ -13,15 +15,28 @@ var (
 type DequeueInstruction struct {
 	Reason      string
 	DequeueList map[int][]int //shardID -> pending index
+	instructionBase
 }
 
 func NewDequeueInstructionWithValue(reason string, dequeueList map[int][]int) *DequeueInstruction {
-	dequeueInstruction := &DequeueInstruction{reason, dequeueList}
+	dequeueInstruction := &DequeueInstruction{
+		reason,
+		dequeueList,
+		instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 	return dequeueInstruction
 }
 
 func NewDequeueInstruction() *DequeueInstruction {
-	return &DequeueInstruction{}
+	return &DequeueInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (f *DequeueInstruction) GetType() string {
@@ -57,7 +72,7 @@ func ImportDequeueInstructionFromString(instruction []string) (*DequeueInstructi
 	return dequeueInstruction, nil
 }
 
-//ValidateFeatureEnableInstructionSanity ...
+// ValidateFeatureEnableInstructionSanity ...
 func ValidateDequeueInstructionSanity(instruction []string) error {
 	if len(instruction) != 3 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrDequeueInstruction, instruction)

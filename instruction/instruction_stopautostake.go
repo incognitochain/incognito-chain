@@ -6,21 +6,28 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 )
 
 type StopAutoStakeInstruction struct {
 	CommitteePublicKeys       []string
 	CommitteePublicKeysStruct []incognitokey.CommitteePublicKey
+	instructionBase
 }
 
 func NewStopAutoStakeInstructionWithValue(publicKeys []string) *StopAutoStakeInstruction {
-	res := &StopAutoStakeInstruction{}
+	res := NewStopAutoStakeInstruction()
 	res.SetPublicKeys(publicKeys)
 	return res
 }
 
 func NewStopAutoStakeInstruction() *StopAutoStakeInstruction {
-	return &StopAutoStakeInstruction{}
+	return &StopAutoStakeInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (s *StopAutoStakeInstruction) GetType() string {

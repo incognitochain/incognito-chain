@@ -1,13 +1,51 @@
 package instruction
 
 import (
+	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	protolog "github.com/incognitochain/incognito-chain/log/proto"
 	"github.com/pkg/errors"
 )
+
+type instructionBase struct {
+	featureID protolog.FeatureID
+	logOnly   bool
+}
 
 type Instruction interface {
 	GetType() string
 	ToString() []string
+	JustLog() bool
+	ToLog(
+		i Instruction,
+		blkHeight uint64,
+		blkHash common.Hash,
+		timeStamp int64,
+	) *protolog.FeatureLog
+}
+
+func (i *instructionBase) JustLog() bool {
+	return i.logOnly
+}
+
+func (i *instructionBase) ToLog(
+	inst Instruction,
+	blkHeight uint64,
+	blkHash common.Hash,
+	timeStamp int64,
+) *protolog.FeatureLog {
+	data := strings.Join(inst.ToString(), ".")
+	return &protolog.FeatureLog{
+		ID: i.featureID,
+		CheckPoint: &protolog.CheckPoint{
+			BlockHeight: blkHeight,
+			BlockHash:   blkHash.String(),
+		},
+		Data:      []byte(data),
+		Timestamp: timeStamp,
+	}
 }
 
 type ViewEnvironment struct {

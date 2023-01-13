@@ -8,13 +8,14 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log/proto"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//SwapInstruction :
-//Swap instruction format:
-//["swap-action", list-keys-in, list-keys-out, shard or beacon chain, shard_id(optional), "punished public key", "new reward receivers"]
+// SwapInstruction :
+// Swap instruction format:
+// ["swap-action", list-keys-in, list-keys-out, shard or beacon chain, shard_id(optional), "punished public key", "new reward receivers"]
 type SwapInstruction struct {
 	InPublicKeys        []string
 	InPublicKeyStructs  []incognitokey.CommitteePublicKey
@@ -27,16 +28,32 @@ type SwapInstruction struct {
 	NewRewardReceivers       []string
 	NewRewardReceiverStructs []privacy.PaymentAddress
 	IsReplace                bool
+	instructionBase
 }
 
 func NewSwapInstructionWithValue(inPublicKeys []string, outPublicKeys []string, chainID int) *SwapInstruction {
 	producersBlackList := make(map[string]uint8)
 	badProducersWithPunishmentBytes, _ := json.Marshal(producersBlackList)
-	return &SwapInstruction{InPublicKeys: inPublicKeys, OutPublicKeys: outPublicKeys, ChainID: chainID, PunishedPublicKeys: string(badProducersWithPunishmentBytes), NewRewardReceivers: []string{}}
+	return &SwapInstruction{
+		InPublicKeys:       inPublicKeys,
+		OutPublicKeys:      outPublicKeys,
+		ChainID:            chainID,
+		PunishedPublicKeys: string(badProducersWithPunishmentBytes),
+		NewRewardReceivers: []string{},
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func NewSwapInstruction() *SwapInstruction {
-	return &SwapInstruction{}
+	return &SwapInstruction{
+		instructionBase: instructionBase{
+			featureID: proto.FID_CONSENSUS_SHARD,
+			logOnly:   false,
+		},
+	}
 }
 
 func (s *SwapInstruction) GetType() string {

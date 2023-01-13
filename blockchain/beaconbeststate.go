@@ -739,6 +739,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	beaconInstructions [][]string,
 	isFoundRandomInstruction bool,
 	isBeaconRandomTime bool,
+	process string,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	missingSignature := make(map[string]signaturecounter.MissingSignature)
@@ -757,6 +758,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	}
 
 	return &committeestate.BeaconCommitteeStateEnvironment{
+		Process:                          process,
 		BeaconHeader:                     header,
 		BeaconHeight:                     beaconBestState.BeaconHeight,
 		BeaconHash:                       beaconBestState.BestBlockHash,

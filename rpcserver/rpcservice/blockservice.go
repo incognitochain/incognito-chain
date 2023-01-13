@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/log"
+	"github.com/incognitochain/incognito-chain/log/proto"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -471,6 +473,53 @@ func (blockService BlockService) GetBlocksFromHeight(chainID int, fromHeight int
 		return resultShard, nil
 	}
 
+}
+
+func (blockService BlockService) GetLogsFromHeight(fromHeight, toHeight int) (interface{}, *RPCError) {
+	rangeCP := &proto.RangeCheckPoint{
+		From: &proto.CheckPoint{
+			BlockHeight: uint64(fromHeight),
+			BlockHash:   "",
+		},
+		To: &proto.CheckPoint{
+			BlockHeight: uint64(toHeight),
+			BlockHash:   "",
+		},
+	}
+	results, err := log.FLogManager.GetRangeFeatureLog(rangeCP)
+	if err != nil {
+		return nil, NewRPCError(0, err)
+	}
+	res := []string{}
+	for _, v := range results {
+		res = append(res, v.String())
+	}
+	return res, nil
+}
+
+func (blockService BlockService) GetLogsFromHeightByFID(fromHeight, toHeight int, FID int32) (interface{}, *RPCError) {
+	rangeCP := &proto.RequestLogByFeature{
+		CheckPoint: &proto.RangeCheckPoint{
+			From: &proto.CheckPoint{
+				BlockHeight: uint64(fromHeight),
+				BlockHash:   "",
+			},
+			To: &proto.CheckPoint{
+				BlockHeight: uint64(toHeight),
+				BlockHash:   "",
+			},
+		},
+		ID: proto.FeatureID(FID),
+	}
+	results, err := log.FLogManager.GetFeatureLogByFeature(rangeCP)
+	if err != nil {
+		return nil, NewRPCError(0, err)
+	}
+	res := []string{}
+	for _, v := range results {
+		res = append(res, v.String())
+	}
+	return res, nil
 }
 
 func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {

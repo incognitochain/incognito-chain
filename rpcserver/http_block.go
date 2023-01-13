@@ -297,7 +297,7 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 	return result, nil
 }
 
-//This function return the result of cross shard block of a specific block in shard
+// This function return the result of cross shard block of a specific block in shard
 func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	// Logger.log.Info(arrayParams)
@@ -400,6 +400,62 @@ func (httpServer *HttpServer) handleGetBlocksFromHeight(params interface{}, clos
 	numBlock := int(numBlockTemp)
 
 	result, err := httpServer.blockService.GetBlocksFromHeight(chainID, fromHeight, numBlock)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetLogsFromHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of parameter is invalid"))
+	}
+
+	fromHeightTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainID is invalid"))
+	}
+	fromHeight := int(fromHeightTemp)
+
+	toHeightTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("fromHeightTemp is invalid"))
+	}
+	toHeight := int(toHeightTemp)
+
+	result, err := httpServer.blockService.GetLogsFromHeight(fromHeight, toHeight)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetLogsFromHeightByFID(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of parameter is invalid"))
+	}
+
+	fromHeightTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainID is invalid"))
+	}
+	fromHeight := int(fromHeightTemp)
+
+	toHeightTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("fromHeightTemp is invalid"))
+	}
+	toHeight := int(toHeightTemp)
+
+	fIDTemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("fromHeightTemp is invalid"))
+	}
+	fID := int32(fIDTemp)
+
+	result, err := httpServer.blockService.GetLogsFromHeightByFID(fromHeight, toHeight, fID)
 	if err != nil {
 		return nil, err
 	}

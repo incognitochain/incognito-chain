@@ -9,6 +9,7 @@ import (
 )
 
 type BeaconCommitteeStateEnvironment struct {
+	Process                          string
 	EpochLengthV1                    uint64
 	BeaconHeight                     uint64
 	Epoch                            uint64
@@ -130,7 +131,7 @@ func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber in
 	}
 }
 
-//ShardCommitteeStateEnvironment :
+// ShardCommitteeStateEnvironment :
 type ShardCommitteeStateEnvironment struct {
 	ShardHeight                  uint64
 	ShardBlockHash               common.Hash
