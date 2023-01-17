@@ -12,6 +12,7 @@ type BeaconCommitteeStateEnvironment struct {
 	EpochLengthV1                    uint64
 	BeaconHeight                     uint64
 	Epoch                            uint64
+	BeaconHeader                     types.BeaconHeader
 	BeaconInstructions               [][]string
 	BeaconHash                       common.Hash
 	BestShardHash                    map[byte]common.Hash
@@ -41,6 +42,7 @@ type BeaconCommitteeStateEnvironment struct {
 	DAOPercent                       int
 	NumberOfFixedShardBlockValidator int
 	MissingSignaturePenalty          map[string]signaturecounter.Penalty
+	MissingSignature                 map[string]signaturecounter.MissingSignature
 	StakingV2Height                  uint64
 	AssignRuleV3Height               uint64
 	StakingV3Height                  uint64
@@ -125,17 +127,6 @@ func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber in
 		RandomNumber: randomNumber,
 		AssignOffset: assignOffset,
 		BeaconHeight: beaconHeight,
-	}
-}
-
-func NewBeaconCommitteeStateEnvironmentForUpgrading(beaconHeight, stakingV2Height, assignRuleV3Height,
-	stakingV3Height uint64, beaconBlockHash common.Hash) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		StakingV3Height:    stakingV3Height,
-		StakingV2Height:    stakingV2Height,
-		AssignRuleV3Height: assignRuleV3Height,
-		BeaconHash:         beaconBlockHash,
-		BeaconHeight:       beaconHeight,
 	}
 }
 

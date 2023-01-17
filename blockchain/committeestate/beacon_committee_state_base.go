@@ -2,9 +2,12 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"math/big"
 	"reflect"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
@@ -43,8 +46,10 @@ func InitBeaconCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
 	}
 }
 
-//NewBeaconCommitteeState constructor for BeaconCommitteeState by version
+// NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
+	stateDB *statedb.StateDB,
+	minBeaconCommitteeSize int,
 	version int,
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
@@ -59,6 +64,7 @@ func NewBeaconCommitteeState(
 	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
 	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
 	assignRule AssignRuleProcessor,
+	allBeaconBlocks []types.BeaconBlock,
 ) BeaconCommitteeState {
 
 	var committeeState BeaconCommitteeState
@@ -118,12 +124,29 @@ func NewBeaconCommitteeState(
 			swapRule,
 			assignRule,
 		)
+	case STAKING_FLOW_V4:
+		committeeState = NewBeaconCommitteeStateV4WithValue(
+			tempShardCommittee,
+			tempShardSubstitute,
+			tempShardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+			tempSyncPool,
+			swapRule,
+			assignRule,
+		)
+		err := committeeState.(*BeaconCommitteeStateV4).RestoreBeaconCommitteeFromDB(stateDB, minBeaconCommitteeSize, allBeaconBlocks)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return committeeState
 }
 
-//VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
+// VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
 func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64) int {
 	if beaconHeight >= stakingV3Height {
 		return STAKING_FLOW_V3
@@ -188,8 +211,8 @@ func (b beaconCommitteeStateBase) shallowCopy(newB *beaconCommitteeStateBase) {
 	newB.hashes = b.hashes
 }
 
-//Clone:
-func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
+// Clone:
+func (b beaconCommitteeStateBase) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()
@@ -240,6 +263,32 @@ func (b *beaconCommitteeStateBase) reset() {
 
 func (b *beaconCommitteeStateBase) setBeaconCommitteeStateHashes(hashes *BeaconCommitteeStateHash) {
 	b.hashes = hashes
+}
+
+func (b beaconCommitteeStateBase) GetBeaconLocking() []incognitokey.CommitteePublicKey {
+	return nil
+}
+
+func (b beaconCommitteeStateBase) GetNonSlashingRewardReceiver(staker []incognitokey.CommitteePublicKey) ([]key.PaymentAddress, error) {
+	rewardReceiver := []key.PaymentAddress{}
+	for _, committee := range b.beaconCommittee {
+		k := incognitokey.CommitteePublicKey{}
+		k.FromString(committee)
+		rewardReceiver = append(rewardReceiver, key.PaymentAddress{Pk: k.GetNormalKey()})
+	}
+	return rewardReceiver, nil
+}
+
+func (b beaconCommitteeStateBase) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
+	return nil
+}
+
+func (b beaconCommitteeStateBase) GetUnsyncBeaconValidator() []incognitokey.CommitteePublicKey {
+	return nil
+}
+
+func (b beaconCommitteeStateBase) GetAllStaker() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+	panic("This should be called from >= beaconCommitteeStateV4 ")
 }
 
 func (b beaconCommitteeStateBase) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
@@ -314,6 +363,10 @@ func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForNextRandom() []inc
 
 func (b beaconCommitteeStateBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
 	panic("do not use function of beaconCommitteeStateBase struct")
+}
+
+func (b beaconCommitteeStateBase) IsFinishSync(string) bool {
+	panic("do not use function ")
 }
 
 func (b beaconCommitteeStateBase) GetAutoStaking() map[string]bool {
@@ -579,7 +632,7 @@ func SnapshotShardCommonPoolV2(
 	return numberOfAssignedCandidates
 }
 
-//Upgrade upgrade committee engine by version
+// Upgrade upgrade committee engine by version
 func (b beaconCommitteeStateBase) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	panic("Implement this function")
 }

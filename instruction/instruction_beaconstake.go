@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/math"
 	"log"
 	"reflect"
 	"strings"
@@ -12,10 +13,10 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//StakeInstruction :
-//StakeInstruction Format:
+//BeaconStakeInstruction :
+//BeaconStakeInstruction Format:
 // ["STAKE_ACTION", list_public_keys, chain or beacon, list_txs, list_reward_addresses, list_autostaking_status(boolean)]
-type StakeInstruction struct {
+type BeaconStakeInstruction struct {
 	PublicKeys            []string
 	PublicKeyStructs      []incognitokey.CommitteePublicKey
 	Chain                 string
@@ -24,35 +25,25 @@ type StakeInstruction struct {
 	RewardReceivers       []string
 	RewardReceiverStructs []privacy.PaymentAddress
 	AutoStakingFlag       []bool
+	StakingAmount         []uint64
+	FunderAddress         []string
+	FunderAddressStructs  []privacy.PaymentAddress
 }
 
-func NewStakeInstructionWithValue(
-	publicKeys []string, chain string,
-	txStakes []string, rewardReceivers []string,
-	autoStakingFlag []bool) *StakeInstruction {
-	stakeInstruction := &StakeInstruction{}
-	stakeInstruction.SetPublicKeys(publicKeys)
-	stakeInstruction.SetChain(chain)
-	stakeInstruction.SetTxStakes(txStakes)
-	stakeInstruction.SetRewardReceivers(rewardReceivers)
-	stakeInstruction.SetAutoStakingFlag(autoStakingFlag)
-	return stakeInstruction
+func NewBeaconStakeInstruction() *BeaconStakeInstruction {
+	return &BeaconStakeInstruction{}
 }
 
-func NewStakeInstruction() *StakeInstruction {
-	return &StakeInstruction{}
-}
-
-func (s *StakeInstruction) IsEmpty() bool {
-	return reflect.DeepEqual(s, NewStakeInstruction()) ||
+func (s *BeaconStakeInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewBeaconStakeInstruction()) ||
 		len(s.PublicKeyStructs) == 0 && len(s.PublicKeys) == 0
 }
 
-func (s *StakeInstruction) GetType() string {
-	return STAKE_ACTION
+func (s *BeaconStakeInstruction) GetType() string {
+	return BEACON_STAKE_ACTION
 }
 
-func (s *StakeInstruction) SetPublicKeys(publicKeys []string) (*StakeInstruction, error) {
+func (s *BeaconStakeInstruction) SetPublicKeys(publicKeys []string) (*BeaconStakeInstruction, error) {
 	s.PublicKeys = publicKeys
 	publicKeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
 	if err != nil {
@@ -62,12 +53,12 @@ func (s *StakeInstruction) SetPublicKeys(publicKeys []string) (*StakeInstruction
 	return s, nil
 }
 
-func (s *StakeInstruction) SetChain(chain string) *StakeInstruction {
+func (s *BeaconStakeInstruction) SetChain(chain string) *BeaconStakeInstruction {
 	s.Chain = chain
 	return s
 }
 
-func (s *StakeInstruction) SetTxStakes(txStakes []string) *StakeInstruction {
+func (s *BeaconStakeInstruction) SetTxStakes(txStakes []string) *BeaconStakeInstruction {
 	s.TxStakes = txStakes
 	for _, txStake := range txStakes {
 		res, _ := common.Hash{}.NewHashFromStr(txStake)
@@ -76,7 +67,16 @@ func (s *StakeInstruction) SetTxStakes(txStakes []string) *StakeInstruction {
 	return s
 }
 
-func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeInstruction {
+func (s *BeaconStakeInstruction) SetFunderAddress(funderAddress []string) *BeaconStakeInstruction {
+	s.FunderAddress = funderAddress
+	for _, v := range funderAddress {
+		wl, _ := wallet.Base58CheckDeserialize(v)
+		s.FunderAddressStructs = append(s.FunderAddressStructs, wl.KeySet.PaymentAddress)
+	}
+	return s
+}
+
+func (s *BeaconStakeInstruction) SetRewardReceivers(rewardReceivers []string) *BeaconStakeInstruction {
 	s.RewardReceivers = rewardReceivers
 	for _, v := range rewardReceivers {
 		wl, _ := wallet.Base58CheckDeserialize(v)
@@ -85,13 +85,13 @@ func (s *StakeInstruction) SetRewardReceivers(rewardReceivers []string) *StakeIn
 	return s
 }
 
-func (s *StakeInstruction) SetAutoStakingFlag(autoStakingFlag []bool) *StakeInstruction {
+func (s *BeaconStakeInstruction) SetAutoStakingFlag(autoStakingFlag []bool) *BeaconStakeInstruction {
 	s.AutoStakingFlag = autoStakingFlag
 	return s
 }
 
-func (s *StakeInstruction) ToString() []string {
-	stakeInstructionStr := []string{STAKE_ACTION}
+func (s *BeaconStakeInstruction) ToString() []string {
+	stakeInstructionStr := []string{BEACON_STAKE_ACTION}
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.PublicKeys, SPLITTER))
 	stakeInstructionStr = append(stakeInstructionStr, s.Chain)
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.TxStakes, SPLITTER))
@@ -105,19 +105,28 @@ func (s *StakeInstruction) ToString() []string {
 		}
 	}
 	stakeInstructionStr = append(stakeInstructionStr, strings.Join(tempStopAutoStakeFlag, SPLITTER))
+
+	amountStr := []string{}
+	for _, amount := range s.StakingAmount {
+		amountStr = append(amountStr, fmt.Sprintf("%v", amount))
+	}
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(amountStr, SPLITTER))
+
+	stakeInstructionStr = append(stakeInstructionStr, strings.Join(s.FunderAddress, SPLITTER))
+
 	return stakeInstructionStr
 }
 
-func ValidateAndImportStakeInstructionFromString(instruction []string) (*StakeInstruction, error) {
-	if err := ValidateStakeInstructionSanity(instruction); err != nil {
+func ValidateAndImportBeaconStakeInstructionFromString(instruction []string) (*BeaconStakeInstruction, error) {
+	if err := ValidateBeaconStakeInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
-	return ImportStakeInstructionFromString(instruction), nil
+	return ImportBeaconStakeInstructionFromString(instruction), nil
 }
 
-// ImportStakeInstructionFromString is unsafe method
-func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
-	stakeInstruction := NewStakeInstruction()
+// ImportBeaconStakeInstructionFromString is unsafe method
+func ImportBeaconStakeInstructionFromString(instruction []string) *BeaconStakeInstruction {
+	stakeInstruction := NewBeaconStakeInstruction()
 	stakeInstruction, _ = stakeInstruction.SetPublicKeys(strings.Split(instruction[1], SPLITTER))
 	stakeInstruction.SetTxStakes(strings.Split(instruction[3], SPLITTER))
 	stakeInstruction.SetRewardReceivers(strings.Split(instruction[4], SPLITTER))
@@ -132,22 +141,32 @@ func ImportStakeInstructionFromString(instruction []string) *StakeInstruction {
 	}
 	stakeInstruction.SetAutoStakingFlag(autoStakeFlags)
 	stakeInstruction.SetChain(instruction[2])
+
+	amount := []uint64{}
+	amountStr := strings.Split(instruction[6], SPLITTER)
+	for _, amounts := range amountStr {
+		a, _ := math.ParseUint64(amounts)
+		amount = append(amount, a)
+	}
+	stakeInstruction.StakingAmount = amount
+	stakeInstruction.SetFunderAddress(strings.Split(instruction[7], SPLITTER))
+
 	return stakeInstruction
 }
 
 // validate stake instruction sanity
 // beaconprocess.go: 1122 - 1165
 // beaconproducer.go: 386
-func ValidateStakeInstructionSanity(instruction []string) error {
-	if instruction[2] != SHARD_INST {
+func ValidateBeaconStakeInstructionSanity(instruction []string) error {
+	if instruction[2] != BEACON_INST {
 		return fmt.Errorf("invalid chain id, %+v", instruction)
 	}
 
-	if len(instruction) != 6 {
+	if len(instruction) != 8 {
 		log.Println(len(instruction), instruction[2])
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
-	if instruction[0] != STAKE_ACTION {
+	if instruction[0] != BEACON_STAKE_ACTION {
 		return fmt.Errorf("invalid stake action, %+v", instruction)
 	}
 
@@ -183,9 +202,9 @@ func ValidateStakeInstructionSanity(instruction []string) error {
 	return nil
 }
 
-// ImportStakeInstructionFromString is unsafe method
-func ImportInitStakeInstructionFromString(instruction []string) *StakeInstruction {
-	stakeInstruction := NewStakeInstruction()
+// ImportBeaconStakeInstructionFromString is unsafe method
+func ImportInitBeaconStakeInstructionFromString(instruction []string) *BeaconStakeInstruction {
+	stakeInstruction := NewBeaconStakeInstruction()
 	stakeInstruction, _ = stakeInstruction.SetPublicKeys(strings.Split(instruction[1], SPLITTER))
 	stakeInstruction.SetTxStakes(strings.Split(instruction[3], SPLITTER))
 	stakeInstruction.SetRewardReceivers(strings.Split(instruction[4], SPLITTER))

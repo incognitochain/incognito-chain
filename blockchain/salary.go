@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"math/big"
 	"strconv"
 
@@ -554,7 +555,15 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	}
 
 	if len(totalRewardForBeacon) > 0 {
-		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
+		committeeOfEpoch, err := blockchain.GetBeaconCommitteeOfEpoch(epoch)
+		if err != nil {
+			return nil, nil, rewardForPdex, err
+		}
+		committeeGotReward, err := curView.beaconCommitteeState.GetNonSlashingRewardReceiver(committeeOfEpoch)
+		if err != nil {
+			return nil, nil, rewardForPdex, err
+		}
+		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon, committeeGotReward)
 		if err != nil {
 			return nil, nil, rewardForPdex, err
 		}
@@ -582,15 +591,14 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 }
 
 // buildInstRewardForBeacons create reward instruction for beacons
-func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, rewardReceiver []key.PaymentAddress) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(len(beaconBestState.GetBeaconCommittee()))
+		baseRewards[key] = value / uint64(len(rewardReceiver))
 	}
-	for _, beaconpublickey := range beaconBestState.GetBeaconCommittee() {
-		// indicate reward pubkey
-		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, beaconpublickey.GetNormalKey())
+	for _, receiver := range rewardReceiver {
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, receiver.Pk)
 		if err != nil {
 			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
 			return nil, err

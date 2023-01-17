@@ -37,15 +37,16 @@ type ShardSyncProcess struct {
 	crossShardSyncProcess *CrossShardSyncProcess
 	blockchain            *blockchain.BlockChain
 	Network               Network
+	consensus             peerv2.ConsensusData
 	Chain                 ShardChainInterface
 	beaconChain           Chain
 	shardPool             *BlkPool
 	actionCh              chan func()
-	consensus             peerv2.ConsensusData
-	lock                  *sync.RWMutex
-	lastInsert            string
-	startSyncTime         time.Time
-	testStall             bool
+
+	lock          *sync.RWMutex
+	lastInsert    string
+	startSyncTime time.Time
+	testStall     bool
 }
 
 func NewShardSyncProcess(
@@ -236,7 +237,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 					continue
 				}
 
-				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), previousValidationData)
+				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), nil, previousValidationData)
 				if err1 != nil {
 					Logger.Error("Replace Previous Validation Data Fail", block.GetPrevHash(), previousValidationData, err)
 				}
@@ -306,7 +307,7 @@ func (s *ShardSyncProcess) syncFinishSyncMessage() {
 	for {
 
 		committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
-		if committeeView.CommitteeStateVersion() == committeestate.STAKING_FLOW_V3 {
+		if committeeView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V3 {
 			shardView := s.blockchain.ShardChain[s.shardID].GetBestView().(*blockchain.ShardBestState)
 			convertedTimeslot := time.Duration(ts) * time.Second
 			now := time.Now().Unix()

@@ -74,6 +74,7 @@ const (
 	BeaconRewardRequestMeta      = metadataCommon.BeaconRewardRequestMeta
 	BeaconSalaryResponseMeta     = metadataCommon.BeaconSalaryResponseMeta
 	ReturnStakingMeta            = metadataCommon.ReturnStakingMeta
+	ReturnBeaconStakingMeta      = metadataCommon.ReturnBeaconStakingMeta
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
@@ -82,6 +83,7 @@ const (
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
 	UnStakingMeta       = metadataCommon.UnStakingMeta
+	AddStakingMeta      = metadataCommon.AddStakingMeta
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = metadataCommon.BeaconSwapConfirmMeta
 	BridgeSwapConfirmMeta = metadataCommon.BridgeSwapConfirmMeta
@@ -269,6 +271,10 @@ const (
 	StopAutoStakingRequestTypeAssertionError                   = metadataCommon.StopAutoStakingRequestTypeAssertionError
 	StopAutoStakingRequestAlreadyStopError                     = metadataCommon.StopAutoStakingRequestAlreadyStopError
 	WrongIncognitoDAOPaymentAddressError                       = metadataCommon.WrongIncognitoDAOPaymentAddressError
+	ConsensusMetadataTypeAssertionError                        = metadataCommon.ConsensusMetadataTypeAssertionError
+	ConsensusMetadataInvalidTransactionSenderError             = metadataCommon.StopAutoStakingRequestInvalidTransactionSenderError
+	AddStakingRequestNotInCommitteeListError                   = metadataCommon.AddStakingNotInCommitteeListError
+	AddStakingCommitteeNotFoundError                           = metadataCommon.AddStakingCommitteeNotFoundError
 	// pde
 	PDEWithdrawalRequestFromMapError    = metadataCommon.PDEWithdrawalRequestFromMapError
 	CouldNotGetExchangeRateError        = metadataCommon.CouldNotGetExchangeRateError

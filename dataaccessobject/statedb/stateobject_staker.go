@@ -164,7 +164,7 @@ func newStakerObject(db *StateDB, hash common.Hash) *StakerObject {
 		db:                  db,
 		stakerPublicKeyHash: hash,
 		stakerInfo:          &StakerInfo{},
-		objectType:          StakerObjectType,
+		objectType:          ShardStakerObjectType,
 		deleted:             false,
 	}
 }
@@ -192,7 +192,7 @@ func newStakerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*
 		stakerPublicKeyHash: key,
 		stakerInfo:          newStakerInfo,
 		db:                  db,
-		objectType:          StakerObjectType,
+		objectType:          ShardStakerObjectType,
 		deleted:             false,
 	}, nil
 }

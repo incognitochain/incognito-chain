@@ -59,7 +59,7 @@ func (b BeaconCommitteeStateV1) shallowCopy(newB *BeaconCommitteeStateV1) {
 	newB.nextEpochShardCandidate = b.nextEpochShardCandidate
 }
 
-func (b *BeaconCommitteeStateV1) Clone() BeaconCommitteeState {
+func (b *BeaconCommitteeStateV1) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()
@@ -474,6 +474,10 @@ func (b *BeaconCommitteeStateV1) GenerateAssignInstructions(env *BeaconCommittee
 		instructions = append(instructions, shardAssignInstruction)
 	}
 	return instructions
+}
+
+func (b BeaconCommitteeStateV1) IsFinishSync(string) bool {
+	panic("This should not be callsed")
 }
 
 //Upgrade check interface method for des
