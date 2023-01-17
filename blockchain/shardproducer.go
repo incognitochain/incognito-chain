@@ -302,6 +302,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
 	}
+
 	crossTransactionRoot, err := CreateMerkleCrossTransaction(newShardBlock.Body.CrossTransactions)
 	if err != nil {
 		return nil, err
@@ -850,6 +851,12 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 			// assume that stake instruction already been validated by beacon committee
 
 			switch l[0] {
+			case instruction.BEACON_STAKE_ACTION:
+				beaconStakeInst := instruction.ImportBeaconStakeInstructionFromString(l)
+				for i, cpk := range beaconStakeInst.PublicKeys {
+					stakingTx[cpk] = beaconStakeInst.TxStakes[i]
+				}
+				instructions = append(instructions, l)
 			case instruction.STAKE_ACTION:
 				if l[2] == "shard" {
 					shard := strings.Split(l[1], ",")
@@ -869,26 +876,6 @@ func (blockchain *BlockChain) extractInstructionsFromBeacon(
 							stakingTx[newShardCandidates[i]] = v
 						}
 						instructions = append(instructions, l)
-					}
-				}
-				if l[2] == "beacon" {
-					beacon := strings.Split(l[1], ",")
-					newBeaconCandidates := []string{}
-					newBeaconCandidates = append(newBeaconCandidates, beacon...)
-					if len(l) == 6 {
-						for i, v := range strings.Split(l[3], ",") {
-							txHash, err := common.Hash{}.NewHashFromStr(v)
-							if err != nil {
-								continue
-							}
-							_, _, _, err = blockchain.GetTransactionByHashWithShardID(*txHash, shardID)
-							if err != nil {
-								continue
-							}
-							// if transaction belong to this shard then add to shard beststate
-							stakingTx[newBeaconCandidates[i]] = v
-						}
-						// instructions = append(instructions, l)
 					}
 				}
 
@@ -938,6 +925,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeShardAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	unstaking := []string{}
+
+	addStake_cpk := []string{}
+	addStake_amount := []uint64{}
+	addStake_tx := []string{}
+
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
 	}
@@ -982,8 +974,18 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
 			}
 		case metadata.BeaconStakingMeta:
-			// BeaconStakingMeta is not supported yet
-			continue
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			inst := []string{
+				instruction.BEACON_STAKE_ACTION,
+				stakingMetadata.CommitteePublicKey,
+				instruction.BEACON_INST, tx.Hash().String(),
+				stakingMetadata.RewardReceiverPaymentAddress,
+				"true", fmt.Sprint(stakingMetadata.StakingAmountShard), stakingMetadata.FunderPaymentAddress,
+			}
+			instructions = append(instructions, inst)
 		case metadata.StopAutoStakingMeta:
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
@@ -1000,6 +1002,14 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			if len(unstakingMetadata.CommitteePublicKey) != 0 {
 				unstaking = append(unstaking, unstakingMetadata.CommitteePublicKey)
 			}
+		case metadata.AddStakingMeta:
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.AddStakingMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			addStake_cpk = append(addStake_cpk, stakingMetadata.CommitteePublicKey)
+			addStake_amount = append(addStake_amount, stakingMetadata.AddStakingAmount)
+			addStake_tx = append(addStake_tx, tx.Hash().String())
 		}
 	}
 
@@ -1039,6 +1049,11 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		// ["unstake" "pubkey1,pubkey2,..."]
 		inst := []string{instruction.UNSTAKE_ACTION, strings.Join(unstaking, ",")}
 		instructions = append(instructions, inst)
+	}
+
+	if len(addStake_cpk) > 0 {
+		inst := instruction.NewAddStakingInstructionWithValue(addStake_cpk, addStake_amount, addStake_tx)
+		instructions = append(instructions, inst.ToString())
 	}
 	return instructions, pdexTxs, nil
 }

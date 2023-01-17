@@ -109,6 +109,10 @@ const (
 )
 
 const (
+	SHARD_STAKING_AMOUNT      = 1750 * 1e9
+	BEACON_MIN_STAKING_AMOUNT = 87500 * 1e9
+)
+const (
 	REPLACE_IN  = 0
 	REPLACE_OUT = 1
 )

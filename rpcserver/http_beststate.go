@@ -2,8 +2,12 @@ package rpcserver
 
 import (
 	"errors"
-
+	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -189,4 +193,97 @@ func (httpServer *HttpServer) handleGetTotalStaker(params interface{}, closeChan
 
 func (httpServer *HttpServer) handleGetConnectionStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.blockService.BlockChain.GetConfig().Highway.GetConnectionStatus(), nil
+}
+
+func (httpServer *HttpServer) handleGetBeaconStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	height := uint64(arrayParams[0].(float64))
+	stakerPubkey := arrayParams[1].(string)
+
+	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
+		height,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	res, found, err := statedb.GetBeaconStakerInfo(stateDB, stakerPubkey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	if !found {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("Not found"))
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetShardStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	height := uint64(arrayParams[0].(float64))
+	stakerPubkey := arrayParams[0].(string)
+
+	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
+		height,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	res, found, err := statedb.GetStakerInfo(stateDB, stakerPubkey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	if !found {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("Not found"))
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetBeaconCommitteeState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	height := uint64(arrayParams[0].(float64))
+	if height == 0 {
+		return httpServer.config.BlockChain.GetBeaconBestState().GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).DebugBeaconCommitteeState(), nil
+	}
+	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
+		height,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	allBeaconBlockInEpoch := []types.BeaconBlock{}
+
+	currentBlock, _ := httpServer.config.BlockChain.GetBeaconBlockByHeight(height)
+	tempBeaconBlock := *currentBlock[0]
+	tempBeaconHeight := tempBeaconBlock.GetBeaconHeight()
+	firstBeaconHeightOfEpoch := blockchain.GetFirstBeaconHeightInEpoch(tempBeaconBlock.GetCurrentEpoch())
+	for tempBeaconHeight > firstBeaconHeightOfEpoch { //dont need to get the first block, we dont count prevValidation data for this block
+		allBeaconBlockInEpoch = append([]types.BeaconBlock{tempBeaconBlock}, allBeaconBlockInEpoch...)
+		previousBeaconBlock, _, err := httpServer.config.BlockChain.GetBeaconBlockByHash(tempBeaconBlock.Header.PreviousBlockHash)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		tempBeaconBlock = *previousBeaconBlock
+		tempBeaconHeight = tempBeaconBlock.GetBeaconHeight()
+	}
+
+	stateV4 := committeestate.NewBeaconCommitteeStateV4()
+
+	stateV4.RestoreBeaconCommitteeFromDB(stateDB, httpServer.config.BlockChain.GetBeaconBestState().MinBeaconCommitteeSize, allBeaconBlockInEpoch)
+
+	return stateV4.DebugBeaconCommitteeState(), nil
 }

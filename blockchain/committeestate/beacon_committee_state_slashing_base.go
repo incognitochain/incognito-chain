@@ -67,7 +67,7 @@ func (b beaconCommitteeStateSlashingBase) shallowCopy(newB *beaconCommitteeState
 	newB.swapRule = b.swapRule
 }
 
-func (b *beaconCommitteeStateSlashingBase) Clone() BeaconCommitteeState {
+func (b *beaconCommitteeStateSlashingBase) Clone(db *statedb.StateDB) BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.clone()
@@ -234,6 +234,9 @@ func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, error) {
+	if stakeInstruction.Chain == instruction.BEACON_INST {
+		return committeeChange, nil
+	}
 	newCommitteeChange, err := b.beaconCommitteeStateBase.processStakeInstruction(stakeInstruction, committeeChange)
 	b.shardCommonPool = append(b.shardCommonPool, stakeInstruction.PublicKeys...)
 	return newCommitteeChange, err

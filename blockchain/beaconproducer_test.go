@@ -265,7 +265,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 			},
 			want: &shardInstruction{
 				swapInstructions: make(map[byte][]*instruction.SwapInstruction),
-				stakeInstructions: []*instruction.StakeInstruction{
+				shardStakeInstructions: []*instruction.StakeInstruction{
 					&instruction.StakeInstruction{
 						PublicKeyStructs: []incognitokey.CommitteePublicKey{
 							*incKey0,
@@ -574,9 +574,9 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				SlashStateDBRootHash:     tt.fields.SlashStateDBRootHash,
 			}
 			got := beaconBestState.preProcessInstructionsFromShardBlock(tt.args.instructions, tt.args.shardID)
-			for i, v := range got.stakeInstructions {
-				if !reflect.DeepEqual(v, tt.want.stakeInstructions[i]) {
-					t.Errorf("got.stakeInstructions = %v, want.stakeInstructions %v", v, tt.want.stakeInstructions[i])
+			for i, v := range got.shardStakeInstructions {
+				if !reflect.DeepEqual(v, tt.want.shardStakeInstructions[i]) {
+					t.Errorf("got.shardStakeInstructions = %v, want.shardStakeInstructions %v", v, tt.want.shardStakeInstructions[i])
 				}
 			}
 			for i, v := range got.swapInstructions {
@@ -938,13 +938,13 @@ func Test_shardInstruction_compose(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			shardInstruction := &shardInstruction{
-				stakeInstructions:         tt.fields.stakeInstructions,
+				shardStakeInstructions:    tt.fields.stakeInstructions,
 				unstakeInstructions:       tt.fields.unstakeInstructions,
 				swapInstructions:          tt.fields.swapInstructions,
 				stopAutoStakeInstructions: tt.fields.stopAutoStakeInstructions,
 			}
 			shardInstruction.compose()
-			for i, v := range shardInstruction.stakeInstructions {
+			for i, v := range shardInstruction.shardStakeInstructions {
 				if !reflect.DeepEqual(v, tt.fieldsAfterProcess.stakeInstructions[i]) {
 					t.Errorf("got = %v, want %v", v, tt.fieldsAfterProcess.stakeInstructions[i])
 				}

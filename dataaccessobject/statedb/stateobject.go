@@ -105,8 +105,12 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPortalExternalTxObjectWithValue(db, hash, value)
 	case PortalConfirmProofObjectType:
 		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
-	case StakerObjectType:
+	case ShardStakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
+	case BeaconStakerObjectType:
+		return newBeaconStakerObjectWithValue(db, hash, value)
+	case CommitteeDataObjectType:
+		return newCommitteeStateDataObjectWithValue(db, hash, value)
 	case PortalV4StatusObjectType:
 		return newPortalV4StatusObjectWithValue(db, hash, value)
 	case PortalV4UTXOObjectType:
@@ -263,8 +267,12 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPortalExternalTxObject(db, hash)
 	case PortalConfirmProofObjectType:
 		return newPortalConfirmProofStateObject(db, hash)
-	case StakerObjectType:
+	case ShardStakerObjectType:
 		return newStakerObject(db, hash)
+	case BeaconStakerObjectType:
+		return newBeaconStakerObject(db, hash)
+	case CommitteeDataObjectType:
+		return newCommitteeStateDataObject(db, hash)
 	case PortalV4StatusObjectType:
 		return newPortalV4StatusObject(db, hash)
 	case PortalV4UTXOObjectType:

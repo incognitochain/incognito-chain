@@ -446,7 +446,10 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 			return
 		}
 		msgPropose.PeerID = msgBFT.PeerID
-		a.proposeMessageCh <- msgPropose
+
+		if a.proposeMessageCh != nil {
+			a.proposeMessageCh <- msgPropose
+		}
 	case MSG_VOTE:
 		var msgVote BFTVote
 		err := json.Unmarshal(msgBFT.Content, &msgVote)
@@ -454,7 +457,9 @@ func (a *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 			a.logger.Error(err)
 			return
 		}
-		a.voteMessageCh <- msgVote
+		if a.voteMessageCh != nil {
+			a.voteMessageCh <- msgVote
+		}
 	default:
 		a.logger.Criticalf("Unknown BFT message type %+v", msgBFT)
 		return
@@ -1267,28 +1272,12 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	//update consensus data
 	if proposeMsg.BestBlockConsensusData != nil {
 		for sid, consensusData := range proposeMsg.BestBlockConsensusData {
-			if sid == -1 {
-				if a.chain.IsBeaconChain() {
-					if err = a.chain.(*blockchain.BeaconChain).VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-						a.logger.Error(err)
-					}
-				} else {
-					if err = a.chain.(*blockchain.ShardChain).Blockchain.BeaconChain.VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-						a.logger.Error(err)
-					}
-				}
-
-			} else if sid >= 0 {
-				if a.chain.IsBeaconChain() {
-					if err = a.chain.(*blockchain.BeaconChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
-						a.logger.Error(err)
-					}
-				} else {
+			if sid >= 0 {
+				if !a.chain.IsBeaconChain() {
 					if err = a.chain.(*blockchain.ShardChain).Blockchain.ShardChain[sid].VerifyFinalityAndReplaceBlockConsensusData(consensusData); err != nil {
 						a.logger.Error(err)
 					}
 				}
-
 			}
 		}
 	}
@@ -1296,8 +1285,12 @@ func (a *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	previousView := a.chain.GetViewByHash(block.GetPrevHash())
 	if previousView == nil {
 		a.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
-		a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
-		return err
+		go a.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, a.chain.GetShardID(), a.chain.GetChainName())
+		time.Sleep(2 * time.Second)
+		previousView = a.chain.GetViewByHash(block.GetPrevHash())
+		if previousView == nil {
+			return fmt.Errorf("Cannot find previous view!")
+		}
 	}
 
 	if block.GetHeight() <= a.chain.GetBestViewHeight() {

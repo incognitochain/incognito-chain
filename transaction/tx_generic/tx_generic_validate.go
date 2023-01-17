@@ -40,7 +40,7 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 		return false, nil
 	}
 	// if type is return staking and not have metadata
-	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
+	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta && meta.GetType() != metadata.ReturnBeaconStakingMeta)) {
 		return false, nil
 	}
 

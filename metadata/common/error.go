@@ -116,6 +116,11 @@ const (
 	IssuingWasmRequestValidateSanityDataError
 	IssuingWasmRequestBuildReqActionsError
 	IssuingWasmRequestVerifyProofAndParseReceipt
+
+	ConsensusMetadataTypeAssertionError
+	ConsensusMetadataInvalidTransactionSenderError
+	AddStakingNotInCommitteeListError
+	AddStakingCommitteeNotFoundError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -225,6 +230,11 @@ var ErrCodeMessage = map[int]struct {
 	IssuingWasmRequestValidateSanityDataError:           {-1305, "Validate sanity data error"},
 	IssuingWasmRequestBuildReqActionsError:              {-1306, "Build request action error"},
 	IssuingWasmRequestVerifyProofAndParseReceipt:        {-1307, "Verify proof and parse receipt"},
+
+	ConsensusMetadataTypeAssertionError:            {-4120, "ConsensusMetadata Type Assertion Error"},
+	ConsensusMetadataInvalidTransactionSenderError: {-4121, "ConsensusMetadata Invalid Transaction Sender Error"},
+	AddStakingNotInCommitteeListError:              {-4122, "AddStaking Not In Committee List Error"},
+	AddStakingCommitteeNotFoundError:               {-4123, "AddStaking Committee Not Found Error"},
 }
 
 type MetadataTxError struct {
