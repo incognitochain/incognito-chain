@@ -7,7 +7,7 @@ const (
 	stakingBeaconArg    = "staking-beacon"
 	unstakingBeaconArg  = "unstaking-beacon"
 	addStakingBeaconArg = "add-staking-beacon"
-	watchValidatorArg   = "watch-validator"
+	watchValidatorArg   = "tch-validator"
 	shouldWatchOnlyArg  = "watch-only"
 )
 

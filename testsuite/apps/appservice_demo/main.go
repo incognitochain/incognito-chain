@@ -32,7 +32,7 @@ var (
 )
 
 func main() {
-	fullnode := flag.String("h", "http://localhost:8334/", "Fullnode Endpoint")
+	fullnode := flag.String("h", "https://testnet.incognito.org/fullnode", "Fullnode Endpoint")
 	flag.Parse()
 
 	app := devframework.NewAppService(*fullnode, true)
