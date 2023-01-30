@@ -21,6 +21,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+//must trigger version for new config
 type BeaconCommitteeStateV4Config struct {
 	MAX_SCORE             uint64
 	MIN_SCORE             uint64
