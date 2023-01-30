@@ -250,6 +250,15 @@ func (httpServer *HttpServer) handleGetShardStakerInfo(params interface{}, close
 func (httpServer *HttpServer) handleGetBeaconCommitteeState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := uint64(arrayParams[0].(float64))
+	beacon_stakingflowv4_enable_height := httpServer.config.BlockChain.GetBeaconBestState().TriggeredFeature[blockchain.BEACON_STAKING_FLOW_V4]
+	if beacon_stakingflowv4_enable_height == 0 {
+		return nil, nil
+	} else {
+		if height != 0 && height < beacon_stakingflowv4_enable_height {
+			return nil, nil
+		}
+	}
+
 	if height == 0 {
 		return httpServer.config.BlockChain.GetBeaconBestState().GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).DebugBeaconCommitteeState(), nil
 	}
@@ -266,7 +275,6 @@ func (httpServer *HttpServer) handleGetBeaconCommitteeState(params interface{}, 
 	}
 
 	allBeaconBlockInEpoch := []types.BeaconBlock{}
-
 	currentBlock, _ := httpServer.config.BlockChain.GetBeaconBlockByHeight(height)
 	tempBeaconBlock := *currentBlock[0]
 	tempBeaconHeight := tempBeaconBlock.GetBeaconHeight()

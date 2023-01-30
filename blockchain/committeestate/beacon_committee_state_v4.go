@@ -22,58 +22,62 @@ import (
 )
 
 type BeaconCommitteeStateV4Config struct {
-	MAX_SCORE           uint64
-	MIN_SCORE           uint64
-	DEFAULT_PERFORMING  uint64
-	INCREASE_PERFORMING uint64
-	DECREASE_PERFORMING uint64
-	MIN_ACTIVE_SHARD    int
-	MIN_WAITING_PERIOD  int64
-	MIN_PERFORMANCE     uint64
-	LOCKING_PERIOD      uint64
-	LOCKING_FACTOR      float64
+	MAX_SCORE             uint64
+	MIN_SCORE             uint64
+	DEFAULT_PERFORMING    uint64
+	INCREASE_PERFORMING   uint64
+	DECREASE_PERFORMING   uint64
+	MIN_ACTIVE_SHARD      int
+	MIN_WAITING_PERIOD    int64
+	MIN_PERFORMANCE       uint64
+	LOCKING_PERIOD        uint64
+	LOCKING_FACTOR        float64
+	BEACON_COMMITTEE_SIZE int
 }
 
 func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 	switch config.Config().Network() {
 	case "mainnet":
 		return BeaconCommitteeStateV4Config{
-			MAX_SCORE:           1000,
-			MIN_SCORE:           100,
-			DEFAULT_PERFORMING:  500,
-			INCREASE_PERFORMING: 1015,
-			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    10,
-			MIN_WAITING_PERIOD:  60 * 60 * 24 * 3, //seconds : 3 days
-			MIN_PERFORMANCE:     100,
-			LOCKING_PERIOD:      160,
-			LOCKING_FACTOR:      5,
+			MAX_SCORE:             1000,
+			MIN_SCORE:             100,
+			DEFAULT_PERFORMING:    500,
+			INCREASE_PERFORMING:   1015,
+			DECREASE_PERFORMING:   965,
+			MIN_ACTIVE_SHARD:      10,
+			MIN_WAITING_PERIOD:    60 * 60 * 24 * 3, //seconds : 3 days
+			MIN_PERFORMANCE:       100,
+			LOCKING_PERIOD:        160,
+			LOCKING_FACTOR:        5,
+			BEACON_COMMITTEE_SIZE: 32,
 		}
 	case "local":
 		return BeaconCommitteeStateV4Config{
-			MAX_SCORE:           1000,
-			MIN_SCORE:           100,
-			DEFAULT_PERFORMING:  500,
-			INCREASE_PERFORMING: 1015,
-			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    2,
-			MIN_WAITING_PERIOD:  60, //seconds
-			MIN_PERFORMANCE:     370,
-			LOCKING_PERIOD:      2,
-			LOCKING_FACTOR:      1,
+			MAX_SCORE:             1000,
+			MIN_SCORE:             100,
+			DEFAULT_PERFORMING:    500,
+			INCREASE_PERFORMING:   1015,
+			DECREASE_PERFORMING:   965,
+			MIN_ACTIVE_SHARD:      2,
+			MIN_WAITING_PERIOD:    60, //seconds
+			MIN_PERFORMANCE:       370,
+			LOCKING_PERIOD:        2,
+			LOCKING_FACTOR:        1,
+			BEACON_COMMITTEE_SIZE: 6,
 		}
 	default:
 		return BeaconCommitteeStateV4Config{
-			MAX_SCORE:           1000,
-			MIN_SCORE:           100,
-			DEFAULT_PERFORMING:  500,
-			INCREASE_PERFORMING: 1015,
-			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    4,
-			MIN_WAITING_PERIOD:  60 * 60, //seconds
-			MIN_PERFORMANCE:     100,
-			LOCKING_PERIOD:      4,
-			LOCKING_FACTOR:      2,
+			MAX_SCORE:             1000,
+			MIN_SCORE:             100,
+			DEFAULT_PERFORMING:    500,
+			INCREASE_PERFORMING:   1015,
+			DECREASE_PERFORMING:   965,
+			MIN_ACTIVE_SHARD:      4,
+			MIN_WAITING_PERIOD:    60 * 60, //seconds
+			MIN_PERFORMANCE:       100,
+			LOCKING_PERIOD:        4,
+			LOCKING_FACTOR:        2,
+			BEACON_COMMITTEE_SIZE: 8,
 		}
 	}
 }
