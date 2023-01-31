@@ -787,7 +787,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//update new beacon committee/pending
 	//update statedb/memdb
 
-	for k, _ := range newBeaconPending {
+	for _, cpk := range newBeaconPending {
+		k, _ := cpk.ToBase58()
 		if stakerInfo, ok := s.beaconPending[k]; !ok {
 			stakerInfo = s.getStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
@@ -810,7 +811,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 		}
 	}
 
-	for k, _ := range newBeaconCommittee {
+	for _, cpk := range newBeaconCommittee {
+		k, _ := cpk.ToBase58()
 		if stakerInfo, ok := s.beaconCommittee[k]; !ok { //new committee
 			stakerInfo = s.getStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
@@ -868,13 +870,16 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconFinishSyncInstruction(env *BeaconC
 // Process assign beacon pending (sync, sync valid time)
 func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 
-	for cpk, stakerInfo := range s.beaconWaiting {
+	for _, k := range s.GetBeaconWaiting() {
+		cpk, _ := k.ToBase58()
+		stakerInfo := s.getStakerInfo(cpk)
 		//Check 1: waiting -> unstake
 		//if this staker not have valid active time, and not stake shard any more -> unstake beacon
 		staker, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return nil, fmt.Errorf("Cannot find stakerInfo %v", cpk)
 		}
+
 		_, shardExist, _ := statedb.GetStakerInfo(s.stateDB, cpk)
 		if !shardExist && staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
 			s.setUnstake(cpk)
