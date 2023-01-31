@@ -114,10 +114,12 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 
 	committeeList := []CandidateInfoV1{}
 	fixNodeVotingPower := int64(0)
-	for cpk, stakerInfo := range s.beaconCommittee {
+	for _, cpk := range s.GetBeaconCommittee() {
+		cpkString, _ := cpk.ToBase58()
+		stakerInfo := s.getStakerInfo(cpkString)
 		score := stakerInfo.Performance * stakerInfo.StakingAmount
 		if !stakerInfo.FixedNode {
-			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpk, score, "committee"})
+			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "committee"})
 		} else {
 			newBeaconCommittee = append(newBeaconCommittee, stakerInfo.cpkStruct)
 			fixNodeVotingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
