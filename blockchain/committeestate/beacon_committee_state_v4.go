@@ -737,7 +737,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 
 	//slash
 	for cpk, stakerInfo := range s.beaconCommittee {
-		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
+		if stakerInfo.Performance <= s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
 			slashCpk[cpk] = env.Epoch + s.getTotalLockingEpoch(stakerInfo.Performance)
 		}
 	}
