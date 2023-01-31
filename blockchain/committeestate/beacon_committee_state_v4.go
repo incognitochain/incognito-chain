@@ -889,10 +889,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommit
 		}
 
 		if staker.FinishSync() && !shardExist {
-			if err := s.removeFromPool(WAITING_POOL, cpk); err != nil {
+			if err := s.addToPool(PENDING_POOL, cpk, stakerInfo); err != nil {
 				return nil, err
 			}
-			if err := s.addToPool(PENDING_POOL, cpk, stakerInfo); err != nil {
+			if err := s.removeFromPool(WAITING_POOL, cpk); err != nil {
 				return nil, err
 			}
 		}
