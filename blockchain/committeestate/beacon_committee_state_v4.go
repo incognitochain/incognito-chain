@@ -21,59 +21,64 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+//must trigger version for new config
 type BeaconCommitteeStateV4Config struct {
-	MAX_SCORE           uint64
-	MIN_SCORE           uint64
-	DEFAULT_PERFORMING  uint64
-	INCREASE_PERFORMING uint64
-	DECREASE_PERFORMING uint64
-	MIN_ACTIVE_SHARD    int
-	MIN_WAITING_PERIOD  int64
-	MIN_PERFORMANCE     uint64
-	LOCKING_PERIOD      uint64
-	LOCKING_FACTOR      float64
+	MAX_SCORE             uint64
+	MIN_SCORE             uint64
+	DEFAULT_PERFORMING    uint64
+	INCREASE_PERFORMING   uint64
+	DECREASE_PERFORMING   uint64
+	MIN_ACTIVE_SHARD      int
+	MIN_WAITING_PERIOD    int64
+	MIN_PERFORMANCE       uint64
+	LOCKING_PERIOD        uint64
+	LOCKING_FACTOR        float64
+	BEACON_COMMITTEE_SIZE int
 }
 
 func NewBeaconCommitteeStateV4Config(version int) BeaconCommitteeStateV4Config {
 	switch config.Config().Network() {
 	case "mainnet":
 		return BeaconCommitteeStateV4Config{
-			MAX_SCORE:           1000,
-			MIN_SCORE:           100,
-			DEFAULT_PERFORMING:  500,
-			INCREASE_PERFORMING: 1015,
-			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    10,
-			MIN_WAITING_PERIOD:  60 * 60 * 24 * 3, //seconds : 3 days
-			MIN_PERFORMANCE:     100,
-			LOCKING_PERIOD:      160,
-			LOCKING_FACTOR:      5,
+			MAX_SCORE:             1000,
+			MIN_SCORE:             100,
+			DEFAULT_PERFORMING:    500,
+			INCREASE_PERFORMING:   1015,
+			DECREASE_PERFORMING:   965,
+			MIN_ACTIVE_SHARD:      10,
+			MIN_WAITING_PERIOD:    60 * 60 * 24 * 3, //seconds : 3 days
+			MIN_PERFORMANCE:       100,
+			LOCKING_PERIOD:        160,
+			LOCKING_FACTOR:        5,
+			BEACON_COMMITTEE_SIZE: 32,
 		}
 	case "local":
 		return BeaconCommitteeStateV4Config{
-			MAX_SCORE:           1000,
-			MIN_SCORE:           100,
-			DEFAULT_PERFORMING:  500,
-			INCREASE_PERFORMING: 1015,
-			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    2,
-			MIN_WAITING_PERIOD:  60, //seconds
-			MIN_PERFORMANCE:     370,
-			LOCKING_PERIOD:      2,
-			LOCKING_FACTOR:      1,
+			MAX_SCORE:             1000,
+			MIN_SCORE:             100,
+			DEFAULT_PERFORMING:    500,
+			INCREASE_PERFORMING:   1015,
+			DECREASE_PERFORMING:   965,
+			MIN_ACTIVE_SHARD:      2,
+			MIN_WAITING_PERIOD:    60, //seconds
+			MIN_PERFORMANCE:       370,
+			LOCKING_PERIOD:        2,
+			LOCKING_FACTOR:        1,
+			BEACON_COMMITTEE_SIZE: 6,
 		}
 	default:
 		return BeaconCommitteeStateV4Config{
-			MAX_SCORE:           1000,
-			MIN_SCORE:           100,
-			DEFAULT_PERFORMING:  500,
-			INCREASE_PERFORMING: 1015,
-			DECREASE_PERFORMING: 965,
-			MIN_ACTIVE_SHARD:    4,
-			MIN_WAITING_PERIOD:  60 * 60, //seconds
-			MIN_PERFORMANCE:     100,
-			LOCKING_PERIOD:      4,
-			LOCKING_FACTOR:      2,
+			MAX_SCORE:             1000,
+			MIN_SCORE:             100,
+			DEFAULT_PERFORMING:    500,
+			INCREASE_PERFORMING:   1015,
+			DECREASE_PERFORMING:   965,
+			MIN_ACTIVE_SHARD:      4,
+			MIN_WAITING_PERIOD:    60 * 60, //seconds
+			MIN_PERFORMANCE:       100,
+			LOCKING_PERIOD:        4,
+			LOCKING_FACTOR:        2,
+			BEACON_COMMITTEE_SIZE: 8,
 		}
 	}
 }
@@ -105,14 +110,22 @@ type LockingInfo struct {
 }
 
 type StateDataDetail struct {
-	Committee []StakerInfo
-	Pending   []StakerInfo
-	Waiting   []StakerInfo
+	Committee []StakerInfoDetail
+	Pending   []StakerInfoDetail
+	Waiting   []StakerInfoDetail
 	Locking   []LockingInfoDetail
+}
+
+type StakerInfoDetail struct {
+	StakeTime     int64
+	PoolEnterTime int64
+	StakerInfo
 }
 
 type LockingInfoDetail struct {
 	CPK           string
+	StakeTime     int64
+	PoolEnterTime int64
 	LockingEpoch  uint64
 	LockingReason int
 	ReleaseEpoch  uint64
@@ -403,9 +416,9 @@ func (s *BeaconCommitteeStateV4) GetNonSlashingRewardReceiver(staker []incognito
 func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 
 	data := &StateDataDetail{
-		Committee: []StakerInfo{},
-		Pending:   []StakerInfo{},
-		Waiting:   []StakerInfo{},
+		Committee: []StakerInfoDetail{},
+		Pending:   []StakerInfoDetail{},
+		Waiting:   []StakerInfoDetail{},
 		Locking:   []LockingInfoDetail{}}
 
 	getLockingDetail := func(cpk string) LockingInfoDetail {
@@ -415,6 +428,8 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 		}
 		detail := LockingInfoDetail{
 			cpk,
+			stakerInfo.BeaconConfirmTime(),
+			stakerInfo.GetEnterTime(),
 			(*s.beaconLocking[cpk]).LockingEpoch,
 			(*s.beaconLocking[cpk]).LockingReason,
 			stakerInfo.UnlockingEpoch(),
@@ -425,16 +440,19 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 
 	for _, v := range s.GetBeaconCommittee() {
 		cpk, _ := v.ToBase58()
-		data.Committee = append(data.Committee, *s.getStakerInfo(cpk))
+		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		data.Committee = append(data.Committee, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getStakerInfo(cpk)})
 	}
 
 	for _, v := range s.GetBeaconSubstitute() {
 		cpk, _ := v.ToBase58()
-		data.Pending = append(data.Pending, *s.getStakerInfo(cpk))
+		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		data.Pending = append(data.Pending, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getStakerInfo(cpk)})
 	}
 	for _, v := range s.GetBeaconWaiting() {
 		cpk, _ := v.ToBase58()
-		data.Waiting = append(data.Waiting, *s.getStakerInfo(cpk))
+		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		data.Waiting = append(data.Waiting, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getStakerInfo(cpk)})
 	}
 	for _, v := range s.GetBeaconLocking() {
 		cpk, _ := v.ToBase58()
@@ -732,7 +750,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 
 	//slash
 	for cpk, stakerInfo := range s.beaconCommittee {
-		if stakerInfo.Performance < s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
+		if stakerInfo.Performance <= s.config.MIN_PERFORMANCE && !stakerInfo.FixedNode {
 			slashCpk[cpk] = env.Epoch + s.getTotalLockingEpoch(stakerInfo.Performance)
 		}
 	}
@@ -782,7 +800,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 	//update new beacon committee/pending
 	//update statedb/memdb
 
-	for k, _ := range newBeaconPending {
+	for _, cpk := range newBeaconPending {
+		k, _ := cpk.ToBase58()
 		if stakerInfo, ok := s.beaconPending[k]; !ok {
 			stakerInfo = s.getStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
@@ -805,7 +824,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env *BeaconCommitteeS
 		}
 	}
 
-	for k, _ := range newBeaconCommittee {
+	for _, cpk := range newBeaconCommittee {
+		k, _ := cpk.ToBase58()
 		if stakerInfo, ok := s.beaconCommittee[k]; !ok { //new committee
 			stakerInfo = s.getStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
@@ -863,13 +883,16 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconFinishSyncInstruction(env *BeaconC
 // Process assign beacon pending (sync, sync valid time)
 func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 
-	for cpk, stakerInfo := range s.beaconWaiting {
+	for _, k := range s.GetBeaconWaiting() {
+		cpk, _ := k.ToBase58()
+		stakerInfo := s.getStakerInfo(cpk)
 		//Check 1: waiting -> unstake
 		//if this staker not have valid active time, and not stake shard any more -> unstake beacon
 		staker, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return nil, fmt.Errorf("Cannot find stakerInfo %v", cpk)
 		}
+
 		_, shardExist, _ := statedb.GetStakerInfo(s.stateDB, cpk)
 		if !shardExist && staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
 			s.setUnstake(cpk)
@@ -884,10 +907,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env *BeaconCommit
 		}
 
 		if staker.FinishSync() && !shardExist {
-			if err := s.removeFromPool(WAITING_POOL, cpk); err != nil {
+			if err := s.addToPool(PENDING_POOL, cpk, stakerInfo); err != nil {
 				return nil, err
 			}
-			if err := s.addToPool(PENDING_POOL, cpk, stakerInfo); err != nil {
+			if err := s.removeFromPool(WAITING_POOL, cpk); err != nil {
 				return nil, err
 			}
 		}

@@ -70,7 +70,9 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 	if len(engine.validators) > 0 {
 		for _, validator := range engine.validators {
 			if validator.State.IsBeaconFullnode {
-				chainValidator[-1] = validator
+				if _, ok := chainValidator[-1]; !ok {
+					chainValidator[-1] = validator
+				}
 			}
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]

@@ -98,38 +98,42 @@ func beacon_swap_v1(pendingList []CandidateInfoV1, committeeList []CandidateInfo
 	return pendingList, committeeList
 }
 
-func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnvironment) (map[string]incognitokey.CommitteePublicKey, map[string]incognitokey.CommitteePublicKey) {
+func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnvironment) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 
 	//swap pending <-> committee
-	newBeaconCommittee := map[string]incognitokey.CommitteePublicKey{}
-	newBeaconPending := map[string]incognitokey.CommitteePublicKey{}
+	newBeaconCommittee := []incognitokey.CommitteePublicKey{}
+	newBeaconPending := []incognitokey.CommitteePublicKey{}
 	pendingList := []CandidateInfoV1{}
-	for cpk, stakerInfo := range s.beaconPending {
+	for _, cpk := range s.GetBeaconSubstitute() {
+		cpkString, _ := cpk.ToBase58()
+		stakerInfo := s.getStakerInfo(cpkString)
 		score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
-		pendingList = append(pendingList, CandidateInfoV1{stakerInfo.cpkStruct, cpk, score, "pending"})
+		pendingList = append(pendingList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "pending"})
 
 	}
 
 	committeeList := []CandidateInfoV1{}
 	fixNodeVotingPower := int64(0)
-	for cpk, stakerInfo := range s.beaconCommittee {
+	for _, cpk := range s.GetBeaconCommittee() {
+		cpkString, _ := cpk.ToBase58()
+		stakerInfo := s.getStakerInfo(cpkString)
 		score := stakerInfo.Performance * stakerInfo.StakingAmount
 		if !stakerInfo.FixedNode {
-			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpk, score, "committee"})
+			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "committee"})
 		} else {
-			newBeaconCommittee[cpk] = stakerInfo.cpkStruct
+			newBeaconCommittee = append(newBeaconCommittee, stakerInfo.cpkStruct)
 			fixNodeVotingPower += int64(math.Sqrt(float64(stakerInfo.StakingAmount)))
 		}
 	}
 	fixNode := len(newBeaconCommittee)
-	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNode, env.MaxBeaconCommitteeSize-len(newBeaconCommittee))
+	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNode, s.config.BEACON_COMMITTEE_SIZE-len(newBeaconCommittee))
 
 	//other candidate
 	for _, candidate := range committeeList {
-		newBeaconCommittee[candidate.cpkStr] = candidate.cpk
+		newBeaconCommittee = append(newBeaconCommittee, candidate.cpk)
 	}
 	for _, candidate := range pendingList {
-		newBeaconPending[candidate.cpkStr] = candidate.cpk
+		newBeaconPending = append(newBeaconPending, candidate.cpk)
 	}
 
 	return newBeaconCommittee, newBeaconPending

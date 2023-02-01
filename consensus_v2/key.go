@@ -3,6 +3,7 @@ package consensus_v2
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -182,12 +183,40 @@ func GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
 }
 
 func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
-	return blsbft.ExtractBridgeValidationData(block)
+	sigs, valId, err := blsbft.ExtractBridgeValidationData(block)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tmpSigs := [][]byte{}
+	tmpValId := []int{}
+	for i, v := range valId {
+		if v > config.Param().CommitteeSize.MinBeaconCommitteeSize-1 {
+			continue
+		} else {
+			tmpSigs = append(tmpSigs, sigs[i])
+			tmpValId = append(tmpValId, valId[i])
+		}
+	}
+
+	return tmpSigs, tmpValId, nil
 }
 
 func (engine *Engine) ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
 	if block.GetVersion() >= 2 {
-		return blsbft.ExtractPortalV4ValidationData(block)
+		sigs, valId, err := blsbft.ExtractPortalV4ValidationData(block)
+		if err != nil {
+			return nil, err
+		}
+		tmpSigs := []*portalprocessv4.PortalSig{}
+		for i, v := range valId {
+			if v > config.Param().CommitteeSize.MinBeaconCommitteeSize-1 {
+				continue
+			} else {
+				tmpSigs = append(tmpSigs, sigs[i])
+			}
+		}
+		return tmpSigs, nil
 	}
 	return nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
