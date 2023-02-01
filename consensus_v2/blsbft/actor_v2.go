@@ -1648,10 +1648,10 @@ func (a *actorV2) makeBFTRequestBlk(request BFTRequestBlock, peerID string, chai
 	return msg, nil
 }
 
-func ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+func ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, []int, error) {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
-		return nil, NewConsensusError(UnExpectedError, err)
+		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
-	return valData.PortalSig, nil
+	return valData.PortalSig, valData.ValidatiorsIdx, nil
 }
