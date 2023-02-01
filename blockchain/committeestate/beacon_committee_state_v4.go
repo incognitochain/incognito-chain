@@ -110,14 +110,22 @@ type LockingInfo struct {
 }
 
 type StateDataDetail struct {
-	Committee []StakerInfo
-	Pending   []StakerInfo
-	Waiting   []StakerInfo
+	Committee []StakerInfoDetail
+	Pending   []StakerInfoDetail
+	Waiting   []StakerInfoDetail
 	Locking   []LockingInfoDetail
+}
+
+type StakerInfoDetail struct {
+	StakeTime     int64
+	PoolEnterTime int64
+	StakerInfo
 }
 
 type LockingInfoDetail struct {
 	CPK           string
+	StakeTime     int64
+	PoolEnterTime int64
 	LockingEpoch  uint64
 	LockingReason int
 	ReleaseEpoch  uint64
@@ -408,9 +416,9 @@ func (s *BeaconCommitteeStateV4) GetNonSlashingRewardReceiver(staker []incognito
 func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 
 	data := &StateDataDetail{
-		Committee: []StakerInfo{},
-		Pending:   []StakerInfo{},
-		Waiting:   []StakerInfo{},
+		Committee: []StakerInfoDetail{},
+		Pending:   []StakerInfoDetail{},
+		Waiting:   []StakerInfoDetail{},
 		Locking:   []LockingInfoDetail{}}
 
 	getLockingDetail := func(cpk string) LockingInfoDetail {
@@ -420,6 +428,8 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 		}
 		detail := LockingInfoDetail{
 			cpk,
+			stakerInfo.BeaconConfirmTime(),
+			stakerInfo.GetEnterTime(),
 			(*s.beaconLocking[cpk]).LockingEpoch,
 			(*s.beaconLocking[cpk]).LockingReason,
 			stakerInfo.UnlockingEpoch(),
@@ -430,16 +440,19 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 
 	for _, v := range s.GetBeaconCommittee() {
 		cpk, _ := v.ToBase58()
-		data.Committee = append(data.Committee, *s.getStakerInfo(cpk))
+		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		data.Committee = append(data.Committee, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getStakerInfo(cpk)})
 	}
 
 	for _, v := range s.GetBeaconSubstitute() {
 		cpk, _ := v.ToBase58()
-		data.Pending = append(data.Pending, *s.getStakerInfo(cpk))
+		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		data.Pending = append(data.Pending, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getStakerInfo(cpk)})
 	}
 	for _, v := range s.GetBeaconWaiting() {
 		cpk, _ := v.ToBase58()
-		data.Waiting = append(data.Waiting, *s.getStakerInfo(cpk))
+		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+		data.Waiting = append(data.Waiting, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getStakerInfo(cpk)})
 	}
 	for _, v := range s.GetBeaconLocking() {
 		cpk, _ := v.ToBase58()
