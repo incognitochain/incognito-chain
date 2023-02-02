@@ -126,7 +126,7 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 		}
 	}
 	fixNode := len(newBeaconCommittee)
-	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNode, s.config.BEACON_COMMITTEE_SIZE-len(newBeaconCommittee))
+	pendingList, committeeList = beacon_swap_v1(pendingList, committeeList, fixNode, 8-len(newBeaconCommittee))
 
 	//other candidate
 	for _, candidate := range committeeList {

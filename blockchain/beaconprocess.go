@@ -107,6 +107,9 @@ CONTINUE_VERIFY:
 // var bcStart time.Time
 // var bcAllTime time.Duration
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
+	if beaconBlock.Header.Height > 6255000 {
+		panic(1)
+	}
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
