@@ -868,9 +868,9 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 
 		if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 			var err error
-			var randomTimeBeaconHash = beaconBestState.BestBlockHash
+			var randomTimeBeaconHash = beaconBestState.GetPreviousHash()
 
-			tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), randomTimeBeaconHash)
+			tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), *randomTimeBeaconHash)
 			if err != nil {
 				panic(err)
 			}
