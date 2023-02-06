@@ -50,8 +50,9 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType = 34
 
-	StakerObjectType = 35
-
+	ShardStakerObjectType   = 35
+	BeaconStakerObjectType  = 79
+	CommitteeDataObjectType = 82
 	// Portal v3
 	PortalExternalTxObjectType      = 36
 	PortalConfirmProofObjectType    = 37
@@ -135,9 +136,9 @@ const (
 	CurrentEpochBeaconCandidate
 	SubstituteValidator
 	CurrentValidator
-	CommonBeaconPool
+	BeaconWaitingPool
 	CommonShardPool
-	BeaconPool
+	BeaconLockingPool
 	ShardPool
 	BeaconCommittee
 	ShardCommittee

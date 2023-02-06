@@ -13,6 +13,7 @@ const (
 	SELF_SWAP_SHARD_VERSION = 1
 	STAKING_FLOW_V2         = 2
 	STAKING_FLOW_V3         = 3
+	STAKING_FLOW_V4         = 4
 )
 
 const (

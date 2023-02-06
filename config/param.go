@@ -118,6 +118,7 @@ type committeeSize struct {
 	BeaconCommitteeSizeKeyListV2       int            `mapstructure:"beacon_committee_size_key_list_v2"`
 	NumberOfFixedShardBlockValidator   int            `mapstructure:"number_of_fixed_shard_block_validators"`
 	NumberOfFixedShardBlockValidatorV2 int            `mapstructure:"number_of_fixed_shard_validators_v2"`
+	NumberOfFixedBeaconBlockValidator  int            `mapstructure:"number_of_fixed_beacon_block_validators"`
 	IncreaseMaxShardCommitteeSize      map[uint64]int `mapstructure:"increase_max_shard_committee_size"`
 }
 
@@ -238,6 +239,10 @@ func verifyParam(p *param) error {
 
 	if p.CommitteeSize.NumberOfFixedShardBlockValidatorV2 == 0 {
 		return fmt.Errorf("Expected having config NumberOfFixedShardBlockValidatorV2")
+	}
+
+	if p.FeatureVersion[BEACON_STAKING_FLOW_V4] == 0 {
+		return fmt.Errorf("Expected having config BEACON_STAKING_FLOW_V4")
 	}
 
 	return nil

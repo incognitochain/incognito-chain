@@ -2,14 +2,14 @@ package metadata
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 type StakingMetadata struct {
@@ -49,8 +49,27 @@ func NewStakingMetadata(
 	}, nil
 }
 
-//	+ no need to IsInBase58ShortFormat because error is already check below by FromString
-//	+ what IsInBase58ShortFormat does is the same as FromString does but for an array
+func (meta *StakingMetadata) Hash() *common.Hash {
+	if meta.Type == ShardStakingMeta {
+		return meta.MetadataBase.Hash()
+	}
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	data = append(data, []byte(meta.FunderPaymentAddress)...)
+	data = append(data, []byte(meta.RewardReceiverPaymentAddress)...)
+	data = append(data, []byte(fmt.Sprintf("%v", meta.StakingAmountShard))...)
+	data = append(data, []byte(meta.CommitteePublicKey)...)
+	data = append(data, []byte(fmt.Sprintf("%v", meta.AutoReStaking))...)
+	hash := common.HashH(data)
+	return &hash
+}
+
+func (meta *StakingMetadata) HashWithoutSig() *common.Hash {
+	return meta.Hash()
+}
+
+// + no need to IsInBase58ShortFormat because error is already check below by FromString
+// + what IsInBase58ShortFormat does is the same as FromString does but for an array
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	rewardReceiverPaymentAddress := sm.RewardReceiverPaymentAddress
 	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
@@ -67,37 +86,73 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	// only stake to shard
-	return sm.Type == ShardStakingMeta
+	return sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta
 }
 
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	SC, SPV, sSP, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
-	if err != nil {
-		return false, err
-	}
+	SC, SPV, sSP, BC, BPV, BW, BL, CSWFCR, CSWFNR := beaconViewRetriever.GetAllStakers()
 	tempStaker, err := incognitokey.CommitteeBase58KeyListToStruct([]string{stakingMetadata.CommitteePublicKey})
 	if err != nil {
 		return false, err
 	}
-	for _, committees := range SC {
-		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(committees, tempStaker)
+	switch stakingMetadata.Type {
+	case ShardStakingMeta:
+		for _, committees := range SC {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(committees, tempStaker)
+		}
+		for _, validators := range SPV {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(validators, tempStaker)
+		}
+		for _, syncValidators := range sSP {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(syncValidators, tempStaker)
+		}
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BW, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BL, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFCR, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFNR, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Shard Staker, This pubkey may staked already")
+		}
+	case BeaconStakingMeta:
+		/* Check if beacon already promote
+		- get all beacon validator
+		- make sure there is no duplicated mining public key
+		*/
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BC")
+		}
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BP")
+		}
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BW, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BW")
+		}
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BL, tempStaker)
+		if len(tempStaker) == 0 {
+			return false, errors.New("invalid Beacon Staker, This pubkey may staked already. In BL")
+		}
+		/* Check if promoting is valid
+		- check if shard validator exist
+		*/
+		for _, committees := range SC {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(committees, tempStaker)
+		}
+		for _, validators := range SPV {
+			tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(validators, tempStaker)
+		}
+		if len(tempStaker) != 0 {
+			return false, errors.New("invalid Staker, This pubkey is not in any shard committee or validator")
+		}
+
+	default:
+		return false, errors.New("Not recognized staking type")
 	}
-	for _, validators := range SPV {
-		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(validators, tempStaker)
-	}
-	for _, syncValidators := range sSP {
-		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(syncValidators, tempStaker)
-	}
-	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
-	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
-	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CBWFCR, tempStaker)
-	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CBWFNR, tempStaker)
-	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFCR, tempStaker)
-	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFNR, tempStaker)
-	if len(tempStaker) == 0 {
-		return false, errors.New("invalid Staker, This pubkey may staked already")
-	}
+
 	return true, nil
 }
 
@@ -120,11 +175,20 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("Error Staking tx should transfer PRV only")
 	}
 	amount := burnCoin.GetValue()
-	if stakingMetadata.Type == ShardStakingMeta && amount != config.Param().StakingAmountShard {
+	if (stakingMetadata.Type != ShardStakingMeta) && (stakingMetadata.Type != BeaconStakingMeta) {
+		return false, false, errors.New("invalid Staking Type")
+	}
+	if amount != stakingMetadata.StakingAmountShard {
+		return false, false, errors.Errorf("invalid Staking Amount, metaData staking amount %v, burn amount %v", stakingMetadata.StakingAmountShard, amount)
+	}
+	if stakingMetadata.Type == ShardStakingMeta && amount != common.SHARD_STAKING_AMOUNT {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount != config.Param().StakingAmountShard*3 {
+	if stakingMetadata.Type == BeaconStakingMeta && ((amount < common.BEACON_MIN_STAKING_AMOUNT) || (amount%common.SHARD_STAKING_AMOUNT != 0)) {
 		return false, false, errors.New("invalid Stake Beacon Amount")
+	}
+	if stakingMetadata.Type == BeaconStakingMeta && !stakingMetadata.AutoReStaking {
+		return false, false, errors.New("staking beacon must always set restaking")
 	}
 
 	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.FunderPaymentAddress, tx.GetVersion()); err != nil {

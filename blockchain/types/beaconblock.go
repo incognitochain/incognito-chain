@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -69,10 +70,16 @@ type BeaconHeader struct {
 
 	//for version 8, instant finality
 	ProcessBridgeFromBlock *uint64 `json:"integer,omitempty"`
+
+	//for beacon committee flow
+	PreviousValidationData string `json:"PrevValData,omitempty"`
 }
 
-func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
-	return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr}
+func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string, preValData string) BeaconHeader {
+	if version < int(config.Param().FeatureVersion[config.BEACON_STAKING_FLOW_V4]) {
+		return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr}
+	}
+	return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr, PreviousValidationData: preValData}
 }
 
 func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(
@@ -344,6 +351,9 @@ func (header *BeaconHeader) toString() string {
 		}
 	}
 
+	if header.Version >= int(config.Param().FeatureVersion[config.BEACON_STAKING_FLOW_V4]) && header.PreviousValidationData != "" {
+		res += header.PreviousValidationData
+	}
 	return res
 }
 

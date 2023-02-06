@@ -26,6 +26,7 @@ committee_size:
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
   number_of_fixed_shard_validators_v2: 6
+  number_of_fixed_beacon_block_validators: 4
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
@@ -140,6 +141,9 @@ auto_enable_feature:
   - reduce_fix_node:
       min_trigger: 5647323
       require_percentage: 90
+  - beacon_staking_flow_v4:
+      min_trigger: 6110375
+      require_percentage: 90
   - reduce_fix_node_v2:
       min_trigger: 5647323
       require_percentage: 90
@@ -210,6 +214,7 @@ feature_version:
   - reduce_fix_node_v2: 13
   - reduce_fix_node_v3: 14
   - blocktime10s_27_12: 15
+  - beacon_staking_flow_v4 : 16
 transactions_param:
   lowerbound: 15
   upperbound: 100

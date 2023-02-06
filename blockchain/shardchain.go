@@ -393,7 +393,7 @@ func (chain *ShardChain) InsertWithPrevValidationData(block types.BlockInterface
 		if linkView == nil {
 			return errors.New("InsertWithPrevValidationData fail! Cannot find previous block hash" + block.GetPrevHash().String())
 		}
-		if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), newValidationData); err != nil {
+		if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), *linkView.GetBlock().(*types.ShardBlock).ProposeHash(), nil, newValidationData); err != nil {
 			return err
 		}
 	}
@@ -443,7 +443,7 @@ func (chain *ShardChain) GetBlockConsensusData() map[int]types.BlockConsensusDat
 }
 
 // this is only call when insert block successfully, the previous block is replace
-func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, newValidationData string) error {
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, previousProposeHash common.Hash, _ []incognitokey.CommitteePublicKey, newValidationData string) error {
 	if hasBlock := chain.BlockStorage.IsExisted(previousBlockHash); !hasBlock {
 		// This block is not inserted yet, no need to replace
 		Logger.log.Errorf("Replace previous validation data fail! Cannot find find block in db " + previousBlockHash.String())
@@ -481,7 +481,7 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 	// validate block before rewrite to
 	replaceBlockHash := *shardBlock.Hash()
 	shardBlock.ValidationData = newValidationData
-	committees, err := chain.GetCommitteeV2(shardBlock)
+	committees, err := chain.GetCommitteeForSync(shardBlock)
 	if err != nil {
 		return err
 	}
@@ -520,7 +520,7 @@ func (chain *ShardChain) VerifyFinalityAndReplaceBlockConsensusData(consensusDat
 	shardBlk.ValidationData = consensusData.ValidationData
 
 	// validate block before rewrite to
-	committees, err := chain.GetCommitteeV2(shardBlk)
+	committees, err := chain.GetCommitteeForSync(shardBlk)
 	if err != nil {
 		return err
 	}
@@ -598,7 +598,7 @@ func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalP
 
 // CommitteesV2 get committees by block for shardChain
 // Input block must be ShardBlock
-func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *ShardChain) GetCommitteeForSync(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	var isShardView bool
 	var shardView *ShardBestState
 	shardView, isShardView = chain.GetViewByHash(block.GetPrevHash()).(*ShardBestState)

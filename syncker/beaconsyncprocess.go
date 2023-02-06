@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"os"
 	"time"
 
@@ -25,7 +28,7 @@ type BeaconPeerState struct {
 
 type BeaconSyncProcess struct {
 	status              string //stop, running
-	isCommittee         bool
+	isBeaconFullnode    bool   //could be committee, pending, waiting
 	isCatchUp           bool
 	beaconPeerStates    map[string]BeaconPeerState //sender -> state
 	beaconPeerStateCh   chan *wire.MessagePeerState
@@ -36,9 +39,10 @@ type BeaconSyncProcess struct {
 	actionCh            chan func()
 	lastCrossShardState map[byte]map[byte]uint64
 	lastInsert          string
+	consensus           peerv2.ConsensusData
 }
 
-func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface) *BeaconSyncProcess {
+func NewBeaconSyncProcess(network Network, consensus peerv2.ConsensusData, bc *blockchain.BlockChain, chain BeaconChainInterface) *BeaconSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.BeaconBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -57,11 +61,12 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 		beaconPeerStateCh:   make(chan *wire.MessagePeerState, 100),
 		actionCh:            make(chan func()),
 		lastCrossShardState: make(map[byte]map[byte]uint64),
+		consensus:           consensus,
 	}
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
-
+	go s.syncFinishSyncMessage()
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		lastHeight := s.chain.GetBestViewHeight()
@@ -379,5 +384,56 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 				return
 			}
 		}
+	}
+}
+
+func (s *BeaconSyncProcess) syncFinishSyncMessage() {
+	ts := s.blockchain.BeaconChain.GetBestView().GetCurrentTimeSlot()
+	sleepTime := time.Duration(ts/2) * time.Second
+	for {
+		validCnt := 0
+		for i := 0; i < s.blockchain.GetActiveShardNumber(); i++ {
+			committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+			if committeeView.CommitteeStateVersion() >= committeestate.STAKING_FLOW_V4 {
+				shardView := s.blockchain.ShardChain[i].GetBestView().(*blockchain.ShardBestState)
+				convertedTimeslot := time.Duration(ts) * time.Second
+				now := time.Now().Unix()
+				ceiling := now + int64(5*convertedTimeslot.Seconds())
+				floor := now - int64(5*convertedTimeslot.Seconds())
+				if floor <= shardView.BestBlock.Header.Timestamp &&
+					shardView.BestBlock.Header.Timestamp <= ceiling {
+					validCnt++
+				}
+			}
+		}
+		if validCnt == s.blockchain.GetActiveShardNumber() {
+			s.trySendFinishSyncMessage()
+		}
+		time.Sleep(sleepTime)
+	}
+
+}
+
+func (s *BeaconSyncProcess) trySendFinishSyncMessage() {
+	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+	validatorFromUserKeys, syncValidator := committeeView.ExtractFinishSyncingValidators(
+		s.consensus.GetValidators(), 255)
+	finishedSyncValidators := []string{}
+	finishedSyncSignatures := [][]byte{}
+	for i, v := range validatorFromUserKeys {
+		signature, err := v.MiningKey.BriSignData([]byte(wire.CmdMsgFinishSync))
+		if err != nil {
+			continue
+		}
+		finishedSyncSignatures = append(finishedSyncSignatures, signature)
+		finishedSyncValidators = append(finishedSyncValidators, syncValidator[i])
+	}
+	if len(finishedSyncValidators) == 0 {
+		return
+	}
+	Logger.Infof("Send Finish Sync Message, beacon key %+v \n signature %+v", finishedSyncValidators, finishedSyncSignatures)
+	msg := wire.NewMessageFinishSync(finishedSyncValidators, finishedSyncSignatures, 255)
+	if err := s.network.PublishMessageToShard(msg, common.BeaconChainSyncID); err != nil {
+		Logger.Errorf("trySendFinishSyncMessage Public Message to Chain %+v, error %+v", common.BeaconChainSyncID, err)
 	}
 }
