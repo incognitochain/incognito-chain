@@ -1013,8 +1013,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnstakeInstruction(env *BeaconComm
 		}
 
 		for _, cpk := range unstakeCPKs {
-			if err := s.setUnstake(cpk); err != nil {
-				return nil, err
+			if stakerInfo := s.getStakerInfo(cpk); stakerInfo != nil {
+				if err := s.setUnstake(cpk); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
