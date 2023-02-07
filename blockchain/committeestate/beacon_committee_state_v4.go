@@ -982,7 +982,6 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 				if err != nil {
 					err = fmt.Errorf("Add Staking tx error, %v", err.Error())
 					Logger.log.Error(err)
-					return nil, err
 				}
 			}
 		}
