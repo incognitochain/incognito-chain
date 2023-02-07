@@ -4,6 +4,7 @@ const (
 	SWAP_SHARD_ACTION              = "swapshard"
 	SWAP_ACTION                    = "swap"
 	RANDOM_ACTION                  = "random"
+	RE_DELEGATE                    = "redelegate"
 	STAKE_ACTION                   = "stake"
 	BEACON_STAKE_ACTION            = "bstake"
 	ASSIGN_ACTION                  = "assign"
@@ -35,7 +36,7 @@ const (
 	BEACON_CHAIN_ID = -1
 )
 
-//Swap Instruction Sub Type
+// Swap Instruction Sub Type
 const (
 	SWAP_BY_END_EPOCH = iota
 	SWAP_BY_SLASHING

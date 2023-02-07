@@ -84,6 +84,7 @@ const (
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
 	UnStakingMeta       = metadataCommon.UnStakingMeta
 	AddStakingMeta      = metadataCommon.AddStakingMeta
+	ReDelegateMeta      = metadataCommon.ReDelegateMeta
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = metadataCommon.BeaconSwapConfirmMeta
 	BridgeSwapConfirmMeta = metadataCommon.BridgeSwapConfirmMeta
@@ -180,6 +181,7 @@ const (
 	AllShards                            = metadataCommon.AllShards
 	BeaconOnly                           = metadataCommon.BeaconOnly
 	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
+	ReDelegateFee                        = metadataCommon.ReDelegateFee
 	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
 	PLGConfirmationBlocks                = metadataCommon.PLGConfirmationBlocks
 	FantomConfirmationBlocks             = metadataCommon.FantomConfirmationBlocks

@@ -33,6 +33,7 @@ const (
 	BeaconStakingMeta   = 64
 	UnStakingMeta       = 210
 	AddStakingMeta      = 360
+	ReDelegateMeta      = 361
 
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = 70
@@ -325,6 +326,7 @@ const (
 
 const (
 	StopAutoStakingAmount    = 0
+	ReDelegateFee            = 0
 	EVMConfirmationBlocks    = 15 // update to 32 when eth merge
 	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
