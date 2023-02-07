@@ -9,11 +9,19 @@ import (
 )
 
 type CommitteeBeginEPochInfo struct {
-	Score       uint64
+	Score            uint64
+	Performance      uint64
+	StakeAmount      uint64
+	DelegationAmount uint64
+}
+
+type CommitteeLastEpochInfo struct {
 	Performance uint64
 }
+
 type CommitteeData struct {
 	BeginEpochInfo map[string]CommitteeBeginEPochInfo //this is in order of statedb get all beacon committee result
+	LastEpochInfo  map[string]CommitteeLastEpochInfo
 }
 
 func NewCommitteeData() *CommitteeData {
