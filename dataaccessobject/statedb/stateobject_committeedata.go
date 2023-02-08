@@ -13,15 +13,18 @@ type CommitteeBeginEPochInfo struct {
 	Performance      uint64
 	StakeAmount      uint64
 	DelegationAmount uint64
+	BeaconStakeID    string
 }
 
 type CommitteeLastEpochInfo struct {
-	Performance uint64
+	Performance      uint64
+	DelegationAmount uint64
+	BeaconStakeID    string
 }
 
 type CommitteeData struct {
-	BeginEpochInfo map[string]CommitteeBeginEPochInfo //this is in order of statedb get all beacon committee result
-	LastEpochInfo  map[string]CommitteeLastEpochInfo
+	BeginEpochInfo         map[string]CommitteeBeginEPochInfo //this is in order of statedb get all beacon committee result
+	LastCommitteeEpochInfo map[string]CommitteeLastEpochInfo
 }
 
 func NewCommitteeData() *CommitteeData {

@@ -2,11 +2,10 @@ package blockchain
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 //todo: big number calculation
@@ -16,70 +15,54 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 		return nil, errors.New("Not new epoch")
 	}
 
-	//get total value (Stake + delegation) of previous epoch
+	beaconCommitteeReward := map[string]uint64{}
+	totalDelegationAmount := uint64(0)
+
+	//get reward with performance
 	beaconConsensusStateRootHash, err := bc.GetBeaconRootsHashFromBlockHeight(
-		bestView.GetHeight() - config.Param().EpochParam.NumberOfBlockInEpoch - 1,
+		bestView.GetHeight() - 1,
 	)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
 		statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, err
 	}
 
 	committeeData := statedb.GetCommitteeData(stateDB)
-	committee := statedb.GetBeaconCommittee(stateDB)
-	beaconCommitteeTotalStake := map[string]uint64{}
-	beaconCommitteeReward := map[string]uint64{}
-	totalAmount := uint64(0)
-	for _, cpk := range committee {
-		cpkStr, err := cpk.ToBase58()
-		if err != nil {
-			return nil, err
+	oldPrice := map[string]uint64{}
+
+	oldPriceDelegationAmount := map[string]uint64{}
+	//get total delegation of this epoch
+	for k, v := range committeeData.LastCommitteeEpochInfo {
+		stakeID := v.BeaconStakeID
+		sharePrice, _, _ := statedb.GetBeaconSharePrice(stateDB, stakeID)
+		if sharePrice == nil {
+			return nil, errors.New("cannot find share price of beacon " + k + " " + stakeID)
 		}
-		_, exist, _ := statedb.GetBeaconStakerInfo(stateDB, cpkStr)
-		if !exist {
-			return nil, fmt.Errorf("Cannot find cpk %v", cpkStr)
-		}
-		totalAmount += committeeData.BeginEpochInfo[cpkStr].DelegationAmount
-		beaconCommitteeTotalStake[cpkStr] = committeeData.BeginEpochInfo[cpkStr].DelegationAmount
+		oldPrice[k] = sharePrice.GetPrice()
+		oldPriceDelegationAmount[k] = v.DelegationAmount
+		totalDelegationAmount += oldPriceDelegationAmount[k]
 	}
 
-	//if no delegation, then no distribute delegation reward
-	if totalAmount == 0 {
-		return nil, nil
-	}
-
-	for k, v := range beaconCommitteeTotalStake {
-		beaconCommitteeReward[k] = delegationReward * v / totalAmount
-	}
-
-	//get reward with performance
-	beaconConsensusStateRootHash, err = bc.GetBeaconRootsHashFromBlockHeight(
-		bestView.GetHeight() - 1,
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	stateDB, err = statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	committeeData = statedb.GetCommitteeData(stateDB)
-	for k, _ := range beaconCommitteeTotalStake {
+	//get beacon delegation reward with performance
+	for k, v := range committeeData.LastCommitteeEpochInfo {
+		beaconCommitteeReward[k] = delegationReward * oldPriceDelegationAmount[k] / totalDelegationAmount
 		beaconCommitteeReward[k] = uint64(float64(beaconCommitteeReward[k]) *
-			(float64(committeeData.LastEpochInfo[k].Performance) / float64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)))
+			(float64(v.Performance) / float64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)))
 	}
 
 	//increase share price
-	for cpkStr, _ := range beaconCommitteeTotalStake {
-		price := GetBeaconSharePriceByEpoch(cpkStr, bestView.Epoch-1)
-		price = price*beaconCommitteeReward[cpkStr] + beaconCommitteeTotalStake[cpkStr]/(beaconCommitteeTotalStake[cpkStr])
-		//todo: create instruction
+	sharePriceInsts := instruction.NewSharePriceInstruction()
+	for cpkStr, v := range committeeData.LastCommitteeEpochInfo {
+		price := oldPriceDelegationAmount[cpkStr]
+		price = price * (beaconCommitteeReward[cpkStr] + oldPriceDelegationAmount[cpkStr]) / (oldPriceDelegationAmount[cpkStr])
+		stakeID := v.BeaconStakeID
+		sharePriceInsts.AddPrice(stakeID, price)
 	}
+
+	return [][]string{sharePriceInsts.ToString()}, nil
 
 }

@@ -52,6 +52,7 @@ const (
 
 	ShardStakerObjectType   = 35
 	BeaconStakerObjectType  = 79
+	BeaconSharePriceType    = 83
 	CommitteeDataObjectType = 82
 	// Portal v3
 	PortalExternalTxObjectType      = 36

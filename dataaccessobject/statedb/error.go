@@ -12,6 +12,7 @@ const (
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
+	ErrInvalidSharePriceType                  = "invalid share price info type"
 	ErrInvalidCommitteeTermType               = "invalid committee term type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"

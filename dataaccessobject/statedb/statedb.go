@@ -424,6 +424,21 @@ func (stateDB *StateDB) getCommitteeData(key common.Hash) (*CommitteeData, bool,
 	return NewCommitteeData(), false, nil
 }
 
+func (stateDB *StateDB) getBeaconSharePriceInfo(key common.Hash) (*BeaconSharePrice, bool, error) {
+	sharePriceObject, err := stateDB.getStateObject(BeaconSharePriceType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if sharePriceObject != nil {
+		res, ok := sharePriceObject.GetValue().(*BeaconSharePrice)
+		if !ok {
+			err = fmt.Errorf("Can not parse staker info")
+		}
+		return res, true, err
+	}
+	return nil, false, nil
+}
+
 func (stateDB *StateDB) getBeaconStakerInfo(key common.Hash) (*BeaconStakerInfo, bool, error) {
 	stakerObject, err := stateDB.getStateObject(BeaconStakerObjectType, key)
 	if err != nil {
