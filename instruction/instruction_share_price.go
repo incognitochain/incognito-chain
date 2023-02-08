@@ -35,7 +35,7 @@ func (f *SharePriceInstruction) ToString() []string {
 	sharePriceInstructionStr = append(sharePriceInstructionStr, strings.Join(f.committeeHash, SPLITTER))
 	prices := ""
 	for i, v := range f.prices {
-		if i == len(f.prices) {
+		if i == len(f.prices)-1 {
 			prices += fmt.Sprintf("%v", v)
 		} else {
 			prices += fmt.Sprintf("%v,", v)
@@ -84,7 +84,7 @@ func importSharePriceInstructionFromString(instruction []string) (*SharePriceIns
 
 //ValidateSharePriceInstructionSanity ...
 func ValidateSharePriceInstructionSanity(instruction []string) error {
-	if len(instruction) != 2 {
+	if len(instruction) != 3 {
 		return fmt.Errorf("%+v: invalid length, %+v", ErrSharePriceInstruction, instruction)
 	}
 	tempIDs := strings.Split(instruction[1], SPLITTER)

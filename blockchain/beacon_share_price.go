@@ -6,12 +6,18 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"log"
+	"math/big"
+	"sort"
 )
 
-//todo: big number calculation
 func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, delegationReward uint64) ([][]string, error) {
-	//check if start of epoch
-	if bestView.GetHeight()%config.Param().EpochParam.NumberOfBlockInEpoch != 1 {
+	if bestView.TriggeredFeature[BEACON_STAKING_FLOW_V4] == 0 {
+		return nil, nil
+	}
+
+	//check if end of epoch
+	if bestView.GetHeight()%config.Param().EpochParam.NumberOfBlockInEpoch != 0 {
 		return nil, errors.New("Not new epoch")
 	}
 
@@ -19,50 +25,62 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 	totalDelegationAmount := uint64(0)
 
 	//get reward with performance
-	beaconConsensusStateRootHash, err := bc.GetBeaconRootsHashFromBlockHeight(
-		bestView.GetHeight() - 1,
-	)
-	if err != nil {
-		return nil, err
-	}
-	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, err
-	}
+	stateDB := bestView.GetBeaconConsensusStateDB()
 
 	committeeData := statedb.GetCommitteeData(stateDB)
 	oldPrice := map[string]uint64{}
 
 	oldPriceDelegationAmount := map[string]uint64{}
+	committee := []string{}
+	for k, _ := range committeeData.LastCommitteeEpochInfo {
+		committee = append(committee, k)
+	}
+	sort.Slice(committee, func(i, j int) bool {
+		return committee[i] > committee[j]
+	})
+
 	//get total delegation of this epoch
 	for k, v := range committeeData.LastCommitteeEpochInfo {
 		stakeID := v.BeaconStakeID
 		sharePrice, _, _ := statedb.GetBeaconSharePrice(stateDB, stakeID)
-		if sharePrice == nil {
-			return nil, errors.New("cannot find share price of beacon " + k + " " + stakeID)
+		if sharePrice == nil || sharePrice.GetPrice() == 0 {
+			return nil, errors.New("cannot find share price of beacon " + k + " ")
 		}
 		oldPrice[k] = sharePrice.GetPrice()
 		oldPriceDelegationAmount[k] = v.DelegationAmount
 		totalDelegationAmount += oldPriceDelegationAmount[k]
 	}
 
+	if totalDelegationAmount == 0 {
+		log.Println("No delegation to reward!")
+		return nil, nil
+	}
 	//get beacon delegation reward with performance
 	for k, v := range committeeData.LastCommitteeEpochInfo {
-		beaconCommitteeReward[k] = delegationReward * oldPriceDelegationAmount[k] / totalDelegationAmount
-		beaconCommitteeReward[k] = uint64(float64(beaconCommitteeReward[k]) *
-			(float64(v.Performance) / float64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)))
+		a := new(big.Int).SetUint64(delegationReward)
+		b := new(big.Int).SetUint64(oldPriceDelegationAmount[k])
+		c := new(big.Int).SetUint64(totalDelegationAmount)
+		tmp := new(big.Int).Div(new(big.Int).Mul(a, b), c).Uint64()
+		beaconCommitteeReward[k], _ = new(big.Float).Mul(
+			new(big.Float).SetUint64(tmp),
+			new(big.Float).SetFloat64((float64(v.Performance) / float64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)))).Uint64()
 	}
-
 	//increase share price
 	sharePriceInsts := instruction.NewSharePriceInstruction()
-	for cpkStr, v := range committeeData.LastCommitteeEpochInfo {
-		price := oldPriceDelegationAmount[cpkStr]
-		price = price * (beaconCommitteeReward[cpkStr] + oldPriceDelegationAmount[cpkStr]) / (oldPriceDelegationAmount[cpkStr])
-		stakeID := v.BeaconStakeID
-		sharePriceInsts.AddPrice(stakeID, price)
+	for _, cpkStr := range committee {
+		price := new(big.Int).SetUint64(oldPrice[cpkStr])
+		c := new(big.Int).SetUint64(oldPriceDelegationAmount[cpkStr])
+		b := new(big.Int).SetUint64(beaconCommitteeReward[cpkStr])
+		newprice := new(big.Int).Div(
+			new(big.Int).Mul(
+				price,
+				new(big.Int).Add(b, c)),
+			c).Uint64()
+		stakeID := committeeData.LastCommitteeEpochInfo[cpkStr].BeaconStakeID
+		sharePriceInsts.AddPrice(stakeID, newprice)
+		log.Println(stakeID, beaconCommitteeReward[cpkStr], price.Uint64(), newprice)
 	}
-
+	log.Println(sharePriceInsts.ToString())
 	return [][]string{sharePriceInsts.ToString()}, nil
 
 }

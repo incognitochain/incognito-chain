@@ -8,7 +8,7 @@ import (
 )
 
 type BeaconSharePrice struct {
-	price uint64
+	Price uint64
 }
 
 func NewBeaconSharePrice() *BeaconSharePrice {
@@ -19,7 +19,7 @@ func NewBeaconSharePriceWithValue(price uint64) *BeaconSharePrice {
 }
 
 func (s BeaconSharePrice) GetPrice() uint64 {
-	return s.price
+	return s.Price
 }
 
 type BeaconSharePriceObject struct {
