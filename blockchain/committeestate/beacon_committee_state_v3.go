@@ -322,6 +322,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	// process slashing after normal swap out
 	if env.TriggeredFeature[config.SLASH_TO_SYNC] != 0 { //if feature slash to sync is enable -> add to sync pool
 		newCommitteeChange = b.assignToSyncPool(shardID, slashingCommittees, newCommitteeChange)
+		newCommitteeChange.AddSlashingCommittees(shardID, slashingCommittees)
 	} else {
 		returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
 			shardID,
