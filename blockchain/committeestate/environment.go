@@ -50,6 +50,7 @@ type BeaconCommitteeStateEnvironment struct {
 	shardSubstitute                  map[byte][]string
 	numberOfValidator                []int
 	PreviousBlockHashes              *BeaconCommitteeStateHash
+	TriggeredFeature                 map[string]uint64
 }
 
 type BeaconCommitteeStateHash struct {
