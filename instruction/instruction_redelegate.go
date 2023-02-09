@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -13,12 +14,14 @@ type ReDelegateInstruction struct {
 	CommitteePublicKeysStruct []incognitokey.CommitteePublicKey
 	DelegateList              []string
 	DelegateListStruct        []incognitokey.CommitteePublicKey
+	DelegateUIDList           []string
 }
 
-func NewReDelegateInstructionWithValue(publicKeys, redelegateList []string) *ReDelegateInstruction {
+func NewReDelegateInstructionWithValue(publicKeys, redelegateList []string, uIDs []string) *ReDelegateInstruction {
 	res := &ReDelegateInstruction{}
 	res.SetPublicKeys(publicKeys)
 	res.SetDelegateList(redelegateList)
+	copy(res.DelegateUIDList, uIDs)
 	return res
 }
 
@@ -58,6 +61,7 @@ func (s *ReDelegateInstruction) ToString() []string {
 	redelegateInstructionStr := []string{RE_DELEGATE}
 	redelegateInstructionStr = append(redelegateInstructionStr, strings.Join(s.CommitteePublicKeys, SPLITTER))
 	redelegateInstructionStr = append(redelegateInstructionStr, strings.Join(s.DelegateList, SPLITTER))
+	redelegateInstructionStr = append(redelegateInstructionStr, strings.Join(s.DelegateUIDList, SPLITTER))
 	return redelegateInstructionStr
 }
 
@@ -77,19 +81,23 @@ func BuildReDelegateInstructionFromString(instruction []string) (Instruction, er
 
 func ImportReDelegateInstructionFromString(instruction []string) *ReDelegateInstruction {
 	redelegateInstruction := NewReDelegateInstruction()
-	if len(instruction[0]) > 0 {
+	if len(instruction[1]) > 0 {
 		publicKeys := strings.Split(instruction[1], SPLITTER)
 		redelegateInstruction, _ = redelegateInstruction.SetPublicKeys(publicKeys)
 	}
-	if len(instruction[1]) > 0 {
+	if len(instruction[2]) > 0 {
 		publicKeys := strings.Split(instruction[2], SPLITTER)
+		redelegateInstruction, _ = redelegateInstruction.SetDelegateList(publicKeys)
+	}
+	if len(instruction[3]) > 0 {
+		publicKeys := strings.Split(instruction[3], SPLITTER)
 		redelegateInstruction, _ = redelegateInstruction.SetDelegateList(publicKeys)
 	}
 	return redelegateInstruction
 }
 
 func ValidateReDelegateInstructionSanity(instruction []string) error {
-	if len(instruction) != 3 {
+	if len(instruction) != 4 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != RE_DELEGATE {
@@ -104,6 +112,13 @@ func ValidateReDelegateInstructionSanity(instruction []string) error {
 	_, err = incognitokey.CommitteeBase58KeyListToStruct(delegateList)
 	if err != nil {
 		return err
+	}
+	delegateUIDList := strings.Split(instruction[3], SPLITTER)
+	for _, uID := range delegateUIDList {
+		_, err := common.Hash{}.NewHashFromStr(uID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

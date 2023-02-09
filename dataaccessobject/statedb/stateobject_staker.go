@@ -3,13 +3,14 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-//@NOTE this struct is view object only
+// @NOTE this struct is view object only
 type StakerInfoSlashingVersion struct {
 	committeePublicKey string
 	rewardReceiver     key.PaymentAddress
@@ -51,6 +52,8 @@ type StakerInfo struct {
 	txStakingID         common.Hash
 	autoStaking         bool
 	beaconConfirmHeight uint64
+	delegateBeacon      string
+	delegateBeaconUID   common.Hash
 }
 
 func NewStakerInfo() *StakerInfo {
@@ -123,6 +126,14 @@ func (s *StakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
 }
 
+func (s *StakerInfo) SetDelegate(pk string) {
+	s.delegateBeacon = pk
+}
+
+func (s *StakerInfo) SetDelegateUID(uID common.Hash) {
+	s.delegateBeaconUID = uID
+}
+
 func (s StakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
 }
@@ -133,6 +144,13 @@ func (s StakerInfo) TxStakingID() common.Hash {
 
 func (s StakerInfo) AutoStaking() bool {
 	return s.autoStaking
+}
+func (s *StakerInfo) GetDelegate() string {
+	return s.delegateBeacon
+}
+
+func (s *StakerInfo) GetDelegateUID() common.Hash {
+	return s.delegateBeaconUID
 }
 
 func (s StakerInfo) BeaconConfirmHeight() uint64 {

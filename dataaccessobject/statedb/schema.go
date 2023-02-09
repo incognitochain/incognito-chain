@@ -62,6 +62,7 @@ var (
 	beaconWaitingPrefix                = []byte("beacon-waiting-")
 	beaconLockingPrefix                = []byte("beacon-locking-")
 	committeeDataPrefix                = []byte("committee-data-")
+	beaconReDelegateStatePrefix        = []byte("bc-redelegate-state-")
 	// pdex v3
 	pdexv3StatusPrefix                      = []byte("pdexv3-status-")
 	pdexv3ParamsModifyingPrefix             = []byte("pdexv3-paramsmodifyingstatus-")
@@ -268,6 +269,11 @@ func GetSlashingCommitteePrefix(epoch uint64) []byte {
 func GetCommitteeRewardPrefix() []byte {
 	h := common.HashH(committeeRewardPrefix)
 	return h[:][:prefixHashKeyLength]
+}
+
+func GetBeaconReDelegateStateKey() common.Hash {
+	h := common.HashH(beaconReDelegateStatePrefix)
+	return h
 }
 
 func GetRewardRequestPrefix(epoch uint64) []byte {

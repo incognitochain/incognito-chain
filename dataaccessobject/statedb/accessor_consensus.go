@@ -1,9 +1,10 @@
 package statedb
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -304,7 +305,7 @@ func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKe
 	return list
 }
 
-//staking flow v4 will not worl with shardIDs contains -1
+// staking flow v4 will not worl with shardIDs contains -1
 func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[int][]incognitokey.CommitteePublicKey,
 	map[int][]incognitokey.CommitteePublicKey,
@@ -426,6 +427,36 @@ func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, er
 	pubKeyBytes, _ := pubKey.RawBytes()
 	key := GetStakerInfoKey(pubKeyBytes)
 	return stateDB.getStakerInfo(key)
+}
+
+func GetBeaconReDelegateState(stateDB *StateDB) (*BeaconDelegateState, bool, error) {
+	key := GetBeaconReDelegateStateKey()
+	return stateDB.getBeaconReDelegateState(key)
+}
+
+func GetReDelegateInfo(stateDB *StateDB, delegatorPK string) (*ReDelegateInfo, bool, error) {
+	key := GetBeaconReDelegateStateKey()
+	state, has, err := stateDB.getBeaconReDelegateState(key)
+	if (err != nil) || (!has) {
+		return nil, false, err
+	}
+	if info, ok := state.NextEpochDelegate[delegatorPK]; ok {
+		return &info, true, nil
+	} else {
+		return nil, false, nil
+	}
+}
+
+func StoreBeaconReDelegateState(
+	stateDB *StateDB,
+	info *BeaconDelegateState,
+) error {
+	key := GetBeaconReDelegateStateKey()
+	err := stateDB.SetStateObject(BeaconStakerObjectType, key, info)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey) error {
@@ -601,7 +632,7 @@ func GetAllStaker(stateDB *StateDB, shardIDs []int) int {
 	return stateDB.getAllStaker(shardIDs)
 }
 
-//DeleteStakerInfo :
+// DeleteStakerInfo :
 func DeleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
 	return deleteStakerInfo(stateDB, stakers)
 }

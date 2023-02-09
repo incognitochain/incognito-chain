@@ -716,6 +716,10 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlatten
 	return beaconBestState.beaconCommitteeState.GetAllCandidateSubstituteCommittee(), nil
 }
 
+func (beaconBestState *BeaconBestState) GetBeaconCandidateUID(candidatePK string) common.Hash {
+	return beaconBestState.beaconCommitteeState.GetBeaconCandidateUID(candidatePK)
+}
+
 func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, error) {
 	bridgeTokenIDs := []common.Hash{}
 	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}

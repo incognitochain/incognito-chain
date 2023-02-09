@@ -100,6 +100,7 @@ const (
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendAddStakingTransaction         = "createandsendaddstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
+	createAndSendReDelegateTransaction         = "createandsendredelegatetransaction"
 	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 	randomCommitmentsAndPublicKeys             = "randomcommitmentsandpublickeys"

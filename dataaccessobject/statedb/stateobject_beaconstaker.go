@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -40,6 +41,7 @@ type BeaconStakerInfo struct {
 	lockingEpoch        uint64
 	unlockingEpoch      uint64
 	lockingReason       int
+	totalDelegators     uint
 }
 
 func (c BeaconStakerInfo) ToString() string {
@@ -179,12 +181,28 @@ func (s *BeaconStakerInfo) AddStaking(tx common.Hash, height uint64, amount uint
 	s.stakingTx[tx] = StakingTxInfo{amount, height}
 }
 
+func (s *BeaconStakerInfo) AddDelegator() {
+	s.totalDelegators++
+}
+
+func (s *BeaconStakerInfo) RemoveDelegator() error {
+	if s.totalDelegators == 0 {
+		return errors.Errorf("Can not remove one delegator, current total delegator is zero")
+	}
+	s.totalDelegators--
+	return nil
+}
+
 func (s BeaconStakerInfo) TotalStakingAmount() uint64 {
 	total := uint64(0)
 	for _, info := range s.stakingTx {
 		total += info.Amount
 	}
 	return total
+}
+
+func (s BeaconStakerInfo) TotalDelegators() uint {
+	return s.totalDelegators
 }
 
 func (s BeaconStakerInfo) Unstaking() bool {

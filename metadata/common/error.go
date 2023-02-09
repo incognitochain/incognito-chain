@@ -121,6 +121,9 @@ const (
 	ConsensusMetadataInvalidTransactionSenderError
 	AddStakingNotInCommitteeListError
 	AddStakingCommitteeNotFoundError
+
+	ReDelegateNotInCommitteeListError
+	ReDelegateCommitteeNotFoundError
 )
 
 var ErrCodeMessage = map[int]struct {
