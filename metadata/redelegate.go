@@ -2,11 +2,13 @@ package metadata
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -14,6 +16,7 @@ type ReDelegateMetadata struct {
 	MetadataBaseWithSignature
 	CommitteePublicKey string
 	NewDelegate        string
+	DelegateUID        common.Hash
 }
 
 func (meta *ReDelegateMetadata) Hash() *common.Hash {
@@ -28,7 +31,7 @@ func (meta *ReDelegateMetadata) HashWithoutSig() *common.Hash {
 	return meta.MetadataBase.Hash()
 }
 
-func NewReDelegateMetadata(committeePublicKey, newDelegate string) (*ReDelegateMetadata, error) {
+func NewReDelegateMetadata(committeePublicKey, newDelegate string, newDelegateUID common.Hash) (*ReDelegateMetadata, error) {
 	metadataBase := NewMetadataBaseWithSignature(ReDelegateMeta)
 	return &ReDelegateMetadata{
 		MetadataBaseWithSignature: *metadataBase,
@@ -62,44 +65,46 @@ func (redelegateMetadata *ReDelegateMetadata) ValidateMetadataByItself() bool {
 // - Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 // - Not yet requested to stop auto-restaking
 func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	// newDelegate := redelegateMetadata.NewDelegate
-	// delegateList, err := beaconViewRetriever.GetAllBeaconValidatorCandidateFlattenList()
-	// if err != nil {
-	// 	return false, err
-	// }
-	// requestedPublicKey := redelegateMetadata.CommitteePublicKey
-	// if !(common.IndexOfStr(newDelegate, delegateList) > -1) {
-	// 	return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", newDelegate))
-	// }
+	newDelegate := redelegateMetadata.NewDelegate
+	stakerInfor, has, err := beaconViewRetriever.GetBeaconStakerInfo(newDelegate)
+	if (!has) || (err != nil) {
+		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", newDelegate))
+	}
+	rawUID := fmt.Sprintf("%v-%v", newDelegate, stakerInfor.BeaconConfirmHeight())
+	uID := common.HashH([]byte(rawUID))
+	if uID.String() != redelegateMetadata.DelegateUID.String() {
+		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v with Beacon confirm height %v not match with the UID in Metadata, expected %v, got %v", newDelegate, stakerInfor.BeaconConfirmHeight(), redelegateMetadata.DelegateUID.String(), uID.String()))
+	}
+	requestedPublicKey := redelegateMetadata.CommitteePublicKey
 
-	// stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
-	// if err != nil {
-	// 	return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
-	// }
-	// if !has {
-	// 	return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", newDelegate, shardID))
-	// }
-	// stakingTxHash := stakerInfo.TxStakingID()
+	stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+	if err != nil {
+		return false, NewMetadataTxError(ReDelegateRequestNotInCommitteeListError, err)
+	}
+	if !has {
+		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", newDelegate, shardID))
+	}
+	stakingTxHash := stakerInfo.TxStakingID()
 
-	// _, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
-	// if err != nil {
-	// 	return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
-	// }
+	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
+	if err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
+	}
 
-	// stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
-	// funderPaymentAddress := stakingMetadata.FunderPaymentAddress
-	// funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
-	// if err != nil || funderWallet == nil {
-	// 	return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
-	// }
+	stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
+	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+	if err != nil || funderWallet == nil {
+		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	}
 
-	// if ok, err := redelegateMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
-	// 	return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
-	// }
+	if ok, err := redelegateMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
+	}
 
-	// if stakerInfo.Delegate() == newDelegate {
-	// 	return false, NewMetadataTxError(StopAutoStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Cannot replace with the same key"))
-	// }
+	if (stakerInfo.GetDelegate() == newDelegate) && (stakerInfo.GetDelegateUID().String() == redelegateMetadata.DelegateUID.String()) {
+		return false, NewMetadataTxError(StopAutoStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Cannot replace with the same key"))
+	}
 	return true, nil
 }
 

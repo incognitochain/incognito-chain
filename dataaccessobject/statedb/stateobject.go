@@ -113,6 +113,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBeaconSharePriceWithValue(db, hash, value)
 	case CommitteeDataObjectType:
 		return newCommitteeStateDataObjectWithValue(db, hash, value)
+	case BeaconReDelegateStateObjectType:
+		return newBeaconReDelegateStateObjectWithValue(db, hash, value)
 	case PortalV4StatusObjectType:
 		return newPortalV4StatusObjectWithValue(db, hash, value)
 	case PortalV4UTXOObjectType:

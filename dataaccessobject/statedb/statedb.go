@@ -1324,6 +1324,17 @@ func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shard
 	return m
 }
 
+func (stateDB *StateDB) getBeaconReDelegateState(key common.Hash) (*BeaconDelegateState, bool, error) {
+	committeeRewardObject, err := stateDB.getStateObject(BeaconReDelegateStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if committeeRewardObject != nil {
+		return committeeRewardObject.GetValue().(*BeaconDelegateState), true, nil
+	}
+	return NewBeaconDelegateState(), false, nil
+}
+
 // ================================= Output Coin OBJECT =======================================
 func (stateDB *StateDB) getOutputCoinState(key common.Hash) (*OutputCoinState, bool, error) {
 	outputCoinState, err := stateDB.getStateObject(OutputCoinObjectType, key)

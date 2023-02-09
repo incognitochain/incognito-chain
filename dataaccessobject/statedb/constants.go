@@ -54,6 +54,9 @@ const (
 	BeaconStakerObjectType  = 79
 	BeaconSharePriceType    = 83
 	CommitteeDataObjectType = 82
+	DelegatorObjectType     = 78
+
+	BeaconReDelegateStateObjectType = 83
 	// Portal v3
 	PortalExternalTxObjectType      = 36
 	PortalConfirmProofObjectType    = 37

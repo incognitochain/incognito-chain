@@ -2,10 +2,11 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"math/big"
 	"reflect"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -546,6 +547,10 @@ func (b *beaconCommitteeStateBase) getAllSubstituteCommittees() ([]string, error
 	}
 	res = append(res, b.beaconCommittee...)
 	return res, nil
+}
+
+func (b *beaconCommitteeStateBase) GetBeaconCandidateUID(cPK string) common.Hash {
+	return common.HashH([]byte(fmt.Sprintf("%v-%v", cPK, 1)))
 }
 
 func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (

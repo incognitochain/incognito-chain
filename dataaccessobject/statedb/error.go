@@ -17,6 +17,7 @@ const (
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
 	ErrInvalidCommitteeRewardStateType        = "invalid reward receiver state type "
+	ErrInvalidBeaconDelegateStateType         = "invalid beacon delegate state type"
 	ErrInvalidRewardRequestStateType          = "invalid reward request state type"
 	ErrInvalidBlackListProducerStateType      = "invalid black list producer state type"
 	ErrInvalidSerialNumberStateType           = "invalid serial number state type"

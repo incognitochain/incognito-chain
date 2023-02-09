@@ -3,16 +3,24 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common/base58"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
+
+type DelegatorRewardInfo struct {
+	ShareID common.Hash
+	Unit    uint
+	Value   uint64
+}
 
 type CommitteeRewardState struct {
 	// tokenid => amount
 	incognitoPublicKey string
 	reward             map[common.Hash]uint64
+	allDelegatorReward map[common.Hash]DelegatorRewardInfo //Key: shard public key, value: Delegator reward info
 }
 
 func NewCommitteeRewardState() *CommitteeRewardState {
@@ -23,12 +31,38 @@ func NewCommitteeRewardStateWithValue(reward map[common.Hash]uint64, incognitoPu
 	return &CommitteeRewardState{reward: reward, incognitoPublicKey: incognitoPublicKey}
 }
 
+func NewCommitteeRewardStateWithValueV2(reward map[common.Hash]uint64, incognitoPublicKey string, delegatorsReward map[common.Hash]DelegatorRewardInfo) *CommitteeRewardState {
+	return &CommitteeRewardState{reward: reward, incognitoPublicKey: incognitoPublicKey}
+}
+
 func (cr CommitteeRewardState) Reward() map[common.Hash]uint64 {
 	return cr.reward
 }
 
+func (cr CommitteeRewardState) AllDelegatorReward() map[common.Hash]DelegatorRewardInfo {
+	return cr.allDelegatorReward
+}
+
 func (cr *CommitteeRewardState) SetReward(reward map[common.Hash]uint64) {
 	cr.reward = reward
+}
+
+func (cr CommitteeRewardState) SetDelegatorReward(delegatorPK string, unit uint, value uint64) {
+	delegatorID := common.HashH([]byte(delegatorPK))
+	if cr.allDelegatorReward == nil {
+		cr.allDelegatorReward = make(map[common.Hash]DelegatorRewardInfo)
+	}
+	info, ok := cr.allDelegatorReward[delegatorID]
+	if ok {
+		info.Unit += unit
+		info.Value += value
+	} else {
+		info = DelegatorRewardInfo{
+			Unit:  unit,
+			Value: value,
+		}
+	}
+	cr.allDelegatorReward[delegatorID] = info
 }
 
 func (cr CommitteeRewardState) IncognitoPublicKey() string {
@@ -43,9 +77,11 @@ func (c CommitteeRewardState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Reward             map[common.Hash]uint64
 		IncognitoPublicKey string
+		AllDelegatorReward map[common.Hash]DelegatorRewardInfo
 	}{
 		Reward:             c.reward,
 		IncognitoPublicKey: c.incognitoPublicKey,
+		AllDelegatorReward: c.allDelegatorReward,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -57,6 +93,7 @@ func (c *CommitteeRewardState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		Reward             map[common.Hash]uint64
 		IncognitoPublicKey string
+		AllDelegatorReward map[common.Hash]DelegatorRewardInfo
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -64,6 +101,7 @@ func (c *CommitteeRewardState) UnmarshalJSON(data []byte) error {
 	}
 	c.reward = temp.Reward
 	c.incognitoPublicKey = temp.IncognitoPublicKey
+	c.allDelegatorReward = temp.AllDelegatorReward
 	return nil
 }
 

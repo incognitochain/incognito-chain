@@ -277,6 +277,8 @@ const (
 	ConsensusMetadataInvalidTransactionSenderError             = metadataCommon.StopAutoStakingRequestInvalidTransactionSenderError
 	AddStakingRequestNotInCommitteeListError                   = metadataCommon.AddStakingNotInCommitteeListError
 	AddStakingCommitteeNotFoundError                           = metadataCommon.AddStakingCommitteeNotFoundError
+	ReDelegateRequestNotInCommitteeListError                   = metadataCommon.ReDelegateNotInCommitteeListError
+	ReDelegateCommitteeNotFoundError                           = metadataCommon.ReDelegateCommitteeNotFoundError
 	// pde
 	PDEWithdrawalRequestFromMapError    = metadataCommon.PDEWithdrawalRequestFromMapError
 	CouldNotGetExchangeRateError        = metadataCommon.CouldNotGetExchangeRateError

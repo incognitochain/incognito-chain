@@ -83,6 +83,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendAddStakingTransaction:      (*HttpServer).handleCreateAndSendAddStakingTransaction,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
+	createAndSendReDelegateTransaction:      (*HttpServer).handleCreateAndSendReDelegateTransaction,
 	createAndSendTokenInitTransaction:       (*HttpServer).handleCreateAndSendTokenInitTx,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                        (*HttpServer).handleHasSerialNumbers,
