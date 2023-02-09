@@ -549,8 +549,9 @@ func (b *beaconCommitteeStateBase) getAllSubstituteCommittees() ([]string, error
 	return res, nil
 }
 
-func (b *beaconCommitteeStateBase) GetBeaconCandidateUID(cPK string) common.Hash {
-	return common.HashH([]byte(fmt.Sprintf("%v-%v", cPK, 1)))
+func (b *beaconCommitteeStateBase) GetBeaconCandidateUID(cPK string) (string, error) {
+	h := common.HashH([]byte(fmt.Sprintf("%v-%v", cPK, 1)))
+	return h.String(), nil
 }
 
 func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (

@@ -1660,8 +1660,8 @@ func (httpServer *HttpServer) handleCreateRawReDelegateTransaction(params interf
 
 	beaconview := httpServer.blockService.BlockChain.BeaconChain.GetFinalView()
 	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
-	beaconDelegateePKUID := beaconFinalView.GetBeaconCandidateUID(beaconDelegateePK)
-	if beaconDelegateePKUID.IsZeroValue() {
+	beaconDelegateePKUID, err := beaconFinalView.GetBeaconCandidateUID(beaconDelegateePK)
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.Errorf("Can not find beacon candidate %v in current view %v", beaconDelegateePK, beaconview.GetBlock().Hash().String()))
 	}
 

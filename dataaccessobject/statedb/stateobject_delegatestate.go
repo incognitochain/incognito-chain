@@ -11,8 +11,8 @@ import (
 type ReDelegateInfo struct {
 	Old    string
 	New    string
-	OldUID common.Hash
-	NewUID common.Hash
+	OldUID string
+	NewUID string
 }
 
 type BeaconDelegateState struct {

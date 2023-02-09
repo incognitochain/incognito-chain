@@ -16,7 +16,7 @@ type ReDelegateMetadata struct {
 	MetadataBaseWithSignature
 	CommitteePublicKey string
 	NewDelegate        string
-	DelegateUID        common.Hash
+	DelegateUID        string
 }
 
 func (meta *ReDelegateMetadata) Hash() *common.Hash {
@@ -31,12 +31,13 @@ func (meta *ReDelegateMetadata) HashWithoutSig() *common.Hash {
 	return meta.MetadataBase.Hash()
 }
 
-func NewReDelegateMetadata(committeePublicKey, newDelegate string, newDelegateUID common.Hash) (*ReDelegateMetadata, error) {
+func NewReDelegateMetadata(committeePublicKey, newDelegate string, newDelegateUID string) (*ReDelegateMetadata, error) {
 	metadataBase := NewMetadataBaseWithSignature(ReDelegateMeta)
 	return &ReDelegateMetadata{
 		MetadataBaseWithSignature: *metadataBase,
 		CommitteePublicKey:        committeePublicKey,
 		NewDelegate:               newDelegate,
+		DelegateUID:               newDelegateUID,
 	}, nil
 }
 
@@ -72,8 +73,8 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 	}
 	rawUID := fmt.Sprintf("%v-%v", newDelegate, stakerInfor.BeaconConfirmHeight())
 	uID := common.HashH([]byte(rawUID))
-	if uID.String() != redelegateMetadata.DelegateUID.String() {
-		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v with Beacon confirm height %v not match with the UID in Metadata, expected %v, got %v", newDelegate, stakerInfor.BeaconConfirmHeight(), redelegateMetadata.DelegateUID.String(), uID.String()))
+	if uID.String() != redelegateMetadata.DelegateUID {
+		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v with Beacon confirm height %v not match with the UID in Metadata, expected %v, got %v", newDelegate, stakerInfor.BeaconConfirmHeight(), redelegateMetadata.DelegateUID, uID.String()))
 	}
 	requestedPublicKey := redelegateMetadata.CommitteePublicKey
 
@@ -102,7 +103,7 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 
-	if (stakerInfo.GetDelegate() == newDelegate) && (stakerInfo.GetDelegateUID().String() == redelegateMetadata.DelegateUID.String()) {
+	if (stakerInfo.GetDelegate() == newDelegate) && (stakerInfo.GetDelegateUID() == redelegateMetadata.DelegateUID) {
 		return false, NewMetadataTxError(StopAutoStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Cannot replace with the same key"))
 	}
 	return true, nil

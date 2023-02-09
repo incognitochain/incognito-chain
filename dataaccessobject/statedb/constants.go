@@ -56,7 +56,7 @@ const (
 	CommitteeDataObjectType = 82
 	DelegatorObjectType     = 78
 
-	BeaconReDelegateStateObjectType = 83
+	BeaconReDelegateStateObjectType = 84
 	// Portal v3
 	PortalExternalTxObjectType      = 36
 	PortalConfirmProofObjectType    = 37
