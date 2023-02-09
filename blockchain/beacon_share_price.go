@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -47,7 +48,7 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 			return nil, errors.New("cannot find share price of beacon " + k + " ")
 		}
 		oldPrice[k] = sharePrice.GetPrice()
-		oldPriceDelegationAmount[k] = v.DelegationAmount
+		oldPriceDelegationAmount[k] = v.Delegators * common.SHARD_STAKING_AMOUNT
 		totalDelegationAmount += oldPriceDelegationAmount[k]
 	}
 

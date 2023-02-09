@@ -18,21 +18,14 @@ func (s *StakerInfo) getScore() uint64 {
 	return s.StakingAmount + uint64(s.TotalDelegators)*config.Param().StakingAmountShard
 }
 
-func (s *BeaconCommitteeStateV4) getDelegateState() (*statedb.BeaconDelegateState, error) {
-	if s.delegateState == nil {
-		res, _, err := statedb.GetBeaconReDelegateState(s.stateDB)
-		if err != nil {
-			return nil, err
-		}
-		s.delegateState = res
-	}
-	return s.delegateState, nil
-}
-
 // Process add stake amount
 func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-	delegateState, err := s.getDelegateState()
-	changed := false
+
+	delegateState, _, err := statedb.GetBeaconReDelegateState(s.stateDB)
+	if err != nil {
+		return nil, err
+	}
+
 	if err != nil {
 		Logger.log.Error(err)
 		delegateState = statedb.NewBeaconDelegateState()
@@ -80,12 +73,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 		}
 	}
 
-	if changed {
-		s.delegateState = delegateState
-		if err := statedb.StoreBeaconReDelegateState(s.stateDB, delegateState); err != nil {
-			return nil, err
-		}
+	if err := statedb.StoreBeaconReDelegateState(s.stateDB, delegateState); err != nil {
+		return nil, err
 	}
+
 	return nil, nil
 }
 
@@ -124,7 +115,10 @@ func (s *BeaconCommitteeStateV4) ProcessAcceptNextDelegate(env *BeaconCommitteeS
 	if !lastBlockEpoch(env.BeaconHeight) {
 		return nil, nil
 	}
-	delegateState, err := s.getDelegateState()
+	delegateState, _, err := statedb.GetBeaconReDelegateState(s.stateDB)
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		Logger.log.Error(err)
 		delegateState = statedb.NewBeaconDelegateState()
@@ -163,12 +157,10 @@ func (s *BeaconCommitteeStateV4) ProcessAcceptNextDelegate(env *BeaconCommitteeS
 	if err := processUpdateDelegate(newDelegateM, s, s.addDelegator); err != nil {
 		return nil, err
 	}
-	if len(delegateState.NextEpochDelegate) != 0 {
-		s.delegateState = statedb.NewBeaconDelegateState()
-		if err := statedb.StoreBeaconReDelegateState(s.stateDB, s.delegateState); err != nil {
-			return nil, err
-		}
+	if err := statedb.StoreBeaconReDelegateState(s.stateDB, delegateState); err != nil {
+		return nil, err
 	}
+
 	return nil, nil
 }
 
@@ -188,4 +180,40 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSharePrice(env *BeaconCommitteeSta
 		}
 	}
 	return nil, nil
+}
+
+func (s *BeaconCommitteeStateV4) GetBeaconCandidateUID(cpk string) (string, error) {
+	info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
+	if !exist {
+		return "", fmt.Errorf("Cannot find cpk %v in statedb", cpk)
+	}
+	hash := common.HashH([]byte(fmt.Sprintf("%v_%v", cpk, info.GetBeaconConfirmTime())))
+	return hash.String(), nil
+}
+
+func (s *BeaconCommitteeStateV4) addDelegator(beaconStakerPK string) error {
+
+	if stakerInfo := s.getStakerInfo(beaconStakerPK); stakerInfo != nil {
+		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakerPK)
+		if !exist {
+			return fmt.Errorf("Cannot find cpk %v in statedb", beaconStakerPK)
+		}
+		info.AddDelegator()
+		stakerInfo.TotalDelegators++
+		return statedb.StoreBeaconStakerInfo(s.stateDB, stakerInfo.cpkStruct, info)
+	}
+	return fmt.Errorf("Cannot find cpk %v in memstate", beaconStakerPK)
+}
+
+func (s *BeaconCommitteeStateV4) removeDelegator(oldBeaconStakerPK string) error {
+	if stakerInfo := s.getStakerInfo(oldBeaconStakerPK); stakerInfo != nil {
+		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, oldBeaconStakerPK)
+		if !exist {
+			return fmt.Errorf("Cannot find cpk %v in statedb", oldBeaconStakerPK)
+		}
+		info.RemoveDelegator()
+		stakerInfo.TotalDelegators--
+		return statedb.StoreBeaconStakerInfo(s.stateDB, stakerInfo.cpkStruct, info)
+	}
+	return fmt.Errorf("Cannot find cpk %v in memstate", oldBeaconStakerPK)
 }

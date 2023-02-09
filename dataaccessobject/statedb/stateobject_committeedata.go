@@ -9,17 +9,17 @@ import (
 )
 
 type CommitteeBeginEPochInfo struct {
-	Score            uint64
-	Performance      uint64
-	StakeAmount      uint64
-	DelegationAmount uint64
-	BeaconStakeID    string
+	Score         uint64
+	Performance   uint64
+	StakeAmount   uint64
+	Delegators    uint64
+	BeaconStakeID string
 }
 
 type CommitteeLastEpochInfo struct {
-	Performance      uint64
-	DelegationAmount uint64
-	BeaconStakeID    string
+	Performance   uint64
+	Delegators    uint64
+	BeaconStakeID string
 }
 
 type CommitteeData struct {
