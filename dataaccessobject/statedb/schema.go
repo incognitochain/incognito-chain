@@ -20,6 +20,7 @@ var (
 	nextBeaconCandidatePrefix          = []byte("next-bea-cand-")
 	currentBeaconCandidatePrefix       = []byte("cur-bea-cand-")
 	committeeRewardPrefix              = []byte("committee-reward-")
+	delegationRewardPrefix             = []byte("delegation-reward-")
 	slashingCommitteePrefix            = []byte("slashing-committee-")
 	rewardRequestPrefix                = []byte("reward-request-")
 	blackListProducerPrefix            = []byte("black-list-")
@@ -279,6 +280,10 @@ func GetSlashingCommitteePrefix(epoch uint64) []byte {
 
 func GetCommitteeRewardPrefix() []byte {
 	h := common.HashH(committeeRewardPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+func GetDelegationRewardPrefix() []byte {
+	h := common.HashH(delegationRewardPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

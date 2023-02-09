@@ -16,7 +16,8 @@ const (
 	ErrInvalidCommitteeTermType               = "invalid committee term type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
-	ErrInvalidCommitteeRewardStateType        = "invalid reward receiver state type "
+	ErrInvalidCommitteeRewardStateType        = "invalid committee reward receiver state type "
+	ErrInvalidDelegationRewardStateType       = "invalid delegation reward receiver state type"
 	ErrInvalidBeaconDelegateStateType         = "invalid beacon delegate state type"
 	ErrInvalidRewardRequestStateType          = "invalid reward request state type"
 	ErrInvalidBlackListProducerStateType      = "invalid black list producer state type"
@@ -151,6 +152,7 @@ const (
 	StoreRewardRequestError
 	GetRewardRequestError
 	StoreCommitteeRewardError
+	StoreDelegationRewardError
 	GetCommitteeRewardError
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
@@ -383,6 +385,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
 	StoreSyncingValidatorsError:            {-3015, "Store Syncing Validators Error"},
 	SaveStopAutoStakerInfoError:            {-3016, "Store Stop Autostake Info Error"},
+	StoreDelegationRewardError:             {-3017, "Store Delegation Reward Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},

@@ -198,3 +198,35 @@ func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardReques
 	_, rewardRequestStates := stateDB.getAllRewardRequestState(epoch)
 	return rewardRequestStates
 }
+
+//================================= Delegation Reward =============================
+func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, shardCPK string, epoch int, beaconUID string, amount int) error {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
+	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
+	reward, _, err := GetDelegationReward(stateDB, incognitoPublicKeyBytes)
+	if err != nil {
+		return err
+	}
+	reward.incognitoPublicKey = incognitoPublicKey
+	if reward.reward[shardCPK] == nil {
+		reward.reward[shardCPK] = map[int]DelegateInfo{}
+	}
+	reward.reward[shardCPK][epoch] = DelegateInfo{
+		beaconUID, amount,
+	}
+	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
+	if err != nil {
+		return NewStatedbError(StoreDelegationRewardError, err)
+	}
+	return nil
+
+}
+
+func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*DelegationRewardState, bool, error) {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
+	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return nil, false, err
+	}
+	return stateDB.getDelegationRewardState(key)
+}

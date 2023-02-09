@@ -27,6 +27,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newCommitteeObjectWithValue(db, hash, value)
 	case CommitteeRewardObjectType:
 		return newCommitteeRewardObjectWithValue(db, hash, value)
+	case DelegationRewardObjectType:
+		return newDelegationRewardObjectWithValue(db, hash, value)
 	case RewardRequestObjectType:
 		return newRewardRequestObjectWithValue(db, hash, value)
 	case RewardRequestV3ObjectType:
@@ -201,6 +203,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newCommitteeObject(db, hash)
 	case CommitteeRewardObjectType:
 		return newCommitteeRewardObject(db, hash)
+	case DelegationRewardObjectType:
+		return newDelegationRewardObject(db, hash)
 	case RewardRequestObjectType:
 		return newRewardRequestObject(db, hash)
 	case RewardRequestV3ObjectType:

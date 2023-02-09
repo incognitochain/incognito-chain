@@ -807,6 +807,17 @@ func (stateDB *StateDB) iterateWithCommitteeState(prefix []byte) []*CommitteeSta
 	return m
 }
 
+func (stateDB *StateDB) getDelegationRewardState(key common.Hash) (*DelegationRewardState, bool, error) {
+	delegationRewardObject, err := stateDB.getStateObject(DelegationRewardObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if delegationRewardObject != nil {
+		return delegationRewardObject.GetValue().(*DelegationRewardState), true, nil
+	}
+	return NewDelegationRewardState(), false, nil
+}
+
 // ================================= Committee Reward OBJECT =======================================
 func (stateDB *StateDB) getCommitteeRewardState(key common.Hash) (*CommitteeRewardState, bool, error) {
 	committeeRewardObject, err := stateDB.getStateObject(CommitteeRewardObjectType, key)

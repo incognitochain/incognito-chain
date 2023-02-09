@@ -65,9 +65,21 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 						NewUID: newDelegateUID.String(),
 					})
 				}
+				//update delegation reward
+				affectEpoch := env.Epoch + 1
+				if lastBlockEpoch(env.BeaconHeight) {
+					affectEpoch++
+				}
+				receiver := shardStakerInfo.RewardReceiver()
+				err = statedb.StoreDelegationReward(s.stateDB, receiver.Bytes(), cpk, int(affectEpoch), newDelegateUID.String(), 1750*1e9)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
 			}
 		}
 	}
+
 	if changed {
 		s.delegateState = delegateState
 		if err := statedb.StoreBeaconReDelegateState(s.stateDB, delegateState); err != nil {
