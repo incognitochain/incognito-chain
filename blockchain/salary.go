@@ -585,8 +585,12 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			return nil, nil, rewardForPdex, err
 		}
 	}
-
-	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
+	//TODO: using another reward distribution, this is just example
+	delegationRewardInst, err := curView.CalculateDelegationSharePrice(blockchain, 1000*1e9)
+	if err != nil {
+		panic(err)
+	}
+	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards, delegationRewardInst)
 	return resInst, totalRewardForCustodian, rewardForPdex, nil
 }
 

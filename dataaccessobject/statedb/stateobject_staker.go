@@ -53,7 +53,7 @@ type StakerInfo struct {
 	autoStaking         bool
 	beaconConfirmHeight uint64
 	delegateBeacon      string
-	delegateBeaconUID   common.Hash
+	delegateBeaconUID   string
 }
 
 func NewStakerInfo() *StakerInfo {
@@ -130,7 +130,7 @@ func (s *StakerInfo) SetDelegate(pk string) {
 	s.delegateBeacon = pk
 }
 
-func (s *StakerInfo) SetDelegateUID(uID common.Hash) {
+func (s *StakerInfo) SetDelegateUID(uID string) {
 	s.delegateBeaconUID = uID
 }
 
@@ -149,7 +149,7 @@ func (s *StakerInfo) GetDelegate() string {
 	return s.delegateBeacon
 }
 
-func (s *StakerInfo) GetDelegateUID() common.Hash {
+func (s *StakerInfo) GetDelegateUID() string {
 	return s.delegateBeaconUID
 }
 

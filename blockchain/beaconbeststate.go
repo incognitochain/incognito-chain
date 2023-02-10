@@ -716,7 +716,7 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlatten
 	return beaconBestState.beaconCommitteeState.GetAllCandidateSubstituteCommittee(), nil
 }
 
-func (beaconBestState *BeaconBestState) GetBeaconCandidateUID(candidatePK string) common.Hash {
+func (beaconBestState *BeaconBestState) GetBeaconCandidateUID(candidatePK string) (string, error) {
 	return beaconBestState.beaconCommitteeState.GetBeaconCandidateUID(candidatePK)
 }
 

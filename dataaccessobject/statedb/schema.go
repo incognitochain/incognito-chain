@@ -20,6 +20,7 @@ var (
 	nextBeaconCandidatePrefix          = []byte("next-bea-cand-")
 	currentBeaconCandidatePrefix       = []byte("cur-bea-cand-")
 	committeeRewardPrefix              = []byte("committee-reward-")
+	delegationRewardPrefix             = []byte("delegation-reward-")
 	slashingCommitteePrefix            = []byte("slashing-committee-")
 	rewardRequestPrefix                = []byte("reward-request-")
 	blackListProducerPrefix            = []byte("black-list-")
@@ -59,6 +60,7 @@ var (
 	syncingValidatorsPrefix            = []byte("syncing-validators-")
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 	beaconStakerInfoPrefix             = common.HashB([]byte("bstk-info-"))[:prefixHashKeyLength]
+	beaconSharePricePrefix             = common.HashB([]byte("bc-s-p-"))[:prefixHashKeyLength]
 	beaconWaitingPrefix                = []byte("beacon-waiting-")
 	beaconLockingPrefix                = []byte("beacon-locking-")
 	committeeDataPrefix                = []byte("committee-data-")
@@ -239,6 +241,16 @@ func GetCommitteeDataKey() common.Hash {
 	return finalHash
 }
 
+func GetBeaconSharePriceKey(cpk []byte) common.Hash {
+	h := common.HashH(beaconSharePricePrefix)
+	final := append(h[:][:prefixHashKeyLength], common.HashH(cpk).Bytes()[:prefixKeyLength]...)
+	finalHash, err := common.Hash{}.NewHash(final)
+	if err != nil {
+		panic("Create key fail1")
+	}
+	return *finalHash
+}
+
 func GetBeaconStakerInfoKey(beaconStakerPublicKey []byte) common.Hash {
 	h := common.HashH(beaconStakerInfoPrefix)
 	final := append(h[:][:prefixHashKeyLength], common.HashH(beaconStakerPublicKey).Bytes()[:prefixKeyLength]...)
@@ -268,6 +280,10 @@ func GetSlashingCommitteePrefix(epoch uint64) []byte {
 
 func GetCommitteeRewardPrefix() []byte {
 	h := common.HashH(committeeRewardPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+func GetDelegationRewardPrefix() []byte {
+	h := common.HashH(delegationRewardPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

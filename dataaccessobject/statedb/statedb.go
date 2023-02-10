@@ -424,6 +424,21 @@ func (stateDB *StateDB) getCommitteeData(key common.Hash) (*CommitteeData, bool,
 	return NewCommitteeData(), false, nil
 }
 
+func (stateDB *StateDB) getBeaconSharePriceInfo(key common.Hash) (*BeaconSharePrice, bool, error) {
+	sharePriceObject, err := stateDB.getStateObject(BeaconSharePriceType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if sharePriceObject != nil {
+		res, ok := sharePriceObject.GetValue().(*BeaconSharePrice)
+		if !ok {
+			err = fmt.Errorf("Can not parse staker info")
+		}
+		return res, true, err
+	}
+	return nil, false, nil
+}
+
 func (stateDB *StateDB) getBeaconStakerInfo(key common.Hash) (*BeaconStakerInfo, bool, error) {
 	stakerObject, err := stateDB.getStateObject(BeaconStakerObjectType, key)
 	if err != nil {
@@ -790,6 +805,17 @@ func (stateDB *StateDB) iterateWithCommitteeState(prefix []byte) []*CommitteeSta
 		m = append(m, committeeState)
 	}
 	return m
+}
+
+func (stateDB *StateDB) getDelegationRewardState(key common.Hash) (*DelegationRewardState, bool, error) {
+	delegationRewardObject, err := stateDB.getStateObject(DelegationRewardObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if delegationRewardObject != nil {
+		return delegationRewardObject.GetValue().(*DelegationRewardState), true, nil
+	}
+	return NewDelegationRewardState(), false, nil
 }
 
 // ================================= Committee Reward OBJECT =======================================

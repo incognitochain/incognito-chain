@@ -50,12 +50,13 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType = 34
 
-	ShardStakerObjectType   = 35
-	BeaconStakerObjectType  = 79
-	CommitteeDataObjectType = 82
-	DelegatorObjectType     = 78
-
-	BeaconReDelegateStateObjectType = 83
+	ShardStakerObjectType           = 35
+	BeaconStakerObjectType          = 79
+	BeaconSharePriceType            = 83
+	CommitteeDataObjectType         = 82
+	DelegatorObjectType             = 78
+	DelegationRewardObjectType      = 85
+	BeaconReDelegateStateObjectType = 84
 	// Portal v3
 	PortalExternalTxObjectType      = 36
 	PortalConfirmProofObjectType    = 37

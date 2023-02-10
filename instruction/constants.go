@@ -21,6 +21,7 @@ const (
 	TRUE                           = "true"
 	FALSE                          = "false"
 	FINISH_SYNC_ACTION             = "finishsync"
+	SHARE_PRICE                    = "shareprice"
 	ENABLE_FEATURE                 = "enablefeature"
 	DEQUEUE                        = "dequeue"
 	OUTDATED_DEQUEUE_REASON        = "outdated"
