@@ -22,7 +22,7 @@ import (
 
 const INIT_SHARE_PRICE = 1750 * 1e9
 
-//must trigger version for new config
+// must trigger version for new config
 type BeaconCommitteeStateV4Config struct {
 	MAX_SCORE             uint64
 	MIN_SCORE             uint64
@@ -349,7 +349,7 @@ func (s *BeaconCommitteeStateV4) UpgradeFromV3(stateV3 *BeaconCommitteeStateV3, 
 	for _, cpk := range stateV3.GetBeaconCommittee() {
 		cpkStr, _ := cpk.ToBase58()
 
-		stakeID := common.HashH([]byte(fmt.Sprintf("%v_%v", cpkStr, 1)))
+		stakeID := common.HashH([]byte(fmt.Sprintf("%v-%v", cpkStr, 1)))
 		scores[cpkStr] = statedb.CommitteeBeginEPochInfo{0, s.config.DEFAULT_PERFORMING, 0, 0, stakeID.String()}
 		info, exists, _ := statedb.GetStakerInfo(stateDB, cpkStr)
 		if !exists {
@@ -606,9 +606,9 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 
 	processFuncs := []func(*BeaconCommitteeStateEnvironment) ([][]string, error){
 		s.ProcessUpdateBeaconPerformance,
-		s.ProcessAcceptNextDelegate,
 		s.ProcessBeaconUnstakeInstruction,
 		s.ProcessBeaconRedelegateInstruction,
+		s.ProcessAcceptNextDelegate,
 		s.ProcessBeaconSwapAndSlash,
 		s.ProcessBeaconFinishSyncInstruction,
 		s.ProcessBeaconWaitingCondition,
@@ -1013,7 +1013,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconStakeInstruction(env *BeaconCommit
 				if err := statedb.StoreBeaconStakerInfo(s.stateDB, key, info); err != nil {
 					return nil, err
 				}
-				stakeID := common.HashH([]byte(fmt.Sprintf("%v_%v", beaconStakeInst.PublicKeys[i], env.BeaconHeader.Timestamp)))
+				stakeID := common.HashH([]byte(fmt.Sprintf("%v-%v", beaconStakeInst.PublicKeys[i], env.BeaconHeader.Timestamp)))
 				newStakerInfo := &StakerInfo{key, beaconStakeInst.PublicKeys[i], beaconStakeInst.StakingAmount[i],
 					false, 500, 0, false, time.Now().UnixNano(),
 					false, 0, stakeID.String(), 0}

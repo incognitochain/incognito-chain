@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -60,11 +61,8 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 				}
 				//update delegation reward
 				affectEpoch := env.Epoch + 1
-				if lastBlockEpoch(env.BeaconHeight) {
-					affectEpoch++
-				}
 				receiver := shardStakerInfo.RewardReceiver()
-				err = statedb.StoreDelegationReward(s.stateDB, receiver.Bytes(), cpk, int(affectEpoch), newDelegateUID.String(), 1750*1e9)
+				err = statedb.StoreDelegationReward(s.stateDB, receiver.Pk, cpk, int(affectEpoch), newDelegateUID.String(), config.Param().StakingAmountShard)
 				if err != nil {
 					Logger.log.Error(err)
 					continue
@@ -187,7 +185,7 @@ func (s *BeaconCommitteeStateV4) GetBeaconCandidateUID(cpk string) (string, erro
 	if !exist {
 		return "", fmt.Errorf("Cannot find cpk %v in statedb", cpk)
 	}
-	hash := common.HashH([]byte(fmt.Sprintf("%v_%v", cpk, info.GetBeaconConfirmTime())))
+	hash := common.HashH([]byte(fmt.Sprintf("%v-%v", cpk, info.GetBeaconConfirmTime())))
 	return hash.String(), nil
 }
 

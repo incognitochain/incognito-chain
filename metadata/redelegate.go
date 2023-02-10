@@ -82,24 +82,26 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 	if err != nil {
 		return false, NewMetadataTxError(ReDelegateRequestNotInCommitteeListError, err)
 	}
+	rewardReceiverAddress := stakerInfo.RewardReceiver()
+	pkToValidateMetadata := rewardReceiverAddress.Pk
 	if !has {
 		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", newDelegate, shardID))
 	}
 	stakingTxHash := stakerInfo.TxStakingID()
 
 	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
-	if err != nil {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
+	if err == nil {
+		stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
+		funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+
+		funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+		if err != nil || funderWallet == nil {
+			return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+		}
+		pkToValidateMetadata = funderWallet.KeySet.PaymentAddress.Pk
 	}
 
-	stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
-	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
-	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
-	if err != nil || funderWallet == nil {
-		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
-	}
-
-	if ok, err := redelegateMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
+	if ok, err := redelegateMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(pkToValidateMetadata, tx); !ok || err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 

@@ -3,15 +3,16 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common/base58"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type DelegateInfo struct {
 	BeaconUID string
-	Amount    int
+	Amount    uint64
 }
 type DelegationRewardState struct {
 	//reward receiver

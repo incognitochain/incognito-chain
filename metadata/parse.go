@@ -116,6 +116,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &StakingMetadata{}
 	case AddStakingMeta:
 		md = &AddStakingMetadata{}
+	case ReDelegateMeta:
+		md = &ReDelegateMetadata{}
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
 	case ReturnBeaconStakingMeta:
