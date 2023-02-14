@@ -33,7 +33,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 		paymentAddStr,
 		1,
 		metadata.WithDrawRewardRequestMeta,
-		)
+	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
@@ -73,7 +73,7 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token
 func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) != 1 {
+	if arrayParams == nil || len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
@@ -81,11 +81,28 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
 	}
-	rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+	mode := 0 //0: committee reward, 1: delegate reward, 2: total reward
+	if len(arrayParams) == 2 {
+		modeInput, ok := arrayParams[0].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("mode is invalid"))
+		}
+		mode = int(modeInput)
 	}
-	return rewardAmount, nil
+	switch mode {
+	default:
+		rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+		}
+		return rewardAmount, nil
+	case 1:
+		rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+		}
+		return rewardAmount, nil
+	}
 }
 
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token

@@ -757,15 +757,7 @@ func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
-				rewardState, has, err := statedb.GetDelegationReward(s.stateDB, payment.Pk)
-				if err != nil {
-					return nil, err
-				}
-				if !has {
-					Logger.log.Errorf("Can not found delegation reward state for this payment %v", reqDRewardInstruction.IncPaymentAddrs[i])
-					continue
-				}
-				amount, err := statedb.GetDelegationRewardAmount(s.stateDB, rewardState)
+				amount, err := statedb.GetDelegationRewardAmount(s.stateDB, payment.Pk)
 				if err != nil {
 					return nil, err
 				}
