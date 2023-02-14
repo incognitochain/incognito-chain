@@ -184,15 +184,15 @@ func (s *BeaconStakerInfo) AddStaking(tx common.Hash, height uint64, amount uint
 	s.stakingTx[tx] = StakingTxInfo{amount, height}
 }
 
-func (s *BeaconStakerInfo) AddDelegator() {
-	s.totalDelegators++
+func (s *BeaconStakerInfo) AddDelegator(total uint) {
+	s.totalDelegators += total
 }
 
-func (s *BeaconStakerInfo) RemoveDelegator() error {
-	if s.totalDelegators == 0 {
-		return errors.Errorf("Can not remove one delegator, current total delegator is zero")
+func (s *BeaconStakerInfo) RemoveDelegator(total uint) error {
+	if (s.totalDelegators == 0) || (s.totalDelegators < total) {
+		return errors.Errorf("Can not remove more delegator than current total delegator, current total delegator is %v, requested %v", s.totalDelegators, total)
 	}
-	s.totalDelegators--
+	s.totalDelegators -= total
 	return nil
 }
 
