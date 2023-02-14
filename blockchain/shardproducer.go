@@ -930,6 +930,10 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	addStake_amount := []uint64{}
 	addStake_tx := []string{}
 
+	reD_dgtor_pks := []string{}
+	reD_dgtee_pks := []string{}
+	reD_dgtee_uid := []string{}
+
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
 	}
@@ -1010,6 +1014,14 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			addStake_cpk = append(addStake_cpk, stakingMetadata.CommitteePublicKey)
 			addStake_amount = append(addStake_amount, stakingMetadata.AddStakingAmount)
 			addStake_tx = append(addStake_tx, tx.Hash().String())
+		case metadata.ReDelegateMeta:
+			redelegateMetadata, ok := tx.GetMetadata().(*metadata.ReDelegateMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.ReDelegate but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			reD_dgtor_pks = append(reD_dgtor_pks, redelegateMetadata.CommitteePublicKey)
+			reD_dgtee_pks = append(reD_dgtee_pks, redelegateMetadata.NewDelegate)
+			reD_dgtee_uid = append(reD_dgtee_uid, redelegateMetadata.DelegateUID)
 		}
 	}
 
@@ -1055,6 +1067,13 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := instruction.NewAddStakingInstructionWithValue(addStake_cpk, addStake_amount, addStake_tx)
 		instructions = append(instructions, inst.ToString())
 	}
+
+	if len(reD_dgtor_pks) > 0 {
+		Logger.log.Debugf("Got redelegate transaction %+v %+v %+v", reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
+		inst := instruction.NewReDelegateInstructionWithValue(reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
+		instructions = append(instructions, inst.ToString())
+	}
+
 	return instructions, pdexTxs, nil
 }
 

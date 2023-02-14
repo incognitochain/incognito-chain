@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-//AddShardRewardRequestMultiset
+// AddShardRewardRequestMultiset
 func AddShardRewardRequestMultiset(
 	stateDB *StateDB,
 	epoch uint64,
@@ -193,14 +193,14 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 	return nil
 }
 
-//================================= Testing ======================================
+// ================================= Testing ======================================
 func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardRequestState {
 	_, rewardRequestStates := stateDB.getAllRewardRequestState(epoch)
 	return rewardRequestStates
 }
 
-//================================= Delegation Reward =============================
-func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, shardCPK string, epoch int, beaconUID string, amount int) error {
+// ================================= Delegation Reward =============================
+func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, shardCPK string, epoch int, beaconUID string, amount uint64) error {
 	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
 	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
 	reward, _, err := GetDelegationReward(stateDB, incognitoPublicKeyBytes)

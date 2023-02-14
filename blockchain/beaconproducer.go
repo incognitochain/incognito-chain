@@ -3,9 +3,10 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -36,6 +37,7 @@ type shardInstruction struct {
 	unstakeInstructions       []*instruction.UnstakeInstruction
 	swapInstructions          map[byte][]*instruction.SwapInstruction
 	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
+	redelegateInstructions    []*instruction.ReDelegateInstruction
 }
 
 func newShardInstruction() *shardInstruction {
@@ -53,6 +55,7 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 	for shardID, swapInstructions := range newShardInstruction.swapInstructions {
 		shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], swapInstructions...)
 	}
+	shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, newShardInstruction.redelegateInstructions...)
 }
 
 // NewBlockBeacon create new beacon block
@@ -586,6 +589,10 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, stakeInstruction.ToString())
 	}
 
+	for _, redelegateInstruction := range shardInstruction.redelegateInstructions {
+		instructions = append(instructions, redelegateInstruction.ToString())
+	}
+
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
 		if len(stakeInstruction.TxStakes) > 0 {
@@ -984,6 +991,11 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 			if inst[0] == instruction.ADD_STAKING_ACTION {
 				tempAddStakeInstruction := instruction.ImportAddStakingInstructionFromString(inst)
 				shardInstruction.addStakeInstruction = append(shardInstruction.addStakeInstruction, tempAddStakeInstruction)
+			}
+			if inst[0] == instruction.RE_DELEGATE {
+				Logger.log.Debugf("Got redelegate instruction %+v", inst)
+				tempReDelegateInstruction := instruction.ImportReDelegateInstructionFromString(inst)
+				shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, tempReDelegateInstruction)
 			}
 			if inst[0] == instruction.BEACON_STAKE_ACTION {
 				if err := instruction.ValidateBeaconStakeInstructionSanity(inst); err != nil {

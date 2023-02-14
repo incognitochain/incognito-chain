@@ -17,11 +17,11 @@ type ReDelegateInstruction struct {
 	DelegateUIDList           []string
 }
 
-func NewReDelegateInstructionWithValue(publicKeys, redelegateList []string, uIDs []string) *ReDelegateInstruction {
+func NewReDelegateInstructionWithValue(publicKeys, redelegateList, uIDs []string) *ReDelegateInstruction {
 	res := &ReDelegateInstruction{}
 	res.SetPublicKeys(publicKeys)
 	res.SetDelegateList(redelegateList)
-	copy(res.DelegateUIDList, uIDs)
+	res.SetDelegateListUID(uIDs)
 	return res
 }
 
@@ -54,6 +54,11 @@ func (s *ReDelegateInstruction) SetDelegateList(delegateList []string) (*ReDeleg
 		return nil, err
 	}
 	s.DelegateListStruct = publicKeyStructs
+	return s, nil
+}
+
+func (s *ReDelegateInstruction) SetDelegateListUID(delegateUIDList []string) (*ReDelegateInstruction, error) {
+	s.DelegateUIDList = delegateUIDList
 	return s, nil
 }
 
@@ -91,7 +96,7 @@ func ImportReDelegateInstructionFromString(instruction []string) *ReDelegateInst
 	}
 	if len(instruction[3]) > 0 {
 		publicKeys := strings.Split(instruction[3], SPLITTER)
-		redelegateInstruction, _ = redelegateInstruction.SetDelegateList(publicKeys)
+		redelegateInstruction, _ = redelegateInstruction.SetDelegateListUID(publicKeys)
 	}
 	return redelegateInstruction
 }

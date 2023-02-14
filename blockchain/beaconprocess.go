@@ -680,6 +680,9 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		beaconBlock.Body.Instructions,
 		isFoundRandomInstruction, isBeginRandom,
 	)
+	for _, v := range beaconBlock.Body.Instructions {
+		Logger.log.Infof("Beacon instructions: %+v", v)
+	}
 
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {

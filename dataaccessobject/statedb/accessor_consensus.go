@@ -452,7 +452,7 @@ func StoreBeaconReDelegateState(
 	info *BeaconDelegateState,
 ) error {
 	key := GetBeaconReDelegateStateKey()
-	err := stateDB.SetStateObject(BeaconStakerObjectType, key, info)
+	err := stateDB.SetStateObject(BeaconReDelegateStateObjectType, key, info)
 	if err != nil {
 		return err
 	}
