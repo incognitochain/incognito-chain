@@ -38,6 +38,7 @@ type shardInstruction struct {
 	swapInstructions          map[byte][]*instruction.SwapInstruction
 	stopAutoStakeInstructions []*instruction.StopAutoStakeInstruction
 	redelegateInstructions    []*instruction.ReDelegateInstruction
+	reqRewardInstructions     []*instruction.RequestDelegationRewardInstruction
 }
 
 func newShardInstruction() *shardInstruction {
@@ -56,6 +57,7 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 		shardInstruction.swapInstructions[shardID] = append(shardInstruction.swapInstructions[shardID], swapInstructions...)
 	}
 	shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, newShardInstruction.redelegateInstructions...)
+	shardInstruction.reqRewardInstructions = append(shardInstruction.reqRewardInstructions, newShardInstruction.reqRewardInstructions...)
 }
 
 // NewBlockBeacon create new beacon block
@@ -593,6 +595,9 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, redelegateInstruction.ToString())
 	}
 
+	for _, reqRewardInstruction := range shardInstruction.reqRewardInstructions {
+		instructions = append(instructions, reqRewardInstruction.ToString())
+	}
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
 		if len(stakeInstruction.TxStakes) > 0 {

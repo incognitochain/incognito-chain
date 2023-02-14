@@ -21,6 +21,8 @@ const (
 	TRUE                           = "true"
 	FALSE                          = "false"
 	FINISH_SYNC_ACTION             = "finishsync"
+	REQ_DREWARD_ACTION             = "reqdreward"
+	MINT_DREWARD_ACTION            = "mintdreward"
 	SHARE_PRICE                    = "shareprice"
 	ENABLE_FEATURE                 = "enablefeature"
 	DEQUEUE                        = "dequeue"

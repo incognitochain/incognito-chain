@@ -934,6 +934,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	reD_dgtee_pks := []string{}
 	reD_dgtee_uid := []string{}
 
+	receiversReqDReward := map[string]interface{}{}
+
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
 	}
@@ -1022,6 +1024,19 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			reD_dgtor_pks = append(reD_dgtor_pks, redelegateMetadata.CommitteePublicKey)
 			reD_dgtee_pks = append(reD_dgtee_pks, redelegateMetadata.NewDelegate)
 			reD_dgtee_uid = append(reD_dgtee_uid, redelegateMetadata.DelegateUID)
+		case metadata.WithDrawRewardRequestMeta:
+			requestWithDrawRewardMetadata, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.WithDrawRewardRequest but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
+				receiverAddr := requestWithDrawRewardMetadata.PaymentAddress.String()
+				if _, ok := receiversReqDReward[receiverAddr]; !ok {
+					receiversReqDReward[receiverAddr] = nil
+				} else {
+					Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
+				}
+			}
 		}
 	}
 
@@ -1069,8 +1084,18 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	}
 
 	if len(reD_dgtor_pks) > 0 {
-		Logger.log.Debugf("Got redelegate transaction %+v %+v %+v", reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
+		Logger.log.Infof("Got redelegate transaction %+v %+v %+v", reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
 		inst := instruction.NewReDelegateInstructionWithValue(reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
+		instructions = append(instructions, inst.ToString())
+	}
+
+	if len(receiversReqDReward) > 0 {
+		keys := []string{}
+		for k := range receiversReqDReward {
+			keys = append(keys, k)
+		}
+		Logger.log.Infof("Got request delegation reward for pk %+v ", keys)
+		inst := instruction.NewRequestDelegationRewardInstructionWithValue(keys)
 		instructions = append(instructions, inst.ToString())
 	}
 
