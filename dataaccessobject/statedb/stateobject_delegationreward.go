@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -16,7 +17,8 @@ type DelegateInfo struct {
 }
 type DelegationRewardState struct {
 	//reward receiver
-	incognitoPublicKey string
+	incognitoPublicKey      string
+	incognitoPaymentAddress key.PaymentAddress
 	// shard cpk => affect epoch => info
 	reward map[string]map[int]DelegateInfo
 }

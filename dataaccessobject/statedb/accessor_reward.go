@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
 // AddShardRewardRequestMultiset
@@ -200,7 +201,7 @@ func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardReques
 }
 
 // ================================= Delegation Reward =============================
-func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, shardCPK string, epoch int, beaconUID string, amount uint64) error {
+func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, incognitoPaymentAddress key.PaymentAddress, shardCPK string, epoch int, beaconUID string, amount uint64) error {
 	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
 	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
 	reward, _, err := GetDelegationReward(stateDB, incognitoPublicKeyBytes)
@@ -208,6 +209,7 @@ func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, sha
 		return err
 	}
 	reward.incognitoPublicKey = incognitoPublicKey
+	reward.incognitoPaymentAddress = incognitoPaymentAddress
 	if reward.reward[shardCPK] == nil {
 		reward.reward[shardCPK] = map[int]DelegateInfo{}
 	}
@@ -229,4 +231,8 @@ func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*Del
 		return nil, false, err
 	}
 	return stateDB.getDelegationRewardState(key)
+}
+
+func GetDelegationRewardAmount(stateDB *StateDB, rewardState *DelegationRewardState) (uint64, error) {
+	return 10 * 10e9, nil
 }
