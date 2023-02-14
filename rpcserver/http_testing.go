@@ -200,7 +200,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 		}
 	}
-	shardIDs := []int{-1}
+	shardIDs := []int{}
 	shardIDs = append(shardIDs, httpServer.config.BlockChain.GetShardIDs()...)
 	stateDB, err2 := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
 		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))

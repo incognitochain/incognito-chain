@@ -373,7 +373,7 @@ func main() {
 		for i, staker := range stakers {
 
 			fmt.Println("Delegate shard shard", i)
-			delegateRes, err := Delegate(&shard0RPC, staker.PrivateKey, staker.PrivateKey, fixNode[1].SelfCommitteePubkey)
+			delegateRes, err := Delegate(&shard0RPC, staker.PrivateKey, staker.PrivateKey, fixNode[i%4].SelfCommitteePubkey)
 			fmt.Println(delegateRes, err)
 
 		}

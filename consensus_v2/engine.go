@@ -288,7 +288,7 @@ func (engine *Engine) loadKeysFromMiningKey() {
 		})
 	}
 	// @NOTICE: hack code, only allow one key
-	engine.validators = engine.validators[:1] //allow only 1 key
+	//engine.validators = engine.validators[:1] //allow only 1 key
 
 	//set monitor pubkey
 	pubkeys := []string{}
