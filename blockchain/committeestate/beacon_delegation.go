@@ -78,7 +78,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 	return nil, nil
 }
 
-func processUpdateDelegate(delegateM map[string]RedelegateInfo, s *BeaconCommitteeStateV4, updateFunc func(bcDelegator string) error) error {
+func processUpdateDelegate(delegateM map[string]RedelegateInfo, s *BeaconCommitteeStateV4, updateFunc func(bcDelegator string, totalDelegator uint) error) error {
 	for uid, info := range delegateM {
 		if info.beaconPK == "" {
 			continue
@@ -90,7 +90,7 @@ func processUpdateDelegate(delegateM map[string]RedelegateInfo, s *BeaconCommitt
 		}
 		curBeaconUID := common.HashH([]byte(fmt.Sprintf("%v-%v", info.beaconPK, bcInfor.BeaconConfirmHeight())))
 		if uid == curBeaconUID.String() {
-			if err := updateFunc(info.beaconPK); err != nil {
+			if err := updateFunc(info.beaconPK, uint(len(info.delegators))); err != nil {
 				return err
 			}
 		}
@@ -134,7 +134,7 @@ func (s *BeaconCommitteeStateV4) ProcessAcceptNextDelegate(env *BeaconCommitteeS
 	for k, v := range oldDelegateM {
 		Logger.log.Infof("BEFOREREMOVE: Beacon %v - %v has current %v delegator, need to remove %v delegator", v.beaconPK, k, len(v.delegators))
 	}
-	if err := processUpdateDelegate(oldDelegateM, s, s.removeDelegator); err != nil {
+	if err := processUpdateDelegate(oldDelegateM, s, s.removeDelegators); err != nil {
 		return nil, err
 	}
 	for k, v := range oldDelegateM {
@@ -145,7 +145,7 @@ func (s *BeaconCommitteeStateV4) ProcessAcceptNextDelegate(env *BeaconCommitteeS
 	for k, v := range newDelegateM {
 		Logger.log.Infof("BEFOREADD: Beacon %v - %v has current %v delegator, need to add %v delegator", v.beaconPK, k, len(v.delegators))
 	}
-	if err := processUpdateDelegate(newDelegateM, s, s.addDelegator); err != nil {
+	if err := processUpdateDelegate(newDelegateM, s, s.addDelegators); err != nil {
 		return nil, err
 	}
 	for k, v := range newDelegateM {
@@ -189,28 +189,31 @@ func (s *BeaconCommitteeStateV4) GetBeaconCandidateUID(cpk string) (string, erro
 	return hash.String(), nil
 }
 
-func (s *BeaconCommitteeStateV4) addDelegator(beaconStakerPK string) error {
+func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint) error {
 
 	if stakerInfo := s.getStakerInfo(beaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakerPK)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", beaconStakerPK)
 		}
-		info.AddDelegator()
-		stakerInfo.TotalDelegators++
+		info.AddDelegator(total)
+		stakerInfo.TotalDelegators += uint64(total)
 		return statedb.StoreBeaconStakerInfo(s.stateDB, stakerInfo.cpkStruct, info)
 	}
 	return fmt.Errorf("Cannot find cpk %v in memstate", beaconStakerPK)
 }
 
-func (s *BeaconCommitteeStateV4) removeDelegator(oldBeaconStakerPK string) error {
+func (s *BeaconCommitteeStateV4) removeDelegators(oldBeaconStakerPK string, total uint) error {
 	if stakerInfo := s.getStakerInfo(oldBeaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, oldBeaconStakerPK)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", oldBeaconStakerPK)
 		}
-		info.RemoveDelegator()
-		stakerInfo.TotalDelegators--
+		err := info.RemoveDelegator(total)
+		if err != nil {
+			return err
+		}
+		stakerInfo.TotalDelegators -= uint64(total)
 		return statedb.StoreBeaconStakerInfo(s.stateDB, stakerInfo.cpkStruct, info)
 	}
 	return fmt.Errorf("Cannot find cpk %v in memstate", oldBeaconStakerPK)
