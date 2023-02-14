@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -40,16 +41,16 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 					Logger.log.Error(errors.Errorf("Cannot find staker cpk %v in statedb", newDelegate))
 					continue
 				}
-				shardStakerInfo.SetDelegate(newDelegate)
-				shardStakerInfo.SetDelegateUID(newDelegateUID.String())
 
 				oldDelegate := shardStakerInfo.GetDelegate()
 				oldDelegateUID := shardStakerInfo.GetDelegateUID()
+				log.Println("oldDelegate", oldDelegate)
 				if oldDelegate != "" {
 					if stakerInfo := s.getStakerInfo(oldDelegate); stakerInfo != nil {
 						if uID, err := s.GetBeaconCandidateUID(oldDelegate); (err != nil) || (uID != oldDelegateUID) {
 							Logger.log.Error(errors.Errorf("Can not get request UID for old delegate %v of delegator %v, uid found in db %v", oldDelegate, oldDelegateUID, uID))
 						} else {
+							log.Println("removeDelegators", oldDelegate)
 							if err = s.removeDelegators(oldDelegate, 1); err != nil {
 								return nil, err
 							}
@@ -58,12 +59,17 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 						Logger.log.Error(errors.Errorf("Cannot find staker cpk %v in statedb", oldDelegate))
 					}
 				}
+
+				shardStakerInfo.SetDelegate(newDelegate)
+				shardStakerInfo.SetDelegateUID(newDelegateUID.String())
+
 				//update delegation reward
 				affectEpoch := env.Epoch + 1
 				receiver := shardStakerInfo.RewardReceiver()
 				err = statedb.StoreDelegationReward(s.stateDB, receiver.Pk, receiver, delegator, int(affectEpoch), newDelegateUID.String(), config.Param().StakingAmountShard)
 				if err != nil {
 					Logger.log.Error(err)
+					panic(err)
 					continue
 				}
 				if err = s.addDelegators(shardStakerInfo.GetDelegate(), 1); err != nil {
@@ -107,7 +113,7 @@ func (s *BeaconCommitteeStateV4) GetBeaconCandidateUID(cpk string) (string, erro
 }
 
 func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint) error {
-
+	log.Println("add delegator to", beaconStakerPK)
 	if stakerInfo := s.getStakerInfo(beaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakerPK)
 		if !exist {

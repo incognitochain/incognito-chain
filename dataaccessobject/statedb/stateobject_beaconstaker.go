@@ -99,6 +99,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		LockingEpoch        uint64
 		UnlockingEpoch      uint64
 		LockingReason       int
+		TotalDelegators     uint
 	}{
 		FunderAddress:       c.funderAddress,
 		RewardReceiver:      c.rewardReceiver,
@@ -112,6 +113,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		UnlockingEpoch:      c.unlockingEpoch,
 		LockingReason:       c.lockingReason,
 		FinishSync:          c.finishSync,
+		TotalDelegators:     c.totalDelegators,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -133,6 +135,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 		UnlockingEpoch      uint64
 		LockingReason       int
 		FinishSync          bool
+		TotalDelegators     uint
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -150,6 +153,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.finishSync = temp.FinishSync
 	c.funderAddress = temp.FunderAddress
 	c.enterTime = temp.EnterTime
+	c.totalDelegators = temp.TotalDelegators
 	return nil
 }
 func (s *BeaconStakerInfo) SetUnstaking() {

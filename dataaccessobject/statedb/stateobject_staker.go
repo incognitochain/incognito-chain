@@ -82,11 +82,15 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		ShardID             byte
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
+		DelegateBeacon      string
+		DelegateBeaconUID   string
 	}{
 		RewardReceiver:      c.rewardReceiver,
 		TxStakingID:         c.txStakingID,
 		AutoStaking:         c.autoStaking,
 		BeaconConfirmHeight: c.beaconConfirmHeight,
+		DelegateBeacon:      c.delegateBeacon,
+		DelegateBeaconUID:   c.delegateBeaconUID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -102,6 +106,8 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 		ShardID             byte
 		NumberOfRound       int
 		BeaconConfirmHeight uint64
+		DelegateBeacon      string
+		DelegateBeaconUID   string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -111,6 +117,8 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	c.rewardReceiver = temp.RewardReceiver
 	c.autoStaking = temp.AutoStaking
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
+	c.delegateBeacon = temp.DelegateBeacon
+	c.delegateBeaconUID = temp.DelegateBeaconUID
 	return nil
 }
 
