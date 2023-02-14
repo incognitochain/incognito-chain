@@ -605,6 +605,7 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 	}
 
 	processFuncs := []func(*BeaconCommitteeStateEnvironment) ([][]string, error){
+		s.ProcessCalculateAndWithdrawDelegationReward,
 		s.ProcessUpdateBeaconPerformance,
 		s.ProcessBeaconUnstakeInstruction,
 		s.ProcessBeaconRedelegateInstruction,
@@ -740,6 +741,47 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommi
 		return nil, nil
 	}
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
+}
+
+func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
+	incurredInstructions := [][]string{}
+	mintPaymentAddresses := []string{}
+	mintRewardAmount := []uint64{}
+	for _, inst := range env.BeaconInstructions {
+		if len(inst) == 0 {
+			continue
+		}
+		switch inst[0] {
+		case instruction.REQ_DREWARD_ACTION:
+			reqDRewardInstruction, err := instruction.ValidateAndImportRequestDelegationRewardInstructionFromString(inst)
+			if err != nil {
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
+				rewardState, has, err := statedb.GetDelegationReward(s.stateDB, payment.Pk)
+				if err != nil {
+					return nil, err
+				}
+				if !has {
+					Logger.log.Errorf("Can not found delegation reward state for this payment %v", reqDRewardInstruction.IncPaymentAddrs[i])
+					continue
+				}
+				amount, err := statedb.GetDelegationRewardAmount(s.stateDB, rewardState)
+				if err != nil {
+					return nil, err
+				}
+				mintRewardAmount = append(mintRewardAmount, amount)
+				mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
+			}
+		default:
+			continue
+		}
+	}
+	if len(mintPaymentAddresses) != 0 {
+		mintInst := instruction.NewMintDelegationRewardInsWithValue(mintPaymentAddresses, mintRewardAmount)
+		incurredInstructions = append(incurredInstructions, mintInst.ToString())
+	}
+	return incurredInstructions, nil
 }
 
 // Process shard active time
