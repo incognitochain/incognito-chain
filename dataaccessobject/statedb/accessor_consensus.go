@@ -429,36 +429,6 @@ func GetStakerInfo(stateDB *StateDB, stakerPubkey string) (*StakerInfo, bool, er
 	return stateDB.getStakerInfo(key)
 }
 
-func GetBeaconReDelegateState(stateDB *StateDB) (*BeaconDelegateState, bool, error) {
-	key := GetBeaconReDelegateStateKey()
-	return stateDB.getBeaconReDelegateState(key)
-}
-
-func GetReDelegateInfo(stateDB *StateDB, delegatorPK string) (*ReDelegateInfo, bool, error) {
-	key := GetBeaconReDelegateStateKey()
-	state, has, err := stateDB.getBeaconReDelegateState(key)
-	if (err != nil) || (!has) {
-		return nil, false, err
-	}
-	if info, ok := state.NextEpochDelegate[delegatorPK]; ok {
-		return &info, true, nil
-	} else {
-		return nil, false, nil
-	}
-}
-
-func StoreBeaconReDelegateState(
-	stateDB *StateDB,
-	info *BeaconDelegateState,
-) error {
-	key := GetBeaconReDelegateStateKey()
-	err := stateDB.SetStateObject(BeaconReDelegateStateObjectType, key, info)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey) error {
 	for _, committee := range committees {
 		key, err := GenerateCommitteeObjectKeyWithRole(role, shardID, committee)

@@ -609,7 +609,6 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 		s.ProcessUpdateBeaconPerformance,
 		s.ProcessBeaconUnstakeInstruction,
 		s.ProcessBeaconRedelegateInstruction,
-		s.ProcessAcceptNextDelegate,
 		s.ProcessBeaconSwapAndSlash,
 		s.ProcessBeaconFinishSyncInstruction,
 		s.ProcessBeaconWaitingCondition,
