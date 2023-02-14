@@ -62,7 +62,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 				//update delegation reward
 				affectEpoch := env.Epoch + 1
 				receiver := shardStakerInfo.RewardReceiver()
-				err = statedb.StoreDelegationReward(s.stateDB, receiver.Pk, cpk, int(affectEpoch), newDelegateUID.String(), config.Param().StakingAmountShard)
+				err = statedb.StoreDelegationReward(s.stateDB, receiver.Pk, receiver, cpk, int(affectEpoch), newDelegateUID.String(), config.Param().StakingAmountShard)
 				if err != nil {
 					Logger.log.Error(err)
 					continue
@@ -99,14 +99,18 @@ func processUpdateDelegate(delegateM map[string]RedelegateInfo, s *BeaconCommitt
 }
 
 func addReDelegateInfo(delegateInfoM map[string]RedelegateInfo, delegateeUID string, delegator string, delegatee string) {
-	if info, ok := delegateInfoM[delegateeUID]; ok {
-		info.delegators = append(info.delegators, delegator)
+	info, ok := delegateInfoM[delegateeUID]
+	if ok {
+		if info.beaconPK == delegatee {
+			info.delegators = append(info.delegators, delegator)
+		}
 	} else {
-		delegateInfoM[delegateeUID] = RedelegateInfo{
+		info = RedelegateInfo{
 			beaconPK:   delegatee,
 			delegators: []string{delegator},
 		}
 	}
+	delegateInfoM[delegateeUID] = info
 }
 
 func (s *BeaconCommitteeStateV4) ProcessAcceptNextDelegate(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
@@ -117,48 +121,44 @@ func (s *BeaconCommitteeStateV4) ProcessAcceptNextDelegate(env *BeaconCommitteeS
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		Logger.log.Error(err)
-		delegateState = statedb.NewBeaconDelegateState()
-	}
 	oldDelegateM := map[string]RedelegateInfo{}
 	newDelegateM := map[string]RedelegateInfo{}
 	for k, v := range delegateState.NextEpochDelegate {
 		oldDelegate := v.Old
 		oldDelegateUID := v.OldUID
-		if info := s.getStakerInfo(oldDelegate); info != nil {
-			uid, err := s.GetBeaconCandidateUID(info.CPK)
-			if err != nil {
-				panic(1) //todo: remove this
-				continue
-			}
-			if uid == oldDelegateUID {
-				addReDelegateInfo(oldDelegateM, oldDelegateUID, k, oldDelegate)
-			}
-		}
+		addReDelegateInfo(oldDelegateM, oldDelegateUID, k, oldDelegate)
 		newDelegate := v.New
 		newDelegateUID := v.NewUID
-		if info := s.getStakerInfo(newDelegate); info != nil {
-			uid, err := s.GetBeaconCandidateUID(info.CPK)
-			if err != nil {
-				panic(1) //todo: remove this
-				continue
-			}
-			if uid == newDelegateUID {
-				addReDelegateInfo(newDelegateM, newDelegateUID, k, newDelegate)
-			}
-		}
+		addReDelegateInfo(newDelegateM, newDelegateUID, k, newDelegate)
+	}
+	for k, v := range oldDelegateM {
+		Logger.log.Infof("BEFOREREMOVE: Beacon %v - %v has current %v delegator, need to remove %v delegator", v.beaconPK, k, len(v.delegators))
 	}
 	if err := processUpdateDelegate(oldDelegateM, s, s.removeDelegator); err != nil {
 		return nil, err
 	}
+	for k, v := range oldDelegateM {
+		if detailInfo := s.getStakerInfo(v.beaconPK); detailInfo != nil {
+			Logger.log.Infof("AFTERREMOVE: Beacon %v - %v has current %v delegator", v.beaconPK, k, detailInfo.TotalDelegators)
+		}
+	}
+	for k, v := range newDelegateM {
+		Logger.log.Infof("BEFOREADD: Beacon %v - %v has current %v delegator, need to add %v delegator", v.beaconPK, k, len(v.delegators))
+	}
 	if err := processUpdateDelegate(newDelegateM, s, s.addDelegator); err != nil {
 		return nil, err
 	}
-	if err := statedb.StoreBeaconReDelegateState(s.stateDB, delegateState); err != nil {
-		return nil, err
+	for k, v := range newDelegateM {
+		if detailInfo := s.getStakerInfo(v.beaconPK); detailInfo != nil {
+			Logger.log.Infof("AFTERADD: Beacon %v - %v has current %v delegator", v.beaconPK, k, detailInfo.TotalDelegators)
+		}
 	}
-
+	if len(delegateState.NextEpochDelegate) != 0 {
+		newDelegate := statedb.NewBeaconDelegateState()
+		if err := statedb.StoreBeaconReDelegateState(s.stateDB, newDelegate); err != nil {
+			return nil, err
+		}
+	}
 	return nil, nil
 }
 
