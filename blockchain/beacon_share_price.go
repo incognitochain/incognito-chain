@@ -32,16 +32,16 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 	oldPrice := map[string]uint64{}
 
 	oldPriceDelegationAmount := map[string]uint64{}
-	committee := []string{}
-	for k, _ := range committeeData.LastCommitteeEpochInfo {
-		committee = append(committee, k)
+	validators := []string{}
+	for k, _ := range committeeData.LastEpoch {
+		validators = append(validators, k)
 	}
-	sort.Slice(committee, func(i, j int) bool {
-		return committee[i] > committee[j]
+	sort.Slice(validators, func(i, j int) bool {
+		return validators[i] > validators[j]
 	})
 
 	//get total delegation of this epoch
-	for k, v := range committeeData.LastCommitteeEpochInfo {
+	for k, v := range committeeData.LastEpoch {
 		stakeID := v.BeaconStakeID
 		sharePrice, _, _ := statedb.GetBeaconSharePrice(stateDB, stakeID)
 		if sharePrice == nil || sharePrice.GetPrice() == 0 {
@@ -56,8 +56,9 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 		log.Println("No delegation to reward!")
 		return nil, nil
 	}
+
 	//get beacon delegation reward with performance
-	for k, v := range committeeData.LastCommitteeEpochInfo {
+	for k, v := range committeeData.LastEpoch {
 		a := new(big.Int).SetUint64(delegationReward)
 		b := new(big.Int).SetUint64(oldPriceDelegationAmount[k])
 		c := new(big.Int).SetUint64(totalDelegationAmount)
@@ -66,9 +67,14 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 			new(big.Float).SetUint64(tmp),
 			new(big.Float).SetFloat64((float64(v.Performance) / float64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)))).Uint64()
 	}
+
 	//increase share price
 	sharePriceInsts := instruction.NewSharePriceInstruction()
-	for _, cpkStr := range committee {
+	for _, cpkStr := range validators {
+		if committeeData.LastEpoch[cpkStr].Delegators == 0 {
+			log.Println("No delegation reward for", cpkStr)
+			continue
+		}
 		price := new(big.Int).SetUint64(oldPrice[cpkStr])
 		c := new(big.Int).SetUint64(oldPriceDelegationAmount[cpkStr])
 		b := new(big.Int).SetUint64(beaconCommitteeReward[cpkStr])
@@ -77,11 +83,10 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 				price,
 				new(big.Int).Add(b, c)),
 			c).Uint64()
-		stakeID := committeeData.LastCommitteeEpochInfo[cpkStr].BeaconStakeID
+		stakeID := committeeData.LastEpoch[cpkStr].BeaconStakeID
 		sharePriceInsts.AddPrice(stakeID, newprice)
 		log.Println(stakeID, beaconCommitteeReward[cpkStr], price.Uint64(), newprice)
 	}
 	log.Println(sharePriceInsts.ToString())
 	return [][]string{sharePriceInsts.ToString()}, nil
-
 }

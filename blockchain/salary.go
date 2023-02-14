@@ -429,12 +429,12 @@ func (blockchain *BlockChain) calculateReward(
 ) (map[common.Hash]uint64,
 	[]map[common.Hash]uint64,
 	map[common.Hash]uint64,
-	map[common.Hash]uint64, error,
+	map[common.Hash]uint64, uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	currentBeaconYear, err := blockchain.GetYearOfBeacon(beaconHeight)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, 0, err
 	}
 	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
@@ -442,7 +442,7 @@ func (blockchain *BlockChain) calculateReward(
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
 	totalRewardForCustodian := map[common.Hash]uint64{}
-
+	delegationReward := uint64(0)
 	for id := 0; id < numberOfActiveShards; id++ {
 		if totalRewards[id] == nil {
 			totalRewards[id] = map[common.Hash]uint64{}
@@ -454,7 +454,7 @@ func (blockchain *BlockChain) calculateReward(
 		for _, coinID := range allCoinID {
 			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, nil, 0, err
 			}
 			if totalRewards[id][coinID] == 0 {
 				delete(totalRewards[id], coinID)
@@ -474,7 +474,13 @@ func (blockchain *BlockChain) calculateReward(
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, 0, err
+		}
+
+		if curView.TriggeredFeature[config.DELEGATION_REWARD] != 0 {
+			shardDelegationReward := rewardForShard[common.PRVCoinID] * 5 / 10
+			rewardForShard[common.PRVCoinID] = rewardForShard[common.PRVCoinID] - shardDelegationReward
+			delegationReward += shardDelegationReward
 		}
 
 		plusMap(rewardForBeacon, totalRewardForBeacon)
@@ -483,7 +489,7 @@ func (blockchain *BlockChain) calculateReward(
 		plusMap(rewardForCustodian, totalRewardForCustodian)
 	}
 
-	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
+	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, delegationReward, nil
 }
 
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
@@ -502,7 +508,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-
+	var delegationRewardInst [][]string
 	beaconBestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
 
 	totalRewardForBeacon := make(map[common.Hash]uint64)
@@ -511,7 +517,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 	rewardForPdex := uint64(0)
-
+	delegationReward := uint64(0)
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
@@ -540,6 +546,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
+			delegationReward,
 			err = blockchain.calculateReward(
 			splitRewardRuleProcessor,
 			curView,
@@ -585,11 +592,15 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			return nil, nil, rewardForPdex, err
 		}
 	}
-	//TODO: using another reward distribution, this is just example
-	delegationRewardInst, err := curView.CalculateDelegationSharePrice(blockchain, 1000*1e9)
-	if err != nil {
-		panic(err)
+
+	if delegationReward > 0 {
+		Logger.log.Info("delegationReward", delegationReward)
+		delegationRewardInst, err = curView.CalculateDelegationSharePrice(blockchain, delegationReward)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards, delegationRewardInst)
 	return resInst, totalRewardForCustodian, rewardForPdex, nil
 }
