@@ -3,11 +3,11 @@ package bnb
 import (
 	"errors"
 	"fmt"
-	"github.com/tendermint/go-amino"
-	cmn "github.com/tendermint/tendermint/libs/common"
-	dbm "github.com/tendermint/tendermint/libs/db"
-	"github.com/tendermint/tendermint/types"
 	"sync"
+
+	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 )
 
 var cdc = amino.NewCodec()
@@ -69,7 +69,7 @@ func (bs *BlockStore) LoadBlock(height int64) *types.Block {
 	if err != nil {
 		// NOTE: The existence of meta should imply the existence of the
 		// block. So, make sure meta is only saved after blocks are saved.
-		panic(cmn.ErrorWrap(err, "Error reading block"))
+		panic(fmt.Errorf("Error reading block %v", err))
 	}
 	return block
 }
@@ -85,7 +85,7 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 	}
 	err := cdc.UnmarshalBinaryBare(bz, part)
 	if err != nil {
-		panic(cmn.ErrorWrap(err, "Error reading block part"))
+		panic(fmt.Errorf("Error reading block part %v", err))
 	}
 	return part
 }
@@ -100,7 +100,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	}
 	err := cdc.UnmarshalBinaryBare(bz, blockMeta)
 	if err != nil {
-		panic(cmn.ErrorWrap(err, "Error reading block meta"))
+		panic(fmt.Errorf("Error reading block meta %v", err))
 	}
 	return blockMeta
 }
@@ -117,7 +117,8 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	}
 	err := cdc.UnmarshalBinaryBare(bz, commit)
 	if err != nil {
-		panic(cmn.ErrorWrap(err, "Error reading block commit"))
+
+		panic(fmt.Errorf("Error reading block commit %v", err))
 	}
 	return commit
 }
@@ -133,7 +134,7 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	}
 	err := cdc.UnmarshalBinaryBare(bz, commit)
 	if err != nil {
-		panic(cmn.ErrorWrap(err, "Error reading block seen commit"))
+		panic(fmt.Errorf("Error reading block seen commit %v", err))
 	}
 	return commit
 }

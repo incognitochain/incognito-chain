@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/binance-chain/go-sdk/client/rpc"
-	bnbtx "github.com/binance-chain/go-sdk/types/tx"
+	"github.com/bnb-chain/go-sdk/client/rpc"
+	bnbtx "github.com/bnb-chain/go-sdk/types/tx"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 )
@@ -24,7 +24,6 @@ func getProofByTxHash(txHashStr string, url string) (*types.TxProof, int64, *BNB
 	defer client.Stop()
 	tx, err := client.Tx(txHash, true)
 	//fmt.Printf("tx: %+v\n", tx)
-
 
 	return &tx.Proof, tx.Height, nil
 }
@@ -120,7 +119,6 @@ func BuildProof(txIndex int, blockHeight int64, url string) (string, error) {
 
 	return bnbProofStr, nil
 }
-
 
 func BuildProofFromTxID(txID string, url string) (string, error) {
 	txProof, blockHeight, err := getProofByTxHash(txID, url)

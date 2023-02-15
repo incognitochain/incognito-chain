@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/binance-chain/go-sdk/types/msg"
+	"github.com/bnb-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 	"testing"

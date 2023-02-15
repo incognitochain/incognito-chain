@@ -2,7 +2,7 @@ package portaltokens
 
 import (
 	"fmt"
-	"github.com/binance-chain/go-sdk/types/msg"
+	"github.com/bnb-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 )

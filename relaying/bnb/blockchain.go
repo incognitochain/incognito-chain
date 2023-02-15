@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	bnbdb "github.com/tendermint/tendermint/libs/db"
-	"github.com/tendermint/tendermint/types"
 	"sort"
+
+	"github.com/tendermint/tendermint/types"
+	bnbdb "github.com/tendermint/tm-db"
 )
 
 var dbPath = ""
