@@ -746,6 +746,7 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommi
 func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	incurredInstructions := [][]string{}
 	mintPaymentAddresses := []string{}
+	mintRequestTxIDs := []string{}
 	mintRewardAmount := []uint64{}
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -764,13 +765,14 @@ func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env
 				}
 				mintRewardAmount = append(mintRewardAmount, amount)
 				mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
+				mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.IncPaymentAddrs...)
 			}
 		default:
 			continue
 		}
 	}
 	if len(mintPaymentAddresses) != 0 {
-		mintInst := instruction.NewMintDelegationRewardInsWithValue(mintPaymentAddresses, mintRewardAmount)
+		mintInst := instruction.NewMintDelegationRewardInsWithValue(mintRequestTxIDs, mintPaymentAddresses, mintRewardAmount)
 		incurredInstructions = append(incurredInstructions, mintInst.ToString())
 	}
 	return incurredInstructions, nil
