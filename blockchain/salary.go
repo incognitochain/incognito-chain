@@ -1,8 +1,11 @@
 package blockchain
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"log"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -847,4 +850,74 @@ func plusMap(src, dst map[common.Hash]uint64) {
 			dst[key] += value
 		}
 	}
+}
+
+func (blockchain *BlockChain) GetBeaconSharePriceByEpoch(epoch uint64, uid string) (uint64, error) {
+	blockHeight := (epoch - 1) * config.Param().EpochParam.NumberOfBlockInEpoch
+	beaconConsensusStateRootHash, err := blockchain.GetBeaconRootsHashFromBlockHeight(
+		blockHeight,
+	)
+	if err != nil {
+		return 0, err
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, err
+	}
+
+	sharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, uid)
+	if err != nil {
+		return 0, err
+	}
+	return sharePrice.GetPrice(), nil
+
+}
+
+func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB, pk key.PublicKey) (uint64, error) {
+	rewardState, has, err := statedb.GetDelegationReward(stateDB, pk)
+	if err != nil {
+		return 0, err
+	}
+	if !has {
+		return 0, nil
+	}
+	reward := uint64(0)
+	for _, epochDelegate := range rewardState.Reward {
+		//sort epoch
+		epochSortList := []int{}
+		for epoch, _ := range epochDelegate {
+			epochSortList = append(epochSortList, epoch)
+		}
+		sort.Slice(epochSortList, func(i, j int) bool {
+			return epochSortList[i] < epochSortList[j]
+		})
+		for i, epoch := range epochSortList {
+			beaconID := epochDelegate[epoch].BeaconUID
+			amount := epochDelegate[epoch].Amount
+			startBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epoch), beaconID)
+			if err != nil {
+				return 0, errors.New("Can not get beacon share price")
+			}
+			unit := float64(amount) / float64(startBeaconSharePrice)
+			if i == len(epochSortList)-1 {
+				//last epoch
+				endBeaconSharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, beaconID)
+				if err != nil {
+					panic(fmt.Sprint("GetBeaconSharePriceByEpoch error 2", err))
+				}
+				endBeaconSharePrice.GetPrice()
+				reward += uint64(unit * float64(endBeaconSharePrice.GetPrice()-startBeaconSharePrice))
+				log.Println("lastBeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice.GetPrice(), reward)
+			} else {
+				endBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epochSortList[i+1]), beaconID)
+				if err != nil {
+					panic(fmt.Sprint("GetBeaconSharePriceByEpoch error 3", err))
+				}
+				reward += uint64(unit * float64(endBeaconSharePrice-startBeaconSharePrice))
+				log.Println("BeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice, reward)
+			}
+		}
+	}
+	return reward, nil
 }

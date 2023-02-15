@@ -739,6 +739,7 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 }
 
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithValue(
+	bc *BlockChain,
 	header types.BeaconHeader,
 	beaconInstructions [][]string,
 	isFoundRandomInstruction bool,
@@ -761,6 +762,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	}
 
 	return &committeestate.BeaconCommitteeStateEnvironment{
+		BlockChain:                       bc,
 		BeaconHeader:                     header,
 		BeaconHeight:                     beaconBestState.BeaconHeight,
 		BeaconHash:                       beaconBestState.BestBlockHash,

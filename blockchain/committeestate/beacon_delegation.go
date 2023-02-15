@@ -112,7 +112,7 @@ func (s *BeaconCommitteeStateV4) GetBeaconCandidateUID(cpk string) (string, erro
 	return hash.String(), nil
 }
 
-func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint) error {
+func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint64) error {
 	log.Println("add delegator to", beaconStakerPK)
 	if stakerInfo := s.getStakerInfo(beaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakerPK)
@@ -126,7 +126,7 @@ func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint
 	return fmt.Errorf("Cannot find cpk %v in memstate", beaconStakerPK)
 }
 
-func (s *BeaconCommitteeStateV4) removeDelegators(oldBeaconStakerPK string, total uint) error {
+func (s *BeaconCommitteeStateV4) removeDelegators(oldBeaconStakerPK string, total uint64) error {
 	if stakerInfo := s.getStakerInfo(oldBeaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, oldBeaconStakerPK)
 		if !exist {

@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
-	"sort"
 )
 
 // AddShardRewardRequestMultiset
@@ -210,10 +209,10 @@ func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, inc
 	}
 	reward.incognitoPublicKey = incognitoPublicKey
 	reward.incognitoPaymentAddress = incognitoPaymentAddress
-	if reward.reward[shardCPK] == nil {
-		reward.reward[shardCPK] = map[int]DelegateInfo{}
+	if reward.Reward[shardCPK] == nil {
+		reward.Reward[shardCPK] = map[int]DelegateInfo{}
 	}
-	reward.reward[shardCPK][epoch] = DelegateInfo{
+	reward.Reward[shardCPK][epoch] = DelegateInfo{
 		beaconUID, amount,
 	}
 	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
@@ -231,37 +230,4 @@ func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*Del
 		return nil, false, err
 	}
 	return stateDB.getDelegationRewardState(key)
-}
-
-func GetDelegationRewardAmount(stateDB *StateDB, pk key.PublicKey) (uint64, error) {
-	rewardState, has, err := GetDelegationReward(stateDB, pk)
-	if err != nil {
-		return 0, err
-	}
-	if !has {
-		return 0, nil
-	}
-	for _, epochDelegate := range rewardState.reward {
-		//sort epoch
-		epochSortList := []int{}
-		for epoch, _ := range epochDelegate {
-			epochSortList = append(epochSortList, epoch)
-		}
-		sort.Slice(epochSortList, func(i, j int) bool {
-			return epochSortList[i] < epochSortList[j]
-		})
-
-		lastBeaconID := ""
-		for _, epoch := range epochSortList {
-			beaconID := epochDelegate[epoch].BeaconUID
-			amount := epochDelegate[epoch].Amount
-			beaconSharePrice, exist, _ := GetBeaconSharePrice(stateDB, beaconID)
-			if !exist {
-				panic(1)
-			}
-			lastBeaconID = epochDelegate[epoch].BeaconUID
-		}
-	}
-
-	return 10 * 10e9, nil
 }

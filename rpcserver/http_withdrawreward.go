@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -83,7 +84,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	}
 	mode := 0 //0: committee reward, 1: delegate reward, 2: total reward
 	if len(arrayParams) == 2 {
-		modeInput, ok := arrayParams[0].(float64)
+		modeInput, ok := arrayParams[1].(float64)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("mode is invalid"))
 		}
@@ -97,7 +98,12 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		}
 		return rewardAmount, nil
 	case 1:
-		rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
+		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			panic(1)
+		}
+		receiverAddr := keyWallet.KeySet.PaymentAddress
+		rewardAmount, err := httpServer.GetBlockchain().GetDelegationRewardAmount(httpServer.GetBlockchain().GetBeaconBestState().GetBeaconConsensusStateDB(), receiverAddr.Pk)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
 		}

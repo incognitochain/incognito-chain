@@ -676,6 +676,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
+		blockchain,
 		beaconBlock.Header,
 		beaconBlock.Body.Instructions,
 		isFoundRandomInstruction, isBeginRandom,
@@ -775,7 +776,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain, genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
