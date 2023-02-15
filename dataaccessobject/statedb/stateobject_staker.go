@@ -54,6 +54,7 @@ type StakerInfo struct {
 	beaconConfirmHeight uint64
 	delegateBeacon      string
 	delegateBeaconUID   string
+	delegateHeight      uint64
 }
 
 func NewStakerInfo() *StakerInfo {
@@ -79,11 +80,10 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		RewardReceiver      key.PaymentAddress
 		AutoStaking         bool
 		TxStakingID         common.Hash
-		ShardID             byte
-		NumberOfRound       int
 		BeaconConfirmHeight uint64
 		DelegateBeacon      string
 		DelegateBeaconUID   string
+		DelegateHeight      uint64
 	}{
 		RewardReceiver:      c.rewardReceiver,
 		TxStakingID:         c.txStakingID,
@@ -91,6 +91,7 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		BeaconConfirmHeight: c.beaconConfirmHeight,
 		DelegateBeacon:      c.delegateBeacon,
 		DelegateBeaconUID:   c.delegateBeaconUID,
+		DelegateHeight:      c.delegateHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -103,11 +104,10 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 		RewardReceiver      key.PaymentAddress
 		AutoStaking         bool
 		TxStakingID         common.Hash
-		ShardID             byte
-		NumberOfRound       int
 		BeaconConfirmHeight uint64
 		DelegateBeacon      string
 		DelegateBeaconUID   string
+		DelegateHeight      uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -119,6 +119,7 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	c.beaconConfirmHeight = temp.BeaconConfirmHeight
 	c.delegateBeacon = temp.DelegateBeacon
 	c.delegateBeaconUID = temp.DelegateBeaconUID
+	c.delegateHeight = temp.DelegateHeight
 	return nil
 }
 
@@ -134,12 +135,10 @@ func (s *StakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
 }
 
-func (s *StakerInfo) SetDelegate(pk string) {
+func (s *StakerInfo) SetDelegate(pk string, uID string, height uint64) {
 	s.delegateBeacon = pk
-}
-
-func (s *StakerInfo) SetDelegateUID(uID string) {
 	s.delegateBeaconUID = uID
+	s.delegateHeight = height
 }
 
 func (s StakerInfo) RewardReceiver() key.PaymentAddress {

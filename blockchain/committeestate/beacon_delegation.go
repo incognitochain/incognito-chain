@@ -60,8 +60,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env *BeaconC
 					}
 				}
 
-				shardStakerInfo.SetDelegate(newDelegate)
-				shardStakerInfo.SetDelegateUID(newDelegateUID.String())
+				shardStakerInfo.SetDelegate(newDelegate, newDelegateUID.String(), env.BeaconHeight)
 
 				//update delegation reward
 				affectEpoch := env.Epoch + 1

@@ -109,6 +109,7 @@ var HttpHandler = map[string]httpHandler{
 	setAutoEnableFeatureConfig:         (*HttpServer).handleSetAutoEnableFeatureConfig,
 	getAutoEnableFeatureConfig:         (*HttpServer).handleGetAutoEnableFeatureConfig,
 	getCommitteeState:                  (*HttpServer).handleGetCommitteeState,
+	getDelegationDetail:                (*HttpServer).handleGetDelegationDetail,
 	convertPaymentAddress:              (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:               (*HttpServer).handleGetTotalBlockInEpoch,
 	getDetailBlocksOfEpoch:             (*HttpServer).handleGetDetailBlocksOfEpoch,

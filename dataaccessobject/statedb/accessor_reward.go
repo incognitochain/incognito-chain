@@ -220,7 +220,6 @@ func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, inc
 		return NewStatedbError(StoreDelegationRewardError, err)
 	}
 	return nil
-
 }
 
 func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*DelegationRewardState, bool, error) {
