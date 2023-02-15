@@ -60,7 +60,7 @@ func Test_Stakingv3() {
 		shardIDs := []int{}
 		shardIDs = append(shardIDs, node.GetBlockchain().GetShardIDs()...)
 		consensusStateDB := node.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).GetBeaconConsensusStateDB()
-		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
 		str, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
 		fmt.Println("currentEpochShardCandidate", str)
 		str, _ = incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)

@@ -590,7 +590,9 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	rewardReceiver map[string]key.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
+	beaconDelegate map[string][]string,
 ) {
+	beaconDelegate = make(map[string][]string)
 	currentValidator = make(map[int][]*CommitteeState)
 	substituteValidator = make(map[int][]*CommitteeState)
 	nextEpochShardCandidate = []*CommitteeState{}
@@ -625,6 +627,9 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
+			if s.delegateBeacon != "" {
+				beaconDelegate[s.delegateBeacon] = append(beaconDelegate[s.delegateBeacon], committeePublicKeyStr)
+			}
 		}
 		currentValidator[shardID] = tempCurrentValidator
 
@@ -650,6 +655,9 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
+			if s.delegateBeacon != "" {
+				beaconDelegate[s.delegateBeacon] = append(beaconDelegate[s.delegateBeacon], committeePublicKeyStr)
+			}
 		}
 		substituteValidator[shardID] = tempSubstituteValidator
 
@@ -675,6 +683,9 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
+			if s.delegateBeacon != "" {
+				beaconDelegate[s.delegateBeacon] = append(beaconDelegate[s.delegateBeacon], committeePublicKeyStr)
+			}
 		}
 		syncingValidators[byte(shardID)] = tempSyncingValidators
 	}
@@ -768,7 +779,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		rewardReceiver[incKey] = stakerInfo.rewardReceiver
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx, beaconDelegate
 }
 
 func (stateDB *StateDB) IterateWithStaker(prefix []byte) []*StakerInfo {

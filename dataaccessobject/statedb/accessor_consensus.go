@@ -317,11 +317,12 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[string]key.PaymentAddress,
 	map[string]bool,
 	map[string]common.Hash,
+	map[string][]string,
 ) {
 	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate,
 		tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate,
 		tempSyncingValidators,
-		rewardReceivers, autoStaking, stakingTx := stateDB.getAllCommitteeState(shardIDs)
+		rewardReceivers, autoStaking, stakingTx, beaconDelegate := stateDB.getAllCommitteeState(shardIDs)
 	currentValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	nextEpochShardCandidate := []incognitokey.CommitteePublicKey{}
@@ -395,7 +396,9 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 		currentEpochBeaconCandidate = append(currentEpochBeaconCandidate, candidate.CommitteePublicKey())
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx
+	return currentValidator, substituteValidator, nextEpochShardCandidate,
+		currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate,
+		syncingValidators, rewardReceivers, autoStaking, stakingTx, beaconDelegate
 }
 
 func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*CommitteeState {
