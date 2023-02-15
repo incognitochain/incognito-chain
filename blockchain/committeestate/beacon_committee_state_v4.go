@@ -495,7 +495,7 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 		if err != nil {
 			return err
 		}
-		s.beaconCommittee[cpkStr] = &StakerInfo{cpkStruct: cpk, stakeID: stakeID, CPK: cpkStr, Unstake: info.Unstaking(), StakingAmount: info.TotalStakingAmount(), FinishSync: info.FinishSync(), ShardActiveTime: info.ShardActiveTime()}
+		s.beaconCommittee[cpkStr] = &StakerInfo{cpkStruct: cpk, stakeID: stakeID, CPK: cpkStr, Unstake: info.Unstaking(), StakingAmount: info.TotalStakingAmount(), FinishSync: info.FinishSync(), ShardActiveTime: info.ShardActiveTime(), TotalDelegators: info.TotalDelegators()}
 		s.beaconCommittee[cpkStr].EpochScore = commiteeData.BeginEpochInfo[cpkStr].Score
 		s.beaconCommittee[cpkStr].Performance = commiteeData.BeginEpochInfo[cpkStr].Performance
 		s.beaconCommittee[cpkStr].enterTime = info.GetEnterTime()
@@ -537,6 +537,7 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 			enterTime:       info.GetEnterTime(),
 			FinishSync:      info.FinishSync(),
 			ShardActiveTime: info.ShardActiveTime(),
+			TotalDelegators: info.TotalDelegators(),
 		}
 		//if not init share price, init it
 		sharePrice, _, _ := statedb.GetBeaconSharePrice(stateDB, stakeID)
@@ -757,15 +758,7 @@ func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
-				rewardState, has, err := statedb.GetDelegationReward(s.stateDB, payment.Pk)
-				if err != nil {
-					return nil, err
-				}
-				if !has {
-					Logger.log.Errorf("Can not found delegation reward state for this payment %v", reqDRewardInstruction.IncPaymentAddrs[i])
-					continue
-				}
-				amount, err := statedb.GetDelegationRewardAmount(s.stateDB, rewardState)
+				amount, err := env.BlockChain.GetDelegationRewardAmount(s.stateDB, payment.Pk)
 				if err != nil {
 					return nil, err
 				}

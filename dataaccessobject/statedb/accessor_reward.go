@@ -2,7 +2,6 @@ package statedb
 
 import (
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -210,10 +209,10 @@ func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, inc
 	}
 	reward.incognitoPublicKey = incognitoPublicKey
 	reward.incognitoPaymentAddress = incognitoPaymentAddress
-	if reward.reward[shardCPK] == nil {
-		reward.reward[shardCPK] = map[int]DelegateInfo{}
+	if reward.Reward[shardCPK] == nil {
+		reward.Reward[shardCPK] = map[int]DelegateInfo{}
 	}
-	reward.reward[shardCPK][epoch] = DelegateInfo{
+	reward.Reward[shardCPK][epoch] = DelegateInfo{
 		beaconUID, amount,
 	}
 	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
@@ -231,8 +230,4 @@ func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*Del
 		return nil, false, err
 	}
 	return stateDB.getDelegationRewardState(key)
-}
-
-func GetDelegationRewardAmount(stateDB *StateDB, rewardState *DelegationRewardState) (uint64, error) {
-	return 10 * 10e9, nil
 }
