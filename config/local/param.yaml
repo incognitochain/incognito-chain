@@ -166,6 +166,9 @@ auto_enable_feature:
       min_trigger: 1
       force_trigger: 1
       require_percentage: 100
+  - bridgehub:
+      min_trigger: 1  # TODO: 0xkraken
+      require_percentage: 100
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime20": 20

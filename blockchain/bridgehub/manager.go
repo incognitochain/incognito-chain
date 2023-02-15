@@ -1,5 +1,7 @@
 package bridgehub
 
+import "github.com/incognitochain/incognito-chain/metadata"
+
 type Manager struct {
 	state     *BridgeHubState
 	producer  stateProducer
@@ -14,6 +16,7 @@ func NewManager() *Manager {
 	}
 }
 
+// TODO 0xkraken: implement
 // func (m *Manager) Clone() *Manager {
 // 	return &Manager{
 // 		state: m.state.Clone(),
@@ -30,27 +33,27 @@ func NewManagerWithValue(state *BridgeHubState) *Manager {
 	}
 }
 
-//TODO:
+func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
+	res := [][]string{}
+	insts := [][]string{}
+	var err error
+	ac := env.AccumulatedValues()
 
-// func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
-// 	res := [][]string{}
-// 	insts := [][]string{}
-// 	var err error
-// 	ac := env.AccumulatedValues()
+	// build instruction for convert actions
+	for shardID, actions := range env.RegisterBridgeActions() {
+		for _, action := range actions {
+			insts, m.state, err = m.producer.registerBridge(action, m.state, env.StateDBs(), byte(shardID))
+			if err != nil {
+				return [][]string{}, nil, err
+			}
+			res = append(res, insts...)
+		}
+	}
 
-// 	// build instruction for convert actions
-// 	for shardID, actions := range env.StakeActions() {
-// 		for _, action := range actions {
-// 			insts, m.state, err = m.producer.convert(action, m.state, env.StateDBs(), byte(shardID))
-// 			if err != nil {
-// 				return [][]string{}, nil, err
-// 			}
-// 			res = append(res, insts...)
-// 		}
-// 	}
+	// TODO: add more funcs to handle action ...
 
-// 	return res, ac, nil
-// }
+	return res, ac, nil
+}
 
 // func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconHeight uint64, unshieldActionForProducers []UnshieldActionForProducer) ([][]string, error) {
 // 	res := [][]string{}

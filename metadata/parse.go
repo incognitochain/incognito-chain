@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
+	metadataBriHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/pkg/errors"
@@ -308,6 +309,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.BurnForCallResponse{}
 	case metadataCommon.IssuingReshieldResponseMeta:
 		md = &metadataBridge.IssuingReshieldResponse{}
+	case metadataCommon.BriHubRegisterBridgeMeta:
+		md = &metadataBriHub.RegisterBridgeRequest{}
 	default:
 		Logger.log.Debug("parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

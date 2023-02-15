@@ -250,6 +250,9 @@ const (
 	// pdao feature
 	BurningPRVRequestMeta        = 338
 	BurningPRVRequestConfirmMeta = 164
+
+	// Decentralized Bridge Hub
+	BriHubRegisterBridgeMeta = 370
 )
 
 var minerCreatedMetaTypes = []int{
@@ -437,3 +440,5 @@ const (
 	ExternalAddressLen         = 20
 	BurnForCallMinBlockVersion = 10 // ADJUST_BLOCKTIME_VERSION
 )
+
+const BridgeHubFeatureName = "bridgehub"

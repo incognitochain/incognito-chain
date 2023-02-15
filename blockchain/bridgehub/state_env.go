@@ -12,7 +12,7 @@ type StateEnvironment struct {
 	unshieldActions [][]string
 
 	slashActions                [][]string
-	initBridgeActions           [][]string
+	registerBridgeActions       [][]string
 	swapBridgeValidatorsActions [][]string
 
 	beaconHeight      uint64
@@ -59,8 +59,8 @@ func (env *StateEnvironment) SetStakeActions(actions [][]string) *StateEnvironme
 	return env
 }
 
-func (env *StateEnvironment) SetInitBridgeActions(actions [][]string) *StateEnvironment {
-	env.initBridgeActions = actions
+func (env *StateEnvironment) SetRegisterBridgeActions(actions [][]string) *StateEnvironment {
+	env.registerBridgeActions = actions
 	return env
 }
 
@@ -106,8 +106,8 @@ func (env StateEnvironment) SlashActions() [][]string {
 	return env.slashActions
 }
 
-func (env StateEnvironment) InitBridgeActions() [][]string {
-	return env.initBridgeActions
+func (env StateEnvironment) RegisterBridgeActions() [][]string {
+	return env.registerBridgeActions
 }
 
 func (env StateEnvironment) SwapBridgeValidatorsActions() [][]string {

@@ -270,3 +270,7 @@ const (
 	SubOperator = 0
 	AddOperator = 1
 )
+
+// Decentralized Bridge Hub
+
+const MinNumValidators = 2

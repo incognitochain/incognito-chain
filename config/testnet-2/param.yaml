@@ -201,6 +201,9 @@ auto_enable_feature:
   - pdao:
       min_trigger: 5926003
       require_percentage: 90
+  - bridgehub:
+      min_trigger: 1  # TODO: 0xkraken
+      require_percentage: 99
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30
