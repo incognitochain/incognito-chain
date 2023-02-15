@@ -82,7 +82,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
 	}
-	mode := 0 //0: committee reward, 1: delegate reward, 2: total reward
+	mode := 2 //0: committee reward, 1: delegate reward, 2: total reward
 	if len(arrayParams) == 2 {
 		modeInput, ok := arrayParams[1].(float64)
 		if !ok {
@@ -91,7 +91,8 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		mode = int(modeInput)
 	}
 	switch mode {
-	default:
+
+	case 0:
 		rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
@@ -105,9 +106,26 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		receiverAddr := keyWallet.KeySet.PaymentAddress
 		rewardAmount, err := httpServer.GetBlockchain().GetDelegationRewardAmount(httpServer.GetBlockchain().GetBeaconBestState().GetBeaconConsensusStateDB(), receiverAddr.Pk)
 		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetDelegationRewardAmountError, err)
+		}
+		return map[string]uint64{"PRV": rewardAmount}, nil
+	default:
+		rewardCAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
+		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
 		}
-		return rewardAmount, nil
+		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			panic(1)
+		}
+		receiverAddr := keyWallet.KeySet.PaymentAddress
+		rewardDAmount, err := httpServer.GetBlockchain().GetDelegationRewardAmount(httpServer.GetBlockchain().GetBeaconBestState().GetBeaconConsensusStateDB(), receiverAddr.Pk)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetDelegationRewardAmountError, err)
+		}
+
+		rewardCAmount["PRV"] += rewardDAmount
+		return rewardCAmount, nil
 	}
 }
 
