@@ -22,6 +22,7 @@ const (
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
 	ReturnBeaconStakingMeta      = 46
+	MintDelegationRewardMeta     = 47
 	IncDAORewardRequestMeta      = 42
 
 	WithDrawRewardRequestMeta  = 44

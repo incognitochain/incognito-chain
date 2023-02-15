@@ -2,10 +2,12 @@ package instruction
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -15,15 +17,19 @@ type MintDelegationRewardInstruction struct {
 	PaymentAddresses       []string
 	PaymentAddressesStruct []key.PaymentAddress
 	RewardAmount           []uint64
+	TxRequestIDs           []string
+	TxRequestIdHashes      []common.Hash
 }
 
 func NewMintDelegationRewardInsWithValue(
-	PaymentAddresses []string,
-	RewardAmount []uint64,
+	txsRequest []string,
+	paymentAddresses []string,
+	rewardAmount []uint64,
 ) *MintDelegationRewardInstruction {
 	mI := &MintDelegationRewardInstruction{}
-	mI, _ = mI.SetPaymentAddresses(PaymentAddresses)
-	mI, _ = mI.SetRewardAmount(RewardAmount)
+	mI, _ = mI.SetPaymentAddresses(paymentAddresses)
+	mI, _ = mI.SetRewardAmount(rewardAmount)
+	mI, _ = mI.SetRequestTXIDs(txsRequest)
 	return mI
 }
 
@@ -61,7 +67,21 @@ func (mI *MintDelegationRewardInstruction) SetRewardAmount(amount []uint64) (*Mi
 	mI.RewardAmount = amount
 	return mI, nil
 }
-
+func (mI *MintDelegationRewardInstruction) SetRequestTXIDs(txIDs []string) (*MintDelegationRewardInstruction, error) {
+	if txIDs == nil {
+		return nil, errors.New("Tx Hashes Are Null")
+	}
+	mI.TxRequestIDs = txIDs
+	mI.TxRequestIdHashes = make([]common.Hash, len(txIDs))
+	for i, v := range mI.TxRequestIDs {
+		temp, err := common.Hash{}.NewHashFromStr(v)
+		if err != nil {
+			return mI, err
+		}
+		mI.TxRequestIdHashes[i] = *temp
+	}
+	return mI, nil
+}
 func (mI *MintDelegationRewardInstruction) GetType() string {
 	return MINT_DREWARD_ACTION
 }
@@ -72,6 +92,14 @@ func (mI *MintDelegationRewardInstruction) GetPaymentAddresses() []string {
 
 func (mI *MintDelegationRewardInstruction) GetPaymentAddressesStruct() []key.PaymentAddress {
 	return mI.PaymentAddressesStruct
+}
+
+func (mI *MintDelegationRewardInstruction) GetRequestIDs() []string {
+	return mI.TxRequestIDs
+}
+
+func (mI *MintDelegationRewardInstruction) GetRequestIDHashes() []common.Hash {
+	return mI.TxRequestIdHashes
 }
 
 func (mI *MintDelegationRewardInstruction) GetRewardAmount() []uint64 {
@@ -86,19 +114,28 @@ func (mI *MintDelegationRewardInstruction) ToString() []string {
 		rewardAmountStr[i] = strconv.FormatUint(v, 10)
 	}
 	mintDRewardInsStr = append(mintDRewardInsStr, strings.Join(rewardAmountStr, SPLITTER))
+	mintDRewardInsStr = append(mintDRewardInsStr, strings.Join(mI.TxRequestIDs, SPLITTER))
 	return mintDRewardInsStr
 }
 
-func (mI *MintDelegationRewardInstruction) AddNewMintInfo(paymentAddress string, amount uint64) {
+func (mI *MintDelegationRewardInstruction) AddNewMintInfo(paymentAddress string, amount uint64, requestID string) {
 	keyWallet, err := wallet.Base58CheckDeserialize(paymentAddress)
 	if err != nil {
 		Logger.Log.Errorf("ERROR: an error occured while deserializing reward receiver address %v string: %+v", paymentAddress, err)
+		return
+	}
+	requestIDHash, err := common.Hash{}.NewHashFromStr(requestID)
+	if err != nil {
+		Logger.Log.Errorf("ERROR: an error occured while deserializing tx hash %v string: %+v", requestID, err)
 		return
 	}
 	mI.PaymentAddresses = append(mI.PaymentAddresses, paymentAddress)
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	mI.PaymentAddressesStruct = append(mI.PaymentAddressesStruct, receiverAddr)
 	mI.RewardAmount = append(mI.RewardAmount, amount)
+	mI.TxRequestIDs = append(mI.TxRequestIDs, requestID)
+	mI.TxRequestIdHashes = append(mI.TxRequestIdHashes, *requestIDHash)
+
 }
 
 func ValidateAndImportMintDelegationRewardInstructionFromString(instruction []string) (*MintDelegationRewardInstruction, error) {
@@ -112,6 +149,11 @@ func ImportMintDelegationRewardInstructionFromString(instruction []string) (*Min
 	mintDelegationRewardIns := NewMintDelegationRewardIns()
 	var err error
 	mintDelegationRewardIns, err = mintDelegationRewardIns.SetPaymentAddresses(strings.Split(instruction[1], SPLITTER))
+	if err != nil {
+		return nil, err
+	}
+
+	mintDelegationRewardIns, err = mintDelegationRewardIns.SetRequestTXIDs(strings.Split(instruction[3], SPLITTER))
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +172,7 @@ func ImportMintDelegationRewardInstructionFromString(instruction []string) (*Min
 }
 
 func ValidateMintDelegationRewardInstructionSanity(instruction []string) error {
-	if len(instruction) != 3 {
+	if len(instruction) != 4 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != MINT_DREWARD_ACTION {
@@ -155,7 +197,18 @@ func ValidateMintDelegationRewardInstructionSanity(instruction []string) error {
 		listRewardAmount[i] = rewardAmount
 	}
 	if len(listRewardAmount) != len(payments) {
-		return fmt.Errorf("invalid reward percentReturns & public Keys length, %+v", instruction)
+		return fmt.Errorf("invalid reward percentReturns & payments length, %+v", instruction)
+	}
+	txRequests := strings.Split(instruction[3], SPLITTER)
+	for _, txRequest := range txRequests {
+		_, err := common.Hash{}.NewHashFromStr(txRequest)
+		if err != nil {
+			log.Println("err:", err)
+			return fmt.Errorf("invalid tx request delegation reward %+v %+v", txRequests, err)
+		}
+	}
+	if len(payments) != len(txRequests) {
+		return fmt.Errorf("invalid tx requests & public Keys length, %+v", instruction)
 	}
 	return nil
 }

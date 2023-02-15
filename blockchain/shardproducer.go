@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -560,6 +561,16 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 		return nil, nil, err
 	}
 	responsedTxs = append(responsedTxs, returnStakingTxs...)
+	mintDRewardTxs, err := blockGenerator.chain.buildMintDRewardTxsFromBeaconInstructions(
+		curView,
+		beaconBlocks,
+		producerPrivateKey,
+		shardID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	responsedTxs = append(responsedTxs, mintDRewardTxs...)
 	errorInstructions = append(errorInstructions, errIns...)
 	return responsedTxs, errorInstructions, nil
 }
@@ -934,7 +945,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	reD_dgtee_pks := []string{}
 	reD_dgtee_uid := []string{}
 
-	receiversReqDReward := map[string]interface{}{}
+	receiversReqDReward := map[string]string{}
 
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
@@ -1032,7 +1043,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
 				receiverAddr := requestWithDrawRewardMetadata.PaymentAddress.String()
 				if _, ok := receiversReqDReward[receiverAddr]; !ok {
-					receiversReqDReward[receiverAddr] = nil
+					receiversReqDReward[receiverAddr] = tx.Hash().String()
 				} else {
 					Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
 				}
@@ -1091,11 +1102,18 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 
 	if len(receiversReqDReward) > 0 {
 		keys := []string{}
+		txRequests := []string{}
 		for k := range receiversReqDReward {
 			keys = append(keys, k)
 		}
-		Logger.log.Infof("Got request delegation reward for pk %+v ", keys)
-		inst := instruction.NewRequestDelegationRewardInstructionWithValue(keys)
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i] < keys[j]
+		})
+		for _, k := range keys {
+			txRequests = append(txRequests, receiversReqDReward[k])
+		}
+		Logger.log.Infof("Got request delegation reward for pk %+v, tx requests %+V ", keys, txRequests)
+		inst := instruction.NewRequestDelegationRewardInstructionWithValue(keys, txRequests)
 		instructions = append(instructions, inst.ToString())
 	}
 
