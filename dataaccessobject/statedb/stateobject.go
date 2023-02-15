@@ -183,6 +183,12 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeAggWaitingUnshieldReqObjectWithValue(db, hash, value)
 	case BridgeAggParamObjectType:
 		return newBridgeAggParamObjectWithValue(db, hash, value)
+	case BridgeHubParamObjectType:
+		return newBridgeHubParamObjectWithValue(db, hash, value)
+	case BridgeHubBridgeInfoObjectType:
+		return newBridgeHubBridgeInfoObjectWithValue(db, hash, value)
+	case BridgeHubPTokenObjectType:
+		return newBridgeHubPTokenObjectWithValue(db, hash, value)
 
 	default:
 		panic("state object type not exist")
@@ -347,6 +353,12 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeAggWaitingUnshieldReqObject(db, hash)
 	case BridgeAggParamObjectType:
 		return newBridgeAggParamObject(db, hash)
+	case BridgeHubParamObjectType:
+		return newBridgeHubParamObject(db, hash)
+	case BridgeHubBridgeInfoObjectType:
+		return newBridgeHubBridgeInfoObject(db, hash)
+	case BridgeHubPTokenObjectType:
+		return newBridgeHubPTokenObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

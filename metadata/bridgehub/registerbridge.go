@@ -23,6 +23,15 @@ type RegisterBridgeRequest struct {
 	metadataCommon.MetadataBase
 }
 
+type RegisterBridgeContentInst struct {
+	ExtChainID       string   `json:"ExtChainID"`
+	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
+	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
+	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
+	Signature        string   `json:"Signature"`        // TSS sig : TODO: 0xkraken: keep or remove?
+	BridgeID         string   `json:"BridgeID,omitempty"`
+}
+
 type RegisterBridgeMsg struct {
 	ExtChainID       string   `json:"ExtChainID"`
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"`
@@ -105,8 +114,8 @@ func (bReq RegisterBridgeRequest) ValidateSanityData(
 	if bReq.Signature == "" {
 		return false, false, errors.New("Signature empty")
 	}
-	if len(bReq.ValidatorPubKeys) < common.MinNumValidators {
-		return false, false, fmt.Errorf("Length of ValidatorPubKeys less than MinNumValidators %v", common.MinNumValidators)
+	if len(bReq.ValidatorPubKeys) == 0 {
+		return false, false, errors.New("ValidatorPubKeys empty")
 	}
 
 	// validate sig

@@ -111,6 +111,11 @@ var (
 	bridgeAggWaitUnshieldReqPrefix   = []byte("bridgeagg-waitUnshield-")
 	bridgeAggParamPrefix             = []byte("bridgeagg-param-")
 
+	// bridge hub
+	bridgeHubParamPrefix  = []byte("bridgehub-param-")
+	bridgeHubPTokenPrefix = []byte("bridgehub-ptoken-")
+	bridgeHubBridgeInfoPrefix = []byte("bridgehub-bridgeinfo-")
+
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
 	portalExchangeRatesRequestStatusPrefix               = []byte("portalexchangeratesrequeststatus-")
@@ -933,6 +938,21 @@ func GetBridgeAggWaitingUnshieldReqPrefix(unifiedTokenID []byte) []byte {
 
 func GetBridgeAggParamPrefix() []byte {
 	h := common.HashH(bridgeAggParamPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeHubParamPrefix() []byte {
+	h := common.HashH(bridgeHubParamPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeHubPTokenPrefix(bridgeID []byte) []byte {
+	h := common.HashH(append(bridgeHubPTokenPrefix, bridgeID...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeHubBridgeInfoPrefix(bridgeID []byte) []byte {
+	h := common.HashH(append(bridgeHubBridgeInfoPrefix, bridgeID...))
 	return h[:][:prefixHashKeyLength]
 }
 

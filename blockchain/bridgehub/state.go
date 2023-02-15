@@ -1,26 +1,55 @@
 package bridgehub
 
+import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+)
+
 type BridgeHubState struct {
 	// TODO: staking asset is PRV or others?
-	StakingInfos map[string]uint64 // bridgePubKey : amount PRV stake
+	stakingInfos map[string]uint64 // bridgePubKey : amount PRV stake
 
 	// bridgePubKey only belongs one Bridge
-	BridgeInfos map[string]BridgeInfo // BridgeID : BridgeInfo
+	bridgeInfos map[string]*BridgeInfo // BridgeID : BridgeInfo
 
-	TokenPrices map[string]uint64 // pTokenID: price * 1e6
+	tokenPrices map[string]uint64 // pTokenID: price * 1e6
+
+	params *statedb.BridgeHubParamState
 }
 
 type BridgeInfo struct {
-	ExtChainID    string
-	BriValidators []string          // array of bridgePubKey
-	BriPubKey     string            // Public key of TSS that used to validate sig from validators by TSS
-	PTokenAmounts map[string]uint64 // pTokenID : amount
+	Info          *statedb.BridgeInfoState
+	PTokenAmounts map[string]*statedb.BridgeHubPTokenState // key: pToken
+}
 
-	// info of previous bridge validators that are used to slashing if they haven't completed their remain tasks
-	PrevBriValidators []string // array of bridgePubKey
-	PrevBriPubKey     string   // Public key of TSS that used to validate sig from validators by TSS
+func (s *BridgeHubState) StakingInfos() map[string]uint64 {
+	return s.stakingInfos
 }
 
 func NewBrigdeHubState() *BridgeHubState {
 	return &BridgeHubState{}
+}
+
+func (s *BridgeHubState) Clone() *BridgeHubState {
+	res := NewBrigdeHubState()
+
+	if s.params != nil {
+		res.params = s.params.Clone()
+	}
+
+	// clone bridgeInfos
+	bridgeInfos := map[string]*BridgeInfo{}
+	for bridgeID, info := range s.bridgeInfos {
+		infoTmp := &BridgeInfo{}
+		infoTmp.Info = info.Info.Clone()
+
+		infoTmp.PTokenAmounts = map[string]*statedb.BridgeHubPTokenState{}
+		for ptokenID, pTokenState := range info.PTokenAmounts {
+			infoTmp.PTokenAmounts[ptokenID] = pTokenState.Clone()
+		}
+		bridgeInfos[bridgeID] = infoTmp
+	}
+
+	// TODO 0xkraken: code more
+
+	return res
 }

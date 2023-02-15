@@ -120,6 +120,11 @@ const (
 
 	// Near bridge
 	BridgeNEARTxObjectType = 77
+
+	// Decentralized Bridge Hub
+	BridgeHubParamObjectType      = 83
+	BridgeHubPTokenObjectType     = 84
+	BridgeHubBridgeInfoObjectType = 85
 )
 
 // Prefix length

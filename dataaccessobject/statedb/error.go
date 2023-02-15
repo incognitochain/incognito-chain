@@ -93,6 +93,11 @@ const (
 	ErrInvalidBridgeAggParamStateType          = "invalid bridge agg param state type"
 
 	ErrInvalidBridgeNEARTxStateType = "invalid bridge near tx state type"
+
+	// Decentralized Bridge Hub
+	ErrInvalidBridgeHubParamStateType      = "invalid bridge hub param state type"
+	ErrInvalidBridgeHubPTokenStateType     = "invalid bridge hub pToken state type"
+	ErrInvalidBridgeHubBridgeInfoStateType = "invalid bridge hub bridge info state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
