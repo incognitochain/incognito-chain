@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -438,12 +439,12 @@ func (blockchain *BlockChain) calculateReward(
 ) (map[common.Hash]uint64,
 	[]map[common.Hash]uint64,
 	map[common.Hash]uint64,
-	map[common.Hash]uint64, error,
+	map[common.Hash]uint64, uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	currentBeaconYear, err := blockchain.GetYearOfBeacon(beaconHeight)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, 0, err
 	}
 	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
@@ -451,7 +452,7 @@ func (blockchain *BlockChain) calculateReward(
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
 	totalRewardForCustodian := map[common.Hash]uint64{}
-
+	delegationReward := uint64(0)
 	for id := 0; id < numberOfActiveShards; id++ {
 		if totalRewards[id] == nil {
 			totalRewards[id] = map[common.Hash]uint64{}
@@ -463,7 +464,7 @@ func (blockchain *BlockChain) calculateReward(
 		for _, coinID := range allCoinID {
 			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, nil, 0, err
 			}
 			if totalRewards[id][coinID] == 0 {
 				delete(totalRewards[id], coinID)
@@ -483,7 +484,13 @@ func (blockchain *BlockChain) calculateReward(
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, 0, err
+		}
+
+		if curView.TriggeredFeature[config.DELEGATION_REWARD] != 0 {
+			shardDelegationReward := rewardForShard[common.PRVCoinID] * 5 / 10
+			rewardForShard[common.PRVCoinID] = rewardForShard[common.PRVCoinID] - shardDelegationReward
+			delegationReward += shardDelegationReward
 		}
 
 		plusMap(rewardForBeacon, totalRewardForBeacon)
@@ -492,7 +499,7 @@ func (blockchain *BlockChain) calculateReward(
 		plusMap(rewardForCustodian, totalRewardForCustodian)
 	}
 
-	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
+	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, delegationReward, nil
 }
 
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
@@ -511,7 +518,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-
+	var delegationRewardInst [][]string
 	beaconBestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
 
 	totalRewardForBeacon := make(map[common.Hash]uint64)
@@ -520,7 +527,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 	rewardForPdex := uint64(0)
-
+	delegationReward := uint64(0)
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
@@ -549,6 +556,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
+			delegationReward,
 			err = blockchain.calculateReward(
 			splitRewardRuleProcessor,
 			curView,
@@ -594,11 +602,15 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			return nil, nil, rewardForPdex, err
 		}
 	}
-	//TODO: using another reward distribution, this is just example
-	delegationRewardInst, err := curView.CalculateDelegationSharePrice(blockchain, 1000*1e9)
-	if err != nil {
-		panic(err)
+
+	if delegationReward > 0 {
+		Logger.log.Info("delegationReward", delegationReward)
+		delegationRewardInst, err = curView.CalculateDelegationSharePrice(blockchain, delegationReward)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards, delegationRewardInst)
 	return resInst, totalRewardForCustodian, rewardForPdex, nil
 }
@@ -1064,4 +1076,73 @@ func (blockchain *BlockChain) buildMintDelegationRewardTransaction(
 		return nil, 0, errors.Errorf("cannot init mint delegation reward tx. Error %v", err)
 	}
 	return mintDRewardTx, mintInfo.RewardAmount, nil
+}
+func (blockchain *BlockChain) GetBeaconSharePriceByEpoch(epoch uint64, uid string) (uint64, error) {
+	blockHeight := (epoch - 1) * config.Param().EpochParam.NumberOfBlockInEpoch
+	beaconConsensusStateRootHash, err := blockchain.GetBeaconRootsHashFromBlockHeight(
+		blockHeight,
+	)
+	if err != nil {
+		return 0, err
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, err
+	}
+
+	sharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, uid)
+	if err != nil {
+		return 0, err
+	}
+	return sharePrice.GetPrice(), nil
+
+}
+
+func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB, pk key.PublicKey) (uint64, error) {
+	rewardState, has, err := statedb.GetDelegationReward(stateDB, pk)
+	if err != nil {
+		return 0, err
+	}
+	if !has {
+		return 0, nil
+	}
+	reward := uint64(0)
+	for _, epochDelegate := range rewardState.Reward {
+		//sort epoch
+		epochSortList := []int{}
+		for epoch, _ := range epochDelegate {
+			epochSortList = append(epochSortList, epoch)
+		}
+		sort.Slice(epochSortList, func(i, j int) bool {
+			return epochSortList[i] < epochSortList[j]
+		})
+		for i, epoch := range epochSortList {
+			beaconID := epochDelegate[epoch].BeaconUID
+			amount := epochDelegate[epoch].Amount
+			startBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epoch), beaconID)
+			if err != nil {
+				return 0, errors.New("Can not get beacon share price")
+			}
+			unit := float64(amount) / float64(startBeaconSharePrice)
+			if i == len(epochSortList)-1 {
+				//last epoch
+				endBeaconSharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, beaconID)
+				if err != nil {
+					panic(fmt.Sprint("GetBeaconSharePriceByEpoch error 2", err))
+				}
+				endBeaconSharePrice.GetPrice()
+				reward += uint64(unit * float64(endBeaconSharePrice.GetPrice()-startBeaconSharePrice))
+				log.Println("lastBeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice.GetPrice(), reward)
+			} else {
+				endBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epochSortList[i+1]), beaconID)
+				if err != nil {
+					panic(fmt.Sprint("GetBeaconSharePriceByEpoch error 3", err))
+				}
+				reward += uint64(unit * float64(endBeaconSharePrice-startBeaconSharePrice))
+				log.Println("BeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice, reward)
+			}
+		}
+	}
+	return reward, nil
 }

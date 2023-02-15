@@ -54,6 +54,22 @@ func StakeBeacon(client *devframework.RemoteRPCClient, privateKey string, mining
 	return &txResp, err
 }
 
+func Delegate(client *devframework.RemoteRPCClient, privateKey string, rewardPrivateKey string, beaconCPK string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+
+	miningWl, _ := wallet.Base58CheckDeserialize(rewardPrivateKey)
+	candidatePaymentAddress := miningWl.Base58CheckSerialize(wallet.PaymentAddressType)
+	privateSeedBytes := common.HashB(common.HashB(miningWl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+
+	txResp, err := client.Redelegate(privateKey, map[string]interface{}{burnAddr: 0}, -1, -1, map[string]interface{}{
+		"CandidatePaymentAddress": candidatePaymentAddress,
+		"PrivateSeed":             privateSeed,
+		"DelegateToBeacon":        beaconCPK,
+	})
+	return &txResp, err
+}
+
 func AddStake(client *devframework.RemoteRPCClient, privateKey string, miningPrivateKey string, stakeAmount uint64) (*jsonresult.CreateTransactionResult, error) {
 	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
 
@@ -353,14 +369,26 @@ func main() {
 		//fmt.Println(stakeRes, err)
 	}
 
-	submitKey()
-	time.Sleep(time.Second * 15)
-	send_prv()
-	time.Sleep(time.Second * 15)
-	add_stake_fixnode()
-	stake_shard()
-	stake_beacon()
-	add_stake()
+	delegate := func() {
+		for i, staker := range stakers {
+
+			fmt.Println("Delegate shard shard", i)
+			delegateRes, err := Delegate(&shard0RPC, staker.PrivateKey, staker.PrivateKey, fixNode[1].SelfCommitteePubkey)
+			fmt.Println(delegateRes, err)
+
+		}
+	}
+	//submitKey()
+	//time.Sleep(time.Second * 15)
+	//send_prv()
+	//time.Sleep(time.Second * 15)
+	//add_stake_fixnode()
+	//stake_shard()
+
+	delegate()
+
+	//stake_beacon()
+	//add_stake()
 	//time.Sleep(time.Second * 10)
 
 	//unstake()
@@ -427,5 +455,6 @@ func main() {
 	add_stake()
 	unstake()
 	add_stake_fixnode()
+	delegate()
 	select {}
 }

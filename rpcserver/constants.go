@@ -136,6 +136,7 @@ const (
 	setAutoEnableFeatureConfig         = "setautoenablefeatureconfig"
 	getAutoEnableFeatureConfig         = "getautoenablefeatureconfig"
 	getCommitteeState                  = "getcommitteestate"
+	getDelegationDetail                = "getdelegationdetail"
 	convertPaymentAddress              = "convertpaymentaddress"
 	getTotalBlockInEpoch               = "gettotalblockinepoch"
 	getDetailBlocksOfEpoch             = "getdetailblocksofepoch"

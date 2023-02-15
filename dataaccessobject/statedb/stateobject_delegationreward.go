@@ -20,12 +20,12 @@ type DelegationRewardState struct {
 	incognitoPublicKey      string
 	incognitoPaymentAddress key.PaymentAddress
 	// shard cpk => affect epoch => info
-	reward map[string]map[int]DelegateInfo
+	Reward map[string]map[int]DelegateInfo
 }
 
 func NewDelegationRewardState() *DelegationRewardState {
 	return &DelegationRewardState{
-		reward: map[string]map[int]DelegateInfo{},
+		Reward: map[string]map[int]DelegateInfo{},
 	}
 }
 
@@ -42,7 +42,7 @@ func (c DelegationRewardState) MarshalJSON() ([]byte, error) {
 		Reward             map[string]map[int]DelegateInfo
 		IncognitoPublicKey string
 	}{
-		Reward:             c.reward,
+		Reward:             c.Reward,
 		IncognitoPublicKey: c.incognitoPublicKey,
 	})
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *DelegationRewardState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	c.reward = temp.Reward
+	c.Reward = temp.Reward
 	c.incognitoPublicKey = temp.IncognitoPublicKey
 	return nil
 }
