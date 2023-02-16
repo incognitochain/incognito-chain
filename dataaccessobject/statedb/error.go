@@ -98,6 +98,7 @@ const (
 	ErrInvalidBridgeHubParamStateType      = "invalid bridge hub param state type"
 	ErrInvalidBridgeHubPTokenStateType     = "invalid bridge hub pToken state type"
 	ErrInvalidBridgeHubBridgeInfoStateType = "invalid bridge hub bridge info state type"
+	ErrInvalidBridgeHubStatusStateType     = "invalid bridge hub status state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -328,6 +329,10 @@ const (
 	// Near bridge
 	BridgeInsertNEARTxHashIssuedError
 	IsNEARTxHashIssuedError
+
+	// Bridge Hub
+	GetBridgeHubStatusError
+	StoreBridgeHubStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -524,6 +529,10 @@ var ErrCodeMessage = map[int]struct {
 	// near bridge
 	BridgeInsertNEARTxHashIssuedError: {-15110, "Insert near shield transaction error"},
 	IsNEARTxHashIssuedError:           {-15111, "Is Near Tx Hash Issued Error"},
+
+	// bridge hub
+	GetBridgeHubStatusError:   {-15112, "Get bridge hub status error"},
+	StoreBridgeHubStatusError: {-15113, "Store bridge hub status Error"},
 }
 
 type StatedbError struct {

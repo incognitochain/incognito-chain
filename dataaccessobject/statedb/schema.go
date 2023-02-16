@@ -112,9 +112,11 @@ var (
 	bridgeAggParamPrefix             = []byte("bridgeagg-param-")
 
 	// bridge hub
-	bridgeHubParamPrefix  = []byte("bridgehub-param-")
-	bridgeHubPTokenPrefix = []byte("bridgehub-ptoken-")
-	bridgeHubBridgeInfoPrefix = []byte("bridgehub-bridgeinfo-")
+	bridgeHubParamPrefix                = []byte("bridgehub-param-")
+	bridgeHubPTokenPrefix               = []byte("bridgehub-ptoken-")
+	bridgeHubBridgeInfoPrefix           = []byte("bridgehub-bridgeinfo-")
+	bridgeHubStatusPrefix               = []byte("bridgehub-status-")
+	bridgeHubRegisterBridgeStatusPrefix = []byte("registerbridge-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -951,9 +953,18 @@ func GetBridgeHubPTokenPrefix(bridgeID []byte) []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetBridgeHubBridgeInfoPrefix(bridgeID []byte) []byte {
-	h := common.HashH(append(bridgeHubBridgeInfoPrefix, bridgeID...))
+func GetBridgeHubBridgeInfoPrefix() []byte {
+	h := common.HashH(bridgeHubBridgeInfoPrefix)
 	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeHubStatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(bridgeHubStatusPrefix, statusType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func BridgeHubRegisterBridgeStatusPrefix() []byte {
+	return bridgeHubRegisterBridgeStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

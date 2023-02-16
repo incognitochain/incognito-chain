@@ -2705,3 +2705,44 @@ func (stateDB *StateDB) getBridgeNEARTxState(key common.Hash) (*BridgeNEARTxStat
 	}
 	return NewBridgeNEARTxState(), false, nil
 }
+
+// ================================= Bridge Hub OBJECT =======================================
+func (stateDB *StateDB) getBridgeHubStatusByKey(key common.Hash) (*BridgeHubStatusState, bool, error) {
+	bridgeHubStatusState, err := stateDB.getStateObject(BridgeHubStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bridgeHubStatusState != nil {
+		return bridgeHubStatusState.GetValue().(*BridgeHubStatusState), true, nil
+	}
+	return NewBridgeHubStatusState(), false, nil
+}
+
+func (stateDB *StateDB) getBridgeHubParamByKey(key common.Hash) (*BridgeHubParamState, bool, error) {
+	bridgeHubParamState, err := stateDB.getStateObject(BridgeHubParamObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if bridgeHubParamState != nil {
+		return bridgeHubParamState.GetValue().(*BridgeHubParamState), true, nil
+	}
+	return NewBridgeHubParamState(), false, nil
+}
+
+func (stateDB *StateDB) iterateBridgeHubBridgeInfos(prefix []byte) ([]*BridgeInfoState, error) {
+	res := []*BridgeInfoState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next(true, false, true) {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		bridgeInfoState := NewBridgeInfoState()
+		err := json.Unmarshal(newValue, &bridgeInfoState)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, bridgeInfoState)
+	}
+	return res, nil
+}

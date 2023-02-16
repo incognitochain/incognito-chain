@@ -252,7 +252,7 @@ const (
 	BurningPRVRequestConfirmMeta = 164
 
 	// Decentralized Bridge Hub
-	BriHubRegisterBridgeMeta = 370
+	BridgeHubRegisterBridgeMeta = 370
 )
 
 var minerCreatedMetaTypes = []int{

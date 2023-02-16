@@ -3,7 +3,7 @@ package bridgehub
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	metadataBriHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
+	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
@@ -16,7 +16,7 @@ func (sp *stateProducer) registerBridge(
 
 	// decode action
 	action := metadataCommon.NewAction()
-	meta := &metadataBriHub.RegisterBridgeRequest{}
+	meta := &metadataBridgeHub.RegisterBridgeRequest{}
 	action.Meta = meta
 	err := action.FromString(contentStr)
 	if err != nil {
@@ -28,14 +28,14 @@ func (sp *stateProducer) registerBridge(
 
 	// check number of validators
 	if uint(len(meta.ValidatorPubKeys)) < state.params.MinNumberValidators() {
-		inst, _ := buildBriHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidNumberValidatorError)
+		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidNumberValidatorError)
 		return [][]string{inst}, state, nil
 	}
 
 	// check all ValidatorPubKeys staked or not
 	for _, validatorPubKeyStr := range meta.ValidatorPubKeys {
 		if state.stakingInfos[validatorPubKeyStr] < state.params.MinStakedAmountValidator() {
-			inst, _ := buildBriHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidStakedAmountValidatorError)
+			inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidStakedAmountValidatorError)
 			return [][]string{inst}, state, nil
 		}
 	}
@@ -45,19 +45,21 @@ func (sp *stateProducer) registerBridge(
 	bridgeID := common.HashH(bridgeIDBytes).String()
 
 	if state.bridgeInfos[bridgeID] != nil {
-		inst, _ := buildBriHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
+		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
 		return [][]string{inst}, state, nil
 
 	}
 
+	// TODO: 0xkraken: if chainID is BTC, init pToken with pBTC ID from portal v4
+
 	// update state
 	clonedState := state.Clone()
 	clonedState.bridgeInfos[bridgeID] = &BridgeInfo{
-		Info:          statedb.NewBridgeInfoStateWithValue(meta.ExtChainID, meta.ValidatorPubKeys, meta.BridgePoolPubKey, []string{}, ""),
+		Info:          statedb.NewBridgeInfoStateWithValue(bridgeID, meta.ExtChainID, meta.ValidatorPubKeys, meta.BridgePoolPubKey, []string{}, ""),
 		PTokenAmounts: map[string]*statedb.BridgeHubPTokenState{},
 	}
 
 	// build accepted instruction
-	inst, _ := buildBriHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
+	inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
 	return [][]string{inst}, clonedState, nil
 }

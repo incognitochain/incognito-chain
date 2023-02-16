@@ -11,6 +11,7 @@ const (
 	InvalidNumberValidatorError
 	InvalidStakedAmountValidatorError
 	BridgeIDExistedError
+	InvalidStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -21,6 +22,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidNumberValidatorError:       {2000, "Number of validators must meet the minimum number"},
 	InvalidStakedAmountValidatorError: {2001, "Validator staked amount must meet the minimum amount"},
 	BridgeIDExistedError:              {2002, "Bridge validator was registered before"},
+	InvalidStatusError:                {2003, "Invalid instruction status error"},
 }
 
 type BridgeHubError struct {

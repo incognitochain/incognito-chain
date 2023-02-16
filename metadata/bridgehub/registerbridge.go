@@ -30,6 +30,7 @@ type RegisterBridgeContentInst struct {
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
 	Signature        string   `json:"Signature"`        // TSS sig : TODO: 0xkraken: keep or remove?
 	BridgeID         string   `json:"BridgeID,omitempty"`
+	TxReqID          string   `json:"TxReqID"`
 }
 
 type RegisterBridgeMsg struct {
@@ -47,7 +48,7 @@ func NewRegisterBridgeRequest(
 	signature string, // TSS sig
 ) (*RegisterBridgeRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
-		Type: metadataCommon.BriHubRegisterBridgeMeta,
+		Type: metadataCommon.BridgeHubRegisterBridgeMeta,
 	}
 	registerReq := &RegisterBridgeRequest{
 		ExtChainID:       extChainID,

@@ -9,6 +9,7 @@ import (
 )
 
 type BridgeInfoState struct {
+	bridgeID      string
 	extChainID    string
 	briValidators []string // array of bridgePubKey
 	briPubKey     string   // Public key of TSS that used to validate sig from validators by TSS
@@ -16,6 +17,14 @@ type BridgeInfoState struct {
 	// info of previous bridge validators that are used to slashing if they haven't completed their remain tasks
 	prevBriValidators []string // array of bridgePubKey
 	prevBriPubKey     string   // Public key of TSS that used to validate sig from validators by TSS
+}
+
+func (b BridgeInfoState) BridgeID() string {
+	return b.bridgeID
+}
+
+func (b *BridgeInfoState) SetBridgeID(bridgeID string) {
+	b.bridgeID = bridgeID
 }
 
 func (b BridgeInfoState) ExtChainID() string {
@@ -56,6 +65,7 @@ func (b BridgeInfoState) Clone() *BridgeInfoState {
 	copy(prevBriValidatorsCopy, b.prevBriValidators)
 
 	return &BridgeInfoState{
+		bridgeID:          b.bridgeID,
 		extChainID:        b.extChainID,
 		briValidators:     briValidatorsCopy,
 		briPubKey:         b.briPubKey,
@@ -68,7 +78,8 @@ func (b *BridgeInfoState) IsDiff(compareParam *BridgeInfoState) bool {
 	if compareParam == nil {
 		return true
 	}
-	return b.extChainID != compareParam.extChainID ||
+	return b.bridgeID != compareParam.bridgeID ||
+		b.extChainID != compareParam.extChainID ||
 		!reflect.DeepEqual(b.briValidators, compareParam.briValidators) ||
 		b.briPubKey != compareParam.briPubKey ||
 		!reflect.DeepEqual(b.prevBriValidators, compareParam.prevBriValidators) ||
@@ -78,12 +89,14 @@ func (b *BridgeInfoState) IsDiff(compareParam *BridgeInfoState) bool {
 
 func (b BridgeInfoState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
+		BridgeID          string
 		ExtChainID        string
 		BriValidators     []string
 		BriPubKey         string
 		PrevBriValidators []string
 		PrevBriPubKey     string
 	}{
+		BridgeID:          b.bridgeID,
 		ExtChainID:        b.extChainID,
 		BriValidators:     b.briValidators,
 		BriPubKey:         b.briPubKey,
@@ -98,6 +111,7 @@ func (b BridgeInfoState) MarshalJSON() ([]byte, error) {
 
 func (b *BridgeInfoState) UnmarshalJSON(data []byte) error {
 	temp := struct {
+		BridgeID          string
 		ExtChainID        string
 		BriValidators     []string
 		BriPubKey         string
@@ -108,6 +122,7 @@ func (b *BridgeInfoState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	b.bridgeID = temp.BridgeID
 	b.extChainID = temp.ExtChainID
 	b.briValidators = temp.BriValidators
 	b.briPubKey = temp.BriPubKey
@@ -121,6 +136,7 @@ func NewBridgeInfoState() *BridgeInfoState {
 }
 
 func NewBridgeInfoStateWithValue(
+	bridgeID string,
 	extChainID string,
 	briValidators []string,
 	briPubKey string,
@@ -128,6 +144,7 @@ func NewBridgeInfoStateWithValue(
 	prevBriPubKey string,
 ) *BridgeInfoState {
 	return &BridgeInfoState{
+		bridgeID:          bridgeID,
 		extChainID:        extChainID,
 		briValidators:     briValidators,
 		briPubKey:         briPubKey,
@@ -192,8 +209,8 @@ func newBridgeHubBridgeInfoObjectWithValue(db *StateDB, key common.Hash, data in
 }
 
 func GenerateBridgeHubBridgeInfoObjectKey(bridgeID string) common.Hash {
-	prefixHash := GetBridgeHubBridgeInfoPrefix([]byte(bridgeID))
-	valueHash := common.HashH([]byte{})
+	prefixHash := GetBridgeHubBridgeInfoPrefix()
+	valueHash := common.HashH([]byte(bridgeID))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

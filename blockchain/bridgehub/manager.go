@@ -1,6 +1,14 @@
 package bridgehub
 
-import "github.com/incognitochain/incognito-chain/metadata"
+import (
+	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+)
 
 type Manager struct {
 	state     *BridgeHubState
@@ -83,86 +91,81 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 // 	return res, nil
 // }
 
-// func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bool, error) {
-// 	// init bridge agg param if it's nil
-// 	if m.state.param == nil {
-// 		m.InitBridgeAggParamDefault()
-// 	}
+func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bool, error) {
+	// init bridge agg param if it's nil
 
-// 	// process insts
-// 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
-// 	bridgeAggUnshieldTxIDs := map[string]bool{}
-// 	for _, content := range insts {
-// 		if len(content) == 0 {
-// 			continue // Empty instruction
-// 		}
-// 		metaType, err := strconv.Atoi(content[0])
-// 		if err != nil {
-// 			continue // Not error, just not bridgeagg instructions
-// 		}
-// 		if !metadataBridge.IsBridgeAggMetaType(metaType) {
-// 			continue // Not error, just not bridgeagg instructions
-// 		}
-// 		if metaType == metadataCommon.BridgeAggAddTokenMeta {
-// 			m.state, err = m.processor.addToken(content, m.state, sDB)
-// 			if err != nil {
-// 				return bridgeAggUnshieldTxIDs, err
-// 			}
-// 			continue
-// 		}
-// 		if len(content) != 4 {
-// 			continue // Not error, just not bridgeagg instructions
-// 		}
+	// TODO: 0xkraken
+	// if m.state.params == nil {
+	// 	m.InitBridgeAggParamDefault()
+	// }
 
-// 		inst := metadataCommon.NewInstruction()
-// 		if err := inst.FromStringSlice(content); err != nil {
-// 			return bridgeAggUnshieldTxIDs, err
-// 		}
+	// process insts
+	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
+	bridgeAggUnshieldTxIDs := map[string]bool{}
+	for _, content := range insts {
+		if len(content) == 0 {
+			continue // Empty instruction
+		}
+		metaType, err := strconv.Atoi(content[0])
+		if err != nil {
+			continue // Not error, just not bridgeagg instructions
+		}
+		if !metadataBridgeHub.IsBridgeHubMetaType(metaType) {
+			continue // Not error, just not bridgeagg instructions
+		}
+		if len(content) != 4 {
+			continue // Not error, just not bridgeagg instructions
+		}
 
-// 		switch inst.MetaType {
-// 		case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:
-// 			m.state, updatingInfoByTokenID, err = m.processor.convert(*inst, m.state, sDB, updatingInfoByTokenID)
-// 		case metadataCommon.IssuingUnifiedTokenRequestMeta:
-// 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
-// 		case metadataCommon.BurningUnifiedTokenRequestMeta:
-// 			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
-// 		case metadataCommon.BridgeAggModifyParamMeta:
-// 			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
-// 		case metadataCommon.BurnForCallRequestMeta:
-// 			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
-// 		case metadataCommon.IssuingReshieldResponseMeta:
-// 			m.state, updatingInfoByTokenID, err = m.processor.reshield(*inst, m.state, sDB, updatingInfoByTokenID)
-// 		}
-// 		if err != nil {
-// 			return bridgeAggUnshieldTxIDs, err
-// 		}
-// 	}
+		inst := metadataCommon.NewInstruction()
+		if err := inst.FromStringSlice(content); err != nil {
+			return bridgeAggUnshieldTxIDs, err
+		}
 
-// 	for _, updatingInfo := range updatingInfoByTokenID {
-// 		var updatingAmt uint64
-// 		var updatingType string
-// 		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
-// 			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
-// 			updatingType = "+"
-// 		}
-// 		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
-// 			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
-// 			updatingType = "-"
-// 		}
-// 		err := statedb.UpdateBridgeTokenInfo(
-// 			sDB,
-// 			updatingInfo.TokenID,
-// 			updatingInfo.ExternalTokenID,
-// 			updatingInfo.IsCentralized,
-// 			updatingAmt,
-// 			updatingType,
-// 		)
-// 		if err != nil {
-// 			return bridgeAggUnshieldTxIDs, err
-// 		}
-// 	}
-// 	return bridgeAggUnshieldTxIDs, nil
-// }
+		switch inst.MetaType {
+		case metadataCommon.BridgeHubRegisterBridgeMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
+		case metadataCommon.IssuingUnifiedTokenRequestMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
+		case metadataCommon.BurningUnifiedTokenRequestMeta:
+			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
+		case metadataCommon.BridgeAggModifyParamMeta:
+			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
+		case metadataCommon.BurnForCallRequestMeta:
+			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
+		case metadataCommon.IssuingReshieldResponseMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.reshield(*inst, m.state, sDB, updatingInfoByTokenID)
+		}
+		if err != nil {
+			return bridgeAggUnshieldTxIDs, err
+		}
+	}
+
+	for _, updatingInfo := range updatingInfoByTokenID {
+		var updatingAmt uint64
+		var updatingType string
+		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
+			updatingType = "+"
+		}
+		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
+			updatingType = "-"
+		}
+		err := statedb.UpdateBridgeTokenInfo(
+			sDB,
+			updatingInfo.TokenID,
+			updatingInfo.ExternalTokenID,
+			updatingInfo.IsCentralized,
+			updatingAmt,
+			updatingType,
+		)
+		if err != nil {
+			return bridgeAggUnshieldTxIDs, err
+		}
+	}
+	return bridgeAggUnshieldTxIDs, nil
+}
 
 // func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
 // 	// store new unifiedTokens
