@@ -25,11 +25,11 @@ func NewManager() *Manager {
 }
 
 // TODO 0xkraken: implement
-// func (m *Manager) Clone() *Manager {
-// 	return &Manager{
-// 		state: m.state.Clone(),
-// 	}
-// }
+func (m *Manager) Clone() *Manager {
+	return &Manager{
+		state: m.state.Clone(),
+	}
+}
 
 func (m *Manager) State() *BridgeHubState {
 	return m.state
@@ -63,35 +63,7 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 	return res, ac, nil
 }
 
-// func (m *Manager) BuildNewUnshieldInstructions(stateDB *statedb.StateDB, beaconHeight uint64, unshieldActionForProducers []UnshieldActionForProducer) ([][]string, error) {
-// 	res := [][]string{}
-// 	insts := [][]string{}
-// 	var err error
-
-// 	// build instruction for new unshielding actions
-// 	for _, a := range unshieldActionForProducers {
-// 		switch a.Action.Meta.GetType() {
-// 		case metadataCommon.BurningUnifiedTokenRequestMeta:
-// 			insts, m.state, err = m.producer.unshield(a, m.state, beaconHeight, stateDB)
-// 			if err != nil {
-// 				return [][]string{}, err
-// 			}
-// 			res = append(res, insts...)
-// 		case metadataCommon.BurnForCallRequestMeta:
-// 			insts, m.state, err = m.producer.burnForCall(a, m.state, beaconHeight, stateDB)
-// 			if err != nil {
-// 				return [][]string{}, err
-// 			}
-// 			res = append(res, insts...)
-// 		default:
-// 		}
-// 	}
-
-// 	Logger.log.Info("bridgeagg new unshield instructions:", res)
-// 	return res, nil
-// }
-
-func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bool, error) {
+func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 	// init bridge agg param if it's nil
 
 	// TODO: 0xkraken
@@ -101,7 +73,6 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bo
 
 	// process insts
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
-	bridgeAggUnshieldTxIDs := map[string]bool{}
 	for _, content := range insts {
 		if len(content) == 0 {
 			continue // Empty instruction
@@ -119,25 +90,17 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bo
 
 		inst := metadataCommon.NewInstruction()
 		if err := inst.FromStringSlice(content); err != nil {
-			return bridgeAggUnshieldTxIDs, err
+			return err
 		}
 
 		switch inst.MetaType {
 		case metadataCommon.BridgeHubRegisterBridgeMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
-		case metadataCommon.IssuingUnifiedTokenRequestMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID)
-		case metadataCommon.BurningUnifiedTokenRequestMeta:
-			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.unshield(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
-		case metadataCommon.BridgeAggModifyParamMeta:
-			m.state, err = m.processor.modifyParam(*inst, m.state, sDB)
-		case metadataCommon.BurnForCallRequestMeta:
-			m.state, updatingInfoByTokenID, bridgeAggUnshieldTxIDs, err = m.processor.burnForCall(*inst, m.state, sDB, updatingInfoByTokenID, bridgeAggUnshieldTxIDs)
-		case metadataCommon.IssuingReshieldResponseMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.reshield(*inst, m.state, sDB, updatingInfoByTokenID)
+
+			// TODO: add more ...
 		}
 		if err != nil {
-			return bridgeAggUnshieldTxIDs, err
+			return err
 		}
 	}
 
@@ -161,10 +124,10 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bo
 			updatingType,
 		)
 		if err != nil {
-			return bridgeAggUnshieldTxIDs, err
+			return err
 		}
 	}
-	return bridgeAggUnshieldTxIDs, nil
+	return nil
 }
 
 // func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
@@ -219,54 +182,6 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) (map[string]bo
 
 // func (m *Manager) GetDiffState(state *State) (*State, map[common.Hash]bool, error) {
 // 	return m.state.GetDiff(state)
-// }
-
-// func (m *Manager) BuildAddTokenInstruction(beaconHeight uint64, sDBs map[int]*statedb.StateDB, ac *metadata.AccumulatedValues, triggeredFeature map[string]uint64) ([][]string, *metadata.AccumulatedValues, error) {
-// 	res := [][]string{}
-// 	temp := []string{}
-// 	var err error
-
-// 	checkpoints := []uint64{}
-// 	validCheckpoints := []uint64{}
-// 	for k := range triggeredFeature {
-// 		if len(k) > len(unifiedTokenTriggerPrefix) {
-// 			if bytes.Equal([]byte(k[:len(unifiedTokenTriggerPrefix)]), []byte(unifiedTokenTriggerPrefix)) {
-// 				checkpoint, err := strconv.ParseUint(k[len(unifiedTokenTriggerPrefix):], 10, 64)
-// 				if err != nil {
-// 					return [][]string{}, ac, err
-// 				}
-// 				checkpoints = append(checkpoints, checkpoint)
-// 			}
-// 		}
-// 	}
-// 	if len(checkpoints) == 0 {
-// 		return [][]string{}, ac, nil
-// 	}
-// 	sort.Slice(checkpoints, func(i, j int) bool {
-// 		return checkpoints[i] < checkpoints[j]
-// 	})
-
-// 	// after beacon generate autoenablefeature instruction, TriggerFeature will mark the height of the trigger time.
-// 	// we only need to process once at the mark time (block after trigger)
-// 	//ex: trigger at 8, block 9 will process punified config
-// 	for _, checkpoint := range checkpoints {
-// 		if beaconHeight == triggeredFeature[unifiedTokenTriggerPrefix+strconv.FormatUint(checkpoint, 10)]+1 {
-// 			validCheckpoints = append(validCheckpoints, checkpoint)
-// 		}
-// 	}
-// 	if len(validCheckpoints) == 0 {
-// 		return [][]string{}, ac, nil
-// 	}
-// 	for _, checkpoint := range validCheckpoints {
-// 		temp, m.state, ac, err = m.producer.addToken(m.state, beaconHeight, sDBs, ac, checkpoint)
-// 		if err != nil {
-// 			return res, nil, err
-// 		}
-// 		if len(temp) != 0 {
-// 			res = append(res, temp)
-// 		}
-// 	}
-// 	return res, ac, err
 // }
 
 // func (m *Manager) InitBridgeAggParamDefault() error {
