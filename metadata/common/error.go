@@ -124,6 +124,7 @@ const (
 
 	ReDelegateNotInCommitteeListError
 	ReDelegateCommitteeNotFoundError
+	ReDelegateInvalidTxError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -172,6 +173,11 @@ var ErrCodeMessage = map[int]struct {
 	UnStakingRequestAlreadyStopError:                      {-4107, "UnStaking Request Already Stop Error"},
 	UnStakingRequestInvalidFormatRequestKey:               {-4108, "Unstaking Request Key Is Invalid Format"},
 	UnstakingRequestAlreadyUnstake:                        {-4109, "Public Key Has Been Already Unstaked"},
+
+	ReDelegateNotInCommitteeListError: {-4110, "Delegate not in committee list"},
+	ReDelegateCommitteeNotFoundError:  {-4111, "Delegate committee not found"},
+	ReDelegateInvalidTxError:          {-4112, "Delegate invalid tx"},
+
 	// -5xxx dev reward error
 	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
 

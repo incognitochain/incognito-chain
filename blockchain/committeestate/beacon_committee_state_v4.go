@@ -765,7 +765,7 @@ func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env
 				}
 				mintRewardAmount = append(mintRewardAmount, amount)
 				mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
-				mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.IncPaymentAddrs...)
+				mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.TxRequestIDs[i])
 			}
 		default:
 			continue
@@ -1092,7 +1092,6 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconAddStakingAmountInstruction(env *B
 				if err != nil {
 					err = fmt.Errorf("Add Staking tx error, %v", err.Error())
 					Logger.log.Error(err)
-					return nil, err
 				}
 			}
 		}
@@ -1123,8 +1122,10 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnstakeInstruction(env *BeaconComm
 		}
 
 		for _, cpk := range unstakeCPKs {
-			if err := s.setUnstake(cpk); err != nil {
-				return nil, err
+			if stakerInfo := s.getStakerInfo(cpk); stakerInfo != nil {
+				if err := s.setUnstake(cpk); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

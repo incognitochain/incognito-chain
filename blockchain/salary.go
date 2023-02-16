@@ -927,7 +927,7 @@ func (blockchain *BlockChain) getMintDRewardInfoFromBeaconInstructions(
 				Logger.log.Infof("SKIP This payment %v (shard %v) is not belong to current shard %v, tx request %v, amount %v", inst.PaymentAddresses[idx], sID, shardID, inst.TxRequestIDs[idx], inst.RewardAmount[idx])
 				continue
 			}
-			rawTxRequest, err := blockchain.ShardChain[shardID].BlockStorage.GetStakingTx(txRequestHash)
+			_, _, rawTxRequest, err := blockchain.GetTransactionByHashWithShardID(txRequestHash, shardID)
 			if err != nil {
 				Logger.log.Infof("SKIP This request (payment %v, dreward amount %v) belong to current shard %v, but can not find tx request %v in database,", inst.PaymentAddresses[idx], inst.RewardAmount[idx], shardID, inst.TxRequestIDs[idx])
 				continue
@@ -1014,8 +1014,10 @@ func (blockchain *BlockChain) ValidateMintDRewardTxsFromBeaconInstructions(
 		} else {
 			if (expectedInfo.RewardAmount != gotInfo.RewardAmount) ||
 				(expectedInfo.ReceiverPayment.String() != gotInfo.ReceiverPayment.String()) ||
-				(expectedInfo.TxRequest.Hash().String() != gotInfo.TxRequest.String()) {
-				return errors.Errorf("Mint delegation reward for pk %v of producer (tx request %v, amount %v, payment %v) and validator (tx request %v, amount %v, payment %v) not match", k, gotInfo.TxRequest.Hash().String(), gotInfo.RewardAmount, gotInfo.ReceiverPayment.String(), expectedInfo.TxRequest.Hash().String(), expectedInfo.RewardAmount, expectedInfo.TxRequest.Hash().String())
+				(expectedInfo.TxRequest.Hash().String() != gotInfo.TxRequest.Hash().String()) {
+
+				return errors.Errorf("Mint delegation reward for pk %v of producer (tx request %v, amount %v, payment %v) and validator (tx request %v, amount %v, payment %v) not match",
+					k, gotInfo.TxRequest.Hash().String(), gotInfo.RewardAmount, gotInfo.ReceiverPayment.String(), expectedInfo.TxRequest.Hash().String(), expectedInfo.RewardAmount, expectedInfo.ReceiverPayment.String())
 			}
 		}
 	}

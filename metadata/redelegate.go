@@ -60,11 +60,6 @@ func (redelegateMetadata *ReDelegateMetadata) ValidateMetadataByItself() bool {
 	return (redelegateMetadata.Type == ReDelegateMeta)
 }
 
-// ValidateTxWithBlockChain Validate Condition to Request Stop AutoStaking With Blockchain
-// - Requested Committee Publickey is in candidate, pending validator,
-// - Requested Committee Publickey is in staking tx list,
-// - Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
-// - Not yet requested to stop auto-restaking
 func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	newDelegate := redelegateMetadata.NewDelegate
 	stakerInfor, has, err := beaconViewRetriever.GetBeaconStakerInfo(newDelegate)
@@ -82,11 +77,12 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 	if err != nil {
 		return false, NewMetadataTxError(ReDelegateRequestNotInCommitteeListError, err)
 	}
+	if !has {
+		return false, NewMetadataTxError(ReDelegateRequestNotInCommitteeListError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", newDelegate, shardID))
+	}
+
 	rewardReceiverAddress := stakerInfo.RewardReceiver()
 	pkToValidateMetadata := rewardReceiverAddress.Pk
-	if !has {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", newDelegate, shardID))
-	}
 	stakingTxHash := stakerInfo.TxStakingID()
 
 	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
@@ -102,11 +98,11 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 	}
 
 	if ok, err := redelegateMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(pkToValidateMetadata, tx); !ok || err != nil {
-		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
+		return false, NewMetadataTxError(ReDelegateInvalidTxError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 
 	if (stakerInfo.GetDelegate() == newDelegate) && (stakerInfo.GetDelegateUID() == redelegateMetadata.DelegateUID) {
-		return false, NewMetadataTxError(StopAutoStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Cannot replace with the same key"))
+		return false, NewMetadataTxError(ReDelegateInvalidTxError, fmt.Errorf("Cannot replace with the same key"))
 	}
 	return true, nil
 }
