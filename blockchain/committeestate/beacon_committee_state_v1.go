@@ -354,7 +354,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 				// if auto staking not found or flag auto stake is false then do not re-stake for this out public key
 				// if auto staking flag is true then system will automatically add this out public key to current candidate list
 				for index, outPublicKey := range swapInstruction.OutPublicKeys {
-					stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, outPublicKey)
 					if err != nil {
 						panic(err)
 					}

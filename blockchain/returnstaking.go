@@ -320,7 +320,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 
 					//dont have shard candidate for next epoch => kickout => return staking amount
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetShardStakerInfo(beaconConsensusStateDB, outPublicKey)
 					if err != nil || !has || stakerInfo == nil {
 						Logger.log.Errorf("fmt.Errorf(\"Cannot get staker info for outpubickey %v\", outPublicKey), error %+v", outPublicKey, err)
 						//return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot get staker info for outpubickey %v", outPublicKey))
