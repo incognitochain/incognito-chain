@@ -6,7 +6,9 @@ import (
 	"math"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -595,9 +597,11 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, redelegateInstruction.ToString())
 	}
 
-	for _, reqRewardInstruction := range shardInstruction.reqRewardInstructions {
-		instructions = append(instructions, reqRewardInstruction.ToString())
+	mintDRewardInstructions, err := blockchain.MintDelegationRewardFromInstructionRequests(shardInstruction.reqRewardInstructions, curView.consensusStateDB)
+	if err != nil {
+		return nil, err
 	}
+	instructions = append(instructions, mintDRewardInstructions...)
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
 		if len(stakeInstruction.TxStakes) > 0 {
@@ -1241,6 +1245,13 @@ func (shardInstruction *shardInstruction) compose() {
 	unstakeInstruction := &instruction.UnstakeInstruction{}
 	stopAutoStakeInstruction := &instruction.StopAutoStakeInstruction{}
 	unstakeKeys := map[string]bool{}
+	reqDRewardInstruction := &instruction.RequestDelegationRewardInstruction{}
+	type reqDRewardInfo struct {
+		IncPaymentAddr       string
+		IncPaymentAddrStruct key.PaymentAddress
+		TxRequestID          string
+	}
+	reqDRewardKeys := map[string]reqDRewardInfo{}
 
 	for _, v := range shardInstruction.shardStakeInstructions {
 		if v.IsEmpty() {
@@ -1282,9 +1293,40 @@ func (shardInstruction *shardInstruction) compose() {
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 	}
 
+	for _, v := range shardInstruction.reqRewardInstructions {
+		if v.IsEmpty() {
+			continue
+		}
+		for i, payment := range v.IncPaymentAddrStructs {
+			requestPkStr := base58.Base58Check{}.Encode(payment.Pk, common.Base58Version)
+			if _, ok := reqDRewardKeys[requestPkStr]; ok {
+				continue
+			}
+			reqDRewardKeys[requestPkStr] = reqDRewardInfo{
+				IncPaymentAddr:       v.IncPaymentAddrs[i],
+				IncPaymentAddrStruct: payment,
+				TxRequestID:          v.TxRequestIDs[i],
+			}
+		}
+	}
+	keys := []string{}
+	for k := range reqDRewardKeys {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	for _, k := range keys {
+		info := reqDRewardKeys[k]
+		reqDRewardInstruction.TxRequestIDs = append(reqDRewardInstruction.TxRequestIDs, info.TxRequestID)
+		reqDRewardInstruction.IncPaymentAddrs = append(reqDRewardInstruction.IncPaymentAddrs, info.IncPaymentAddr)
+		reqDRewardInstruction.IncPaymentAddrStructs = append(reqDRewardInstruction.IncPaymentAddrStructs, info.IncPaymentAddrStruct)
+	}
+
 	shardInstruction.shardStakeInstructions = []*instruction.StakeInstruction{}
 	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+	shardInstruction.reqRewardInstructions = []*instruction.RequestDelegationRewardInstruction{}
 
 	if !stakeInstruction.IsEmpty() {
 		shardInstruction.shardStakeInstructions = append(shardInstruction.shardStakeInstructions, stakeInstruction)
@@ -1296,5 +1338,8 @@ func (shardInstruction *shardInstruction) compose() {
 
 	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	}
+	if !reqDRewardInstruction.IsEmpty() {
+		shardInstruction.reqRewardInstructions = append(shardInstruction.reqRewardInstructions, reqDRewardInstruction)
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/pkg/errors"
 )
 
 const INIT_SHARE_PRICE = 1750 * 1e9
@@ -606,7 +607,7 @@ func (s *BeaconCommitteeStateV4) UpdateCommitteeState(env *BeaconCommitteeStateE
 	}
 
 	processFuncs := []func(*BeaconCommitteeStateEnvironment) ([][]string, error){
-		s.ProcessCalculateAndWithdrawDelegationReward,
+		s.ProcessValidateWithdrawDelegationReward,
 		s.ProcessUpdateBeaconPerformance,
 		s.ProcessBeaconUnstakeInstruction,
 		s.ProcessBeaconRedelegateInstruction,
@@ -743,39 +744,41 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env *BeaconCommi
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
 }
 
-func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-	incurredInstructions := [][]string{}
-	mintPaymentAddresses := []string{}
-	mintRequestTxIDs := []string{}
-	mintRewardAmount := []uint64{}
+func (s *BeaconCommitteeStateV4) ProcessValidateWithdrawDelegationReward(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
 			continue
 		}
 		switch inst[0] {
-		case instruction.REQ_DREWARD_ACTION:
-			reqDRewardInstruction, err := instruction.ValidateAndImportRequestDelegationRewardInstructionFromString(inst)
+		case instruction.MINT_DREWARD_ACTION:
+			mintDRewardInstruction, err := instruction.ValidateAndImportMintDelegationRewardInstructionFromString(inst)
 			if err != nil {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
+			for i, payment := range mintDRewardInstruction.PaymentAddressesStruct {
 				amount, err := env.BlockChain.GetDelegationRewardAmount(s.stateDB, payment.Pk)
 				if err != nil {
 					return nil, err
 				}
-				mintRewardAmount = append(mintRewardAmount, amount)
-				mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
-				mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.TxRequestIDs[i])
+				if amount == mintDRewardInstruction.RewardAmount[i] {
+					err := statedb.ResetDelegationReward(s.stateDB, mintDRewardInstruction.PaymentAddressesStruct[i].Pk, mintDRewardInstruction.PaymentAddressesStruct[i], int(env.Epoch))
+					if err != nil {
+						err := errors.Errorf("Can not reset delegation reward for payment %v, tx request %v, reward in inst %v", mintDRewardInstruction.PaymentAddresses[i], mintDRewardInstruction.TxRequestIDs[i], mintDRewardInstruction.RewardAmount[i])
+						Logger.log.Error(err)
+						return nil, err
+					}
+				} else {
+					err := errors.Errorf("Wrong amount of delegation reward for payment %v, tx request %v, reward in inst %v, got %v", mintDRewardInstruction.PaymentAddresses[i], mintDRewardInstruction.TxRequestIDs[i], mintDRewardInstruction.RewardAmount[i], amount)
+					Logger.log.Error(err)
+					return nil, err
+				}
 			}
 		default:
 			continue
 		}
 	}
-	if len(mintPaymentAddresses) != 0 {
-		mintInst := instruction.NewMintDelegationRewardInsWithValue(mintRequestTxIDs, mintPaymentAddresses, mintRewardAmount)
-		incurredInstructions = append(incurredInstructions, mintInst.ToString())
-	}
-	return incurredInstructions, nil
+
+	return [][]string{}, nil
 }
 
 // Process shard active time

@@ -1148,3 +1148,27 @@ func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB
 	}
 	return reward, nil
 }
+
+func (blockchain *BlockChain) MintDelegationRewardFromInstructionRequests(insts []*instruction.RequestDelegationRewardInstruction, stateDB *statedb.StateDB) ([][]string, error) {
+	incurredInstructions := [][]string{}
+	mintPaymentAddresses := []string{}
+	mintRequestTxIDs := []string{}
+	mintRewardAmount := []uint64{}
+	for _, inst := range insts {
+		reqDRewardInstruction := inst
+		for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
+			amount, err := blockchain.GetDelegationRewardAmount(stateDB, payment.Pk)
+			if err != nil {
+				return nil, err
+			}
+			mintRewardAmount = append(mintRewardAmount, amount)
+			mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
+			mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.TxRequestIDs[i])
+		}
+	}
+	if len(mintPaymentAddresses) != 0 {
+		mintInst := instruction.NewMintDelegationRewardInsWithValue(mintRequestTxIDs, mintPaymentAddresses, mintRewardAmount)
+		incurredInstructions = append(incurredInstructions, mintInst.ToString())
+	}
+	return incurredInstructions, nil
+}

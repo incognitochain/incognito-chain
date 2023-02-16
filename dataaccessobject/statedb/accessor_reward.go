@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -214,6 +215,32 @@ func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, inc
 	}
 	reward.Reward[shardCPK][epoch] = DelegateInfo{
 		beaconUID, amount,
+	}
+	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
+	if err != nil {
+		return NewStatedbError(StoreDelegationRewardError, err)
+	}
+	return nil
+}
+
+func ResetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, incognitoPaymentAddress key.PaymentAddress, epoch int) error {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
+	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
+	reward, _, err := GetDelegationReward(stateDB, incognitoPublicKeyBytes)
+	if err != nil {
+		return err
+	}
+	reward.incognitoPublicKey = incognitoPublicKey
+	reward.incognitoPaymentAddress = incognitoPaymentAddress
+	for shardCPK, dInfoByEpoch := range reward.Reward {
+		curDInfo, ok := dInfoByEpoch[epoch]
+		if !ok {
+			curDInfo = DelegateInfo{}
+		}
+		dInfoByEpoch = map[int]DelegateInfo{
+			epoch + 1: curDInfo,
+		}
+		reward.Reward[shardCPK] = dInfoByEpoch
 	}
 	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
 	if err != nil {
