@@ -308,6 +308,7 @@ var minerCreatedMetaTypes = []int{
 	BurningUnifiedTokenResponseMeta,
 	IssuingReshieldResponseMeta,
 	BurnForCallResponseMeta,
+	MintDelegationRewardMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
