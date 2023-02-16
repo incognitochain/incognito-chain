@@ -139,7 +139,7 @@ func (mI *MintDelegationRewardInstruction) AddNewMintInfo(paymentAddress string,
 }
 
 func ValidateAndImportMintDelegationRewardInstructionFromString(instruction []string) (*MintDelegationRewardInstruction, error) {
-	if err := ValidateReturnStakingInstructionSanity(instruction); err != nil {
+	if err := ValidateMintDelegationRewardInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
 	return ImportMintDelegationRewardInstructionFromString(instruction)

@@ -1006,7 +1006,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 				Logger.log.Infof("Got request delegation instruction %+v", inst)
 				tempReqDelegateRewardInstruction, err := instruction.ImportRequestDelegationRewardInstructionFromString(inst)
 				if err != nil {
-					Logger.log.Errorf("Got error when process instruction request delegation reward %+v", inst)
+					Logger.log.Errorf("Got error when process instruction request delegation reward %+v %+v", inst, err)
 					continue
 				}
 				shardInstruction.reqRewardInstructions = append(shardInstruction.reqRewardInstructions, tempReqDelegateRewardInstruction)

@@ -765,7 +765,7 @@ func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env
 				}
 				mintRewardAmount = append(mintRewardAmount, amount)
 				mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
-				mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.IncPaymentAddrs...)
+				mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.TxRequestIDs[i])
 			}
 		default:
 			continue
