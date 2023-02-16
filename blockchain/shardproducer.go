@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/config"
 
@@ -1036,16 +1037,21 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			reD_dgtee_pks = append(reD_dgtee_pks, redelegateMetadata.NewDelegate)
 			reD_dgtee_uid = append(reD_dgtee_uid, redelegateMetadata.DelegateUID)
 		case metadata.WithDrawRewardRequestMeta:
-			requestWithDrawRewardMetadata, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			if !ok {
-				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.WithDrawRewardRequest but get %+v", reflect.TypeOf(tx.GetMetadata()))
-			}
-			if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
-				receiverAddr := requestWithDrawRewardMetadata.PaymentAddress.String()
-				if _, ok := receiversReqDReward[receiverAddr]; !ok {
-					receiversReqDReward[receiverAddr] = tx.Hash().String()
-				} else {
-					Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
+			if bc.GetBeaconBestState().TriggeredFeature[config.DELEGATION_REWARD] >= beaconHeight {
+				requestWithDrawRewardMetadata, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+				if !ok {
+					return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.WithDrawRewardRequest but get %+v", reflect.TypeOf(tx.GetMetadata()))
+				}
+				if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
+					wl := wallet.KeyWallet{}
+					wl.KeySet.PaymentAddress = requestWithDrawRewardMetadata.PaymentAddress
+					wl.Base58CheckSerialize(wallet.PaymentAddressType)
+					receiverAddr := requestWithDrawRewardMetadata.PaymentAddress.String()
+					if _, ok := receiversReqDReward[receiverAddr]; !ok {
+						receiversReqDReward[receiverAddr] = tx.Hash().String()
+					} else {
+						Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
+					}
 				}
 			}
 		}
