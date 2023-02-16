@@ -1002,6 +1002,15 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 				tempReDelegateInstruction := instruction.ImportReDelegateInstructionFromString(inst)
 				shardInstruction.redelegateInstructions = append(shardInstruction.redelegateInstructions, tempReDelegateInstruction)
 			}
+			if inst[0] == instruction.REQ_DREWARD_ACTION {
+				Logger.log.Infof("Got request delegation instruction %+v", inst)
+				tempReqDelegateRewardInstruction, err := instruction.ImportRequestDelegationRewardInstructionFromString(inst)
+				if err != nil {
+					Logger.log.Errorf("Got error when process instruction request delegation reward %+v", inst)
+					continue
+				}
+				shardInstruction.reqRewardInstructions = append(shardInstruction.reqRewardInstructions, tempReqDelegateRewardInstruction)
+			}
 			if inst[0] == instruction.BEACON_STAKE_ACTION {
 				if err := instruction.ValidateBeaconStakeInstructionSanity(inst); err != nil {
 					Logger.log.Errorf("SKIP Stake Instruction Error %+v", err)
