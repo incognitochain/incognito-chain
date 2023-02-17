@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -56,6 +57,62 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 
 func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithWithdrawRewardReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithWithdrawDelegationRewardReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get metadata from params
+	metaParam, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	paymentAddStr, ok := metaParam["PaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address string is invalid"))
+	}
+	txVersion, ok := metaParam["TxVersion"].(float64)
+	if !ok {
+		txVersion = 0
+	}
+	meta, err := metadata.NewWithdrawDelegationRewardRequest(
+		paymentAddStr,
+		1,
+		metadata.WithdrawDelegationRewardRequestMeta,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	if txVersion == 1 {
+		meta.PaymentAddress.OTAPublic = nil
+	}
+
+	param := map[string]interface{}{}
+	param["PaymentAddress"] = paymentAddStr
+	param["Version"] = common.SALARY_VER_FIX_HASH
+	arrayParams[4] = interface{}(param)
+	return httpServer.createRawTxWithMetadata(
+		arrayParams,
+		closeChan,
+		metadata.NewWithdrawDelegationRewardRequestFromRPC,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendWithdrawDelegationRewardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithWithdrawDelegationRewardReq(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

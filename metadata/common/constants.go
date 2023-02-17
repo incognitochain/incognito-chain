@@ -28,6 +28,8 @@ const (
 	WithDrawRewardRequestMeta  = 44
 	WithDrawRewardResponseMeta = 45
 
+	WithdrawDelegationRewardRequestMeta = 48
+
 	// staking
 	ShardStakingMeta    = 63
 	StopAutoStakingMeta = 127

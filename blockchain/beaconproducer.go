@@ -8,7 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -1248,7 +1248,7 @@ func (shardInstruction *shardInstruction) compose() {
 	reqDRewardInstruction := &instruction.RequestDelegationRewardInstruction{}
 	type reqDRewardInfo struct {
 		IncPaymentAddr       string
-		IncPaymentAddrStruct key.PaymentAddress
+		IncPaymentAddrStruct privacy.PaymentAddress
 		TxRequestID          string
 	}
 	reqDRewardKeys := map[string]reqDRewardInfo{}
