@@ -547,6 +547,36 @@ func (r *RemoteRPCClient) GetRewardAmount(paymentAddress string) (res map[string
 	return resp.Result, err
 }
 
+func (r *RemoteRPCClient) WithdrawDelegateReward(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	requestBody, rpcERR := json.Marshal(map[string]interface{}{
+		"jsonrpc": "1.0",
+		"method":  "withdrawdelegationreward",
+		"params":  []interface{}{privateKey, receivers, fee, privacy, info},
+		"id":      1,
+	})
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	body, err := r.sendRequest(requestBody)
+	if err != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resp := struct {
+		Result jsonresult.CreateTransactionResult
+		Error  *ErrMsg
+	}{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return res, errors.New(err.Error())
+	}
+
+	if resp.Error != nil && resp.Error.StackTrace != "" {
+		return res, errors.New(resp.Error.StackTrace)
+	}
+
+	return resp.Result, err
+}
+
 func (r *RemoteRPCClient) WithdrawReward(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
 	requestBody, rpcERR := json.Marshal(map[string]interface{}{
 		"jsonrpc": "1.0",

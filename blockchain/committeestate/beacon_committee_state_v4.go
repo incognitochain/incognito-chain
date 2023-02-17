@@ -769,7 +769,13 @@ func (s *BeaconCommitteeStateV4) ProcessValidateWithdrawDelegationReward(env Pro
 					return nil, err
 				}
 				if amount == mintDRewardInstruction.RewardAmount[i] {
-					err := statedb.ResetDelegationReward(s.stateDB, mintDRewardInstruction.PaymentAddressesStruct[i].Pk, mintDRewardInstruction.PaymentAddressesStruct[i], int(env.Epoch))
+					currentEpoch := env.Epoch
+					//if this is first block of epoch, we need to update the affect epoch is previous one.
+					//We are not count the previous epoch in delegation reward (i.e share price is not updated yet)
+					if firstBlockEpoch(env.BeaconHeight) {
+						currentEpoch--
+					}
+					err := statedb.ResetDelegationReward(s.stateDB, mintDRewardInstruction.PaymentAddressesStruct[i].Pk, mintDRewardInstruction.PaymentAddressesStruct[i], int(currentEpoch))
 					if err != nil {
 						err := errors.Errorf("Can not reset delegation reward for payment %v, tx request %v, reward in inst %v", mintDRewardInstruction.PaymentAddresses[i], mintDRewardInstruction.TxRequestIDs[i], mintDRewardInstruction.RewardAmount[i])
 						Logger.log.Error(err)

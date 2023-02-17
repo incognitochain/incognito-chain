@@ -83,6 +83,18 @@ func WithdrawReward(client *devframework.RemoteRPCClient, privateKey string, rew
 	return &txResp, err
 }
 
+func WithdrawDelegateReward(client *devframework.RemoteRPCClient, privateKey string, rewardPrivateKey string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+
+	miningWl, _ := wallet.Base58CheckDeserialize(rewardPrivateKey)
+	candidatePaymentAddress := miningWl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	txResp, err := client.WithdrawDelegateReward(privateKey, map[string]interface{}{burnAddr: 0}, -1, -1, map[string]interface{}{
+		"PaymentAddress": candidatePaymentAddress,
+	})
+	return &txResp, err
+}
+
 func AddStake(client *devframework.RemoteRPCClient, privateKey string, miningPrivateKey string, stakeAmount uint64) (*jsonresult.CreateTransactionResult, error) {
 	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
 
@@ -378,7 +390,7 @@ func main() {
 		//fmt.Println(stakeRes, err)
 		//stakeRes, err := UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[2].PrivateKey)
 		//fmt.Println(stakeRes, err)
-		stakeRes, err := UnStake(&shard0RPC, stakers[4].PrivateKey, stakers[4].PrivateKey)
+		stakeRes, err := UnStake(&shard0RPC, stakers[6].PrivateKey, stakers[6].PrivateKey)
 		fmt.Println(stakeRes, err)
 	}
 
@@ -391,12 +403,14 @@ func main() {
 	}
 
 	withdrawReward := func() {
-		staker := stakers[1]
+		staker := stakers[0]
 		stakerBalance1, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
 		fmt.Println(stakerBalance1)
 		withdraw, err := WithdrawReward(&shard0RPC, staker.PrivateKey, staker.PrivateKey)
 		fmt.Println(withdraw, err)
-		time.Sleep(time.Second * 15)
+		withdrawD, err := WithdrawDelegateReward(&shard0RPC, staker.PrivateKey, staker.PrivateKey)
+		fmt.Println(withdrawD, err)
+		time.Sleep(time.Second * 20)
 		stakerBalance2, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
 		fmt.Println(stakerBalance2 - stakerBalance1)
 	}
@@ -409,12 +423,12 @@ func main() {
 	//stake_shard()
 
 	//delegate()
-	//withdrawReward()
+	withdrawReward()
 	//stake_beacon()
 	//add_stake()
 	//time.Sleep(time.Second * 10)
 
-	unstake()
+	//unstake()
 
 	select {}
 
