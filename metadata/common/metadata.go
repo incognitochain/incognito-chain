@@ -137,6 +137,8 @@ type ShardViewRetriever interface {
 	GetHeight() uint64
 	GetBlockVersion() int
 	GetTriggeredFeature() map[string]uint64
+	GetShardCommittee() []incognitokey.CommitteePublicKey
+	GetShardPendingValidator() []incognitokey.CommitteePublicKey
 }
 
 type ValidationEnviroment interface {
