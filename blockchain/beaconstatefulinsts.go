@@ -93,7 +93,8 @@ func collectStatefulActions(
 			metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta,
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta,
-			metadataCommon.BridgeHubRegisterBridgeMeta:
+			metadataCommon.BridgeHubRegisterBridgeMeta,
+			metadataCommon.ShieldingBTCRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:

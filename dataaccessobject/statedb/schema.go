@@ -52,6 +52,7 @@ var (
 	bridgeAVAXTxPrefix                 = []byte("bri-avax-tx-")
 	bridgeNEARTxPrefix                 = []byte("bri-near-tx-")
 	bridgePRVEVMPrefix                 = []byte("bri-prv-evm-tx-")
+	bridgeBridgeHubTxPrefix            = []byte("bri-bridge-hub-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
@@ -415,6 +416,11 @@ func GetBridgeAVAXTxPrefix() []byte {
 
 func GetBridgeNEARTxPrefix() []byte {
 	h := common.HashH(bridgeNEARTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeHubTxPrefix() []byte {
+	h := common.HashH(bridgeBridgeHubTxPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

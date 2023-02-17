@@ -253,6 +253,8 @@ const (
 
 	// Decentralized Bridge Hub
 	BridgeHubRegisterBridgeMeta = 370
+	ShieldingBTCRequestMeta     = 371
+	ShieldingBTCResponse        = 372
 )
 
 var minerCreatedMetaTypes = []int{

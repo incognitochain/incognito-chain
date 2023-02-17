@@ -333,6 +333,9 @@ const (
 	// Bridge Hub
 	GetBridgeHubStatusError
 	StoreBridgeHubStatusError
+
+	IsBridgeHubTxHashIssuedError
+	BridgeInsertBTCHubTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {

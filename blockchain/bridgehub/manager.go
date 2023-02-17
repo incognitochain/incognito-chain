@@ -58,6 +58,17 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 		}
 	}
 
+	// build instruction for shield btc hub actions
+	for _, actions := range env.RegisterBridgeActions() {
+		for _, action := range actions {
+			insts, m.state, ac, err = m.producer.shield(action, m.state, ac, env.StateDBs(), statedb.IsBTCHubTxHashIssued)
+			if err != nil {
+				return [][]string{}, nil, err
+			}
+			res = append(res, insts...)
+		}
+	}
+
 	// TODO: add more funcs to handle action ...
 
 	return res, ac, nil
@@ -96,7 +107,8 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		switch inst.MetaType {
 		case metadataCommon.BridgeHubRegisterBridgeMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
-
+		case metadataCommon.ShieldingBTCRequestMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID, statedb.InsertBTCHubTxHashIssued)
 			// TODO: add more ...
 		}
 		if err != nil {

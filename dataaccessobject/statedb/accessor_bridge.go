@@ -210,6 +210,32 @@ func IsAVAXTxHashIssued(stateDB *StateDB, uniqueAVAXTx []byte) (bool, error) {
 	return true, nil
 }
 
+func InsertBTCHubTxHashIssued(stateDB *StateDB, uniqueBTCTx []byte) error {
+	key := GenerateBridgeHubStatusObjectKey(GetBridgeHubTxPrefix(), uniqueBTCTx)
+	value := NewBridgeHubStatusStateWithValue(GetBridgeHubTxPrefix(), []byte{}, uniqueBTCTx)
+	err := stateDB.SetStateObject(BridgeHubPTokenObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(BridgeInsertBTCHubTxHashIssuedError, err)
+	}
+	return nil
+}
+
+func IsBTCHubTxHashIssued(stateDB *StateDB, uniqueBTCTx []byte) (bool, error) {
+	key := GenerateBridgeHubStatusObjectKey(GetBridgeHubTxPrefix(), uniqueBTCTx)
+	_, has, err := stateDB.getBridgeBridgeHubTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsBridgeHubTxHashIssuedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	// todo: update bridge object type
+	if bytes.Compare([]byte{}, uniqueBTCTx) != 0 {
+		panic("same key wrong value")
+	}
+	return true, nil
+}
+
 func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash, privacyTokenExisted bool) (bool, error) {
 	dBridgeTokenExisted, err := IsBridgeTokenExistedByType(stateDB, incTokenID, false)
 	if err != nil {

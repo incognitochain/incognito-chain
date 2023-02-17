@@ -121,6 +121,9 @@ const (
 	ConsensusMetadataInvalidTransactionSenderError
 	AddStakingNotInCommitteeListError
 	AddStakingCommitteeNotFoundError
+
+	IssuingBtcHubRequestDecodeInstructionError
+	IssuingBtcHubRequestUnmarshalJsonError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -235,6 +238,10 @@ var ErrCodeMessage = map[int]struct {
 	ConsensusMetadataInvalidTransactionSenderError: {-4121, "ConsensusMetadata Invalid Transaction Sender Error"},
 	AddStakingNotInCommitteeListError:              {-4122, "AddStaking Not In Committee List Error"},
 	AddStakingCommitteeNotFoundError:               {-4123, "AddStaking Committee Not Found Error"},
+
+	// btc hub
+	IssuingBtcHubRequestDecodeInstructionError: {-4200, "decode btc hub request error"},
+	IssuingBtcHubRequestUnmarshalJsonError:     {-4200, "unmarshal btc hub request error"},
 }
 
 type MetadataTxError struct {

@@ -14,6 +14,7 @@ type StateEnvironment struct {
 	slashActions                [][]string
 	registerBridgeActions       [][]string
 	swapBridgeValidatorsActions [][]string
+	shieldBridgeActions         [][]string
 
 	beaconHeight      uint64
 	accumulatedValues *metadata.AccumulatedValues
@@ -112,4 +113,8 @@ func (env StateEnvironment) RegisterBridgeActions() [][]string {
 
 func (env StateEnvironment) SwapBridgeValidatorsActions() [][]string {
 	return env.swapBridgeValidatorsActions
+}
+
+func (env StateEnvironment) ShieldBridgeActions() [][]string {
+	return env.shieldBridgeActions
 }

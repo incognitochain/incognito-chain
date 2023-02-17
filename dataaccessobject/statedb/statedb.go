@@ -2729,6 +2729,17 @@ func (stateDB *StateDB) getBridgeHubParamByKey(key common.Hash) (*BridgeHubParam
 	return NewBridgeHubParamState(), false, nil
 }
 
+func (stateDB *StateDB) getBridgeBridgeHubTxState(key common.Hash) (*BridgeHubPTokenState, bool, error) {
+	avaxTxState, err := stateDB.getStateObject(BridgeHubPTokenObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if avaxTxState != nil {
+		return avaxTxState.GetValue().(*BridgeHubPTokenState), true, nil
+	}
+	return NewBridgeHubPTokenState(), false, nil
+}
+
 func (stateDB *StateDB) iterateBridgeHubBridgeInfos(prefix []byte) ([]*BridgeInfoState, error) {
 	res := []*BridgeInfoState{}
 	temp := stateDB.trie.NodeIterator(prefix)

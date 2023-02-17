@@ -12,6 +12,8 @@ const (
 	InvalidStakedAmountValidatorError
 	BridgeIDExistedError
 	InvalidStatusError
+	InvalidBTCShieldStatus
+	StoreShieldExtTxError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -23,6 +25,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidStakedAmountValidatorError: {2001, "Validator staked amount must meet the minimum amount"},
 	BridgeIDExistedError:              {2002, "Bridge validator was registered before"},
 	InvalidStatusError:                {2003, "Invalid instruction status error"},
+	InvalidBTCShieldStatus:            {2004, "Invalid btc shield status"},
 }
 
 type BridgeHubError struct {
