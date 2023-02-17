@@ -752,7 +752,7 @@ func (s *BeaconCommitteeStateV4) ProcessUpdateBeaconPerformance(env ProcessConte
 	return nil, s.updateBeaconPerformance(env.BeaconHeader.PreviousValidationData)
 }
 
-func (s *BeaconCommitteeStateV4) ProcessCalculateAndWithdrawDelegationReward(env ProcessContext) ([][]string, error) {
+func (s *BeaconCommitteeStateV4) ProcessValidateWithdrawDelegationReward(env ProcessContext) ([][]string, error) {
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
 			continue
