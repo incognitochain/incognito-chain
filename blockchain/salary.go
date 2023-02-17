@@ -1161,8 +1161,12 @@ func (blockchain *BlockChain) MintDelegationRewardFromInstructionRequests(insts 
 		reqDRewardInstruction := inst
 		for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
 			amount, err := blockchain.GetDelegationRewardAmount(stateDB, payment.Pk)
-			if err != nil {
-				return nil, err
+			if err != nil { //will not generate instruction to withdraw delegation reward for this pk. Cannot get delegation reward because of calculation process! Wait next epoch!
+				Logger.log.Errorf("Cannot get delegation reward. SKIP. %+v", err)
+				continue
+			}
+			if amount == 0 {
+				continue
 			}
 			mintRewardAmount = append(mintRewardAmount, amount)
 			mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
