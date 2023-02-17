@@ -1036,21 +1036,34 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			reD_dgtor_pks = append(reD_dgtor_pks, redelegateMetadata.CommitteePublicKey)
 			reD_dgtee_pks = append(reD_dgtee_pks, redelegateMetadata.NewDelegate)
 			reD_dgtee_uid = append(reD_dgtee_uid, redelegateMetadata.DelegateUID)
-		case metadata.WithDrawRewardRequestMeta:
+		case metadata.WithDrawRewardRequestMeta, metadata.WithdrawDelegationRewardRequestMeta:
 			if bc.GetBeaconBestState().TriggeredFeature[config.DELEGATION_REWARD] <= beaconHeight {
+				var (
+					txRequest   string
+					paymentAddr privacy.PaymentAddress
+				)
+				txRequest = tx.Hash().String()
 				requestWithDrawRewardMetadata, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
 				if !ok {
-					return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.WithDrawRewardRequest but get %+v", reflect.TypeOf(tx.GetMetadata()))
-				}
-				if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
-					wl := wallet.KeyWallet{}
-					wl.KeySet.PaymentAddress = requestWithDrawRewardMetadata.PaymentAddress
-					receiverAddr := wl.Base58CheckSerialize(wallet.PaymentAddressType)
-					if _, ok := receiversReqDReward[receiverAddr]; !ok {
-						receiversReqDReward[receiverAddr] = tx.Hash().String()
+					if requestWithdrawDelegationRewardMetadata, ok := tx.GetMetadata().(*metadata.WithdrawDelegationRewardRequest); !ok {
+						return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.WithDrawRewardRequest or *metadata.WithdrawDelegationRewardRequest but get %+v", reflect.TypeOf(tx.GetMetadata()))
 					} else {
-						Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
+						paymentAddr = requestWithdrawDelegationRewardMetadata.PaymentAddress
 					}
+				} else {
+					if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
+						paymentAddr = requestWithDrawRewardMetadata.PaymentAddress
+					} else {
+						continue
+					}
+				}
+				wl := wallet.KeyWallet{}
+				wl.KeySet.PaymentAddress = paymentAddr
+				receiverAddr := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+				if _, ok := receiversReqDReward[receiverAddr]; !ok {
+					receiversReqDReward[receiverAddr] = txRequest
+				} else {
+					Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
 				}
 			}
 		}

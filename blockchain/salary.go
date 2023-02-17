@@ -7,8 +7,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/privacy/key"
-
 	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -616,7 +614,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 }
 
 // buildInstRewardForBeacons create reward instruction for beacons
-func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, rewardReceiver []key.PaymentAddress) ([][]string, error) {
+func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, rewardReceiver []privacy.PaymentAddress) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
@@ -1101,7 +1099,7 @@ func (blockchain *BlockChain) GetBeaconSharePriceByEpoch(epoch uint64, uid strin
 
 }
 
-func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB, pk key.PublicKey) (uint64, error) {
+func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB, pk privacy.PublicKey) (uint64, error) {
 	rewardState, has, err := statedb.GetDelegationReward(stateDB, pk)
 	if err != nil {
 		return 0, err

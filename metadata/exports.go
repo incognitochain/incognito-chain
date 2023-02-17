@@ -79,6 +79,8 @@ const (
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
+
+	WithdrawDelegationRewardRequestMeta = metadataCommon.WithdrawDelegationRewardRequestMeta
 	// staking
 	ShardStakingMeta    = metadataCommon.ShardStakingMeta
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
