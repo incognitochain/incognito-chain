@@ -211,9 +211,9 @@ func IsAVAXTxHashIssued(stateDB *StateDB, uniqueAVAXTx []byte) (bool, error) {
 }
 
 func InsertBTCHubTxHashIssued(stateDB *StateDB, uniqueBTCTx []byte) error {
-	key := GenerateBridgeHubStatusObjectKey(GetBridgeHubTxPrefix(), uniqueBTCTx)
-	value := NewBridgeHubStatusStateWithValue(GetBridgeHubTxPrefix(), []byte{}, uniqueBTCTx)
-	err := stateDB.SetStateObject(BridgeHubPTokenObjectType, key, value)
+	key := GenerateBridgeHubTxObjectKey(uniqueBTCTx)
+	value := NewBridgeHubTxStateWithValue(uniqueBTCTx)
+	err := stateDB.SetStateObject(BridgeHubTxObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(BridgeInsertBTCHubTxHashIssuedError, err)
 	}
@@ -221,16 +221,15 @@ func InsertBTCHubTxHashIssued(stateDB *StateDB, uniqueBTCTx []byte) error {
 }
 
 func IsBTCHubTxHashIssued(stateDB *StateDB, uniqueBTCTx []byte) (bool, error) {
-	key := GenerateBridgeHubStatusObjectKey(GetBridgeHubTxPrefix(), uniqueBTCTx)
-	_, has, err := stateDB.getBridgeBridgeHubTxState(key)
+	key := GenerateBridgeHubTxObjectKey(uniqueBTCTx)
+	bridgeHubTx, has, err := stateDB.getBridgeBridgeHubTxState(key)
 	if err != nil {
 		return false, NewStatedbError(IsBridgeHubTxHashIssuedError, err)
 	}
 	if !has {
 		return false, nil
 	}
-	// todo: update bridge object type
-	if bytes.Compare([]byte{}, uniqueBTCTx) != 0 {
+	if bytes.Compare(bridgeHubTx.UniqueBridgeHubTx(), uniqueBTCTx) != 0 {
 		panic("same key wrong value")
 	}
 	return true, nil

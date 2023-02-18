@@ -191,6 +191,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeHubPTokenObjectWithValue(db, hash, value)
 	case BridgeHubStatusObjectType:
 		return newBridgeHubStatusObjectWithValue(db, hash, value)
+	case BridgeHubTxObjectType:
+		return newBridgeHubTxObjectWithValue(db, hash, value)
 
 	default:
 		panic("state object type not exist")
@@ -363,6 +365,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeHubPTokenObject(db, hash)
 	case BridgeHubStatusObjectType:
 		return newBridgeHubStatusObject(db, hash)
+	case BridgeHubTxObjectType:
+		return newBridgeHubTxObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

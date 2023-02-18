@@ -2729,15 +2729,15 @@ func (stateDB *StateDB) getBridgeHubParamByKey(key common.Hash) (*BridgeHubParam
 	return NewBridgeHubParamState(), false, nil
 }
 
-func (stateDB *StateDB) getBridgeBridgeHubTxState(key common.Hash) (*BridgeHubPTokenState, bool, error) {
-	avaxTxState, err := stateDB.getStateObject(BridgeHubPTokenObjectType, key)
+func (stateDB *StateDB) getBridgeBridgeHubTxState(key common.Hash) (*BridgeHubTxState, bool, error) {
+	bridgeHubTxState, err := stateDB.getStateObject(BridgeHubTxObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
-	if avaxTxState != nil {
-		return avaxTxState.GetValue().(*BridgeHubPTokenState), true, nil
+	if bridgeHubTxState != nil {
+		return bridgeHubTxState.GetValue().(*BridgeHubTxState), true, nil
 	}
-	return NewBridgeHubPTokenState(), false, nil
+	return NewBridgeHubTxState(), false, nil
 }
 
 func (stateDB *StateDB) iterateBridgeHubBridgeInfos(prefix []byte) ([]*BridgeInfoState, error) {
