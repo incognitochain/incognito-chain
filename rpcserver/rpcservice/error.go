@@ -163,6 +163,9 @@ const (
 
 	// prune
 	PruneError
+
+	// bridge hub
+	GetBridgeHubStateError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -316,6 +319,8 @@ var ErrCodeMessage = map[int]struct {
 
 	// prune
 	PruneError: {-14000, "Prune error"},
+
+	GetBridgeHubStateError: {-15000, "Get bridge hub state error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

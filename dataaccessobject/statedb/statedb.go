@@ -2757,3 +2757,21 @@ func (stateDB *StateDB) iterateBridgeHubBridgeInfos(prefix []byte) ([]*BridgeInf
 	}
 	return res, nil
 }
+
+func (stateDB *StateDB) iterateBridgeHubPTokens(prefix []byte) ([]*BridgeHubPTokenState, error) {
+	res := []*BridgeHubPTokenState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next(true, false, true) {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		pTokenState := NewBridgeHubPTokenState()
+		err := json.Unmarshal(newValue, &pTokenState)
+		if err != nil {
+			return res, err
+		}
+		res = append(res, pTokenState)
+	}
+	return res, nil
+}

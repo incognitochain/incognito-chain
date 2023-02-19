@@ -25,12 +25,23 @@ func (s *BridgeHubState) StakingInfos() map[string]uint64 {
 	return s.stakingInfos
 }
 
-func NewBrigdeHubState() *BridgeHubState {
+func (s *BridgeHubState) BridgeInfos() map[string]*BridgeInfo {
+	return s.bridgeInfos
+}
+
+func (s *BridgeHubState) TokenPrices() map[string]uint64 {
+	return s.tokenPrices
+}
+func (s *BridgeHubState) Params() *statedb.BridgeHubParamState {
+	return s.params
+}
+
+func NewBridgeHubState() *BridgeHubState {
 	return &BridgeHubState{}
 }
 
 func (s *BridgeHubState) Clone() *BridgeHubState {
-	res := NewBrigdeHubState()
+	res := NewBridgeHubState()
 
 	if s.params != nil {
 		res.params = s.params.Clone()

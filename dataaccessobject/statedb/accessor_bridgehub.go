@@ -49,7 +49,17 @@ func StoreBridgeHubBridgeInfo(stateDB *StateDB, bridgeID string, state *BridgeIn
 	return stateDB.SetStateObject(BridgeHubBridgeInfoObjectType, key, state)
 }
 
-func GetBridgeHubBridgeInfoByBridgeID(stateDB *StateDB, bridgeID string) ([]*BridgeInfoState, error) {
+func GetBridgeHubBridgeInfo(stateDB *StateDB) ([]*BridgeInfoState, error) {
 	prefixHash := GetBridgeHubBridgeInfoPrefix()
 	return stateDB.iterateBridgeHubBridgeInfos(prefixHash)
+}
+
+func StoreBridgeHubPTokenAmount(stateDB *StateDB, bridgeID string, pTokenID string, state *BridgeHubPTokenState) error {
+	key := GenerateBridgeHubPTokenObjectKey(bridgeID, pTokenID)
+	return stateDB.SetStateObject(BridgeHubPTokenObjectType, key, state)
+}
+
+func GetBridgeHubPTokenByBridgeID(stateDB *StateDB, bridgeID string) ([]*BridgeHubPTokenState, error) {
+	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
+	return stateDB.iterateBridgeHubPTokens(prefixHash)
 }

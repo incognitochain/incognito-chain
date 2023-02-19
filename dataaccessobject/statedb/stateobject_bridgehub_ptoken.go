@@ -9,6 +9,7 @@ import (
 )
 
 type BridgeHubPTokenState struct {
+	pTokenID     string
 	pTokenAmount uint64 // pTokenID : amount
 }
 
@@ -20,8 +21,17 @@ func (b *BridgeHubPTokenState) SetPTokenAmount(pTokenAmount uint64) {
 	b.pTokenAmount = pTokenAmount
 }
 
+func (b BridgeHubPTokenState) PTokenID() string {
+	return b.pTokenID
+}
+
+func (b *BridgeHubPTokenState) SetPTokenID(pTokenID string) {
+	b.pTokenID = pTokenID
+}
+
 func (b BridgeHubPTokenState) Clone() *BridgeHubPTokenState {
 	return &BridgeHubPTokenState{
+		pTokenID:     b.pTokenID,
 		pTokenAmount: b.pTokenAmount,
 	}
 }
@@ -30,13 +40,15 @@ func (b *BridgeHubPTokenState) IsDiff(compareParam *BridgeHubPTokenState) bool {
 	if compareParam == nil {
 		return true
 	}
-	return b.pTokenAmount != compareParam.pTokenAmount
+	return b.pTokenAmount != compareParam.pTokenAmount || b.pTokenID != compareParam.pTokenID
 }
 
 func (b BridgeHubPTokenState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
+		PTokenID     string
 		PTokenAmount uint64
 	}{
+		PTokenID:     b.pTokenID,
 		PTokenAmount: b.pTokenAmount,
 	})
 	if err != nil {
@@ -47,12 +59,14 @@ func (b BridgeHubPTokenState) MarshalJSON() ([]byte, error) {
 
 func (b *BridgeHubPTokenState) UnmarshalJSON(data []byte) error {
 	temp := struct {
+		PTokenID     string
 		PTokenAmount uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
+	b.pTokenID = temp.PTokenID
 	b.pTokenAmount = temp.PTokenAmount
 	return nil
 }
@@ -61,8 +75,9 @@ func NewBridgeHubPTokenState() *BridgeHubPTokenState {
 	return &BridgeHubPTokenState{}
 }
 
-func NewBridgeHubPTokenStateWithValue(pTokenAmount uint64) *BridgeHubPTokenState {
+func NewBridgeHubPTokenStateWithValue(pTokenAmount uint64, pTokenID string) *BridgeHubPTokenState {
 	return &BridgeHubPTokenState{
+		pTokenID:     pTokenID,
 		pTokenAmount: pTokenAmount,
 	}
 }
@@ -122,7 +137,7 @@ func newBridgeHubPTokenObjectWithValue(db *StateDB, key common.Hash, data interf
 	}, nil
 }
 
-func GenerateBridgePTokenObjectKey(bridgeID, pTokenID string) common.Hash {
+func GenerateBridgeHubPTokenObjectKey(bridgeID, pTokenID string) common.Hash {
 	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
 	valueHash := common.HashH([]byte(pTokenID))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))

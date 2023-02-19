@@ -18,7 +18,7 @@ type Manager struct {
 
 func NewManager() *Manager {
 	return &Manager{
-		state:     NewBrigdeHubState(),
+		state:     NewBridgeHubState(),
 		producer:  stateProducer{},
 		processor: stateProcessor{},
 	}
