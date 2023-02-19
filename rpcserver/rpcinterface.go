@@ -431,6 +431,9 @@ var HttpHandler = map[string]httpHandler{
 	prune:          (*HttpServer).handlePrune,
 	getPruneState:  (*HttpServer).getPruneState,
 	checkPruneData: (*HttpServer).checkPruneData,
+
+	// bridge hub
+	createAndSendBridgeHubRegisterBridgeTx: (*HttpServer).handleCreateAndSendBridgeHubRegisterBridgeTx,
 }
 
 // Commands that are available to a limited user

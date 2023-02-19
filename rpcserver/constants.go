@@ -455,6 +455,8 @@ const (
 	prune          = "pruneState"
 	getPruneState  = "getPruneState"
 	checkPruneData = "checkprunedata"
+
+	createAndSendBridgeHubRegisterBridgeTx = "createandsendbridgehubregisterbridgetx"
 )
 
 const (
