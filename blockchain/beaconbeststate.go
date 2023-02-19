@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgehub"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -109,6 +110,7 @@ type BeaconBestState struct {
 	portalStateV3          *portalprocessv3.CurrentPortalState
 	portalStateV4          *portalprocessv4.CurrentPortalStateV4
 	bridgeAggManager       *bridgeagg.Manager
+	bridgeHubManager       *bridgehub.Manager
 	LastBlockProcessBridge uint64
 }
 
@@ -145,6 +147,7 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	beaconBestState.pdeStates = make(map[uint]pdex.State)
 	beaconBestState.bridgeAggManager = bridgeagg.NewManager()
+	beaconBestState.bridgeHubManager = bridgehub.NewManager()
 	beaconBestState.ShardTSManager = make(map[byte]*TSManager)
 	return beaconBestState
 }
@@ -530,6 +533,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	if beaconBestState.bridgeAggManager != nil {
 		beaconBestState.bridgeAggManager = target.bridgeAggManager.Clone()
 	}
+	if beaconBestState.bridgeHubManager != nil {
+		beaconBestState.bridgeHubManager = target.bridgeHubManager.Clone()
+	}
 
 	return nil
 }
@@ -621,6 +627,10 @@ func (beaconBestState *BeaconBestState) GetMissingSignaturePenalty() map[string]
 
 func (beaconBestState *BeaconBestState) BridgeAggManager() *bridgeagg.Manager {
 	return beaconBestState.bridgeAggManager
+}
+
+func (beaconBestState *BeaconBestState) BridgeHubManager() *bridgehub.Manager {
+	return beaconBestState.bridgeHubManager
 }
 
 func (beaconBestState *BeaconBestState) PdeState(version uint) pdex.State {

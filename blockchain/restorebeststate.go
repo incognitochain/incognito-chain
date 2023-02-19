@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgehub"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -13,7 +14,7 @@ import (
 
 //RestoreBeaconViewStateFromHash ...
 func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
-	blockchain *BlockChain, includeCommittee, includePdexv3, includeBridgeAgg bool,
+	blockchain *BlockChain, includeCommittee, includePdexv3, includeBridgeAgg bool, includeBridgeHub bool,
 ) error {
 	Logger.log.Infof("Start restore beaconBestState")
 	err := beaconBestState.InitStateRootHash(blockchain)
@@ -68,6 +69,9 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(
 	}
 	if includeBridgeAgg {
 		beaconBestState.bridgeAggManager, err = bridgeagg.InitManager(beaconBestState.featureStateDB)
+	}
+	if includeBridgeHub {
+		beaconBestState.bridgeHubManager, err = bridgehub.InitManager(beaconBestState.featureStateDB)
 	}
 	Logger.log.Infof("Finish restore beaconBestState")
 	return err

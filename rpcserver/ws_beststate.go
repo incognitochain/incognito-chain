@@ -3,8 +3,9 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -109,7 +110,8 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 				}
 
 				for _, v := range allViews {
-					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true, false, false)
+					// TODO: 0xkraken: why false?
+					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true, false, false, false)
 					if err != nil {
 						cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
 					}

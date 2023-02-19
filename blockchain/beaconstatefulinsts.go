@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgehub"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
@@ -94,7 +95,7 @@ func collectStatefulActions(
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta,
 			metadataCommon.BridgeHubRegisterBridgeMeta,
-			metadataCommon.ShieldingBTCRequestMeta:
+			metadataCommon.ShieldingBTCRequestMeta: // TODO: add more
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -191,6 +192,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 		return utils.EmptyStringMatrix, err
 	}
+
+	// bridge hub actions collector
+	bridgeHubStakeActions := make([][]string, beaconBestState.ActiveShards)
+	bridgeHubRegisterBridgeActions := make([][]string, beaconBestState.ActiveShards)
+	bridgeHubShieldActions := make([][]string, beaconBestState.ActiveShards)
+	bridgeHubUnshieldActions := make([][]string, beaconBestState.ActiveShards)
 
 	newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggManager.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues, beaconBestState.TriggeredFeature)
 	if err != nil {
@@ -406,6 +413,11 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				convertActions[shardID] = append(convertActions[shardID], contentStr)
 			case metadataCommon.IssuingUnifiedTokenRequestMeta:
 				shieldActions[shardID] = append(shieldActions[shardID], contentStr)
+			case metadataCommon.BridgeHubRegisterBridgeMeta:
+				bridgeHubRegisterBridgeActions[shardID] = append(bridgeHubRegisterBridgeActions[shardID], contentStr)
+			case metadataCommon.ShieldingBTCRequestMeta:
+				bridgeHubShieldActions[shardID] = append(bridgeHubShieldActions[shardID], contentStr)
+			// TODO: add more
 			default:
 				continue
 			}
@@ -474,6 +486,24 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 	if len(bridgeAggInsts) > 0 {
 		instructions = append(instructions, bridgeAggInsts...)
+	}
+	accumulatedValues = newAccumulatedValues
+
+	// Bridge aggregator instructions (don't build unshield instructions here)
+	bridgeHubEnv := bridgehub.NewStateEnvironment().
+		SetRegisterBridgeActions(bridgeHubRegisterBridgeActions).
+		SetStakeActions(bridgeHubStakeActions).
+		SetShieldActions(bridgeHubShieldActions).
+		SetUnshieldActions(bridgeHubUnshieldActions).
+		SetAccumulatedValues(accumulatedValues).
+		SetBeaconHeight(beaconHeight).
+		SetStateDBs(sDBs)
+	bridgeHubInsts, newAccumulatedValues, err := beaconBestState.bridgeHubManager.BuildInstructions(bridgeHubEnv)
+	if err != nil {
+		return instructions, err
+	}
+	if len(bridgeHubInsts) > 0 {
+		instructions = append(instructions, bridgeHubInsts...)
 	}
 	accumulatedValues = newAccumulatedValues
 

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgehub"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -1071,6 +1072,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 
+	// execute, store bridge hub instructions
+	err = newBestState.bridgeHubManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	if err != nil {
+		return NewBlockChainError(ProcessBridgeInstructionError, err)
+	}
+
 	// optimize storing PortalV3 state
 	if newBestState.portalStateV3 != nil {
 		if !reflect.DeepEqual(curView.portalStateV3, newBestState.portalStateV3) {
@@ -1114,6 +1121,29 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			err = m.UpdateToDB(newBestState.featureStateDB, newVaults)
 			if err != nil {
 				Logger.log.Errorf("Error update to db: %v", err)
+				return err
+			}
+		}
+	}
+
+	// optimize storing BridgeHubState
+	err = newBestState.bridgeHubManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
+	if err != nil {
+		return NewBlockChainError(ProcessBridgeInstructionError, err)
+	}
+
+	if newBestState.bridgeHubManager != nil {
+		diffState, err := newBestState.bridgeHubManager.GetDiffState(curView.bridgeHubManager.State())
+		fmt.Println("[BriHub] Process beacon block diffState", diffState)
+		if err != nil {
+			Logger.log.Errorf("Error get diff bridge hub state: %v", err)
+			return err
+		}
+		if diffState != nil {
+			m := bridgehub.NewManagerWithValue(diffState)
+			err = m.UpdateToDB(newBestState.featureStateDB)
+			if err != nil {
+				Logger.log.Errorf("Error update BridgeHubState to db: %v", err)
 				return err
 			}
 		}

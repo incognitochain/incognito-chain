@@ -42,7 +42,7 @@ func NewManagerWithValue(state *BridgeHubState) *Manager {
 	}
 }
 
-func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
+func (m *Manager) BuildInstructions(env *StateEnvironment) ([][]string, *metadata.AccumulatedValues, error) {
 	res := [][]string{}
 	insts := [][]string{}
 	var err error
@@ -142,11 +142,11 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 	return nil
 }
 
-func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
+func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 	// store new/updated bridge info
 	for bridgeID, bridgeInfo := range m.state.bridgeInfos {
 		// TODO: 0xkraken recheck this condition
-		if bridgeInfo.Info != nil {
+		if bridgeInfo.Info != nil && bridgeInfo.Info.BridgeID() != "" {
 			err := statedb.StoreBridgeHubBridgeInfo(sDB, bridgeID, bridgeInfo.Info)
 			if err != nil {
 				return err
