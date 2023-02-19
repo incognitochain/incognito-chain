@@ -24,7 +24,6 @@ func NewManager() *Manager {
 	}
 }
 
-// TODO 0xkraken: implement
 func (m *Manager) Clone() *Manager {
 	return &Manager{
 		state: m.state.Clone(),
@@ -142,59 +141,43 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 	return nil
 }
 
-// func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
-// 	// store new unifiedTokens
-// 	for unifiedTokenID := range newUnifiedTokens {
-// 		err := statedb.StoreBridgeAggUnifiedToken(
-// 			sDB,
-// 			unifiedTokenID,
-// 			statedb.NewBridgeAggUnifiedTokenStateWithValue(unifiedTokenID),
-// 		)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
+func (m *Manager) UpdateToDB(sDB *statedb.StateDB, newUnifiedTokens map[common.Hash]bool) error {
+	// store new/updated bridge info
+	for bridgeID, bridgeInfo := range m.state.bridgeInfos {
+		// TODO: 0xkraken recheck this condition
+		if bridgeInfo.Info != nil {
+			err := statedb.StoreBridgeHubBridgeInfo(sDB, bridgeID, bridgeInfo.Info)
+			if err != nil {
+				return err
+			}
+		}
 
-// 	// store updated vaults
-// 	for unifiedTokenID, vaults := range m.state.unifiedTokenVaults {
-// 		for tokenID, vault := range vaults {
-// 			err := statedb.StoreBridgeAggVault(sDB, unifiedTokenID, tokenID, vault)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
+		if bridgeInfo.PTokenAmounts != nil {
+			for pTokenID, pTokenInfo := range bridgeInfo.PTokenAmounts {
+				err := statedb.StoreBridgeHubPTokenAmount(sDB, bridgeID, pTokenID, pTokenInfo)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 
-// 	// store new waiting unshield reqs
-// 	for unifiedTokenID, unshieldReqs := range m.state.newWaitingUnshieldReqs {
-// 		for _, req := range unshieldReqs {
-// 			err := statedb.StoreBridgeAggWaitingUnshieldReq(sDB, unifiedTokenID, req.GetUnshieldID(), req)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
+	// store new param
+	if m.state.params != nil {
+		err := statedb.StoreBridgeHubParam(sDB, m.state.params)
+		if err != nil {
+			return err
+		}
+	}
 
-// 	// store new param
-// 	if m.state.param != nil {
-// 		err := statedb.StoreBridgeAggParam(sDB, m.state.param)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
+	// TODO: coding for stakingInfo, tokenPrices
 
-// 	// delete waiting unshield reqs
-// 	err := statedb.DeleteBridgeAggWaitingUnshieldReqs(sDB, m.state.deletedWaitingUnshieldReqKeyHashes)
-// 	if err != nil {
-// 		return err
-// 	}
+	return nil
+}
 
-// 	return nil
-// }
-
-// func (m *Manager) GetDiffState(state *State) (*State, map[common.Hash]bool, error) {
-// 	return m.state.GetDiff(state)
-// }
+func (m *Manager) GetDiffState(state *BridgeHubState) (*BridgeHubState, error) {
+	return m.state.GetDiff(state)
+}
 
 // func (m *Manager) InitBridgeAggParamDefault() error {
 // 	if m.state.param != nil {

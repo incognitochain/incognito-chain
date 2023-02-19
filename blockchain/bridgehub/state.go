@@ -1,6 +1,8 @@
 package bridgehub
 
 import (
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -59,8 +61,66 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 		}
 		bridgeInfos[bridgeID] = infoTmp
 	}
+	res.bridgeInfos = bridgeInfos
 
-	// TODO 0xkraken: code more
+	// TODO: coding for stakingInfo, tokenPrices
 
 	return res
+}
+
+func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, error) {
+	if preState == nil {
+		return nil, errors.New("preState is nil")
+	}
+
+	diffState := NewBridgeHubState()
+
+	// get diff bridgeInfos
+	newBridgeInfos := map[string]*BridgeInfo{}
+	for bridgeID, bridgeInfo := range s.bridgeInfos {
+		isUpdateBridgeInfo := false
+		if preBridge, found := preState.bridgeInfos[bridgeID]; found {
+			// check info
+			isUpdateBridgeInfo = preBridge.Info.IsDiff(bridgeInfo.Info)
+
+			// check list ptoken
+			for pTokenID, pTokenInfo := range bridgeInfo.PTokenAmounts {
+				isUpdate := true
+				if prePTokenInfo, found := preBridge.PTokenAmounts[pTokenID]; found && !prePTokenInfo.IsDiff(pTokenInfo) {
+					isUpdate = false
+				}
+				if isUpdate {
+					if newBridgeInfos[bridgeID] == nil {
+						newBridgeInfos[bridgeID] = &BridgeInfo{}
+					}
+					if newBridgeInfos[bridgeID].PTokenAmounts == nil {
+						newBridgeInfos[bridgeID].PTokenAmounts = map[string]*statedb.BridgeHubPTokenState{}
+					}
+					newBridgeInfos[bridgeID].PTokenAmounts[pTokenID] = pTokenInfo
+				}
+			}
+
+		} else {
+			isUpdateBridgeInfo = true
+		}
+
+		if isUpdateBridgeInfo {
+			if newBridgeInfos[bridgeID] == nil {
+				newBridgeInfos[bridgeID] = &BridgeInfo{}
+			}
+			newBridgeInfos[bridgeID].Info = bridgeInfo.Info
+		}
+	}
+	diffState.bridgeInfos = newBridgeInfos
+
+	// get diff param
+	if s.params != nil && s.params.IsDiff(preState.params) {
+		diffState.params = s.params
+	} else {
+		diffState.params = nil
+	}
+
+	// TODO: coding for stakingInfo, tokenPrices
+
+	return diffState, nil
 }
