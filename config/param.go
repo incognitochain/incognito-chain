@@ -80,6 +80,7 @@ type param struct {
 	PDexParams                       pdexParam                    `mapstructure:"pdex_param"`
 	IsEnableBPV3Stats                bool                         `mapstructure:"is_enable_bpv3_stats"`
 	BridgeAggParam                   bridgeAggParam               `mapstructure:"bridge_agg_param"`
+	BridgeHubParam                   bridgeHubParam               `mapstructure:"bridge_hub_param"`
 	BlockTimeParam                   map[string]int64             `mapstructure:"blocktime_param"`
 	FeatureVersion                   map[string]int64             `mapstructure:"feature_version"`
 	TransactionInBlockParam          TxsPerBlock                  `mapstructure:"transactions_param"`
@@ -420,4 +421,9 @@ type bridgeAggParam struct {
 	MaxLenOfPath                 uint8  `mapstructure:"max_len_of_path"`
 	PercentFeeDecimal            uint64 `mapstructure:"percent_fee_decimal"`
 	DefaultPercentFeeWithDecimal uint64 `mapstructure:"default_percent_fee_with_decimal"`
+}
+
+type bridgeHubParam struct {
+	MinNumberValidators       uint   `mapstructure:"min_number_validators"`
+	MinValidatorStakingAmount uint64 `mapstructure:"min_validator_staking_amount"`
 }

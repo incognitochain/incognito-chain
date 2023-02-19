@@ -140,3 +140,6 @@ bridge_agg_param:
   max_len_of_path: 3
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 100 # 0.01% * 1e6
+bridge_hub_param:
+  min_number_validators: 4
+  min_validator_staking_amount: 1000000000000 # 1000 PRV

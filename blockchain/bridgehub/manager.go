@@ -1,9 +1,11 @@
 package bridgehub
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
@@ -74,12 +76,11 @@ func (m *Manager) BuildInstructions(env StateEnvironment) ([][]string, *metadata
 }
 
 func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
-	// init bridge agg param if it's nil
-
-	// TODO: 0xkraken
-	// if m.state.params == nil {
-	// 	m.InitBridgeAggParamDefault()
-	// }
+	// init bridge hub param if it's nil
+	// it only runs one time when starting releasing
+	if m.state.params == nil {
+		m.InitBridgeHubParamDefault()
+	}
 
 	// process insts
 	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
@@ -179,10 +180,12 @@ func (m *Manager) GetDiffState(state *BridgeHubState) (*BridgeHubState, error) {
 	return m.state.GetDiff(state)
 }
 
-// func (m *Manager) InitBridgeAggParamDefault() error {
-// 	if m.state.param != nil {
-// 		return errors.New("Can not set bridge agg param to valued param")
-// 	}
-// 	m.state.param = statedb.NewBridgeAggParamStateWithValue(config.Param().BridgeAggParam.DefaultPercentFeeWithDecimal)
-// 	return nil
-// }
+func (m *Manager) InitBridgeHubParamDefault() error {
+	if m.state.params != nil {
+		return errors.New("Can not set bridge agg param to valued param")
+	}
+	m.state.params = statedb.NewBridgeHubParamStateWithValue(
+		config.Param().BridgeHubParam.MinNumberValidators,
+		config.Param().BridgeHubParam.MinValidatorStakingAmount)
+	return nil
+}
