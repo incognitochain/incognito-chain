@@ -413,8 +413,8 @@ func (sim *NodeEngine) PrintBlockChainInfo() {
 	fmt.Println("Shard Chain:")
 }
 
-//life cycle of a block generation process:
-//PreCreate -> PreValidation -> PreInsert ->
+// life cycle of a block generation process:
+// PreCreate -> PreValidation -> PreInsert ->
 func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	time.Sleep(time.Nanosecond)
 	var chainArray = []int{-1}
@@ -436,7 +436,6 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			validatorIndex = arg.(ValidatorIndex)
 		}
 	}
-
 	//Create blocks for apply chain
 	for _, chainID := range chainArray {
 		var block types.BlockInterface = nil
@@ -556,8 +555,8 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	return sim
 }
 
-//number of second we want simulation to forward
-//default = round interval
+// number of second we want simulation to forward
+// default = round interval
 func (sim *NodeEngine) NextRound() {
 	sim.timer.Forward(int64(common.TIMESLOT))
 }
@@ -595,6 +594,7 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 	//if len(committees) != len(committeeIndex) {
 	//	fmt.Println(len(committees), len(committeeIndex), committeeIndex)
 	//}
+	// fmt.Printf("%+v %+v %+v aaaaaaaaaaaaaaaaaaaaaaa\n", committeeIndex, block.GetHeight(), block.GetShardID())
 	if block.GetVersion() >= 2 {
 		votes := make(map[string]*blsbft.BFTVote)
 		for _, committee := range committees {
@@ -605,11 +605,17 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			//	fmt.Println(committee.Name)
 			//}
 		}
-		//for _, committeeID := range committeeIndex {
-		//	vote, _ := blsbft.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
-		//	vote.IsValid = 1
-		//	votes[vote.Validator] = vote
-		//}
+		var c blsbft.Chain
+		if block.GetShardID() == -1 {
+			c = s.bc.BeaconChain
+		} else {
+			c = s.bc.ShardChain[block.GetShardID()]
+		}
+		for _, committeeID := range committeeIndex {
+			vote, _ := blsbft.CreateVote(c, miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
+			vote.IsValid = 1
+			votes[vote.Validator] = vote
+		}
 		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committeePubKey, common.BlsConsensus)
 		aggSig, brigSigs, validatorIdx, portalSigs, err := blsbft.CombineVotes(votes, committeeBLSString)
 
@@ -669,11 +675,18 @@ func InitChainParam(cfg Config, customParam func(), postInit func(*NodeEngine)) 
 	node := NewStandaloneSimulation("sim", cfg)
 	customParam()
 	node.Init()
+	customParam()
 	postInit(node)
+	for i := 0; i < 5; i++ {
+		node.GenerateBlock().NextRound()
+	}
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
-	node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
+	err := node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
+	if err != nil {
+		panic(err)
+	}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		node.GenerateBlock().NextRound()
 	}
 	return node
@@ -698,7 +711,30 @@ func (s *NodeEngine) SendFinishSync(accs []account.Account, sid byte) {
 	s.GetBlockchain().AddFinishedSyncValidators(msg.CommitteePublicKey, msg.Signature, msg.ShardID)
 }
 
-func (s *NodeEngine) SendFeatureStat(accs []*account.Account, unTriggerFeatures []string) {
+func (s *NodeEngine) getUntriggerFeature(afterCheckPoint bool) []string {
+	curView := s.bc.GetBeaconBestState()
+	unTriggerFeatures := []string{}
+	for f, _ := range config.Param().AutoEnableFeature {
+		if config.Param().AutoEnableFeature[f].MinTriggerBlockHeight == 0 {
+			//skip default value
+			continue
+		}
+		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
+			if afterCheckPoint {
+				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {
+					unTriggerFeatures = append(unTriggerFeatures, f)
+				}
+			} else {
+				unTriggerFeatures = append(unTriggerFeatures, f)
+			}
+
+		}
+	}
+	return unTriggerFeatures
+}
+
+func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures []string) {
+	unTriggerFeatures = append(unTriggerFeatures, s.getUntriggerFeature(false)...)
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 	signBytes := []byte{}

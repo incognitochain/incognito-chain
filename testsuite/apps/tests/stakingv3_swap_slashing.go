@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,7 +16,7 @@ import (
 func Test_Stakingv3() {
 	cfg := testsuite.Config{
 		DataDir: "./data/",
-		Network: testsuite.ID_TESTNET2,
+		Network: testsuite.ID_LOCAL,
 		ResetDB: true,
 	}
 
@@ -24,36 +25,59 @@ func Test_Stakingv3() {
 		config.Param().BCHeightBreakPointNewZKP = 1
 		config.Param().BCHeightBreakPointPrivacyV2 = 2
 		config.Param().BeaconHeightBreakPointBurnAddr = 1
-		config.Param().ConsensusParam.EnableSlashingHeightV2 = 2
-		config.Param().ConsensusParam.StakingFlowV2Height = 5
-		config.Param().ConsensusParam.AssignRuleV3Height = 10
-		config.Param().ConsensusParam.StakingFlowV3Height = 15
+		config.Param().ConsensusParam.EnableSlashingHeightV2 = 1
+		config.Param().ConsensusParam.StakingFlowV2Height = 1
+		config.Param().ConsensusParam.AssignRuleV3Height = 1
+		config.Param().ConsensusParam.StakingFlowV3Height = 1
 		config.Param().CommitteeSize.MaxShardCommitteeSize = 16
-		config.Param().CommitteeSize.MinShardCommitteeSize = 4
+		config.Param().CommitteeSize.MaxBeaconCommitteeSize = 8
+		config.Param().CommitteeSize.MinShardCommitteeSize = 8
+		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 8
+		config.Param().CommitteeSize.NumberOfFixedShardBlockValidatorV2 = 8
 		config.Param().ConsensusParam.ConsensusV2Epoch = 1
-		config.Param().EpochParam.NumberOfBlockInEpoch = 20
-		config.Param().EpochParam.RandomTime = 10
+		config.Param().EpochParam.NumberOfBlockInEpoch = 10
+		config.Param().EpochParam.RandomTime = 5
 		config.Param().ConsensusParam.EpochBreakPointSwapNewKey = []uint64{1e9}
 		config.Config().LimitFee = 0
-	})
+		config.Param().PDexParams.Pdexv3BreakPointHeight = 1e9
+		config.Param().TxPoolVersion = 0
+		config.Param().MaxReward = 100000000000000
+	}, func(ne *testsuite.NodeEngine) {})
 
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
 	//stake node
 	stakers := []account.Account{}
 	for i := 0; i < 30; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
-
-		node.SendPRV(node.GenesisAccount, acc, 1e14)
-		node.GenerateBlock().NextRound()
-		node.GenerateBlock().NextRound()
-
-		fmt.Println("send", acc.Name)
 		stakers = append(stakers, acc)
 	}
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	x, e := node.RPC.API_GetBalance(node.GenesisAccount)
+	fmt.Printf("%+v - %+v\n", x, e)
+	accs := []interface{}{}
+	accs = append(accs, node.GenesisAccount)
+	for i := 0; i < 30; i++ {
+		acc := stakers[i]
+		accs = append(accs, acc)
+		accs = append(accs, 1e14)
+		fmt.Println("send", acc.Name)
+
+	}
+	result, err := node.SendPRVToMultiAccs(accs)
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	fmt.Printf("%+v --- %+v\n", result, err)
+	node.Pause()
 	for i := 0; i < len(stakers); i++ {
 		acc := stakers[i]
 		node.RPC.Stake(acc)
-		fmt.Println("stake", acc.Name)
+	}
+	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 
 		fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
@@ -79,20 +103,16 @@ func Test_Stakingv3() {
 		}
 		fmt.Println("substituteValidator", substituteValidatorStr)
 		fmt.Println("syncingValidatorStr", syncingValidatorStr)
-		if node.GetBlockchain().BeaconChain.CurrentHeight() == 71 {
+		if node.GetBlockchain().BeaconChain.CurrentHeight() >= 51 {
 			node.Pause()
 		}
 	}
 
 	node.GenerateBlock().NextRound()
 
-	for {
+	for i := 0; i < 10; i++ {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
-		epoch := currentBeaconBlock.GetCurrentEpoch()
-		if epoch > 20 {
-			break
-		}
 
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
@@ -104,6 +124,7 @@ func Test_Stakingv3() {
 	for {
 		node.SendFinishSync(stakers, 0)
 		node.SendFinishSync(stakers, 1)
+		node.SendFeatureStat(stakers, []string{})
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
@@ -144,7 +165,7 @@ func Test_Stakingv3() {
 		for _, v := range signIndex {
 			valIndex = append(valIndex, v)
 		}
-		node.Pause()
+		// node.Pause()
 		//fmt.Println(valIndex, signIndex)
 		node.ApplyChain(0).GenerateBlock(valIndex)
 		node.NextRound()

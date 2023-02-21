@@ -1108,7 +1108,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if newBestState.bridgeAggManager != nil {
 		diffState, newVaults, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
-		fmt.Println("HHH : diffState", diffState)
+		// fmt.Println("HHH : diffState", diffState)
 		if err != nil {
 			Logger.log.Errorf("Error get diff bridge agg: %v", err)
 			return err

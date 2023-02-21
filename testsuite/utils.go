@@ -5,16 +5,17 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/portal"
 	"io"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -165,6 +166,38 @@ func (sim *NodeEngine) SendPRV(args ...interface{}) (string, error) {
 		}
 	}
 	res, err := sim.RPC.API_SendTxPRV(sender, receivers, -1, true)
+	if err != nil {
+		fmt.Println(err)
+		sim.Pause()
+	}
+	return res.TxID, nil
+}
+
+func (sim *NodeEngine) SendPRVToMultiAccs(args ...interface{}) (string, error) {
+	var sender string
+	var receivers = make(map[string]uint64)
+	argsNew := args[0].([]interface{})
+
+	for i, arg := range argsNew {
+		if i == 0 {
+			sender = arg.(account.Account).PrivateKey
+		} else {
+			switch arg.(type) {
+			default:
+				if i%2 == 1 {
+					amount, ok := argsNew[i+1].(float64)
+					if !ok {
+						amountF64 := argsNew[i+1].(float64)
+						amount = amountF64
+					}
+					receivers[arg.(account.Account).PaymentAddress] = uint64(amount)
+				}
+			}
+		}
+	}
+	res, err := sim.RPC.API_SendTxPRV(sender, receivers, -1, true)
+	x, e := sim.RPC.Client.GetBalanceByPrivateKey(sender)
+	fmt.Printf("Balance of account %v is %+v, err %+v\n", sender, x, e)
 	if err != nil {
 		fmt.Println(err)
 		sim.Pause()
