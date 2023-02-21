@@ -239,7 +239,7 @@ func (httpServer *HttpServer) handleGetShardStakerInfo(params interface{}, close
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 	}
-	res, found, err := statedb.GetStakerInfo(stateDB, stakerPubkey)
+	res, found, err := statedb.GetShardStakerInfo(stateDB, stakerPubkey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

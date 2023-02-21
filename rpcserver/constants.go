@@ -247,10 +247,12 @@ const (
 	getPrvBurnProof          = "getprvburnproof"
 
 	// reward
-	CreateRawWithDrawTransaction = "withdrawreward"
-	getRewardAmount              = "getrewardamount"
-	getRewardAmountByPublicKey   = "getrewardamountbypublickey"
-	listRewardAmount             = "listrewardamount"
+	CreateRawWithDrawTransaction                 = "withdrawreward"
+	CreateRawWithDrawDelegationRewardTransaction = "withdrawdelegationreward"
+
+	getRewardAmount            = "getrewardamount"
+	getRewardAmountByPublicKey = "getrewardamountbypublickey"
+	listRewardAmount           = "listrewardamount"
 
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"

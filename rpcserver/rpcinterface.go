@@ -224,10 +224,11 @@ var HttpHandler = map[string]httpHandler{
 	getPrvBurnProof:          (*HttpServer).handleGetPRVBurnProof,
 
 	//reward
-	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
-	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
-	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
-	listRewardAmount:             (*HttpServer).handleListRewardAmount,
+	CreateRawWithDrawTransaction:                 (*HttpServer).handleCreateAndSendWithDrawTransaction,
+	CreateRawWithDrawDelegationRewardTransaction: (*HttpServer).handleCreateAndSendWithdrawDelegationRewardTransaction,
+	getRewardAmount:                              (*HttpServer).handleGetRewardAmount,
+	getRewardAmountByPublicKey:                   (*HttpServer).handleGetRewardAmountByPublicKey,
+	listRewardAmount:                             (*HttpServer).handleListRewardAmount,
 
 	// mining info
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,

@@ -233,12 +233,18 @@ func ResetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, inc
 	reward.incognitoPublicKey = incognitoPublicKey
 	reward.incognitoPaymentAddress = incognitoPaymentAddress
 	for shardCPK, dInfoByEpoch := range reward.Reward {
-		curDInfo, ok := dInfoByEpoch[epoch]
-		if !ok {
-			curDInfo = DelegateInfo{}
+		latestDelegateEpoch := 0
+		for k, _ := range dInfoByEpoch {
+			if latestDelegateEpoch < k {
+				latestDelegateEpoch = k
+			}
 		}
-		dInfoByEpoch = map[int]DelegateInfo{
-			epoch + 1: curDInfo,
+		latestInfo := dInfoByEpoch[latestDelegateEpoch]
+		dInfoByEpoch = map[int]DelegateInfo{}
+		if latestInfo.BeaconUID != "" {
+			dInfoByEpoch = map[int]DelegateInfo{
+				epoch: latestInfo,
+			}
 		}
 		reward.Reward[shardCPK] = dInfoByEpoch
 	}

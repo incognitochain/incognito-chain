@@ -1080,7 +1080,7 @@ func (blockchain *BlockChain) buildMintDelegationRewardTransaction(
 func (blockchain *BlockChain) GetBeaconSharePriceByEpoch(epoch uint64, uid string) (uint64, error) {
 	blockHeight := (epoch - 1) * config.Param().EpochParam.NumberOfBlockInEpoch
 	beaconConsensusStateRootHash, err := blockchain.GetBeaconRootsHashFromBlockHeight(
-		blockHeight,
+		blockHeight + 1,
 	)
 	if err != nil {
 		return 0, err
@@ -1119,6 +1119,9 @@ func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB
 		})
 		for i, epoch := range epochSortList {
 			beaconID := epochDelegate[epoch].BeaconUID
+			if beaconID == "" { //end of list ~ shard return staking
+				break
+			}
 			amount := epochDelegate[epoch].Amount
 			startBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epoch), beaconID)
 			if err != nil {
@@ -1129,7 +1132,7 @@ func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB
 				//last epoch
 				endBeaconSharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, beaconID)
 				if err != nil {
-					panic(fmt.Sprint("GetBeaconSharePriceByEpoch error 2", err))
+					return 0, errors.New("Can not get beacon share price")
 				}
 				endBeaconSharePrice.GetPrice()
 				reward += uint64(unit * float64(endBeaconSharePrice.GetPrice()-startBeaconSharePrice))
@@ -1137,7 +1140,7 @@ func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB
 			} else {
 				endBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epochSortList[i+1]), beaconID)
 				if err != nil {
-					panic(fmt.Sprint("GetBeaconSharePriceByEpoch error 3", err))
+					return 0, errors.New("Can not get beacon share price")
 				}
 				reward += uint64(unit * float64(endBeaconSharePrice-startBeaconSharePrice))
 				log.Println("BeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice, reward)
@@ -1156,8 +1159,12 @@ func (blockchain *BlockChain) MintDelegationRewardFromInstructionRequests(insts 
 		reqDRewardInstruction := inst
 		for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
 			amount, err := blockchain.GetDelegationRewardAmount(stateDB, payment.Pk)
-			if err != nil {
-				return nil, err
+			if err != nil { //will not generate instruction to withdraw delegation reward for this pk. Cannot get delegation reward because of calculation process! Wait next epoch!
+				Logger.log.Errorf("Cannot get delegation reward. SKIP. %+v", err)
+				continue
+			}
+			if amount == 0 {
+				continue
 			}
 			mintRewardAmount = append(mintRewardAmount, amount)
 			mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
