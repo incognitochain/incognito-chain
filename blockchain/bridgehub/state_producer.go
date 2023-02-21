@@ -79,7 +79,7 @@ func (sp *stateProducer) shield(
 	stateDBs map[int]*statedb.StateDB,
 	isTxHashIssued func(stateDB *statedb.StateDB, uniqueBtcTx []byte) (bool, error),
 ) ([][]string, *BridgeHubState, *metadata.AccumulatedValues, error) {
-	Logger.log.Info("[BTC hub] Starting...")
+	Logger.log.Info("[Bridge hub] Starting...")
 
 	issuingBTCHubReqAction, err := metadataBridgeHub.ParseBTCIssuingInstContent(contentStr)
 	if err != nil {
@@ -102,13 +102,13 @@ func (sp *stateProducer) shield(
 	)
 	rejectedInst := inst.StringSlice()
 	if err != nil {
-		Logger.log.Warn("[BTC hub] WARNING: an issue occurred while parsing issuing action content: ", err)
+		Logger.log.Warn("[Bridge hub] WARNING: an issue occurred while parsing issuing action content: ", err)
 		return [][]string{rejectedInst}, state, ac, err
 	}
 
 	depositPubKey, err := new(operation.Point).FromBytesS(depositKeyBytes)
 	if err != nil {
-		Logger.log.Warn("[BTC hub] WARNING: invalid OTDepositPubKey %v", issuingBTCHubReqAction.Meta.Receiver)
+		Logger.log.Warn("[Bridge hub] WARNING: invalid OTDepositPubKey %v", issuingBTCHubReqAction.Meta.Receiver)
 		return [][]string{rejectedInst}, state, ac, err
 	}
 	sigPubKey := new(privacy.SchnorrPublicKey)
@@ -118,7 +118,7 @@ func (sp *stateProducer) shield(
 	_ = tmpSig.SetBytes(issuingBTCHubReqAction.Meta.Signature) // error has been handle at shard side
 
 	if isValid := sigPubKey.Verify(tmpSig, common.HashB(otaReceiverBytes)); !isValid {
-		Logger.log.Warn("[BTC hub] invalid signature", issuingBTCHubReqAction.Meta.Signature)
+		Logger.log.Warn("[Bridge hub] invalid signature", issuingBTCHubReqAction.Meta.Signature)
 		return [][]string{rejectedInst}, state, ac, err
 	}
 
@@ -126,11 +126,11 @@ func (sp *stateProducer) shield(
 	receivingShardID = otaReceiver.GetShardID()
 
 	md := issuingBTCHubReqAction.Meta
-	Logger.log.Infof("[BTC hub] Processing for tx: %s, tokenid: %s", issuingBTCHubReqAction.TxReqID.String(), md.IncTokenID.String())
+	Logger.log.Infof("[Bridge hub] Processing for tx: %s, tokenid: %s", issuingBTCHubReqAction.TxReqID.String(), md.IncTokenID.String())
 	// todo: validate the request
 	ok, err := tss.VerifyTSSSig("", "", issuingBTCHubReqAction.Meta.TSS)
 	if err != nil || !ok {
-		Logger.log.Warn("[BTC hub] WARNING: an issue occurred verify signature: ", err, ok)
+		Logger.log.Warn("[Bridge hub] WARNING: an issue occurred verify signature: ", err, ok)
 		if err != nil {
 			err = errors.New("invalid signature")
 		}
@@ -165,4 +165,22 @@ func (sp *stateProducer) shield(
 	inst.Content = base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes)
 	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
 	return [][]string{inst.StringSlice()}, state, ac, err
+}
+
+func (sp *stateProducer) stake(
+	contentStr string,
+	state *BridgeHubState,
+	ac *metadata.AccumulatedValues,
+	stateDBs map[int]*statedb.StateDB,
+	isTxHashIssued func(stateDB *statedb.StateDB, uniqueBtcTx []byte) (bool, error),
+) ([][]string, *BridgeHubState, error) {
+	Logger.log.Info("[Bridge hub] Starting...")
+
+	var stakeReqAction metadataBridgeHub.StakeReqAction
+	err := metadataBridgeHub.DecodeContent(contentStr, &stakeReqAction)
+	if err != nil {
+		// todo: cryptolover add logic here
+	}
+
+	return [][]string{}, state, err
 }

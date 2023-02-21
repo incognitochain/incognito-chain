@@ -95,7 +95,8 @@ func collectStatefulActions(
 			metadataCommon.IssuingUnifiedTokenRequestMeta,
 			metadataCommon.BurningUnifiedTokenRequestMeta,
 			metadataCommon.BridgeHubRegisterBridgeMeta,
-			metadataCommon.ShieldingBTCRequestMeta: // TODO: add more
+			metadataCommon.ShieldingBTCRequestMeta,
+			metadataCommon.StakePRVRequestMeta: // TODO: add more
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -416,6 +417,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadataCommon.BridgeHubRegisterBridgeMeta:
 				bridgeHubRegisterBridgeActions[shardID] = append(bridgeHubRegisterBridgeActions[shardID], contentStr)
 			case metadataCommon.ShieldingBTCRequestMeta:
+				bridgeHubShieldActions[shardID] = append(bridgeHubShieldActions[shardID], contentStr)
+			case metadataCommon.StakePRVRequestMeta:
 				bridgeHubShieldActions[shardID] = append(bridgeHubShieldActions[shardID], contentStr)
 			// TODO: add more
 			default:

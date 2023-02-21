@@ -255,6 +255,7 @@ const (
 	BridgeHubRegisterBridgeMeta = 370
 	ShieldingBTCRequestMeta     = 371
 	ShieldingBTCResponse        = 372
+	StakePRVRequestMeta         = 373
 )
 
 var minerCreatedMetaTypes = []int{

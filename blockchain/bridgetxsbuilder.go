@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/eteu-technologies/near-api-go/pkg/types/hash"
+	"github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	"math/big"
 	"strconv"
 
@@ -440,6 +442,68 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingEVMRes
+	}
+
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
+}
+
+func (blockGenerator *BlockGenerator) buildBridgeHubIssuanceTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
+	metatype int,
+	isPeggedPRV bool,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of Bridge Hub accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	var issuingBridgeHubAcceptedInst bridgehub.ShieldingBTCAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingBridgeHubAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling Bridge Hub accepted issuance instruction: ", err)
+		return nil, nil
+	}
+
+	if shardID != issuingBridgeHubAcceptedInst.ShardID {
+		Logger.log.Warnf("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingBridgeHubAcceptedInst.ShardID)
+		return nil, nil
+	}
+
+	issuingEVMRes := bridgehub.NewIssuingBTCResponse(
+		issuingBridgeHubAcceptedInst.TxReqID,
+		issuingBridgeHubAcceptedInst.UniqTx,
+		issuingBridgeHubAcceptedInst.ExternalTokenID,
+		metatype,
+	)
+	tokenID := issuingBridgeHubAcceptedInst.IncTokenID
+	if !isPeggedPRV && tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
+	}
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount:  issuingBridgeHubAcceptedInst.IssuingAmount,
+		TokenID: &tokenID,
+	}
+
+	otaReceiver := new(privacy.OTAReceiver)
+	err = otaReceiver.FromString(issuingBridgeHubAcceptedInst.Receiver)
+	if err != nil {
+		return nil, fmt.Errorf("parseOTA receiver from %v error: %v", issuingBridgeHubAcceptedInst.Receiver, err)
+	}
+	txParam.TxRandom = &otaReceiver.TxRandom
+	txParam.PublicKey = otaReceiver.PublicKey
+
 	makeMD := func(c privacy.Coin) metadata.Metadata {
 		if c != nil && c.GetSharedRandom() != nil {
 			issuingEVMRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())

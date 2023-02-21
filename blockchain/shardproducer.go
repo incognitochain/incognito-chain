@@ -508,6 +508,12 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 					newTx, err = curView.buildPortalRefundedUnshieldingRequestTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 
+			// bridge hub requests
+			case metadataCommon.ShieldingBTCRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeHubIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.ShieldingBTCResponse, false)
+				}
+
 			default:
 				if metadataCommon.IsPDEType(metaType) {
 					pdeTxBuilderV1 := pdex.TxBuilderV1{}
