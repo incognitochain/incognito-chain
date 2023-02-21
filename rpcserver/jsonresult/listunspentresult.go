@@ -27,6 +27,7 @@ type ICoinInfo interface {
 	GetSharedRandom() *privacy.Scalar
 	GetSharedConcealRandom() *privacy.Scalar
 	GetAssetTag() *privacy.Point
+	GetOTATag() *uint8
 }
 type ListOutputCoins struct {
 	FromHeight uint64               `json:"FromHeight"`
@@ -49,6 +50,7 @@ type OutCoin struct {
 	TxRandom             string `json:"TxRandom"`
 	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 	AssetTag             string `json:"AssetTag"`
+	OTATag              string `json:"OTATag"`
 }
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 	outcoin := OutCoin{}
@@ -111,6 +113,9 @@ func NewOutCoin(outCoin ICoinInfo) OutCoin {
 	if outCoin.GetAssetTag() != nil {
 		result.AssetTag = base58.Base58Check{}.Encode(outCoin.GetAssetTag().ToBytesS(), common.ZeroByte)
 	}
+	if outCoin.GetOTATag() != nil {
+		result.OTATag = strconv.Itoa(int(*outCoin.GetOTATag()))
+	}
 	return result
 }
 func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
@@ -123,6 +128,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 	var txRandom *coin.TxRandom
 	var coinDetailEncrypted *privacy.HybridCipherText
 	var assetTag *privacy.Point
+	var otaTag *uint8
 	value, ok := math.ParseUint64(jsonOutCoin.Value)
 	if !ok {
 		return nil, nil, errors.New("Cannot parse value")
@@ -232,6 +238,16 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 	}
+	if len(jsonOutCoin.OTATag) == 0 {
+		otaTag = nil
+	} else {
+		temp, err := strconv.Atoi(jsonOutCoin.OTATag)
+		if err != nil {
+			return nil, nil, err
+		}
+		tempUint8 := uint8(temp)
+		OTATag = &tempUint8
+	}
 	if len(jsonOutCoin.Index) == 0 {
 		idx = nil
 	} else {
@@ -284,6 +300,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		coinV2.SetKeyImage(keyImage)
 		coinV2.SetInfo(info)
 		coinV2.SetAssetTag(assetTag)
+		coinV2.SetOTATag(otaTag)
 		coinV2.SetSharedRandom(sharedRandom)
 		coinV2.SetSharedConcealRandom(sharedConcealRandom)
 		coinV2.SetTxRandom(txRandom)

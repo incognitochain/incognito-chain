@@ -100,6 +100,7 @@ func (pc PlainCoinV1) IsEncrypted() bool                         { return false 
 func (pc PlainCoinV1) GetCoinDetailEncrypted() []byte {
 	return nil
 }
+func (pc PlainCoinV1) GetOTATag() *uint8 { return nil }
 
 func (pc *PlainCoinV1) SetPublicKey(v *operation.Point)    { pc.publicKey = v }
 func (pc *PlainCoinV1) SetCommitment(v *operation.Point)   { pc.commitment = v }
@@ -111,6 +112,7 @@ func (pc *PlainCoinV1) SetInfo(v []byte) {
 	pc.info = make([]byte, len(v))
 	copy(pc.info, v)
 }
+func (pc *PlainCoinV1) SetOTATag(vt *uint8) {}
 
 // Conceal data leaving serialnumber
 func (pc *PlainCoinV1) ConcealOutputCoin(additionalData *operation.Point) error {
@@ -427,6 +429,8 @@ func (c *CoinV1) GetCoinID() [operation.Ed25519KeySize]byte {
 	}
 	return [operation.Ed25519KeySize]byte{}
 }
+func (c CoinV1) GetOTATag() *uint8 { return nil }
+func (c *CoinV1) SetOTATag(vt *uint8) {}
 
 // Init (OutputCoin) initializes a output coin
 func (c *CoinV1) Init() *CoinV1 {

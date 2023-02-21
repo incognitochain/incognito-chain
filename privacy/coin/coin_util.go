@@ -170,6 +170,13 @@ func NewCoinFromPaymentInfo(p *CoinParams) (*CoinV2, error) {
 			otaRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedRandom())
 			concealRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedConcealRandom())
 			c.SetTxRandomDetail(concealRandomPoint, otaRandomPoint, index)
+
+			b := append(rK.ToBytesS(), common.Uint32ToBytes(index)...)
+			b = append(b, []byte("otatag")...)
+			hOTATag := operation.HashToScalar(b)
+			b = hOTATag.ToBytesS()
+			vt := uint8(b[operation.Ed25519KeySize - 1])
+			c.otaTag = &vt
 			break
 		}
 	}

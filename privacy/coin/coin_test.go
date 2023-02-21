@@ -1,18 +1,21 @@
 package coin
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
-	"math/big"
+
+	"testing"
 
 	"github.com/incognitochain/incognito-chain/privacy/key"
-	"testing"
 )
 
 var _ = func() (_ struct{}) {
@@ -79,6 +82,8 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		assert.Equal(t, coin.publicKey.ToBytesS(), coinByBytes.publicKey.ToBytesS(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.commitment.ToBytesS(), coinByBytes.commitment.ToBytesS(), "FromBytes then SetBytes should be equal")
 		assert.Equal(t, coin.info, coinByBytes.info, "FromBytes then SetBytes should be equal")
+		b1 := coinByBytes.Bytes()
+		assert.Equal(t, true, bytes.Equal(b, b1))
 
 		rConceal, rOTA, i, err := coin.GetTxRandomDetail()
 		rConcealPrime, rOTAPrime, iPrime, errPrime := coinByBytes.GetTxRandomDetail()
@@ -95,6 +100,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		assert.Equal(t, nil, err)
 		paymentInfo := key.InitPaymentInfo(keyset.PaymentAddress, 3000, []byte{})
 		coin, err = NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(paymentInfo))
+
 		coin.ConcealOutputCoin(keyset.PaymentAddress.GetPublicView())
 		b = coin.Bytes()
 		coinByBytes = new(CoinV2).Init()
@@ -113,6 +119,39 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		assert.Equal(t, true, operation.IsPointEqual(rOTAPrime, rOTA))
 		assert.Equal(t, true, operation.IsPointEqual(rConcealPrime, rConceal))
 		assert.Equal(t, i, iPrime)
+		b1 = coinByBytes.Bytes()
+		fmt.Printf("%x vs %x\n", b, b1)
+		assert.Equal(t, true, bytes.Equal(b, b1))
+
+		changedCoin := coinByBytes
+		changedCoin.otaTag = nil
+		b = changedCoin.Bytes()
+		coinByBytes = new(CoinV2).Init()
+		err = coinByBytes.SetBytes(b)
+		assert.Equal(t, nil, err)
+		b1 = coinByBytes.Bytes()
+		fmt.Printf("%x vs %x\n", b, b1)
+		assert.Equal(t, true, bytes.Equal(b, b1))
+
+		changedCoin.assetTag = operation.RandomPoint()
+		changedCoin.otaTag = nil
+		b = changedCoin.Bytes()
+		coinByBytes = new(CoinV2).Init()
+		err = coinByBytes.SetBytes(b)
+		assert.Equal(t, nil, err)
+		b1 = coinByBytes.Bytes()
+		fmt.Printf("%x vs %x\n", b, b1)
+		assert.Equal(t, true, bytes.Equal(b, b1))
+
+		changedCoin.assetTag = operation.RandomPoint()
+		changedCoin.otaTag = coin.otaTag
+		b = changedCoin.Bytes()
+		coinByBytes = new(CoinV2).Init()
+		err = coinByBytes.SetBytes(b)
+		assert.Equal(t, nil, err)
+		b1 = coinByBytes.Bytes()
+		fmt.Printf("%x vs %x\n", b, b1)
+		assert.Equal(t, true, bytes.Equal(b, b1))
 	}
 }
 
@@ -215,7 +254,82 @@ func TestCoinV2_IsCoinBelongToKeySet(t *testing.T) {
 
 	possessed, _ := tmpCoinV2.DoesCoinBelongToKeySet(keySet)
 	assert.Equal(t, true, possessed)
+}
 
+func doesCoinBelongToKeySetOld(c *CoinV2, keySet *incognitokey.KeySet) (bool, *operation.Point) {
+	_, txOTARandomPoint, index, err1 := c.GetTxRandomDetail()
+	if err1 != nil {
+		return false, nil
+	}
+
+	// Check if the utxo belong to this one-time-address
+	rK := new(operation.Point).ScalarMult(txOTARandomPoint, keySet.OTAKey.GetOTASecretKey())
+
+	hashed := operation.HashToScalar(
+		append(rK.ToBytesS(), common.Uint32ToBytes(index)...),
+	)
+
+	HnG := new(operation.Point).ScalarMultBase(hashed)
+	KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
+
+	// // Retrieve the sharedConcealRandomPoint for generating the blinded assetTag
+	// var rSharedConcealPoint *operation.Point
+	// if keySet.ReadonlyKey.GetPrivateView() != nil {
+	// 	rSharedConcealPoint = new(operation.Point).ScalarMult(txConcealRandomPoint, keySet.ReadonlyKey.GetPrivateView())
+	// }
+
+	return operation.IsPointEqual(KCheck, keySet.OTAKey.GetPublicSpend()), rK
+}
+
+func BenchmarkFilterCoinWithOTATag(b *testing.B) {
+	const numCoins = 1000
+	const ownedCoinRate = 1
+	const ownedCoinRatePrecision = 1000
+
+	privateKey := operation.RandomScalar().ToBytesS()
+	var testKeySet incognitokey.KeySet
+	err := testKeySet.InitFromPrivateKeyByte(privateKey)
+	assert.Equal(b, nil, err)
+
+	otherPrivateKey := operation.RandomScalar().ToBytesS()
+	var otherKeySet incognitokey.KeySet
+	err = otherKeySet.InitFromPrivateKeyByte(otherPrivateKey)
+	assert.Equal(b, nil, err)
+
+	keys := []incognitokey.KeySet{testKeySet, otherKeySet}
+
+	coinLst := make([]*CoinV2, numCoins)
+	for i := 0; i < numCoins; i++ {
+		coinReceiverKeySet := keys[0]
+		if i*ownedCoinRatePrecision >= numCoins*ownedCoinRate {
+			coinReceiverKeySet = keys[1]
+		}
+		paymentInfo := key.PaymentInfo{Amount: 10000, PaymentAddress: coinReceiverKeySet.PaymentAddress, Message: []byte("Hello world 1")}
+		coinLst[i], err = NewCoinFromPaymentInfo((&CoinParams{}).FromPaymentInfo(&paymentInfo))
+		// if i * ownedCoinRatePrecision >= numCoins * ownedCoinRate {
+		// 	coinLst[i].otaTag = nil
+		// }
+	}
+
+	b.Run("Filtering coin with view tags", func(b *testing.B) {
+		b.ResetTimer()
+		for loop := 0; loop < b.N; loop++ {
+			for i := 0; i < numCoins; i++ {
+				coinLst[i].DoesCoinBelongToKeySet(&testKeySet)
+				// assert.Equal(b, i * ownedCoinRatePrecision < numCoins * ownedCoinRate, owned)
+			}
+		}
+	})
+
+	b.Run("Filtering coin (current)", func(b *testing.B) {
+		b.ResetTimer()
+		for loop := 0; loop < b.N; loop++ {
+			for i := 0; i < numCoins; i++ {
+				doesCoinBelongToKeySetOld(coinLst[i], &testKeySet)
+				// assert.Equal(b, i * ownedCoinRatePrecision < numCoins * ownedCoinRate, owned)
+			}
+		}
+	})
 }
 
 // TEST COIN VER 1

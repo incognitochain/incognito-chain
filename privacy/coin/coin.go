@@ -25,6 +25,7 @@ type Coin interface {
 	GetSharedConcealRandom() *operation.Scalar
 	GetAssetTag() *operation.Point
 	GetCoinID() [operation.Ed25519KeySize]byte
+	GetOTATag() *uint8
 
 	// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
 	// Param keyset: (private key, payment address, read only key)
@@ -60,6 +61,7 @@ type PlainCoin interface {
 	GetSharedRandom() *operation.Scalar
 	GetSharedConcealRandom() *operation.Scalar
 	GetAssetTag() *operation.Point
+	GetOTATag() *uint8
 
 	SetKeyImage(*operation.Point)
 	SetPublicKey(*operation.Point)

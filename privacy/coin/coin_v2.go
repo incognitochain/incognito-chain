@@ -72,10 +72,11 @@ func (t *TxRandom) SetBytes(b []byte) error {
 	return nil
 }
 
-//nolint:revive // skip linter for this struct name
 // CoinV2 is the struct that will be stored to db
 // If not privacy, mask and amount will be the original randomness and value
 // If has privacy, mask and amount will be as paper monero
+//
+//nolint:revive // skip linter for this struct name
 type CoinV2 struct {
 	// Public
 	version    uint8
@@ -96,6 +97,8 @@ type CoinV2 struct {
 	amount *operation.Scalar
 	// tag is nil unless confidential asset
 	assetTag *operation.Point
+
+	otaTag *uint8
 }
 
 // ParsePrivateKeyOfCoin retrieves the private OTA key of coin from the Master PrivateKey
@@ -127,7 +130,7 @@ func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.
 
 // Conceal the amount of coin using the publicView of the receiver
 //
-//	- AdditionalData: must be the publicView of the receiver
+//   - AdditionalData: must be the publicView of the receiver
 func (c *CoinV2) ConcealOutputCoin(additionalData *operation.Point) error {
 	// If this coin is already encrypted or it is created by other person then cannot conceal
 	if c.IsEncrypted() || c.GetSharedConcealRandom() == nil {
@@ -259,6 +262,7 @@ func (c CoinV2) GetCommitment() *operation.Point           { return c.commitment
 func (c CoinV2) GetKeyImage() *operation.Point             { return c.keyImage }
 func (c CoinV2) GetInfo() []byte                           { return c.info }
 func (c CoinV2) GetAssetTag() *operation.Point             { return c.assetTag }
+func (c CoinV2) GetOTATag() *uint8                        { return c.otaTag }
 func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
 		return 0
@@ -327,6 +331,7 @@ func (c *CoinV2) SetInfo(b []byte) {
 	copy(c.info, b)
 }
 func (c *CoinV2) SetAssetTag(at *operation.Point) { c.assetTag = at }
+func (c *CoinV2) SetOTATag(vt *uint8) { c.otaTag = vt }
 
 func (c CoinV2) Bytes() []byte {
 	coinBytes := []byte{c.GetVersion()}
@@ -396,6 +401,11 @@ func (c CoinV2) Bytes() []byte {
 		coinBytes = append(coinBytes, c.assetTag.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if c.otaTag != nil {
+		coinBytes = append(coinBytes, byte(33))
+		coinBytes = append(coinBytes, byte(*c.otaTag))
 	}
 
 	return coinBytes
@@ -471,15 +481,28 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		return fmt.Errorf("setBytes CoinV2 amount error: %v", err)
 	}
 
-	if offset >= len(coinBytes) {
-		// for parsing old serialization, which does not have assetTag field
-		c.assetTag = nil
-	} else {
-		c.assetTag, err = parsePointForSetBytes(&coinBytes, &offset)
-		if err != nil {
-			return fmt.Errorf("setBytes CoinV2 assetTag error: %v", err)
+	if offset < len(coinBytes) {
+		// parse asset tag
+		if coinBytes[offset] == operation.Ed25519KeySize {
+			c.assetTag, err = parsePointForSetBytes(&coinBytes, &offset)
+			if err != nil {
+				return fmt.Errorf("setBytes CoinV2 assetTag error: %v", err)
+			}
+		} else if coinBytes[offset] == 0 {
+			offset++
 		}
 	}
+
+	if offset < len(coinBytes) {
+		// parse view tag
+		if coinBytes[offset] == 33 {
+			vt := uint8(coinBytes[offset+1])
+			c.otaTag = &vt
+		} else {
+			return fmt.Errorf("setBytes CoinV2 otaTag error: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -547,6 +570,14 @@ func (c *CoinV2) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *ope
 
 	// Check if the utxo belong to this one-time-address
 	rK := new(operation.Point).ScalarMult(txOTARandomPoint, keySet.OTAKey.GetOTASecretKey())
+
+	b := append(rK.ToBytesS(), common.Uint32ToBytes(index)...)
+	b = append(b, []byte("otatag")...)
+	hOTATag := operation.HashToScalar(b)
+	b = hOTATag.ToBytesS()
+	if c.otaTag != nil && *c.otaTag != uint8(b[operation.Ed25519KeySize-1]) {
+		return false, rK
+	}
 
 	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), common.Uint32ToBytes(index)...),
