@@ -97,4 +97,5 @@ var (
 //feature
 const (
 	BEACON_STAKING_FLOW_V4 = "beacon_staking_flow_v4"
+	SLASH_TO_SYNC          = "slash2sync"
 )

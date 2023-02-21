@@ -167,6 +167,9 @@ auto_enable_feature:
   - pdao:
       min_trigger: 2668878
       require_percentage: 75
+  - slash2sync:
+      min_trigger: 1e9
+      require_percentage: 75
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
@@ -177,6 +180,7 @@ feature_version:
   - reduce_fix_node_v3: 11
   - blocktime15s_27_12: 12
   - beacon_staking_flow_v4 : 13
+  - slash2sync: 14
 transactions_param:
   lowerbound: 15
   upperbound: 100

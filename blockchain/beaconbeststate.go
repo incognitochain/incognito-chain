@@ -784,6 +784,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 			AutoStakeHash:                   beaconBestState.BestBlock.Header.AutoStakingRoot,
 			ShardSyncValidatorsHash:         beaconBestState.BestBlock.Header.ShardSyncValidatorRoot,
 		},
+		TriggeredFeature: beaconBestState.TriggeredFeature,
 	}
 }
 
