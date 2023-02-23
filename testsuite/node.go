@@ -285,7 +285,10 @@ func (sim *NodeEngine) Init() {
 		ps,
 		time.Duration(15*60)*time.Second,
 	)
-	otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
+	otadb, err := incdb.Open("leveldb", "/tmp/database/ota")
+	if err != nil {
+		panic(err)
+	}
 	err = bc.Init(&blockchain.Config{
 		BTCChain:          btcChain,
 		BNBChainState:     bnbChainState,
@@ -451,27 +454,39 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		committeeFromBlock := common.Hash{}
 		committees := curView.GetCommittee()
 		version := 2
-		if config.Param().ConsensusParam.StakingFlowV2Height <= curView.GetBeaconHeight() {
-			version = 3
-		}
-		switch version {
-		case 2:
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
-			//fmt.Println("version 2")
-		case 3:
+		versionNew := sim.GetBlockVersion(chainID)
+		fmt.Printf("Create new block of chain %v, version %v, version by feature %v\n", chainID, version, versionNew)
+		if (version < versionNew) && (versionNew > 5) {
+			version = versionNew
 			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
 			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
 			if chainID > -1 {
 				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
 				//fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
 			}
+		} else {
+			if config.Param().ConsensusParam.StakingFlowV2Height <= curView.GetBeaconHeight() {
+				version = 3
+			}
+			switch version {
+			case 2:
+				proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+				//fmt.Println("version 2")
+			case 3:
+				proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+				committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
+				if chainID > -1 {
+					committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
+					//fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
+				}
+			}
 		}
-
 		proposerPkStr, _ := proposerPK.ToBase58()
 
 		if chainID == -1 {
 			block, err = chain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
 			if err != nil {
+				fmt.Printf("Can not create block for chain %v %+v\n", chainID, err)
 				Logger.log.Error(err)
 				return sim
 			}
@@ -479,13 +494,15 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		} else {
 			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
 			if err != nil {
+				fmt.Printf("Can not create block for chain %v %+v\n", chainID, err)
 				Logger.log.Error(err)
 				return sim
 			}
 		}
-
+		fmt.Printf("Proposer %+v %v \n", proposerPK, proposerPkStr)
 		//SignBlock
 		proposeAcc := sim.GetAccountByCommitteePubkey(&proposerPK)
+		fmt.Printf("Proposer acc %+v %+v \n", proposeAcc, *proposeAcc)
 		userKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(proposeAcc.MiningKey)
 		sim.SignBlock(userKey, block)
 
@@ -677,7 +694,16 @@ func InitChainParam(cfg Config, customParam func(), postInit func(*NodeEngine)) 
 	node.Init()
 	customParam()
 	postInit(node)
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 3; i++ {
+		node.GenerateBlock().NextRound()
+	}
+	go func() {
+		for {
+			node.SendFeatureStat(GetAllFixedNodesAccount(node), []string{})
+			time.Sleep(2 * time.Second)
+		}
+	}()
+	for i := 0; i < 3; i++ {
 		node.GenerateBlock().NextRound()
 	}
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
@@ -711,7 +737,7 @@ func (s *NodeEngine) SendFinishSync(accs []account.Account, sid byte) {
 	s.GetBlockchain().AddFinishedSyncValidators(msg.CommitteePublicKey, msg.Signature, msg.ShardID)
 }
 
-func (s *NodeEngine) getUntriggerFeature(afterCheckPoint bool) []string {
+func (s *NodeEngine) GetUntriggerFeature(afterCheckPoint bool) []string {
 	curView := s.bc.GetBeaconBestState()
 	unTriggerFeatures := []string{}
 	for f, _ := range config.Param().AutoEnableFeature {
@@ -734,9 +760,12 @@ func (s *NodeEngine) getUntriggerFeature(afterCheckPoint bool) []string {
 }
 
 func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures []string) {
-	unTriggerFeatures = append(unTriggerFeatures, s.getUntriggerFeature(false)...)
+	unTriggerFeatures = append(unTriggerFeatures, s.GetUntriggerFeature(false)...)
+	// unTriggerFeatures = append(unTriggerFeatures, s.GetUntriggerFeature(true)...)
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
+	fmt.Printf("%v\n", len(accs))
+
 	signBytes := []byte{}
 	for _, v := range unTriggerFeatures {
 		signBytes = append([]byte(wire.CmdMsgFeatureStat), []byte(v)...)
@@ -757,6 +786,63 @@ func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures [
 	if len(featureSyncValidators) == 0 {
 		return
 	}
-	//fmt.Println("Send ", featureSyncValidators, unTriggerFeatures)
+	fmt.Println("Send ", featureSyncValidators, unTriggerFeatures)
 	s.GetBlockchain().ReceiveFeatureReport(int(timestamp), featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
+}
+
+func (s *NodeEngine) GetBlockVersion(chainID int) int {
+	chainEpoch := uint64(1)
+	chainHeight := uint64(1)
+	triggerFeature := make(map[string]uint64)
+	if chainID == -1 {
+		chainEpoch = s.bc.BeaconChain.GetEpoch()
+		chainHeight = s.bc.BeaconChain.GetBestViewHeight()
+		triggerFeature = s.bc.BeaconChain.GetFinalView().(*blockchain.BeaconBestState).TriggeredFeature
+	} else {
+		chainEpoch = s.bc.ShardChain[chainID].GetEpoch()
+		chainHeight = s.bc.ShardChain[chainID].GetBestView().GetBeaconHeight()
+		triggerFeature = s.bc.ShardChain[chainID].GetFinalView().(*blockchain.ShardBestState).TriggeredFeature
+	}
+
+	//get last trigger feature that change block version
+	latestFeature := ""
+	latestTriggerHeight := uint64(0)
+	for f, h := range triggerFeature {
+		if _, ok := config.Param().FeatureVersion[f]; ok {
+			if latestTriggerHeight < h {
+				latestTriggerHeight = h
+				latestFeature = f
+			}
+		}
+	}
+	if version, ok := config.Param().FeatureVersion[latestFeature]; ok {
+		return int(version)
+	}
+
+	//legacy flow
+	if triggerFeature[blockchain.INSTANT_FINALITY_FEATURE] != 0 {
+		return types.INSTANT_FINALITY_VERSION
+	}
+
+	if chainHeight >= config.Param().ConsensusParam.BlockProducingV3Height {
+		return types.BLOCK_PRODUCINGV3_VERSION
+	}
+
+	if chainHeight >= config.Param().ConsensusParam.Lemma2Height {
+		return types.LEMMA2_VERSION
+	}
+
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
+		return types.SHARD_SFV3_VERSION
+	}
+
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
+		return types.SHARD_SFV2_VERSION
+	}
+
+	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
+		return types.MULTI_VIEW_VERSION
+	}
+
+	return types.BFT_VERSION
 }

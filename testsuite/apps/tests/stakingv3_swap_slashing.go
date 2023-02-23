@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -46,6 +45,7 @@ func Test_Stakingv3() {
 
 	node.GenerateBlock().NextRound()
 	node.GenerateBlock().NextRound()
+
 	//stake node
 	stakers := []account.Account{}
 	for i := 0; i < 30; i++ {
@@ -124,11 +124,13 @@ func Test_Stakingv3() {
 	for {
 		node.SendFinishSync(stakers, 0)
 		node.SendFinishSync(stakers, 1)
+		node.SendFinishSync(stakers, 255)
 		node.SendFeatureStat(stakers, []string{})
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
-		if epoch > 40 {
+		if height > 151 {
+			node.Pause()
 			break
 		}
 		//epoch := currentBeaconBlock.GetCurrentEpoch()
@@ -136,6 +138,7 @@ func Test_Stakingv3() {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
+			node.ShowBeaconCandidateInfo(stakers, epoch)
 		}
 		node.GenerateBlock().NextRound()
 
@@ -148,31 +151,38 @@ func Test_Stakingv3() {
 	for {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
+		for i, staker := range stakers {
+			if i%2 == 1 {
+				res, err := node.RPC.StakeNewBeacon(staker)
+				fmt.Printf("Stake new beacon using staker %v, result %v, err %+v\n", staker.Name, res, err)
+			}
+		}
 
 		//epoch := currentBeaconBlock.GetCurrentEpoch()
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
+
 		}
 
-		committee2 := node.GetBlockchain().BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(0))]
+		// committee2 := node.GetBlockchain().BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(0))]
 		//node.PrintAccountNameFromCPK(committee2)
 
-		node.ApplyChain(-1, 1).GenerateBlock()
-		signIndex := testsuite.GenerateCommitteeIndex(len(committee2) - 1)
-		valIndex := testsuite.ValidatorIndex{}
-		for _, v := range signIndex {
-			valIndex = append(valIndex, v)
-		}
-		// node.Pause()
-		//fmt.Println(valIndex, signIndex)
-		node.ApplyChain(0).GenerateBlock(valIndex)
-		node.NextRound()
+		// node.ApplyChain(-1, 1).GenerateBlock()
+		// signIndex := testsuite.GenerateCommitteeIndex(len(committee2) - 1)
+		// valIndex := testsuite.ValidatorIndex{}
+		// for _, v := range signIndex {
+		// 	valIndex = append(valIndex, v)
+		// }
+		// // node.Pause()
+		// //fmt.Println(valIndex, signIndex)
+		// node.ApplyChain(0).GenerateBlock(valIndex)
+		// node.NextRound()
 
-		shard0Block := node.GetBlockchain().GetChain(0).(testsuite.Chain).GetBestView().GetBlock().(*types.ShardBlock)
-		if shard0Block.Header.BeaconHeight%20 == 1 {
-			fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
-		}
+		// shard0Block := node.GetBlockchain().GetChain(0).(testsuite.Chain).GetBestView().GetBlock().(*types.ShardBlock)
+		// if shard0Block.Header.BeaconHeight%20 == 1 {
+		// 	fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
+		// }
 	}
 }
