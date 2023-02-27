@@ -118,6 +118,7 @@ var (
 	bridgeHubBridgeInfoPrefix           = []byte("bridgehub-bridgeinfo-")
 	bridgeHubStatusPrefix               = []byte("bridgehub-status-")
 	bridgeHubRegisterBridgeStatusPrefix = []byte("registerbridge-")
+	stakeHubRegisterBridgeStatusPrefix  = []byte("stakebridge-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -971,6 +972,10 @@ func GetBridgeHubStatusPrefix(statusType []byte) []byte {
 
 func BridgeHubRegisterBridgeStatusPrefix() []byte {
 	return bridgeHubRegisterBridgeStatusPrefix
+}
+
+func BridgeHubStakeBridgeStatusPrefix() []byte {
+	return stakeHubRegisterBridgeStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

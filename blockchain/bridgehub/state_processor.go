@@ -157,3 +157,76 @@ func (sp *stateProcessor) shield(
 
 	return state, updatingInfoByTokenID, nil
 }
+
+func (sp *stateProcessor) bridgeHubValidatorStake(
+	inst metadataCommon.Instruction,
+	state *BridgeHubState,
+	sDB *statedb.StateDB,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (*BridgeHubState, map[common.Hash]metadata.UpdatingInfo, error) {
+	var status byte
+	var errorCode int
+
+	var err error
+	contentBytes := []byte{}
+
+	// extract inst content bytes
+	switch inst.Status {
+	case common.AcceptedStatusStr:
+		contentBytes, err = base64.StdEncoding.DecodeString(inst.Content)
+		if err != nil {
+			Logger.log.Errorf("Can not decode instruction convert: %v", err)
+			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+		}
+		status = common.AcceptedStatusByte
+	case common.RejectedStatusStr:
+		rejectContent := metadataCommon.NewRejectContent()
+		if err := rejectContent.FromString(inst.Content); err != nil {
+			Logger.log.Errorf("Can not decode rejected instruction convert: %v", err)
+			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+		}
+		contentBytes = rejectContent.Data
+		status = common.RejectedStatusByte
+		errorCode = rejectContent.ErrorCode
+	default:
+		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(InvalidStatusError, errors.New("Can not recognize status"))
+	}
+
+	// unmarshal inst content
+	contentInst := metadataBridgeHub.StakePRVRequestContentInst{}
+	err = json.Unmarshal(contentBytes, &contentInst)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction register bridge: %v", err)
+		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+	}
+
+	// update state
+	// TODO: 0xcryptolover add more information
+	// handle fail status
+	clonedState := state.Clone()
+	if inst.Status == common.AcceptedStatusStr {
+		clonedState := state.Clone()
+		clonedState.stakingInfos[contentInst.BridgePoolPubKey] += contentInst.StakeAmount
+	}
+
+	// track status
+	trackStatus := StakeBridgeStatus{
+		BridgeID:         contentInst.BridgeID,
+		ExtChainID:       contentInst.ExtChainID,
+		BridgePoolPubKey: contentInst.BridgePoolPubKey,
+		StakeAmount:      contentInst.StakeAmount,
+		TokenID:          contentInst.TokenID,
+		Status:           status,
+		ErrorCode:        errorCode,
+	}
+	trackStatusBytes, _ := json.Marshal(trackStatus)
+	txHash := &common.Hash{}
+	txHash, _ = txHash.NewHashFromStr(contentInst.TxReqID)
+
+	return clonedState, updatingInfoByTokenID, statedb.TrackBridgeHubStatus(
+		sDB,
+		statedb.BridgeHubStakeBridgeStatusPrefix(),
+		txHash.Bytes(),
+		trackStatusBytes,
+	)
+}

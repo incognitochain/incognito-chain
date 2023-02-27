@@ -12,11 +12,20 @@ import (
 )
 
 type StakePRVRequest struct {
-	StakeAmount  uint64 // must be equal to vout value
-	TokenID      common.Hash
-	TokenName    string // unused
-	BridgePubKey string // staker's key
+	ExtChainID   string      `json:"ExtChainID"`
+	StakeAmount  uint64      `json:"StakeAmount"` // must be equal to vout value
+	TokenID      common.Hash `json:"TokenID"`
+	BridgePubKey string      `json:"BridgePubKey"` // staker's key
 	metadataCommon.MetadataBase
+}
+
+type StakePRVRequestContentInst struct {
+	ExtChainID       string      `json:"ExtChainID"`
+	BridgePoolPubKey string      `json:"BridgePoolPubKey"` // TSS pubkey
+	StakeAmount      uint64      `json:"StakeAmount"`      // must be equal to vout value
+	TokenID          common.Hash `json:"TokenID"`
+	BridgeID         string      `json:"BridgeID,omitempty"`
+	TxReqID          string      `json:"TxReqID"`
 }
 
 type StakeReqAction struct {
@@ -28,7 +37,6 @@ func NewStakePRVRequest(
 	bridgePubKey string,
 	stakeAmount uint64,
 	tokenID common.Hash,
-	tokenName string,
 	metaType int,
 ) (*StakePRVRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
@@ -38,7 +46,6 @@ func NewStakePRVRequest(
 		BridgePubKey: bridgePubKey,
 		StakeAmount:  stakeAmount,
 		TokenID:      tokenID,
-		TokenName:    tokenName,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil

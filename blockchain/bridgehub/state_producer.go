@@ -170,17 +170,35 @@ func (sp *stateProducer) shield(
 func (sp *stateProducer) stake(
 	contentStr string,
 	state *BridgeHubState,
-	ac *metadata.AccumulatedValues,
 	stateDBs map[int]*statedb.StateDB,
-	isTxHashIssued func(stateDB *statedb.StateDB, uniqueBtcTx []byte) (bool, error),
+	shardID byte,
 ) ([][]string, *BridgeHubState, error) {
 	Logger.log.Info("[Bridge hub] Starting...")
 
-	var stakeReqAction metadataBridgeHub.StakeReqAction
-	err := metadataBridgeHub.DecodeContent(contentStr, &stakeReqAction)
+	// decode action
+	action := metadataCommon.NewAction()
+	meta := &metadataBridgeHub.StakePRVRequest{}
+	action.Meta = meta
+	err := action.FromString(contentStr)
 	if err != nil {
-		// todo: cryptolover add logic here
+		Logger.log.Warn("[Bridge hub] decode request stake got error: ", err)
+		return [][]string{}, state, err
+	}
+	// todo: cryptolover add more validation
+	// check bridgeID existed or not
+	bridgeIDBytes := append([]byte(meta.ExtChainID), []byte(meta.BridgePubKey)...)
+	bridgeID := common.HashH(bridgeIDBytes).String()
+
+	if state.bridgeInfos[bridgeID] != nil {
+		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
+		return [][]string{inst}, state, nil
 	}
 
-	return [][]string{}, state, err
+	// update state
+	clonedState := state.Clone()
+	clonedState.stakingInfos[meta.BridgePubKey] += meta.StakeAmount
+
+	// build accepted instruction
+	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
+	return [][]string{inst}, clonedState, nil
 }

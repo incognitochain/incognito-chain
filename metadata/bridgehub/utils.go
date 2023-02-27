@@ -1,8 +1,6 @@
 package bridgehub
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
 
@@ -14,12 +12,4 @@ func IsBridgeHubMetaType(metaType int) bool {
 	default:
 		return false
 	}
-}
-
-func DecodeContent(content string, action interface{}) error {
-	contentBytes, err := base64.StdEncoding.DecodeString(content)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(contentBytes, &action)
 }
