@@ -342,7 +342,7 @@ func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, erro
 
 const (
 	stakeShardAmount   int = 1750000000000
-	stakeBeaceonAmount int = stakeShardAmount * 3
+	stakeBeaceonAmount int = stakeShardAmount * 50
 )
 
 type StakingTxParam struct {

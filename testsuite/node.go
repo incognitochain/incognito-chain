@@ -3,6 +3,7 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -453,36 +454,20 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		var proposerPK incognitokey.CommitteePublicKey
 		committeeFromBlock := common.Hash{}
 		committees := curView.GetCommittee()
-		version := 2
+		version := 9
 		versionNew := sim.GetBlockVersion(chainID)
 		fmt.Printf("Create new block of chain %v, version %v, version by feature %v\n", chainID, version, versionNew)
-		if (version < versionNew) && (versionNew > 5) {
+		if version < versionNew {
 			version = versionNew
-			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
-			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
-			if chainID > -1 {
-				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
-				//fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
-			}
-		} else {
-			if config.Param().ConsensusParam.StakingFlowV2Height <= curView.GetBeaconHeight() {
-				version = 3
-			}
-			switch version {
-			case 2:
-				proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
-				//fmt.Println("version 2")
-			case 3:
-				proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
-				committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
-				if chainID > -1 {
-					committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
-					//fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
-				}
-			}
+		}
+		proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+		committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
+		if chainID > -1 {
+			committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
+			fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
 		}
 		proposerPkStr, _ := proposerPK.ToBase58()
-
+		// fmt.Println("Create new block", chain.BeaconChain.GetBestView().GetHeight()+1)
 		if chainID == -1 {
 			block, err = chain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
 			if err != nil {
@@ -499,10 +484,10 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 				return sim
 			}
 		}
-		fmt.Printf("Proposer %+v %v \n", proposerPK, proposerPkStr)
+		// fmt.Printf("Proposer %+v %v \n", proposerPK, proposerPkStr)
 		//SignBlock
 		proposeAcc := sim.GetAccountByCommitteePubkey(&proposerPK)
-		fmt.Printf("Proposer acc %+v %+v \n", proposeAcc, *proposeAcc)
+		// fmt.Printf("Proposer acc %+v %+v \n", proposeAcc, *proposeAcc)
 		userKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(proposeAcc.MiningKey)
 		sim.SignBlock(userKey, block)
 
@@ -554,14 +539,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			if err != nil {
 				panic(err)
 			}
-			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
+			log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
 			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
 			if err != nil {
 				panic(err)
 			} else {
 				crossX := types.CreateAllCrossShardBlock(block.(*types.ShardBlock), config.Param().ActiveShards)
-				//log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
+				log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
 				for _, blk := range crossX {
 					sim.syncker.InsertCrossShardBlock(blk)
 				}
@@ -652,7 +637,7 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 
 func (s *NodeEngine) SignBlock(userMiningKey *signatureschemes.MiningKey, block types.BlockInterface) {
 	var validationData consensustypes.ValidationData
-	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
+	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.ProposeHash().GetBytes())
 	validationDataString, _ := consensustypes.EncodeValidationData(validationData)
 	block.(blsbft.BlockValidation).AddValidationField(validationDataString)
 }
@@ -764,7 +749,7 @@ func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures [
 	// unTriggerFeatures = append(unTriggerFeatures, s.GetUntriggerFeature(true)...)
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
-	fmt.Printf("%v\n", len(accs))
+	// fmt.Printf("%v\n", len(accs))
 
 	signBytes := []byte{}
 	for _, v := range unTriggerFeatures {
@@ -786,7 +771,7 @@ func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures [
 	if len(featureSyncValidators) == 0 {
 		return
 	}
-	fmt.Println("Send ", featureSyncValidators, unTriggerFeatures)
+	// fmt.Println("Send ", featureSyncValidators, unTriggerFeatures)
 	s.GetBlockchain().ReceiveFeatureReport(int(timestamp), featureSyncValidators, featureSyncSignatures, unTriggerFeatures)
 }
 

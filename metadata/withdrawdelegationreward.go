@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -117,23 +118,27 @@ func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) CheckTran
 }
 
 func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
-		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
-	}
+	triggerMap := shardViewRetriever.GetTriggeredFeature()
+	if (triggerMap != nil) && (triggerMap[config.DELEGATION_REWARD] <= shardViewRetriever.GetHeight()) {
+		if tx.IsPrivacy() && tx.GetVersion() <= 1 {
+			return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
+		}
 
-	//check authorized sender
-	if ok, err := withdrawDelegationRewardRequest.MetadataBaseWithSignature.VerifyMetadataSignature(withdrawDelegationRewardRequest.PaymentAddress.Pk, tx); err != nil || !ok {
-		return false, fmt.Errorf("public key in withdraw delegation reward request metadata is unauthorized. Error %v, OK %v", err, ok)
-	}
+		//check authorized sender
+		if ok, err := withdrawDelegationRewardRequest.MetadataBaseWithSignature.VerifyMetadataSignature(withdrawDelegationRewardRequest.PaymentAddress.Pk, tx); err != nil || !ok {
+			return false, fmt.Errorf("public key in withdraw delegation reward request metadata is unauthorized. Error %v, OK %v", err, ok)
+		}
 
-	//check available reward
-	if rewardAmount, err := chainRetriever.GetDelegationRewardAmount(beaconViewRetriever.GetBeaconConsensusStateDB(), withdrawDelegationRewardRequest.PaymentAddress.Pk); err != nil {
-		return false, err
-	} else if rewardAmount <= 0 {
-		return false, errors.New("Not enough reward")
-	} else {
-		return true, nil
+		//check available reward
+		if rewardAmount, err := chainRetriever.GetDelegationRewardAmount(beaconViewRetriever.GetBeaconConsensusStateDB(), withdrawDelegationRewardRequest.PaymentAddress.Pk); err != nil {
+			return false, err
+		} else if rewardAmount <= 0 {
+			return false, errors.New("Not enough reward")
+		} else {
+			return true, nil
+		}
 	}
+	return false, errors.Errorf("The delegation reward feature is not ready, trigger feature info %+v, shard ID %+v height %+v", triggerMap, shardID, shardViewRetriever.GetHeight())
 }
 
 func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
