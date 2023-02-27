@@ -60,7 +60,7 @@ type PreFetchTx struct {
 	Ctx          *PreFetchContext
 }
 
-//get response tx and mempool tx
+// get response tx and mempool tx
 func (s *PreFetchTx) GetTxForBlockProducing() []metadata.Transaction {
 	txs := []metadata.Transaction{}
 	for _, tx := range s.ResponseTxs {
@@ -72,7 +72,7 @@ func (s *PreFetchTx) GetTxForBlockProducing() []metadata.Transaction {
 	return txs
 }
 
-//call whenever there is new view
+// call whenever there is new view
 func (s *PreFetchTx) Reset(view *ShardBestState) {
 	s.Stop()
 	s.BeaconBlocks = []*types.BeaconBlock{}
@@ -82,7 +82,7 @@ func (s *PreFetchTx) Reset(view *ShardBestState) {
 
 }
 
-//call when start propose block
+// call when start propose block
 func (s *PreFetchTx) Stop() {
 	if s.Ctx != nil && s.Ctx.cancelFunc != nil {
 		s.Ctx.cancelFunc()
@@ -92,7 +92,7 @@ func (s *PreFetchTx) Stop() {
 
 }
 
-//call when next timeslot is proposer => prepare tx
+// call when next timeslot is proposer => prepare tx
 func (s *PreFetchTx) Start(curView *ShardBestState) {
 	if s.BestView.BestBlock.Hash().String() != curView.BestBlock.Hash().String() {
 		s.Reset(curView)
@@ -111,7 +111,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 
 	blockChain := s.BestView.blockChain
 	shardID := curView.ShardID
-	bView, err := blockChain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false)
+	bView, err := blockChain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true, false, false, false)
 	if err != nil {
 		Logger.log.Info("debugprefetch: cannot dinf beacon view", curView.BestBeaconHash.String())
 		return

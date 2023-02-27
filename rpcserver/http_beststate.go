@@ -36,7 +36,7 @@ func (httpServer *HttpServer) handleGetBeaconViewByHash(params interface{}, clos
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Block Hash format is invalid"))
 	}
-	bView, err := httpServer.blockService.BlockChain.GetBeaconViewStateDataFromBlockHash(*blockHash, true, false, false)
+	bView, err := httpServer.blockService.BlockChain.GetBeaconViewStateDataFromBlockHash(*blockHash, true, false, false, false)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetBeaconViewByBlockHashError, err)
 	}
@@ -101,11 +101,11 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 }
 
 /*
-	Tell a public key can stake or not
-	Compare this public key with database only
-	param #1: public key
-	return #1: true (can stake), false (can't stake)
-	return #2: error
+Tell a public key can stake or not
+Compare this public key with database only
+param #1: public key
+return #1: true (can stake), false (can't stake)
+return #2: error
 */
 func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)

@@ -128,7 +128,7 @@ func (chain *ShardChain) AddView(view multiview.View) bool {
 			}
 			if (curBestView.GetHash().String() != sBestView.GetHash().String()) && (chain.TxPool != nil) {
 				bcHash := sBestView.GetBeaconHash()
-				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, false, false)
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true, false, false, false)
 				if err != nil {
 					Logger.log.Errorf("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
 				} else {

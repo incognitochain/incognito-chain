@@ -301,7 +301,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx), false, false)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx), false, false, false)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -320,7 +320,7 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...), false, false)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...), false, false, false)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -329,12 +329,12 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	return txDesc, err
 }
 
-//MaybeAcceptSalaryTransactionForBlockProducing performs the following validations on minteable transactions
+// MaybeAcceptSalaryTransactionForBlockProducing performs the following validations on minteable transactions
 //
-//	- Validate transaction sanity
-//	- Validate transaction with current mempool
-//	- Validate transaction by itself
-//	- Validate transaction with blockchain
+//   - Validate transaction sanity
+//   - Validate transaction with current mempool
+//   - Validate transaction by itself
+//   - Validate transaction with blockchain
 func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	Logger.log.Infof("Verifying tx salary %v\n", tx.Hash().String())
 	tp.mtx.Lock()
@@ -950,13 +950,14 @@ func (tp *TxPool) RemoveStuckTx(txHash common.Hash, tx metadata.Transaction) {
 }
 
 /*
-	- Remove transaction out of pool
-		+ Tx Description pool
-		+ List Serial Number Pool
-		+ Hash of List Serial Number Pool
-	- Transaction want to be removed maybe replaced by another transaction:
-		+ New tx (Replacement tx) still exist in pool
-		+ Using the same list serial number to delete new transaction out of pool
+- Remove transaction out of pool
+  - Tx Description pool
+  - List Serial Number Pool
+  - Hash of List Serial Number Pool
+
+- Transaction want to be removed maybe replaced by another transaction:
+  - New tx (Replacement tx) still exist in pool
+  - Using the same list serial number to delete new transaction out of pool
 */
 func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
@@ -1046,7 +1047,7 @@ func (tp *TxPool) RemoveRequestStopStakingList(requestStopStakings []string) {
 	}
 }
 
-//=======================Service for other package
+// =======================Service for other package
 // SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.mtx.RLock()
@@ -1151,6 +1152,7 @@ func (tp *TxPool) MaxFee() uint64 {
 
 /*
 // LastUpdated returns the last time a transaction was added to or
+
 	// removed from the source pool.
 */
 func (tp *TxPool) LastUpdated() time.Time {
@@ -1159,6 +1161,7 @@ func (tp *TxPool) LastUpdated() time.Time {
 
 /*
 // HaveTransaction returns whether or not the passed transaction hash
+
 	// exists in the source pool.
 */
 func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {

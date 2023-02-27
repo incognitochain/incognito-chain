@@ -731,7 +731,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
 				}
 			}
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), false, false)
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), false, false, false)
 			if err == nil {
 				valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 				tx.SetValidationEnv(valEnv)
@@ -2057,7 +2057,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 				}
 			}
 
-			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), false, false)
+			bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(tx), false, false, false)
 			valEnv := blockchain.UpdateTxEnvWithSView(sView, tx)
 			tx.SetValidationEnv(valEnv)
 			valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, tx.GetTxNormal())
@@ -2258,7 +2258,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	return tx, nil
 }
 
-//calculateOutputCoinsByMinValue
+// calculateOutputCoinsByMinValue
 func (txService TxService) calculateOutputCoinsByMinValue(outCoins []coin.PlainCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]coin.PlainCoin, uint64) {
 	outCoinsTmp := make([]coin.PlainCoin, 0)
 	amount := uint64(0)
