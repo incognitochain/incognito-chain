@@ -16,7 +16,7 @@ type PortalFeeRefundResponse struct {
 	MetadataBase
 	PortingRequestStatus string
 	ReqTxID              common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom         []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalFeeRefundResponse(
@@ -70,6 +70,10 @@ func (iRes PortalFeeRefundResponse) Hash() *common.Hash {
 
 func (iRes *PortalFeeRefundResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalFeeRefundResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func parsePortingRequest(contentBytes []byte, shardID string) (string, common.Hash, string, uint64, error) {

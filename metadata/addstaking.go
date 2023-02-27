@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/pkg/errors"
 )
 
@@ -127,4 +128,8 @@ func (addStakingMetadata AddStakingMetadata) GetType() int {
 
 func (addStakingMetadata *AddStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(addStakingMetadata)
+}
+
+func (req *AddStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
 }

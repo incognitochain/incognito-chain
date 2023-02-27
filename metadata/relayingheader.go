@@ -135,3 +135,7 @@ func (rh *RelayingHeader) BuildReqActions(tx Transaction, chainRetriever ChainRe
 func (rh *RelayingHeader) CalculateSize() uint64 {
 	return calculateSize(rh)
 }
+
+func (rh *RelayingHeader) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(rh)
+}

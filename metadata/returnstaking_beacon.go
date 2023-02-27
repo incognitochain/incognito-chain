@@ -82,3 +82,7 @@ func (sbsRes ReturnBeaconStakingMetadata) Hash() *common.Hash {
 func (sbsRes *ReturnBeaconStakingMetadata) SetSharedRandom(r []byte) {
 	sbsRes.SharedRandom = r
 }
+
+func (sbsRes *ReturnBeaconStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(sbsRes)
+}

@@ -122,6 +122,10 @@ func (request *ConvertTokenToUnifiedTokenRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (req *ConvertTokenToUnifiedTokenRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (request *ConvertTokenToUnifiedTokenRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	result = append(result, metadataCommon.OTADeclaration{

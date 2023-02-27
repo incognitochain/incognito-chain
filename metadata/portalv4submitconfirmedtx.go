@@ -142,3 +142,7 @@ func (r *PortalSubmitConfirmedTxRequest) BuildReqActions(tx Transaction, chainRe
 func (r *PortalSubmitConfirmedTxRequest) CalculateSize() uint64 {
 	return calculateSize(r)
 }
+
+func (r *PortalSubmitConfirmedTxRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(r)
+}

@@ -66,6 +66,10 @@ func (iRes *InitTokenResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *InitTokenResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 //VerifyMinerCreatedTxBeforeGettingInBlock validates if the response is a reply to an instruction from the beacon chain.
 //The response is valid for a specific instruction if
 //	1. the instruction has a valid metadata type
@@ -137,7 +141,7 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 			return false, fmt.Errorf("cannot get minted data of txResp %v: %v", tx.Hash().String(), err)
 		}
 
-		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()){
+		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()) {
 			Logger.log.Infof("public keys mismatch: %v != %v\n", mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS())
 			continue
 		}

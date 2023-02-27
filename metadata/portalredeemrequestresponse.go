@@ -19,7 +19,7 @@ type PortalRedeemRequestResponse struct {
 	RequesterAddrStr string
 	Amount           uint64
 	IncTokenID       string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemRequestResponse(
@@ -76,6 +76,10 @@ func (iRes PortalRedeemRequestResponse) Hash() *common.Hash {
 
 func (iRes *PortalRedeemRequestResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalRedeemRequestResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {

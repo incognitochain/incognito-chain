@@ -212,3 +212,7 @@ func (portalUserRegister *PortalUserRegister) BuildReqActions(tx Transaction, ch
 func (portalUserRegister *PortalUserRegister) CalculateSize() uint64 {
 	return calculateSize(portalUserRegister)
 }
+
+func (portalUserRegister *PortalUserRegister) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(portalUserRegister)
+}

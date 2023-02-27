@@ -142,3 +142,7 @@ func (convertVaultReq *PortalConvertVaultRequest) BuildReqActions(tx Transaction
 func (convertVaultReq *PortalConvertVaultRequest) CalculateSize() uint64 {
 	return calculateSize(convertVaultReq)
 }
+
+func (convertVaultReq *PortalConvertVaultRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(convertVaultReq)
+}

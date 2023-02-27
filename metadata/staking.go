@@ -218,6 +218,10 @@ func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stakingMetadata)
 }
 
+func (stakingMetadata *StakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(stakingMetadata)
+}
+
 func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
 	return stakingMetadata.StakingAmountShard * 3
 }

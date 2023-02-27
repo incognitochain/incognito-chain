@@ -132,3 +132,7 @@ func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, chainRe
 func (meta *PortalRequestWithdrawReward) CalculateSize() uint64 {
 	return calculateSize(meta)
 }
+
+func (meta *PortalRequestWithdrawReward) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(meta)
+}

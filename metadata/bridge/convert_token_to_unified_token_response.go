@@ -92,6 +92,10 @@ func (response *ConvertTokenToUnifiedTokenResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
+func (req *ConvertTokenToUnifiedTokenResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (response *ConvertTokenToUnifiedTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,

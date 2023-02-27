@@ -136,6 +136,10 @@ func (bReq *BurnForCallRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(bReq)
 }
 
+func (req *BurnForCallRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (bReq *BurnForCallRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for _, d := range bReq.Data {

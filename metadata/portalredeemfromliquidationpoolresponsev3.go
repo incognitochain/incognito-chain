@@ -20,7 +20,7 @@ type PortalRedeemFromLiquidationPoolResponseV3 struct {
 	RedeemAmount        uint64
 	MintedPRVCollateral uint64
 	TokenID             string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom        []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemFromLiquidationPoolResponseV3(
@@ -83,6 +83,10 @@ func (iRes PortalRedeemFromLiquidationPoolResponseV3) Hash() *common.Hash {
 
 func (iRes *PortalRedeemFromLiquidationPoolResponseV3) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalRedeemFromLiquidationPoolResponseV3) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBeforeGettingInBlock(

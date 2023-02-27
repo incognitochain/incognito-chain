@@ -83,6 +83,10 @@ func (response *UnshieldResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
+func (req *UnshieldResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (response *UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte,

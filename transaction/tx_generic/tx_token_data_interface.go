@@ -100,6 +100,13 @@ type TransactionToken interface {
 		bool,
 		error,
 	)
+
+	// ToCompactBytes returns a compact encoding of a Transaction. Call this function instead of json.Marshal when
+	// storing the Transaction to the db to improve storage efficiency.
+	ToCompactBytes() ([]byte, error)
+
+	// FromCompactBytes decodes a Transaction from its compactly encoded data.
+	FromCompactBytes([]byte) error
 }
 
 type TxTokenData struct {

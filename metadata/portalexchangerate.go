@@ -162,3 +162,7 @@ func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, 
 func (portalExchangeRates *PortalExchangeRates) CalculateSize() uint64 {
 	return calculateSize(portalExchangeRates)
 }
+
+func (portalExchangeRates *PortalExchangeRates) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(portalExchangeRates)
+}

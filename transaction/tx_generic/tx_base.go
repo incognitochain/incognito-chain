@@ -199,7 +199,7 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
 	} else {
-		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		meta, parseErr := metadata.ParseMetadata(*temp.Metadata)
 		if parseErr != nil {
 			utils.Logger.Log.Error(parseErr)
 			return parseErr

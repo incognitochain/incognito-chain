@@ -210,3 +210,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) GetType() int {
 func (withDrawRewardRequest *WithDrawRewardRequest) CalculateSize() uint64 {
 	return calculateSize(withDrawRewardRequest)
 }
+
+func (withDrawRewardRequest *WithDrawRewardRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(withDrawRewardRequest)
+}

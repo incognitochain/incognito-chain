@@ -154,6 +154,10 @@ func (request *AddLiquidityRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (request *AddLiquidityRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(request)
+}
+
 func (request *AddLiquidityRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PoolPairID  string `json:"PoolPairID"` // only "" for the first contribution of pool

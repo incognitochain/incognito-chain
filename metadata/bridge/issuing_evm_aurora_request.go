@@ -3,8 +3,9 @@ package bridge
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/config"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -139,6 +140,10 @@ func (iReq *IssuingEVMAuroraRequest) BuildReqActions(tx metadataCommon.Transacti
 
 func (iReq *IssuingEVMAuroraRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(iReq)
+}
+
+func (req *IssuingEVMAuroraRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
 }
 
 func (iReq *IssuingEVMAuroraRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {

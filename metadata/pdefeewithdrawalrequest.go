@@ -121,3 +121,7 @@ func (pc *PDEFeeWithdrawalRequest) BuildReqActions(tx Transaction, chainRetrieve
 func (pc *PDEFeeWithdrawalRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
+
+func (pc *PDEFeeWithdrawalRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(pc)
+}

@@ -194,3 +194,7 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetr
 func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
 }
+
+func (mb *MetadataBase) FromCompactBytes(data []byte) error {
+	return nil
+}

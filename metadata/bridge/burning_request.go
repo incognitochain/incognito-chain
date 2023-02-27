@@ -186,3 +186,7 @@ func (bReq *BurningRequest) BuildReqActions(tx metadataCommon.Transaction, chain
 func (bReq *BurningRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(bReq)
 }
+
+func (req *BurningRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}

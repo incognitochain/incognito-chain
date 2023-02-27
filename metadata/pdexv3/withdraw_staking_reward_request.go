@@ -138,6 +138,10 @@ func (withdrawal *WithdrawalStakingRewardRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(withdrawal)
 }
 
+func (withdrawal *WithdrawalStakingRewardRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(withdrawal)
+}
+
 func (withdrawal *WithdrawalStakingRewardRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	result := []metadataCommon.OTADeclaration{}
 	for currentTokenID, val := range withdrawal.Receivers {

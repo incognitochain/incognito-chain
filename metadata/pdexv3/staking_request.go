@@ -140,6 +140,10 @@ func (request *StakingRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (request *StakingRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(request)
+}
+
 func (request *StakingRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		OtaReceiver string `json:"OtaReceiver"`

@@ -1,8 +1,11 @@
 package tx_ver2
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	proto_transaction "github.com/incognitochain/incognito-chain/transaction/proto"
+	"google.golang.org/protobuf/proto"
 	"sort"
 
 	"math"
@@ -782,5 +785,96 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (tx Tx) ToCompactBytes() ([]byte, error) {
+	protoTx, err := tx.toProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return proto.Marshal(protoTx)
+}
+
+func (tx *Tx) FromCompactBytes(data []byte) error {
+	protoTx := new(proto_transaction.TxVer2)
+	err := proto.Unmarshal(data, protoTx)
+	if err != nil {
+		return err
+	}
+
+	return tx.fromProto(protoTx)
+}
+
+func (tx Tx) toProto() (*proto_transaction.TxVer2, error) {
+	if tx.GetType() == "cv" || tx.GetType() == "tcv" {
+		return nil, fmt.Errorf("tx type %v not supported", tx.GetType())
+	}
+
+	res := new(proto_transaction.TxVer2)
+	res.Version = int32(tx.Version)
+	res.Type = tx.Type
+	res.LockTime = tx.LockTime
+	res.Fee = tx.Fee
+	switch {
+	case tx.Info == nil:
+		res.Info = nil
+	case len(tx.Info) == 0:
+		res.Info = utils.TxInfoPlaceHolder
+	default:
+		res.Info = tx.Info
+	}
+
+	res.SigPubKey = tx.SigPubKey
+	res.Sig = tx.Sig
+	res.LastByte = int32(tx.PubKeyLastByteSender)
+	if tx.GetMetadata() != nil {
+		var err error
+		res.Metadata, err = tx.GetMetadata().ToCompactBytes()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if tx.GetProof() != nil {
+		res.Proof = tx.GetProof().Bytes()
+	}
+
+	return res, nil
+}
+
+func (tx *Tx) fromProto(protoTx *proto_transaction.TxVer2) error {
+	if len(protoTx.Proof) != 0 {
+		proof := new(privacy.ProofV2)
+		err := proof.SetBytes(protoTx.Proof)
+		if err != nil {
+			return err
+		}
+		tx.Proof = proof
+	}
+
+	tx.Version = int8(protoTx.Version)
+	tx.Type = protoTx.Type
+	tx.LockTime = protoTx.LockTime
+	tx.Fee = protoTx.Fee
+	switch {
+	case protoTx.Info == nil:
+		tx.Info = nil
+	case bytes.Equal(protoTx.Info, utils.TxInfoPlaceHolder):
+		tx.Info = []byte{}
+	default:
+		tx.Info = protoTx.Info
+	}
+
+	tx.SigPubKey = protoTx.SigPubKey
+	tx.Sig = protoTx.Sig
+	tx.PubKeyLastByteSender = byte(protoTx.LastByte)
+
+	var err error
+	tx.Metadata, err = metadata.MdFromCompactBytes(protoTx.Metadata)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

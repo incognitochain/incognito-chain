@@ -228,6 +228,10 @@ func (iReq *IssuingEVMRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(iReq)
 }
 
+func (req *IssuingEVMRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	// get hosts, minEVMConfirmationBlocks, networkPrefix depend iReq.Type
 	hosts, networkPrefix, minEVMConfirmationBlocks, checkEVMHardFork, err := GetEVMInfoByMetadataType(iReq.Type, iReq.NetworkID)

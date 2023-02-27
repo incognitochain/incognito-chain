@@ -133,6 +133,10 @@ func (req *WithdrawOrderRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(req)
 }
 
+func (req *WithdrawOrderRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (req *WithdrawOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for currentTokenID, val := range req.Receiver {

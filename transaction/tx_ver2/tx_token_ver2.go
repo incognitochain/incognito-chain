@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	proto_transaction "github.com/incognitochain/incognito-chain/transaction/proto"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+
 	"math"
 	"sort"
 	"strconv"
@@ -13,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
@@ -1297,4 +1301,105 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 		return result[i].String() < result[j].String()
 	})
 	return result
+}
+
+func (txToken TxToken) ToCompactBytes() ([]byte, error) {
+	protoTx, err := txToken.toProto()
+	if err != nil {
+		return nil, err
+	}
+
+	dataBytes, err := proto.Marshal(protoTx)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataBytes, nil
+}
+
+func (txToken *TxToken) FromCompactBytes(data []byte) error {
+	protoTx := new(proto_transaction.TxTokenVer2)
+	err := proto.Unmarshal(data, protoTx)
+	if err != nil {
+		return err
+	}
+
+	return txToken.fromProto(protoTx)
+}
+
+func (td TxTokenDataVersion2) toProto() *proto_transaction.TxTokenDataVersion2 {
+	res := new(proto_transaction.TxTokenDataVersion2)
+	res.ID = td.PropertyID.GetBytes()
+	res.Name = td.PropertyName
+	res.Symbol = td.PropertySymbol
+	res.SigPubKey = td.SigPubKey
+	res.Sig = td.Sig
+	res.Proof = td.Proof.Bytes()
+	res.Type = int32(td.Type)
+	res.Mintable = td.Mintable
+
+	return res
+}
+
+func (td *TxTokenDataVersion2) fromProto(protoTokenData *proto_transaction.TxTokenDataVersion2) error {
+	tokenID := new(common.Hash)
+	err := tokenID.SetBytes(protoTokenData.ID)
+	if err != nil {
+		return err
+	}
+	td.PropertyID = *tokenID
+
+	td.PropertyName = protoTokenData.Name
+	td.PropertySymbol = protoTokenData.Symbol
+	td.SigPubKey = protoTokenData.SigPubKey
+	td.Sig = protoTokenData.Sig
+	td.Type = int(protoTokenData.Type)
+	td.Mintable = protoTokenData.Mintable
+
+	if len(protoTokenData.Proof) != 0 {
+		proof := new(privacy.ProofV2)
+		err1 := proof.SetBytes(protoTokenData.Proof)
+		if err1 != nil {
+			return fmt.Errorf(err1.Error())
+		}
+		td.Proof = proof
+	}
+
+	return nil
+}
+
+func (txToken TxToken) toProto() (*proto_transaction.TxTokenVer2, error) {
+	if txToken.GetType() == "cv" || txToken.GetType() == "tcv" {
+		return nil, fmt.Errorf("tx type %v not supported", txToken.GetType())
+	}
+
+	var err error
+	res := new(proto_transaction.TxTokenVer2)
+
+	res.Tx, err = txToken.GetTxBase().(*Tx).toProto()
+	if err != nil {
+		return nil, err
+	}
+
+	res.TokenData = txToken.TokenData.toProto()
+
+	return res, nil
+}
+
+func (txToken *TxToken) fromProto(protoTxToken *proto_transaction.TxTokenVer2) error {
+	tmpTx := new(Tx)
+	err := tmpTx.fromProto(protoTxToken.Tx)
+	if err != nil {
+		return err
+	}
+	txToken.Tx = *tmpTx
+
+	tmpTokenData := new(TxTokenDataVersion2)
+	err = tmpTokenData.fromProto(protoTxToken.TokenData)
+	if err != nil {
+		return err
+	}
+	txToken.TokenData = *tmpTokenData
+
+	return nil
 }

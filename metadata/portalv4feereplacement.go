@@ -171,3 +171,7 @@ func (repl *PortalReplacementFeeRequest) BuildReqActions(tx Transaction, chainRe
 func (repl *PortalReplacementFeeRequest) CalculateSize() uint64 {
 	return calculateSize(repl)
 }
+
+func (repl *PortalReplacementFeeRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(repl)
+}

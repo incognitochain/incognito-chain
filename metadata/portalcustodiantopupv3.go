@@ -149,7 +149,7 @@ func (req PortalLiquidationCustodianDepositV3) ValidateSanityData(chainRetriever
 	// validate amount deposit
 	if req.DepositAmount > 0 {
 		// validate deposit proof
-		if len(req.BlockHash.Bytes()) == 0 || bytes.Equal(req.BlockHash.Bytes(), eCommon.HexToHash("").Bytes()){
+		if len(req.BlockHash.Bytes()) == 0 || bytes.Equal(req.BlockHash.Bytes(), eCommon.HexToHash("").Bytes()) {
 			return false, false, errors.New("BlockHash should be not empty")
 		}
 		if len(req.ProofStrs) == 0 {
@@ -201,4 +201,8 @@ func (req *PortalLiquidationCustodianDepositV3) BuildReqActions(tx Transaction, 
 
 func (req *PortalLiquidationCustodianDepositV3) CalculateSize() uint64 {
 	return calculateSize(req)
+}
+
+func (req *PortalLiquidationCustodianDepositV3) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(req)
 }

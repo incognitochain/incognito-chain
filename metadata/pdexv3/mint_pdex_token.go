@@ -99,6 +99,10 @@ func (mintResponse *MintPDEXGenesisResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(mintResponse)
 }
 
+func (mintResponse *MintPDEXGenesisResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(mintResponse)
+}
+
 func (mintResponse MintPDEXGenesisResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *metadataCommon.MintData,
 	shardID byte, tx metadataCommon.Transaction,

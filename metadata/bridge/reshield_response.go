@@ -78,6 +78,10 @@ func (iRes *IssuingReshieldResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(iRes)
 }
 
+func (req *IssuingReshieldResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (iRes IssuingReshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *metadataCommon.MintData, shardID byte, tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, ac *metadataCommon.AccumulatedValues, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range mintData.Insts {

@@ -140,3 +140,7 @@ func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Tr
 func (custodianDeposit *PortalLiquidationCustodianDeposit) CalculateSize() uint64 {
 	return calculateSize(custodianDeposit)
 }
+
+func (custodianDeposit *PortalLiquidationCustodianDeposit) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(custodianDeposit)
+}

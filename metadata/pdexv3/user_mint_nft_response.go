@@ -88,6 +88,10 @@ func (response *UserMintNftResponse) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(response)
 }
 
+func (response *UserMintNftResponse) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(response)
+}
+
 func (response *UserMintNftResponse) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Status  string `json:"Status"`

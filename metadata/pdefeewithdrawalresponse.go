@@ -15,7 +15,7 @@ import (
 type PDEFeeWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPDEFeeWithdrawalResponse(
@@ -63,6 +63,10 @@ func (iRes PDEFeeWithdrawalResponse) Hash() *common.Hash {
 
 func (iRes *PDEFeeWithdrawalResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PDEFeeWithdrawalResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {

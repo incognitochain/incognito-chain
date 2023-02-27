@@ -169,6 +169,10 @@ func (pc *PDETradeRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
 
+func (pc *PDETradeRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(pc)
+}
+
 func (pc *PDETradeRequest) GetOTADeclarations() []OTADeclaration {
 	pk, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {

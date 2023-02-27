@@ -179,6 +179,10 @@ func (iReq *InitTokenRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }
 
+func (iReq *InitTokenRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iReq)
+}
+
 func (iReq *InitTokenRequest) GetOTADeclarations() []OTADeclaration {
 	pk, _, err := coin.ParseOTAInfoFromString(iReq.OTAStr, iReq.TxRandomStr)
 	if err != nil {

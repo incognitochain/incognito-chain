@@ -98,3 +98,7 @@ func (sbsRes BeaconBlockSalaryRes) Hash() *common.Hash {
 	hash := common.HashH([]byte(record))
 	return &hash
 }
+
+func (sbsRes *BeaconBlockSalaryRes) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(sbsRes)
+}

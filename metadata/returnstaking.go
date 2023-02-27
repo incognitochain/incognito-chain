@@ -11,10 +11,10 @@ type ReturnStakingMetadata struct {
 	MetadataBase
 	TxID          string
 	StakerAddress privacy.PaymentAddress
-	SharedRandom []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
-func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int, ) *ReturnStakingMetadata {
+func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int) *ReturnStakingMetadata {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -78,3 +78,6 @@ func (sbsRes *ReturnStakingMetadata) SetSharedRandom(r []byte) {
 	sbsRes.SharedRandom = r
 }
 
+func (sbsRes *ReturnStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(sbsRes)
+}

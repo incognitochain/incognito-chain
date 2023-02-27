@@ -160,3 +160,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) GetType() int {
 func (stopAutoStakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stopAutoStakingMetadata)
 }
+
+func (stopAutoStakingMetadata *StopAutoStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(stopAutoStakingMetadata)
+}

@@ -131,3 +131,7 @@ func (withdrawReq *PortalCustodianWithdrawRequest) BuildReqActions(tx Transactio
 func (withdrawReq *PortalCustodianWithdrawRequest) CalculateSize() uint64 {
 	return calculateSize(withdrawReq)
 }
+
+func (withdrawReq *PortalCustodianWithdrawRequest) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(withdrawReq)
+}

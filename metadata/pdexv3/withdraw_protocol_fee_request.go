@@ -131,3 +131,7 @@ func (withdrawal WithdrawalProtocolFeeRequest) HashWithoutSig() *common.Hash {
 func (withdrawal *WithdrawalProtocolFeeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(withdrawal)
 }
+
+func (withdrawal *WithdrawalProtocolFeeRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(withdrawal)
+}

@@ -264,3 +264,7 @@ func (redeemReq *PortalRedeemRequestV3) BuildReqActions(tx Transaction, chainRet
 func (redeemReq *PortalRedeemRequestV3) CalculateSize() uint64 {
 	return calculateSize(redeemReq)
 }
+
+func (redeemReq *PortalRedeemRequestV3) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(redeemReq)
+}

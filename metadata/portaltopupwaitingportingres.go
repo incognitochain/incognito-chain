@@ -16,7 +16,7 @@ type PortalTopUpWaitingPortingResponse struct {
 	MetadataBase
 	DepositStatus string
 	ReqTxID       common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalTopUpWaitingPortingResponse(
@@ -66,6 +66,10 @@ func (iRes PortalTopUpWaitingPortingResponse) Hash() *common.Hash {
 
 func (iRes *PortalTopUpWaitingPortingResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
+}
+
+func (iRes *PortalTopUpWaitingPortingResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
 }
 
 func (iRes PortalTopUpWaitingPortingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {

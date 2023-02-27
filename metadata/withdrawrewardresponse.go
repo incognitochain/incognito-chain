@@ -94,6 +94,10 @@ func (withDrawRewardResponse *WithDrawRewardResponse) SetSharedRandom(r []byte) 
 	withDrawRewardResponse.SharedRandom = r
 }
 
+func (withDrawRewardResponse *WithDrawRewardResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(withDrawRewardResponse)
+}
+
 //func (withDrawRewardResponse WithDrawRewardResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte,
 //	tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever,
 //	beaconViewRetriever BeaconViewRetriever) (bool, error) {

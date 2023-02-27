@@ -184,6 +184,10 @@ func (iReq *IssuingWasmRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(iReq)
 }
 
+func (req *IssuingWasmRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (iReq *IssuingWasmRequest) verifyProofAndParseReceipt() (string, string, uint64, string, error) {
 	// get hosts, minWasmConfirmationBlocks, networkPrefix depend on iReq.Type
 	hosts, _, minWasmConfirmationBlocks, contractId, err := GetWasmInfoByMetadataType(iReq.Type)

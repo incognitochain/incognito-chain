@@ -777,3 +777,11 @@ func (tx Tx) GetTxActualSize() uint64 {
 	tx.SetCachedActualSize(&result)
 	return result
 }
+
+func (tx Tx) ToCompactBytes() ([]byte, error) {
+	return json.Marshal(tx)
+}
+
+func (tx *Tx) FromCompactBytes(data []byte) error {
+	return json.Unmarshal(data, &tx)
+}

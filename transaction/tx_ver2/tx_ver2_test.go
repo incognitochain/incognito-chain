@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 	"unicode"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -359,6 +360,201 @@ func TestPrivacyV2TxPRV(t *testing.T) {
 	})
 }
 
+func loadSampleTxs(isPrv bool) ([]metadata.Transaction, error) {
+	res := make([]metadata.Transaction, 0)
+
+	rootDataDir := "test_data"
+
+	var dataDir string
+	if isPrv {
+		dataDir = rootDataDir + "/prv"
+	} else {
+		dataDir = rootDataDir + "/token"
+	}
+
+	filePath := fmt.Sprintf("%v/txs.dat", dataDir)
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	txs := make(map[string]string)
+	err = json.Unmarshal(data, &txs)
+
+	for _, tx := range txs {
+		rawTx, _, err := base58.Base58Check{}.Decode(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		var tx metadata.Transaction
+		if isPrv {
+			tx = new(Tx)
+		} else {
+			tx = new(TxToken)
+		}
+
+		err = json.Unmarshal(rawTx, tx)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, tx)
+	}
+
+	return res, nil
+}
+
+func BenchmarkTx_CompactBytes(b *testing.B) {
+	txs, err := loadSampleTxs(true)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("LOAD TXS successfully!!!!")
+
+	minEncodingRate := 100000.0
+	maxEncodingRate := 0.0
+	totalEncodingRate := 0.0
+	minDecodingRate := 100000.0
+	maxDecodingRate := 0.0
+	totalDecodingRate := 0.0
+
+	minSizeReductionRate := 10000.0
+	maxSizeReductionRate := 0.0
+	totalReductionRate := 0.0
+	minReductionTx := ""
+
+	count := 0
+	for i := 0; i < len(txs); i++ {
+		tx := txs[i]
+		prefix := fmt.Sprintf("[i: %v, txHash: %v]", i, tx.Hash().String()[:10])
+		txV2, ok := tx.(*Tx)
+		if !ok {
+			continue
+		}
+
+		start := time.Now()
+		jsb, err := json.Marshal(txV2)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		jsbEncodingTime := time.Since(start).Seconds()
+
+		start = time.Now()
+		tmpTx := new(Tx)
+		err = json.Unmarshal(jsb, &tmpTx)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		jsbDecodingTime := time.Since(start).Seconds()
+		if tmpTx.Hash().String() != tx.Hash().String() {
+			jsb1, _ := json.Marshal(tx)
+			jsb2, _ := json.Marshal(tmpTx)
+			fmt.Println(string(jsb1))
+			fmt.Println(string(jsb2))
+			panic(fmt.Sprintf("%v expected txHash %v, got %v", prefix, tx.Hash().String(), tmpTx.Hash().String()))
+		}
+
+		start = time.Now()
+		compactBytes, err := txV2.ToCompactBytes()
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		encodingTime := time.Since(start).Seconds()
+
+		// Calculate reduction rate
+		reductionRate := 1 - float64(len(compactBytes))/float64(len(jsb))
+		if reductionRate > maxSizeReductionRate {
+			maxSizeReductionRate = reductionRate
+		}
+		if reductionRate < minSizeReductionRate {
+			minSizeReductionRate = reductionRate
+			minReductionTx = tx.Hash().String()
+		}
+		totalReductionRate += reductionRate
+
+		start = time.Now()
+		newTx := new(Tx)
+		err = newTx.FromCompactBytes(compactBytes)
+		if err != nil {
+			panic(fmt.Sprintf("%v %v", prefix, err))
+		}
+		decodingTime := time.Since(start).Seconds()
+
+		encodingRate := jsbEncodingTime / encodingTime
+		totalEncodingRate += encodingRate
+		if encodingRate > maxEncodingRate {
+			maxEncodingRate = encodingRate
+		}
+		if encodingRate < minEncodingRate {
+			minEncodingRate = encodingRate
+		}
+
+		decodingRate := jsbDecodingTime / decodingTime
+		totalDecodingRate += decodingRate
+		if decodingRate > maxDecodingRate {
+			maxDecodingRate = decodingRate
+		}
+		if decodingRate < minDecodingRate {
+			minDecodingRate = decodingRate
+		}
+
+		if newTx.Hash().String() != tx.Hash().String() {
+			jsb1, _ := json.Marshal(tx)
+			jsb2, _ := json.Marshal(newTx)
+			fmt.Println(string(jsb1))
+			fmt.Println(string(jsb2))
+			panic(fmt.Sprintf("%v expected txHash %v, got %v", prefix, tx.Hash().String(), newTx.Hash().String()))
+		}
+		count++
+	}
+	fmt.Printf("minEncodingRate: %v, maxEncodingRate: %v, avgEncodingRate: %v\n", minEncodingRate, maxEncodingRate, totalEncodingRate/float64(count))
+	fmt.Printf("minDecodingRate: %v, maxDecodingRate: %v, avgDecodingRate: %v\n", minDecodingRate, maxDecodingRate, totalDecodingRate/float64(count))
+	fmt.Printf("minReductionRate: %v (%v), maxReductionRate: %v, avgReductionRate: %v\n",
+		minSizeReductionRate, minReductionTx, maxSizeReductionRate, totalReductionRate/float64(len(txs)))
+}
+
+func TestTx_FromCompactBytes(t *testing.T) {
+	encodedTxStr := "1BTcuoVdWQ5SmCs1NBJSJiQMpBfKk6mRJryzzyjssdYkNbyRraNnxtEnqo9gGN5RrcLGpj69eGBAiq7TD8rKVJaNxsc3G38pydFdgrDQeHgKJC57SQUFLqxwi5EsiELRF9kFEEouGRqc9R2B7e1hLwMoED4bk6QWVgam6aycQAZ7a96GKsbRYB4yro7gqcEdKUi6aW8XQ4N8Q95ThSZbrvaVzYdsVq51ApfV2HwnRscxbjqMoVksdNHk9RzfWs3NcgoZi9wKR5dqBKZRFMBk58ZNvbidwEomzhTzUnb4EEVL6m4zY6he1u6uKBeR52WGBkKbGLjFpzeKWM1FkXLoyEHn11uNLmMvNHjsAc9Ss8AtmumiwDroTMK558Dsf4N5qPPnacC6mskqFMfkHdBKNCczkYrRkFuzHGpTXuP2iX24BPoUkn9Gztj8a8LvejtuyYerqok97EFwbGG9qAo8vMUnXivHbenJ5kXqevEaWUoMq9DiqcfnUnWu6vo8pV7ccK7vXkCqcTVta2ZxVkYYfK95bhtynEjhspmBLYZjX723BpUqhN8T75PSHJXyb52aNzv17QAV6riZdHphc6EWpkt7CLvpsbfPedi1TBm54xvxtyMxPERDtkXzr8BQWJvgiRdP5p4kgT7WtLHh1RCwtFDoPrQVjbR1vp3LH9HetDveN5XgwtzVBb37VyaVb7pnnSxNmk12h6t6L8dv8fXgvTXxFCNy6dnzv9UyspXu7irkb2bvYVfW6ZyuZbk7P4Xgk93sWdy2GaXzmCph74RUvybUfQ1bbDUJQwxzqUfpLDaetp1YxPRiAS4bawSRURv4oeKHqVvUymmAvBsRXjt5k26UauhSYMXf423Gtw5RNt9jUiRqWpfn8z6bEFxcpSkgm1W8hNzo3fLZSQBns3gnq5WorBja97KE8mKjEZYHU44KY4JQtf1AT3M9iN5cJJqMHhbbXHRLfNP6rvhzHSSk3hATtVztCNB1kq3jGiRxg86najg2M24xpqf32LrRTqTZVwhcc4X9F4YjDuqD2bgf6UtpvSCZKF159abCLVRNsDcQddRFhyqeAnwD8CJSQYUKZLrBDF1Y2QKEMxGr83NBd3cWSYHu4nrbKYsgcREcqpVzas2ZsFY5oyhpH3eJjN2fXoxVHcHBHNbAf6nG16jUDU1sLuNfokTrKibprNYaZTjxqrqjrs1f6JL39s4NRVbwwWPp8MwD366WhikDFEwgFGuP5WrAUkaHd3WV993ymTvZu1Y5P9DhymxAigcXRpk34Gd4fhbMSgJwZ1Xe51KKRsD22bURQJnQsXFaGutffLLjvpqxgPg4VkrVBqy9XPFgJjzaAY8vVJdEp7s6TXo6gqT95LhsLTGJKwLHD7aB9grJi5VjDev5Ps84TXJqPNVbxnV7oyae2WKuFPZk6NMwPKYnEggVubevSyzhe4NR95Y8L67YY2VjC56BU18EcG9JMK3PaHednyevSeG8jY5A3TKSSbVKys7RKAUVbuebU614qXonRyzqDnmyk6AbX2AXx23GijbsjZkcDjENZPk6dBYaxRCmgyDWFTSpEwEu6VWo6CuB4RNzpMKMAMN6HfRetDPk4Cffm8nkYarGRkteqXykWt1qTrWfzbtpHubPxeLRJCVhT1mNa3Vhx1bEr7vTfvBad16gJrh71ah9ssVVzkkEJRgnYJLPmrzYAgrmkDT7ZyN9DFdzL2S5LDGm79nmp82ggHV2RmKA8sTgY9ejcCVWwoPpJW24dpbXyYuTXc76Q5kJGjnyMbdvsXFjF4HZah8aSJVabVSs239u4x3PkSxjJQnJcJTKzVnRronQrDZC2WGcUBJxuaAe3ob5DjU6LDcZVbgpRwRLCxSYVZdfeUF5Lgf1ZoYakDZnBTnPMMddREioHYnCtrSmKm1yB1jyVjMd7KJpeTCMFXruH2mfEhrBa4gFEPS9BQ5XkDGLU1JEQdSwhp8fiU1kHg1CtRyVZxxAU5vj9HhiTpUsayGfWmmQjMpr5VfTEazeBP5GYK87vwUAbVjgPow6vdyGkEuoM9VZ2R5BwhRbx1GvSsDBR97d4KJdbir44mFYBSpzQbQgfkgPjEBfqb6bTWAdJpNA2KiCSvPePT4ExCo7h1Kw63LJcfDovAWZzFGCiVyRZskQA6FzjB3Q55UkKDhYfzPGjVhnhi7CmCNuzieo9MJSmLWikzWQGqnHxPnVwJaoCX7nGMK7uqAB3zuUL1rTVdz7ukJKzLM81wB5gSBywznLU2kBevGtE6TroNVSknwg5pHxQt7UoFWAZtD9ANBibB5Wvkqpr75FgwsVsGJP1MarQzHwPm42a9M3d29j76BqPYxcTGrwbrScjxz9tr1pHNy56Rr2kiPr85hVajZrbKrELNC5MV9a1H9mT1939g5Z9R4eE7zRyo3x1ooeaVUV796YuBK8J9Pn3dvQ4tJ2a65843cQLSdf9FEtVCxNWQtbpdycBiV8BFJjibyAwZwfa4vLXQYupSF2NFAddeoUVXQWY3Vc4k3ZKbT2QUbnD8L4RCzNV7X3VhUUWEAve96c96CwNdx4BGP537VvYwWFtX53pxaE6qRvNJYnfPB3UAJqZnTDFd5U4jYz6stn9E91pgcEAJP961WJQzezF3eJ1ML6VcUfCvnfAJugv8Zhg7AzBmdMxvFXCEyDonaskvdxZRBXfFUPJGGkA6oku9C5Wsz2PdeWr1r3TVRbCrBSwnc29scZvarrtGghEa1hsEPKumPH78i2qHngABLNaqrnfrxHGj9XdERxFoL8YQbiN1msCvcZiCgCMmLNcfy4FZPRvnXNyY5YWhsqd6CJrfpdwnudsbfLYQZnaZuHzSyGqLXVoftnLgpeVPcWxMb5nYoCkRpCL1vcqXuqyXcZd45FN16qZnkmxxRB9KoMDeeNuuojwSbDLaPMwh44DhWwBFJBW8GwpvXRbWnrn9rKEVf99ef8DQiBJA8NeZaD8wP7MpNzmih7hXVtPZ5CyVPjP6V5WnVgYiSqQFHUtZqw8g6HRXmqbEy92RgnwLL5CPtrwXJE4aJGMVvjZdbodNaFoq1pLzwviBeWBG4aGzAEWeBstmsissdUv3VdcPgvi8teVgikUwqpXkwvNFwFYrd6hvEXELqdrdzxWx7RLVjZwC9gUsxYX9SxzeRHVcLayr52yP6tgSxeMcwBJUXdwWbAr1sPtkHh7wCMoUHC39CfLxiRbYV1REqLHkxX8PaM9Ae7SuQqsrbvkDs1GEbxBp699gmqYpsRtJvTq2wSszDFs6Bg9QwrQn9gLBcB3dwvv7Jqg79Z2bLkA1YZcuaih1K2j6vNbTwYmmqnkqmyihMwvUU6QeKZxYYs9YXF7xWe7Lq9NTpERiMw66XGdoft8yw2xpevATLUFcfxdSyZHENqXW1h5spc6vcY8MqVBrxYxAem773q5jGAVs6Qb3wXFc9kfnLUHnPbyKS3gV97PmEyQDvGkav6XZ3dVAjfExuHQPKP1SMUrF3H3EssKD74NorUPxzKQpmi8cbuxABqxyRysrxLGZS7U1WeZRmpGMpLhfMV7d2DZLComNvmBJs1RjQpmZMFZfJxg4TFtAj2XVKNp65r1qDXC22Pu5EdZqn425QFuAAzPoZ5uGb3DW46ej1T6xS4VRLJtYA3iChMcqXUikdpYQvzs5MGeP3hBk9Zm1t8Gfnv9efUmxoXn7jJNhRw9gXAGa1wCkwQTFQryjhscvaP8Dn4PN93MjZeJAkUmjz6Hboi1Gyb5q8UjPGbZfQY8DB3NoE8LZXEMqZHyomChwnGWj4Zai6j4e9uRRdyBeunLxqX1mVj5xW5b9YCaEiS21tiz3tWyceNQDiT8EJLGci5VgkJ7rC9LsGtyu653xECt9imPxYokUNNJvS1VaPE3xow6pLo4kmMCaq65U1huYgYSZcv68k6FgSXYLez2hsCvTdXgcELgQWovXB6J3DRMiAPaQ9ciQRoNGMSecYQMb19ARzwAbwWpWbZTr1ZVWAGZLF1GixXDbVmWS9jXJ5XqPWBgKpz5zaXsmMaRfXzJqYYtEyVDj5UjbukiuEF5sfbS6q4u4KpFju2oAiCwZKSSjSx22PdvEyvzcshN1SSsWAyAj4bGbsdAr8MtgRfWkWLYshRn18JEt5YMaG1ZajSyHVmHccskkaMYLqC3QvMZt5kXXLpTU5Kb9jyNfUb2nacBHAGJMDTiB5WxTgcXF3svNA8ZCAWCR8qu7aAq2u9bxK86VHUMMQHbQK429147UQ6312NzCqe1GmatTc22iHABtU57aJC6VbTaFkiAHp6grsWq9nRDsGp1EnbC6VBL2host2e7EXEYwvN8gdfZqwAssvZ5xzBiyDqpsRdhsnwchLSjz8zwSxM1cWJdcJcZU4ny2GxR5dxCE482J4k53bAAhra86aBdtSoYcvTUr93MST56oETTubWt786YvaVyA55N6KV1Q4vfiqRn5HdxZW4cfL6awEGnBcdVvss1o1B3WqMfKjQ2GEWJ187zfR3oM3pdRwuub2XkLKhE6YBfZGAvyCUDCaXwPj3z9EjrH8mfTbVtk5QsC7QFGJoTkYQzKeN4h5vHx5Wg41kbgWYgt9EFMcWG6aZh2AAibQ7vxYF6ESNXfe2fafq9Jm8vdwWzi3hbvYpJ1pSC4N7tb1q3ePiyiWicnRz2qHs8K2k7Q2bfu1cEFkCZKSTLGhKnZkAJChmjmLfiZfbKG78uDixtWgDSQGnspmNCHBLs7jmAGzuM3Lxxqz3rhjFXZ9kXQ4UpFsZBtyWV8V8YVubUmhFavYkbLdVHgQsgguogeoCC8o4iwZr9tPdAxRj1Vcna4CJwMW9Lrv5zicygXGqdexmsfJ3U8xnoJmF6WD3odQMcTaFnTo87rRh7bLTuD1ptUFpjoyFFomqCFf6ozgKivmVoRjDoqMbvMcDAJtaiDD2ctXYphDQWGsZUtUmvyx9uPQv7zwiffKK9Bq6iPvdKJXwVActqgHdZpcoGtaza9V5CFWipBZzGW2xfkmQvex7SAfoLH1n8obiZ7exB5MVi34M2g4oaWGip3fF8kjN5bJnh3LmV6FA84yNEkzNZgy3E1amKSjd7tZreRSKWU9jR77bcR6myQxzWxuCbY4ggFT4Fcoa8yZg519hesqWQCRGbTmGy9oYgBqtcAojNe5w8hKibKMf1QUbJzcSTecn4cwCv7WzLN7qc6UpsM8mQ4p49d8Xzvem8wozPzfC4egdm5Ntn5kUdzqyoBfSrowUBY266zoi3qMF8LJucEwWKef24jdgcqdGNaXCNkztrZmWYgiLq81m7qt6XANzXzFi3e2o4rjxH9zmM4BZzSzykNaS3joK6sbNhkdRaSkCBDPbvygSNW2EMh61xusZTYwFencYq8YDFXoPm1Kah9xM1WwNAe4dNUBPgzuo9gtZeqkKa3i5s3RkCFj5qMKghHNptAnXzaDQ1FwxBGdFkUmrWeyQvkF4v4XVqK4773H8iMf2zb4gXCYeLynMquSoZyuwkfCJN9bSCtCQnt2M3MiUaD1Qo3vT3vwUGqXSXsVX3bsrUKQcVB83HYxBzoMqbRMmfWX8eBchEXfEmX4SKvCLqrJT28ysvKNe7nkeJA"
+	encodedTx, _, err := base58.Base58Check{}.Decode(encodedTxStr)
+	if err != nil {
+		panic(err)
+	}
+
+	tx := new(Tx)
+	err = json.Unmarshal(encodedTx, &tx)
+	if err != nil {
+		panic(err)
+	}
+
+	compactBytes, err := tx.ToCompactBytes()
+	if err != nil {
+		panic(err)
+	}
+
+	reductionRate := 1 - float64(len(compactBytes))/float64(len(encodedTx))
+	fmt.Printf("jsonSize: %v, compactSize: %v, reductionRate: %v\n", len(encodedTx), len(compactBytes), reductionRate)
+
+	newTx := new(Tx)
+	err = newTx.FromCompactBytes(compactBytes)
+	if err != nil {
+		panic(err)
+	}
+	if newTx.Hash().String() != tx.Hash().String() {
+		jsb1, _ := json.Marshal(tx)
+		jsb2, _ := json.Marshal(newTx)
+		fmt.Println(string(jsb1))
+		fmt.Println(string(jsb2))
+		panic(fmt.Sprintf("expected txHash %v, got %v", tx.Hash().String(), newTx.Hash().String()))
+	}
+}
+
 func testTxV2DeletedProof(txv2 *Tx) {
 	// try setting the proof to nil, then verify
 	// it should not go through
@@ -418,7 +614,7 @@ func testTxV2InvalidFee(db *statedb.StateDB, privateKeys []*privacy.PrivateKey, 
 	malTx := &Tx{}
 	err := malTx.Init(malFeeParams)
 	So(err, ShouldBeNil)
-	malTx.Fee = sumIn-sumOut+1111
+	malTx.Fee = sumIn - sumOut + 1111
 	malTx, err = malTx.startVerifyTx(db)
 	So(err, ShouldBeNil)
 	boolParams := make(map[string]bool)

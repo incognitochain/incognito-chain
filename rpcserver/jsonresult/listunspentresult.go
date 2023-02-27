@@ -1,16 +1,19 @@
 package jsonresult
+
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"log"
 	"math/big"
 	"strconv"
+
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
+
 type ICoinInfo interface {
 	GetVersion() uint8
 	GetCommitment() *privacy.Point
@@ -50,8 +53,9 @@ type OutCoin struct {
 	TxRandom             string `json:"TxRandom"`
 	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 	AssetTag             string `json:"AssetTag"`
-	OTATag              string `json:"OTATag"`
+	OTATag               string `json:"OTATag"`
 }
+
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 	outcoin := OutCoin{}
 	temp, err := json.Marshal(data)
@@ -88,15 +92,15 @@ func NewOutCoin(outCoin ICoinInfo) OutCoin {
 		randomness = base58.Base58Check{}.Encode(outCoin.GetRandomness().ToBytesS(), common.ZeroByte)
 	}
 	result := OutCoin{
-		Version:        strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
-		PublicKey:      publicKey,
-		Value:          strconv.FormatUint(outCoin.GetValue(), 10),
-		Info:           EncodeBase58Check(outCoin.GetInfo()),
-		Commitment:     commitment,
-		SNDerivator:    snd,
-		KeyImage:       keyImage,
-		SerialNumber:   keyImage,
-		Randomness:     randomness,
+		Version:      strconv.FormatUint(uint64(outCoin.GetVersion()), 10),
+		PublicKey:    publicKey,
+		Value:        strconv.FormatUint(outCoin.GetValue(), 10),
+		Info:         EncodeBase58Check(outCoin.GetInfo()),
+		Commitment:   commitment,
+		SNDerivator:  snd,
+		KeyImage:     keyImage,
+		SerialNumber: keyImage,
+		Randomness:   randomness,
 	}
 	if outCoin.GetCoinDetailEncrypted() != nil {
 		result.CoinDetailsEncrypted = base58.Base58Check{}.Encode(outCoin.GetCoinDetailEncrypted(), common.ZeroByte)
@@ -246,7 +250,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return nil, nil, err
 		}
 		tempUint8 := uint8(temp)
-		OTATag = &tempUint8
+		otaTag = &tempUint8
 	}
 	if len(jsonOutCoin.Index) == 0 {
 		idx = nil

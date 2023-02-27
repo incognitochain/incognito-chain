@@ -167,6 +167,10 @@ func (req *AddOrderRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(req)
 }
 
+func (req *AddOrderRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (req *AddOrderRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for currentTokenID, val := range req.Receiver {

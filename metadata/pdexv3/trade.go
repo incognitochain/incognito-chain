@@ -192,6 +192,10 @@ func (req *TradeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(req)
 }
 
+func (req *TradeRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (req TradeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	for currentTokenID, val := range req.Receiver {

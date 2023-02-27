@@ -147,6 +147,10 @@ func (request *UnshieldRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (req *UnshieldRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (request *UnshieldRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	var result []metadataCommon.OTADeclaration
 	result = append(result, metadataCommon.OTADeclaration{

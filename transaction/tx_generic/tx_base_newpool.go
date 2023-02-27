@@ -89,6 +89,7 @@ func (tx *TxBase) ValidateSanityDataWithMetadata() (bool, error) {
 				if !metadata.NoInputHasOutput(metaType) {
 					return false, utils.NewTransactionErr(utils.RejectTxType, fmt.Errorf("tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
 				}
+
 			}
 		}
 	}

@@ -182,3 +182,7 @@ func (pc *PDEContribution) BuildReqActions(tx Transaction, chainRetriever ChainR
 func (pc *PDEContribution) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
+
+func (pc *PDEContribution) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(pc)
+}

@@ -67,6 +67,10 @@ func (iRes *PDETradeResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func (iRes *PDETradeResponse) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(iRes)
+}
+
 func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 	Logger.log.Infof("BUGLOG there are currently %v insts\n", len(mintData.Insts))

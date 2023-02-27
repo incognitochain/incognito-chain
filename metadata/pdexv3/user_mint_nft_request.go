@@ -104,6 +104,10 @@ func (request *UserMintNftRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (request *UserMintNftRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(request)
+}
+
 func (request *UserMintNftRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		OtaReceiver string `json:"OtaReceiver"`

@@ -115,6 +115,10 @@ func (request *ModifyBridgeAggParamReq) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (req *ModifyBridgeAggParamReq) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func (request *ModifyBridgeAggParamReq) BuildReqActions(
 	tx metadataCommon.Transaction,
 	chainRetriever metadataCommon.ChainRetriever,

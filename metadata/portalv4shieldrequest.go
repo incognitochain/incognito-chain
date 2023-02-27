@@ -154,3 +154,7 @@ func (shieldingReq *PortalShieldingRequest) BuildReqActions(tx Transaction, chai
 func (shieldingReq *PortalShieldingRequest) CalculateSize() uint64 {
 	return calculateSize(shieldingReq)
 }
+
+func (shieldingReq PortalShieldingRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(&shieldingReq)
+}

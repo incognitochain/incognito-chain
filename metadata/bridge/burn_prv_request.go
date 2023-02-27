@@ -6,11 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"strconv"
 )
 
 type BurningPRVRequest struct {
@@ -115,6 +116,10 @@ func (bReq *BurningPRVRequest) BuildReqActions(tx metadataCommon.Transaction, ch
 
 func (bReq *BurningPRVRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(bReq)
+}
+
+func (req *BurningPRVRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
 }
 
 func (bReq *BurningPRVRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {

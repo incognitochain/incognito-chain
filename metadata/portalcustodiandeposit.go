@@ -131,7 +131,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 	}
 
 	// validate amount deposit
-	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue(){
+	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
 	}
 
@@ -187,4 +187,8 @@ func (custodianDeposit *PortalCustodianDeposit) BuildReqActions(tx Transaction, 
 
 func (custodianDeposit *PortalCustodianDeposit) CalculateSize() uint64 {
 	return calculateSize(custodianDeposit)
+}
+
+func (custodianDeposit *PortalCustodianDeposit) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(custodianDeposit)
 }

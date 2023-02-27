@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option go_package = "proto_transaction";
+
+message TxVer2 {
+  int32 Version = 1;
+  string Type = 2;
+  int64 LockTime = 3;
+  uint64 Fee = 4;
+  bytes Info = 5;
+  bytes SigPubKey = 6;
+  bytes Sig = 7;
+  bytes Proof = 8;
+  int32 LastByte = 9;
+  bytes Metadata = 10;
+}
+
+message TxTokenDataVersion2 {
+  bytes ID = 1;
+  string Name = 2;
+  string Symbol = 3;
+  bytes SigPubKey = 4;
+  bytes Sig = 5;
+  bytes Proof =6;
+  int32 Type = 7;
+  bool Mintable = 8;
+}
+
+message TxTokenVer2 {
+  TxVer2 Tx = 1;
+  TxTokenDataVersion2 TokenData = 2;
+}

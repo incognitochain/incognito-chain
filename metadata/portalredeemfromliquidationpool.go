@@ -160,3 +160,7 @@ func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transact
 func (redeemReq *PortalRedeemLiquidateExchangeRates) CalculateSize() uint64 {
 	return calculateSize(redeemReq)
 }
+
+func (redeemReq *PortalRedeemLiquidateExchangeRates) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(redeemReq)
+}

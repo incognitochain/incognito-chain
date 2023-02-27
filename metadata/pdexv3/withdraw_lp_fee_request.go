@@ -138,6 +138,10 @@ func (withdrawal *WithdrawalLPFeeRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(withdrawal)
 }
 
+func (withdrawal *WithdrawalLPFeeRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(withdrawal)
+}
+
 func (withdrawal *WithdrawalLPFeeRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
 	result := []metadataCommon.OTADeclaration{}
 	for currentTokenID, val := range withdrawal.Receivers {

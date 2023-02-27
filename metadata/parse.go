@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -9,20 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ParseMetadata(meta interface{}) (Metadata, error) {
-
-	if meta == nil {
+func ParseMetadata(metaInBytes json.RawMessage) (Metadata, error) {
+	if metaInBytes == nil {
 		return nil, nil
 	}
 
 	mtTemp := map[string]interface{}{}
-	metaInBytes, err := json.Marshal(meta)
+	err := json.Unmarshal(metaInBytes, &mtTemp)
 	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(metaInBytes, &mtTemp)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("metadata not recognizable")
 	}
 
 	var md Metadata
@@ -309,7 +305,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case metadataCommon.IssuingReshieldResponseMeta:
 		md = &metadataBridge.IssuingReshieldResponse{}
 	default:
-		Logger.log.Debug("parse meta err: %+v\n", meta)
+		Logger.log.Debug("parse meta err: %+v\n", metaInBytes)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
 	}
 
@@ -319,4 +315,31 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 
 	return md, nil
+}
+
+func MdFromCompactBytes(data []byte) (Metadata, error) {
+	if data == nil { // valid blank metadata
+		return nil, nil
+	}
+	if len(data) < 2 {
+		return nil, fmt.Errorf("invalid metadata content")
+	}
+
+	// var err error
+	// var md Metadata
+	// mdType := common.BytesToInt(data[:2])
+	// switch mdType {
+	// case metadataCommon.PortalV4ShieldingRequestMeta:
+	// 	md = &PortalShieldingRequest{}
+	// case metadataCommon.PortalV4SubmitConfirmedTxMeta:
+	// 	md = &PortalSubmitConfirmedTxRequest{}
+	// case metadataCommon.Pdexv3TradeRequestMeta:
+	// 	md = &metadataPdexv3.TradeRequest{}
+	// default:
+	// 	return ParseMetadata(data[2:])
+	// }
+
+	// err = md.FromCompactBytes(data[2:])
+	// return md, err
+	return ParseMetadata(data[2:])
 }

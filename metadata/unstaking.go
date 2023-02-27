@@ -148,3 +148,7 @@ func (unStakingMetadata UnStakingMetadata) GetType() int {
 func (unStakingMetadata *UnStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(unStakingMetadata)
 }
+
+func (unStakingMetadata *UnStakingMetadata) ToCompactBytes() ([]byte, error) {
+	return toCompactBytes(unStakingMetadata)
+}

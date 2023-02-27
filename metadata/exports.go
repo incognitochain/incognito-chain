@@ -60,6 +60,7 @@ var HasBridgeInstructions = metadataCommon.HasBridgeInstructions
 var HasPortalInstructions = metadataCommon.HasPortalInstructions
 
 var calculateSize = metadataCommon.CalculateSize
+var toCompactBytes = metadataCommon.ToCompactBytes
 
 // export package constants
 const (

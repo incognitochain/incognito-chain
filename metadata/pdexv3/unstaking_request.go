@@ -153,6 +153,10 @@ func (request *UnstakingRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (request *UnstakingRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(request)
+}
+
 func (request *UnstakingRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		StakingPoolID   string            `json:"StakingPoolID"`

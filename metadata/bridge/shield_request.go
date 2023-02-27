@@ -214,6 +214,10 @@ func (request *ShieldRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(request)
 }
 
+func (req *ShieldRequest) ToCompactBytes() ([]byte, error) {
+	return metadataCommon.ToCompactBytes(req)
+}
+
 func UnmarshalActionDataForShieldEVMReq(data []byte) (*types.Receipt, error) {
 	txReceipt := types.Receipt{}
 	err := json.Unmarshal(data, &txReceipt)
