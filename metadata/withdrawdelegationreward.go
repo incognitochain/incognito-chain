@@ -118,12 +118,14 @@ func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) CheckTran
 }
 
 func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
-		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
+	triggerMap := shardViewRetriever.GetTriggeredFeature()
+
+	if triggerMap == nil || shardViewRetriever.GetTriggeredFeature()[config.DELEGATION_REWARD] == 0 {
+		return false, fmt.Errorf("this feature is not supported yet!")
 	}
 
-	if shardViewRetriever.GetTriggeredFeature()[config.DELEGATION_REWARD] == 0 {
-		return false, fmt.Errorf("this feature is not supported yet!")
+	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
+		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
 	}
 
 	//check authorized sender
@@ -139,6 +141,8 @@ func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) ValidateT
 	} else {
 		return true, nil
 	}
+
+	return false, errors.Errorf("The delegation reward feature is not ready, trigger feature info %+v, shard ID %+v height %+v", triggerMap, shardID, shardViewRetriever.GetHeight())
 }
 
 func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {

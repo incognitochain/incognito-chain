@@ -2,13 +2,14 @@ package devframework
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
-	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-	"github.com/incognitochain/incognito-chain/pruner"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
+	"github.com/incognitochain/incognito-chain/pruner"
 
 	"github.com/incognitochain/incognito-chain/metadata/evmcaller"
 	"github.com/incognitochain/incognito-chain/syncker/finishsync"
@@ -111,7 +112,7 @@ var (
 type logWriter struct{}
 
 func (logWriter) Write(p []byte) (n int, err error) {
-	os.Stdout.Write(p)
+	// os.Stdout.Write(p)
 	logRotator.Write(p)
 	return len(p), nil
 }

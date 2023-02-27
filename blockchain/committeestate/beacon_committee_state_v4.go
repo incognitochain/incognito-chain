@@ -765,11 +765,20 @@ func (s *BeaconCommitteeStateV4) ProcessCountShardActiveTime(env ProcessContext)
 
 		if sig, ok := env.MissingSignature[cpkStr]; ok && sig.ActualTotal != 0 {
 			//update shard active time
+			activeTimes := staker.ShardActiveTime()
 			if (sig.Missing*100)/sig.ActualTotal > 20 {
-				s.setShardActiveTime(cpkStr, staker.ShardActiveTime()-2)
+				activeTimes -= 2
 			} else {
-				s.setShardActiveTime(cpkStr, staker.ShardActiveTime()+1)
+				activeTimes++
 			}
+			if activeTimes < 0 {
+				activeTimes = 0
+			}
+			//if this pubkey is slashed in this block
+			if _, ok := env.MissingSignaturePenalty[cpkStr]; ok {
+				activeTimes = 0
+			}
+			s.setShardActiveTime(cpkStr, activeTimes)
 
 			shardStakerInfo, exists, _ := statedb.GetShardStakerInfo(s.stateDB, cpkStr)
 			if exists && staker.ShardActiveTime() >= s.config.MIN_ACTIVE_SHARD {
