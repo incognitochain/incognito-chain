@@ -66,10 +66,10 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 	if (!has) || (err != nil) {
 		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", newDelegate))
 	}
-	rawUID := fmt.Sprintf("%v-%v", newDelegate, stakerInfor.BeaconConfirmHeight())
+	rawUID := fmt.Sprintf("%v-%v", newDelegate, stakerInfor.BeaconConfirmTime())
 	uID := common.HashH([]byte(rawUID))
 	if uID.String() != redelegateMetadata.DelegateUID {
-		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v with Beacon confirm height %v not match with the UID in Metadata, expected %v, got %v", newDelegate, stakerInfor.BeaconConfirmHeight(), redelegateMetadata.DelegateUID, uID.String()))
+		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v with Beacon confirm height %v not match with the UID in Metadata, expected %v, got %v", newDelegate, stakerInfor.GetBeaconConfirmTime(), redelegateMetadata.DelegateUID, uID.String()))
 	}
 	requestedPublicKey := redelegateMetadata.CommitteePublicKey
 

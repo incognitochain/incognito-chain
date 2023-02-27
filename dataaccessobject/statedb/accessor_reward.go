@@ -1,7 +1,9 @@
 package statedb
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/trie"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -262,4 +264,28 @@ func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*Del
 		return nil, false, err
 	}
 	return stateDB.getDelegationRewardState(key)
+}
+
+func ListDelegationReward(stateDB *StateDB) (map[string]*DelegationRewardState, error) {
+	m := map[string]*DelegationRewardState{}
+	keys := []common.Hash{}
+	prefixHash := GetDelegationRewardPrefix()
+	temp := stateDB.trie.NodeIterator(prefixHash)
+	it := trie.NewIterator(temp)
+	for it.Next(true, false, true) {
+		key := it.Key
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		keys = append(keys, common.BytesToHash(newKey))
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		delegateRewardState := NewDelegationRewardState()
+		err := json.Unmarshal(newValue, delegateRewardState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[delegateRewardState.incognitoPublicKey] = delegateRewardState
+	}
+	return m, nil
 }
