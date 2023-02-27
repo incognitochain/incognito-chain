@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -119,6 +120,10 @@ func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) CheckTran
 func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	if tx.IsPrivacy() && tx.GetVersion() <= 1 {
 		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
+	}
+
+	if shardViewRetriever.GetTriggeredFeature()[config.DELEGATION_REWARD] == 0 {
+		return false, fmt.Errorf("this feature is not supported yet!")
 	}
 
 	//check authorized sender

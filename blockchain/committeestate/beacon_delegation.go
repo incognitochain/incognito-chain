@@ -184,3 +184,35 @@ func (s *BeaconCommitteeStateV4) removeDelegators(oldBeaconStakerPK string, tota
 	}
 	return fmt.Errorf("Cannot find cpk %v in memstate", oldBeaconStakerPK)
 }
+
+func (s *BeaconCommitteeStateV4) ProcessWithdrawDelegationReward(env ProcessContext) ([][]string, error) {
+	for _, inst := range env.BeaconInstructions {
+		if len(inst) == 0 {
+			continue
+		}
+		switch inst[0] {
+		case instruction.MINT_DREWARD_ACTION:
+			mintDRewardInstruction, err := instruction.ValidateAndImportMintDelegationRewardInstructionFromString(inst)
+			if err != nil {
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			for i, _ := range mintDRewardInstruction.PaymentAddressesStruct {
+				currentEpoch := env.Epoch
+				//if this is first block of epoch, we need to update the affect epoch is previous one.
+				//We are not count the previous epoch in delegation reward (i.e share price is not updated yet)
+				if firstBlockEpoch(env.BeaconHeight) {
+					currentEpoch--
+				}
+				err := statedb.ResetDelegationReward(s.stateDB, mintDRewardInstruction.PaymentAddressesStruct[i].Pk, mintDRewardInstruction.PaymentAddressesStruct[i], int(currentEpoch))
+				if err != nil {
+					err := errors.Errorf("Can not reset delegation reward for payment %v, tx request %v, reward in inst %v", mintDRewardInstruction.PaymentAddresses[i], mintDRewardInstruction.TxRequestIDs[i], mintDRewardInstruction.RewardAmount[i])
+					Logger.log.Error(err)
+					return nil, err
+				}
+			}
+		default:
+			continue
+		}
+	}
+	return [][]string{}, nil
+}

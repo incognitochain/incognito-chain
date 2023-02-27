@@ -238,6 +238,9 @@ func (s BeaconStakerInfo) ShardActiveTime() int {
 }
 
 func (s *BeaconStakerInfo) SetShardActiveTime(t int) {
+	if t < 0 {
+		t = 0
+	}
 	s.shardActiveTime = t
 }
 

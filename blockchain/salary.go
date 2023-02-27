@@ -485,12 +485,6 @@ func (blockchain *BlockChain) calculateReward(
 			return nil, nil, nil, nil, 0, err
 		}
 
-		if curView.TriggeredFeature[config.DELEGATION_REWARD] != 0 {
-			shardDelegationReward := rewardForShard[common.PRVCoinID] * 5 / 10
-			rewardForShard[common.PRVCoinID] = rewardForShard[common.PRVCoinID] - shardDelegationReward
-			delegationReward += shardDelegationReward
-		}
-
 		plusMap(rewardForBeacon, totalRewardForBeacon)
 		plusMap(rewardForShard, totalRewardForShard[id])
 		plusMap(rewardForDAO, totalRewardForIncDAO)
@@ -602,7 +596,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	}
 
 	if delegationReward > 0 {
-		Logger.log.Info("delegationReward", delegationReward)
+		Logger.log.Info("DelegationReward", delegationReward)
 		delegationRewardInst, err = curView.CalculateDelegationSharePrice(blockchain, delegationReward)
 		if err != nil {
 			panic(err)
