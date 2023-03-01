@@ -256,6 +256,8 @@ const (
 	ShieldingBTCRequestMeta     = 371
 	ShieldingBTCResponse        = 372
 	StakePRVRequestMeta         = 373
+	BridgeHubUnshieldRequest    = 374
+	BridgeHubUnshieldConfirm    = 375
 )
 
 var minerCreatedMetaTypes = []int{
@@ -312,6 +314,7 @@ var minerCreatedMetaTypes = []int{
 	BurningUnifiedTokenResponseMeta,
 	IssuingReshieldResponseMeta,
 	BurnForCallResponseMeta,
+	ShieldingBTCResponse,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -420,6 +423,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BurningAvaxConfirmForDepositToSCMeta),
 	strconv.Itoa(BurningNearConfirmMeta),
 	strconv.Itoa(BurningPRVRequestConfirmMeta),
+	strconv.Itoa(BridgeHubUnshieldConfirm),
 }
 
 var portalV4MetaTypes = []int{

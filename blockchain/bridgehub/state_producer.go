@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
@@ -13,6 +14,8 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+	"math/big"
+	"strconv"
 )
 
 type stateProducer struct{}
@@ -201,4 +204,42 @@ func (sp *stateProducer) stake(
 	// build accepted instruction
 	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
 	return [][]string{inst}, clonedState, nil
+}
+
+// create burn token for bridge hub instruction
+func (sp *stateProducer) unshield(
+	contentStr string,
+	state *BridgeHubState,
+	stateDBs map[int]*statedb.StateDB,
+	shardID byte,
+) ([][]string, *BridgeHubState, error) {
+	// decode action
+	action := metadataCommon.NewAction()
+	meta := &metadataBridgeHub.BridgeHubUnshieldRequest{}
+	action.Meta = meta
+	err := action.FromString(contentStr)
+	if err != nil {
+		Logger.log.Warn("[Bridge hub] decode request stake got error: ", err)
+		return [][]string{}, state, err
+	}
+
+	txID := action.TxReqID // to prevent double-release token
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(meta.BurningAmount)
+	// Convert height to big.Int to get bytes later
+	// todo: query beacon height at here
+	h := big.NewInt(0).SetUint64(0)
+
+	results := []string{
+		strconv.Itoa(metadataCommon.BridgeHubUnshieldConfirm),
+		strconv.Itoa(int(shardID)),
+		base58.Base58Check{}.Encode(meta.TokenID[:], 0x00),
+		meta.RemoteAddress,
+		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+		txID.String(),
+	}
+
+	results = append(results, base58.Base58Check{}.Encode(h.Bytes(), 0x00))
+	return [][]string{results}, state, nil
 }

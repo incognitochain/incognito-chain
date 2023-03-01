@@ -105,6 +105,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridge.BurningRequest{}
 	case BurningPRVRequestMeta:
 		md = &metadataBridge.BurningPRVRequest{}
+	case metadataCommon.BridgeHubUnshieldRequest:
+		md = &metadataBridgeHub.BridgeHubUnshieldRequest{}
 	case IssuingNearRequestMeta:
 		md = &metadataBridge.IssuingWasmRequest{}
 	case IssuingNearResponseMeta:

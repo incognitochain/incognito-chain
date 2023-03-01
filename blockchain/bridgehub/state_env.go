@@ -114,7 +114,3 @@ func (env StateEnvironment) RegisterBridgeActions() [][]string {
 func (env StateEnvironment) SwapBridgeValidatorsActions() [][]string {
 	return env.swapBridgeValidatorsActions
 }
-
-func (env StateEnvironment) ShieldBridgeActions() [][]string {
-	return env.shieldBridgeActions
-}

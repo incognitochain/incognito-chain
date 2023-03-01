@@ -59,10 +59,32 @@ func (m *Manager) BuildInstructions(env *StateEnvironment) ([][]string, *metadat
 		}
 	}
 
-	// build instruction for shield btc hub actions
-	for _, actions := range env.RegisterBridgeActions() {
+	// build instruction for shield bridge hub actions
+	for _, actions := range env.ShieldActions() {
 		for _, action := range actions {
 			insts, m.state, ac, err = m.producer.shield(action, m.state, ac, env.StateDBs(), statedb.IsBTCHubTxHashIssued)
+			if err != nil {
+				return [][]string{}, nil, err
+			}
+			res = append(res, insts...)
+		}
+	}
+
+	// build instruction for unshield btc hub actions
+	for shardID, actions := range env.UnshieldActions() {
+		for _, action := range actions {
+			insts, m.state, err = m.producer.unshield(action, m.state, env.StateDBs(), byte(shardID))
+			if err != nil {
+				return [][]string{}, nil, err
+			}
+			res = append(res, insts...)
+		}
+	}
+
+	// build instruction for stake btc hub actions
+	for shardID, actions := range env.StakeActions() {
+		for _, action := range actions {
+			insts, m.state, err = m.producer.stake(action, m.state, env.StateDBs(), byte(shardID))
 			if err != nil {
 				return [][]string{}, nil, err
 			}
