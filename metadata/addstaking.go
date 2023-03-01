@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -89,7 +90,16 @@ func (addStakingMetadata AddStakingMetadata) ValidateTxWithBlockChain(tx Transac
 	}
 
 	if ok, err := addStakingMetadataFromTx.MetadataBaseWithSignature.VerifyMetadataSignature(stakerInfo.FunderAddress().Pk, tx); !ok || err != nil {
-		return false, NewMetadataTxError(ConsensusMetadataInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
+		txStakeRelateds := []string{}
+		for _, v := range stakerInfo.StakingTxList() {
+			txStakeRelateds = append(txStakeRelateds, v.String())
+		}
+		pk := stakerInfo.FunderAddress().Pk
+		paymentAddressStr, _ := json.Marshal(stakerInfo.FunderAddress())
+		txRaw, _ := json.Marshal(tx)
+
+		errNew := errors.Errorf("addStakingMetadata got error %+v, metadata detail %+v, tx stake %+v ---tx %+v --payment %+v --- pk %+v", err, *&addStakingMetadataFromTx, txStakeRelateds, txRaw, paymentAddressStr, pk)
+		return false, NewMetadataTxError(ConsensusMetadataInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail, %+v", errNew))
 	}
 	return true, nil
 }
