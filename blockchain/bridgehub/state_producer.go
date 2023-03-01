@@ -210,8 +210,8 @@ func (sp *stateProducer) stake(
 func (sp *stateProducer) unshield(
 	contentStr string,
 	state *BridgeHubState,
+	height uint64,
 	stateDBs map[int]*statedb.StateDB,
-	shardID byte,
 ) ([][]string, *BridgeHubState, error) {
 	// decode action
 	action := metadataCommon.NewAction()
@@ -228,17 +228,16 @@ func (sp *stateProducer) unshield(
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(meta.BurningAmount)
 	// Convert height to big.Int to get bytes later
-	// todo: query beacon height at here
-	h := big.NewInt(0).SetUint64(0)
+	h := big.NewInt(0).SetUint64(height)
 
 	results := []string{
 		strconv.Itoa(metadataCommon.BridgeHubUnshieldConfirm),
-		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(meta.TokenID[:], 0x00),
 		meta.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
 	}
+	// todo: update bridge hub state
 
 	results = append(results, base58.Base58Check{}.Encode(h.Bytes(), 0x00))
 	return [][]string{results}, state, nil

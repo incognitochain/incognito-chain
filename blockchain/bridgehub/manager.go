@@ -71,9 +71,9 @@ func (m *Manager) BuildInstructions(env *StateEnvironment) ([][]string, *metadat
 	}
 
 	// build instruction for unshield btc hub actions
-	for shardID, actions := range env.UnshieldActions() {
+	for _, actions := range env.UnshieldActions() {
 		for _, action := range actions {
-			insts, m.state, err = m.producer.unshield(action, m.state, env.StateDBs(), byte(shardID))
+			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), env.StateDBs())
 			if err != nil {
 				return [][]string{}, nil, err
 			}

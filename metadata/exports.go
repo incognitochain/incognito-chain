@@ -242,6 +242,7 @@ const (
 
 	BurningPRVRequestMeta        = metadataCommon.BurningPRVRequestMeta
 	BurningPRVRequestConfirmMeta = metadataCommon.BurningPRVRequestConfirmMeta
+	BridgeHubUnshieldConfirm     = metadataCommon.BridgeHubUnshieldConfirm
 )
 
 // export error codes

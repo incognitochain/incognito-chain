@@ -857,6 +857,8 @@ func IsBurningConfirmMetaType(metaType int) bool {
 		return true
 	case metadataCommon.BurningPRVRequestConfirmMeta:
 		return true
+	case metadataCommon.BridgeHubUnshieldConfirm:
+		return true
 	default:
 		return false
 	}

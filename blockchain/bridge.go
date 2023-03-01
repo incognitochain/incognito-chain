@@ -64,6 +64,13 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
+	case strconv.Itoa(metadata.BridgeHubUnshieldConfirm):
+		var err error
+		flatten, err = decodeNearBurningConfirmInst(inst)
+		if err != nil {
+			return nil, err
+		}
+
 	// for portal instructions
 	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
 		strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
@@ -188,6 +195,37 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 
 // decodeNearBurningConfirmInst decodes and flattens a BurningConfirm instruction
 func decodeNearBurningConfirmInst(inst []string) ([]byte, error) {
+	if len(inst) < 8 {
+		return nil, errors.New("invalid length of BurningConfirm inst")
+	}
+	m, errMeta := strconv.Atoi(inst[0])
+	metaType := byte(m)
+	incTokenID, _, errToken := base58.Base58Check{}.Decode(inst[1])
+	remoteAddr := []byte(inst[2])
+	remoteAddrLen := byte(len(remoteAddr))
+	amount, _, errAmount := base58.Base58Check{}.Decode(inst[3])
+	txID, errTx := common.Hash{}.NewHashFromStr(inst[4])
+	height, _, errHeight := base58.Base58Check{}.Decode(inst[5])
+	if err := common.CheckError(errMeta, errToken, errAmount, errTx, errHeight); err != nil {
+		err = errors.Wrapf(err, "inst: %+v", inst)
+		BLogger.log.Error(err)
+		return nil, err
+	}
+
+	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, incTokenID)
+	flatten := []byte{}
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, incTokenID...)
+	flatten = append(flatten, remoteAddrLen)
+	flatten = append(flatten, remoteAddr...)
+	flatten = append(flatten, toBytes32BigEndian(amount)...)
+	flatten = append(flatten, txID[:]...)
+	flatten = append(flatten, toBytes32BigEndian(height)...)
+	return flatten, nil
+}
+
+// decodeBridgeHubBurningConfirmInst decodes and flattens a BurningConfirm instruction
+func decodeBridgeHubBurningConfirmInst(inst []string) ([]byte, error) {
 	if len(inst) < 8 {
 		return nil, errors.New("invalid length of BurningConfirm inst")
 	}
