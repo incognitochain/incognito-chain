@@ -147,8 +147,6 @@ type BeaconCommitteeStateV4 struct {
 	beaconWaiting   map[string]*StakerInfo
 	beaconLocking   map[string]*LockingInfo
 	stateDB         *statedb.StateDB
-
-	enableDelegate bool
 }
 
 func NewBeaconCommitteeStateV4WithValue(
