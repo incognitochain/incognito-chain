@@ -72,26 +72,20 @@ func (redelegateMetadata ReDelegateMetadata) ValidateTxWithBlockChain(tx Transac
 	if (!has) || (err != nil) {
 		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", newDelegate))
 	}
-	rawUID := fmt.Sprintf("%v-%v", newDelegate, beaconStakerInfo.BeaconConfirmHeight())
+	rawUID := fmt.Sprintf("%v-%v", newDelegate, beaconStakerInfo.GetBeaconConfirmTime())
 	uID := common.HashH([]byte(rawUID))
 	if uID.String() != redelegateMetadata.DelegateUID {
 		return false, NewMetadataTxError(ReDelegateCommitteeNotFoundError, fmt.Errorf("Committee Publickey %+v with Beacon confirm height %v not match with the UID in Metadata, expected %v, got %v", newDelegate, beaconStakerInfo.BeaconConfirmHeight(), redelegateMetadata.DelegateUID, uID.String()))
 	}
 	requestedPublicKey := redelegateMetadata.CommitteePublicKey
 	processList := []string{}
-	shardCommittee := shardViewRetriever.GetShardCommittee()
-	sCStr, err := incognitokey.CommitteeKeyListToString(shardCommittee)
-	if err != nil {
-		return false, errors.Errorf("Can not convert list shard committee %+v to string, shard height %+v", shardCommittee, shardViewRetriever.GetHeight())
-	}
-	shardPending := shardViewRetriever.GetShardPendingValidator()
-	sPStr, err := incognitokey.CommitteeKeyListToString(shardPending)
-	if err != nil {
-		return false, errors.Errorf("Can not convert list shard pending %+v to string, shard ID %v, shard height %+v", shardPending, shardViewRetriever.GetShardID(), shardViewRetriever.GetHeight())
-	}
-	processList = append(sCStr, sPStr...)
+
+	shardCommittee := beaconViewRetriever.GetShardCommitteeFlattenList()
+	shardPending := beaconViewRetriever.GetShardPendingFlattenList()
+	processList = append(shardCommittee, shardPending...)
+
 	if common.IndexOfStr(requestedPublicKey, processList) == -1 {
-		return false, errors.Errorf("Can not found public key %v in list shard committeee %+v and list shard pending %+v, shard ID %v, shard height %v", requestedPublicKey, sCStr, sPStr, shardViewRetriever.GetShardID(), shardViewRetriever.GetHeight())
+		return false, errors.Errorf("Can not found public key %v in list , shard ID %v, shard height %v", requestedPublicKey, shardViewRetriever.GetShardID(), shardViewRetriever.GetHeight())
 	}
 
 	stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)

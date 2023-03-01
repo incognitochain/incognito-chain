@@ -284,6 +284,18 @@ func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string 
 	return committees
 }
 
+func (beaconBestState *BeaconBestState) GetShardPendingFlattenList() []string {
+	committees := []string{}
+	for _, committeeStructs := range beaconBestState.GetShardPendingValidator() {
+		for _, committee := range committeeStructs {
+			res, _ := committee.ToBase58()
+			committees = append(committees, res)
+		}
+	}
+
+	return committees
+}
+
 func (beaconBestState *BeaconBestState) getNewShardCommitteeFlattenList() []string {
 
 	committees := []string{}

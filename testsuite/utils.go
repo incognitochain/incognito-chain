@@ -396,7 +396,6 @@ func (sim *NodeEngine) GetAccountPosition(accounts []account.Account, bcView *bl
 	shardPendingList := make(map[int][]string)
 	shardCommitteeList := make(map[int][]string)
 	shardSyncingList := make(map[int][]string)
-	shardSlashingList := sim.bc.GetBeaconBestState().GetAllCurrentSlashingCommittee()
 	bPending := chain.BeaconChain.GetBeaconPendingList()
 	// bWaiting := chain.BeaconChain.GetBeaconWaitingList()
 	bCommittee := chain.BeaconChain.GetCommittee()
@@ -471,18 +470,18 @@ func (sim *NodeEngine) GetAccountPosition(accounts []account.Account, bcView *bl
 		}
 	}
 
-	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
-		tmp = ""
-		for _, pk := range shardSlashingList[byte(sid)] {
-			if pkMap[pk] != nil && pkMap[pk].Name != "" {
-				tmp += pkMap[pk].Name + " "
-				pkMap[pk].Queue = SHARD_SLASH
-				pkMap[pk].CID = sid
-			} else {
-				tmp += "@@ "
-			}
-		}
-	}
+	//for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+	//	tmp = ""
+	//	for _, pk := range shardSlashingList[byte(sid)] {
+	//		if pkMap[pk] != nil && pkMap[pk].Name != "" {
+	//			tmp += pkMap[pk].Name + " "
+	//			pkMap[pk].Queue = SHARD_SLASH
+	//			pkMap[pk].CID = sid
+	//		} else {
+	//			tmp += "@@ "
+	//		}
+	//	}
+	//}
 
 	return pkMap
 }

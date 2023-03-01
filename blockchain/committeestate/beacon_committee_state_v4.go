@@ -508,7 +508,11 @@ func (s *BeaconCommitteeStateV4) RestoreBeaconCommitteeFromDB(stateDB *statedb.S
 			statedb.StoreBeaconSharePrice(stateDB, stakeID, INIT_SHARE_PRICE)
 		}
 	}
+
 	for _, blk := range allBeaconBlock {
+		if lastBlockEpoch(allBeaconBlock[len(allBeaconBlock)-1].GetBeaconHeight()) { //no need to restore performance if the last block is end of epoch
+			break
+		}
 		err := s.updateBeaconPerformance(blk.Header.PreviousValidationData)
 		if err != nil {
 			panic(err)

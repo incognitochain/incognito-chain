@@ -112,6 +112,8 @@ type BeaconViewRetriever interface {
 	GetBeaconSlashStateDB() *statedb.StateDB
 	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
 	GetBeaconStakerInfo(stakerPubkey string) (*statedb.BeaconStakerInfo, bool, error)
+	GetShardCommitteeFlattenList() []string
+	GetShardPendingFlattenList() []string
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
