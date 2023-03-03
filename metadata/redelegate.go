@@ -24,12 +24,21 @@ func (meta *ReDelegateMetadata) Hash() *common.Hash {
 	record := strconv.Itoa(meta.Type)
 	data := []byte(record)
 	data = append(data, meta.Sig...)
+	data = append(data, []byte(meta.CommitteePublicKey)...)
+	data = append(data, []byte(meta.NewDelegate)...)
+	data = append(data, []byte(meta.DelegateUID)...)
 	hash := common.HashH(data)
 	return &hash
 }
 
 func (meta *ReDelegateMetadata) HashWithoutSig() *common.Hash {
-	return meta.MetadataBase.Hash()
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	data = append(data, []byte(meta.CommitteePublicKey)...)
+	data = append(data, []byte(meta.NewDelegate)...)
+	data = append(data, []byte(meta.DelegateUID)...)
+	hash := common.HashH(data)
+	return &hash
 }
 
 func NewReDelegateMetadata(committeePublicKey, newDelegate string, newDelegateUID string) (*ReDelegateMetadata, error) {

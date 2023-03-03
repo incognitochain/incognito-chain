@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -101,11 +102,11 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 }
 
 /*
-	Tell a public key can stake or not
-	Compare this public key with database only
-	param #1: public key
-	return #1: true (can stake), false (can't stake)
-	return #2: error
+Tell a public key can stake or not
+Compare this public key with database only
+param #1: public key
+return #1: true (can stake), false (can't stake)
+return #2: error
 */
 func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -219,6 +220,19 @@ func (httpServer *HttpServer) handleGetBeaconStakerInfo(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("Not found"))
 	}
 	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetBeaconCandidateUID(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	stakerPubkey := arrayParams[0].(string)
+	bcBestState := httpServer.GetBlockchain().GetBeaconBestState()
+	uid, err := bcBestState.GetBeaconCandidateUID(stakerPubkey)
+
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return uid, nil
+
 }
 
 func (httpServer *HttpServer) handleGetShardStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
