@@ -1,11 +1,11 @@
 package types
 
 import (
-	// "encoding/hex"
 	"encoding/json"
-	// "fmt"
+	"fmt"
 	"testing"
 
+	"github.com/franela/goblin"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -15,7 +15,8 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	. "github.com/smartystreets/goconvey/convey"
+
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -152,8 +153,8 @@ func createAndSaveTokens(numCoins int, tokenID common.Hash, keySets []*incognito
 			for j := 0; j < numCoins; j++ {
 				amount := uint64(common.RandIntInterval(0, 100000000))
 				paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Dummy token"))
-
-				tmpCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo))
+				// currently only accepts coin ver2 as fee (PRV)
+				tmpCoin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo).WithVersion(coin.CoinVersion2))
 				if err != nil {
 					return nil, err
 				}
@@ -234,7 +235,7 @@ func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *
 		for i := 0; i < numFeeInputs-1; i++ {
 			amount := uint64(common.RandIntInterval(0, int(totalAmount)-1))
 			paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, amount, []byte("Hello there"))
-			coin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo))
+			coin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo).WithVersion(coin.CoinVersion2))
 			if err != nil {
 				return nil, err
 			}
@@ -242,7 +243,7 @@ func createSamplePlainCoinsFromTotalAmount(senderSK privacy.PrivateKey, pubkey *
 			totalAmount -= amount
 		}
 		paymentInfo := key.InitPaymentInfo(keySet.PaymentAddress, totalAmount, []byte("Hello there"))
-		coin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo))
+		coin, err := coin.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo).WithVersion(coin.CoinVersion2))
 		if err != nil {
 			return nil, err
 		}
@@ -371,89 +372,99 @@ func createInitTokenParams(theInputCoin coin.Coin, db *statedb.StateDB, tokenID,
 }
 
 func TestInitializeTxConversion(t *testing.T) {
-	Convey("Conversion Parameter Test", t, func() {
-		_, _, txConvertParams, err := createConversionParams(numInputs, numOutputs, &common.PRVCoinID)
-		So(err, ShouldBeNil)
-		//Test initializeTxConversion
-		txConvertOutput := new(Tx)
-		err = initializeTxConversion(txConvertOutput, txConvertParams)
-		So(err, ShouldBeNil)
+	g := goblin.Goblin(t)
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
+	g.Describe("Conversion Parameter Test", func() {
+		g.It("should create conversion params and initialize tx", func() {
+			_, _, txConvertParams, err := createConversionParams(numInputs, numOutputs, &common.PRVCoinID)
+			Expect(err).To(BeNil())
+			txConvertOutput := new(Tx)
+			err = initializeTxConversion(txConvertOutput, txConvertParams)
+			Expect(err).To(BeNil())
+		})
 	})
 }
 
 func TestProveVerifyTxNormalConversion(t *testing.T) {
+	g := goblin.Goblin(t)
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	txConvertOutput := new(Tx)
 	var txConvertParams *TxConvertVer1ToVer2InitParams
 	var err error
 
-	Convey("TX Convert", t, func() {
-		Convey("create TX", func() {
+	g.Describe("TX Convert", func() {
+		g.It("create TX", func() {
 			_, _, txConvertParams, err = createConversionParams(numInputs, numOutputs, &common.PRVCoinID)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 			err = initializeTxConversion(txConvertOutput, txConvertParams)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 
 			err = proveConversion(txConvertOutput, txConvertParams)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 		})
 
-		Convey("should verify TX", func() {
+		g.It("should verify TX", func() {
 			res, err := tx_generic.ValidateSanity(txConvertOutput, nil, nil, nil, 0)
-			So(err, ShouldBeNil)
-			So(res, ShouldBeTrue)
+			Expect(err).To(BeNil())
+			Expect(res).To(BeTrue())
 
 			res, err = tx_generic.MdValidate(txConvertOutput, false, txConvertParams.stateDB, nil, 0)
-			So(err, ShouldBeNil)
-			So(res, ShouldBeTrue)
+			Expect(err).To(BeNil())
+			Expect(res).To(BeTrue())
 
 			boolParams := make(map[string]bool)
 			boolParams["hasPrivacy"] = false
 			boolParams["isNewTransaction"] = true
 			res, err = txConvertOutput.ValidateTxByItself(boolParams, txConvertParams.stateDB, nil, nil, 0, nil, nil)
-			So(err, ShouldBeNil)
-			So(res, ShouldBeTrue)
-			Println("should reject since PRV inputs are not in db")
+			Expect(err).To(BeNil())
+			Expect(res).To(BeTrue())
+			fmt.Println("should reject since PRV inputs are not in db")
 		})
 	})
 }
 
 func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
+	g := goblin.Goblin(t)
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	txConvertOutput := new(Tx)
 	var txConvertParams *TxConvertVer1ToVer2InitParams
 	var err error
 	var senderSk *privacy.PrivateKey
 
-	Convey("TX Convert - Reject Cases", t, func() {
-		Convey("create TX", func() {
+	g.Describe("TX Convert - Reject Cases", func() {
+		g.It("create TX", func() {
 			_, _, txConvertParams, err = createConversionParams(numInputs, numOutputs, &common.PRVCoinID)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 			err = initializeTxConversion(txConvertOutput, txConvertParams)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 			err = proveConversion(txConvertOutput, txConvertParams)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 			senderSk = txConvertParams.senderSK
 			// Initialize conversion and prove
 			err = InitConversion(txConvertOutput, txConvertParams)
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 		})
 
-		Convey("change TX", func() {
+		g.It("change TX", func() {
 			m := common.RandInt()
 
 			switch m % 5 { //Change this if you want to test a specific case
 
 			//tamper with fee
 			case 0:
-				Print("--Tampering with fee--")
+				fmt.Println("--Tampering with fee--")
 				txConvertOutput.Fee = uint64(common.RandIntInterval(0, 1000))
 
 				//Re-sign transaction
 				txConvertOutput.Sig, txConvertOutput.SigPubKey, err = tx_generic.SignNoPrivacy(senderSk, txConvertOutput.Hash()[:])
-				So(err, ShouldBeNil)
+				Expect(err).To(BeNil())
 
 			//tamper with randomness
 			case 1:
-				Print("--Tampering with randomness--")
+				fmt.Println("--Tampering with randomness--")
 				inputCoins := txConvertOutput.Proof.GetInputCoins()
 				for j := 0; j < numInputs; j++ {
 					inputCoins[j].SetRandomness(operation.RandomScalar())
@@ -461,33 +472,33 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 
 				//Re-sign transaction
 				txConvertOutput.Sig, txConvertOutput.SigPubKey, err = tx_generic.SignNoPrivacy(senderSk, txConvertOutput.Hash()[:])
-				So(err, ShouldBeNil)
+				Expect(err).To(BeNil())
 
 			//attempt to convert used coins (used serial numbers)
 			case 2:
-				Print("--Tampering with serial numbers--")
+				fmt.Println("--Tampering with serial numbers--")
 				usedIndex := common.RandInt() % len(txConvertOutput.Proof.GetInputCoins())
 				inputCoin := txConvertOutput.Proof.GetInputCoins()[usedIndex]
 
 				err := statedb.StoreSerialNumbers(dummyDB, *txConvertParams.tokenID, [][]byte{inputCoin.GetKeyImage().ToBytesS()}, 0)
-				So(err, ShouldBeNil)
+				Expect(err).To(BeNil())
 
 			//tamper with OTAs
 			case 3:
-				Print("--Tampering with OTAs--")
+				fmt.Println("--Tampering with OTAs--")
 				usedIndex := common.RandInt() % len(txConvertOutput.Proof.GetOutputCoins())
 				outputCoin := txConvertOutput.Proof.GetOutputCoins()[usedIndex]
 
-				So(storeCoins(dummyDB, []coin.Coin{outputCoin}, 0, *txConvertParams.tokenID), ShouldBeNil)
+				Expect(storeCoins(dummyDB, []coin.Coin{outputCoin}, 0, *txConvertParams.tokenID)).To(BeNil())
 
 			//tamper with commitment of output
 			case 4:
-				Print("--Tampering with commitment--")
-				//Println("Tx hash before altered", txConvertOutput.Hash().String())
+				fmt.Println("--Tampering with commitment--")
+				//fmt.Println("Tx hash before altered", txConvertOutput.Hash().String())
 				newOutputCoins := []coin.Coin{}
 				outputCoin := txConvertOutput.Proof.GetOutputCoins()[0]
 				newOutputCoin, ok := outputCoin.(*coin.CoinV2)
-				So(ok, ShouldBeTrue)
+				Expect(ok).To(BeTrue())
 
 				//Attempt to alter some output coins!
 				value := new(operation.Scalar).Add(newOutputCoin.GetAmount(), new(operation.Scalar).FromUint64(100))
@@ -496,11 +507,11 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 				newOutputCoin.SetCommitment(newCommitment)
 				newOutputCoins = append(newOutputCoins, newOutputCoin)
 				txConvertOutput.Proof.SetOutputCoins(newOutputCoins)
-				//Println("Tx hash after altered", txConvertOutput.Hash().String())
+				//fmt.Println("Tx hash after altered", txConvertOutput.Hash().String())
 
 				//Re-sign transaction
 				txConvertOutput.Sig, txConvertOutput.SigPubKey, err = tx_generic.SignNoPrivacy(senderSk, txConvertOutput.Hash()[:])
-				So(err, ShouldBeNil)
+				Expect(err).To(BeNil())
 			default:
 
 			}
@@ -518,80 +529,95 @@ func TestProveVerifyTxNormalConversionTampered(t *testing.T) {
 			}
 			if isValid {
 				jsb, _ := json.Marshal(txConvertOutput)
-				Printf("Unexpected error in case %d : %v\nTransaction : %s\n", m%5, err, string(jsb))
+				fmt.Printf("Unexpected error in case %d : %v\nTransaction : %s\n", m%5, err, string(jsb))
 				// return
 			}
 			//This validation should return an error
-			So(isValid, ShouldBeFalse)
+			Expect(isValid).To(BeFalse())
 		})
 	})
 }
 
 func TestValidateTxTokenConversion(t *testing.T) {
+	g := goblin.Goblin(t)
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	r := common.RandBytes(1)[0]
 	tokenID := &common.Hash{r}
 
-	Convey("Convert Token TX", t, func() {
-		m := common.RandInt()
-		switch m % 6 {
-		//attempt to use a large number of input tokens
-		case 0:
-			numTokenInputs, numFeeInputs, numFeePayments := 256, 5, 10
-			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
-			So(err, ShouldBeNil)
+	g.Describe("Convert Token TX", func() {
+		// m := common.RandInt()
+		for m := 0; m < 12; m++ {
+			switch m % 6 {
+			//attempt to use a large number of input tokens
+			case 0:
+				g.It("should err when using a large number of input tokens", func() {
+					numTokenInputs, numFeeInputs, numFeePayments := 256, 5, 10
+					_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+					Expect(err).To(BeNil())
 
-			//Test validate txTokenConversionParams
-			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
-			So(err, ShouldNotBeNil)
-		//attempt to use a large number of input PRV fee coins
-		case 1:
-			numTokenInputs, numFeeInputs, numFeePayments := 5, 256, 10
-			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
-			So(err, ShouldBeNil)
+					//Test validate txTokenConversionParams
+					err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
+					Expect(err).ToNot(BeNil())
+				})
+			//attempt to use a large number of input PRV fee coins
+			case 1:
+				g.It("should err when using a large number of input PRV fee coins", func() {
+					numTokenInputs, numFeeInputs, numFeePayments := 5, 256, 10
+					_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+					Expect(err).To(BeNil())
 
-			//Test validate txTokenConversionParams
-			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
-			So(err, ShouldNotBeNil)
-		//attempt to return a large number of output coins
-		case 2:
-			numTokenInputs, numFeeInputs, numFeePayments := 5, 10, 256
-			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
-			So(err, ShouldBeNil)
+					//Test validate txTokenConversionParams
+					err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
+					Expect(err).ToNot(BeNil())
+				})
+			//attempt to return a large number of output coins
+			case 2:
+				g.It("should err when returning a large number of output coins", func() {
+					numTokenInputs, numFeeInputs, numFeePayments := 5, 10, 256
+					_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+					Expect(err).To(BeNil())
 
-			//Test validate txTokenConversionParams
-			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
-			So(err, ShouldNotBeNil)
-		//attempt to use PRV coins ver 1 as fee inputs
-		case 3:
-			// storeOTA cannot be used to store coinv1 or the db will be corrupted
-			return
-			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
-			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 1, tokenID)
-			So(err, ShouldBeNil)
+					//Test validate txTokenConversionParams
+					err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
+					Expect(err).ToNot(BeNil())
+				})
+			//attempt to use PRV coins ver 1 as fee inputs
+			case 3:
+				// storeOTA cannot be used to store coinv1 or the db will be corrupted
+				g.Xit("should err when using PRV coins ver 1 as fee inputs", func() {
+					numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
+					_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 1, tokenID)
+					Expect(err).To(BeNil())
 
-			//Test validate txTokenConversionParams
-			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
-			So(err, ShouldNotBeNil)
-		//attempt to tamper with the total amount
-		case 4:
-			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
-			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
-			So(err, ShouldBeNil)
+					//Test validate txTokenConversionParams
+					err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
+					Expect(err).ToNot(BeNil())
+				})
+			//attempt to tamper with the total amount
+			case 4:
+				g.It("should err when the total amount was tampered", func() {
+					numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 255), common.RandIntInterval(0, 255), common.RandIntInterval(0, 255)
+					_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+					Expect(err).To(BeNil())
 
-			txTokenConversionParams.tokenParams.tokenPayments[0].Amount += uint64(common.RandIntInterval(1, 1000))
-			//Test validate txTokenConversionParams
-			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
-			So(err, ShouldNotBeNil)
+					txTokenConversionParams.tokenParams.tokenPayments[0].Amount += uint64(common.RandIntInterval(1, 1000))
+					//Test validate txTokenConversionParams
+					err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
+					Expect(err).ToNot(BeNil())
+				})
+			// default: create valid conversion
+			default:
+				g.It("should create & verify a valid conversion", func() {
+					numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 100), common.RandIntInterval(0, 100), common.RandIntInterval(0, 100)
+					_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
+					Expect(err).To(BeNil())
 
-		// default: create valid conversion
-		default:
-			numTokenInputs, numFeeInputs, numFeePayments := common.RandIntInterval(0, 100), common.RandIntInterval(0, 100), common.RandIntInterval(0, 100)
-			_, txTokenConversionParams, err := createTokenConversionParams(numTokenInputs, numFeeInputs, numFeePayments, 2, tokenID)
-			So(err, ShouldBeNil)
-
-			//Test validate txTokenConversionParams
-			err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
-			So(err, ShouldBeNil)
+					//Test validate txTokenConversionParams
+					err = validateTxTokenConvertVer1ToVer2Params(txTokenConversionParams)
+					Expect(err).To(BeNil())
+				})
+			}
 		}
 	})
 }

@@ -14,6 +14,7 @@ const (
 	JsonMarshalFlag   = 34 //nolint:revive
 	CoinVersion1      = 1
 	CoinVersion2      = 2
+	CoinVersion3      = 3
 	TxRandomGroupSize = 68
 )
 
@@ -171,12 +172,15 @@ func NewCoinFromPaymentInfo(p *CoinParams) (*CoinV2, error) {
 			concealRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedConcealRandom())
 			c.SetTxRandomDetail(concealRandomPoint, otaRandomPoint, index)
 
-			b := append(rK.ToBytesS(), common.Uint32ToBytes(index)...)
-			b = append(b, []byte("otatag")...)
-			hOTATag := operation.HashToScalar(b)
-			b = hOTATag.ToBytesS()
-			vt := uint8(b[operation.Ed25519KeySize - 1])
-			c.otaTag = &vt
+			if p.Version == CoinVersion3 {
+				c.SetVersion(CoinVersion3)
+				b := append(rK.ToBytesS(), common.Uint32ToBytes(index)...)
+				b = append(b, []byte("otatag")...)
+				hOTATag := operation.HashToScalar(b)
+				b = hOTATag.ToBytesS()
+				vt := uint8(b[operation.Ed25519KeySize-1])
+				c.SetOTATag(vt)
+			}
 			break
 		}
 	}
@@ -239,11 +243,14 @@ func DeriveShardInfoFromCoin(coinPubKey []byte) (int, int, int, error) {
 	return senderShardID, receiverShardID, coinPrivacyType, nil
 }
 
+const DefaultCoinVersion = CoinVersion3
+
 // CoinParams contains the necessary data to create a new coin
 type CoinParams struct {
 	key.PaymentInfo
 	SenderShardID   int
 	CoinPrivacyType int
+	Version         uint8
 }
 
 // From initializes the CoinParam using input data (PaymentInfo must not be nil)
@@ -252,6 +259,7 @@ func (p *CoinParams) From(inf *key.PaymentInfo, sid, cptype int) *CoinParams {
 		PaymentInfo:     *inf,
 		SenderShardID:   sid % common.MaxShardNumber,
 		CoinPrivacyType: cptype % (PrivacyTypeMint + 1),
+		Version:         DefaultCoinVersion,
 	}
 }
 
@@ -264,5 +272,13 @@ func (p *CoinParams) FromPaymentInfo(inf *key.PaymentInfo) *CoinParams {
 		PaymentInfo:     *inf,
 		SenderShardID:   int(shardID),
 		CoinPrivacyType: PrivacyTypeTransfer,
+		Version:         DefaultCoinVersion,
 	}
+}
+
+func (p *CoinParams) WithVersion(version uint8) *CoinParams {
+	if version == CoinVersion2 || version == CoinVersion3 {
+		p.Version = version
+	}
+	return p
 }

@@ -181,12 +181,15 @@ func NewCoinCA(p *CoinParams, tokenID *common.Hash) (*CoinV2, *operation.Point, 
 			concealSharedRandomPoint := new(operation.Point).ScalarMultBase(c.GetSharedConcealRandom())
 			c.SetTxRandomDetail(concealSharedRandomPoint, otaSharedRandomPoint, index)
 
-			b := append(rK.ToBytesS(), common.Uint32ToBytes(index)...)
-			b = append(b, []byte("otatag")...)
-			hOTATag := operation.HashToScalar(b)
-			b = hOTATag.ToBytesS()
-			vt := uint8(b[operation.Ed25519KeySize - 1])
-			c.otaTag = &vt
+			if p.Version == CoinVersion3 {
+				c.SetVersion(CoinVersion3)
+				b := append(rK.ToBytesS(), common.Uint32ToBytes(index)...)
+				b = append(b, []byte("otatag")...)
+				hOTATag := operation.HashToScalar(b)
+				b = hOTATag.ToBytesS()
+				vt := uint8(b[operation.Ed25519KeySize-1])
+				c.SetOTATag(vt)
+			}
 
 			rAsset := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
 			blinder, _ := ComputeAssetTagBlinder(rAsset)

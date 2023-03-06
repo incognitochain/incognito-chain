@@ -127,25 +127,18 @@ func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 	if len(inputCoins) == 0 {
 		return utils.CurrentTxVersion, nil
 	}
-	check := [3]bool{false, false, false}
+	check := [4]uint8{0, 0, 0, 0}
+	var result int8
 	for i := 0; i < len(inputCoins); i++ {
-		check[inputCoins[i].GetVersion()] = true
+		check[inputCoins[i].GetVersion()] = 1
+		result = int8(inputCoins[i].GetVersion())
 	}
 
 	// If inputCoins contain 2 versions
-	if check[1] && check[2] {
-		return 0, fmt.Errorf("cannot get tx version because there are 2 versions of input coins")
+	if check[utils.TxVersion1Number]+check[utils.TxVersion2Number]+check[utils.TxVersion3Number] != 1 {
+		return 0, fmt.Errorf("cannot get tx version: input coins version inconsistent")
 	}
-
-	// If somehow no version is checked???
-	if !check[1] && !check[2] {
-		return 0, fmt.Errorf("cannot get tx version, something is wrong with coins.version, it should be 1 or 2 only")
-	}
-
-	if check[2] {
-		return 2, nil
-	}
-	return 1, nil
+	return result, nil
 }
 
 // InitializeTxAndParams returns bool indicates whether we should continue "Init" function or not

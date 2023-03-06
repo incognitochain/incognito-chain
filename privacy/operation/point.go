@@ -9,6 +9,10 @@ import (
 	v1 "github.com/incognitochain/incognito-chain/privacy/operation/v1"
 )
 
+const (
+	domainSeparationTagCommon string = "incognito:edwards25519_XMD:SHA-512_ELL2_RO_"
+)
+
 // Point is a wrapper for `edwards25519.Point`, representing a point on the curve.
 // It needs to be instantiated via constructor; while `new(Point)` can only be used as receiver.
 type Point struct {
@@ -253,4 +257,13 @@ func HashToPoint(b []byte) *Point {
 	result := &Point{}
 	result.FromBytesS(temp.ToBytesS()) //nolint // legacy Point marshals to valid bytes
 	return result
+}
+
+// FromBytesH2C maps a byte array to the curve using Hash2Curve and sets this Point to it
+func (p *Point) FromBytesH2C(b, dstag []byte) *Point {
+	dstag = append(dstag, domainSeparationTagCommon...)
+
+	temp := HashToEdwards25519(b, dstag)
+	p.p = *temp
+	return p
 }

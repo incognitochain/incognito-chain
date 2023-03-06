@@ -286,7 +286,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			return coinV1, idx, nil
 		}
 		return pCoinV1, idx, nil
-	} else if jsonOutCoin.Version == "2" {
+	} else if jsonOutCoin.Version == "2" || jsonOutCoin.Version == "3" {
 		coinV2 := new(coin.CoinV2).Init()
 		if len(jsonOutCoin.CoinDetailsEncrypted) != 0 {
 			coinDetailEncryptedInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.CoinDetailsEncrypted)
@@ -304,7 +304,12 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		coinV2.SetKeyImage(keyImage)
 		coinV2.SetInfo(info)
 		coinV2.SetAssetTag(assetTag)
-		coinV2.SetOTATag(otaTag)
+		if jsonOutCoin.Version == "3" {
+			if otaTag == nil {
+				return nil, nil, errors.New("coin missing ota tag")
+			}
+			coinV2.SetOTATag(*otaTag)
+		}
 		coinV2.SetSharedRandom(sharedRandom)
 		coinV2.SetSharedConcealRandom(sharedConcealRandom)
 		coinV2.SetTxRandom(txRandom)

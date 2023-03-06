@@ -25,7 +25,7 @@ func (tx *TxBase) initEnv() metadata.ValidationEnviroment {
 	valEnv = WithShardID(valEnv, int(sID))
 	valEnv = WithVersion(valEnv, tx.Version)
 	valEnv = WithCA(valEnv, false)
-	if tx.Version == utils.TxVersion2Number {
+	if tx.Version == utils.TxVersion2Number || tx.Version == utils.TxVersion3Number {
 		proofAsV2, ok := tx.GetProof().(*privacy.ProofV2)
 		if (proofAsV2 != nil) && (ok) {
 			if hasCA, err := proofAsV2.IsConfidentialAsset(); err != nil {
@@ -115,7 +115,7 @@ func (tx *TxBase) ValidateSanityDataByItSelf() (bool, error) {
 	}
 
 	// check version
-	if tx.Version > utils.TxVersion2Number {
+	if tx.Version > utils.TxVersion3Number {
 		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, utils.CurrentTxVersion))
 	}
 	// check LockTime before now

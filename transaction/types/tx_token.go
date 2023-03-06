@@ -1252,13 +1252,13 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 		txToken.TokenData.Proof = &privacy.ProofForConversion{}
 		txToken.TokenData.Proof.Init()
 	case common.TxCustomTokenPrivacyType:
-		if txToken.Tx.Version != utils.TxVersion2Number {
+		if txToken.Tx.Version != utils.TxVersion2Number && txToken.Tx.Version != utils.TxVersion3Number {
 			return utils.NewTransactionErr(utils.PrivacyTokenJsonError, fmt.Errorf("error while unmarshalling TX token v2 : wrong proof version"))
 		}
 		txToken.TokenData.Proof = &privacy.ProofV2{}
 		txToken.TokenData.Proof.Init()
 	default:
-		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, fmt.Errorf("error while unmarshalling TX token v2 : wrong proof type"))
+		return utils.NewTransactionErr(utils.PrivacyTokenJsonError, fmt.Errorf("error while unmarshalling TX token v2 : wrong proof type %v", txToken.Tx.Type))
 	}
 
 	err = json.Unmarshal(holder.TxTokenPrivacyData, &txToken.TokenData)

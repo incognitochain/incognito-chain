@@ -131,7 +131,7 @@ func MdValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetr
 
 func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	// check version
-	if tx.GetVersion() > utils.TxVersion2Number {
+	if tx.GetVersion() > utils.TxVersion3Number {
 		return false, utils.NewTransactionErr(utils.RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.GetVersion(), utils.CurrentTxVersion))
 	}
 	// check LockTime before now

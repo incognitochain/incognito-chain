@@ -122,9 +122,12 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		b1 = coinByBytes.Bytes()
 		fmt.Printf("%x vs %x\n", b, b1)
 		assert.Equal(t, true, bytes.Equal(b, b1))
+		assert.Equal(t, coin.otaTag, coinByBytes.otaTag)
 
 		changedCoin := coinByBytes
 		changedCoin.otaTag = nil
+		assert.Panics(t, func() { changedCoin.Bytes() })
+		changedCoin.version = 2
 		b = changedCoin.Bytes()
 		coinByBytes = new(CoinV2).Init()
 		err = coinByBytes.SetBytes(b)
@@ -132,6 +135,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		b1 = coinByBytes.Bytes()
 		fmt.Printf("%x vs %x\n", b, b1)
 		assert.Equal(t, true, bytes.Equal(b, b1))
+		assert.Equal(t, changedCoin.otaTag, coinByBytes.otaTag)
 
 		changedCoin.assetTag = operation.RandomPoint()
 		changedCoin.otaTag = nil
@@ -142,9 +146,10 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		b1 = coinByBytes.Bytes()
 		fmt.Printf("%x vs %x\n", b, b1)
 		assert.Equal(t, true, bytes.Equal(b, b1))
+		assert.Equal(t, changedCoin.otaTag, coinByBytes.otaTag)
 
 		changedCoin.assetTag = operation.RandomPoint()
-		changedCoin.otaTag = coin.otaTag
+		changedCoin.SetOTATag(*coin.otaTag)
 		b = changedCoin.Bytes()
 		coinByBytes = new(CoinV2).Init()
 		err = coinByBytes.SetBytes(b)
@@ -152,6 +157,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 		b1 = coinByBytes.Bytes()
 		fmt.Printf("%x vs %x\n", b, b1)
 		assert.Equal(t, true, bytes.Equal(b, b1))
+		assert.Equal(t, changedCoin.otaTag, coinByBytes.otaTag)
 	}
 }
 
@@ -633,7 +639,7 @@ func TestInputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 }
 
 /*
-	Unit test for Bytes/SetBytes OutputCoin function
+Unit test for Bytes/SetBytes OutputCoin function
 */
 func TestOutputCoinBytesSetBytes(t *testing.T) {
 	coin := new(CoinV1).Init()
@@ -740,7 +746,7 @@ func debugInterface(a interface{}) {
 }
 
 /*
-	Unit test for Encrypt/Decrypt OutputCoin
+Unit test for Encrypt/Decrypt OutputCoin
 */
 func TestOutputCoinEncryptDecrypt(t *testing.T) {
 	// prepare key

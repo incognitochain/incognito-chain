@@ -400,8 +400,14 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 	txver := tx.GetVersion()
 	for _, c := range proofAsV2.GetOutputCoins() {
 		if c.GetVersion() != uint8(txver) {
-			utils.Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have outputs of any other version", tx.Hash().String())
-			return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("wrong coin version %d in tx ver%d", c.GetVersion(), txver))
+			utils.Logger.Log.Errorf("Error in tx %s : transaction vs output coin version mismatch", tx.Hash().String())
+			return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("wrong outcoin version %d in tx ver%d", c.GetVersion(), txver))
+		}
+	}
+	for _, c := range proofAsV2.GetInputCoins() {
+		if c.GetVersion() > uint8(txver) {
+			utils.Logger.Log.Errorf("Error in tx %s : transaction vs input coin version mismatch", tx.Hash().String())
+			return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("wrong input coin version %d in tx ver%d", c.GetVersion(), txver))
 		}
 	}
 

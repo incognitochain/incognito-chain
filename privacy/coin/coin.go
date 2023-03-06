@@ -86,7 +86,7 @@ func NewPlainCoinFromByte(b []byte) (PlainCoin, error) {
 		version = b[0]
 	}
 	var c PlainCoin
-	if version == CoinVersion2 {
+	if version == CoinVersion2 || version == CoinVersion3 {
 		c = new(CoinV2)
 	} else {
 		c = new(PlainCoinV1)

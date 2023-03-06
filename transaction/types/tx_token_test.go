@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	goblin "github.com/franela/goblin"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -19,10 +20,13 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	. "github.com/smartystreets/goconvey/convey"
+	. "github.com/onsi/gomega"
 )
 
 func TestPrivacyV2TxToken(t *testing.T) {
+	g := goblin.Goblin(t)
+	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+
 	var err error
 	var numOfPrivateKeys int
 	var numOfInputs int
@@ -34,93 +38,100 @@ func TestPrivacyV2TxToken(t *testing.T) {
 	var msgCipherText []byte
 	var boolParams map[string]bool
 	tokenID := &common.Hash{56}
-	tx2 := &TxToken{}
+	var tx2 *TxToken
 
-	Convey("Tx Token Main Test", t, func() {
+	g.Describe("Tx Token Main Test", func() {
 		numOfPrivateKeys = RandInt()%(maxPrivateKeys-minPrivateKeys+1) + minPrivateKeys
 		numOfInputs = 2
-		Convey("prepare keys", func() {
+		g.It("prepare keys", func() {
 			dummyPrivateKeys, keySets, paymentInfo = preparePaymentKeys(numOfPrivateKeys)
 			boolParams = make(map[string]bool)
 		})
 
-		Convey("create & store PRV UTXOs", func() {
+		g.It("create & store PRV UTXOs", func() {
 			pastCoins = make([]privacy.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 			for i := range pastCoins {
 				tempCoin, err := privacy.NewCoinFromPaymentInfo(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)]))
-				So(err, ShouldBeNil)
-				So(tempCoin.IsEncrypted(), ShouldBeFalse)
+				Expect(err).To(BeNil())
+				Expect(tempCoin.IsEncrypted()).To(BeFalse())
 				tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
-				So(tempCoin.IsEncrypted(), ShouldBeTrue)
-				So(tempCoin.GetSharedRandom() == nil, ShouldBeTrue)
+				Expect(tempCoin.IsEncrypted()).To(BeTrue())
+				Expect(tempCoin.GetSharedRandom()).To(BeNil())
 				pastCoins[i] = tempCoin
 			}
 			// store a bunch of sample OTA coins in PRV
-			So(storeCoins(dummyDB, pastCoins, 0, common.PRVCoinID), ShouldBeNil)
+			Expect(storeCoins(dummyDB, pastCoins, 0, common.PRVCoinID)).To(BeNil())
 		})
 
-		Convey("create & store Token UTXOs", func() {
+		g.It("create & store Token UTXOs", func() {
 			// now store the token
 			err := statedb.StorePrivacyToken(dummyDB, *tokenID, "NameName", "SYM", statedb.InitToken, false, uint64(100000), []byte{}, common.Hash{66})
-			So(err, ShouldBeNil)
+			Expect(err).To(BeNil())
 
 			pastTokenCoins = make([]privacy.Coin, (10+numOfInputs)*len(dummyPrivateKeys))
 			for i := range pastTokenCoins {
 				tempCoin, _, err := privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[i%len(dummyPrivateKeys)]), tokenID)
-				So(err, ShouldBeNil)
-				So(tempCoin.IsEncrypted(), ShouldBeFalse)
+				Expect(err).To(BeNil())
+				Expect(int(tempCoin.GetVersion())).To(Equal(coin.DefaultCoinVersion))
+				Expect(tempCoin.IsEncrypted()).To(BeFalse())
 				tempCoin.ConcealOutputCoin(keySets[i%len(dummyPrivateKeys)].PaymentAddress.GetPublicView())
-				So(tempCoin.IsEncrypted(), ShouldBeTrue)
-				So(tempCoin.GetSharedRandom() == nil, ShouldBeTrue)
+				Expect(tempCoin.IsEncrypted()).To(BeTrue())
+				Expect(tempCoin.GetSharedRandom()).To(BeNil())
 				pastTokenCoins[i] = tempCoin
 			}
 			// store a bunch of sample OTA coins in PRV
-			So(storeCoins(dummyDB, pastTokenCoins, 0, common.ConfidentialAssetID), ShouldBeNil)
+			Expect(storeCoins(dummyDB, pastTokenCoins, 0, common.ConfidentialAssetID)).To(BeNil())
 		})
 
-		Convey("create salary transaction", func() {
-			testTxTokenV2Salary(tokenID, dummyPrivateKeys, keySets, paymentInfo, dummyDB)
+		g.It("create salary transaction", func() {
+			testTxTokenV2Salary(g, tokenID, dummyPrivateKeys, keySets, paymentInfo, dummyDB)
 		})
 
-		Convey("transfer token", func() {
-			Convey("create TX with params", func() {
-				txParams, _ = getParamForTxTokenTransfer(pastCoins, pastTokenCoins, keySets, dummyDB, tokenID)
-				exists := statedb.PrivacyTokenIDExisted(dummyDB, *tokenID)
-				So(exists, ShouldBeTrue)
-				err = tx2.Init(txParams)
-				So(err, ShouldBeNil)
-			})
+		g.It("create params", func() {
+			txParams, _ = getParamForTxTokenTransfer(pastCoins, pastTokenCoins, keySets, dummyDB, tokenID)
+		})
 
-			Convey("should verify & accept transaction", func() {
-				msgCipherText = []byte("doing a transfer")
-				So(bytes.Equal(msgCipherText, tx2.GetTxNormal().GetProof().GetOutputCoins()[0].GetInfo()), ShouldBeTrue)
-				var err error
-				tx2, err = tx2.startVerifyTx(dummyDB)
-				So(err, ShouldBeNil)
+		g.It("create TX (token) with params", func() {
+			Expect(txParams).ToNot(BeNil())
+			exists := statedb.PrivacyTokenIDExisted(dummyDB, *tokenID)
+			Expect(exists).To(BeTrue())
+			tx2 = &TxToken{}
+			err = tx2.Init(txParams)
+			Expect(err).To(BeNil())
+			Expect(int(tx2.GetVersion())).To(Equal(coin.DefaultCoinVersion))
+		})
 
-				isValidSanity, err := tx2.ValidateSanityData(nil, nil, nil, 0)
-				So(isValidSanity, ShouldBeTrue)
-				So(err, ShouldBeNil)
+		g.It("should verify & accept transaction", func() {
+			Expect(tx2).ToNot(BeNil())
+			msgCipherText = []byte("doing a transfer")
+			Expect(bytes.Equal(msgCipherText, tx2.GetTxNormal().GetProof().GetOutputCoins()[0].GetInfo())).To(BeTrue())
+			var err error
+			tx2, err = tx2.startVerifyTx(dummyDB)
+			Expect(err).To(BeNil())
 
-				boolParams["hasPrivacy"] = hasPrivacyForToken
-				// before the token init tx is written into db, this should not pass
-				isValidTxItself, err := tx2.ValidateTxByItself(boolParams, dummyDB, nil, nil, shardID, nil, nil)
-				So(isValidTxItself, ShouldBeTrue)
-				So(err, ShouldBeNil)
-				err = tx2.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
-				So(err, ShouldBeNil)
-			})
+			isValidSanity, err := tx2.ValidateSanityData(nil, nil, nil, 0)
+			Expect(isValidSanity).To(BeTrue())
+			Expect(err).To(BeNil())
 
-			Convey("should reject tampered TXs", func() {
-				testTxTokenV2JsonMarshaler(tx2, 10, dummyDB)
-				testTxTokenV2DeletedProof(tx2, dummyDB)
-				testTxTokenV2InvalidFee(tx2, dummyDB)
-				myParams, _ := getParamForTxTokenTransfer(pastCoins, pastTokenCoins, keySets, dummyDB, tokenID)
-				testTxTokenV2OneFakeOutput(tx2, keySets, dummyDB, myParams, *tokenID)
-				myParams, _ = getParamForTxTokenTransfer(pastCoins, pastTokenCoins, keySets, dummyDB, tokenID)
-				indexForAnotherCoinOfMine := len(dummyPrivateKeys)
-				testTxTokenV2OneDoubleSpentInput(myParams, pastCoins[indexForAnotherCoinOfMine], pastTokenCoins[indexForAnotherCoinOfMine], keySets, dummyDB)
-			})
+			boolParams["hasPrivacy"] = hasPrivacyForToken
+			// before the token init tx is written into db, this should not pass
+			isValidTxItself, err := tx2.ValidateTxByItself(boolParams, dummyDB, nil, nil, shardID, nil, nil)
+			Expect(isValidTxItself).To(BeTrue())
+			Expect(err).To(BeNil())
+			err = tx2.ValidateTxWithBlockChain(nil, nil, nil, shardID, dummyDB)
+			Expect(err).To(BeNil())
+		})
+
+		g.It("should reject tampered TXs", func() {
+			Expect(tx2).ToNot(BeNil())
+			testTxTokenV2JsonMarshaler(tx2, 10, dummyDB)
+			testTxTokenV2DeletedProof(tx2, dummyDB)
+			testTxTokenV2InvalidFee(tx2, dummyDB)
+			myParams, _ := getParamForTxTokenTransfer(pastCoins, pastTokenCoins, keySets, dummyDB, tokenID)
+			testTxTokenV2OneFakeOutput(tx2, keySets, dummyDB, myParams, *tokenID)
+			myParams, _ = getParamForTxTokenTransfer(pastCoins, pastTokenCoins, keySets, dummyDB, tokenID)
+			indexForAnotherCoinOfMine := len(dummyPrivateKeys)
+			testTxTokenV2OneDoubleSpentInput(myParams, pastCoins[indexForAnotherCoinOfMine], pastTokenCoins[indexForAnotherCoinOfMine], keySets, dummyDB)
 		})
 	})
 }
@@ -277,33 +288,32 @@ func testTxTokenV2DeletedProof(txv2 *TxToken, db *statedb.StateDB) {
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	boolParams["isBatch"] = false
 	txn, ok := txv2.GetTxNormal().(*Tx)
-	So(ok, ShouldBeTrue)
+	Expect(ok).To(BeTrue())
 	savedProof := txn.GetProof()
 	txn.SetProof(nil)
 	txv2.SetTxNormal(txn)
 	isValid, _ := txv2.ValidateSanityData(nil, nil, nil, 0)
-	So(isValid, ShouldBeTrue)
+	Expect(isValid).To(BeTrue())
 	isValidTxItself, err := txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeFalse)
+	Expect(isValidTxItself).To(BeFalse())
 	logger.Infof("TEST RESULT : Missing token proof -> %v", err)
 	txn.SetProof(savedProof)
 	txv2.SetTxNormal(txn)
 	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeTrue)
+	Expect(isValidTxItself).To(BeTrue())
 
 	savedProof = txv2.GetTxBase().GetProof()
 	txv2.GetTxBase().SetProof(nil)
 	isValid, _ = txv2.ValidateSanityData(nil, nil, nil, 0)
-	So(isValid, ShouldBeTrue)
+	Expect(isValid).To(BeTrue())
 
 	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeFalse)
+	Expect(isValidTxItself).To(BeFalse())
 	logger.Infof("TEST RESULT : Missing PRV proof -> %v", err)
 	// undo the tampering
 	txv2.GetTxBase().SetProof(savedProof)
 	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeTrue)
-
+	Expect(isValidTxItself).To(BeTrue())
 }
 
 func testTxTokenV2InvalidFee(txv2 *TxToken, db *statedb.StateDB) {
@@ -317,8 +327,8 @@ func testTxTokenV2InvalidFee(txv2 *TxToken, db *statedb.StateDB) {
 
 	// sanity should pass
 	isValidSanity, err := txv2.ValidateSanityData(nil, nil, nil, 0)
-	So(isValidSanity, ShouldBeTrue)
-	So(err, ShouldBeNil)
+	Expect(isValidSanity).To(BeTrue())
+	Expect(err).To(BeNil())
 
 	boolParams := make(map[string]bool)
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
@@ -326,13 +336,13 @@ func testTxTokenV2InvalidFee(txv2 *TxToken, db *statedb.StateDB) {
 
 	// should reject at signature since fee & output doesn't sum to input
 	isValidTxItself, err := txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeFalse)
+	Expect(isValidTxItself).To(BeFalse())
 	logger.Infof("TEST RESULT : Invalid fee -> %v", err)
 
 	// undo the tampering
 	txv2.GetTxBase().SetTxFee(savedFee)
 	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeTrue)
+	Expect(isValidTxItself).To(BeTrue())
 }
 
 func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, db *statedb.StateDB, params *tx_generic.TxTokenParams, fakingTokenID common.Hash) {
@@ -340,11 +350,11 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	var err error
 	var isValid bool
 	txn, ok := txv2.GetTxNormal().(*Tx)
-	So(ok, ShouldBeTrue)
+	Expect(ok).To(BeTrue())
 	outs := txn.Proof.GetOutputCoins()
 	tokenOutput, ok := outs[0].(*coin.CoinV2)
 	savedCoinBytes := tokenOutput.Bytes()
-	So(ok, ShouldBeTrue)
+	Expect(ok).To(BeTrue())
 	tokenOutput.Decrypt(keySets[0])
 	// set amount from 69 to 690
 	tokenOutput.SetValue(690)
@@ -353,44 +363,43 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	txv2.SetTxNormal(txn)
 	// here ring is broken so signing will err
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
-	So(err, ShouldNotBeNil)
+	Expect(err).ToNot(BeNil())
 	// isValid, err = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, 0, false, nil, nil)
 	// verify must fail
-	// So(isValid, ShouldBeFalse)
 	logger.Infof("TEST RESULT : Fake output (wrong amount) -> %v", err)
 	// undo the tampering
 	tokenOutput.SetBytes(savedCoinBytes)
 	outs[0] = tokenOutput
 	txn.Proof.SetOutputCoins(outs)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 
 	boolParams := make(map[string]bool)
 	boolParams["hasPrivacy"] = true
 	boolParams["isBatch"] = false
 
 	isValid, err = txv2.ValidateTxByItself(boolParams, db, nil, nil, 0, nil, nil)
-	So(isValid, ShouldBeTrue)
+	Expect(isValid).To(BeTrue())
 
 	// now instead of changing amount, we change the OTA public key
 	outs = txn.GetProof().GetOutputCoins()
 	tokenOutput, ok = outs[0].(*coin.CoinV2)
 	savedCoinBytes = tokenOutput.Bytes()
-	So(ok, ShouldBeTrue)
+	Expect(ok).To(BeTrue())
 	payInf := &privacy.PaymentInfo{PaymentAddress: keySets[0].PaymentAddress, Amount: uint64(69), Message: []byte("doing a transfer")}
 	// totally fresh OTA of the same amount, meant for the same PaymentAddress
 	newCoin, _, err := privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(payInf), &fakingTokenID)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	newCoin.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
 	txn.GetProof().(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2).GetCommitments()[0] = newCoin.GetCommitment()
 	outs[0] = newCoin
 	txn.GetProof().SetOutputCoins(outs)
 	txv2.SetTxNormal(txn)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	isValid, err = txv2.ValidateTxByItself(boolParams, db, nil, nil, 0, nil, nil)
 	// verify must fail
-	So(isValid, ShouldBeFalse)
+	Expect(isValid).To(BeFalse())
 	logger.Infof("Fake output (wrong receiving OTA) -> %v", err)
 	// undo the tampering
 	tokenOutput.SetBytes(savedCoinBytes)
@@ -399,9 +408,9 @@ func testTxTokenV2OneFakeOutput(txv2 *TxToken, keySets []*incognitokey.KeySet, d
 	txn.GetProof().SetOutputCoins(outs)
 	txv2.SetTxNormal(txn)
 	err = resignUnprovenTxToken([]*incognitokey.KeySet{keySets[0]}, txv2, params, nil)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	isValid, err = txv2.ValidateTxByItself(boolParams, db, nil, nil, 0, nil, nil)
-	So(isValid, ShouldBeTrue)
+	Expect(isValid).To(BeTrue())
 }
 
 // happens after txTransfer in test
@@ -414,11 +423,11 @@ func testTxTokenV2OneDoubleSpentInput(pr *tx_generic.TxTokenParams, dbCoin priva
 	doubleSpendingFeeInput := &coin.CoinV2{}
 	doubleSpendingFeeInput.SetBytes(feeOutputSerialized)
 	_, err := doubleSpendingFeeInput.Decrypt(keySets[0])
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	doubleSpendingTokenInput := &coin.CoinV2{}
 	doubleSpendingTokenInput.SetBytes(tokenOutputSerialized)
 	_, err = doubleSpendingTokenInput.Decrypt(keySets[0])
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	// save both fee&token outputs from previous tx
 	otaBytes := [][]byte{doubleSpendingFeeInput.GetKeyImage().ToBytesS()}
 	statedb.StoreSerialNumbers(db, common.PRVCoinID, otaBytes, 0)
@@ -429,38 +438,38 @@ func testTxTokenV2OneDoubleSpentInput(pr *tx_generic.TxTokenParams, dbCoin priva
 	pr.InputCoin = []coin.PlainCoin{pc}
 	tx := &TxToken{}
 	err = tx.Init(pr)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	tx, err = tx.startVerifyTx(db)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	isValidSanity, err := tx.ValidateSanityData(nil, nil, nil, 0)
-	So(isValidSanity, ShouldBeTrue)
-	So(err, ShouldBeNil)
+	Expect(isValidSanity).To(BeTrue())
+	Expect(err).To(BeNil())
 	boolParams := make(map[string]bool)
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	isValidTxItself, err := tx.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeTrue)
-	So(err, ShouldBeNil)
+	Expect(isValidTxItself).To(BeTrue())
+	Expect(err).To(BeNil())
 	err = tx.ValidateTxWithBlockChain(nil, nil, nil, 0, db)
 	logger.Infof("Swap with spent Fee Input -> %v", err)
-	So(err, ShouldNotBeNil)
+	Expect(err).ToNot(BeNil())
 
 	// now we try to swap in a used token input
 	pc = doubleSpendingTokenInput
 	pr.TokenParams.TokenInput = []coin.PlainCoin{pc}
 	tx = &TxToken{}
 	err = tx.Init(pr)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	tx, err = tx.startVerifyTx(db)
-	So(err, ShouldBeNil)
+	Expect(err).To(BeNil())
 	isValidSanity, err = tx.ValidateSanityData(nil, nil, nil, 0)
-	So(isValidSanity, ShouldBeTrue)
-	So(err, ShouldBeNil)
+	Expect(isValidSanity).To(BeTrue())
+	Expect(err).To(BeNil())
 	isValidTxItself, err = tx.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-	So(isValidTxItself, ShouldBeTrue)
-	So(err, ShouldBeNil)
+	Expect(isValidTxItself).To(BeTrue())
+	Expect(err).To(BeNil())
 	err = tx.ValidateTxWithBlockChain(nil, nil, nil, 0, db)
 	logger.Infof("Swap with spent Token Input of same TokenID underneath -> %v", err)
-	So(err, ShouldNotBeNil)
+	Expect(err).ToNot(BeNil())
 }
 
 func getParamForTxTokenTransfer(dbCoins []privacy.Coin, dbTokenCoins []privacy.Coin, keySets []*incognitokey.KeySet, db *statedb.StateDB, specifiedTokenID *common.Hash) (*tx_generic.TxTokenParams, *tx_generic.TokenParam) {
@@ -474,12 +483,12 @@ func getParamForTxTokenTransfer(dbCoins []privacy.Coin, dbTokenCoins []privacy.C
 	tokenCoinsToTransfer := make([]coin.PlainCoin, 0)
 	for _, c := range feeOutputs {
 		pc, err := c.Decrypt(keySets[0])
-		So(err, ShouldBeNil)
+		Expect(err).To(BeNil())
 		prvCoinsToPayTransfer = append(prvCoinsToPayTransfer, pc)
 	}
 	for _, c := range tokenOutputs {
 		pc, err := c.Decrypt(keySets[0])
-		So(err, ShouldBeNil)
+		Expect(err).To(BeNil())
 		tokenCoinsToTransfer = append(tokenCoinsToTransfer, pc)
 	}
 
@@ -499,14 +508,14 @@ func getParamForTxTokenTransfer(dbCoins []privacy.Coin, dbTokenCoins []privacy.C
 	return txParams, tokenParam2
 }
 
-func testTxTokenV2Salary(tokenID *common.Hash, privateKeys []*privacy.PrivateKey, keySets []*incognitokey.KeySet, paymentInfo []*privacy.PaymentInfo, db *statedb.StateDB) {
-	Convey("Tx Salary Test", func() {
-		Convey("create salary coins", func() {
+func testTxTokenV2Salary(g *goblin.G, tokenID *common.Hash, privateKeys []*privacy.PrivateKey, keySets []*incognitokey.KeySet, paymentInfo []*privacy.PaymentInfo, db *statedb.StateDB) {
+	g.Describe("Tx Salary Test", func() {
+		g.Describe("create salary coins", func() {
 			var err error
 			var salaryCoin *privacy.CoinV2
 			for {
 				salaryCoin, _, err = privacy.NewCoinCA(privacy.NewCoinParams().FromPaymentInfo(paymentInfo[0]), tokenID)
-				So(err, ShouldBeNil)
+				Expect(err).To(BeNil())
 				otaPublicKeyBytes := salaryCoin.GetPublicKey().ToBytesS()
 				// want an OTA in shard 0
 				if otaPublicKeyBytes[31] == 0 {
@@ -514,24 +523,25 @@ func testTxTokenV2Salary(tokenID *common.Hash, privateKeys []*privacy.PrivateKey
 				}
 			}
 			var c privacy.Coin = salaryCoin
-			So(salaryCoin.IsEncrypted(), ShouldBeFalse)
-			So(storeCoins(db, []privacy.Coin{c}, 0, common.ConfidentialAssetID), ShouldBeNil)
-			Convey("create salary TX", func() {
-				txsal := &TxToken{}
+			Expect(c.IsEncrypted()).To(BeFalse())
+			Expect(storeCoins(db, []privacy.Coin{c}, 0, common.ConfidentialAssetID)).To(BeNil())
+			txsal := &TxToken{}
+			g.It("create salary TX", func() {
+
 				// actually making the salary TX
 				err := txsal.InitTxTokenSalary(salaryCoin, privateKeys[0], db, nil, tokenID, "Token 1")
-				So(err, ShouldBeNil)
+				Expect(err).To(BeNil())
 				testTxTokenV2JsonMarshaler(txsal, 10, db)
 				// ptoken minting requires valid signed metadata, so we skip validation here
-				SkipConvey("verify salary TX", func() {
-					isValid, err := txsal.ValidateTxSalary(db)
-					So(err, ShouldBeNil)
-					So(isValid, ShouldBeTrue)
-					// malTx := &TxToken{}
-					// this other coin is already in db so it must be rejected
-					// err = malTx.InitTxTokenSalary(salaryCoin, privateKeys[0], db, nil, tokenID, "Token 1")
-					// So(err, ShouldNotBeNil)
-				})
+
+			})
+			g.Xit("verify salary TX", func() {
+				isValid, err := txsal.ValidateTxSalary(db)
+				Expect(err).To(BeNil())
+				Expect(isValid).To(BeTrue())
+				// malTx := &TxToken{}
+				// this other coin is already in db so it must be rejected
+				// err = malTx.InitTxTokenSalary(salaryCoin, privateKeys[0], db, nil, tokenID, "Token 1")
 			})
 		})
 
