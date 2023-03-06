@@ -1,12 +1,13 @@
-package tx_ver2
+package types
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
+
 	proto_transaction "github.com/incognitochain/incognito-chain/transaction/proto"
 	"google.golang.org/protobuf/proto"
-	"sort"
 
 	"math"
 	"math/big"
@@ -396,6 +397,13 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 		utils.Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have proofs of any other version - %v", tx.Hash().String(), err)
 		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
+	txver := tx.GetVersion()
+	for _, c := range proofAsV2.GetOutputCoins() {
+		if c.GetVersion() != uint8(txver) {
+			utils.Logger.Log.Errorf("Error in tx %s : ver2 transaction cannot have outputs of any other version", tx.Hash().String())
+			return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("wrong coin version %d in tx ver%d", c.GetVersion(), txver))
+		}
+	}
 
 	isNewTransaction, ok := boolParams["isNewTransaction"]
 	if !ok {
@@ -528,11 +536,11 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 }
 
 // ValidateTxSalary checks the following conditions for salary transactions (s, rs):
-//	- the signature is valid
-//	- the number of output coins is 1
-//	- all fields of the output coins are valid
-//	- the commitment has been calculated correctly
-//  - the ota has not existed
+//   - the signature is valid
+//   - the number of output coins is 1
+//   - all fields of the output coins are valid
+//   - the commitment has been calculated correctly
+//   - the ota has not existed
 func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// verify signature
 	if valid, err := tx_generic.VerifySigNoPrivacy(tx.Sig, tx.SigPubKey, tx.Hash()[:]); !valid {

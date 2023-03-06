@@ -1,14 +1,15 @@
 package mlsag
 
 import (
-	"testing"
 	"encoding/json"
 	"fmt"
+	"testing"
+
+	"crypto/rand"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
-	"crypto/rand"
 )
 
 // TEST DURATION NOTE : 1000 iterations = 190sec
@@ -16,8 +17,8 @@ import (
 var (
 	maxPrivateKeys = 15
 	minPrivateKeys = 1
-	maxTotalLayers  = 10
-	minTotalLayers  = 1
+	maxTotalLayers = 10
+	minTotalLayers = 1
 	numOfLoops     = 1000
 )
 
@@ -26,26 +27,25 @@ var (
 )
 
 func TestWorkflowMlsag(t *testing.T) {
-	message := make([]byte,32)
-	
-	for loopCount:=0;loopCount<=numOfLoops;loopCount++{
+	message := make([]byte, 32)
+
+	for loopCount := 0; loopCount <= numOfLoops; loopCount++ {
 		keyInputs := []*operation.Scalar{}
 
 		// ring params : #private keys, #fake layers, pi
 		// are picked randomly in their domain
-		numOfPrivateKeys := common.RandInt() % (maxPrivateKeys-minPrivateKeys+1) + minPrivateKeys
+		numOfPrivateKeys := common.RandInt()%(maxPrivateKeys-minPrivateKeys+1) + minPrivateKeys
 		for i := 0; i < numOfPrivateKeys; i += 1 {
 			privateKey := operation.RandomScalar()
 			keyInputs = append(keyInputs, privateKey)
 		}
-		numOfLayers := common.RandInt() % (maxTotalLayers-minTotalLayers+1) + minTotalLayers
+		numOfLayers := common.RandInt()%(maxTotalLayers-minTotalLayers+1) + minTotalLayers
 		pi := common.RandInt() % numOfLayers
 		ring := NewRandomRing(keyInputs, numOfLayers, pi)
 		signer := NewMlsag(keyInputs, ring, pi)
 
 		// take a random 20-byte message
 		rand.Read(message)
-
 
 		s := common.HashH(message)
 		signature, err := signer.Sign(s[:])
@@ -58,24 +58,72 @@ func TestWorkflowMlsag(t *testing.T) {
 	}
 }
 
-func TestDumpSig(t *testing.T){
-	for _, sigStr := range signatureStrings{
+const (
+	numOfPrivateKeys = 1
+	numOfLayers      = 128
+)
+
+// benchmark mlsag Sign & Verify functions, separately. Use randomly generated public keys and message
+func BenchmarkMlsagSign(b *testing.B) {
+	message := make([]byte, 32)
+	keyInputs := []*operation.Scalar{}
+	for i := 0; i < numOfPrivateKeys; i += 1 {
+		privateKey := operation.RandomScalar()
+		keyInputs = append(keyInputs, privateKey)
+	}
+	pi := common.RandInt() % numOfLayers
+	ring := NewRandomRing(keyInputs, numOfLayers, pi)
+	signer := NewMlsag(keyInputs, ring, pi)
+
+	// take a random 20-byte message
+	rand.Read(message)
+	s := common.HashH(message)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		signer.Sign(s[:])
+	}
+}
+
+func BenchmarkMlsagVerify(b *testing.B) {
+	message := make([]byte, 32)
+	keyInputs := []*operation.Scalar{}
+	for i := 0; i < numOfPrivateKeys; i += 1 {
+		privateKey := operation.RandomScalar()
+		keyInputs = append(keyInputs, privateKey)
+	}
+	pi := common.RandInt() % numOfLayers
+	ring := NewRandomRing(keyInputs, numOfLayers, pi)
+	signer := NewMlsag(keyInputs, ring, pi)
+
+	// take a random 20-byte message
+	rand.Read(message)
+	s := common.HashH(message)
+	signature, _ := signer.Sign(s[:])
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Verify(signature, ring, s[:])
+	}
+}
+
+func TestDumpSig(t *testing.T) {
+	for _, sigStr := range signatureStrings {
 		var sigByteHolder []byte = make([]byte, 100)
 		err := json.Unmarshal([]byte(sigStr), &sigByteHolder)
-		if err!=nil{
+		if err != nil {
 			panic(err)
 		}
 		sig := &Sig{}
 		_, err = sig.FromBytes(sigByteHolder)
 		fmt.Printf("\n\nBegin Signature\n")
 		fmt.Printf("  %x\n--Key Images\n", sig.c.ToBytesS())
-		for _, k := range sig.keyImages{
+		for _, k := range sig.keyImages {
 			fmt.Printf("  %x\n", k.ToBytesS())
 		}
 		fmt.Printf("\n--R Matrix\n")
-		for _, row := range sig.r{
+		for _, row := range sig.r {
 			fmt.Printf("\n  --Row--\n")
-			for _, ele := range row{
+			for _, ele := range row {
 				fmt.Printf("    %x\n", ele.ToBytesS())
 			}
 		}

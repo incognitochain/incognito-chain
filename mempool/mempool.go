@@ -253,7 +253,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		tempTx, ok := tx.(*transaction.TxTokenVersion1)
 		if !ok {
-			tempTxToken2, ok := tx.(*transaction.TxTokenVersion2)
+			tempTxToken2, ok := tx.(*transaction.TxToken)
 			if !ok {
 				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
 			}

@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
-	"github.com/incognitochain/incognito-chain/transaction/tx_ver2"
+	txtypes "github.com/incognitochain/incognito-chain/transaction/types"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
@@ -28,8 +28,8 @@ const (
 )
 
 type EstimateTxSizeParam = tx_generic.EstimateTxSizeParam
-type TxConvertVer1ToVer2InitParams = tx_ver2.TxConvertVer1ToVer2InitParams
-type TxTokenConvertVer1ToVer2InitParams = tx_ver2.TxTokenConvertVer1ToVer2InitParams
+type TxConvertVer1ToVer2InitParams = txtypes.TxConvertVer1ToVer2InitParams
+type TxTokenConvertVer1ToVer2InitParams = txtypes.TxTokenConvertVer1ToVer2InitParams
 type TxPrivacyInitParams = tx_generic.TxPrivacyInitParams
 
 func NewRandomCommitmentsProcessParam(usableInputCoins []privacy.PlainCoin, randNum int, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) *tx_generic.RandomCommitmentsProcessParam {
@@ -66,7 +66,7 @@ func NewTxConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxConvertVer1ToVer2InitParams {
-	return tx_ver2.NewTxConvertVer1ToVer2InitParams(senderSK, paymentInfo, inputCoins, fee, stateDB, tokenID, metaData,
+	return txtypes.NewTxConvertVer1ToVer2InitParams(senderSK, paymentInfo, inputCoins, fee, stateDB, tokenID, metaData,
 		info)
 }
 
@@ -81,15 +81,15 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	tokenID *common.Hash, // tokenID of the conversion coin
 	metaData metadata.Metadata,
 	info []byte) *TxTokenConvertVer1ToVer2InitParams {
-	return tx_ver2.NewTxTokenConvertVer1ToVer2InitParams(senderSK, feeInputs, feePayments, tokenInputs, tokenPayments, fee, stateDB, bridgeStateDB, tokenID, metaData, info)
+	return txtypes.NewTxTokenConvertVer1ToVer2InitParams(senderSK, feeInputs, feePayments, tokenInputs, tokenPayments, fee, stateDB, bridgeStateDB, tokenID, metaData, info)
 }
 
-func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
-	return tx_ver2.InitConversion(tx, params)
+func InitConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error {
+	return txtypes.InitConversion(tx, params)
 }
 
-func InitTokenConversion(txToken *TxTokenVersion2, params *TxTokenConvertVer1ToVer2InitParams) error {
-	return tx_ver2.InitTokenConversion(txToken, params)
+func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitParams) error {
+	return txtypes.InitTokenConversion(txToken, params)
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,

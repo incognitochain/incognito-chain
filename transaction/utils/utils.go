@@ -73,7 +73,7 @@ func ParseProof(p interface{}, ver int8, txType string) (privacy.Proof, error) {
 		switch ver {
 		case TxVersion1Number, TxVersion0Number:
 			res = new(privacy.ProofV1)
-		case TxVersion2Number:
+		case TxVersion2Number, TxVersion3Number:
 			res = new(privacy.ProofV2)
 			res.Init()
 		default:

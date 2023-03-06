@@ -1,10 +1,11 @@
-package tx_ver2
+package types
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common/base58"
 
 	"encoding/json"
 	"testing"

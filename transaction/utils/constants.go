@@ -9,6 +9,7 @@ const (
 	TxVersion1Number                 = 1
 	TxVersion2Number                 = 2
 	TxConversionVersion12Number      = 2
+	TxVersion3Number                 = 3
 	ValidateTimeForOneoutOfManyProof = 1574985600 // GMT: Friday, November 29, 2019 12:00:00 AM
 )
 

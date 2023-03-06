@@ -227,8 +227,9 @@ func (p *Point) Sub(pa, pb *Point) *Point {
 	return p
 }
 
-//nolint:gocritic // using capitalized variable name
 // AddPedersen computes a Pedersen commitment; it sets `p = aA + bB`, then returns `p`
+//
+//nolint:gocritic // using capitalized variable name
 func (p *Point) AddPedersen(a *Scalar, A *Point, b *Scalar, B *Point) *Point {
 	return p.MultiScalarMult([]*Scalar{a, b}, []*Point{A, B})
 }

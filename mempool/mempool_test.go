@@ -228,7 +228,7 @@ func initTx(amount string, privateKey string, db incdb.Database) []metadata.Tran
 			Logger.log.Errorf("Cannot get new coin from amount and payment address")
 			return nil
 		}
-		testSalaryTX := new(transaction.TxVersion2)
+		testSalaryTX := new(transaction.Tx)
 		testSalaryTX.InitTxSalary(otaCoin, &testUserKey.KeySet.PrivateKey, nil, nil)
 		initTxs = append(initTxs, testSalaryTX)
 	}

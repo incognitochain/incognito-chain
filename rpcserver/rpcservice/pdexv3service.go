@@ -182,7 +182,7 @@ func buildTokenTransaction(svc PdexTxService, sel *paramSelector) (metadataCommo
 		svc.BlockChain.BeaconChain.GetFinalViewState().GetBeaconFeatureStateDB(),
 	)
 
-	tx := &transaction.TxTokenVersion2{}
+	tx := &transaction.TxToken{}
 	errTx := tx.Init(txTokenParams)
 	if errTx != nil {
 		return nil, NewRPCError(CreateTxDataError, errTx)

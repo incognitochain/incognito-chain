@@ -1,9 +1,10 @@
-package tx_ver2
+package types
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	proto_transaction "github.com/incognitochain/incognito-chain/transaction/proto"
 	"google.golang.org/protobuf/proto"
 
@@ -545,10 +546,10 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 }
 
 // ValidateTxSalary checks the following conditions for minteable transactions:
-//	- the signature is valid
-//	- all fields of the output coins are valid: commitment, assetTag, etc,.
-//	- the commitment has been calculated correctly
-//	- the ota has not existed
+//   - the signature is valid
+//   - all fields of the output coins are valid: commitment, assetTag, etc,.
+//   - the commitment has been calculated correctly
+//   - the ota has not existed
 func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	tokenID := &txToken.TokenData.PropertyID
 
@@ -781,7 +782,7 @@ func (txToken TxToken) GetTxActualSize() uint64 {
 	return uint64(math.Ceil(float64(len(jsb)) / 1024))
 }
 
-//-- OVERRIDE--
+// -- OVERRIDE--
 func (txToken TxToken) GetVersion() int8 { return txToken.Tx.Version }
 
 func (txToken *TxToken) SetVersion(version int8) { txToken.Tx.Version = version }

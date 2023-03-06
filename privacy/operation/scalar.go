@@ -212,7 +212,7 @@ func Reverse(x [32]byte) (result [32]byte) {
 	return
 }
 
-//nolint // d2h is a legacy function
+// nolint // d2h is a legacy function
 func d2h(val uint64) [32]byte {
 	var key [32]byte
 	for i := 0; val > 0; i++ {

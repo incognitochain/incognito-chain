@@ -13,65 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
-type TxRandom [TxRandomGroupSize]byte
-
-func NewTxRandom() *TxRandom {
-	txRandom := new(operation.Point).Identity()
-	index := uint32(0)
-
-	res := new(TxRandom)
-	res.SetTxConcealRandomPoint(txRandom)
-	res.SetIndex(index)
-	return res
-}
-
-func (t TxRandom) GetTxConcealRandomPoint() (*operation.Point, error) {
-	return new(operation.Point).FromBytesS(t[operation.Ed25519KeySize+4:])
-}
-
-func (t TxRandom) GetTxOTARandomPoint() (*operation.Point, error) {
-	return new(operation.Point).FromBytesS(t[:operation.Ed25519KeySize])
-}
-
-func (t TxRandom) GetIndex() (uint32, error) {
-	return common.BytesToUint32(t[operation.Ed25519KeySize : operation.Ed25519KeySize+4])
-}
-
-func (t *TxRandom) SetTxConcealRandomPoint(txConcealRandom *operation.Point) {
-	txRandomBytes := txConcealRandom.ToBytesS()
-	copy(t[operation.Ed25519KeySize+4:], txRandomBytes)
-}
-
-func (t *TxRandom) SetTxOTARandomPoint(txRandom *operation.Point) {
-	txRandomBytes := txRandom.ToBytesS()
-	copy(t[:operation.Ed25519KeySize], txRandomBytes)
-}
-
-func (t *TxRandom) SetIndex(index uint32) {
-	indexBytes := common.Uint32ToBytes(index)
-	copy(t[operation.Ed25519KeySize:], indexBytes)
-}
-
-func (t TxRandom) Bytes() []byte {
-	return t[:]
-}
-
-func (t *TxRandom) SetBytes(b []byte) error {
-	if b == nil || len(b) != TxRandomGroupSize {
-		return fmt.Errorf("cannot SetByte to TxRandom. Input is invalid")
-	}
-	_, err := new(operation.Point).FromBytesS(b[:operation.Ed25519KeySize])
-	if err != nil {
-		return fmt.Errorf("cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
-	}
-	_, err = new(operation.Point).FromBytesS(b[operation.Ed25519KeySize+4:])
-	if err != nil {
-		return fmt.Errorf("cannot TxRandomGroupSize.SetBytes: bytes is not operation.Point err: %v", err)
-	}
-	copy(t[:], b)
-	return nil
-}
-
 // CoinV2 is the struct that will be stored to db
 // If not privacy, mask and amount will be the original randomness and value
 // If has privacy, mask and amount will be as paper monero
@@ -224,7 +165,7 @@ func (c *CoinV2) Init() *CoinV2 {
 	if c == nil {
 		c = new(CoinV2)
 	}
-	c.version = 2
+	c.version = CoinVersion2
 	c.info = []byte{}
 	c.publicKey = new(operation.Point).Identity()
 	c.commitment = new(operation.Point).Identity()
@@ -252,7 +193,7 @@ func (c CoinV2) IsEncrypted() bool {
 	return !operation.IsPointEqual(tempCommitment, c.commitment)
 }
 
-func (c CoinV2) GetVersion() uint8                         { return 2 }
+func (c CoinV2) GetVersion() uint8                         { return c.version }
 func (c CoinV2) GetRandomness() *operation.Scalar          { return c.mask }
 func (c CoinV2) GetAmount() *operation.Scalar              { return c.amount }
 func (c CoinV2) GetSharedRandom() *operation.Scalar        { return c.sharedRandom }
@@ -262,7 +203,7 @@ func (c CoinV2) GetCommitment() *operation.Point           { return c.commitment
 func (c CoinV2) GetKeyImage() *operation.Point             { return c.keyImage }
 func (c CoinV2) GetInfo() []byte                           { return c.info }
 func (c CoinV2) GetAssetTag() *operation.Point             { return c.assetTag }
-func (c CoinV2) GetOTATag() *uint8                        { return c.otaTag }
+func (c CoinV2) GetOTATag() *uint8                         { return c.otaTag }
 func (c CoinV2) GetValue() uint64 {
 	if c.IsEncrypted() {
 		return 0
@@ -299,7 +240,7 @@ func (c *CoinV2) GetCoinID() [operation.Ed25519KeySize]byte {
 	return [operation.Ed25519KeySize]byte{}
 }
 
-func (c *CoinV2) SetVersion(uint8)                               { c.version = 2 }
+func (c *CoinV2) SetVersion(version uint8)                       { c.version = version }
 func (c *CoinV2) SetRandomness(mask *operation.Scalar)           { c.mask = mask }
 func (c *CoinV2) SetAmount(amount *operation.Scalar)             { c.amount = amount }
 func (c *CoinV2) SetSharedRandom(sharedRandom *operation.Scalar) { c.sharedRandom = sharedRandom }
@@ -331,7 +272,12 @@ func (c *CoinV2) SetInfo(b []byte) {
 	copy(c.info, b)
 }
 func (c *CoinV2) SetAssetTag(at *operation.Point) { c.assetTag = at }
-func (c *CoinV2) SetOTATag(vt *uint8) { c.otaTag = vt }
+
+func (c *CoinV2) SetOTATag(t uint8) {
+	if c.version == CoinVersion3 {
+		c.otaTag = &t
+	}
+}
 
 func (c CoinV2) Bytes() []byte {
 	coinBytes := []byte{c.GetVersion()}
@@ -403,8 +349,7 @@ func (c CoinV2) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if c.otaTag != nil {
-		coinBytes = append(coinBytes, byte(33))
+	if c.version == CoinVersion3 {
 		coinBytes = append(coinBytes, byte(*c.otaTag))
 	}
 
@@ -419,8 +364,8 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
 		return fmt.Errorf("coinBytes is empty")
 	}
-	if coinBytes[0] != 2 {
-		return fmt.Errorf("coinBytes version is not 2")
+	if coinBytes[0] != CoinVersion2 && coinBytes[0] != CoinVersion3 {
+		return fmt.Errorf("coinBytes version is not 2 or 3")
 	}
 	c.SetVersion(coinBytes[0])
 
@@ -493,14 +438,12 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 		}
 	}
 
-	if offset < len(coinBytes) {
-		// parse view tag
-		if coinBytes[offset] == 33 {
-			vt := uint8(coinBytes[offset+1])
-			c.otaTag = &vt
-		} else {
-			return fmt.Errorf("setBytes CoinV2 otaTag error: %v", err)
+	if c.version == CoinVersion3 {
+		if offset >= len(coinBytes) {
+			return fmt.Errorf("setBytes CoinV2 length error")
 		}
+		vt := uint8(coinBytes[offset])
+		c.otaTag = &vt
 	}
 
 	return nil

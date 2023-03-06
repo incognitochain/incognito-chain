@@ -182,9 +182,7 @@ func NewCoinFromAmountAndTxRandomBytes(amount uint64, publicKey *operation.Point
 	return coin.NewCoinFromAmountAndTxRandomBytes(amount, publicKey, txRandom, info)
 }
 
-func ProveV2(inputCoins []PlainCoin, outputCoins []*CoinV2, sharedSecrets []*Point, hasPrivacy bool, paymentInfo []*PaymentInfo) (*ProofV2, error) {
-	return privacy_v2.Prove(inputCoins, outputCoins, sharedSecrets, hasPrivacy, paymentInfo)
-}
+var ProveV2 = privacy_v2.Prove
 
 func ComputeAssetTagBlinder(sharedSecret *Point) (*Scalar, error) {
 	return coin.ComputeAssetTagBlinder(sharedSecret)

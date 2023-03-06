@@ -97,8 +97,8 @@ func (coin *CoinV2) SetPlainTokenID(tokenID *common.Hash) error {
 
 // GetTokenId attempts to retrieve the asset a CoinV2.
 // Parameters:
-// 	- keySet: the key set of the user, must contain an OTAKey
-//	- rawAssetTags: a pre-computed mapping from a raw assetTag to the tokenId (e.g, HashToPoint(PRV) => PRV).
+//   - keySet: the key set of the user, must contain an OTAKey
+//   - rawAssetTags: a pre-computed mapping from a raw assetTag to the tokenId (e.g, HashToPoint(PRV) => PRV).
 func (c *CoinV2) GetTokenId(keySet *incognitokey.KeySet, rawAssetTags map[string]*common.Hash) (*common.Hash, error) {
 	if c.GetAssetTag() == nil {
 		return &common.PRVCoinID, nil

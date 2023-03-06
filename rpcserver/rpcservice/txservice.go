@@ -621,7 +621,7 @@ func (txService TxService) BuildConvertV1ToV2Transaction(params *bean.CreateRawT
 		nil,
 		params.Info,
 	)
-	tx := new(transaction.TxVersion2)
+	tx := new(transaction.Tx)
 	if err := transaction.InitConversion(tx, txConvertParams); err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
@@ -1145,7 +1145,7 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 		nil,
 		params.Info,
 	)
-	tx := new(transaction.TxTokenVersion2)
+	tx := new(transaction.TxToken)
 	if err := transaction.InitTokenConversion(tx, txTokenConvertParams); err != nil {
 		return nil, nil, 0, NewRPCError(CreateTxDataError, err)
 	}
@@ -2258,7 +2258,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	return tx, nil
 }
 
-//calculateOutputCoinsByMinValue
+// calculateOutputCoinsByMinValue
 func (txService TxService) calculateOutputCoinsByMinValue(outCoins []coin.PlainCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]coin.PlainCoin, uint64) {
 	outCoinsTmp := make([]coin.PlainCoin, 0)
 	amount := uint64(0)

@@ -1,4 +1,4 @@
-package tx_ver2
+package types
 
 import (
 	// "encoding/hex"

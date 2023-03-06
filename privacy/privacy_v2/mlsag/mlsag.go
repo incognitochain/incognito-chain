@@ -1,12 +1,14 @@
-//nolint:gocritic,revive // skip some linters since this file has some capitalized, underscored
 // variable names to match names in the crypto protocol
 // Package mlsag contains the implementation of MLSAG, a ring signature scheme.
+//
+//nolint:gocritic,revive // skip some linters since this file has some capitalized, underscored
 package mlsag
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )

@@ -218,7 +218,7 @@ func TestBuildResponseTrade(t *testing.T) {
 		Instructions [][]string `json:"instructions"`
 	}
 
-	type TestResult = transaction.TxTokenVersion2
+	type TestResult = transaction.TxToken
 
 	var testcases []Testcase
 	testcases = append(testcases, buildResponseTradeTestcases...)
@@ -248,7 +248,7 @@ func TestBuildResponseTrade(t *testing.T) {
 				10,
 			)
 			NoError(t, err)
-			txv2, ok := tx.(*transaction.TxTokenVersion2)
+			txv2, ok := tx.(*transaction.TxToken)
 			True(t, ok)
 			mintedCoin, ok := txv2.TokenData.Proof.GetOutputCoins()[0].(*privacy.CoinV2)
 			True(t, ok)
@@ -354,7 +354,7 @@ func mockTxsForProducer(mds []metadataCommon.Metadata, shardID byte, burningPRV 
 	var txLst []metadataCommon.Transaction
 	for _, md := range mds {
 		// for compatibility within tests, use the actual Hash() function; mock others when necessary
-		mytx := &transaction.TxVersion2{}
+		mytx := &transaction.Tx{}
 		valEnv := tx_generic.DefaultValEnv()
 		valEnv = tx_generic.WithShardID(valEnv, int(shardID))
 		mytx.SetMetadata(md)

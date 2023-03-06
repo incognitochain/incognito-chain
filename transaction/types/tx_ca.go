@@ -1,9 +1,10 @@
-package tx_ver2
+package types
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"

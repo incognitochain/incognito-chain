@@ -1,9 +1,12 @@
-package tx_ver2
+package types
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
+	"strconv"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,8 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	"strconv"
-	"time"
 )
 
 // ================ TX NORMAL CONVERSION =================
