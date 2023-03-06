@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	common2 "github.com/incognitochain/incognito-chain/metadata/common"
 	"reflect"
+
+	common2 "github.com/incognitochain/incognito-chain/metadata/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -368,7 +369,7 @@ func (httpServer *HttpServer) handleGetEncodedTransactionsByHashes(params interf
 	return httpServer.txService.GetEncodedTransactionsByHashes(txHashList)
 }
 
-//Get transaction by serial numbers
+// Get transaction by serial numbers
 func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
@@ -685,131 +686,6 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 		}
 	}
 
-	return result, nil
-}
-
-// handleRandomCommitments - from input of outputcoin, random to create data for create new tx
-func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 2 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
-	}
-
-	// #1: ShardID
-	shardID, ok := arrayParams[0].(float64)
-	if !ok {
-		//If no direct shardID provided, try a payment address
-		paymentAddressStr, ok := arrayParams[0].(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
-		}
-
-		tmpWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("error when deserialized payment address %v: %v", paymentAddressStr, err)))
-		}
-
-		pk := tmpWallet.KeySet.PaymentAddress.Pk
-		if len(pk) == 0 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("payment address %v invalid: no public key found", paymentAddressStr)))
-		}
-
-		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk)-1]))
-	}
-
-	// #2: available inputCoin from old outputcoin
-	outputs, ok := arrayParams[1].([]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("outputs is invalid"))
-	}
-	if len(outputs) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("len of outputs must be greater than zero"))
-	}
-
-	//#3 - tokenID - default PRV
-	tokenID := &common.Hash{}
-	err := tokenID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
-	}
-	if len(arrayParams) > 2 {
-		tokenIDTemp, ok := arrayParams[2].(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tokenID is invalid"))
-		}
-		tokenID, err = common.Hash{}.NewHashFromStr(tokenIDTemp)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
-		}
-	}
-
-	commitmentIndexs, myCommitmentIndexs, commitments, err2 := httpServer.txService.RandomCommitments(byte(shardID), outputs, tokenID)
-	if err2 != nil {
-		return nil, err2
-	}
-
-	result := jsonresult.NewRandomCommitmentResult(commitmentIndexs, myCommitmentIndexs, commitments)
-	return result, nil
-}
-
-// handleRandomCommitmentsAndPublicKey - returns a list of random commitments, public keys and indices for creating txver2
-func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 2 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
-	}
-
-	// #1: ShardID
-	shardID, ok := arrayParams[0].(float64)
-	if !ok {
-		//If no direct shardID provided, try a payment address
-		paymentAddressStr, ok := arrayParams[0].(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
-		}
-
-		tmpWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("error when deserialized payment address %v: %v", paymentAddressStr, err)))
-		}
-
-		pk := tmpWallet.KeySet.PaymentAddress.Pk
-		if len(pk) == 0 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("payment address %v invalid: no public key found", paymentAddressStr)))
-		}
-
-		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk)-1]))
-	}
-
-	// #2: Number of commitments
-	numOutputs, ok := arrayParams[1].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of commitments is invalid"))
-	}
-
-	//#3 - tokenID - default PRV
-	tokenID := &common.Hash{}
-	err := tokenID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
-	}
-	if len(arrayParams) > 2 {
-		tokenIDTemp, ok := arrayParams[2].(string)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tokenID is invalid"))
-		}
-		tokenID, err = common.Hash{}.NewHashFromStr(tokenIDTemp)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
-		}
-	}
-
-	commitmentIndices, publicKeys, commitments, assetTags, err2 := httpServer.txService.RandomCommitmentsAndPublicKeys(byte(shardID), int(numOutputs), tokenID)
-	if err2 != nil {
-		return nil, err2
-	}
-
-	result := jsonresult.NewRandomCommitmentAndPublicKeyResult(commitmentIndices, publicKeys, commitments, assetTags)
 	return result, nil
 }
 

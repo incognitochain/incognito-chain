@@ -40,8 +40,22 @@ func RandomCommitmentsProcess(param *tx_generic.RandomCommitmentsProcessParam) (
 	return tx_generic.RandomCommitmentsProcess(param)
 }
 
-func NewTxTokenParams(senderKey *privacy.PrivateKey, paymentInfo []*privacy.PaymentInfo, inputCoin []privacy.PlainCoin, feeNativeCoin uint64, tokenParams *TokenParam, transactionStateDB *statedb.StateDB, metaData metadata.Metadata, hasPrivacyCoin bool, hasPrivacyToken bool, shardID byte, info []byte, bridgeStateDB *statedb.StateDB) *TxTokenParams {
-	return tx_generic.NewTxTokenParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, transactionStateDB, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, bridgeStateDB)
+func NewTxTokenParams(
+	senderKey *privacy.PrivateKey,
+	paymentInfo []*privacy.PaymentInfo,
+	inputCoin []privacy.PlainCoin,
+	feeNativeCoin uint64,
+	tokenParams *TokenParam,
+	transactionStateDB *statedb.StateDB,
+	metaData metadata.Metadata,
+	hasPrivacyCoin bool,
+	hasPrivacyToken bool,
+	shardID byte,
+	info []byte,
+	bridgeStateDB *statedb.StateDB,
+	latestShardHeights ...uint64,
+) *TxTokenParams {
+	return tx_generic.NewTxTokenParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, transactionStateDB, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, bridgeStateDB, latestShardHeights...)
 }
 
 // EstimateTxSize gives an estimate of TX size based on the number of inputs, outputs, token parameters & metadata.
@@ -80,8 +94,10 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	bridgeStateDB *statedb.StateDB,
 	tokenID *common.Hash, // tokenID of the conversion coin
 	metaData metadata.Metadata,
-	info []byte) *TxTokenConvertVer1ToVer2InitParams {
-	return tx_ver2.NewTxTokenConvertVer1ToVer2InitParams(senderSK, feeInputs, feePayments, tokenInputs, tokenPayments, fee, stateDB, bridgeStateDB, tokenID, metaData, info)
+	info []byte,
+	latestShardHeights ...uint64,
+) *TxTokenConvertVer1ToVer2InitParams {
+	return tx_ver2.NewTxTokenConvertVer1ToVer2InitParams(senderSK, feeInputs, feePayments, tokenInputs, tokenPayments, fee, stateDB, bridgeStateDB, tokenID, metaData, info, latestShardHeights...)
 }
 
 func InitConversion(tx *TxVersion2, params *TxConvertVer1ToVer2InitParams) error {
@@ -100,8 +116,10 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	stateDB *statedb.StateDB,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
-	info []byte) *TxPrivacyInitParams {
-	return tx_generic.NewTxPrivacyInitParams(senderSK, paymentInfo, inputCoins, fee, hasPrivacy, stateDB, tokenID, metaData, info)
+	info []byte,
+	latestShardHeights ...uint64,
+) *TxPrivacyInitParams {
+	return tx_generic.NewTxPrivacyInitParams(senderSK, paymentInfo, inputCoins, fee, hasPrivacy, stateDB, tokenID, metaData, info, latestShardHeights...)
 }
 
 func GetTxVersionFromCoins(coins []privacy.PlainCoin) (int8, error) {
