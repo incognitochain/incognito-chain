@@ -326,6 +326,7 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 				propertyID,
 				nil,
 				nil,
+				params.LatestHeight,
 			)
 			isBurning, err := txNormal.proveToken(txParams)
 			if err != nil {
@@ -420,6 +421,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		nil,
 		params.MetaData,
 		params.Info,
+		params.LatestHeight,
 	)
 	jsb, _ := json.Marshal(params.TokenParams)
 	utils.Logger.Log.Infof("Create TX token v2 with token params %s", string(jsb))

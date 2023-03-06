@@ -286,6 +286,7 @@ type TxTokenConvertVer1ToVer2InitParams struct {
 	bridgeStateDB *statedb.StateDB
 	metaData      metadata.Metadata
 	info          []byte // 512 bytes
+	latestHeight  uint64 // the current latest shard height
 }
 
 func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
@@ -298,8 +299,12 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 	bridgeStateDB *statedb.StateDB,
 	tokenID *common.Hash, // tokenID of the conversion coin
 	metaData metadata.Metadata,
-	info []byte) *TxTokenConvertVer1ToVer2InitParams {
-
+	info []byte,
+	latestHeights ...uint64) *TxTokenConvertVer1ToVer2InitParams {
+	latestHeight := uint64(0)
+	if len(latestHeights) != 0 {
+		latestHeight = latestHeights[0]
+	}
 	if info == nil {
 		info = []byte{}
 	}
@@ -319,6 +324,7 @@ func NewTxTokenConvertVer1ToVer2InitParams(senderSK *privacy.PrivateKey,
 		feePayments:   feePayments,
 		senderSK:      senderSK,
 		info:          info,
+		latestHeight:  latestHeight,
 	}
 }
 
@@ -422,7 +428,7 @@ func InitTokenConversion(txToken *TxToken, params *TxTokenConvertVer1ToVer2InitP
 
 	txPrivacyParams := tx_generic.NewTxPrivacyInitParams(
 		params.senderSK, params.feePayments, params.feeInputs, params.fee,
-		false, params.stateDB, nil, params.metaData, params.info,
+		false, params.stateDB, nil, params.metaData, params.info, params.latestHeight,
 	)
 	if err := tx_generic.ValidateTxParams(txPrivacyParams); err != nil {
 		return err

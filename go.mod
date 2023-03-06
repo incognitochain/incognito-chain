@@ -3,7 +3,6 @@ module github.com/incognitochain/incognito-chain
 go 1.13
 
 require (
-	cloud.google.com/go v0.38.0
 	github.com/0xBahamoot/go-bigcompressor v1.0.5
 	github.com/0xsirrush/color v1.7.0
 	github.com/allegro/bigcache v1.2.1
@@ -13,8 +12,7 @@ require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
-	github.com/cweill/gotests v1.6.0 // indirect
-	github.com/davecgh/go-spew v1.1.1
+	github.com/bytemare/hash2curve v0.1.2
 	github.com/dchest/siphash v1.2.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/dgryski/go-identicon v0.0.0-20140725220403-371855927d74
@@ -25,8 +23,8 @@ require (
 	github.com/eteu-technologies/near-api-go v0.0.2-0.20220525104145-c042eac16f21
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
-	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0
+	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf
+	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
@@ -44,34 +42,31 @@ require (
 	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-protocol v0.1.0 // indirect
-	github.com/libp2p/go-libp2p-pubsub v0.3.5
 	github.com/libp2p/go-libp2p-swarm v0.2.8
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic v6.2.21+incompatible
+	github.com/onsi/gomega v1.27.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
-	github.com/smartystreets/goconvey v1.6.4
-	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa // indirect
 	github.com/spf13/viper v1.3.2
-	github.com/stathat/consistent v1.0.0 // indirect
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
-	google.golang.org/api v0.10.0
+	golang.org/x/crypto v0.1.0
+	golang.org/x/exp v0.0.0-20191002040644-a1355ae1e2c3
+	golang.org/x/sync v0.1.0
+	gonum.org/v1/gonum v0.12.0
 	google.golang.org/grpc v1.27.1
-	google.golang.org/protobuf v1.23.0
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.4.0
 	stathat.com/c/consistent v1.0.0
 )
 

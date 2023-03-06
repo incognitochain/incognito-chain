@@ -652,6 +652,7 @@ func (txService TxService) BuildRawTransaction(
 		nil, // use for prv coin -> nil is valid
 		meta,
 		params.Info,
+		txService.BlockChain.GetBestStateShard(params.ShardIDSender).ShardHeight,
 	)
 	tx, err := transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
@@ -1144,6 +1145,7 @@ func (txService TxService) BuildRawConvertVer1ToVer2Token(params *bean.CreateRaw
 		params.TokenID,
 		nil,
 		params.Info,
+		txService.BlockChain.GetBestStateShard(params.ShardIDSender).ShardHeight,
 	)
 	tx := new(transaction.TxToken)
 	if err := transaction.InitTokenConversion(tx, txTokenConvertParams); err != nil {
@@ -1205,7 +1207,8 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 		txParam.HasPrivacyCoin,
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
-		beaconView.GetBeaconFeatureStateDB())
+		beaconView.GetBeaconFeatureStateDB(),
+		txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).ShardHeight)
 
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
@@ -1267,7 +1270,8 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransactionV2(params interf
 		txParam.HasPrivacyCoin,
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
-		beaconView.GetBeaconFeatureStateDB())
+		beaconView.GetBeaconFeatureStateDB(),
+		txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).ShardHeight)
 
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
@@ -2247,6 +2251,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 		txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(),
 		nil, // use for prv coin -> nil is valid
 		meta, nil,
+		txService.BlockChain.GetBestStateShard(shardIDSender).ShardHeight,
 	)
 	tx, err := transaction.NewTransactionFromParams(txPrivacyParams)
 	if err != nil {
@@ -2605,7 +2610,8 @@ func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(param
 		txParam.HasPrivacyCoin,
 		txParam.HasPrivacyToken,
 		txParam.ShardIDSender, txParam.Info,
-		beaconView.GetBeaconFeatureStateDB())
+		beaconView.GetBeaconFeatureStateDB(),
+		txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).ShardHeight)
 
 	tx, errTx := transaction.NewTransactionTokenFromParams(txTokenParams)
 	if errTx != nil {
