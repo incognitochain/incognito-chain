@@ -456,6 +456,7 @@ const (
 	getBeaconStaker         = "getbeaconstaker"
 	getShardStaker          = "getshardstaker"
 	getBeaconCommitteeState = "getbeaconcommitteestate"
+	getBeaconCandidateUID   = "getbeaconcandidateuid"
 	// prune
 	prune          = "pruneState"
 	getPruneState  = "getPruneState"

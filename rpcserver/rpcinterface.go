@@ -430,6 +430,7 @@ var HttpHandler = map[string]httpHandler{
 	getBeaconStaker:         (*HttpServer).handleGetBeaconStakerInfo,
 	getShardStaker:          (*HttpServer).handleGetShardStakerInfo,
 	getBeaconCommitteeState: (*HttpServer).handleGetBeaconCommitteeState,
+	getBeaconCandidateUID:   (*HttpServer).handleGetBeaconCandidateUID,
 
 	// prune
 	prune:          (*HttpServer).handlePrune,
