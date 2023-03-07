@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -44,6 +45,9 @@ type BeaconCommitteeState interface {
 		[][]string,
 		error)
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
+
+	GetBeaconStakerInfo(cpk string) *StakerInfo
+	GetAllShardCandidateSubstituteCommittee() []string
 }
 
 type AssignInstructionsGenerator interface {
@@ -60,6 +64,7 @@ type RandomInstructionsGenerator interface {
 
 type SplitRewardRuleProcessor interface {
 	SplitReward(environment *SplitRewardEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
+	Version() int
 }
 
 type SplitRewardEnvironment struct {
@@ -70,10 +75,13 @@ type SplitRewardEnvironment struct {
 	IsSplitRewardForCustodian bool
 	PercentCustodianReward    uint64
 	DAOPercent                int
+	CommitteePercent          int
 	ActiveShards              int
 	MaxSubsetCommittees       byte
 	BeaconCommittee           []incognitokey.CommitteePublicKey
 	ShardCommittee            map[byte][]incognitokey.CommitteePublicKey
+	TotalCreditSize           uint64
+	BeaconCreditSize          uint64
 }
 
 func NewSplitRewardEnvironmentMultiset(
@@ -93,9 +101,13 @@ func NewSplitRewardEnvironmentMultiset(
 		IsSplitRewardForCustodian: isSplitRewardForCustodian,
 		PercentCustodianReward:    percentCustodianReward,
 		DAOPercent:                DAOPercent,
+		CommitteePercent:          0,
+		ActiveShards:              config.Param().ActiveShards,
 		MaxSubsetCommittees:       maxSubsetsCommittee,
-		ShardCommittee:            shardCommittee,
 		BeaconCommittee:           beaconCommittee,
+		ShardCommittee:            shardCommittee,
+		TotalCreditSize:           0,
+		BeaconCreditSize:          0,
 	}
 }
 func NewSplitRewardEnvironmentV1(
@@ -111,14 +123,47 @@ func NewSplitRewardEnvironmentV1(
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
+		SubsetID:                  0,
 		BeaconHeight:              beaconHeight,
 		TotalReward:               totalReward,
 		IsSplitRewardForCustodian: isSplitRewardForCustodian,
 		PercentCustodianReward:    percentCustodianReward,
 		DAOPercent:                DAOPercent,
+		CommitteePercent:          0,
 		ActiveShards:              activeShards,
 		MaxSubsetCommittees:       1,
-		ShardCommittee:            shardCommittee,
 		BeaconCommittee:           beaconCommittee,
+		ShardCommittee:            shardCommittee,
+		TotalCreditSize:           0,
+		BeaconCreditSize:          0,
+	}
+}
+
+func NewSplitRewardEnvironmentForDelegation(
+	beaconHeight uint64,
+	totalReward map[common.Hash]uint64,
+	isSplitRewardForCustodian bool,
+	percentCustodianReward uint64,
+	DAOPercent int,
+	committeePercent int,
+	activeShards int,
+	totalCredit uint64,
+	beaconCredit uint64,
+) *SplitRewardEnvironment {
+	return &SplitRewardEnvironment{
+		ShardID:                   0,
+		SubsetID:                  0,
+		BeaconHeight:              beaconHeight,
+		TotalReward:               totalReward,
+		IsSplitRewardForCustodian: isSplitRewardForCustodian,
+		PercentCustodianReward:    percentCustodianReward,
+		DAOPercent:                DAOPercent,
+		CommitteePercent:          committeePercent,
+		ActiveShards:              activeShards,
+		MaxSubsetCommittees:       1,
+		BeaconCommittee:           []incognitokey.CommitteePublicKey{},
+		ShardCommittee:            map[byte][]incognitokey.CommitteePublicKey{},
+		TotalCreditSize:           totalCredit,
+		BeaconCreditSize:          beaconCredit,
 	}
 }

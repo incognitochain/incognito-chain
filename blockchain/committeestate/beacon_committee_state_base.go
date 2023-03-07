@@ -661,3 +661,39 @@ func (b beaconCommitteeStateBase) GenerateRandomInstructions(env *BeaconCommitte
 	)
 	return randomInstruction, randomNumber
 }
+
+func (s *beaconCommitteeStateBase) GetBeaconStakerInfo(cpk string) *StakerInfo {
+	beaconInfo := &StakerInfo{}
+	for _, pk := range s.beaconCommittee {
+		if pk == cpk {
+			pkStructs, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{cpk})
+			beaconInfo = &StakerInfo{
+				cpkStruct:       pkStructs[0],
+				CPK:             cpk,
+				StakingAmount:   0,
+				Unstake:         false,
+				Performance:     0,
+				EpochScore:      0,
+				FixedNode:       true,
+				enterTime:       0,
+				FinishSync:      true,
+				ShardActiveTime: 0,
+				stakeID:         "",
+				TotalDelegators: 0,
+			}
+			return beaconInfo
+		}
+	}
+	return nil
+}
+
+func (b *beaconCommitteeStateBase) GetAllShardCandidateSubstituteCommittee() []string {
+	res := []string{}
+	for _, committee := range b.shardCommittee {
+		res = append(res, committee...)
+	}
+	for _, substitute := range b.shardSubstitute {
+		res = append(res, substitute...)
+	}
+	return res
+}

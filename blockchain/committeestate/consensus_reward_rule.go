@@ -12,7 +12,6 @@ func GetRewardSplitRule(blockVersion int) SplitRewardRuleProcessor {
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		return RewardSplitRuleV3{}
 	}
-
 	return RewardSplitRuleV1{}
 }
 
@@ -52,6 +51,10 @@ func (r RewardSplitRuleV1) SplitReward(env *SplitRewardEnvironment) (
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
 
+func (r RewardSplitRuleV1) Version() int {
+	return 1
+}
+
 type RewardSplitRuleV2 struct{}
 
 func (r RewardSplitRuleV2) SplitReward(env *SplitRewardEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
@@ -85,6 +88,10 @@ func (r RewardSplitRuleV2) SplitReward(env *SplitRewardEnvironment) (map[common.
 		rewardForBeacon[key] += totalReward - (rewardForShard[key] + totalRewardForDAOAndCustodians)
 	}
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (r RewardSplitRuleV2) Version() int {
+	return 2
 }
 
 type RewardSplitRuleV3 struct {
@@ -134,4 +141,61 @@ func (r RewardSplitRuleV3) SplitReward(env *SplitRewardEnvironment) (
 		rewardForBeacon[coinID] += totalReward - (rewardForShardSubset[coinID] + totalRewardForDAOAndCustodians)
 	}
 	return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (r RewardSplitRuleV3) Version() int {
+	return 3
+}
+
+type RewardSplitRuleV4 struct {
+}
+
+func (r RewardSplitRuleV4) SplitReward(
+	env *SplitRewardEnvironment,
+) (
+	map[common.Hash]uint64,
+	map[common.Hash]uint64,
+	map[common.Hash]uint64,
+	map[common.Hash]uint64,
+	error,
+) {
+	devPercent := uint64(env.DAOPercent)
+	allCoinTotalReward := env.TotalReward // total reward for shard subset
+	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForAllStaker := map[common.Hash]uint64{}
+	rewardForShardStaker := map[common.Hash]uint64{}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
+
+	if len(allCoinTotalReward) == 0 {
+		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
+		return rewardForBeacon, rewardForShardStaker, rewardForIncDAO, rewardForCustodian, nil
+	}
+
+	for coinID, totalReward := range allCoinTotalReward {
+		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
+
+		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", coinID.String(), totalRewardForDAOAndCustodians)
+
+		if env.IsSplitRewardForCustodian {
+			rewardForCustodian[coinID] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			rewardForIncDAO[coinID] += totalRewardForDAOAndCustodians - rewardForCustodian[coinID]
+		} else {
+			rewardForIncDAO[coinID] += totalRewardForDAOAndCustodians
+		}
+		rewardForAllStaker[coinID] += totalReward - (totalRewardForDAOAndCustodians)
+	}
+
+	for coinID, rewardForAll := range rewardForAllStaker {
+		rewardForCredit := rewardForAll / env.TotalCreditSize
+		rewardForShardStaker[coinID] = rewardForCredit
+		rewardForBeacon[coinID] = rewardForCredit * env.BeaconCreditSize
+		Logger.log.Infof("Distribute reward: Total reward token %v, beacon height %v, amount %v, each shard received %v, beacon and their delegator received %v", coinID.String(), env.BeaconHeight, rewardForAll, rewardForCredit, rewardForCredit*env.BeaconCreditSize)
+	}
+
+	return rewardForBeacon, rewardForShardStaker, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (r RewardSplitRuleV4) Version() int {
+	return STAKING_FLOW_V4
 }

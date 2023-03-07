@@ -1,9 +1,10 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"math"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type CandidateInfoV1 struct {
@@ -13,8 +14,8 @@ type CandidateInfoV1 struct {
 	currentRole string
 }
 
-//swap in to empty committee slot (new committee < 1/3 new total size)
-//swap lowest score in committee (new committee < 1/3 new total size)
+// swap in to empty committee slot (new committee < 1/3 new total size)
+// swap lowest score in committee (new committee < 1/3 new total size)
 func beacon_swap_v1(pendingList []CandidateInfoV1, committeeList []CandidateInfoV1, numberOfFixNode int, committeeSlot int) ([]CandidateInfoV1, []CandidateInfoV1) {
 	//sort candidate list
 	sort.Slice(committeeList, func(i, j int) bool {
@@ -106,7 +107,7 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env ProcessContext) ([]incognito
 	pendingList := []CandidateInfoV1{}
 	for _, cpk := range s.GetBeaconSubstitute() {
 		cpkString, _ := cpk.ToBase58()
-		stakerInfo := s.getBeaconStakerInfo(cpkString)
+		stakerInfo := s.GetBeaconStakerInfo(cpkString)
 		score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
 		pendingList = append(pendingList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "pending"})
 
@@ -116,7 +117,7 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env ProcessContext) ([]incognito
 	fixNodeVotingPower := int64(0)
 	for _, cpk := range s.GetBeaconCommittee() {
 		cpkString, _ := cpk.ToBase58()
-		stakerInfo := s.getBeaconStakerInfo(cpkString)
+		stakerInfo := s.GetBeaconStakerInfo(cpkString)
 		score := stakerInfo.Performance * stakerInfo.StakingAmount
 		if !stakerInfo.FixedNode {
 			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "committee"})
