@@ -517,13 +517,13 @@ func (blockchain *BlockChain) calculateRewardForDelegation(
 		return nil, nil, nil, nil, 0, err
 	}
 	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
-	percentForCommittee := 70
+	percentForCommittee := config.Param().ConsensusParam.SCommitteeRewardPercent
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewards := map[common.Hash]uint64{}
 	delegationReward := uint64(0)
 	creditSize := uint64(len(curView.beaconCommitteeState.GetAllShardCandidateSubstituteCommittee()))
 	beaconCreditSize := uint64(0)
-	shardCreditSize := creditSize
+	allShardCommitteeSize := uint64(0)
 	for _, v := range curView.beaconCommitteeState.GetBeaconCommittee() {
 		pkStr, err := v.ToBase58()
 		if err != nil {
@@ -534,6 +534,7 @@ func (blockchain *BlockChain) calculateRewardForDelegation(
 		beaconCreditSize += (stakerInfo.StakingAmount) / common.SHARD_STAKING_AMOUNT
 	}
 	for id := 0; id < numberOfActiveShards; id++ {
+		allShardCommitteeSize += uint64(len(curView.GetAShardCommittee(byte(id))))
 		totalRewardsAtShard := map[common.Hash]uint64{}
 		if totalRewardForShard[id] == nil {
 			totalRewardForShard[id] = map[common.Hash]uint64{}
@@ -560,13 +561,13 @@ func (blockchain *BlockChain) calculateRewardForDelegation(
 		creditSize,
 		beaconCreditSize,
 	)
-	rewardForBeacon, rewardForAShardValidator, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
+	rewardForBeacon, rewardForAllShardCommittee, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 	if err != nil {
 		return nil, nil, nil, nil, 0, err
 	}
-	for coinID, rewardForAVal := range rewardForAShardValidator {
+	for coinID, rewardForAllCmt := range rewardForAllShardCommittee {
 		for id := 0; id < curView.ActiveShards; id++ {
-			rewardForCommittee := rewardForAVal * uint64(len(curView.GetAShardCommittee(byte(id))))
+			rewardForCommittee := rewardForAllCmt * uint64(len(curView.GetAShardCommittee(byte(id)))) / allShardCommitteeSize
 			if coinID == common.PRVCoinID {
 				rewardForCommittee = rewardForCommittee * uint64(percentForCommittee) / 100
 			}
@@ -576,7 +577,7 @@ func (blockchain *BlockChain) calculateRewardForDelegation(
 			totalRewardForShard[id][coinID] = rewardForCommittee
 		}
 		if coinID == common.PRVCoinID {
-			delegationReward = rewardForAVal * shardCreditSize * (100 - uint64(percentForCommittee)) / 100
+			delegationReward = rewardForAllCmt * (100 - uint64(percentForCommittee)) / 100
 		}
 	}
 

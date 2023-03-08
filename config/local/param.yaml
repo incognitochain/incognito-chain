@@ -72,6 +72,7 @@ consensus_param:
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2
     - 1e9
+  percent_committereward: 30
 beacon_height_break_point_burn_addr: 2
 eth_remove_bridge_sig_epoch: 0
 replace_staking_tx_height: 1

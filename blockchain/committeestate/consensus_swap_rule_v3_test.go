@@ -37,11 +37,11 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				},
 				substitutes: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				},
 				minCommitteeSize:        8,
 				maxCommitteeSize:        20,
@@ -53,15 +53,15 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				},
 			},
 			want: instruction.NewSwapShardInstructionWithValue(
-				[]string{key0, key},
+				[]string{key0, key1},
 				[]string{key12, key8},
 				1,
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 				key9, key10, key11, key13, key14, key15, key16, key17, key18, key19,
-				key0, key,
+				key0, key1,
 			},
 			newSubstitutes: []string{
 				key2, key3, key4, key5, key6, key7, key8, key9,
@@ -79,7 +79,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				},
 				substitutes:             []string{},
@@ -106,7 +106,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 				key9, key11, key13, key15, key17, key19,
 			},
 			newSubstitutes: []string{},
@@ -121,7 +121,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -153,7 +153,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 				key9, key11, key13, key15, key17, key19,
 				key21, key22, key24, key25,
 			},
@@ -171,7 +171,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key23,
 				},
@@ -203,7 +203,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 				key9, key11, key13, key15, key17, key19, key23, key24,
 			},
 			newSubstitutes: []string{
@@ -220,7 +220,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -249,7 +249,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key9,
 				key10, key11, key13, key14, key15, key17, key18, key19,
 				key21, key22, key24, key25,
 			},
@@ -267,7 +267,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -294,7 +294,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key9,
 				key10, key11, key13, key14, key15, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25,
 			},
@@ -312,7 +312,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21,
 				},
@@ -338,7 +338,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key9,
 				key10, key11, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key24, key25,
 			},
@@ -356,7 +356,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -380,7 +380,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key9,
 				key10, key11, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23,
 			},
@@ -396,7 +396,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -422,7 +422,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 				key10, key11, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25,
 			},
@@ -442,7 +442,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -468,7 +468,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 				key10, key11, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33,
@@ -487,7 +487,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -513,7 +513,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key32, key33, key34,
 			},
@@ -531,7 +531,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -557,7 +557,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key31, key32,
 			},
@@ -575,7 +575,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -602,7 +602,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key23, key25, key26, key27, key28, key29,
 				key31, key32, key33, key34,
@@ -623,7 +623,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26,
 				},
@@ -647,7 +647,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26,
 				key32, key33, key34,
@@ -664,7 +664,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -689,7 +689,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35,
@@ -708,7 +708,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -733,7 +733,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key31,
 				key32, key33,
@@ -750,7 +750,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -775,7 +775,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28,
 				key32, key33, key34,
@@ -794,7 +794,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31,
@@ -812,7 +812,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			},
 			want: instruction.NewSwapShardInstructionWithShardID(1),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31,
@@ -827,7 +827,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -858,7 +858,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20,
 				key32, key33,
@@ -875,7 +875,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -906,7 +906,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20,
 				key32, key33,
@@ -923,7 +923,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -956,7 +956,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15,
 				key32, key33,
 			},
@@ -972,7 +972,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			args: args{
 				shardID: 1,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23,
 				},
@@ -997,7 +997,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21,
 				key32, key33,
@@ -1101,7 +1101,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
@@ -1116,7 +1116,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 62,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
@@ -1133,7 +1133,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
@@ -1149,7 +1149,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 62,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
@@ -1169,7 +1169,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1184,7 +1184,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 60,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1201,7 +1201,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1216,7 +1216,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 50,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1235,7 +1235,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1250,7 +1250,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1268,7 +1268,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1284,7 +1284,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1305,7 +1305,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1321,7 +1321,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1340,7 +1340,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1357,7 +1357,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1379,7 +1379,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1395,7 +1395,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1414,7 +1414,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesAfterSwapOut: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1431,7 +1431,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				lenCommitteesBeforeSwapOut: 64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1632,7 +1632,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1648,7 +1648,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1661,7 +1661,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1678,7 +1678,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1692,7 +1692,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1706,7 +1706,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1720,7 +1720,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1737,7 +1737,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1751,7 +1751,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1767,7 +1767,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1783,7 +1783,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1800,7 +1800,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1817,7 +1817,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1834,7 +1834,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1850,7 +1850,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1867,7 +1867,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1885,7 +1885,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1903,7 +1903,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1919,7 +1919,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1934,7 +1934,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1949,7 +1949,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1967,7 +1967,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1982,7 +1982,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1999,7 +1999,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2016,7 +2016,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2034,7 +2034,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2051,7 +2051,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2069,7 +2069,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2086,7 +2086,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committeesAfterSlashing: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2103,7 +2103,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				maxCommitteeSize:         64,
 			},
 			newCommittees: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2366,17 +2366,17 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7,
+					key0, key1, key2, key3, key4, key5, key6, key7,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key0: signaturecounter.Penalty{},
-					key:  signaturecounter.Penalty{},
+					key1: signaturecounter.Penalty{},
 				},
 				numberOfFixedValidators: 8,
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 			},
 			want1: []string{},
 		},
@@ -2385,14 +2385,14 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7,
+					key0, key1, key2, key3, key4, key5, key6, key7,
 				},
 				penalty:                 map[string]signaturecounter.Penalty{},
 				numberOfFixedValidators: 5,
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 			},
 			want1: []string{},
 		},
@@ -2401,7 +2401,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key6:  signaturecounter.Penalty{},
@@ -2416,7 +2416,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key13, key14,
+				key0, key1, key2, key3, key4, key5, key6, key7, key13, key14,
 			},
 			want1: []string{
 				key8, key9, key10, key11, key12,
@@ -2427,7 +2427,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key6:  signaturecounter.Penalty{},
@@ -2440,7 +2440,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key13, key14,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key13, key14,
 			},
 			want1: []string{
 				key10, key11, key12,
@@ -2451,7 +2451,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key5:  signaturecounter.Penalty{},
@@ -2469,7 +2469,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key13, key14,
+				key0, key1, key2, key3, key4, key5, key6, key7, key13, key14,
 			},
 			want1: []string{
 				key8, key9, key10, key11, key12,
@@ -2480,11 +2480,11 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key0: signaturecounter.Penalty{},
-					key:  signaturecounter.Penalty{},
+					key1: signaturecounter.Penalty{},
 					key8: signaturecounter.Penalty{},
 					key9: signaturecounter.Penalty{},
 				},
@@ -2492,7 +2492,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 			},
 			want1: []string{
 				key8, key9,
@@ -2503,14 +2503,14 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10,
 				},
 				penalty:                 map[string]signaturecounter.Penalty{},
 				numberOfFixedValidators: 8,
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10,
 			},
 			want1: []string{},
 		},
@@ -2519,11 +2519,11 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key0:  signaturecounter.Penalty{},
-					key:   signaturecounter.Penalty{},
+					key1:  signaturecounter.Penalty{},
 					key8:  signaturecounter.Penalty{},
 					key9:  signaturecounter.Penalty{},
 					key10: signaturecounter.Penalty{},
@@ -2532,7 +2532,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 			},
 			want1: []string{
 				key8, key9, key10,
@@ -2542,11 +2542,11 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key0:  signaturecounter.Penalty{},
-					key:   signaturecounter.Penalty{},
+					key1:  signaturecounter.Penalty{},
 					key8:  signaturecounter.Penalty{},
 					key9:  signaturecounter.Penalty{},
 					key10: signaturecounter.Penalty{},
@@ -2556,7 +2556,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 				maxSlashOutPercent:      3,
 			},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
+				key0, key1, key2, key3, key4, key5, key6, key7,
 			},
 			want1: []string{
 				key8, key9, key10,
@@ -2650,7 +2650,7 @@ func Test_calculateNewSubstitutePosition(t *testing.T) {
 		{
 			name: "calculateNewSubstitutePosition testcase 1",
 			args: args{
-				candidate: key,
+				candidate: key1,
 				rand:      1000,
 				total:     10,
 			},
@@ -2659,7 +2659,7 @@ func Test_calculateNewSubstitutePosition(t *testing.T) {
 		{
 			name: "calculateNewSubstitutePosition testcase 1",
 			args: args{
-				candidate: key,
+				candidate: key1,
 				rand:      1001,
 				total:     10,
 			},
@@ -2668,7 +2668,7 @@ func Test_calculateNewSubstitutePosition(t *testing.T) {
 		{
 			name: "calculateNewSubstitutePosition testcase 1",
 			args: args{
-				candidate: key,
+				candidate: key1,
 				rand:      1002,
 				total:     10,
 			},

@@ -2,8 +2,9 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -333,7 +334,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwap(
 	return newCommitteeChange, swapShardInstruction.InPublicKeys, normalSwapOutCommittees, slashingCommittees, nil
 }
 
-//processSwapShardInstruction update committees state by swap shard instruction
+// processSwapShardInstruction update committees state by swap shard instruction
 // Process single swap shard instruction for and update committee state
 func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
@@ -458,7 +459,7 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 	return returnStakingInstruction, committeeChange, nil
 }
 
-//processUnstakeInstruction : process unstake instruction from beacon block
+// processUnstakeInstruction : process unstake instruction from beacon block
 func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 	unstakeInstruction *instruction.UnstakeInstruction,
 	env *BeaconCommitteeStateEnvironment,

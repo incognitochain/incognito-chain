@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -163,19 +165,20 @@ func (r RewardSplitRuleV4) SplitReward(
 	allCoinTotalReward := env.TotalReward // total reward for shard subset
 	rewardForBeacon := map[common.Hash]uint64{}
 	rewardForAllStaker := map[common.Hash]uint64{}
-	rewardForShardStaker := map[common.Hash]uint64{}
+	rewardForAllShard := map[common.Hash]uint64{}
 	rewardForIncDAO := map[common.Hash]uint64{}
 	rewardForCustodian := map[common.Hash]uint64{}
-
+	shardCreditSize := env.TotalCreditSize - env.BeaconCreditSize
+	fmt.Printf("Distribute reward: Total Credit %v, beacon credit %v, shard credit %v\n", env.TotalCreditSize, env.BeaconCreditSize, shardCreditSize)
 	if len(allCoinTotalReward) == 0 {
 		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
-		return rewardForBeacon, rewardForShardStaker, rewardForIncDAO, rewardForCustodian, nil
+		return rewardForBeacon, rewardForAllShard, rewardForIncDAO, rewardForCustodian, nil
 	}
 
 	for coinID, totalReward := range allCoinTotalReward {
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 
-		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", coinID.String(), totalRewardForDAOAndCustodians)
+		fmt.Printf("totalRewardForDAOAndCustodians tokenID %v - %v\n", coinID.String(), totalRewardForDAOAndCustodians)
 
 		if env.IsSplitRewardForCustodian {
 			rewardForCustodian[coinID] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
@@ -187,13 +190,13 @@ func (r RewardSplitRuleV4) SplitReward(
 	}
 
 	for coinID, rewardForAll := range rewardForAllStaker {
-		rewardForCredit := rewardForAll / env.TotalCreditSize
-		rewardForShardStaker[coinID] = rewardForCredit
-		rewardForBeacon[coinID] = rewardForCredit * env.BeaconCreditSize
-		Logger.log.Infof("Distribute reward: Total reward token %v, beacon height %v, amount %v, each shard received %v, beacon and their delegator received %v", coinID.String(), env.BeaconHeight, rewardForAll, rewardForCredit, rewardForCredit*env.BeaconCreditSize)
+		rewardForAllShardCommittee := rewardForAll * shardCreditSize / env.TotalCreditSize
+		rewardForAllShard[coinID] = rewardForAllShardCommittee
+		rewardForBeacon[coinID] = rewardForAll * env.BeaconCreditSize / env.TotalCreditSize
+		fmt.Printf("Distribute reward: Total reward for token %v, beacon height %v, amount %v, each shard received %v, beacon and their delegator received %v\n", coinID.String(), env.BeaconHeight, rewardForAll, rewardForAllShardCommittee, rewardForAllShardCommittee*env.BeaconCreditSize)
 	}
 
-	return rewardForBeacon, rewardForShardStaker, rewardForIncDAO, rewardForCustodian, nil
+	return rewardForBeacon, rewardForAllShard, rewardForIncDAO, rewardForCustodian, nil
 }
 
 func (r RewardSplitRuleV4) Version() int {

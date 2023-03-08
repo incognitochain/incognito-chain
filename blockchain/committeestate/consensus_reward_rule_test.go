@@ -1,10 +1,12 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func TestRewardSplitRuleV1_SplitReward(t *testing.T) {
@@ -1290,6 +1292,741 @@ func TestRewardSplitRuleV3_SplitReward(t *testing.T) {
 			if !reflect.DeepEqual(got3, tt.want3) {
 				t.Errorf("BeaconCommitteeStateV3.SplitReward() got3 = %v, want %v", got3, tt.want3)
 			}
+		})
+	}
+}
+
+func TestRewardSplitRuleV4_SplitReward(t *testing.T) {
+	initTestParams()
+	basicReward := uint64(1000000000)
+	type args struct {
+		env *SplitRewardEnvironment
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[common.Hash]uint64
+		want1   map[common.Hash]uint64
+		want2   map[common.Hash]uint64
+		want3   map[common.Hash]uint64
+		wantErr bool
+	}{
+		{
+			name: "Year 1",
+			args: args{
+				env: &SplitRewardEnvironment{
+					BeaconCommittee: []incognitokey.CommitteePublicKey{
+						*incKey0, *incKey, *incKey2, *incKey3,
+					},
+					ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						1: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						2: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						3: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						4: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						5: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						6: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+						7: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+							*incKey4, *incKey5,
+						},
+					},
+
+					DAOPercent:                10,
+					CommitteePercent:          30,
+					TotalCreditSize:           3000,
+					BeaconCreditSize:          200,
+					ActiveShards:              8,
+					IsSplitRewardForCustodian: false,
+					PercentCustodianReward:    0,
+					TotalReward: map[common.Hash]uint64{
+						common.PRVCoinID:           basicReward * 350 * 8,
+						common.ConfidentialAssetID: basicReward * 100, //just random amount
+					},
+				},
+			},
+			want: map[common.Hash]uint64{ //for all beacon
+				common.PRVCoinID:           basicReward * 350 * 8 * 90 / 100 * 200 / 3000,
+				common.ConfidentialAssetID: basicReward * 100 * 90 / 100 * 200 / 3000,
+			},
+			want1: map[common.Hash]uint64{ //for all shard, included delegation
+				common.PRVCoinID:           basicReward * 350 * 8 * 90 / 100 * 2800 / 3000,
+				common.ConfidentialAssetID: basicReward * 100 * 90 / 100 * 2800 / 3000,
+			},
+			want2: map[common.Hash]uint64{ //for DAO
+				common.PRVCoinID:           basicReward * 350 * 8 * 10 / 100,
+				common.ConfidentialAssetID: basicReward * 100 * 10 / 100,
+			},
+			want3:   map[common.Hash]uint64{}, // for Custodians
+			wantErr: false,
+		},
+		// {
+		// 	name: "Year 2",
+		// 	args: args{
+		// 		env: &SplitRewardEnvironment{
+		// 			BeaconCommittee: []incognitokey.CommitteePublicKey{
+		// 				*incKey0, *incKey, *incKey2, *incKey3,
+		// 			},
+		// 			ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		// 				0: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				1: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				2: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				3: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				4: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				5: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				6: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				7: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 			},
+		// 			DAOPercent:                9,
+		// 			CommitteePercent:          30,
+		// 			TotalCreditSize:           3000,
+		// 			BeaconCreditSize:          200,
+		// 			ActiveShards:              8,
+		// 			IsSplitRewardForCustodian: false,
+		// 			PercentCustodianReward:    0,
+		// 			TotalReward: map[common.Hash]uint64{
+		// 				common.PRVCoinID: 995536,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 46975,
+		// 	},
+		// 	want1: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 858963,
+		// 	},
+		// 	want2: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 89598,
+		// 	},
+		// 	want3:   map[common.Hash]uint64{},
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Year 3",
+		// 	args: args{
+		// 		env: &SplitRewardEnvironment{
+		// 			BeaconCommittee: []incognitokey.CommitteePublicKey{
+		// 				*incKey0, *incKey, *incKey2, *incKey3,
+		// 			},
+		// 			ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		// 				0: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				1: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				2: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				3: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				4: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				5: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				6: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				7: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 			},
+		// 			DAOPercent:                8,
+		// 			CommitteePercent:          30,
+		// 			TotalCreditSize:           3000,
+		// 			BeaconCreditSize:          200,
+		// 			ActiveShards:              8,
+		// 			IsSplitRewardForCustodian: false,
+		// 			PercentCustodianReward:    0,
+		// 			TotalReward: map[common.Hash]uint64{
+		// 				common.PRVCoinID: 905938,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 43217,
+		// 	},
+		// 	want1: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 790246,
+		// 	},
+		// 	want2: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 72475,
+		// 	},
+		// 	want3:   map[common.Hash]uint64{},
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Year 4",
+		// 	args: args{
+		// 		env: &SplitRewardEnvironment{
+		// 			BeaconCommittee: []incognitokey.CommitteePublicKey{
+		// 				*incKey0, *incKey, *incKey2, *incKey3,
+		// 			},
+		// 			ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		// 				0: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				1: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				2: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				3: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				4: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				5: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				6: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				7: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 			},
+
+		// 			DAOPercent:                7,
+		// 			CommitteePercent:          30,
+		// 			TotalCreditSize:           3000,
+		// 			BeaconCreditSize:          200,
+		// 			ActiveShards:              8,
+		// 			IsSplitRewardForCustodian: false,
+		// 			PercentCustodianReward:    0,
+		// 			TotalReward: map[common.Hash]uint64{
+		// 				common.PRVCoinID: 824403,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 39755,
+		// 	},
+		// 	want1: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 726940,
+		// 	},
+		// 	want2: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 57708,
+		// 	},
+		// 	want3:   map[common.Hash]uint64{},
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Year 5",
+		// 	args: args{
+		// 		env: &SplitRewardEnvironment{
+		// 			BeaconCommittee: []incognitokey.CommitteePublicKey{
+		// 				*incKey0, *incKey, *incKey2, *incKey3,
+		// 			},
+		// 			ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		// 				0: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				1: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				2: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				3: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				4: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				5: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				6: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				7: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 			},
+
+		// 			DAOPercent:                6,
+		// 			CommitteePercent:          30,
+		// 			TotalCreditSize:           3000,
+		// 			BeaconCreditSize:          200,
+		// 			ActiveShards:              8,
+		// 			IsSplitRewardForCustodian: false,
+		// 			PercentCustodianReward:    0,
+		// 			TotalReward: map[common.Hash]uint64{
+		// 				common.PRVCoinID: 750207,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 36566,
+		// 	},
+		// 	want1: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 668629,
+		// 	},
+		// 	want2: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 45012,
+		// 	},
+		// 	want3:   map[common.Hash]uint64{},
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Year 6",
+		// 	args: args{
+		// 		env: &SplitRewardEnvironment{
+		// 			BeaconCommittee: []incognitokey.CommitteePublicKey{
+		// 				*incKey0, *incKey, *incKey2, *incKey3,
+		// 			},
+		// 			ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		// 				0: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				1: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				2: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				3: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				4: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				5: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				6: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				7: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 			},
+		// 			DAOPercent:                5,
+		// 			CommitteePercent:          30,
+		// 			TotalCreditSize:           3000,
+		// 			BeaconCreditSize:          200,
+		// 			ActiveShards:              8,
+		// 			IsSplitRewardForCustodian: false,
+		// 			PercentCustodianReward:    0,
+		// 			TotalReward: map[common.Hash]uint64{
+		// 				common.PRVCoinID: 682688,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 33629,
+		// 	},
+		// 	want1: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 614925,
+		// 	},
+		// 	want2: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 34134,
+		// 	},
+		// 	want3:   map[common.Hash]uint64{},
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Year 7",
+		// 	args: args{
+		// 		env: &SplitRewardEnvironment{
+		// 			BeaconCommittee: []incognitokey.CommitteePublicKey{
+		// 				*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+		// 			},
+		// 			ShardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+		// 				0: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				1: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				2: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				3: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				4: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				5: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				6: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 				7: []incognitokey.CommitteePublicKey{
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
+		// 					*incKey4, *incKey5,
+		// 				},
+		// 			},
+		// 			DAOPercent:                4,
+		// 			CommitteePercent:          30,
+		// 			TotalCreditSize:           3000,
+		// 			BeaconCreditSize:          200,
+		// 			ActiveShards:              8,
+		// 			IsSplitRewardForCustodian: false,
+		// 			PercentCustodianReward:    0,
+		// 			TotalReward: map[common.Hash]uint64{
+		// 				common.PRVCoinID: 621246,
+		// 			},
+		// 		},
+		// 	},
+		// 	want: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 30925,
+		// 	},
+		// 	want1: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 565472,
+		// 	},
+		// 	want2: map[common.Hash]uint64{
+		// 		common.PRVCoinID: 24849,
+		// 	},
+		// 	want3:   map[common.Hash]uint64{},
+		// 	wantErr: false,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rV4 := &RewardSplitRuleV4{}
+			rV2 := &RewardSplitRuleV2{}
+			gotV4, got1V4, got2V4, got3V4, err := rV4.SplitReward(tt.args.env)
+			gotV2, got1V2, _, _, err := rV2.SplitReward(tt.args.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BeaconCommitteeEngineV1.Process() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotV4, tt.want) {
+				t.Errorf("splitReward() got = %v, want %v", gotV4, tt.want)
+			}
+			if !reflect.DeepEqual(got1V4, tt.want1) {
+				t.Errorf("splitReward() got1 = %v, want %v", got1V4, tt.want1)
+			}
+			if !reflect.DeepEqual(got2V4, tt.want2) {
+				t.Errorf("splitReward() got2 = %v, want %v", got2V4, tt.want2)
+			}
+			if !reflect.DeepEqual(got3V4, tt.want3) {
+				t.Errorf("splitReward() got3 = %v, want %v", got3V4, tt.want3)
+			}
+			v4BeaconPRV := gotV4[common.PRVCoinID] / 4
+			v2BeaconPRV := gotV2[common.PRVCoinID] / 4
+			v4ShardPRV := got1V4[common.PRVCoinID] / (32 * 8)
+			v2ShardPRV := got1V2[common.PRVCoinID] / (32 * 8)
+			fmt.Printf("V4 PRV for each Beacon %+v; V2: %+v \n", v4BeaconPRV, v2BeaconPRV)
+			fmt.Printf("V4 PRV for each Shard %+v; V2: %+v \n", v4ShardPRV, v2ShardPRV)
 		})
 	}
 }
