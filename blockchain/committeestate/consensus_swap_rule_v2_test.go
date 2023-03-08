@@ -1,10 +1,11 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 var samplePenalty = signaturecounter.Penalty{
@@ -41,7 +42,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			args: args{
 				shardID: 0,
 				committees: []string{
-					key0, key, key2, key3, key4, key5,
+					key0, key1, key2, key3, key4, key5,
 				},
 				substitutes: []string{
 					key6, key7, key8, key9,
@@ -52,7 +53,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				numberOfFixedValidators: 4,
 				penalty: map[string]signaturecounter.Penalty{
 					key5: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 				},
 			},
 			s: &swapRuleV2{},
@@ -66,7 +67,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				0,
 				instruction.SWAP_BY_END_EPOCH,
 			),
-			want1: []string{key0, key, key2, key3, key6, key7, key8, key9},
+			want1: []string{key0, key1, key2, key3, key6, key7, key8, key9},
 			want2: []string{},
 			want3: []string{key5},
 			want4: []string{key4},
@@ -76,7 +77,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			args: args{
 				shardID: 0,
 				committees: []string{
-					key0, key, key2, key3, key4, key5,
+					key0, key1, key2, key3, key4, key5,
 				},
 				substitutes: []string{
 					key6, key7, key8, key9,
@@ -87,7 +88,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				numberOfFixedValidators: 4,
 				penalty: map[string]signaturecounter.Penalty{
 					key5: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 				},
 			},
 			s: &swapRuleV2{},
@@ -102,7 +103,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			want1: []string{
-				key0, key, key2, key3, key6, key7,
+				key0, key1, key2, key3, key6, key7,
 			},
 			want2: []string{
 				key8, key9,
@@ -115,7 +116,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			args: args{
 				shardID: 0,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key8,
+					key0, key1, key2, key3, key4, key5, key8,
 				},
 				substitutes: []string{
 					key6, key7, key9, key10, key11, key12,
@@ -126,7 +127,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				numberOfFixedValidators: 4,
 				penalty: map[string]signaturecounter.Penalty{
 					key5: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 				},
 			},
@@ -142,7 +143,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			want1: []string{
-				key0, key, key2, key3, key4, key6, key7, key9, key10,
+				key0, key1, key2, key3, key4, key6, key7, key9, key10,
 			},
 			want2: []string{key11, key12},
 			want3: []string{key5, key8},
@@ -153,7 +154,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			args: args{
 				shardID: 0,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
 				},
 				substitutes: []string{
 					key12,
@@ -164,7 +165,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				numberOfFixedValidators: 4,
 				penalty: map[string]signaturecounter.Penalty{
 					key5: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 				},
 			},
@@ -180,7 +181,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			want1: []string{
-				key0, key, key2, key3, key6, key7, key9, key10, key11, key12,
+				key0, key1, key2, key3, key6, key7, key9, key10, key11, key12,
 			},
 			want2: []string{},
 			want3: []string{key5, key8},
@@ -191,7 +192,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			args: args{
 				shardID: 0,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
 				},
 				substitutes: []string{
 					key12, key13,
@@ -202,7 +203,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				numberOfFixedValidators: 4,
 				penalty: map[string]signaturecounter.Penalty{
 					key5: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 				},
 			},
@@ -218,7 +219,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			want1: []string{
-				key0, key, key2, key3, key7, key9, key10, key11, key12, key13,
+				key0, key1, key2, key3, key7, key9, key10, key11, key12, key13,
 			},
 			want2: []string{},
 			want3: []string{key5, key8},
@@ -229,7 +230,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			args: args{
 				shardID: 0,
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
 				},
 				substitutes: []string{
 					key12, key13, key14, key15, key16, key17,
@@ -240,7 +241,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				numberOfFixedValidators: 4,
 				penalty: map[string]signaturecounter.Penalty{
 					key5: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 				},
 			},
@@ -256,7 +257,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 				instruction.SWAP_BY_END_EPOCH,
 			),
 			want1: []string{
-				key0, key, key2, key3, key7, key9, key10, key11, key12, key13, key14, key15,
+				key0, key1, key2, key3, key7, key9, key10, key11, key12, key13, key14, key15,
 			},
 			want2: []string{key16, key17},
 			want3: []string{key5, key8},
@@ -307,18 +308,18 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			s:    &swapRuleV2{},
 			args: args{
 				committees: []string{
-					key, key0, key2, key3,
+					key1, key0, key2, key3,
 				},
 				substitutes: []string{},
 				penalty: map[string]signaturecounter.Penalty{
 					key0: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 				},
 				minCommitteeSize:       4,
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key, key0, key2, key3,
+				key1, key0, key2, key3,
 			},
 			want1: []string{},
 			want2: []string{},
@@ -327,18 +328,18 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			name: "swap offset 3, one slash, spare one slash in fixed nodes, two normal swap",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				},
 				substitutes: []string{},
 				penalty: map[string]signaturecounter.Penalty{
 					key8: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 				},
 				minCommitteeSize:       4,
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key0, key, key2, key3, key6, key7, key9,
+				key0, key1, key2, key3, key6, key7, key9,
 			},
 			want1: []string{
 				key8,
@@ -352,18 +353,18 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			name: "swap offset 3, two slash, spare one slash in fixed nodes, one normal swap",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key8: samplePenalty,
 					key6: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 				},
 				minCommitteeSize:       4,
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key0, key, key2, key3, key5, key7, key9,
+				key0, key1, key2, key3, key5, key7, key9,
 			},
 			want1: []string{
 				key6, key8,
@@ -376,18 +377,18 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			name: "swap offset 3, two slash, spare one slash in fixed nodes, one normal swap",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 				},
 				penalty: map[string]signaturecounter.Penalty{
 					key8: samplePenalty,
 					key6: samplePenalty,
-					key:  samplePenalty,
+					key1: samplePenalty,
 				},
 				minCommitteeSize:       4,
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key0, key, key2, key3, key5, key7, key9,
+				key0, key1, key2, key3, key5, key7, key9,
 			},
 			want1: []string{
 				key6, key8,
@@ -400,13 +401,13 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			name: "swap offset 2, one slash, spare one slash in fixed nodes, one normal swap",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5,
+					key0, key1, key2, key3, key4, key5,
 				},
 				substitutes: []string{
 					key6, key7, key8, key9,
 				},
 				penalty: map[string]signaturecounter.Penalty{
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 					key5: samplePenalty,
 				},
@@ -414,7 +415,7 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key0, key, key2, key3,
+				key0, key1, key2, key3,
 			},
 			want1: []string{
 				key5,
@@ -427,13 +428,13 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			name: "swap offset 4 - 1, two slash, spare one slash in fixed nodes, one normal swap",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
 				},
 				substitutes: []string{
 					key12,
 				},
 				penalty: map[string]signaturecounter.Penalty{
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 					key5: samplePenalty,
 				},
@@ -441,7 +442,7 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key0, key, key2, key3, key6, key7, key9, key10, key11,
+				key0, key1, key2, key3, key6, key7, key9, key10, key11,
 			},
 			want1: []string{
 				key5, key8,
@@ -454,13 +455,13 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 			name: "swap offset 4 - 0, two slash, spare one slash in fixed nodes, one normal swap",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+					key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
 				},
 				substitutes: []string{
 					key12, key13,
 				},
 				penalty: map[string]signaturecounter.Penalty{
-					key:  samplePenalty,
+					key1: samplePenalty,
 					key8: samplePenalty,
 					key5: samplePenalty,
 				},
@@ -468,7 +469,7 @@ func Test_swapRuleV2_slashingSwapOut(t *testing.T) {
 				numberOfFixedValidator: 4,
 			},
 			want: []string{
-				key0, key, key2, key3, key7, key9, key10, key11,
+				key0, key1, key2, key3, key7, key9, key10, key11,
 			},
 			want1: []string{
 				key5, key8,
@@ -513,7 +514,7 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 			name: "push to max committee size",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3,
+					key0, key1, key2, key3,
 				},
 				substitutes: []string{
 					key4, key5, key6, key7, key8, key9,
@@ -522,7 +523,7 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 			},
 			s: &swapRuleV2{},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8,
 			},
 			want1: []string{
 				key9,
@@ -535,7 +536,7 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 			name: "push all substitute list but not max committee size",
 			args: args{
 				committees: []string{
-					key0, key, key2, key3,
+					key0, key1, key2, key3,
 				},
 				substitutes: []string{
 					key4, key5, key6, key7, key8, key9,
@@ -544,7 +545,7 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 			},
 			s: &swapRuleV2{},
 			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 			},
 			want1: []string{},
 			want2: []string{

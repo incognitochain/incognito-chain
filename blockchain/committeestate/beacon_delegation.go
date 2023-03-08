@@ -15,8 +15,8 @@ func (s *StakerInfo) getScore() uint64 {
 	return s.StakingAmount + uint64(s.TotalDelegators)*config.Param().StakingAmountShard
 }
 
-//when validator return staking, it will end its delegation reward
-//also update delegator number for the delegated beacon
+// when validator return staking, it will end its delegation reward
+// also update delegator number for the delegated beacon
 func (s *BeaconCommitteeStateV4) ProcessDelegateRewardForReturnValidator(env ProcessContext) ([][]string, error) {
 	if !firstBlockEpoch(env.BeaconHeight) {
 		return nil, nil
@@ -32,7 +32,7 @@ func (s *BeaconCommitteeStateV4) ProcessDelegateRewardForReturnValidator(env Pro
 		oldDelegate := shardStakerInfo.GetDelegate()
 		oldDelegateUID := shardStakerInfo.GetDelegateUID()
 		if oldDelegate != "" {
-			if stakerInfo := s.getBeaconStakerInfo(oldDelegate); stakerInfo != nil {
+			if stakerInfo := s.GetBeaconStakerInfo(oldDelegate); stakerInfo != nil {
 				if uID, err := s.GetBeaconCandidateUID(oldDelegate); (err != nil) || (uID != oldDelegateUID) {
 					Logger.log.Error(errors.Errorf("Can not get request UID for old delegate %v of delegator %v, uid found in db %v", oldDelegate, oldDelegateUID, uID))
 				} else {
@@ -76,7 +76,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env ProcessC
 					Logger.log.Error(err)
 					continue
 				}
-				if stakerInfo := s.getBeaconStakerInfo(newDelegate); stakerInfo != nil {
+				if stakerInfo := s.GetBeaconStakerInfo(newDelegate); stakerInfo != nil {
 					if uID, err := s.GetBeaconCandidateUID(newDelegate); (err != nil) || (uID != newDelegateUID.String()) {
 						Logger.log.Error(errors.Errorf("Can not get request UID for new delegate %v of delegator %v, uid found in db %v", newDelegate, newDelegateUID, uID))
 						continue
@@ -90,7 +90,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconRedelegateInstruction(env ProcessC
 				oldDelegateUID := shardStakerInfo.GetDelegateUID()
 				log.Println("oldDelegate", oldDelegate)
 				if oldDelegate != "" {
-					if stakerInfo := s.getBeaconStakerInfo(oldDelegate); stakerInfo != nil {
+					if stakerInfo := s.GetBeaconStakerInfo(oldDelegate); stakerInfo != nil {
 						if uID, err := s.GetBeaconCandidateUID(oldDelegate); (err != nil) || (uID != oldDelegateUID) {
 							Logger.log.Error(errors.Errorf("Can not get request UID for old delegate %v of delegator %v, uid found in db %v", oldDelegate, oldDelegateUID, uID))
 						} else {
@@ -157,7 +157,7 @@ func (s *BeaconCommitteeStateV4) GetBeaconCandidateUID(cpk string) (string, erro
 
 func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint64) error {
 	log.Println("add delegator to", beaconStakerPK)
-	if stakerInfo := s.getBeaconStakerInfo(beaconStakerPK); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(beaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, beaconStakerPK)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", beaconStakerPK)
@@ -170,7 +170,7 @@ func (s *BeaconCommitteeStateV4) addDelegators(beaconStakerPK string, total uint
 }
 
 func (s *BeaconCommitteeStateV4) removeDelegators(oldBeaconStakerPK string, total uint64) error {
-	if stakerInfo := s.getBeaconStakerInfo(oldBeaconStakerPK); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(oldBeaconStakerPK); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, oldBeaconStakerPK)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", oldBeaconStakerPK)

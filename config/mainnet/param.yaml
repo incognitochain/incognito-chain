@@ -64,6 +64,7 @@ consensus_param:
   timeslot: 40
   epoch_break_point_swap_new_key:
     - 1917
+  percent_committereward: 30
 beacon_height_break_point_burn_addr: 150500
 eth_remove_bridge_sig_epoch: 1973
 replace_staking_tx_height: 559380

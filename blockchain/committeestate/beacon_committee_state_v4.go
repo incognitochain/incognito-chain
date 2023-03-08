@@ -188,7 +188,7 @@ func (s BeaconCommitteeStateV4) GetConfig() BeaconCommitteeStateV4Config {
 	return s.config
 }
 
-func (s *BeaconCommitteeStateV4) getBeaconStakerInfo(cpk string) *StakerInfo {
+func (s *BeaconCommitteeStateV4) GetBeaconStakerInfo(cpk string) *StakerInfo {
 	if stakerInfo, ok := s.beaconCommittee[cpk]; ok {
 		return stakerInfo
 	}
@@ -202,7 +202,7 @@ func (s *BeaconCommitteeStateV4) getBeaconStakerInfo(cpk string) *StakerInfo {
 }
 
 func (s *BeaconCommitteeStateV4) setShardActiveTime(cpk string, t int) error {
-	if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
@@ -215,7 +215,7 @@ func (s *BeaconCommitteeStateV4) setShardActiveTime(cpk string, t int) error {
 }
 
 func (s *BeaconCommitteeStateV4) setUnstake(cpk string) error {
-	if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 		stakerInfo.Unstake = true
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
@@ -228,7 +228,7 @@ func (s *BeaconCommitteeStateV4) setUnstake(cpk string) error {
 }
 
 func (s *BeaconCommitteeStateV4) setEnterTime(cpk string, t int64) error {
-	if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
@@ -241,7 +241,7 @@ func (s *BeaconCommitteeStateV4) setEnterTime(cpk string, t int64) error {
 }
 
 func (s *BeaconCommitteeStateV4) setFinishSync(cpk string, b bool) error {
-	if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
@@ -254,7 +254,7 @@ func (s *BeaconCommitteeStateV4) setFinishSync(cpk string, b bool) error {
 }
 
 func (s *BeaconCommitteeStateV4) addStakingTx(cpk string, tx common.Hash, amount, height uint64) error {
-	if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
@@ -267,7 +267,7 @@ func (s *BeaconCommitteeStateV4) addStakingTx(cpk string, tx common.Hash, amount
 }
 
 func (s *BeaconCommitteeStateV4) setLocking(cpk string, epoch, unlockEpoch uint64, reason int) error {
-	if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+	if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 		info, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
 		if !exist {
 			return fmt.Errorf("Cannot find cpk %v in statedb", cpk)
@@ -452,18 +452,18 @@ func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 	for _, v := range s.GetBeaconCommittee() {
 		cpk, _ := v.ToBase58()
 		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
-		data.Committee = append(data.Committee, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getBeaconStakerInfo(cpk)})
+		data.Committee = append(data.Committee, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.GetBeaconStakerInfo(cpk)})
 	}
 
 	for _, v := range s.GetBeaconSubstitute() {
 		cpk, _ := v.ToBase58()
 		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
-		data.Pending = append(data.Pending, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getBeaconStakerInfo(cpk)})
+		data.Pending = append(data.Pending, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.GetBeaconStakerInfo(cpk)})
 	}
 	for _, v := range s.GetBeaconWaiting() {
 		cpk, _ := v.ToBase58()
 		stakerInfoDB, _, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
-		data.Waiting = append(data.Waiting, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.getBeaconStakerInfo(cpk)})
+		data.Waiting = append(data.Waiting, StakerInfoDetail{stakerInfoDB.BeaconConfirmTime(), stakerInfoDB.GetEnterTime(), *s.GetBeaconStakerInfo(cpk)})
 	}
 	for _, v := range s.GetBeaconLocking() {
 		cpk, _ := v.ToBase58()
@@ -664,7 +664,7 @@ func (s *BeaconCommitteeStateV4) commiteeAndPendingHash() common.Hash {
 	}
 	for _, v := range beaconCommittee {
 		vStr, _ := v.ToBase58()
-		stakerInfo := s.getBeaconStakerInfo(vStr)
+		stakerInfo := s.GetBeaconStakerInfo(vStr)
 		if stakerInfo == nil {
 			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
 		}
@@ -672,7 +672,7 @@ func (s *BeaconCommitteeStateV4) commiteeAndPendingHash() common.Hash {
 	}
 	for _, v := range beaconPending {
 		vStr, _ := v.ToBase58()
-		stakerInfo := s.getBeaconStakerInfo(vStr)
+		stakerInfo := s.GetBeaconStakerInfo(vStr)
 		if stakerInfo == nil {
 			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
 		}
@@ -698,7 +698,7 @@ func (s *BeaconCommitteeStateV4) waitingAndSlashingHash() common.Hash {
 	}
 	for _, v := range beaconWaiting {
 		vStr, _ := v.ToBase58()
-		stakerInfo := s.getBeaconStakerInfo(vStr)
+		stakerInfo := s.GetBeaconStakerInfo(vStr)
 		if stakerInfo == nil {
 			panic(fmt.Sprintf("Can not get staker info of this pk %v", vStr))
 		}
@@ -880,7 +880,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env ProcessContext) (
 	for _, cpk := range newBeaconPending {
 		k, _ := cpk.ToBase58()
 		if stakerInfo, ok := s.beaconPending[k]; !ok {
-			stakerInfo = s.getBeaconStakerInfo(k)
+			stakerInfo = s.GetBeaconStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.getScore()
 			stakerInfo.Performance = s.config.DEFAULT_PERFORMING
 			log.Println("disable finish sync", false, k)
@@ -904,7 +904,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconSwapAndSlash(env ProcessContext) (
 	for _, cpk := range newBeaconCommittee {
 		k, _ := cpk.ToBase58()
 		if stakerInfo, ok := s.beaconCommittee[k]; !ok { //new committee
-			stakerInfo = s.getBeaconStakerInfo(k)
+			stakerInfo = s.GetBeaconStakerInfo(k)
 			stakerInfo.EpochScore = s.config.DEFAULT_PERFORMING * stakerInfo.getScore()
 			stakerInfo.Performance = s.config.DEFAULT_PERFORMING
 			if err = s.addToPool(COMMITTEE_POOL, k, stakerInfo); err != nil {
@@ -968,7 +968,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env ProcessContex
 
 	for _, k := range s.GetBeaconWaiting() {
 		cpk, _ := k.ToBase58()
-		stakerInfo := s.getBeaconStakerInfo(cpk)
+		stakerInfo := s.GetBeaconStakerInfo(cpk)
 		//Check 1: waiting -> unstake
 		//if this staker not have valid active time, and not stake shard any more -> unstake beacon
 		staker, exist, _ := statedb.GetBeaconStakerInfo(s.stateDB, cpk)
@@ -1098,7 +1098,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconUnstakeInstruction(env ProcessCont
 		}
 
 		for _, cpk := range unstakeCPKs {
-			if stakerInfo := s.getBeaconStakerInfo(cpk); stakerInfo != nil {
+			if stakerInfo := s.GetBeaconStakerInfo(cpk); stakerInfo != nil {
 				if err := s.setUnstake(cpk); err != nil {
 					return nil, err
 				}
@@ -1277,6 +1277,7 @@ func (s *BeaconCommitteeStateV4) GetAllCandidateSubstituteCommittee() []string {
 	}
 	return stateV3Res
 }
+
 func (s BeaconCommitteeStateV4) getTotalLockingEpoch(perf uint64) uint64 {
 	return s.config.LOCKING_PERIOD + uint64(s.config.LOCKING_FACTOR*float64(s.config.MAX_SCORE-perf)/float64(s.config.MIN_SCORE))
 }

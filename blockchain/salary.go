@@ -494,6 +494,96 @@ func (blockchain *BlockChain) calculateReward(
 	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, delegationReward, nil
 }
 
+func (blockchain *BlockChain) calculateRewardForDelegation(
+	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
+	curView *BeaconBestState,
+	numberOfActiveShards int,
+	beaconHeight uint64,
+	epoch uint64,
+	rewardStateDB *statedb.StateDB,
+	isSplitRewardForCustodian bool,
+	percentCustodianRewards uint64,
+) (map[common.Hash]uint64,
+	[]map[common.Hash]uint64,
+	map[common.Hash]uint64,
+	map[common.Hash]uint64, uint64, error,
+) {
+	if splitRewardRuleProcessor.Version() < committeestate.STAKING_FLOW_V4 {
+		return nil, nil, nil, nil, 0, errors.Errorf("This function just work with split rule v4 or higher, got %+v ", splitRewardRuleProcessor.Version())
+	}
+	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
+	currentBeaconYear, err := blockchain.GetYearOfBeacon(beaconHeight)
+	if err != nil {
+		return nil, nil, nil, nil, 0, err
+	}
+	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
+	percentForCommittee := config.Param().ConsensusParam.SCommitteeRewardPercent
+	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
+	totalRewards := map[common.Hash]uint64{}
+	delegationReward := uint64(0)
+	creditSize := uint64(len(curView.beaconCommitteeState.GetAllShardCandidateSubstituteCommittee()))
+	beaconCreditSize := uint64(0)
+	allShardCommitteeSize := uint64(0)
+	for _, v := range curView.beaconCommitteeState.GetBeaconCommittee() {
+		pkStr, err := v.ToBase58()
+		if err != nil {
+			return nil, nil, nil, nil, 0, err
+		}
+		stakerInfo := curView.beaconCommitteeState.GetBeaconStakerInfo(pkStr)
+		creditSize += (stakerInfo.StakingAmount) / common.SHARD_STAKING_AMOUNT
+		beaconCreditSize += (stakerInfo.StakingAmount) / common.SHARD_STAKING_AMOUNT
+	}
+	for id := 0; id < numberOfActiveShards; id++ {
+		allShardCommitteeSize += uint64(len(curView.GetAShardCommittee(byte(id))))
+		totalRewardsAtShard := map[common.Hash]uint64{}
+		if totalRewardForShard[id] == nil {
+			totalRewardForShard[id] = map[common.Hash]uint64{}
+		}
+		for _, coinID := range allCoinID {
+			totalRewardsAtShard[coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
+			if err != nil {
+				return nil, nil, nil, nil, 0, err
+			}
+			if totalRewardsAtShard[coinID] == 0 {
+				delete(totalRewardsAtShard, coinID)
+			}
+		}
+		plusMap(totalRewardsAtShard, totalRewards)
+	}
+	env := committeestate.NewSplitRewardEnvironmentForDelegation(
+		beaconHeight,
+		totalRewards,
+		isSplitRewardForCustodian,
+		percentCustodianRewards,
+		percentForIncognitoDAO,
+		percentForCommittee,
+		numberOfActiveShards,
+		creditSize,
+		beaconCreditSize,
+	)
+	rewardForBeacon, rewardForAllShardCommittee, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
+	if err != nil {
+		return nil, nil, nil, nil, 0, err
+	}
+	for coinID, rewardForAllCmt := range rewardForAllShardCommittee {
+		for id := 0; id < curView.ActiveShards; id++ {
+			rewardForCommittee := rewardForAllCmt * uint64(len(curView.GetAShardCommittee(byte(id)))) / allShardCommitteeSize
+			if coinID == common.PRVCoinID {
+				rewardForCommittee = rewardForCommittee * uint64(percentForCommittee) / 100
+			}
+			if totalRewardForShard[id] == nil {
+				totalRewardForShard[id] = map[common.Hash]uint64{}
+			}
+			totalRewardForShard[id][coinID] = rewardForCommittee
+		}
+		if coinID == common.PRVCoinID {
+			delegationReward = rewardForAllCmt * (100 - uint64(percentForCommittee)) / 100
+		}
+	}
+
+	return rewardForBeacon, totalRewardForShard, rewardForDAO, rewardForCustodian, delegationReward, nil
+}
+
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	curView *BeaconBestState,
 	blkHeight, epoch uint64,
@@ -520,8 +610,9 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 	rewardForPdex := uint64(0)
 	delegationReward := uint64(0)
+
+	splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
-		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
@@ -543,20 +634,33 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		}
 
 	} else {
-		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
-		totalRewardForBeacon,
-			totalRewardForShard,
-			totalRewardForIncDAO,
-			totalRewardForCustodian,
-			delegationReward,
-			err = blockchain.calculateReward(
-			splitRewardRuleProcessor,
-			curView,
-			curView.ActiveShards, blkHeight, epoch,
-			curView.GetBeaconRewardStateDB(),
-			isSplitRewardForCustodian, percentCustodianRewards,
-		)
-
+		if curView.TriggeredFeature[config.DELEGATION_REWARD] != 0 {
+			totalRewardForBeacon,
+				totalRewardForShard,
+				totalRewardForIncDAO,
+				totalRewardForCustodian,
+				delegationReward,
+				err = blockchain.calculateRewardForDelegation(
+				splitRewardRuleProcessor,
+				curView,
+				curView.ActiveShards, blkHeight, epoch,
+				curView.GetBeaconRewardStateDB(),
+				isSplitRewardForCustodian, percentCustodianRewards,
+			)
+		} else {
+			totalRewardForBeacon,
+				totalRewardForShard,
+				totalRewardForIncDAO,
+				totalRewardForCustodian,
+				delegationReward,
+				err = blockchain.calculateReward(
+				splitRewardRuleProcessor,
+				curView,
+				curView.ActiveShards, blkHeight, epoch,
+				curView.GetBeaconRewardStateDB(),
+				isSplitRewardForCustodian, percentCustodianRewards,
+			)
+		}
 		instRewardForShards, err = blockchain.buildInstructionRewardForShards(epoch, totalRewardForShard)
 		if err != nil {
 			return nil, nil, rewardForPdex, err

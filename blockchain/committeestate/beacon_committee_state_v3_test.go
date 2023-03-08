@@ -39,7 +39,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
 		map[string]bool{
 			key0:  true,
-			key:   true,
+			key1:  true,
 			key2:  true,
 			key3:  true,
 			key6:  true,
@@ -71,10 +71,12 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			key58: true,
 			key59: true,
 		},
-		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+		map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
-			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash})
+			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+		1,
+	)
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]string
@@ -104,7 +106,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -126,10 +128,10 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							},
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+						stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -165,7 +167,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -191,12 +193,12 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 							incKey21.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress,
 							incKey54.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+						stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 							key21: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash,
 							key54: *hash, key56: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -269,7 +271,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -291,10 +293,10 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							},
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+						stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -330,7 +332,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -355,12 +357,12 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 							incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress,
 							incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+						stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 							key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 							key52: *hash, key53: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -436,7 +438,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -458,10 +460,10 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							},
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+						stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -497,7 +499,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -523,12 +525,12 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 							incKey21.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress,
 							incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+						stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 							key21: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 							key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -601,7 +603,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -623,10 +625,10 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							},
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+						stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -662,7 +664,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -687,12 +689,12 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 							incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress,
 							incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+						stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 							key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 							key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -761,7 +763,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -783,13 +785,13 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress,
 							incKey31.GetIncKeyBase58(): paymentAddress, incKey32.GetIncKeyBase58(): paymentAddress, incKey33.GetIncKeyBase58(): paymentAddress, incKey34.GetIncKeyBase58(): paymentAddress, incKey35.GetIncKeyBase58(): paymentAddress, incKey36.GetIncKeyBase58(): paymentAddress,
 							incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+						stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 							key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 							key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
 							key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -831,7 +833,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20,
 								key30, key37, key38, key39,
@@ -851,11 +853,11 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 							incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+						stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 							key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -929,7 +931,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -948,10 +950,10 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							},
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+						stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -987,7 +989,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+								key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 								key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 								key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 								key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -1006,10 +1008,10 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							},
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-						stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+						stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 						autoStake: map[string]bool{
 							key0:  true,
-							key:   true,
+							key1:  true,
 							key2:  true,
 							key3:  true,
 							key6:  true,
@@ -1120,23 +1122,23 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 					},
 					shardCommonPool: []string{
-						key0, key, key2, key3,
+						key0, key1, key2, key3,
 					},
 					numberOfAssignedCandidates: 2,
 				},
@@ -1148,18 +1150,18 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 					},
@@ -1170,7 +1172,7 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 				},
 				syncPool: map[byte][]string{
 					0: []string{
-						key,
+						key1,
 					},
 					1: []string{
 						key0,
@@ -1244,7 +1246,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1256,7 +1258,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key2},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1279,7 +1281,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key3},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1291,7 +1293,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key0, key2, key3},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1314,7 +1316,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1326,7 +1328,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key6, key4, key2},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1348,7 +1350,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key5},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1360,7 +1362,7 @@ func TestBeaconCommitteeStateV3_assignRandomlyToSubstituteList(t *testing.T) {
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
 							0: []string{key2, key6, key4, key5},
-							1: []string{key},
+							1: []string{key1},
 						},
 					},
 				},
@@ -1420,7 +1422,7 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 				},
 				syncPool: map[byte][]string{
 					0: []string{
-						key0, key, key2, key3,
+						key0, key1, key2, key3,
 					},
 					1: []string{
 						key4, key5, key6, key7,
@@ -1433,7 +1435,7 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 				},
 				syncPool: map[byte][]string{
 					0: []string{
-						key0, key, key2, key3,
+						key0, key1, key2, key3,
 					},
 					1: []string{
 						key4, key5, key6, key7, key8, key9, key10,
@@ -1499,26 +1501,26 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 						autoStake: map[string]bool{
-							key:  true,
+							key1: true,
 							key0: false,
 							key2: true,
 							key3: true,
@@ -1530,7 +1532,7 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 							incKey3.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:  *txHash,
+							key1: *txHash,
 							key0: *txHash,
 							key2: *txHash,
 							key3: *txHash,
@@ -1539,25 +1541,25 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 						mu:     mutex,
 					},
 					shardCommonPool: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 					numberOfAssignedCandidates: 1,
 					swapRule:                   NewSwapRuleV3(),
 				},
 				syncPool: map[byte][]string{
 					0: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 					1: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 				},
 				finishedSyncValidators: map[byte][]string{
 					0: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 					1: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 				},
 			},
@@ -1566,26 +1568,26 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						shardCommittee: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 						shardSubstitute: map[byte][]string{
 							0: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 							1: []string{
-								key0, key, key2, key3,
+								key0, key1, key2, key3,
 							},
 						},
 						autoStake: map[string]bool{
-							key:  true,
+							key1: true,
 							key0: false,
 							key2: true,
 							key3: true,
@@ -1597,7 +1599,7 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 							incKey3.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:  *txHash,
+							key1: *txHash,
 							key0: *txHash,
 							key2: *txHash,
 							key3: *txHash,
@@ -1606,17 +1608,17 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 						mu:     mutex,
 					},
 					shardCommonPool: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 					numberOfAssignedCandidates: 1,
 					swapRule:                   NewSwapRuleV3(),
 				},
 				syncPool: map[byte][]string{
 					0: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 					1: []string{
-						key, key0, key2, key3,
+						key1, key0, key2, key3,
 					},
 				},
 			},
@@ -1660,7 +1662,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			incKey12.GetIncKeyBase58(): paymentAddress,
 		},
 		map[string]bool{
-			key:   true,
+			key1:  true,
 			key0:  true,
 			key2:  true,
 			key4:  true,
@@ -1670,7 +1672,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			key12: true,
 		},
 		map[string]common.Hash{
-			key:   *hash,
+			key1:  *hash,
 			key0:  *hash,
 			key2:  *hash,
 			key4:  *hash,
@@ -1679,6 +1681,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		1,
 	)
 
 	type fields struct {
@@ -1706,7 +1709,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					assignRule:      NewAssignRuleV2(),
-					shardCommonPool: []string{key2, key, key0},
+					shardCommonPool: []string{key2, key1, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
@@ -1718,7 +1721,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key:   true,
+							key1:  true,
 							key0:  true,
 							key2:  true,
 							key4:  true,
@@ -1738,7 +1741,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							incKey12.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:   *hash,
+							key1:  *hash,
 							key0:  *hash,
 							key2:  *hash,
 							key4:  *hash,
@@ -1802,7 +1805,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key, key0, key2, key4, key6, key8, key10, key12}),
+				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key1, key0, key2, key4, key6, key8, key10, key12}),
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB: sDB,
 				},
@@ -1811,10 +1814,10 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			},
 			wantCommitteeChange: NewCommitteeChange().
 				AddStopAutoStakes([]string{key2, key4, key6, key8, key10, key12}).
-				AddNextEpochShardCandidateRemoved([]string{key, key0}).
-				AddRemovedStakers([]string{key, key0}),
+				AddNextEpochShardCandidateRemoved([]string{key1, key0}).
+				AddRemovedStakers([]string{key1, key0}),
 			wantReturnStakeInst: instruction.NewReturnStakeInsWithValue(
-				[]string{key, key0},
+				[]string{key1, key0},
 				[]string{hash.String(), hash.String()},
 			),
 		},
@@ -1823,7 +1826,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					assignRule:      NewAssignRuleV2(),
-					shardCommonPool: []string{key2, key, key0},
+					shardCommonPool: []string{key2, key1, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
@@ -1835,7 +1838,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key:   true,
+							key1:  true,
 							key0:  true,
 							key2:  true,
 							key4:  true,
@@ -1855,7 +1858,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							incKey12.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:   *hash,
+							key1:  *hash,
 							key0:  *hash,
 							key2:  *hash,
 							key4:  *hash,
@@ -1875,7 +1878,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					assignRule:      NewAssignRuleV2(),
-					shardCommonPool: []string{key2, key, key0},
+					shardCommonPool: []string{key2, key1, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
@@ -1887,7 +1890,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key:   true,
+							key1:  true,
 							key0:  true,
 							key2:  true,
 							key4:  false,
@@ -1907,7 +1910,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							incKey12.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:   *hash,
+							key1:  *hash,
 							key0:  *hash,
 							key2:  *hash,
 							key4:  *hash,
@@ -1941,7 +1944,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					assignRule:      NewAssignRuleV2(),
-					shardCommonPool: []string{key2, key, key0},
+					shardCommonPool: []string{key2, key1, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
@@ -1953,7 +1956,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key:   true,
+							key1:  true,
 							key0:  true,
 							key2:  true,
 							key4:  true,
@@ -1973,7 +1976,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							incKey12.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:   *hash,
+							key1:  *hash,
 							key0:  *hash,
 							key2:  *hash,
 							key4:  *hash,
@@ -1993,7 +1996,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					assignRule:      NewAssignRuleV2(),
-					shardCommonPool: []string{key},
+					shardCommonPool: []string{key1},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
@@ -2005,7 +2008,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key:   true,
+							key1:  true,
 							key4:  true,
 							key6:  true,
 							key8:  true,
@@ -2021,7 +2024,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							incKey12.GetIncKeyBase58(): paymentAddress,
 						},
 						stakingTx: map[string]common.Hash{
-							key:   *hash,
+							key1:  *hash,
 							key4:  *hash,
 							key6:  *hash,
 							key8:  *hash,
@@ -2112,7 +2115,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
 		map[string]bool{
 			key0:  true,
-			key:   true,
+			key1:  true,
 			key2:  true,
 			key3:  true,
 			key6:  true,
@@ -2144,10 +2147,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 			key58: true,
 			key59: true,
 		},
-		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+		map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
-			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash})
+			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+		1,
+	)
 
 	randomInstructionCommitteeChange := NewCommitteeChange()
 	randomInstructionCommitteeChange.NextEpochShardCandidateRemoved =
@@ -2187,7 +2192,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 2,
 					},
@@ -2222,7 +2227,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						numberOfAssignedCandidates: 0,
 					},
 					syncPool: map[byte][]string{
-						0: []string{key},
+						0: []string{key1},
 						1: []string{key0},
 					},
 				},
@@ -2254,7 +2259,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
 							autoStake: map[string]bool{
-								key:   true,
+								key1:  true,
 								key10: false,
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{
@@ -2262,12 +2267,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								incKey10.GetIncKeyBase58(): paymentAddress,
 							},
 							stakingTx: map[string]common.Hash{
-								key:   *hash,
+								key1:  *hash,
 								key10: *hash,
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3, key4, key5, key6, key7, key8,
+							key0, key1, key2, key3, key4, key5, key6, key7, key8,
 							key9, key10, key11, key12, key13, key14, key15,
 						},
 					},
@@ -2297,20 +2302,20 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 					BeaconInstructions: [][]string{
 						[]string{
 							instruction.UNSTAKE_ACTION,
-							strings.Join([]string{key, key10}, instruction.SPLITTER),
+							strings.Join([]string{key1, key10}, instruction.SPLITTER),
 						},
 					},
 					newUnassignedCommonPool: []string{
-						key0, key, key2, key3, key4, key5, key6, key7, key8,
+						key0, key1, key2, key3, key4, key5, key6, key7, key8,
 						key9, key10, key11, key12, key13, key14, key15,
 					},
 				},
 			},
 			wantCommitteeChange: NewCommitteeChange().
-				AddNextEpochShardCandidateRemoved([]string{key, key10}).
-				AddRemovedStakers([]string{key, key10}),
+				AddNextEpochShardCandidateRemoved([]string{key1, key10}).
+				AddRemovedStakers([]string{key1, key10}),
 			wantReturnInstruction: [][]string{
-				instruction.NewReturnStakeInsWithValue([]string{key, key10}, []string{hash.String(), hash.String()}).ToString(),
+				instruction.NewReturnStakeInsWithValue([]string{key1, key10}, []string{hash.String(), hash.String()}).ToString(),
 			},
 			wantErr: false,
 		},
@@ -2332,14 +2337,14 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								1: []string{key10, key11},
 							},
 							autoStake: map[string]bool{
-								key:  true,
+								key1: true,
 								key7: false,
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 					},
@@ -2365,14 +2370,14 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								1: []string{key15, key10, key11},
 							},
 							autoStake: map[string]bool{
-								key:  true,
+								key1: true,
 								key7: false,
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 					},
@@ -2415,14 +2420,14 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								1: []string{key10, key11},
 							},
 							autoStake: map[string]bool{
-								key:  true,
+								key1: true,
 								key7: true,
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 					},
@@ -2448,14 +2453,14 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								1: []string{key10, key11},
 							},
 							autoStake: map[string]bool{
-								key:  true,
+								key1: true,
 								key7: false,
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 					},
@@ -2495,14 +2500,14 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								1: []string{key10, key11},
 							},
 							autoStake: map[string]bool{
-								key:  true,
+								key1: true,
 								key7: false,
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 					},
@@ -2527,7 +2532,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								1: []string{key10, key11},
 							},
 							autoStake: map[string]bool{
-								key:   true,
+								key1:  true,
 								key7:  false,
 								key20: true,
 								key21: false,
@@ -2545,7 +2550,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3, key20, key21, key22,
+							key0, key1, key2, key3, key20, key21, key22,
 						},
 						numberOfAssignedCandidates: 0,
 					},
@@ -2584,7 +2589,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2606,10 +2611,10 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 								},
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -2637,7 +2642,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 						swapRule:                   &swapRuleV3{},
@@ -2656,7 +2661,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2682,12 +2687,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 								incKey21.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress,
 								incKey54.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-							stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+							stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 								key21: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash,
 								key54: *hash, key56: *hash, key58: *hash, key59: *hash},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -2710,7 +2715,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 						swapRule:                   &swapRuleV3{},
@@ -2817,7 +2822,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			incKey91.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 		map[string]bool{
 			key0:  true,
-			key:   true,
+			key1:  true,
 			key2:  true,
 			key3:  true,
 			key6:  true,
@@ -2854,11 +2859,13 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			key94: true,
 			key95: true,
 		},
-		map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+		map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 			key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 			key31: *hash, key32: *hash, key33: *hash, key34: *hash, key35: *hash, key36: *hash,
 			key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash,
-			key91: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash})
+			key91: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+		1,
+	)
 
 	type fields struct {
 		BeaconCommitteeStateV3 *BeaconCommitteeStateV3
@@ -2886,7 +2893,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2907,11 +2914,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -2963,7 +2970,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -2984,11 +2991,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3073,7 +3080,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3094,11 +3101,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key91: *hash, key92: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key91: *hash, key92: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey91.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3151,7 +3158,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3172,11 +3179,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key97, key114, key12, key13, key91, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key91: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key91: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey91.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3266,7 +3273,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3288,10 +3295,10 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 								},
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3319,7 +3326,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 						swapRule:                   &swapRuleV3{},
@@ -3338,7 +3345,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3364,12 +3371,12 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 								incKey21.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress,
 								incKey54.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-							stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
+							stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash,
 								key21: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash,
 								key54: *hash, key56: *hash, key58: *hash, key59: *hash},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3392,7 +3399,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 						swapRule:                   &swapRuleV3{},
@@ -3457,7 +3464,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3476,10 +3483,10 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 								},
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3507,7 +3514,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 						swapRule:                   &swapRuleV3{},
@@ -3526,7 +3533,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3545,10 +3552,10 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 								},
 							},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key54: *hash, key56: *hash, key58: *hash, key59: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key54: *hash, key56: *hash, key58: *hash, key59: *hash},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3573,7 +3580,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							},
 						},
 						shardCommonPool: []string{
-							key0, key, key2, key3,
+							key0, key1, key2, key3,
 						},
 						numberOfAssignedCandidates: 0,
 						swapRule:                   &swapRuleV3{},
@@ -3637,7 +3644,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3658,11 +3665,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -3713,7 +3720,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3734,7 +3741,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
+							stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash,
 								key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash,
 								key92: *hash, key93: *hash, key94: *hash, key95: *hash,
 								key116: *hash, key117: *hash, key118: *hash},
@@ -3744,7 +3751,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 								incKey116.GetIncKeyBase58(): paymentAddress, incKey117.GetIncKeyBase58(): paymentAddress, incKey118.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:   true,
-								key:    true,
+								key1:   true,
 								key2:   true,
 								key3:   true,
 								key6:   true,
@@ -3832,7 +3839,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3853,11 +3860,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:   true,
-								key:    true,
+								key1:   true,
 								key2:   true,
 								key3:   true,
 								key6:   true,
@@ -3909,7 +3916,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -3930,11 +3937,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:   true,
-								key:    true,
+								key1:   true,
 								key2:   true,
 								key3:   true,
 								key6:   true,
@@ -4024,7 +4031,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -4045,11 +4052,11 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx:      map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx:      map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key22: *hash, key23: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key53: *hash, key54: *hash, key55: *hash, key56: *hash, key57: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress, incKey21.GetIncKeyBase58(): paymentAddress, incKey22.GetIncKeyBase58(): paymentAddress, incKey23.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress, incKey52.GetIncKeyBase58(): paymentAddress, incKey53.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey55.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey57.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -4100,7 +4107,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 							mu: finalMutex,
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+									key0, key1, key2, key3, key4, key5, key6, key7, key8, key9,
 									key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
 									key20, key26, key27, key28, key29,
 									key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
@@ -4123,13 +4130,13 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 									key12, key13, key14, key15,
 								},
 							},
-							stakingTx: map[string]common.Hash{key0: *hash, key: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key54: *hash, key56: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
+							stakingTx: map[string]common.Hash{key0: *hash, key1: *hash, key2: *hash, key3: *hash, key6: *hash, key8: *hash, key9: *hash, key10: *hash, key11: *hash, key21: *hash, key24: *hash, key25: *hash, key26: *hash, key27: *hash, key28: *hash, key29: *hash, key52: *hash, key54: *hash, key56: *hash, key58: *hash, key59: *hash, key92: *hash, key93: *hash, key94: *hash, key95: *hash},
 							rewardReceiver: map[string]privacy.PaymentAddress{incKey0.GetIncKeyBase58(): paymentAddress, incKey.GetIncKeyBase58(): paymentAddress, incKey2.GetIncKeyBase58(): paymentAddress, incKey3.GetIncKeyBase58(): paymentAddress, incKey6.GetIncKeyBase58(): paymentAddress, incKey8.GetIncKeyBase58(): paymentAddress, incKey9.GetIncKeyBase58(): paymentAddress, incKey10.GetIncKeyBase58(): paymentAddress, incKey11.GetIncKeyBase58(): paymentAddress,
 								incKey21.GetIncKeyBase58(): paymentAddress, incKey24.GetIncKeyBase58(): paymentAddress, incKey25.GetIncKeyBase58(): paymentAddress, incKey26.GetIncKeyBase58(): paymentAddress, incKey27.GetIncKeyBase58(): paymentAddress, incKey28.GetIncKeyBase58(): paymentAddress, incKey29.GetIncKeyBase58(): paymentAddress,
 								incKey52.GetIncKeyBase58(): paymentAddress, incKey54.GetIncKeyBase58(): paymentAddress, incKey56.GetIncKeyBase58(): paymentAddress, incKey58.GetIncKeyBase58(): paymentAddress, incKey59.GetIncKeyBase58(): paymentAddress, incKey92.GetIncKeyBase58(): paymentAddress, incKey93.GetIncKeyBase58(): paymentAddress, incKey94.GetIncKeyBase58(): paymentAddress, incKey95.GetIncKeyBase58(): paymentAddress},
 							autoStake: map[string]bool{
 								key0:  true,
-								key:   true,
+								key1:  true,
 								key2:  true,
 								key3:  true,
 								key6:  true,
@@ -4260,7 +4267,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
+							0: []string{key0, key1},
 						},
 					},
 				},
@@ -4273,7 +4280,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key4, key},
+							0: []string{key0, key4, key1},
 						},
 					},
 				},
@@ -4300,7 +4307,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
+							0: []string{key0, key1},
 						},
 					},
 				},
@@ -4313,7 +4320,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key4, key},
+							0: []string{key0, key4, key1},
 						},
 					},
 				},
@@ -4340,7 +4347,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
+							0: []string{key0, key1},
 							1: []string{key10, key11},
 						},
 					},
@@ -4355,7 +4362,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key3, key0, key4, key5, key},
+							0: []string{key3, key0, key4, key5, key1},
 							1: []string{key10, key11},
 						},
 					},
@@ -4390,7 +4397,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key0, key},
+							0: []string{key0, key1},
 							1: []string{key10, key11},
 						},
 					},
@@ -4405,7 +4412,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key3, key0, key4, key},
+							0: []string{key3, key0, key4, key1},
 							1: []string{key10, key11},
 						},
 					},
@@ -4597,13 +4604,13 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove all validators must be removed from syncPool",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0, key, key3, key2, key5},
+					0: []string{key0, key1, key3, key2, key5},
 					1: []string{key10, key11, key12},
 				},
 			},
 			args: args{
 				shardID:    0,
-				validators: []string{key5, key0, key2, key, key3},
+				validators: []string{key5, key0, key2, key1, key3},
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
@@ -4617,7 +4624,7 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			name: "remove 3 validators, 5 sync pool",
 			fields: fields{
 				syncPool: map[byte][]string{
-					0: []string{key0, key, key3, key2, key5},
+					0: []string{key0, key1, key3, key2, key5},
 					1: []string{key10, key11, key12},
 				},
 			},
@@ -4627,7 +4634,7 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 			},
 			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				syncPool: map[byte][]string{
-					0: []string{key, key2},
+					0: []string{key1, key2},
 					1: []string{key10, key11, key12},
 				},
 			},
@@ -4695,6 +4702,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 			key10: *hash,
 			key12: *hash,
 		},
+		1,
 	)
 
 	type fields struct {
@@ -4767,7 +4775,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key},
+							0: []string{key1},
 							1: []string{key3},
 						},
 						stakingTx: map[string]common.Hash{
@@ -4788,7 +4796,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key, key2},
+							0: []string{key1, key2},
 							1: []string{key3},
 						},
 						stakingTx: map[string]common.Hash{
@@ -4825,7 +4833,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key},
+							0: []string{key1},
 							1: []string{key3},
 						},
 						stakingTx: map[string]common.Hash{
@@ -4855,7 +4863,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 					assignRule: NewAssignRuleV2(),
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						shardSubstitute: map[byte][]string{
-							0: []string{key, key2, key0},
+							0: []string{key1, key2, key0},
 							1: []string{key3},
 						},
 						stakingTx: map[string]common.Hash{
@@ -4917,7 +4925,7 @@ func TestBeaconCommitteeStateV3_processAfterNormal(t *testing.T) {
 }
 
 func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
-	testcase3CommitteeChange := NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0, key})
+	testcase3CommitteeChange := NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0, key1})
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]string
@@ -4964,12 +4972,12 @@ func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
 			},
 			args: args{
 				candidates: []string{
-					key0, key,
+					key0, key1,
 				},
 				shardID:         0,
 				committeeChange: NewCommitteeChange(),
 			},
-			want: NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0, key}),
+			want: NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0, key1}),
 		},
 		{
 			name: "two candidate, not empty committee change",

@@ -156,6 +156,7 @@ type consensusParam struct {
 	BlockProducingV3Height    uint64   `mapstructure:"block_producing_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
+	SCommitteeRewardPercent   int      `mapstructure:"percent_committereward"`
 }
 
 func LoadParam() *param {
