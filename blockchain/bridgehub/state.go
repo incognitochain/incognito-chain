@@ -8,7 +8,8 @@ import (
 
 type BridgeHubState struct {
 	// TODO: staking asset is PRV or others?
-	stakingInfos map[string]uint64 // bridgePubKey : amount PRV stake
+	stakingInfos      map[string]uint64            // bridgePubKey : total amount PRV staked
+	stakingInfoDetail map[string]map[string]uint64 // bridgePubkey -> payment address : amount PRV staked
 
 	// bridgePubKey only belongs one Bridge
 	bridgeInfos map[string]*BridgeInfo // BridgeID : BridgeInfo

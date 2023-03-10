@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
@@ -59,13 +60,14 @@ func buildBridgeHubRegisterBridgeInst(
 }
 
 type StakeBridgeStatus struct {
-	Status           byte        `json:"Status"`
-	BridgeID         string      `json:"BridgeID"`
-	ExtChainID       string      `json:"ExtChainID"`
-	BridgePoolPubKey string      `json:"BridgePoolPubKey"` // TSS pubkey
-	StakeAmount      uint64      `json:"StakeAmount"`      // must be equal to vout value
-	TokenID          common.Hash `json:"TokenID"`
-	ErrorCode        int         `json:"ErrorCode,omitempty"`
+	Status           byte                   `json:"Status"`
+	BridgeID         string                 `json:"BridgeID"`
+	ExtChainID       string                 `json:"ExtChainID"`
+	BridgePoolPubKey string                 `json:"BridgePoolPubKey"` // TSS pubkey
+	StakeAmount      uint64                 `json:"StakeAmount"`      // must be equal to vout value
+	TokenID          common.Hash            `json:"TokenID"`
+	StakerAddress    privacy.PaymentAddress `json:"StakerAddress"`
+	ErrorCode        int                    `json:"ErrorCode,omitempty"`
 }
 
 func buildBridgeHubStakeInst(

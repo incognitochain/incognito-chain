@@ -207,6 +207,7 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	if inst.Status == common.AcceptedStatusStr {
 		clonedState := state.Clone()
 		clonedState.stakingInfos[contentInst.BridgePoolPubKey] += contentInst.StakeAmount
+		clonedState.stakingInfoDetail[contentInst.BridgePoolPubKey][contentInst.StakerAddress.String()] += contentInst.StakeAmount
 	}
 
 	// track status
@@ -217,6 +218,7 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 		StakeAmount:      contentInst.StakeAmount,
 		TokenID:          contentInst.TokenID,
 		Status:           status,
+		StakerAddress:    contentInst.StakerAddress,
 		ErrorCode:        errorCode,
 	}
 	trackStatusBytes, _ := json.Marshal(trackStatus)

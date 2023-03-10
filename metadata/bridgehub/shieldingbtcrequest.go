@@ -20,9 +20,6 @@ import (
 //   - payment address: Receiver and Signature must be empty;
 //   - using one-time depositing public key: Receiver must be an OTAReceiver, a signature is required.
 type ShieldingBTCRequest struct {
-	// TSS from validators
-	TSS string `json:"tss"`
-
 	// Amount to shield
 	Amount uint64 `json:"amount"`
 
@@ -62,20 +59,17 @@ type ShieldingBTCAcceptedInst struct {
 }
 
 func NewShieldingBTCRequest(
-	tss string,
 	amount uint64,
 	btcTx common.Hash,
 	incTokenID common.Hash,
 	receiver string,
 	signature []byte,
 	extChainID string,
-	metaType int,
 ) (*ShieldingBTCRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
-		Type: metaType,
+		Type: metadataCommon.ShieldingBTCRequestMeta,
 	}
 	ShieldingBTCReq := &ShieldingBTCRequest{
-		TSS:        tss,
 		Amount:     amount,
 		BTCTxID:    btcTx,
 		IncTokenID: incTokenID,
@@ -91,8 +85,6 @@ func NewShieldingBTCRequestFromMap(
 	data map[string]interface{},
 	metaType int,
 ) (*ShieldingBTCRequest, error) {
-	tss := data["tss"].(string)
-	// todo: validate tss
 	amount := data["amount"].(uint64)
 	if amount == 0 {
 		return nil, errors.New("BTCHub: not thing to shield")
@@ -137,14 +129,12 @@ func NewShieldingBTCRequestFromMap(
 	}
 
 	req, _ := NewShieldingBTCRequest(
-		tss,
 		amount,
 		*btcTx,
 		*incTokenID,
 		receiver,
 		sig,
 		extBridgeId,
-		metaType,
 	)
 	return req, nil
 }

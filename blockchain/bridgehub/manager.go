@@ -131,6 +131,8 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
 		case metadataCommon.ShieldingBTCRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID, statedb.InsertBTCHubTxHashIssued)
+		case metadataCommon.StakePRVRequestMeta:
+			m.state, updatingInfoByTokenID, err = m.processor.bridgeHubValidatorStake(*inst, m.state, sDB, updatingInfoByTokenID)
 			// TODO: add more ...
 		}
 		if err != nil {

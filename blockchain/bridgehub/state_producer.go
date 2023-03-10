@@ -131,7 +131,7 @@ func (sp *stateProducer) shield(
 	md := issuingBTCHubReqAction.Meta
 	Logger.log.Infof("[Bridge hub] Processing for tx: %s, tokenid: %s", issuingBTCHubReqAction.TxReqID.String(), md.IncTokenID.String())
 	// todo: validate the request
-	ok, err := tss.VerifyTSSSig("", "", issuingBTCHubReqAction.Meta.TSS)
+	ok, err := tss.VerifyTSSSig("", "", base64.StdEncoding.EncodeToString(issuingBTCHubReqAction.Meta.Signature))
 	if err != nil || !ok {
 		Logger.log.Warn("[Bridge hub] WARNING: an issue occurred verify signature: ", err, ok)
 		if err != nil {
@@ -139,6 +139,7 @@ func (sp *stateProducer) shield(
 		}
 		return [][]string{rejectedInst}, state, ac, err
 	}
+	// todo: verify validators has enough collateral to mint more btc
 
 	// check tx issued
 	isIssued, err := isTxHashIssued(stateDBs[common.BeaconChainID], issuingBTCHubReqAction.Meta.BTCTxID.Bytes())
