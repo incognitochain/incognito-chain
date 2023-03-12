@@ -1113,3 +1113,28 @@ func CreateShardBridgeAggUnshieldActionsFromTxs(
 	}
 	return bridgeAggActions, nil
 }
+
+// CreateShardBridgeHubUnshieldActionsFromTxs create bridge agg unshield insts from transactions in shard block
+func CreateShardBridgeHubUnshieldActionsFromTxs(
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) ([][]string, error) {
+	bridgeAggActions := [][]string{}
+	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue == nil {
+			continue
+		}
+		if metadataCommon.IsBridgeHubUnshieldMetaType(tx.GetMetadataType()) {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+			Logger.log.Infof("Build Shard Bridge Hub Unshield instruction %+v, metadata value %+v", actionPairs, metadataValue)
+			if err != nil {
+				Logger.log.Errorf("Build Shard Bridge Hub Unshield Error %+v", err)
+				return nil, fmt.Errorf("Build Shard Bridge Hub Unshield Error %+v", err)
+			}
+			bridgeAggActions = append(bridgeAggActions, actionPairs...)
+		}
+	}
+	return bridgeAggActions, nil
+}

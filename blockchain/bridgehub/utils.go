@@ -4,11 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy"
-
 	"github.com/incognitochain/incognito-chain/common"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type RegisterBridgeStatus struct {

@@ -306,7 +306,6 @@ func (httpServer *HttpServer) createBridgeHubShieldingTx(
 
 // unshield bridge token
 func processBurningBridgeHubReq(
-	burningMetaType int,
 	params interface{},
 	closeChan <-chan struct{},
 	httpServer *HttpServer,
@@ -325,11 +324,6 @@ func processBurningBridgeHubReq(
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
-	}
-
-	senderPrivateKeyParam, ok := arrayParams[0].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
 	}
 
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
@@ -352,19 +346,26 @@ func processBurningBridgeHubReq(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("remote address is invalid"))
 	}
 
-	var txVersion int8
-	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	extChainID, ok := tokenParamsRaw["ExtChainID"].(string)
 	if !ok {
-		txVersion = 2
-	} else {
-		tmpVersion, ok := tmpVersionParam.(float64)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
-		}
-		txVersion = int8(tmpVersion)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("external chain id is invalid"))
 	}
 
-	meta, err := metadataBridgeHub.NewBridgeHubUnshieldRequest()
+	_, voutsAmount, err := rpcservice.CreateCustomTokenPrivacyBurningReceiverArray(tokenReceivers, httpServer.GetBlockchain(), httpServer.GetBlockchain().BeaconChain.CurrentHeight())
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("can not extract burn amount"))
+	}
+	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid token id"))
+	}
+
+	meta, err := metadataBridgeHub.NewBridgeHubUnshieldRequest(
+		uint64(voutsAmount),
+		*tokenIDHash,
+		remoteAddress,
+		extChainID,
+	)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -388,12 +389,9 @@ func processBurningBridgeHubReq(
 	}
 	return result, nil
 }
-func (httpServer *HttpServer) handleCreateRawTxWithBurningBridgeHubReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-
-}
 
 func (httpServer *HttpServer) handleCreateAndSendBurningBridgeHubReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithBurningBridgeHubReq(params, closeChan)
+	data, err := processBurningBridgeHubReq(params, closeChan, httpServer)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

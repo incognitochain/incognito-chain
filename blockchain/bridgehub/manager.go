@@ -70,17 +70,6 @@ func (m *Manager) BuildInstructions(env *StateEnvironment) ([][]string, *metadat
 		}
 	}
 
-	// build instruction for unshield btc hub actions
-	for _, actions := range env.UnshieldActions() {
-		for _, action := range actions {
-			insts, m.state, err = m.producer.unshield(action, m.state, env.BeaconHeight(), env.StateDBs())
-			if err != nil {
-				return [][]string{}, nil, err
-			}
-			res = append(res, insts...)
-		}
-	}
-
 	// build instruction for stake btc hub actions
 	for shardID, actions := range env.StakeActions() {
 		for _, action := range actions {
@@ -212,4 +201,31 @@ func (m *Manager) InitBridgeHubParamDefault() error {
 		config.Param().BridgeHubParam.MinNumberValidators,
 		config.Param().BridgeHubParam.MinValidatorStakingAmount)
 	return nil
+}
+
+func (m *Manager) BuildNewUnshieldBridgeHubInstructions(stateDB *statedb.StateDB, beaconHeight uint64, unshieldActionForProducers [][]string) ([][]string, error) {
+	res := [][]string{}
+	insts := [][]string{}
+
+	// build instruction for new unshielding actions
+	for _, a := range unshieldActionForProducers {
+		metaType, err := strconv.Atoi(a[0])
+		if err != nil {
+			continue
+		}
+		switch metaType {
+		case metadataCommon.BridgeHubUnshieldRequest:
+			contentStr := a[1]
+			insts, m.state, err = m.producer.unshield(contentStr, m.state, beaconHeight, stateDB)
+			if err != nil {
+				continue
+			}
+			res = append(res, insts...)
+		default:
+			continue
+		}
+	}
+
+	Logger.log.Info("bridgeagg new unshield instructions:", res)
+	return res, nil
 }

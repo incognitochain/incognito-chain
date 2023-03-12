@@ -199,6 +199,7 @@ const (
 	UpdateBFTV3StatsError
 	FinishSyncInstructionError
 	OutdatedCodeError
+	BuildBridgeHubError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -385,6 +386,8 @@ var ErrCodeMessage = map[int]struct {
 	UpgradeBeaconCommitteeStateError:                {-4000, "Upgrade Beacon Committee State Error"},
 	UpgradeShardCommitteeStateError:                 {-4001, "Upgrade Shard Committee State Error"},
 	UpdateBFTV3StatsError:                           {-4002, "Update BFT V3 Stats Error, This Error Won't effect Store Shard Block"},
+
+	BuildBridgeHubError: {-1190, "Build bridge hub unshield instruction error"},
 }
 
 type BlockChainError struct {

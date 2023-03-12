@@ -25,10 +25,9 @@ func NewBridgeHubUnshieldRequest(
 	tokenID common.Hash,
 	remoteAddress string,
 	extChainId string,
-	metaType int,
 ) (*BridgeHubUnshieldRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
-		Type: metaType,
+		Type: metadataCommon.BridgeHubUnshieldRequest,
 	}
 	burningReq := &BridgeHubUnshieldRequest{
 		BurningAmount: burningAmount,

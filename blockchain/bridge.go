@@ -66,7 +66,7 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 
 	case strconv.Itoa(metadata.BridgeHubUnshieldConfirm):
 		var err error
-		flatten, err = decodeNearBurningConfirmInst(inst)
+		flatten, err = decodeBridgeHubBurningConfirmInst(inst)
 		if err != nil {
 			return nil, err
 		}
@@ -230,21 +230,16 @@ func decodeBridgeHubBurningConfirmInst(inst []string) ([]byte, error) {
 		return nil, errors.New("invalid length of BurningConfirm inst")
 	}
 	m, errMeta := strconv.Atoi(inst[0])
-	s, errShard := strconv.Atoi(inst[1])
 	metaType := byte(m)
-	shardID := byte(s)
-	tokenID, _, errToken := base58.Base58Check{}.Decode(inst[2])
-	// prefix 3 bytes + max id 64 bytes
-	tokenIDPadding := toBytes67BigEndian(tokenID)
+	tokenID, _, errToken := base58.Base58Check{}.Decode(inst[1])
 	tokenIDLen := byte(len(tokenID))
-	remoteAddr := []byte(inst[3])
+	remoteAddr := []byte(inst[2])
 	remoteAddrLen := byte(len(remoteAddr))
-	remoteAddrPadding := toBytes64BigEndian(remoteAddr)
-	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
-	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
-	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
-	height, _, errHeight := base58.Base58Check{}.Decode(inst[7])
-	if err := common.CheckError(errMeta, errShard, errToken, errAmount, errTx, errIncToken, errHeight); err != nil {
+	amount, _, errAmount := base58.Base58Check{}.Decode(inst[3])
+	txID, errTx := common.Hash{}.NewHashFromStr(inst[4])
+	extChainIdLen := byte(len(inst[5]))
+	height, _, errHeight := base58.Base58Check{}.Decode(inst[6])
+	if err := common.CheckError(errMeta, errToken, errAmount, errTx, errHeight); err != nil {
 		err = errors.Wrapf(err, "inst: %+v", inst)
 		BLogger.log.Error(err)
 		return nil, err
@@ -253,14 +248,14 @@ func decodeBridgeHubBurningConfirmInst(inst []string) ([]byte, error) {
 	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType)
-	flatten = append(flatten, shardID)
 	flatten = append(flatten, tokenIDLen)
-	flatten = append(flatten, tokenIDPadding...)
+	flatten = append(flatten, tokenID...)
 	flatten = append(flatten, remoteAddrLen)
-	flatten = append(flatten, remoteAddrPadding...)
+	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
-	flatten = append(flatten, incTokenID...)
+	flatten = append(flatten, extChainIdLen)
+	flatten = append(flatten, inst[5]...)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
 	return flatten, nil
 }

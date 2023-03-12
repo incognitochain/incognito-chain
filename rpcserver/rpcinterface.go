@@ -436,7 +436,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBridgeHubRegisterBridgeTx: (*HttpServer).handleCreateAndSendBridgeHubRegisterBridgeTx, // register bridge
 	createAndSendBridgeHubStakeBridgeTx:    (*HttpServer).handleCreateAndSendBridgeHubStakeTx,          // stake
 	createAndSendBridgeHubIssuingBridgeTx:  (*HttpServer).handleCreateAndSendBridgeShieldingTx,         // shielding
-	createAndSendBridgeHubBurnBridgeTx:     (*HttpServer).handleCreateAndSendBridgeHubRegisterBridgeTx, // unshield
+	createAndSendBridgeHubBurnBridgeTx:     (*HttpServer).handleCreateAndSendBurningBridgeHubReq,       // unshield
 	getBridgeHubState:                      (*HttpServer).handleGetBridgeHubState,                      // get state
 }
 

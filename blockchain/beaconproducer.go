@@ -212,6 +212,47 @@ func (blockchain *BlockChain) generateBridgeInstruction(
 	return bridgeInstructions, nil
 }
 
+func (blockchain *BlockChain) generateBridgeHubInstruction(
+	curView *BeaconBestState,
+	currentShardStateBlock map[byte][]*types.ShardBlock,
+	newBeaconBlock *types.BeaconBlock,
+) ([][]string, error) {
+	keys := []int{}
+	bridgeInstructions := [][]string{}
+	for shardID := range currentShardStateBlock {
+		keys = append(keys, int(shardID))
+	}
+	sort.Ints(keys)
+
+	for _, v := range keys {
+		shardID := byte(v)
+		for _, shardBlock := range currentShardStateBlock[shardID] {
+			actions, err := CreateShardBridgeHubUnshieldActionsFromTxs(shardBlock.Body.Transactions, blockchain,
+				shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
+			if err != nil {
+				BLogger.log.Errorf("Build bridge hub unshield instructions failed: %s", err.Error())
+				return nil, err
+			}
+
+			newInsts, err := curView.bridgeHubManager.BuildNewUnshieldBridgeHubInstructions(
+				curView.GetBeaconFeatureStateDB(),
+				newBeaconBlock.GetHeight(),
+				actions,
+			)
+
+			if err != nil {
+				BLogger.log.Errorf("Build bridge hub unshield instructions failed: %s", err.Error())
+				return nil, err
+			}
+
+			// build bridge hub unshield instructions
+			bridgeInstructions = append(bridgeInstructions, newInsts...)
+		}
+	}
+
+	return bridgeInstructions, nil
+}
+
 // generateBridgeAggInstruction creates bridge agg unshield instructions for FINALIZED unshield reqs
 func (blockchain *BlockChain) generateBridgeAggInstruction(
 	curView *BeaconBestState,
@@ -265,6 +306,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
 	bridgeAggInstructions := [][]string{}
+	bridgeHubInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
 	shardStates := make(map[byte][]types.ShardState)
@@ -420,9 +462,15 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	if err != nil {
 		return nil, nil, NewBlockChainError(BuildBridgeAggError, err)
 	}
+	bridgeHubInstructions, err = blockchain.generateBridgeHubInstruction(curView, retrievedShardBlockForBridge, newBeaconBlock)
+	Logger.log.Info("[Bridge Debug] Generate bridge hub unshield instruction", len(bridgeHubInstructions))
+	if err != nil {
+		return nil, nil, NewBlockChainError(BuildBridgeHubError, err)
+	}
 
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	bridgeInstructions = append(bridgeInstructions, bridgeAggInstructions...)
+	bridgeInstructions = append(bridgeInstructions, bridgeHubInstructions...)
 	shardInstruction.compose()
 
 	//outdatedPendingValidator := map[int][]int{}

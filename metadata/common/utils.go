@@ -816,3 +816,13 @@ func IsSpecifiedFeeMetaType(metaType int) bool {
 		return false
 	}
 }
+
+// NOTE: append new bridge agg unshield metadata type
+func IsBridgeHubUnshieldMetaType(metadataType int) bool {
+	switch metadataType {
+	case BridgeHubUnshieldRequest:
+		return true
+	default:
+		return false
+	}
+}

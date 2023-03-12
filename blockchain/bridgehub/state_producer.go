@@ -212,7 +212,7 @@ func (sp *stateProducer) unshield(
 	contentStr string,
 	state *BridgeHubState,
 	height uint64,
-	stateDBs map[int]*statedb.StateDB,
+	stateDBs *statedb.StateDB,
 ) ([][]string, *BridgeHubState, error) {
 	// decode action
 	action := metadataCommon.NewAction()
@@ -237,6 +237,7 @@ func (sp *stateProducer) unshield(
 		meta.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
+		meta.ExtChainID,
 	}
 	// todo: update bridge hub state
 
