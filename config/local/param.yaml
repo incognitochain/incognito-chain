@@ -167,15 +167,19 @@ auto_enable_feature:
       force_trigger: 1
       require_percentage: 100
   - bridgehub:
-      min_trigger: 1  # TODO: 0xkraken
+      min_trigger: 1
+      force_trigger: 1
       require_percentage: 100
+  - beacon_staking_flow_v4:
+      min_trigger: 1
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
-
+  - beacon_staking_flow_v4 : 16
 transactions_param:
   lowerbound: 15
   upperbound: 1000

@@ -12,18 +12,19 @@ import (
 )
 
 type BridgeHubUnshieldRequest struct {
-	BurningAmount uint64 // must be equal to vout value
-	TokenID       common.Hash
-	TokenName     string // unused
-	RemoteAddress string
+	// ExtChainID to distinguish between bridge hubs
+	ExtChainID    string      `json:"ExtChainID"`
+	BurningAmount uint64      `json:"BurningAmount"` // must be equal to vout value
+	TokenID       common.Hash `json:"TokenID"`
+	RemoteAddress string      `json:"RemoteAddress"`
 	metadataCommon.MetadataBase
 }
 
 func NewBridgeHubUnshieldRequest(
 	burningAmount uint64,
 	tokenID common.Hash,
-	tokenName string,
 	remoteAddress string,
+	extChainId string,
 	metaType int,
 ) (*BridgeHubUnshieldRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
@@ -32,8 +33,8 @@ func NewBridgeHubUnshieldRequest(
 	burningReq := &BridgeHubUnshieldRequest{
 		BurningAmount: burningAmount,
 		TokenID:       tokenID,
-		TokenName:     tokenName,
 		RemoteAddress: remoteAddress,
+		ExtChainID:    extChainId,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil
@@ -45,9 +46,10 @@ func (bReq BridgeHubUnshieldRequest) ValidateTxWithBlockChain(tx metadataCommon.
 
 func (bReq BridgeHubUnshieldRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	// check trigger feature or not
-	if shardViewRetriever.GetTriggeredFeature()[metadataCommon.BridgeHubFeatureName] == 0 {
-		return false, false, fmt.Errorf("Bridge Hub Feature has not been enabled yet %v", bReq.Type)
-	}
+	// todo: 0xcryptolover disable to test
+	//if shardViewRetriever.GetTriggeredFeature()[metadataCommon.BridgeHubFeatureName] == 0 {
+	//	return false, false, fmt.Errorf("Bridge Hub Feature has not been enabled yet %v", bReq.Type)
+	//}
 
 	if bReq.BurningAmount == 0 {
 		return false, false, fmt.Errorf("wrong request info's burned amount")
@@ -67,6 +69,7 @@ func (bReq BridgeHubUnshieldRequest) ValidateSanityData(chainRetriever metadataC
 		return false, false, fmt.Errorf("burn amount is incorrect %v", burnAmount)
 	}
 
+	// todo: 0xcryptolover handle properly for each ext_type
 	// validate RemoteAddress for btc only
 	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(bReq.TokenID.String(), bReq.RemoteAddress, beaconHeight, common.PortalVersion4)
 	if err != nil || !isValidRemoteAddress {

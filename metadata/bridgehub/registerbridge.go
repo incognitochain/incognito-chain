@@ -97,9 +97,10 @@ func (bReq RegisterBridgeRequest) ValidateSanityData(
 	}
 
 	// check trigger feature or not
-	if shardViewRetriever.GetTriggeredFeature()[metadataCommon.BridgeHubFeatureName] == 0 {
-		return false, false, fmt.Errorf("Bridge Hub Feature has not been enabled yet %v", bReq.Type)
-	}
+	// todo: 0xcryptolover disable to test
+	//if shardViewRetriever.GetTriggeredFeature()[metadataCommon.BridgeHubFeatureName] == 0 {
+	//	return false, false, fmt.Errorf("Bridge Hub Feature has not been enabled yet %v", bReq.Type)
+	//}
 
 	// vanity data
 	// TODO 0xkraken: validate format address string

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
@@ -303,4 +302,110 @@ func (httpServer *HttpServer) createBridgeHubShieldingTx(
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
+}
+
+// unshield bridge token
+func processBurningBridgeHubReq(
+	burningMetaType int,
+	params interface{},
+	closeChan <-chan struct{},
+	httpServer *HttpServer,
+) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	if len(arrayParams) > 6 {
+		privacyTemp, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be valid "))
+		}
+		hasPrivacyToken := int(privacyTemp) > 0
+		if hasPrivacyToken {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
+		}
+	}
+
+	senderPrivateKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+	}
+
+	tokenReceivers, ok := tokenParamsRaw["TokenReceivers"].(interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token receivers is invalid"))
+	}
+
+	tokenID, ok := tokenParamsRaw["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
+	}
+
+	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("remote address is invalid"))
+	}
+
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
+	meta, err := metadataBridgeHub.NewBridgeHubUnshieldRequest()
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	var byteArrays []byte
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+	byteArrays, err = json.Marshal(customTokenTx)
+	txHash := customTokenTx.Hash().String()
+
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            txHash,
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+func (httpServer *HttpServer) handleCreateRawTxWithBurningBridgeHubReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningBridgeHubReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningBridgeHubReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
 }

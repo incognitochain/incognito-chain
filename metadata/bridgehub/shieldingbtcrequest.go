@@ -158,9 +158,10 @@ func (iReq ShieldingBTCRequest) ValidateTxWithBlockChain(tx metadataCommon.Trans
 
 func (iReq ShieldingBTCRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
 	// check trigger feature or not
-	if shardViewRetriever.GetTriggeredFeature()[metadataCommon.BridgeHubFeatureName] == 0 {
-		return false, false, fmt.Errorf("Bridge Hub Feature has not been enabled yet %v", iReq.Type)
-	}
+	// todo: 0xcryptolover disable to test
+	//if shardViewRetriever.GetTriggeredFeature()[metadataCommon.BridgeHubFeatureName] == 0 {
+	//	return false, false, fmt.Errorf("Bridge Hub Feature has not been enabled yet %v", iReq.Type)
+	//}
 	var err error
 	// todo: update
 	if iReq.IncTokenID.String() != "BTC_ID" {

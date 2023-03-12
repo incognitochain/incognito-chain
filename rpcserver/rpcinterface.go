@@ -433,7 +433,11 @@ var HttpHandler = map[string]httpHandler{
 	checkPruneData: (*HttpServer).checkPruneData,
 
 	// bridge hub
-	createAndSendBridgeHubRegisterBridgeTx: (*HttpServer).handleCreateAndSendBridgeHubRegisterBridgeTx,
+	createAndSendBridgeHubRegisterBridgeTx: (*HttpServer).handleCreateAndSendBridgeHubRegisterBridgeTx, // register bridge
+	createAndSendBridgeHubStakeBridgeTx:    (*HttpServer).handleCreateAndSendBridgeHubStakeTx,          // stake
+	createAndSendBridgeHubIssuingBridgeTx:  (*HttpServer).handleCreateAndSendBridgeShieldingTx,         // shielding
+	createAndSendBridgeHubBurnBridgeTx:     (*HttpServer).handleCreateAndSendBridgeHubRegisterBridgeTx, // unshield
+	getBridgeHubState:                      (*HttpServer).handleGetBridgeHubState,                      // get state
 }
 
 // Commands that are available to a limited user
