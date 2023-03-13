@@ -28,6 +28,10 @@ func (s *BridgeHubState) StakingInfos() map[string]uint64 {
 	return s.stakingInfos
 }
 
+func (s *BridgeHubState) StakingInfoDetail() map[string]map[string]uint64 {
+	return s.stakingInfoDetail
+}
+
 func (s *BridgeHubState) BridgeInfos() map[string]*BridgeInfo {
 	return s.bridgeInfos
 }

@@ -220,12 +220,13 @@ func (m *Manager) BuildNewUnshieldBridgeHubInstructions(stateDB *statedb.StateDB
 			if err != nil {
 				continue
 			}
-			res = append(res, insts...)
+			if len(insts) > 0 {
+				res = append(res, insts...)
+			}
 		default:
 			continue
 		}
 	}
 
-	Logger.log.Info("bridgeagg new unshield instructions:", res)
 	return res, nil
 }

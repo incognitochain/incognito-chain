@@ -48,11 +48,12 @@ func getBridgeHubState(
 	}
 
 	res := &jsonresult.BridgeHubState{
-		BeaconTimeStamp: beaconTimeStamp,
-		StakingInfos:    bridgeHubState.StakingInfos(),
-		BridgeInfos:     bridgeHubState.BridgeInfos(),
-		TokenPrices:     bridgeHubState.TokenPrices(),
-		Params:          bridgeHubState.Params(),
+		BeaconTimeStamp:   beaconTimeStamp,
+		StakingInfos:      bridgeHubState.StakingInfos(),
+		StakingInfoDetail: bridgeHubState.StakingInfoDetail(),
+		BridgeInfos:       bridgeHubState.BridgeInfos(),
+		TokenPrices:       bridgeHubState.TokenPrices(),
+		Params:            bridgeHubState.Params(),
 	}
 	return res, nil
 }
