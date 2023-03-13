@@ -634,7 +634,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		}
 
 	} else {
-		if curView.TriggeredFeature[config.DELEGATION_REWARD] != 0 {
+		if blockVersion >= int(config.Param().FeatureVersion[config.DELEGATION_REWARD]) {
 			totalRewardForBeacon,
 				totalRewardForShard,
 				totalRewardForIncDAO,

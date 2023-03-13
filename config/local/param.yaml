@@ -167,12 +167,22 @@ auto_enable_feature:
       min_trigger: 1
       force_trigger: 1
       require_percentage: 100
+  - delegation:
+      min_trigger: 11
+      force_trigger: 90
+      require_percentage: 100
+  - delegation_reward:
+      min_trigger: 41
+      force_trigger: 90
+      require_percentage: 100
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
+  - delegation: 10
+  - delegation_reward: 11
 
 transactions_param:
   lowerbound: 15

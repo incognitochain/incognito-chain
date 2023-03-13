@@ -81,6 +81,28 @@ func CheckValidationDataWithCommittee(valData *consensustypes.ValidationData, co
 	return true
 }
 
+func CheckValidationDataWithCommitteeAndVotingPower(valData *consensustypes.ValidationData, committee []incognitokey.CommitteePublicKey, votingPower []uint64) bool {
+	if len(committee) < 1 {
+		return false
+	}
+	sum := uint64(0)
+	for _, power := range votingPower {
+		sum += power
+	}
+	votedPower := uint64(0)
+
+	for i := 0; i < len(valData.ValidatiorsIdx)-1; i++ {
+		votedPower += votingPower[valData.ValidatiorsIdx[i]]
+		if valData.ValidatiorsIdx[i] >= valData.ValidatiorsIdx[i+1] {
+			return false
+		}
+	}
+	if votedPower <= sum*2/3 {
+		return false
+	}
+	return true
+}
+
 func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
@@ -89,18 +111,56 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 
 	reduceFixNodeVersion := GetLatestReduceFixNodeVersion()
 	if reduceFixNodeVersion != 0 && block.GetVersion() >= reduceFixNodeVersion {
-		cnt := 0
-		for _, v := range valData.ValidatiorsIdx {
-			if v < numFixNode {
-				cnt++
-			}
-		}
-		if cnt <= 2*numFixNode/3 {
-			return errors.New("Not enough fix node votes")
+		if err := CheckCommitteeSigWithFixNode(valData, committee, numFixNode); err != nil {
+			return err
 		}
 	}
 
 	valid := CheckValidationDataWithCommittee(valData, committee)
+	if !valid {
+		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
+		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %+v len(%+v) is not valid with this committee %v", valData.ValidatiorsIdx, len(valData.ValidatiorsIdx), committeeStr)))
+	}
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committee {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
+	}
+
+	if err := validateBLSSig(block.ProposeHash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	return nil
+}
+
+func CheckCommitteeSigWithFixNode(valData *consensustypes.ValidationData, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
+
+	cnt := 0
+	for _, v := range valData.ValidatiorsIdx {
+		if v < numFixNode {
+			cnt++
+		}
+	}
+	if cnt <= 2*numFixNode/3 {
+		return errors.New("Not enough fix node votes")
+	}
+
+	return nil
+}
+
+func ValidateCommitteeSigWithVotingPower(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, votingPower []uint64, numFixNode int) error {
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+
+	reduceFixNodeVersion := GetLatestReduceFixNodeVersion()
+	if reduceFixNodeVersion != 0 && block.GetVersion() >= reduceFixNodeVersion {
+		if err := CheckCommitteeSigWithFixNode(valData, committee, numFixNode); err != nil {
+			return err
+		}
+	}
+
+	valid := CheckValidationDataWithCommitteeAndVotingPower(valData, committee, votingPower)
 	if !valid {
 		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
 		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %+v len(%+v) is not valid with this committee %v", valData.ValidatiorsIdx, len(valData.ValidatiorsIdx), committeeStr)))

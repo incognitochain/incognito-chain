@@ -3,10 +3,11 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/config"
 	"log"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -65,6 +66,31 @@ func GetLatestReduceFixNodeVersion() int {
 
 	return 0
 }
+
+func (p *ProposeBlockInfo) ValidateMajorityVotingPower(votingPower []uint64) bool {
+	if len(p.SigningCommittees) < 1 {
+		return false
+	}
+	sum := uint64(0)
+	for _, power := range votingPower {
+		sum += power
+	}
+	votedPower := uint64(0)
+
+	for valIdx, cpk := range p.SigningCommittees {
+		if v, ok := p.Votes[cpk.GetMiningKeyBase58(consensusName)]; ok {
+			if v.IsValid == 1 {
+				votedPower += votingPower[valIdx]
+			}
+		}
+	}
+
+	if votedPower <= sum*2/3 {
+		return false
+	}
+	return true
+}
+
 func (p *ProposeBlockInfo) ValidateFixNodeMajority() bool {
 	redduceFixNodeVersion := GetLatestReduceFixNodeVersion()
 	if redduceFixNodeVersion == 0 || p.block.GetVersion() < redduceFixNodeVersion {

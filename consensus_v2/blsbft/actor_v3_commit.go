@@ -1,8 +1,15 @@
 package blsbft
 
 import (
+	"math"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 /*
@@ -20,8 +27,43 @@ func (a *actorV3) maybeCommit() {
 		if previousView == nil {
 			continue
 		}
-		if a.currentTimeSlot == previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) &&
-			!proposeBlockInfo.IsCommitted {
+		if a.currentTimeSlot != previousView.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) ||
+			proposeBlockInfo.IsCommitted {
+			continue
+		}
+		if (proposeBlockInfo.block.GetVersion() >= int(config.Param().FeatureVersion[config.DELEGATION_REWARD])) && (a.chainID == common.BeaconChainID) {
+			bcView, ok := previousView.(*blockchain.BeaconBestState)
+			if !ok {
+				a.logger.Error(errors.Errorf("Can not convert view %v to beacon best state", previousView.GetHash().String()))
+				continue
+			}
+			beaconConsensusStateDB := bcView.GetBeaconConsensusStateDB()
+			committeeKeyStringList, err := incognitokey.CommitteeKeyListToString(proposeBlockInfo.SigningCommittees)
+			if err != nil {
+				a.logger.Error(errors.Errorf("Can not convert committee key list to string, block %v", proposeBlockInfo.block.Hash().String()))
+				continue
+			}
+			votingPower := make([]uint64, len(committeeKeyStringList))
+			committeeData := statedb.GetCommitteeData(beaconConsensusStateDB)
+			if committeeData == nil {
+				a.logger.Error(errors.Errorf("Can not get committee data at beacon height %v, beacon view hash %v", previousView.GetBeaconHeight(), previousView.GetHash().String()))
+				continue
+			}
+			for idx, cPK := range committeeKeyStringList {
+				stakerInfo, has := committeeData.BeginEpochInfo[cPK]
+				if !has {
+					votingPower[idx] = 1
+				} else {
+					votingPower[idx] = uint64(math.Sqrt(float64(stakerInfo.Score)))
+				}
+			}
+			if proposeBlockInfo.ValidateMajorityVotingPower(votingPower) && proposeBlockInfo.ValidateFixNodeMajority() {
+				a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)",
+					proposeBlockInfo.block.FullHashString(), proposeBlockInfo.ValidVotes, 2*len(proposeBlockInfo.SigningCommittees)/3, len(proposeBlockInfo.SigningCommittees))
+				a.commitBlock(proposeBlockInfo)
+				proposeBlockInfo.IsCommitted = true
+			}
+		} else {
 			//has majority votes
 			if proposeBlockInfo.ValidVotes > 2*len(proposeBlockInfo.SigningCommittees)/3 && proposeBlockInfo.ValidateFixNodeMajority() {
 				a.logger.Infof("Process Block With enough votes, %+v, has %+v, expect > %+v (from total %v)",

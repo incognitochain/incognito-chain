@@ -5,15 +5,20 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 )
 
 func GetRewardSplitRule(blockVersion int) SplitRewardRuleProcessor {
+	if blockVersion >= int(config.Param().FeatureVersion[config.DELEGATION_REWARD]) {
+		return RewardSplitRuleV4{}
+	}
 	if blockVersion >= types.INSTANT_FINALITY_VERSION_V2 {
 		return RewardSplitRuleV2{}
 	}
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION {
 		return RewardSplitRuleV3{}
 	}
+
 	return RewardSplitRuleV1{}
 }
 

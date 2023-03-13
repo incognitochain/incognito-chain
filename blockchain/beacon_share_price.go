@@ -2,14 +2,15 @@ package blockchain
 
 import (
 	"errors"
+	"log"
+	"math/big"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"log"
-	"math/big"
-	"sort"
 )
 
 func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, delegationReward uint64) ([][]string, error) {
@@ -89,4 +90,17 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 	}
 	log.Println(sharePriceInsts.ToString())
 	return [][]string{sharePriceInsts.ToString()}, nil
+}
+
+func (bestView *BeaconBestState) GetCommitteeData(bc *BlockChain, delegationReward uint64) (*statedb.CommitteeData, error) {
+	if bestView.TriggeredFeature[BEACON_STAKING_FLOW_V4] == 0 {
+		return nil, nil
+	}
+
+	//get reward with performance
+	stateDB := bestView.GetBeaconConsensusStateDB()
+
+	committeeData := statedb.GetCommitteeData(stateDB)
+
+	return committeeData, nil
 }

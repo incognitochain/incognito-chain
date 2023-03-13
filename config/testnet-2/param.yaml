@@ -205,6 +205,14 @@ auto_enable_feature:
   - slash2sync:
       min_trigger: 1e9
       require_percentage: 90
+  - delegation:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 85
+  - delegation_reward:
+      min_trigger: 1e9
+      force_trigger: 1e9
+      require_percentage: 85
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30
@@ -220,6 +228,8 @@ feature_version:
   - blocktime10s_27_12: 15
   - beacon_staking_flow_v4 : 16
   - slash2sync: 17
+  - delegation: 18
+  - delegation_reward: 19
 transactions_param:
   lowerbound: 15
   upperbound: 100

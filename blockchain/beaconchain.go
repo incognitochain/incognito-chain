@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"path"
 	"sort"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -436,9 +438,42 @@ func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, co
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees, numOfFixNode); err != nil {
-		Logger.log.Info("[dcs] err:", err)
-		return err
+	if block.GetVersion() >= int(config.Param().FeatureVersion[config.DELEGATION_REWARD]) {
+		beaconConsensusRootHash, err := chain.Blockchain.GetBeaconConsensusRootHash(chain.GetFinalViewState(), block.GetBeaconHeight()-1)
+		if err != nil {
+			return errors.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", block.GetBeaconHeight(), err)
+		}
+		beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(chain.Blockchain.GetBeaconChainDatabase()))
+		if err != nil {
+			return errors.Errorf("Beacon Consensus DB of Root Hash %v of Height %+v not found, error %+v", beaconConsensusRootHash.String(), block.GetBeaconHeight(), err)
+		}
+		committeeKeyStringList, err := incognitokey.CommitteeKeyListToString(committees)
+		if err != nil {
+			return err
+		}
+		votingPower := make([]uint64, len(committeeKeyStringList))
+		committeeData := statedb.GetCommitteeData(beaconConsensusStateDB)
+		if committeeData == nil {
+			return errors.Errorf("Can not get committee data at beacon height %v, beacon root hash %v", block.GetBeaconHeight(), beaconConsensusRootHash.String())
+		}
+		for idx, cPK := range committeeKeyStringList {
+			stakerInfo, has := committeeData.BeginEpochInfo[cPK]
+			if !has {
+				votingPower[idx] = 1
+			} else {
+				votingPower[idx] = uint64(math.Sqrt(float64(stakerInfo.Score)))
+			}
+		}
+
+		if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSigWithVotingPower(block, committees, votingPower, numOfFixNode); err != nil {
+			Logger.log.Info("[dcs] err:", err)
+			return err
+		}
+	} else {
+		if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees, numOfFixNode); err != nil {
+			Logger.log.Info("[dcs] err:", err)
+			return err
+		}
 	}
 	return nil
 }

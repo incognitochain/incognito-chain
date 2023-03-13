@@ -3,8 +3,9 @@ package consensus_v2
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -172,6 +173,11 @@ func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusT
 
 func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, numFixNode int) error {
 	return blsbft.ValidateCommitteeSig(block, committees, numFixNode)
+}
+
+func (engine *Engine) ValidateBlockCommitteSigWithVotingPower(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, votingPower []uint64, numFixNode int) error {
+
+	return blsbft.ValidateCommitteeSigWithVotingPower(block, committees, votingPower, numFixNode)
 }
 
 func GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
