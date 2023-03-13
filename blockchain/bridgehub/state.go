@@ -44,7 +44,13 @@ func (s *BridgeHubState) Params() *statedb.BridgeHubParamState {
 }
 
 func NewBridgeHubState() *BridgeHubState {
-	return &BridgeHubState{}
+	return &BridgeHubState{
+		stakingInfos:      make(map[string]uint64),
+		stakingInfoDetail: make(map[string]map[string]uint64),
+		bridgeInfos:       make(map[string]*BridgeInfo),
+		tokenPrices:       make(map[string]uint64),
+		params:            nil,
+	}
 }
 
 func (s *BridgeHubState) Clone() *BridgeHubState {
