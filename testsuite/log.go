@@ -3,6 +3,7 @@ package devframework
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgehub"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/pruner"
 	"os"
@@ -90,6 +91,7 @@ var (
 	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
 	pdexLogger             = backendLog.Logger("Pdex log ", false)
 	bridgeAggLogger        = backendLog.Logger("BridgeAgg log ", false)
+	bridgeHubLogger        = backendLog.Logger("BridgeHub log ", false)
 	finishSyncLogger       = backendLog.Logger("Finish Sync log ", false)
 	prunerLogger           = backendLog.Logger("Pruner log ", false)
 
@@ -153,6 +155,7 @@ func init() {
 	committeestate.Logger.Init(committeeStateLogger)
 	pdex.Logger.Init(pdexLogger)
 	bridgeagg.Logger.Init(bridgeAggLogger)
+	bridgehub.Logger.Init(bridgeHubLogger)
 	pruner.Logger.Init(prunerLogger)
 
 	portal.Logger.Init(portalLogger)

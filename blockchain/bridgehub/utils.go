@@ -73,7 +73,6 @@ func buildBridgeHubStakeInst(
 	meta metadataBridgeHub.StakePRVRequest,
 	shardID byte,
 	txReqID common.Hash,
-	bridgeID string,
 	status string,
 	errorType int,
 ) ([]string, error) {
@@ -82,7 +81,6 @@ func buildBridgeHubStakeInst(
 		BridgePoolPubKey: meta.BridgePubKey,
 		StakeAmount:      meta.StakeAmount,
 		TokenID:          meta.TokenID,
-		BridgeID:         bridgeID,
 		TxReqID:          txReqID.String(),
 	}
 	contentBytes, _ := json.Marshal(content)

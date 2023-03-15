@@ -8,8 +8,7 @@ import (
 
 type BridgeHubState struct {
 	// TODO: staking asset is PRV or others?
-	stakingInfos      map[string]uint64            // bridgePubKey : total amount PRV staked
-	stakingInfoDetail map[string]map[string]uint64 // bridgePubkey -> payment address : amount PRV staked
+	stakingInfos map[string]uint64 // bridgePubKey : total amount PRV staked
 
 	// bridgePubKey only belongs one Bridge
 	bridgeInfos map[string]*BridgeInfo // BridgeID : BridgeInfo
@@ -28,10 +27,6 @@ func (s *BridgeHubState) StakingInfos() map[string]uint64 {
 	return s.stakingInfos
 }
 
-func (s *BridgeHubState) StakingInfoDetail() map[string]map[string]uint64 {
-	return s.stakingInfoDetail
-}
-
 func (s *BridgeHubState) BridgeInfos() map[string]*BridgeInfo {
 	return s.bridgeInfos
 }
@@ -45,11 +40,10 @@ func (s *BridgeHubState) Params() *statedb.BridgeHubParamState {
 
 func NewBridgeHubState() *BridgeHubState {
 	return &BridgeHubState{
-		stakingInfos:      make(map[string]uint64),
-		stakingInfoDetail: make(map[string]map[string]uint64),
-		bridgeInfos:       make(map[string]*BridgeInfo),
-		tokenPrices:       make(map[string]uint64),
-		params:            nil,
+		stakingInfos: make(map[string]uint64),
+		bridgeInfos:  make(map[string]*BridgeInfo),
+		tokenPrices:  make(map[string]uint64),
+		params:       nil,
 	}
 }
 

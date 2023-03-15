@@ -171,6 +171,7 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
 		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+		ValidatorPubKey  string      `json:"ValidatorPubKey"`
 		TokenID          common.Hash `json:"TokenID"`
 		BurnAmount       uint64      `json:"BurnAmount"`
 	}{}
@@ -182,7 +183,7 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 
 	md, _ := metadataBridgeHub.NewStakePRVRequest(
 		mdReader.BridgePoolPubKey,
-		keyWallet.KeySet.PaymentAddress,
+		mdReader.ValidatorPubKey,
 		mdReader.BurnAmount,
 		mdReader.TokenID,
 	)

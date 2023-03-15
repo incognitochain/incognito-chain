@@ -194,7 +194,7 @@ func (sp *stateProducer) stake(
 	bridgeID := common.HashH(bridgeIDBytes).String()
 
 	if state.bridgeInfos[bridgeID] != nil {
-		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
+		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDExistedError)
 		return [][]string{inst}, state, nil
 	}
 
@@ -203,7 +203,7 @@ func (sp *stateProducer) stake(
 	clonedState.stakingInfos[meta.BridgePubKey] += meta.StakeAmount
 
 	// build accepted instruction
-	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
+	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.AcceptedStatusStr, 0)
 	return [][]string{inst}, clonedState, nil
 }
 

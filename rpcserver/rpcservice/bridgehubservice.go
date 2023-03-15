@@ -16,7 +16,7 @@ func (blockService BlockService) GetBridgeHubState(
 		beaconHeight = beaconBestView.BeaconHeight
 	}
 
-	beaconFeatureStateRootHash, err := blockService.BlockChain.GetBeaconFeatureRootHash(beaconBestView, uint64(beaconHeight))
+	beaconFeatureStateRootHash, err := blockService.BlockChain.GetBeaconFeatureRootHash(beaconBestView, beaconHeight)
 	if err != nil {
 		return nil, NewRPCError(GetBridgeHubStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
@@ -25,7 +25,7 @@ func (blockService BlockService) GetBridgeHubState(
 		return nil, NewRPCError(GetBridgeHubStateError, err)
 	}
 
-	beaconBlocks, err := blockService.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	beaconBlocks, err := blockService.BlockChain.GetBeaconBlockByHeight(beaconHeight)
 	if err != nil {
 		return nil, NewRPCError(GetBridgeHubStateError, err)
 	}
@@ -48,12 +48,11 @@ func getBridgeHubState(
 	}
 
 	res := &jsonresult.BridgeHubState{
-		BeaconTimeStamp:   beaconTimeStamp,
-		StakingInfos:      bridgeHubState.StakingInfos(),
-		StakingInfoDetail: bridgeHubState.StakingInfoDetail(),
-		BridgeInfos:       bridgeHubState.BridgeInfos(),
-		TokenPrices:       bridgeHubState.TokenPrices(),
-		Params:            bridgeHubState.Params(),
+		BeaconTimeStamp: beaconTimeStamp,
+		StakingInfos:    bridgeHubState.StakingInfos(),
+		BridgeInfos:     bridgeHubState.BridgeInfos(),
+		TokenPrices:     bridgeHubState.TokenPrices(),
+		Params:          bridgeHubState.Params(),
 	}
 	return res, nil
 }

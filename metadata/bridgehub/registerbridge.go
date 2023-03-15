@@ -121,16 +121,16 @@ func (bReq RegisterBridgeRequest) ValidateSanityData(
 	}
 
 	// validate sig
-	isValidSig, err := bReq.VerifySignature()
-	if err != nil || !isValidSig {
-		return false, false, fmt.Errorf("Invalid Tss signature: %v", err)
-	}
+	//isValidSig, err := bReq.VerifySignature()
+	//if err != nil || !isValidSig {
+	//	return false, false, fmt.Errorf("Invalid Tss signature: %v", err)
+	//}
 
 	return true, true, nil
 }
 
 func (bReq RegisterBridgeRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == metadataCommon.BridgeAggAddTokenMeta
+	return bReq.Type == metadataCommon.BridgeHubRegisterBridgeMeta
 }
 
 func (bReq RegisterBridgeRequest) Hash() *common.Hash {
