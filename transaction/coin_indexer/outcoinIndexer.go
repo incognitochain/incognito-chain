@@ -219,6 +219,10 @@ func (ci *CoinIndexer) AddOTAKey(otaKey privacy.OTAKey, state int) error {
 	return nil
 }
 
+func (ci *CoinIndexer) GetAllOTAKey() ([][]byte, error) {
+	return rawdbv2.GetIndexedOTAKeys(ci.db)
+}
+
 // AddOTAKey adds a new OTAKey to the cache list.
 func (ci *CoinIndexer) WriteWhitelistOTAKey(whitelist []privacy.OTAKey) error {
 	whitelistBytes := [][rawdbv2.OTAKeyBytesLength]byte{}
@@ -288,6 +292,9 @@ func (ci *CoinIndexer) resetCachedOTAByWhitelist() error {
 	})
 	for _, k := range needToDel {
 		ci.managedOTAKeys.Delete(k)
+	}
+	for _, k := range curMap {
+		ci.managedOTAKeys.LoadOrStore(k, StatusIndexing)
 	}
 	return nil
 }
