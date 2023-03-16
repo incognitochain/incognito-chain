@@ -203,6 +203,7 @@ func GetIndexedOTAKeys(db incdb.Database) ([][]byte, error) {
 	for it.Next() {
 		value := it.Value()
 		newValue := make([]byte, len(value))
+		copy(newValue, value)
 		if len(whitelistMap) != 0 {
 			otaKey := [OTAKeyBytesLength]byte{}
 			copy(otaKey[:], newValue[:OTAKeyBytesLength])
@@ -210,7 +211,6 @@ func GetIndexedOTAKeys(db incdb.Database) ([][]byte, error) {
 				continue
 			}
 		}
-		copy(newValue, value)
 		otaKeys = append(otaKeys, newValue)
 	}
 	return otaKeys, nil
