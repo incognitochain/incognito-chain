@@ -206,9 +206,10 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	// TODO: 0xcryptolover add more information
 	// handle fail status
 	clonedState := state.Clone()
+	fmt.Printf("thachtb log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
-		clonedState := state.Clone()
 		clonedState.stakingInfos[contentInst.ValidatorPubKey] += contentInst.StakeAmount
+		fmt.Printf("thachtb log state info %+v \n", clonedState.stakingInfos)
 	}
 
 	// track status

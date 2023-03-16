@@ -419,7 +419,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadataCommon.ShieldingBTCRequestMeta:
 				bridgeHubShieldActions[shardID] = append(bridgeHubShieldActions[shardID], contentStr)
 			case metadataCommon.StakePRVRequestMeta:
-				bridgeHubShieldActions[shardID] = append(bridgeHubShieldActions[shardID], contentStr)
+				bridgeHubStakeActions[shardID] = append(bridgeHubStakeActions[shardID], contentStr)
 			// TODO: add more
 			default:
 				continue

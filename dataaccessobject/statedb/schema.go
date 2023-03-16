@@ -118,7 +118,8 @@ var (
 	bridgeHubBridgeInfoPrefix           = []byte("bridgehub-bridgeinfo-")
 	bridgeHubStatusPrefix               = []byte("bridgehub-status-")
 	bridgeHubRegisterBridgeStatusPrefix = []byte("registerbridge-")
-	stakeHubRegisterBridgeStatusPrefix  = []byte("stakebridge-")
+	bridgeHubStakingPrefix              = []byte("stakingbridge-")
+	bridgeHubStakingStatusPrefix        = []byte("registerbridge-status-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -444,6 +445,12 @@ func GetBurningConfirmPrefix() []byte {
 	h := common.HashH(burnPrefix)
 	return h[:][:prefixHashKeyLength]
 }
+
+func GetBridgeHubStakingTxPrefix() []byte {
+	h := common.HashH(bridgeHubStakingPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 func WaitingPDEContributionPrefix() []byte {
 	return waitingPDEContributionPrefix
 }
@@ -975,7 +982,7 @@ func BridgeHubRegisterBridgeStatusPrefix() []byte {
 }
 
 func BridgeHubStakeBridgeStatusPrefix() []byte {
-	return stakeHubRegisterBridgeStatusPrefix
+	return bridgeHubStakingStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

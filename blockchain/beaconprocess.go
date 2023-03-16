@@ -1129,7 +1129,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if newBestState.bridgeHubManager != nil {
 		diffState, err := newBestState.bridgeHubManager.GetDiffState(curView.bridgeHubManager.State())
-		fmt.Println("[BriHub] Process beacon block diffState", newBestState.bridgeHubManager.State().BridgeInfos())
+		fmt.Printf("[BriHub] Process beacon block %+v diffState", diffState)
 		if err != nil {
 			Logger.log.Errorf("Error get diff bridge hub state: %v", err)
 			return err

@@ -2,7 +2,6 @@ package bridgehub
 
 import (
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -125,7 +124,14 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 		diffState.params = nil
 	}
 
-	// TODO: coding for stakingInfo, tokenPrices
+	// get diff staking info
+	for k, v := range s.stakingInfos {
+		if preState.stakingInfos[k] != v {
+			diffState.stakingInfos[k] = v
+		}
+	}
+
+	// TODO: coding for tokenPrices
 
 	return diffState, nil
 }

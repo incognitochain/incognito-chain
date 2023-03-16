@@ -78,7 +78,8 @@ func buildBridgeHubStakeInst(
 ) ([]string, error) {
 	content := metadataBridgeHub.StakePRVRequestContentInst{
 		ExtChainID:       meta.ExtChainID,
-		BridgePoolPubKey: meta.BridgePubKey,
+		ValidatorPubKey:  meta.ValidatorPubKey,
+		BridgePoolPubKey: meta.BridgePoolPubKey,
 		StakeAmount:      meta.StakeAmount,
 		TokenID:          meta.TokenID,
 		TxReqID:          txReqID.String(),

@@ -63,3 +63,13 @@ func GetBridgeHubPTokenByBridgeID(stateDB *StateDB, bridgeID string) ([]*BridgeH
 	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
 	return stateDB.iterateBridgeHubPTokens(prefixHash)
 }
+
+func StoreBridgeHubStaking(stateDB *StateDB, validator string, state *BridgeStakingInfoState) error {
+	key := GenerateBridgeHubStakingInfoObjectKey(validator)
+	return stateDB.SetStateObject(BridgeStakingTxObjectType, key, state)
+}
+
+func GetBridgeStakingInfo(stateDB *StateDB) ([]*BridgeStakingInfoState, error) {
+	prefixHash := GetBridgeHubStakingTxPrefix()
+	return stateDB.iterateBridgeHubBridgeStakingInfos(prefixHash)
+}

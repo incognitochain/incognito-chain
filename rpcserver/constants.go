@@ -457,9 +457,9 @@ const (
 	checkPruneData = "checkprunedata"
 
 	createAndSendBridgeHubRegisterBridgeTx = "createandsendbridgehubregisterbridgetx"
-	createAndSendBridgeHubStakeBridgeTx    = "createAndSendBridgeHubStakeBridgeTx"
-	createAndSendBridgeHubIssuingBridgeTx  = "createAndSendBridgeHubIssuingBridgeTx"
-	createAndSendBridgeHubBurnBridgeTx     = "createAndSendBridgeHubBurnBridgeTx"
+	createAndSendBridgeHubStakeBridgeTx    = "createandsendbridgehubstakebridgetx"
+	createAndSendBridgeHubIssuingBridgeTx  = "createandsendbridgehubissuingbridgetx"
+	createAndSendBridgeHubBurnBridgeTx     = "createandsendbridgehubburnbridgetx"
 	getBridgeHubState                      = "getbridgehubstate"
 )
 
