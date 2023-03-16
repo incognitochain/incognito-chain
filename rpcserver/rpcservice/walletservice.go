@@ -52,9 +52,9 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, _, err := GetKeySetFromPrivateKeyParams(keyStr)
-	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil{
+	if err != nil || keySet.OTAKey.GetOTASecretKey() == nil {
 		return false, NewRPCError(InvalidSenderViewingKeyError, fmt.Errorf("OTA key not found, error: %v", err))
-	}else{
+	} else {
 		otaKey = keySet.OTAKey
 	}
 
@@ -64,6 +64,26 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 	}
 
 	err = walletService.BlockChain.SubmitOTAKey(otaKey, accessToken, isReset, heightToSyncFrom)
+	if err != nil {
+		return false, NewRPCError(CacheQueueError, err)
+	}
+
+	return true, nil
+}
+
+func (walletService WalletService) SubmitWhitelist(keyStrs []string, accessToken string, isReset bool) (bool, *RPCError) {
+	// this function accepts a private key or a hex-encoded OTA key
+	var otaKeys []privacy.OTAKey
+	for _, keyStr := range keyStrs {
+		keySet, _, err := GetKeySetFromPrivateKeyParams(keyStr)
+		if err != nil || keySet.OTAKey.GetOTASecretKey() == nil {
+			return false, NewRPCError(InvalidSenderViewingKeyError, fmt.Errorf("OTA key not found, error: %v", err))
+		} else {
+			otaKeys = append(otaKeys, keySet.OTAKey)
+		}
+	}
+
+	err := walletService.BlockChain.SubmitWhiteList(otaKeys, accessToken, isReset)
 	if err != nil {
 		return false, NewRPCError(CacheQueueError, err)
 	}

@@ -494,6 +494,20 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 	}
 }
 
+func (blockchain *BlockChain) SubmitWhiteList(whitelistOTA []privacy.OTAKey, accessToken string, reset bool) error {
+	if !EnableIndexingCoinByOTAKey {
+		return fmt.Errorf("OTA key submission not supported by this node configuration")
+	}
+	if (accessToken == "") || (!outcoinIndexer.IsValidAccessToken(accessToken)) {
+		return fmt.Errorf("invalid access token")
+	}
+	if reset {
+		return outcoinIndexer.WriteWhitelistOTAKey(whitelistOTA)
+	}
+	return outcoinIndexer.AddWhitelistOTAKey(whitelistOTA)
+
+}
+
 func (blockchain *BlockChain) GetKeySubmissionInfo(keyStr string) (int, error) {
 	if !EnableIndexingCoinByOTAKey {
 		return 0, fmt.Errorf("OTA key submission not supported by this node configuration")

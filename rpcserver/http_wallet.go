@@ -20,7 +20,6 @@ listaccount RPC lists accounts and their balances.
 Parameter #1—the minimum number of confirmations a transaction must have
 Parameter #2—whether to include watch-only addresses in results
 Result—a list of accounts and their balances
-
 */
 func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result, err := httpServer.walletService.ListAccounts()
@@ -36,7 +35,6 @@ this submits a chain-facing `OTA key` to view its balances later
 
 Parameter #1—the OTA key that will be submitted
 Result—success or error
-
 */
 func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -49,6 +47,37 @@ func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-ch
 	}
 
 	result, err := httpServer.walletService.SubmitKey(key, "", false, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleSubmitWhitelist(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 1 element"))
+	}
+	keys, ok := arrayParams[0].([]string)
+	if !ok {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA keys is invalid"))
+	}
+	var accessToken string
+	accessToken, ok = arrayParams[1].(string)
+	if !ok {
+		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("access token is invalid"))
+	}
+	isReset := false
+	if len(arrayParams) > 3 {
+		var ok bool
+		isReset, ok = arrayParams[3].(bool)
+		if !ok {
+			isReset = false
+		}
+	}
+
+	result, err := httpServer.walletService.SubmitWhitelist(keys, accessToken, isReset)
 	if err != nil {
 		return false, err
 	}
@@ -185,7 +214,7 @@ func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeC
 }
 
 /*
- dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address. (But does not remove it from the wallet.)
+	dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address. (But does not remove it from the wallet.)
 
 Parameter #1—the address corresponding to the private key to get
 Result—the private key
@@ -389,7 +418,7 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 	return err == nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
-//for fast retrieve token detail
+// for fast retrieve token detail
 var PrivacyCustomTokenCache, _ = lru.New(5000)
 
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
