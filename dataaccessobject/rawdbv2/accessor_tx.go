@@ -1,6 +1,7 @@
 package rawdbv2
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -125,7 +126,6 @@ func GetTxByPublicKeyV2(
 	return result, skip, limit, nil
 }
 
-
 func StoreIndexedOutCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	for _, outputCoin := range outputCoins {
 		key := generateIndexedOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
@@ -161,6 +161,26 @@ func StoreIndexedOTAKey(db incdb.Database, theKey []byte, state int) error {
 	return nil
 }
 
+func StoreWhitelistOTAKeys(db incdb.Database, whitelist [][OTAKeyBytesLength]byte) error {
+	key := GetWhitelistOTAKey()
+	if value, err := json.Marshal(whitelist); err != nil {
+		return err
+	} else {
+		return db.Put(key, value)
+	}
+}
+
+func GetWhitelistOTAKeys(db incdb.Database) ([][OTAKeyBytesLength]byte, error) {
+	key := GetWhitelistOTAKey()
+	value, err := db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	whitelist := [][OTAKeyBytesLength]byte{}
+	err = json.Unmarshal(value, &whitelist)
+	return whitelist, err
+}
+
 func DeleteIndexedOTAKey(db incdb.Database, theKey []byte) error {
 	key := generateIndexedOTAKeyObjectKey(theKey)
 	err := db.Delete(key)
@@ -170,12 +190,26 @@ func DeleteIndexedOTAKey(db incdb.Database, theKey []byte) error {
 	return nil
 }
 
-func GetIndexedOTAKeys(db incdb.Database) ([][]byte,error) {
+func GetIndexedOTAKeys(db incdb.Database) ([][]byte, error) {
+	whitelistMap := map[[OTAKeyBytesLength]byte]interface{}{}
+	whitelist, err := GetWhitelistOTAKeys(db)
+	if err == nil {
+		for _, kBytes := range whitelist {
+			whitelistMap[kBytes] = nil
+		}
+	}
 	it := db.NewIteratorWithPrefix(getIndexedKeysPrefix())
 	var otaKeys [][]byte
 	for it.Next() {
 		value := it.Value()
 		newValue := make([]byte, len(value))
+		if len(whitelistMap) != 0 {
+			otaKey := [OTAKeyBytesLength]byte{}
+			copy(otaKey[:], newValue[:OTAKeyBytesLength])
+			if _, has := whitelistMap[[64]byte(otaKey)]; !has {
+				continue
+			}
+		}
 		copy(newValue, value)
 		otaKeys = append(otaKeys, newValue)
 	}
@@ -205,8 +239,8 @@ func GetCachedCoinHashes(db incdb.Database) ([][]byte, error) {
 	return otaKeys, nil
 }
 
-//These functions are used for storing and getting a transaction by an output coin index
-//TODO: refactor these functions for more efficient read/write
+// These functions are used for storing and getting a transaction by an output coin index
+// TODO: refactor these functions for more efficient read/write
 func StoreTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, shardID byte, txID common.Hash) error {
 	key := generateTxByCoinIndexObjectKey(index, tokenID, shardID)
 	value := txID.Bytes()
@@ -245,8 +279,8 @@ func GetTxByCoinIndex(db incdb.Database, index []byte, tokenID common.Hash, shar
 	return nil, NewRawdbError(GetTxByCoinIndexError, fmt.Errorf("no tx found for index %v, tokenID %v, shardID %v", index, tokenID.String(), shardID))
 }
 
-//These functions are used for storing/retrieving a transaction by an input coin serial number
-//TODO: refactor these functions for more efficient read/write
+// These functions are used for storing/retrieving a transaction by an input coin serial number
+// TODO: refactor these functions for more efficient read/write
 func StoreTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID common.Hash, shardID byte, txID common.Hash) error {
 	key := generateTxBySerialNumberObjectKey(serialNumber, tokenID, shardID)
 	value := txID.Bytes()

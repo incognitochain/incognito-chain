@@ -455,6 +455,7 @@ var LimitedHttpHandler = map[string]httpHandler{
 	submitKey:                        (*HttpServer).handleSubmitKey,
 	authorizedSubmitKey:              (*HttpServer).handleAuthorizedSubmitKey,
 	getKeySubmissionInfo:             (*HttpServer).handleGetKeySubmissionInfo,
+	submitWhitelist:                  (*HttpServer).handleSubmitWhitelist,
 }
 
 var WsHandler = map[string]wsHandler{

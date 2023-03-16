@@ -179,6 +179,7 @@ const (
 	submitKey                       = "submitkey"
 	authorizedSubmitKey             = "authorizedsubmitkey"
 	getKeySubmissionInfo            = "getkeysubmissioninfo"
+	submitWhitelist                 = "submitwhitelist"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
