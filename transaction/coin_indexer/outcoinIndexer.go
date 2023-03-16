@@ -243,13 +243,12 @@ func (ci *CoinIndexer) AddWhitelistOTAKey(whitelist []privacy.OTAKey) error {
 		kByte := OTAKeyToRaw(k)
 		whitelistBytes = append(whitelistBytes, kByte)
 	}
-	curList, err := rawdbv2.GetWhitelistOTAKeys(ci.db)
-	if err != nil {
-		return err
-	}
 	curKeyMap := map[[rawdbv2.OTAKeyBytesLength]byte]interface{}{}
-	for _, k := range curList {
-		curKeyMap[k] = nil
+	curList, err := rawdbv2.GetWhitelistOTAKeys(ci.db)
+	if (len(curList) > 0) && (err != nil) {
+		for _, k := range curList {
+			curKeyMap[k] = nil
+		}
 	}
 	for _, k := range whitelistBytes {
 		if _, has := curKeyMap[k]; !has {

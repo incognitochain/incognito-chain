@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -59,10 +60,11 @@ func (httpServer *HttpServer) handleSubmitWhitelist(params interface{}, closeCha
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 1 element"))
 	}
-	keys, ok := arrayParams[0].([]string)
+	keys, ok := arrayParams[0].(string)
 	if !ok {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("OTA keys is invalid"))
 	}
+	keysList := strings.Split(keys, ",")
 	var accessToken string
 	accessToken, ok = arrayParams[1].(string)
 	if !ok {
@@ -77,7 +79,7 @@ func (httpServer *HttpServer) handleSubmitWhitelist(params interface{}, closeCha
 		}
 	}
 
-	result, err := httpServer.walletService.SubmitWhitelist(keys, accessToken, isReset)
+	result, err := httpServer.walletService.SubmitWhitelist(keysList, accessToken, isReset)
 	if err != nil {
 		return false, err
 	}
