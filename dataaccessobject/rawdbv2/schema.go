@@ -52,6 +52,7 @@ var (
 	pruneStatusPrefix         = []byte("p-s")
 
 	cacheCommitteeFromBlockPrefix = []byte("c-c-f-b" + string(splitter))
+	whitelistOTAPrefix            = []byte("wl-ota" + string(splitter))
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -370,22 +371,22 @@ func GetStakingTxKey(shardID byte, hash common.Hash) []byte {
 	return key
 }
 
-//getBeaconPreCommitteeInfoKey ...
+// getBeaconPreCommitteeInfoKey ...
 func getBeaconPreCommitteeInfoKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
-//getShardPreCommitteeInfoKey ...
+// getShardPreCommitteeInfoKey ...
 func getShardPreCommitteeInfoKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
-//getShardPreCommitteeInfoForShardKey...
+// getShardPreCommitteeInfoForShardKey...
 func getShardPreCommitteeInfoForShardKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
 
-//getShardPendingValidatorsKey ...
+// getShardPendingValidatorsKey ...
 func getShardPendingValidatorsKey(hash common.Hash) []byte {
 	return hash.Bytes()
 }
@@ -400,6 +401,7 @@ const (
 	txByCoinIndexPrefixKeyLength        = 20
 	txBySerialNumberPrefixHashKeyLength = 12
 	txBySerialNumberPrefixKeyLength     = 20
+	OTAKeyBytesLength                   = 64
 )
 
 func getIndexedOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
@@ -438,6 +440,11 @@ func generateCachedCoinHashObjectKey(theCoinHash []byte) []byte {
 func getTxByCoinIndexPrefix() []byte {
 	h := common.HashH(txByCoinIndexPrefix)
 	return h[:][:txByCoinIndexPrefixHashKeyLength]
+}
+
+func GetWhitelistOTAKey() []byte {
+	h := common.HashH(whitelistOTAPrefix)
+	return h[:]
 }
 
 func generateTxByCoinIndexObjectKey(index []byte, tokenID common.Hash, shardID byte) []byte {
