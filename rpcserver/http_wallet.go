@@ -154,6 +154,16 @@ func (httpServer *HttpServer) handleGetKeySubmissionInfo(params interface{}, clo
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetAllKeySubmissionInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	status, err := httpServer.walletService.BlockChain.GetAllKeySubmissionInfo()
+	if err != nil {
+		return 0, rpcservice.NewRPCError(rpcservice.RPCInternalError, err)
+	}
+
+	return status, nil
+}
+
 /*
 getaccount RPC returns the name of the account associated with the given address.
 - Param #1: address

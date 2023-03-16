@@ -307,9 +307,9 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 	return append(transactions, txsResponse...), nil
 }
 
-//Return all coins belonging to the provided keyset
+// Return all coins belonging to the provided keyset
 //
-//If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
+// If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
 func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	var outCoins []privacy.Coin
 	var lowestHeightForV2 uint64 = config.Param().CoinVersion2LowestHeight
@@ -412,13 +412,13 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *in
 	return resPlainCoins, resCoins, err
 }
 
-//GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
-//With private-key, we can check unspent tx by check serialNumber from database
-//- Param #1: keyset - (priv-key, payment-address, readonlykey)
-//in case priv-key: return unspent outputcoin tx
-//in case readonly-key: return all outputcoin tx with amount value
-//in case payment-address: return all outputcoin tx with no amount value
-//- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
+// GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+// With private-key, we can check unspent tx by check serialNumber from database
+// - Param #1: keyset - (priv-key, payment-address, readonlykey)
+// in case priv-key: return unspent outputcoin tx
+// in case readonly-key: return all outputcoin tx with amount value
+// in case payment-address: return all outputcoin tx with no amount value
+// - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	if keyset.OTAKey.GetPublicSpend() == nil || keyset.OTAKey.GetOTASecretKey() == nil || keyset.PaymentAddress.GetOTAPublicKey() == nil {
 		return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1: true})
@@ -506,6 +506,51 @@ func (blockchain *BlockChain) SubmitWhiteList(whitelistOTA []privacy.OTAKey, acc
 	}
 	return outcoinIndexer.AddWhitelistOTAKey(whitelistOTA)
 
+}
+
+func (blockchain *BlockChain) GetAllKeySubmissionInfo() (map[string][]string, error) {
+	if !EnableIndexingCoinByOTAKey {
+		return nil, fmt.Errorf("OTA key submission not supported by this node configuration")
+	}
+
+	keyMapMemory := outcoinIndexer.GetManagedOTAKeys()
+	inmem := []string{}
+	keyMapMemory.Range(func(key, value any) bool {
+		if keyBytes, ok := key.([64]byte); ok {
+			keyOTA := coinIndexer.OTAKeyFromRaw(keyBytes)
+			wl := wallet.KeyWallet{}
+			wl.KeySet.OTAKey = keyOTA
+			OTAString := wl.Base58CheckSerialize(wallet.OTAKeyType)
+			inmem = append(inmem, OTAString)
+		}
+		return true
+	})
+	indatabase := []string{}
+	listCached, err := outcoinIndexer.GetAllOTAKey()
+	if err != nil {
+		return nil, err
+	}
+	for _, keyBytes := range listCached {
+		keyBytesRaw := [64]byte{}
+		copy(keyBytesRaw[:], keyBytes[:])
+		keyOTA := coinIndexer.OTAKeyFromRaw(keyBytesRaw)
+		wl := wallet.KeyWallet{}
+		wl.KeySet.OTAKey = keyOTA
+		OTAString := wl.Base58CheckSerialize(wallet.OTAKeyType)
+		indatabase = append(indatabase, OTAString)
+	}
+	sort.Slice(inmem, func(i, j int) bool {
+		return inmem[i] < inmem[j]
+	})
+	sort.Slice(indatabase, func(i, j int) bool {
+		return indatabase[i] < indatabase[j]
+	})
+
+	res := map[string][]string{
+		"Cached in mem":      inmem,
+		"Cached in database": indatabase,
+	}
+	return res, nil
 }
 
 func (blockchain *BlockChain) GetKeySubmissionInfo(keyStr string) (int, error) {
