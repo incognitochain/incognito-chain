@@ -55,7 +55,7 @@ func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-ch
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleSubmitWhitelist(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleSubmitWhitelistOTAForCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be an array with 1 element"))
@@ -79,7 +79,7 @@ func (httpServer *HttpServer) handleSubmitWhitelist(params interface{}, closeCha
 		}
 	}
 
-	result, err := httpServer.walletService.SubmitWhitelist(keysList, accessToken, isReset)
+	result, err := httpServer.walletService.SubmitWhitelistOTAForCache(keysList, accessToken, isReset)
 	if err != nil {
 		return false, err
 	}

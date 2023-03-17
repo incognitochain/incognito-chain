@@ -71,7 +71,7 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 	return true, nil
 }
 
-func (walletService WalletService) SubmitWhitelist(keyStrs []string, accessToken string, isReset bool) (bool, *RPCError) {
+func (walletService WalletService) SubmitWhitelistOTAForCache(keyStrs []string, accessToken string, isReset bool) (bool, *RPCError) {
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKeys []privacy.OTAKey
 	for _, keyStr := range keyStrs {
@@ -83,7 +83,7 @@ func (walletService WalletService) SubmitWhitelist(keyStrs []string, accessToken
 		}
 	}
 
-	err := walletService.BlockChain.SubmitWhiteList(otaKeys, accessToken, isReset)
+	err := walletService.BlockChain.SubmitWhiteListOTAForCache(otaKeys, accessToken, isReset)
 	if err != nil {
 		return false, NewRPCError(CacheQueueError, err)
 	}
