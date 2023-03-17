@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -17,8 +18,8 @@ type RegisterBridgeStatus struct {
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
-	Signature        string   `json:"Signature"`        // TSS sig
-	ErrorCode        int      `json:"ErrorCode,omitempty"`
+	//Signature        string   `json:"Signature"`        // TSS sig
+	ErrorCode int `json:"ErrorCode,omitempty"`
 }
 
 func buildBridgeHubRegisterBridgeInst(
@@ -31,12 +32,12 @@ func buildBridgeHubRegisterBridgeInst(
 ) ([]string, error) {
 	content := metadataBridgeHub.RegisterBridgeContentInst{
 		ExtChainID:       meta.ExtChainID,
-		BridgePoolPubKey: meta.BridgePoolPubKey,
 		ValidatorPubKeys: meta.ValidatorPubKeys,
 		VaultAddress:     meta.VaultAddress,
-		Signature:        meta.Signature,
+		//Signature:        meta.Signature,
 		BridgeID:         bridgeID,
 		TxReqID:          txReqID.String(),
+		BridgePoolPubKey: meta.BridgePoolPubKey,
 	}
 	contentBytes, _ := json.Marshal(content)
 
@@ -62,10 +63,12 @@ type StakeBridgeStatus struct {
 	Status           byte                   `json:"Status"`
 	BridgeID         string                 `json:"BridgeID"`
 	ExtChainID       string                 `json:"ExtChainID"`
-	BridgePoolPubKey string                 `json:"BridgePoolPubKey"` // TSS pubkey
-	StakeAmount      uint64                 `json:"StakeAmount"`      // must be equal to vout value
+	StakeAmount      uint64                 `json:"StakeAmount"` // must be equal to vout value
 	TokenID          common.Hash            `json:"TokenID"`
 	StakerAddress    privacy.PaymentAddress `json:"StakerAddress"`
+	BridgePubKey     string                 `json:"BridgePubKey"` // staker's key
+	BridgePoolPubKey string                 `json:"BridgePoolPubKey"`
+	BridgePubKeys    []string               `json:"BridgePubKeys"`
 	ErrorCode        int                    `json:"ErrorCode,omitempty"`
 }
 
@@ -79,10 +82,12 @@ func buildBridgeHubStakeInst(
 ) ([]string, error) {
 	content := metadataBridgeHub.StakePRVRequestContentInst{
 		ExtChainID:       meta.ExtChainID,
-		BridgePoolPubKey: meta.BridgePubKey,
 		StakeAmount:      meta.StakeAmount,
 		TokenID:          meta.TokenID,
 		BridgeID:         bridgeID,
+		BridgePubKey:     meta.BridgePubKey,
+		BridgePoolPubKey: meta.BridgePoolPubKey,
+		BridgePubKeys:    meta.BridgePubKeys,
 		TxReqID:          txReqID.String(),
 	}
 	contentBytes, _ := json.Marshal(content)

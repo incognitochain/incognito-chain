@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/metadata/tss"
 )
 
 // whoever can send this type of tx
@@ -19,7 +18,7 @@ type RegisterBridgeRequest struct {
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
-	Signature        string   `json:"Signature"`        // TSS sig
+	//Signature        string   `json:"Signature"`        // TSS sig
 	metadataCommon.MetadataBase
 }
 
@@ -45,7 +44,7 @@ func NewRegisterBridgeRequest(
 	bridgePoolPubKey string, // TSS pubkey
 	validatorPubKeys []string, // pubkey to build TSS key
 	vaultAddress string, // vault to receive external assets
-	signature string, // TSS sig
+	//signature string, // TSS sig
 ) (*RegisterBridgeRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.BridgeHubRegisterBridgeMeta,
@@ -55,7 +54,7 @@ func NewRegisterBridgeRequest(
 		BridgePoolPubKey: bridgePoolPubKey,
 		ValidatorPubKeys: validatorPubKeys,
 		VaultAddress:     vaultAddress,
-		Signature:        signature,
+		//Signature:        signature,
 	}
 	registerReq.MetadataBase = metadataBase
 	return registerReq, nil
@@ -67,21 +66,22 @@ func (bReq RegisterBridgeRequest) ValidateTxWithBlockChain(tx metadataCommon.Tra
 
 func (bReq RegisterBridgeRequest) VerifySignature() (bool, error) {
 	// validate TSS signature
-	msg := RegisterBridgeMsg{
-		ExtChainID:       bReq.ExtChainID,
-		BridgePoolPubKey: bReq.BridgePoolPubKey,
-		ValidatorPubKeys: bReq.ValidatorPubKeys,
-		VaultAddress:     bReq.VaultAddress,
-	}
+	/*msg := RegisterBridgeMsg{*/
+	/*ExtChainID:       bReq.ExtChainID,*/
+	/*BridgePoolPubKey: bReq.BridgePoolPubKey,*/
+	/*ValidatorPubKeys: bReq.ValidatorPubKeys,*/
+	/*VaultAddress:     bReq.VaultAddress,*/
+	/*}*/
 
-	msgBytes, err := json.Marshal(msg)
-	if err != nil {
-		return false, fmt.Errorf("Marshal msg error: %v", err)
-	}
+	/*msgBytes, err := json.Marshal(msg)*/
+	/*if err != nil {*/
+	/*return false, fmt.Errorf("Marshal msg error: %v", err)*/
+	/*}*/
 
 	// TODO: review hash func on Bridge Validator Network
-	h := common.HashH(msgBytes)
-	return tss.VerifyTSSSig(bReq.BridgePoolPubKey, h.String(), bReq.Signature)
+	//h := common.HashH(msgBytes)
+	//return tss.VerifyTSSSig(bReq.BridgePoolPubKey, h.String(), bReq.Signature)
+	return true, nil
 }
 
 func (bReq RegisterBridgeRequest) ValidateSanityData(
@@ -113,9 +113,9 @@ func (bReq RegisterBridgeRequest) ValidateSanityData(
 	if bReq.VaultAddress == "" {
 		return false, false, errors.New("VaultAddress empty")
 	}
-	if bReq.Signature == "" {
-		return false, false, errors.New("Signature empty")
-	}
+	/*if bReq.Signature == "" {*/
+	/*return false, false, errors.New("Signature empty")*/
+	/*}*/
 	if len(bReq.ValidatorPubKeys) == 0 {
 		return false, false, errors.New("ValidatorPubKeys empty")
 	}

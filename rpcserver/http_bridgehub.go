@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
@@ -83,7 +84,7 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 		BridgePoolPubKey string   `json:"BridgePoolPubKey"`
 		ValidatorPubKeys []string `json:"ValidatorPubKeys"`
 		VaultAddress     string   `json:"VaultAddress"`
-		Signature        string   `json:"Signature"`
+		//Signature        string   `json:"Signature"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -96,7 +97,7 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 		mdReader.BridgePoolPubKey,
 		mdReader.ValidatorPubKeys,
 		mdReader.VaultAddress,
-		mdReader.Signature,
+		//mdReader.Signature,
 	)
 
 	// create new param to build raw tx from param interface
@@ -170,9 +171,11 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+		BridgePubKey     string      `json:"BridgePubKey"`
 		TokenID          common.Hash `json:"TokenID"`
 		BurnAmount       uint64      `json:"BurnAmount"`
+		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+		BridgePubKeys    []string    `json:"BridgePubKeys"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -181,10 +184,12 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 	}
 
 	md, _ := metadataBridgeHub.NewStakePRVRequest(
-		mdReader.BridgePoolPubKey,
+		mdReader.BridgePubKey,
 		keyWallet.KeySet.PaymentAddress,
 		mdReader.BurnAmount,
 		mdReader.TokenID,
+		mdReader.BridgePoolPubKey,
+		mdReader.BridgePubKeys,
 	)
 
 	// create new param to build raw tx from param interface

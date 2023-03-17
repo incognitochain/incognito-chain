@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -73,9 +74,9 @@ func (sp *stateProcessor) registerBridge(
 		BridgePoolPubKey: contentInst.BridgePoolPubKey,
 		ValidatorPubKeys: contentInst.ValidatorPubKeys,
 		VaultAddress:     contentInst.VaultAddress,
-		Signature:        contentInst.Signature,
-		Status:           status,
-		ErrorCode:        errorCode,
+		//Signature:        contentInst.Signature,
+		Status:    status,
+		ErrorCode: errorCode,
 	}
 	trackStatusBytes, _ := json.Marshal(trackStatus)
 	txHash := &common.Hash{}
@@ -196,7 +197,7 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	contentInst := metadataBridgeHub.StakePRVRequestContentInst{}
 	err = json.Unmarshal(contentBytes, &contentInst)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction register bridge: %v", err)
+		Logger.log.Errorf("Can not unmarshal instruction stake bridge: %v", err)
 		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
 	}
 
@@ -214,11 +215,13 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	trackStatus := StakeBridgeStatus{
 		BridgeID:         contentInst.BridgeID,
 		ExtChainID:       contentInst.ExtChainID,
-		BridgePoolPubKey: contentInst.BridgePoolPubKey,
 		StakeAmount:      contentInst.StakeAmount,
 		TokenID:          contentInst.TokenID,
 		Status:           status,
 		StakerAddress:    contentInst.StakerAddress,
+		BridgePoolPubKey: contentInst.BridgePoolPubKey,
+		BridgePubKey:     contentInst.BridgePubKey,
+		BridgePubKeys:    contentInst.BridgePubKeys,
 		ErrorCode:        errorCode,
 	}
 	trackStatusBytes, _ := json.Marshal(trackStatus)
