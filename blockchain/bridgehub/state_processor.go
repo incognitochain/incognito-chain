@@ -63,7 +63,7 @@ func (sp *stateProcessor) registerBridge(
 	fmt.Printf("0xcryptolover log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
 		clonedState.bridgeInfos[contentInst.BridgeID] = &BridgeInfo{
-			Info:          statedb.NewBridgeInfoStateWithValue(contentInst.BridgeID, contentInst.ExtChainID, contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
+			Info:          statedb.NewBridgeInfoStateWithValue(contentInst.BridgeID, contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
 			PTokenAmounts: map[string]*statedb.BridgeHubPTokenState{},
 		}
 		fmt.Printf("0xcryptolover log state info %+v \n", clonedState.bridgeInfos)
@@ -72,7 +72,6 @@ func (sp *stateProcessor) registerBridge(
 	// track status
 	trackStatus := RegisterBridgeStatus{
 		BridgeID:         contentInst.BridgeID,
-		ExtChainID:       contentInst.ExtChainID,
 		BridgePoolPubKey: contentInst.BridgePoolPubKey,
 		ValidatorPubKeys: contentInst.ValidatorPubKeys,
 		VaultAddress:     contentInst.VaultAddress,
@@ -209,19 +208,21 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	clonedState := state.Clone()
 	fmt.Printf("thachtb log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
-		clonedState.stakingInfos[contentInst.BridgePubKey] += contentInst.StakeAmount
+		_, found := clonedState.stakingInfos[contentInst.BridgePubKey]
+		if !found {
+			clonedState.stakingInfos[contentInst.BridgePubKey] = &StakerInfo{}
+		}
+		clonedState.stakingInfos[contentInst.BridgePubKey].StakeAmount += contentInst.StakeAmount
 		fmt.Printf("thachtb log state info %+v \n", clonedState.stakingInfos)
 	}
 
 	// track status
 	trackStatus := StakeBridgeStatus{
-		ExtChainID:       contentInst.ExtChainID,
 		StakeAmount:      contentInst.StakeAmount,
 		TokenID:          contentInst.TokenID,
 		Status:           status,
 		BridgePoolPubKey: contentInst.BridgePoolPubKey,
 		BridgePubKey:     contentInst.BridgePubKey,
-		BridgePubKeys:    contentInst.BridgePubKeys,
 		ErrorCode:        errorCode,
 	}
 	trackStatusBytes, _ := json.Marshal(trackStatus)

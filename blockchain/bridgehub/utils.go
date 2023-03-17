@@ -14,7 +14,6 @@ import (
 type RegisterBridgeStatus struct {
 	Status           byte     `json:"Status"`
 	BridgeID         string   `json:"BridgeID"`
-	ExtChainID       string   `json:"ExtChainID"`
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
@@ -31,7 +30,6 @@ func buildBridgeHubRegisterBridgeInst(
 	errorType int,
 ) ([]string, error) {
 	content := metadataBridgeHub.RegisterBridgeContentInst{
-		ExtChainID:       meta.ExtChainID,
 		ValidatorPubKeys: meta.ValidatorPubKeys,
 		VaultAddress:     meta.VaultAddress,
 		//Signature:        meta.Signature,
@@ -79,12 +77,10 @@ func buildBridgeHubStakeInst(
 	errorType int,
 ) ([]string, error) {
 	content := metadataBridgeHub.StakePRVRequestContentInst{
-		ExtChainID:       meta.ExtChainID,
 		StakeAmount:      meta.StakeAmount,
 		TokenID:          meta.TokenID,
 		BridgePubKey:     meta.BridgePubKey,
 		BridgePoolPubKey: meta.BridgePoolPubKey,
-		BridgePubKeys:    meta.BridgePubKeys,
 		TxReqID:          txReqID.String(),
 	}
 	contentBytes, _ := json.Marshal(content)

@@ -13,23 +13,19 @@ import (
 )
 
 type StakePRVRequest struct {
-	ExtChainID       string      `json:"ExtChainID"`
 	StakeAmount      uint64      `json:"StakeAmount"` // must be equal to vout value
 	TokenID          common.Hash `json:"TokenID"`
 	BridgePubKey     string      `json:"BridgePubKey"` // staker's key
 	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
-	BridgePubKeys    []string    `json:"BridgePubKeys"`
 	metadataCommon.MetadataBase
 }
 
 type StakePRVRequestContentInst struct {
-	ExtChainID       string      `json:"ExtChainID"`
 	StakeAmount      uint64      `json:"StakeAmount"` // must be equal to vout value
 	TokenID          common.Hash `json:"TokenID"`
 	TxReqID          string      `json:"TxReqID"`
 	BridgePubKey     string      `json:"BridgePubKey"` // staker's key
 	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
-	BridgePubKeys    []string    `json:"BridgePubKeys"`
 }
 
 type StakeReqAction struct {
@@ -38,23 +34,19 @@ type StakeReqAction struct {
 }
 
 func NewStakePRVRequest(
-	extChainID string,
 	bridgePubKey string,
 	stakeAmount uint64,
 	tokenID common.Hash,
 	bridgePoolPubKey string,
-	birdgePubKeys []string,
 ) (*StakePRVRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.StakePRVRequestMeta,
 	}
 	burningReq := &StakePRVRequest{
-		ExtChainID:       extChainID,
 		BridgePubKey:     bridgePubKey,
 		StakeAmount:      stakeAmount,
 		TokenID:          tokenID,
 		BridgePoolPubKey: bridgePoolPubKey,
-		BridgePubKeys:    birdgePubKeys,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil
@@ -89,9 +81,6 @@ func (bReq StakePRVRequest) ValidateSanityData(chainRetriever metadataCommon.Cha
 		return false, false, fmt.Errorf("stake amount is incorrect %v", burnAmount)
 	}
 
-	if len(bReq.BridgePubKeys) == 0 {
-		return false, false, fmt.Errorf("length of bridgePubKey members cannot be 0")
-	}
 	if bReq.BridgePubKey == "" {
 		return false, false, fmt.Errorf("bridgePubKey cannot be empty")
 	}

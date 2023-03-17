@@ -13,7 +13,6 @@ import (
 
 // whoever can send this type of tx
 type RegisterBridgeRequest struct {
-	ExtChainID       string   `json:"ExtChainID"`
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
@@ -22,7 +21,6 @@ type RegisterBridgeRequest struct {
 }
 
 type RegisterBridgeContentInst struct {
-	ExtChainID       string   `json:"ExtChainID"`
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
@@ -32,14 +30,12 @@ type RegisterBridgeContentInst struct {
 }
 
 type RegisterBridgeMsg struct {
-	ExtChainID       string   `json:"ExtChainID"`
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"`
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`
 }
 
 func NewRegisterBridgeRequest(
-	extChainID string,
 	bridgePoolPubKey string, // TSS pubkey
 	validatorPubKeys []string, // pubkey to build TSS key
 	vaultAddress string, // vault to receive external assets
@@ -49,7 +45,6 @@ func NewRegisterBridgeRequest(
 		Type: metadataCommon.BridgeHubRegisterBridgeMeta,
 	}
 	registerReq := &RegisterBridgeRequest{
-		ExtChainID:       extChainID,
 		BridgePoolPubKey: bridgePoolPubKey,
 		ValidatorPubKeys: validatorPubKeys,
 		VaultAddress:     vaultAddress,
@@ -66,7 +61,6 @@ func (bReq RegisterBridgeRequest) ValidateTxWithBlockChain(tx metadataCommon.Tra
 func (bReq RegisterBridgeRequest) VerifySignature() (bool, error) {
 	// validate TSS signature
 	/*msg := RegisterBridgeMsg{*/
-	/*ExtChainID:       bReq.ExtChainID,*/
 	/*BridgePoolPubKey: bReq.BridgePoolPubKey,*/
 	/*ValidatorPubKeys: bReq.ValidatorPubKeys,*/
 	/*VaultAddress:     bReq.VaultAddress,*/
@@ -103,9 +97,6 @@ func (bReq RegisterBridgeRequest) ValidateSanityData(
 
 	// vanity data
 	// TODO 0xkraken: validate format address string
-	if bReq.ExtChainID == "" {
-		return false, false, errors.New("ExtChainID empty")
-	}
 	if bReq.BridgePoolPubKey == "" {
 		return false, false, errors.New("BridgePoolPubKey empty")
 	}

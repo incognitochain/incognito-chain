@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math/big"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,8 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
-	"math/big"
-	"strconv"
 )
 
 type stateProducer struct{}
@@ -45,15 +46,14 @@ func (sp *stateProducer) registerBridge(
 
 	// check all ValidatorPubKeys staked or not
 	for _, validatorPubKeyStr := range meta.ValidatorPubKeys {
-		if state.stakingInfos[validatorPubKeyStr] < state.params.MinStakedAmountValidator() {
+		if state.stakingInfos[validatorPubKeyStr].StakeAmount < state.params.MinStakedAmountValidator() {
 			inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidStakedAmountValidatorError)
 			return [][]string{inst}, state, nil
 		}
 	}
 
 	// check bridgeID existed or not
-	bridgeIDBytes := append([]byte(meta.ExtChainID), []byte(meta.BridgePoolPubKey)...)
-	bridgeID := common.HashH(bridgeIDBytes).String()
+	bridgeID := meta.BridgePoolPubKey
 
 	if state.bridgeInfos[bridgeID] != nil {
 		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
@@ -66,7 +66,7 @@ func (sp *stateProducer) registerBridge(
 	// update state
 	clonedState := state.Clone()
 	clonedState.bridgeInfos[bridgeID] = &BridgeInfo{
-		Info:          statedb.NewBridgeInfoStateWithValue(bridgeID, meta.ExtChainID, meta.ValidatorPubKeys, meta.BridgePoolPubKey, []string{}, ""),
+		Info:          statedb.NewBridgeInfoStateWithValue(bridgeID, meta.ValidatorPubKeys, meta.BridgePoolPubKey, []string{}, ""),
 		PTokenAmounts: map[string]*statedb.BridgeHubPTokenState{},
 	}
 
@@ -190,8 +190,7 @@ func (sp *stateProducer) stake(
 	}
 	// todo: cryptolover add more validation
 	// check bridgeID existed or not
-	bridgeIDBytes := append([]byte(meta.ExtChainID), []byte(meta.BridgePoolPubKey)...)
-	bridgeID := common.HashH(bridgeIDBytes).String()
+	bridgeID := meta.BridgePubKey
 
 	if state.bridgeInfos[bridgeID] != nil {
 		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDExistedError)
@@ -200,7 +199,11 @@ func (sp *stateProducer) stake(
 
 	// update state
 	clonedState := state.Clone()
-	clonedState.stakingInfos[meta.BridgePoolPubKey] += meta.StakeAmount
+	_, found := clonedState.stakingInfos[meta.BridgePubKey]
+	if !found {
+		clonedState.stakingInfos[meta.BridgePubKey] = &StakerInfo{}
+	}
+	clonedState.stakingInfos[meta.BridgePubKey].StakeAmount += meta.StakeAmount
 
 	// build accepted instruction
 	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.AcceptedStatusStr, 0)

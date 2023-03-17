@@ -80,7 +80,6 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		ExtChainID       string   `json:"ExtChainID"`
 		BridgePoolPubKey string   `json:"BridgePoolPubKey"`
 		ValidatorPubKeys []string `json:"ValidatorPubKeys"`
 		VaultAddress     string   `json:"VaultAddress"`
@@ -93,7 +92,6 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 	}
 
 	md, _ := metadataBridgeHub.NewRegisterBridgeRequest(
-		mdReader.ExtChainID,
 		mdReader.BridgePoolPubKey,
 		mdReader.ValidatorPubKeys,
 		mdReader.VaultAddress,
@@ -175,7 +173,6 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 		TokenID          common.Hash `json:"TokenID"`
 		BurnAmount       uint64      `json:"BurnAmount"`
 		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
-		ExtChainID       string      `json:"ExtChainID"`
 		BridgePubKeys    []string    `json:"BridgePubKeys"`
 	}{}
 	// parse params & metadata
@@ -185,12 +182,10 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 	}
 
 	md, _ := metadataBridgeHub.NewStakePRVRequest(
-		mdReader.ExtChainID,
 		mdReader.BridgePubKey,
 		mdReader.BurnAmount,
 		mdReader.TokenID,
 		mdReader.BridgePoolPubKey,
-		mdReader.BridgePubKeys,
 	)
 
 	// create new param to build raw tx from param interface

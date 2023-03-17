@@ -2,12 +2,14 @@ package bridgehub
 
 import (
 	"errors"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type BridgeHubState struct {
 	// TODO: staking asset is PRV or others?
-	stakingInfos map[string]uint64 // bridgePubKey : total amount PRV staked
+	stakingInfos map[string]*StakerInfo // bridgePubKey : total amount PRV staked
 
 	// bridgePubKey only belongs one Bridge
 	bridgeInfos map[string]*BridgeInfo // BridgeID : BridgeInfo
@@ -17,12 +19,21 @@ type BridgeHubState struct {
 	params *statedb.BridgeHubParamState
 }
 
+type StakerInfo struct {
+	StakeAmount      uint64      `json:"StakeAmount"`
+	TokenID          common.Hash `json:"TokenID"`
+	TxReqID          string      `json:"TxReqID"`
+	BridgePubKey     string      `json:"BridgePubKey"`
+	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+}
+
 type BridgeInfo struct {
 	Info          *statedb.BridgeInfoState
 	PTokenAmounts map[string]*statedb.BridgeHubPTokenState // key: pToken
 }
 
-func (s *BridgeHubState) StakingInfos() map[string]uint64 {
+// read only function
+func (s *BridgeHubState) StakingInfos() map[string]*StakerInfo {
 	return s.stakingInfos
 }
 
@@ -39,7 +50,7 @@ func (s *BridgeHubState) Params() *statedb.BridgeHubParamState {
 
 func NewBridgeHubState() *BridgeHubState {
 	return &BridgeHubState{
-		stakingInfos: make(map[string]uint64),
+		stakingInfos: make(map[string]*StakerInfo),
 		bridgeInfos:  make(map[string]*BridgeInfo),
 		tokenPrices:  make(map[string]uint64),
 		params:       nil,
