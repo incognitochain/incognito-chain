@@ -179,7 +179,7 @@ const (
 	submitKey                       = "submitkey"
 	authorizedSubmitKey             = "authorizedsubmitkey"
 	getKeySubmissionInfo            = "getkeysubmissioninfo"
-	submitWhitelist                 = "submitwhitelist"
+	submitWhitelistOTAForCache      = "submitwhitelistforcache"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
