@@ -190,20 +190,20 @@ func (sp *stateProducer) stake(
 	}
 	// todo: cryptolover add more validation
 	// check bridgeID existed or not
-	bridgeIDBytes := append([]byte(meta.ExtChainID), []byte(meta.BridgePubKey)...)
+	bridgeIDBytes := append([]byte(meta.ExtChainID), []byte(meta.BridgePoolPubKey)...)
 	bridgeID := common.HashH(bridgeIDBytes).String()
 
 	if state.bridgeInfos[bridgeID] != nil {
-		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
+		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDExistedError)
 		return [][]string{inst}, state, nil
 	}
 
 	// update state
 	clonedState := state.Clone()
-	clonedState.stakingInfos[meta.BridgePubKey] += meta.StakeAmount
+	clonedState.stakingInfos[meta.BridgePoolPubKey] += meta.StakeAmount
 
 	// build accepted instruction
-	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
+	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.AcceptedStatusStr, 0)
 	return [][]string{inst}, clonedState, nil
 }
 

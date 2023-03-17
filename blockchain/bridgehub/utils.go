@@ -61,7 +61,6 @@ func buildBridgeHubRegisterBridgeInst(
 
 type StakeBridgeStatus struct {
 	Status           byte                   `json:"Status"`
-	BridgeID         string                 `json:"BridgeID"`
 	ExtChainID       string                 `json:"ExtChainID"`
 	StakeAmount      uint64                 `json:"StakeAmount"` // must be equal to vout value
 	TokenID          common.Hash            `json:"TokenID"`
@@ -76,7 +75,6 @@ func buildBridgeHubStakeInst(
 	meta metadataBridgeHub.StakePRVRequest,
 	shardID byte,
 	txReqID common.Hash,
-	bridgeID string,
 	status string,
 	errorType int,
 ) ([]string, error) {
@@ -84,7 +82,6 @@ func buildBridgeHubStakeInst(
 		ExtChainID:       meta.ExtChainID,
 		StakeAmount:      meta.StakeAmount,
 		TokenID:          meta.TokenID,
-		BridgeID:         bridgeID,
 		BridgePubKey:     meta.BridgePubKey,
 		BridgePoolPubKey: meta.BridgePoolPubKey,
 		BridgePubKeys:    meta.BridgePubKeys,

@@ -16,7 +16,7 @@ README.md
 create_tmux.sh
 run_new_local.sh
 run_new.sh
-run_node.sh
 run_testing.sh
 start_chain.sh
 start_node.sh
+.git/

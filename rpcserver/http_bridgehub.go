@@ -175,6 +175,7 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 		TokenID          common.Hash `json:"TokenID"`
 		BurnAmount       uint64      `json:"BurnAmount"`
 		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+		ExtChainID       string      `json:"ExtChainID"`
 		BridgePubKeys    []string    `json:"BridgePubKeys"`
 	}{}
 	// parse params & metadata
@@ -184,8 +185,8 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 	}
 
 	md, _ := metadataBridgeHub.NewStakePRVRequest(
+		mdReader.ExtChainID,
 		mdReader.BridgePubKey,
-		keyWallet.KeySet.PaymentAddress,
 		mdReader.BurnAmount,
 		mdReader.TokenID,
 		mdReader.BridgePoolPubKey,

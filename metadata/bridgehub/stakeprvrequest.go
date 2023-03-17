@@ -10,30 +10,26 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type StakePRVRequest struct {
-	ExtChainID       string                 `json:"ExtChainID"`
-	StakeAmount      uint64                 `json:"StakeAmount"` // must be equal to vout value
-	TokenID          common.Hash            `json:"TokenID"`
-	StakerAddress    privacy.PaymentAddress `json:"StakerAddress"`
-	BridgePubKey     string                 `json:"BridgePubKey"` // staker's key
-	BridgePoolPubKey string                 `json:"BridgePoolPubKey"`
-	BridgePubKeys    []string               `json:"BridgePubKeys"`
+	ExtChainID       string      `json:"ExtChainID"`
+	StakeAmount      uint64      `json:"StakeAmount"` // must be equal to vout value
+	TokenID          common.Hash `json:"TokenID"`
+	BridgePubKey     string      `json:"BridgePubKey"` // staker's key
+	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+	BridgePubKeys    []string    `json:"BridgePubKeys"`
 	metadataCommon.MetadataBase
 }
 
 type StakePRVRequestContentInst struct {
-	ExtChainID       string                 `json:"ExtChainID"`
-	StakeAmount      uint64                 `json:"StakeAmount"` // must be equal to vout value
-	TokenID          common.Hash            `json:"TokenID"`
-	BridgeID         string                 `json:"BridgeID,omitempty"`
-	TxReqID          string                 `json:"TxReqID"`
-	BridgePubKey     string                 `json:"BridgePubKey"` // staker's key
-	BridgePoolPubKey string                 `json:"BridgePoolPubKey"`
-	BridgePubKeys    []string               `json:"BridgePubKeys"`
-	StakerAddress    privacy.PaymentAddress `json:"StakerAddress"`
+	ExtChainID       string      `json:"ExtChainID"`
+	StakeAmount      uint64      `json:"StakeAmount"` // must be equal to vout value
+	TokenID          common.Hash `json:"TokenID"`
+	TxReqID          string      `json:"TxReqID"`
+	BridgePubKey     string      `json:"BridgePubKey"` // staker's key
+	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+	BridgePubKeys    []string    `json:"BridgePubKeys"`
 }
 
 type StakeReqAction struct {
@@ -42,8 +38,8 @@ type StakeReqAction struct {
 }
 
 func NewStakePRVRequest(
+	extChainID string,
 	bridgePubKey string,
-	stakerAddress privacy.PaymentAddress,
 	stakeAmount uint64,
 	tokenID common.Hash,
 	bridgePoolPubKey string,
@@ -53,10 +49,10 @@ func NewStakePRVRequest(
 		Type: metadataCommon.StakePRVRequestMeta,
 	}
 	burningReq := &StakePRVRequest{
+		ExtChainID:       extChainID,
 		BridgePubKey:     bridgePubKey,
 		StakeAmount:      stakeAmount,
 		TokenID:          tokenID,
-		StakerAddress:    stakerAddress,
 		BridgePoolPubKey: bridgePoolPubKey,
 		BridgePubKeys:    birdgePubKeys,
 	}
@@ -77,10 +73,6 @@ func (bReq StakePRVRequest) ValidateSanityData(chainRetriever metadataCommon.Cha
 
 	if bReq.StakeAmount == 0 {
 		return false, false, fmt.Errorf("wrong request info's staked amount")
-	}
-
-	if _, err := metadataCommon.AssertPaymentAddressAndTxVersion(bReq.StakerAddress, tx.GetVersion()); err != nil {
-		return false, false, err
 	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()

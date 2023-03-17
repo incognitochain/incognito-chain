@@ -100,7 +100,8 @@ const (
 	ErrInvalidBridgeHubBridgeInfoStateType = "invalid bridge hub bridge info state type"
 	ErrInvalidBridgeHubStatusStateType     = "invalid bridge hub status state type"
 
-	ErrInvalidBridgeHubTxStateType = "invalide birdge hub shield tx"
+	ErrInvalidBridgeHubTxStateType        = "invalid bridge hub shield tx"
+	ErrInvalidBridgeHubStakingTxStateType = "invalid bridge hub staking tx"
 )
 const (
 	InvalidByteArrayTypeError = iota

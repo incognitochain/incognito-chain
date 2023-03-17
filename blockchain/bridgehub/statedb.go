@@ -41,6 +41,16 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 		return nil, err
 	}
 
+	// load staking info
+	stakingInfo := map[string]uint64{}
+	stakingInfos, err := statedb.GetBridgeStakingInfo(sDB)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range stakingInfos {
+		stakingInfo[v.Validator()] = v.StakingAmount()
+	}
+
 	// TODO: load more
 
 	return &BridgeHubState{

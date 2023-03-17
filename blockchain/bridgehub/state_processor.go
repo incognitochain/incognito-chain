@@ -60,11 +60,13 @@ func (sp *stateProcessor) registerBridge(
 	// update state
 	// TODO: 0xkraken: if chainID is BTC, init pToken with pBTC ID from portal v4
 	clonedState := state.Clone()
+	fmt.Printf("0xcryptolover log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
 		clonedState.bridgeInfos[contentInst.BridgeID] = &BridgeInfo{
 			Info:          statedb.NewBridgeInfoStateWithValue(contentInst.BridgeID, contentInst.ExtChainID, contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
 			PTokenAmounts: map[string]*statedb.BridgeHubPTokenState{},
 		}
+		fmt.Printf("0xcryptolover log state info %+v \n", clonedState.bridgeInfos)
 	}
 
 	// track status
@@ -205,20 +207,18 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	// TODO: 0xcryptolover add more information
 	// handle fail status
 	clonedState := state.Clone()
+	fmt.Printf("thachtb log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
-		clonedState := state.Clone()
-		clonedState.stakingInfos[contentInst.BridgePoolPubKey] += contentInst.StakeAmount
-		clonedState.stakingInfoDetail[contentInst.BridgePoolPubKey][contentInst.StakerAddress.String()] += contentInst.StakeAmount
+		clonedState.stakingInfos[contentInst.BridgePubKey] += contentInst.StakeAmount
+		fmt.Printf("thachtb log state info %+v \n", clonedState.stakingInfos)
 	}
 
 	// track status
 	trackStatus := StakeBridgeStatus{
-		BridgeID:         contentInst.BridgeID,
 		ExtChainID:       contentInst.ExtChainID,
 		StakeAmount:      contentInst.StakeAmount,
 		TokenID:          contentInst.TokenID,
 		Status:           status,
-		StakerAddress:    contentInst.StakerAddress,
 		BridgePoolPubKey: contentInst.BridgePoolPubKey,
 		BridgePubKey:     contentInst.BridgePubKey,
 		BridgePubKeys:    contentInst.BridgePubKeys,

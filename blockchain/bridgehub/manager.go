@@ -2,6 +2,7 @@ package bridgehub
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -118,10 +119,13 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		switch inst.MetaType {
 		case metadataCommon.BridgeHubRegisterBridgeMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
+			fmt.Printf("thachtb log state info 2 %+v \n", m.state)
 		case metadataCommon.ShieldingBTCRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID, statedb.InsertBTCHubTxHashIssued)
+			fmt.Printf("thachtb log state info 2 %+v \n", m.state)
 		case metadataCommon.StakePRVRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.bridgeHubValidatorStake(*inst, m.state, sDB, updatingInfoByTokenID)
+			fmt.Printf("thachtb log stake state info 2 %+v \n", m.state)
 			// TODO: add more ...
 		}
 		if err != nil {
@@ -184,7 +188,17 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 		}
 	}
 
-	// TODO: coding for stakingInfo, tokenPrices
+	temp := &statedb.BridgeStakingInfoState{}
+	for k, v := range m.state.stakingInfos {
+		temp.SetStakingAmount(v)
+		temp.SetValidator(k)
+		err := statedb.StoreBridgeHubStaking(sDB, k, temp)
+		if err != nil {
+			return err
+		}
+	}
+
+	// TODO: coding for tokenPrices
 
 	return nil
 }

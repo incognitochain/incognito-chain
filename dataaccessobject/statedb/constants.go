@@ -127,6 +127,7 @@ const (
 	BridgeHubBridgeInfoObjectType = 85
 	BridgeHubStatusObjectType     = 86
 	BridgeHubTxObjectType         = 87
+	BridgeStakingTxObjectType     = 88
 )
 
 // Prefix length

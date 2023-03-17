@@ -1073,12 +1073,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 
-	// execute, store bridge hub instructions
-	err = newBestState.bridgeHubManager.Process(beaconBlock.Body.Instructions, newBestState.featureStateDB)
-	if err != nil {
-		return NewBlockChainError(ProcessBridgeInstructionError, err)
-	}
-
 	// optimize storing PortalV3 state
 	if newBestState.portalStateV3 != nil {
 		if !reflect.DeepEqual(curView.portalStateV3, newBestState.portalStateV3) {
@@ -1135,7 +1129,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if newBestState.bridgeHubManager != nil {
 		diffState, err := newBestState.bridgeHubManager.GetDiffState(curView.bridgeHubManager.State())
-		fmt.Println("[BriHub] Process beacon block diffState", diffState)
+		fmt.Printf("[BriHub] Process beacon block %+v diffState", diffState)
 		if err != nil {
 			Logger.log.Errorf("Error get diff bridge hub state: %v", err)
 			return err
