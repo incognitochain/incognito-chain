@@ -122,15 +122,12 @@ const (
 	BridgeNEARTxObjectType = 77
 
 	// Decentralized Bridge Hub
-	BridgeHubParamObjectType      = 83
-	BridgeHubStakerInfoObjcetType = 84
-	BridgeHubBridgeInfoObjcetType = 85
-
-	BridgeHubPTokenObjectType     = 84
-	BridgeHubBridgeInfoObjectType = 85
-	BridgeHubStatusObjectType     = 86
-	BridgeHubTxObjectType         = 87
-	BridgeStakingTxObjectType     = 88
+	BridgeHubParamObjectType                  = 83
+	BridgeHubStakerInfoObjectType             = 84
+	BridgeHubBridgeInfoObjectType             = 85
+	BridgeHubBridgeInfoTokenAmountsObjectType = 86
+	BridgeHubStatusObjectType                 = 87
+	BridgeHubTxObjectType                     = 88
 )
 
 // Prefix length

@@ -9,7 +9,7 @@ import (
 )
 
 type BridgeHubPTokenState struct {
-	pTokenID     string
+	pTokenID     common.Hash
 	pTokenAmount uint64 // pTokenID : amount
 }
 
@@ -21,11 +21,11 @@ func (b *BridgeHubPTokenState) SetPTokenAmount(pTokenAmount uint64) {
 	b.pTokenAmount = pTokenAmount
 }
 
-func (b BridgeHubPTokenState) PTokenID() string {
+func (b BridgeHubPTokenState) PTokenID() common.Hash {
 	return b.pTokenID
 }
 
-func (b *BridgeHubPTokenState) SetPTokenID(pTokenID string) {
+func (b *BridgeHubPTokenState) SetPTokenID(pTokenID common.Hash) {
 	b.pTokenID = pTokenID
 }
 
@@ -45,7 +45,7 @@ func (b *BridgeHubPTokenState) IsDiff(compareParam *BridgeHubPTokenState) bool {
 
 func (b BridgeHubPTokenState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		PTokenID     string
+		PTokenID     common.Hash
 		PTokenAmount uint64
 	}{
 		PTokenID:     b.pTokenID,
@@ -59,7 +59,7 @@ func (b BridgeHubPTokenState) MarshalJSON() ([]byte, error) {
 
 func (b *BridgeHubPTokenState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		PTokenID     string
+		PTokenID     common.Hash
 		PTokenAmount uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -75,7 +75,7 @@ func NewBridgeHubPTokenState() *BridgeHubPTokenState {
 	return &BridgeHubPTokenState{}
 }
 
-func NewBridgeHubPTokenStateWithValue(pTokenAmount uint64, pTokenID string) *BridgeHubPTokenState {
+func NewBridgeHubPTokenStateWithValue(pTokenAmount uint64, pTokenID common.Hash) *BridgeHubPTokenState {
 	return &BridgeHubPTokenState{
 		pTokenID:     pTokenID,
 		pTokenAmount: pTokenAmount,
@@ -107,7 +107,7 @@ func newBridgeHubPTokenObject(db *StateDB, hash common.Hash) *BridgePTokenObject
 		db:         db,
 		hash:       hash,
 		state:      NewBridgeHubPTokenState(),
-		objectType: BridgeHubPTokenObjectType,
+		objectType: BridgeHubBridgeInfoTokenAmountsObjectType,
 		deleted:    false,
 	}
 }
@@ -132,7 +132,7 @@ func newBridgeHubPTokenObjectWithValue(db *StateDB, key common.Hash, data interf
 		hash:       key,
 		state:      newBridgePToken,
 		db:         db,
-		objectType: BridgeHubPTokenObjectType,
+		objectType: BridgeHubBridgeInfoTokenAmountsObjectType,
 		deleted:    false,
 	}, nil
 }

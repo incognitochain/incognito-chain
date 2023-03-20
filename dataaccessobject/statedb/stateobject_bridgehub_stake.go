@@ -107,7 +107,7 @@ func newBridgeHubStakingInfoObject(db *StateDB, hash common.Hash) *BridgeHubStak
 		db:         db,
 		hash:       hash,
 		state:      NewBridgeStakingInfoState(),
-		objectType: BridgeStakingTxObjectType,
+		objectType: BridgeHubStakerInfoObjectType,
 		deleted:    false,
 	}
 }
@@ -132,7 +132,7 @@ func newBridgeHubStakingInfoObjectWithValue(db *StateDB, key common.Hash, data i
 		hash:       key,
 		state:      newBridgeHubParam,
 		db:         db,
-		objectType: BridgeStakingTxObjectType,
+		objectType: BridgeHubStakerInfoObjectType,
 		deleted:    false,
 	}, nil
 }

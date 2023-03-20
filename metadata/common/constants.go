@@ -252,6 +252,7 @@ const (
 	BurningPRVRequestConfirmMeta = 164
 
 	// Decentralized Bridge Hub
+	BridgeHubStartNetwork       = 369
 	BridgeHubRegisterBridgeMeta = 370
 	ShieldingBTCRequestMeta     = 371
 	ShieldingBTCResponse        = 372

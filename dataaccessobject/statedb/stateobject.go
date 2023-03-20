@@ -363,13 +363,13 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeHubParamObject(db, hash)
 	case BridgeHubBridgeInfoObjectType:
 		return newBridgeHubBridgeInfoObject(db, hash)
-	case BridgeHubPTokenObjectType:
+	case BridgeHubBridgeInfoTokenAmountsObjectType:
 		return newBridgeHubPTokenObject(db, hash)
 	case BridgeHubStatusObjectType:
 		return newBridgeHubStatusObject(db, hash)
 	case BridgeHubTxObjectType:
 		return newBridgeHubTxObject(db, hash)
-	case BridgeStakingTxObjectType:
+	case BridgeHubStakerInfoObjectType:
 		return newBridgeHubStakingInfoObject(db, hash)
 	default:
 		panic("state object type not exist")
