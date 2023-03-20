@@ -123,6 +123,9 @@ const (
 
 	// Decentralized Bridge Hub
 	BridgeHubParamObjectType      = 83
+	BridgeHubStakerInfoObjcetType = 84
+	BridgeHubBridgeInfoObjcetType = 85
+
 	BridgeHubPTokenObjectType     = 84
 	BridgeHubBridgeInfoObjectType = 85
 	BridgeHubStatusObjectType     = 86

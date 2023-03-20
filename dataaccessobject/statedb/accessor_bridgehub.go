@@ -2,6 +2,8 @@ package statedb
 
 import (
 	"fmt"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 // Get bridge hub param from statedb
@@ -54,7 +56,7 @@ func GetBridgeHubBridgeInfo(stateDB *StateDB) ([]*BridgeInfoState, error) {
 	return stateDB.iterateBridgeHubBridgeInfos(prefixHash)
 }
 
-func StoreBridgeHubPTokenAmount(stateDB *StateDB, bridgeID string, pTokenID string, state *BridgeHubPTokenState) error {
+func StoreBridgeHubPTokenAmount(stateDB *StateDB, bridgeID string, pTokenID common.Hash, state *BridgeHubPTokenState) error {
 	key := GenerateBridgeHubPTokenObjectKey(bridgeID, pTokenID)
 	return stateDB.SetStateObject(BridgeHubPTokenObjectType, key, state)
 }

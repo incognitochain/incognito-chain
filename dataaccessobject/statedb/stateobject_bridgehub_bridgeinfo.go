@@ -9,21 +9,21 @@ import (
 )
 
 type BridgeInfoState struct {
-	bridgeID      string
 	briValidators []string // array of bridgePubKey
 	briPubKey     string   // Public key of TSS that used to validate sig from validators by TSS
 
 	// info of previous bridge validators that are used to slashing if they haven't completed their remain tasks
 	prevBriValidators []string // array of bridgePubKey
 	prevBriPubKey     string   // Public key of TSS that used to validate sig from validators by TSS
+	minPrvToStake     uint64   // min prv to stake for this bridge. Also this will be the init prv for registering bridge 1000 prv -> 1 btc
 }
 
-func (b BridgeInfoState) BridgeID() string {
-	return b.bridgeID
+func (b BridgeInfoState) MinPrvToStake() uint64 {
+	return b.minPrvToStake
 }
 
-func (b *BridgeInfoState) SetBridgeID(bridgeID string) {
-	b.bridgeID = bridgeID
+func (b *BridgeInfoState) SetMinPrvToStake(minPrvToStake uint64) {
+	b.minPrvToStake = minPrvToStake
 }
 
 func (b BridgeInfoState) BriValidators() []string {
@@ -41,12 +41,21 @@ func (b BridgeInfoState) PrevBriValidators() []string {
 func (b *BridgeInfoState) SetPrevBriValidators(prevBriValidators []string) {
 	b.prevBriValidators = prevBriValidators
 }
+
 func (b BridgeInfoState) PrevBriPubKey() string {
 	return b.prevBriPubKey
 }
 
 func (b *BridgeInfoState) SetPrevBriPubKey(prevBriPubKey string) {
 	b.prevBriPubKey = prevBriPubKey
+}
+
+func (b BridgeInfoState) BriPubKey() string {
+	return b.briPubKey
+}
+
+func (b *BridgeInfoState) SetBriPubKey(briPubKey string) {
+	b.briPubKey = briPubKey
 }
 
 func (b BridgeInfoState) Clone() *BridgeInfoState {
@@ -56,7 +65,6 @@ func (b BridgeInfoState) Clone() *BridgeInfoState {
 	copy(prevBriValidatorsCopy, b.prevBriValidators)
 
 	return &BridgeInfoState{
-		bridgeID:          b.bridgeID,
 		briValidators:     briValidatorsCopy,
 		briPubKey:         b.briPubKey,
 		prevBriValidators: prevBriValidatorsCopy,
@@ -68,8 +76,7 @@ func (b *BridgeInfoState) IsDiff(compareParam *BridgeInfoState) bool {
 	if compareParam == nil {
 		return true
 	}
-	return b.bridgeID != compareParam.bridgeID ||
-		!reflect.DeepEqual(b.briValidators, compareParam.briValidators) ||
+	return !reflect.DeepEqual(b.briValidators, compareParam.briValidators) ||
 		b.briPubKey != compareParam.briPubKey ||
 		!reflect.DeepEqual(b.prevBriValidators, compareParam.prevBriValidators) ||
 		b.prevBriPubKey != compareParam.prevBriPubKey
@@ -78,13 +85,11 @@ func (b *BridgeInfoState) IsDiff(compareParam *BridgeInfoState) bool {
 
 func (b BridgeInfoState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		BridgeID          string
 		BriValidators     []string
 		BriPubKey         string
 		PrevBriValidators []string
 		PrevBriPubKey     string
 	}{
-		BridgeID:          b.bridgeID,
 		BriValidators:     b.briValidators,
 		BriPubKey:         b.briPubKey,
 		PrevBriValidators: b.prevBriValidators,
@@ -98,7 +103,6 @@ func (b BridgeInfoState) MarshalJSON() ([]byte, error) {
 
 func (b *BridgeInfoState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		BridgeID          string
 		BriValidators     []string
 		BriPubKey         string
 		PrevBriValidators []string
@@ -108,7 +112,6 @@ func (b *BridgeInfoState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	b.bridgeID = temp.BridgeID
 	b.briValidators = temp.BriValidators
 	b.briPubKey = temp.BriPubKey
 	b.prevBriPubKey = temp.PrevBriPubKey
@@ -121,14 +124,12 @@ func NewBridgeInfoState() *BridgeInfoState {
 }
 
 func NewBridgeInfoStateWithValue(
-	bridgeID string,
 	briValidators []string,
 	briPubKey string,
 	prevBriValidators []string,
 	prevBriPubKey string,
 ) *BridgeInfoState {
 	return &BridgeInfoState{
-		bridgeID:          bridgeID,
 		briValidators:     briValidators,
 		briPubKey:         briPubKey,
 		prevBriValidators: prevBriValidators,
@@ -191,9 +192,9 @@ func newBridgeHubBridgeInfoObjectWithValue(db *StateDB, key common.Hash, data in
 	}, nil
 }
 
-func GenerateBridgeHubBridgeInfoObjectKey(bridgeID string) common.Hash {
+func GenerateBridgeHubBridgeInfoObjectKey(bridgePoolPubKey string) common.Hash {
 	prefixHash := GetBridgeHubBridgeInfoPrefix()
-	valueHash := common.HashH([]byte(bridgeID))
+	valueHash := common.HashH([]byte(bridgePoolPubKey))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

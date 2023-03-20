@@ -20,7 +20,7 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 	}
 	bridgeInfos := map[string]*BridgeInfo{}
 	for _, info := range listBridgeInfos {
-		pTokens, err := statedb.GetBridgeHubPTokenByBridgeID(sDB, info.BridgeID())
+		pTokens, err := statedb.GetBridgeHubPTokenByBridgeID(sDB, info.BriPubKey())
 		if err != nil {
 			return nil, err
 		}
@@ -29,7 +29,7 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 			pTokenMap[token.PTokenID()] = token
 		}
 
-		bridgeInfos[info.BridgeID()] = &BridgeInfo{
+		bridgeInfos[info.BriPubKey()] = &BridgeInfo{
 			Info:          info,
 			PTokenAmounts: pTokenMap,
 		}

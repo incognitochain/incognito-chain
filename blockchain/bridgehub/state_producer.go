@@ -66,8 +66,8 @@ func (sp *stateProducer) registerBridge(
 	// update state
 	clonedState := state.Clone()
 	clonedState.bridgeInfos[bridgeID] = &BridgeInfo{
-		Info:          statedb.NewBridgeInfoStateWithValue(bridgeID, meta.ValidatorPubKeys, meta.BridgePoolPubKey, []string{}, ""),
-		PTokenAmounts: map[string]*statedb.BridgeHubPTokenState{},
+		Info:          statedb.NewBridgeInfoStateWithValue(meta.ValidatorPubKeys, meta.BridgePoolPubKey, []string{}, ""),
+		PTokenAmounts: map[common.Hash]*statedb.BridgeHubPTokenState{},
 	}
 
 	// build accepted instruction

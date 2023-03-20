@@ -137,9 +137,9 @@ func newBridgeHubPTokenObjectWithValue(db *StateDB, key common.Hash, data interf
 	}, nil
 }
 
-func GenerateBridgeHubPTokenObjectKey(bridgeID, pTokenID string) common.Hash {
+func GenerateBridgeHubPTokenObjectKey(bridgeID string, pTokenID common.Hash) common.Hash {
 	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
-	valueHash := common.HashH([]byte(pTokenID))
+	valueHash := common.HashH(pTokenID.Bytes())
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

@@ -9,10 +9,10 @@ import (
 
 type BridgeHubState struct {
 	// TODO: staking asset is PRV or others?
-	stakingInfos map[string]*StakerInfo // bridgePubKey : total amount PRV staked
+	stakingInfos map[string]*StakerInfo // bridgePubKey : Staker info
 
 	// bridgePubKey only belongs one Bridge
-	bridgeInfos map[string]*BridgeInfo // BridgeID : BridgeInfo
+	bridgeInfos map[string]*BridgeInfo // BridgePoolPubKey : BridgeInfo
 
 	tokenPrices map[string]uint64 // pTokenID: price * 1e6
 
@@ -29,7 +29,7 @@ type StakerInfo struct {
 
 type BridgeInfo struct {
 	Info          *statedb.BridgeInfoState
-	PTokenAmounts map[string]*statedb.BridgeHubPTokenState // key: pToken
+	PTokenAmounts map[common.Hash]*statedb.BridgeHubPTokenState // key: pToken
 }
 
 // read only function
@@ -70,7 +70,7 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 		infoTmp := &BridgeInfo{}
 		infoTmp.Info = info.Info.Clone()
 
-		infoTmp.PTokenAmounts = map[string]*statedb.BridgeHubPTokenState{}
+		infoTmp.PTokenAmounts = map[common.Hash]*statedb.BridgeHubPTokenState{}
 		for ptokenID, pTokenState := range info.PTokenAmounts {
 			infoTmp.PTokenAmounts[ptokenID] = pTokenState.Clone()
 		}
@@ -109,7 +109,7 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 						newBridgeInfos[bridgeID] = &BridgeInfo{}
 					}
 					if newBridgeInfos[bridgeID].PTokenAmounts == nil {
-						newBridgeInfos[bridgeID].PTokenAmounts = map[string]*statedb.BridgeHubPTokenState{}
+						newBridgeInfos[bridgeID].PTokenAmounts = map[common.Hash]*statedb.BridgeHubPTokenState{}
 					}
 					newBridgeInfos[bridgeID].PTokenAmounts[pTokenID] = pTokenInfo
 				}

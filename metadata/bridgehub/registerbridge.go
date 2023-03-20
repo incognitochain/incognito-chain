@@ -25,7 +25,6 @@ type RegisterBridgeContentInst struct {
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
 	Signature        string   `json:"Signature"`        // TSS sig : TODO: 0xkraken: keep or remove?
-	BridgeID         string   `json:"BridgeID,omitempty"`
 	TxReqID          string   `json:"TxReqID"`
 }
 
