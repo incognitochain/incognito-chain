@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math/big"
 	"sort"
@@ -60,13 +61,20 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 
 	//get beacon delegation reward with performance
 	for k, v := range committeeData.LastEpoch {
-		a := new(big.Int).SetUint64(delegationReward)
-		b := new(big.Int).SetUint64(oldPriceDelegationAmount[k])
-		c := new(big.Int).SetUint64(totalDelegationAmount)
-		tmp := new(big.Int).Div(new(big.Int).Mul(a, b), c).Uint64()
-		beaconCommitteeReward[k], _ = new(big.Float).Mul(
-			new(big.Float).SetUint64(tmp),
-			new(big.Float).SetFloat64((float64(v.Performance) / float64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)))).Uint64()
+		a := new(big.Float).SetUint64(delegationReward)
+		b := new(big.Float).SetUint64(oldPriceDelegationAmount[k])
+		c := new(big.Float).SetUint64(totalDelegationAmount)
+		p := new(big.Float).SetUint64(v.Performance)
+		maxScore := new(big.Float).SetUint64(bestView.GetBeaconCommitteeState().(*committeestate.BeaconCommitteeStateV4).GetConfig().MAX_SCORE)
+		tmp := new(big.Float).Mul(new(big.Float).Mul(a, b), p)
+		fmt.Printf("tmp %v c*maxscore %v\n", tmp.String(), new(big.Float).Mul(c, maxScore).String())
+		beaconCommitteeReward[k], _ = new(big.Float).Quo(tmp, new(big.Float).Mul(c, maxScore)).Uint64()
+		aU, _ := a.Uint64()
+		bU, _ := b.Uint64()
+		pU, _ := p.Uint64()
+		cU, _ := c.Uint64()
+		fmt.Printf("Value to calculate delegation reward: total %v, oldPriceDAmount %v performance %v c %v\n", aU, bU, pU, cU)
+		fmt.Printf("beaconCommitteeReward %v\n", beaconCommitteeReward[k])
 	}
 
 	//increase share price
@@ -76,19 +84,24 @@ func (bestView *BeaconBestState) CalculateDelegationSharePrice(bc *BlockChain, d
 			log.Println("No delegation reward for", cpkStr)
 			continue
 		}
-		price := new(big.Int).SetUint64(oldPrice[cpkStr])
-		c := new(big.Int).SetUint64(oldPriceDelegationAmount[cpkStr])
-		b := new(big.Int).SetUint64(beaconCommitteeReward[cpkStr])
-		newprice := new(big.Int).Div(
-			new(big.Int).Mul(
+		price := new(big.Float).SetUint64(oldPrice[cpkStr])
+		c := new(big.Float).SetUint64(oldPriceDelegationAmount[cpkStr])
+		b := new(big.Float).SetUint64(beaconCommitteeReward[cpkStr])
+		newprice := new(big.Float).Quo(
+			new(big.Float).Mul(
 				price,
-				new(big.Int).Add(b, c)),
-			c).Uint64()
+				b,
+			),
+			c,
+		)
+		newprice = new(big.Float).Add(newprice, price)
 		stakeID := committeeData.LastEpoch[cpkStr].BeaconStakeID
-		sharePriceInsts.AddPrice(stakeID, newprice)
-		log.Println(stakeID, beaconCommitteeReward[cpkStr], price.Uint64(), newprice)
+		newPrU, _ := newprice.Uint64()
+		prU, _ := price.Uint64()
+		sharePriceInsts.AddPrice(stakeID, newPrU)
+		fmt.Println("New price ", stakeID, beaconCommitteeReward[cpkStr], prU, newPrU)
 	}
-	log.Println(sharePriceInsts.ToString())
+	fmt.Println("New Price Insts ", sharePriceInsts.ToString())
 	return [][]string{sharePriceInsts.ToString()}, nil
 }
 

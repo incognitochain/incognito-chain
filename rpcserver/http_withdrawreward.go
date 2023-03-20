@@ -1,13 +1,14 @@
 package rpcserver
 
 import (
-	"errors"
+	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -143,9 +144,13 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if len(arrayParams) == 2 {
 		modeInput, ok := arrayParams[1].(float64)
 		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("mode is invalid"))
+			mode, ok = arrayParams[1].(int)
+			if !ok {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.Errorf("mode is invalid, mode %v, type %v", arrayParams[1], reflect.TypeOf(arrayParams[1])))
+			}
+		} else {
+			mode = int(modeInput)
 		}
-		mode = int(modeInput)
 	}
 	switch mode {
 

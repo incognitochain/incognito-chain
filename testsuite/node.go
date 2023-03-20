@@ -3,7 +3,6 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -456,7 +455,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		committees := curView.GetCommittee()
 		version := 9
 		versionNew := sim.GetBlockVersion(chainID)
-		fmt.Printf("Create new block of chain %v, version %v, version by feature %v\n", chainID, version, versionNew)
+		// fmt.Printf("Create new block of chain %v, version %v, version by feature %v\n", chainID, version, versionNew)
 		if version < versionNew {
 			version = versionNew
 		}
@@ -464,7 +463,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
 		if chainID > -1 {
 			committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
-			fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
+			// fmt.Println("version 3 from beacon", chain.BeaconChain.FinalView().GetHeight(), committeeFromBlock)
 		}
 		proposerPkStr, _ := proposerPK.ToBase58()
 		// fmt.Println("Create new block", chain.BeaconChain.GetBestView().GetHeight()+1)
@@ -484,6 +483,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 				return sim
 			}
 		}
+		// fmt.Printf("Created new block of chain %v, version %v\n", chainID, block.GetVersion())
 		// fmt.Printf("Proposer %+v %v \n", proposerPK, proposerPkStr)
 		//SignBlock
 		proposeAcc := sim.GetAccountByCommitteePubkey(&proposerPK)
@@ -539,14 +539,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			if err != nil {
 				panic(err)
 			}
-			log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
+			// log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
 			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), true)
 			if err != nil {
 				panic(err)
 			} else {
 				crossX := types.CreateAllCrossShardBlock(block.(*types.ShardBlock), config.Param().ActiveShards)
-				log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
+				// log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
 				for _, blk := range crossX {
 					sim.syncker.InsertCrossShardBlock(blk)
 				}
@@ -593,10 +593,9 @@ func (s *NodeEngine) GetUserDatabase() *leveldb.DB {
 func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committees []account.Account, committeeIndex []int) error {
 	committeePubKey := []incognitokey.CommitteePublicKey{}
 	miningKeys := []*signatureschemes.MiningKey{}
-	//if len(committees) != len(committeeIndex) {
-	//	fmt.Println(len(committees), len(committeeIndex), committeeIndex)
-	//}
-	// fmt.Printf("%+v %+v %+v aaaaaaaaaaaaaaaaaaaaaaa\n", committeeIndex, block.GetHeight(), block.GetShardID())
+	if len(committees) != len(committeeIndex) {
+		fmt.Println(len(committees), len(committeeIndex), committeeIndex)
+	}
 	if block.GetVersion() >= 2 {
 		votes := make(map[string]*blsbft.BFTVote)
 		for _, committee := range committees {
@@ -744,9 +743,34 @@ func (s *NodeEngine) GetUntriggerFeature(afterCheckPoint bool) []string {
 	return unTriggerFeatures
 }
 
+func (s *NodeEngine) GetAllFeature() []string {
+	afterCheckPoint := true
+	curView := s.bc.GetBeaconBestState()
+	unTriggerFeatures := []string{}
+	trigger := []string{}
+	for f, _ := range config.Param().AutoEnableFeature {
+		if config.Param().AutoEnableFeature[f].MinTriggerBlockHeight == 0 {
+			//skip default value
+			continue
+		}
+		if curView.TriggeredFeature == nil || curView.TriggeredFeature[f] == 0 {
+			if afterCheckPoint {
+				if curView.BeaconHeight > uint64(config.Param().AutoEnableFeature[f].MinTriggerBlockHeight) {
+					unTriggerFeatures = append(unTriggerFeatures, f)
+				}
+			} else {
+				unTriggerFeatures = append(unTriggerFeatures, f)
+			}
+
+		} else {
+			trigger = append(trigger, f)
+		}
+	}
+	return append(unTriggerFeatures, trigger...)
+}
+
 func (s *NodeEngine) SendFeatureStat(accs []account.Account, unTriggerFeatures []string) {
-	unTriggerFeatures = append(unTriggerFeatures, s.GetUntriggerFeature(false)...)
-	// unTriggerFeatures = append(unTriggerFeatures, s.GetUntriggerFeature(true)...)
+	unTriggerFeatures = append(unTriggerFeatures, s.GetAllFeature()...)
 	featureSyncValidators := []string{}
 	featureSyncSignatures := [][]byte{}
 	// fmt.Printf("%v\n", len(accs))

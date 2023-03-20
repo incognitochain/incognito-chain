@@ -252,10 +252,21 @@ func (r *LocalRPCClient) GetListPrivacyCustomTokenBalance(privateKey string) (re
 	}
 	return resI.(jsonresult.ListCustomTokenBalance), nil
 }
+
 func (r *LocalRPCClient) GetRewardAmount(paymentAddress string) (res map[string]uint64, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["getrewardamount"]
-	resI, rpcERR := c(httpServer, []interface{}{paymentAddress}, nil)
+	resI, rpcERR := c(httpServer, []interface{}{paymentAddress, 0}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(map[string]uint64), nil
+}
+
+func (r *LocalRPCClient) GetDelegationRewardAmount(paymentAddress string) (res map[string]uint64, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getrewardamount"]
+	resI, rpcERR := c(httpServer, []interface{}{paymentAddress, 1}, nil)
 	if rpcERR != nil {
 		return res, errors.New(rpcERR.Error())
 	}

@@ -54,16 +54,16 @@ type AccountInfo struct {
 }
 
 type StakerInfo struct {
-	Name            string
-	Delegate        string
-	StakingAmount   uint64
-	HasCredit       bool
-	RewardPRV       uint64
-	RewardPRVLocked uint64
-	InCommittee     int
-	AutoStake       bool
-	Balance         uint64
-	Chain           string
+	Name             string
+	Delegate         string
+	StakingAmount    uint64
+	HasCredit        bool
+	RewardPRV        uint64
+	DelegationReward uint64
+	InCommittee      int
+	AutoStake        bool
+	Balance          uint64
+	Chain            string
 }
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
@@ -545,10 +545,6 @@ func (sim *NodeEngine) ShowAccountStakeInfo(accounts []account.Account) {
 
 func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*StakerInfo {
 	chain := sim.GetBlockchain()
-	allReward, err := sim.RPC.Client.GetAllRewardAmount()
-	if err != nil {
-		panic(err)
-	}
 	pkMap := make(map[string]*StakerInfo)
 	for _, acc := range accounts {
 		pkMap[acc.SelfCommitteePubkey] = &StakerInfo{acc.Name, "unknown", 0, false, 0, 0, 0, false, 0, "unknown"}
@@ -559,7 +555,16 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 	bCStr, _ := incognitokey.CommitteeKeyListToString(bC)
 
 	for _, acc := range accounts {
-		pkMap[acc.SelfCommitteePubkey].RewardPRV = allReward[acc.PublicKey][common.PRVIDStr]
+		rewardM, err := sim.RPC.Client.GetRewardAmount(acc.PaymentAddress)
+		if err != nil {
+			panic(err)
+		}
+		dRewardM, err := sim.RPC.Client.GetDelegationRewardAmount(acc.PaymentAddress)
+		if err != nil {
+			panic(err)
+		}
+		pkMap[acc.SelfCommitteePubkey].RewardPRV = uint64(rewardM["PRV"])
+		pkMap[acc.SelfCommitteePubkey].DelegationReward = uint64(dRewardM[common.PRVIDStr]) + uint64(dRewardM["PRV"]+uint64(dRewardM["DPRV"]))
 		pkMap[acc.SelfCommitteePubkey].StakingAmount = 0
 		stakerInfo, ok, _ := bBestState.GetStakerInfo(acc.SelfCommitteePubkey)
 		if ok {
@@ -590,7 +595,7 @@ func (sim *NodeEngine) GetStakerInfo(accounts []account.Account) map[string]*Sta
 	for _, acc := range accounts {
 		stakerInfo := pkMap[acc.SelfCommitteePubkey]
 		k := acc.SelfCommitteePubkey
-		fmt.Printf("Acc: %v, %v, In committee %v, AutoStake %+v Balance %v, sAmount %v, Has credit %v, Reward %v\n", stakerInfo.Name, k[len(k)-5:], stakerInfo.InCommittee, stakerInfo.AutoStake, stakerInfo.Balance, stakerInfo.StakingAmount, stakerInfo.HasCredit, stakerInfo.RewardPRV)
+		fmt.Printf("Acc: %v, %v, In committee %v, AutoStake %+v Balance %v, sAmount %v, Has credit %v, Reward %v DReward %v, Delegate %v\n", stakerInfo.Name, k[len(k)-5:], stakerInfo.InCommittee, stakerInfo.AutoStake, stakerInfo.Balance, stakerInfo.StakingAmount, stakerInfo.HasCredit, stakerInfo.RewardPRV, stakerInfo.DelegationReward, stakerInfo.Delegate)
 	}
 	return pkMap
 }
@@ -717,6 +722,8 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account, epoch
 			Reputation:  uint(stakerDetail.EpochScore),
 			Performance: uint(stakerDetail.Performance),
 			RewardPRV:   allReward[bCPk][common.PRVIDStr],
+
+			CurrentDelegators: int(stakerDetail.TotalDelegators),
 		}
 
 		keys = append(keys, stakerDetail.CPK)
@@ -737,8 +744,8 @@ func (sim *NodeEngine) ShowBeaconCandidateInfo(accounts []account.Account, epoch
 			pkCandidateMap[k] = infor
 		}
 		cInfo := pkCandidateMap[k]
-		fmt.Printf("%v\tRep:%v\tPer:%v\tReward %+v\tStakingAmount %+v Staking Txs %+v\n",
-			cInfo.Name, cInfo.Reputation, cInfo.Performance, cInfo.RewardPRV, cInfo.StakingAmount, cInfo.StakingTxs)
+		fmt.Printf("%v\tRep:%v\tPer:%v\tReward %+v\tStakingAmount %+v Delegators %v, Staking Txs %+v\n",
+			cInfo.Name, cInfo.Reputation, cInfo.Performance, cInfo.RewardPRV, cInfo.StakingAmount, cInfo.CurrentDelegators, cInfo.StakingTxs)
 	}
 	for id, value := range bcCommitteeString {
 		if len(value) > 5 {

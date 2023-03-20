@@ -424,6 +424,24 @@ func (s *BeaconCommitteeStateV4) GetNonSlashingRewardReceiver(staker []incognito
 	return res, nil
 }
 
+func (s *BeaconCommitteeStateV4) GetNonSlashingRewardReceiverByCPK(staker []incognitokey.CommitteePublicKey) (map[string]key.PaymentAddress, error) {
+	res := map[string]key.PaymentAddress{}
+	for _, k := range staker {
+		kString, err := k.ToBase58()
+		if err != nil {
+			return res, fmt.Errorf("Base58 error")
+		}
+		info, exists, _ := statedb.GetBeaconStakerInfo(s.stateDB, kString)
+		if !exists || info == nil {
+			return res, fmt.Errorf(kString + "not found!")
+		}
+		if info.LockingReason() != statedb.BY_SLASH {
+			res[kString] = info.RewardReceiver()
+		}
+	}
+	return res, nil
+}
+
 func (s BeaconCommitteeStateV4) DebugBeaconCommitteeState() *StateDataDetail {
 
 	data := &StateDataDetail{
@@ -984,7 +1002,7 @@ func (s *BeaconCommitteeStateV4) ProcessBeaconWaitingCondition(env ProcessContex
 
 		//Check 2: waiting -> pending
 		//if finish sync & enough valid time & shard staker is unstaked -> update role to pending
-		log.Printf("ProcessBeaconWaitingCondition %v %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), staker.BeaconConfirmTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
+		// log.Printf("ProcessBeaconWaitingCondition %v %v %v %v %v %+v", staker.FinishSync(), staker.ShardActiveTime(), staker.BeaconConfirmTime(), s.config.MIN_ACTIVE_SHARD, shardExist, staker.ToString())
 		if env.BeaconHeader.Timestamp < staker.BeaconConfirmTime()+s.config.MIN_WAITING_PERIOD || staker.ShardActiveTime() < s.config.MIN_ACTIVE_SHARD {
 			continue
 		}

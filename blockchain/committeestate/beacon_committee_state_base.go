@@ -280,6 +280,16 @@ func (b beaconCommitteeStateBase) GetNonSlashingRewardReceiver(staker []incognit
 	return rewardReceiver, nil
 }
 
+func (b beaconCommitteeStateBase) GetNonSlashingRewardReceiverByCPK(staker []incognitokey.CommitteePublicKey) (map[string]key.PaymentAddress, error) {
+	rewardReceiver := map[string]key.PaymentAddress{}
+	for _, committee := range b.beaconCommittee {
+		k := incognitokey.CommitteePublicKey{}
+		k.FromString(committee)
+		rewardReceiver[committee] = key.PaymentAddress{Pk: k.GetNormalKey()}
+	}
+	return rewardReceiver, nil
+}
+
 func (b beaconCommitteeStateBase) GetBeaconWaiting() []incognitokey.CommitteePublicKey {
 	return nil
 }

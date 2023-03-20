@@ -18,6 +18,7 @@ type ConsensusInterface interface {
 	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidateBlockCommitteSigWithVotingPower(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, votingPower []uint64, numFixNode int) error
 	IsCommitteeInChain(int) bool
 	GetValidators() []*consensus.Validator
 }
@@ -72,6 +73,10 @@ func (c *Consensus) ValidateProducerSig(block types.BlockInterface, consensusTyp
 
 func (c *Consensus) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey, numFixNode int) error {
 	return c.consensusEngine.ValidateBlockCommitteSig(block, committee, numFixNode)
+}
+
+func (c *Consensus) ValidateBlockCommitteSigWithVotingPower(block types.BlockInterface, committees []incognitokey.CommitteePublicKey, votingPower []uint64, numFixNode int) error {
+	return c.consensusEngine.ValidateBlockCommitteSigWithVotingPower(block, committees, votingPower, numFixNode)
 }
 
 func (c *Consensus) IsCommitteeInChain(sid int) bool {

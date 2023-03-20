@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -28,7 +29,7 @@ func Test_Stakingv3() {
 		config.Param().ConsensusParam.StakingFlowV2Height = 1
 		config.Param().ConsensusParam.AssignRuleV3Height = 1
 		config.Param().ConsensusParam.StakingFlowV3Height = 1
-		config.Param().CommitteeSize.MaxShardCommitteeSize = 16
+		config.Param().CommitteeSize.MaxShardCommitteeSize = 12
 		config.Param().CommitteeSize.MaxBeaconCommitteeSize = 8
 		config.Param().CommitteeSize.MinShardCommitteeSize = 8
 		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator = 8
@@ -48,6 +49,11 @@ func Test_Stakingv3() {
 
 	//stake node
 	stakers := []account.Account{}
+	beaconFixedNodes := []account.Account{}
+	for _, cpk := range node.GetBlockchain().GetBeaconBestState().GetBeaconCommittee() {
+		beaconFixedNodes = append(beaconFixedNodes, *node.GetAccountByCommitteePubkey(&cpk))
+		node.RPC.API_SubmitKey(node.GetAccountByCommitteePubkey(&cpk).PrivateKey)
+	}
 	for i := 0; i < 30; i++ {
 		acc := node.NewAccountFromShard(0)
 		node.RPC.API_SubmitKey(acc.PrivateKey)
@@ -59,6 +65,7 @@ func Test_Stakingv3() {
 	fmt.Printf("%+v - %+v\n", x, e)
 	accs := []interface{}{}
 	accs = append(accs, node.GenesisAccount)
+
 	for i := 0; i < 30; i++ {
 		acc := stakers[i]
 		accs = append(accs, acc)
@@ -67,6 +74,22 @@ func Test_Stakingv3() {
 
 	}
 	result, err := node.SendPRVToMultiAccs(accs)
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	node.GenerateBlock().NextRound()
+	fmt.Printf("%+v --- %+v\n", result, err)
+
+	accs = []interface{}{}
+	accs = append(accs, node.GenesisAccount)
+
+	for i := 0; i < len(beaconFixedNodes); i++ {
+		acc := beaconFixedNodes[i]
+		accs = append(accs, acc)
+		accs = append(accs, 1e16)
+		fmt.Println("send", acc.Name)
+	}
+	result, err = node.SendPRVToMultiAccs(accs)
 	node.GenerateBlock().NextRound()
 	node.GenerateBlock().NextRound()
 	node.GenerateBlock().NextRound()
@@ -109,10 +132,19 @@ func Test_Stakingv3() {
 	}
 
 	node.GenerateBlock().NextRound()
-
 	for i := 0; i < 10; i++ {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
+		if currentBeaconBlock.GetVersion() >= 12 {
+			for _, acc := range beaconFixedNodes {
+				txHash, err := node.RPC.AddStake(acc, 1750*1e9*3)
+				if err == nil {
+					fmt.Printf("Added stake amount for acc %v-%v --- %v\n", acc.Name, acc.SelfCommitteePubkey, txHash.TxID)
+				} else {
+					fmt.Println(err)
+				}
+			}
+		}
 
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
@@ -129,7 +161,7 @@ func Test_Stakingv3() {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
 		epoch := currentBeaconBlock.GetCurrentEpoch()
-		if height > 151 {
+		if height > 101 {
 			node.Pause()
 			break
 		}
@@ -139,6 +171,7 @@ func Test_Stakingv3() {
 			fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
 			node.ShowBeaconCandidateInfo(stakers, epoch)
+			node.GetStakerInfo(stakers)
 		}
 		node.GenerateBlock().NextRound()
 
@@ -147,25 +180,64 @@ func Test_Stakingv3() {
 			fmt.Println("shard0Block", shard0Block.Header.BeaconHeight, shard0Block.Body.Transactions, shard0Block.Body.Instructions, shard0Block.Body.CrossTransactions)
 		}
 	}
-
+	stakersBeacon := []account.Account{}
+	delegators := []account.Account{}
+	staking := map[string]interface{}{}
+	delegated := map[string]interface{}{}
+	idStaker := 0
+	idDelegator := 0
+	for i, staker := range stakers {
+		if i%2 == 1 {
+			stakersBeacon = append(stakersBeacon, staker)
+			staking[staker.SelfCommitteePubkey] = nil
+			idStaker++
+		} else {
+			delegators = append(delegators, staker)
+			idDelegator++
+		}
+	}
+	var stakersInfo map[string]*testsuite.AccountInfo
 	for {
 		currentBeaconBlock := node.GetBlockchain().BeaconChain.GetBestView().GetBlock()
 		height := currentBeaconBlock.GetHeight()
-		for i, staker := range stakers {
-			if i%2 == 1 {
-				res, err := node.RPC.StakeNewBeacon(staker)
-				fmt.Printf("Stake new beacon using staker %v, result %v, err %+v\n", staker.Name, res, err)
-			}
-		}
 
-		//epoch := currentBeaconBlock.GetCurrentEpoch()
+		epoch := currentBeaconBlock.GetCurrentEpoch()
 		if height%20 == 1 || height%20 == 11 {
 			fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
 			fmt.Println(currentBeaconBlock.GetInstructions())
 			node.ShowAccountPosition(stakers)
+			node.ShowBeaconCandidateInfo(stakers, epoch)
+			node.GetStakerInfo(stakers)
+			stakersInfo = node.GetAccountPosition(stakers, node.GetBlockchain().GetBeaconBestState())
 
 		}
-
+		if len(staking) > (len(stakersBeacon) - 4) {
+			for _, staker := range stakersBeacon {
+				if _, ok := staking[staker.SelfCommitteePubkey]; ok {
+					res, err := node.RPC.StakeNewBeacon(staker)
+					fmt.Printf("Stake new beacon using staker %v, result %v, err %+v\n", staker.Name, res, err)
+					if err == nil {
+						delete(staking, staker.SelfCommitteePubkey)
+					}
+				}
+			}
+		}
+		for i, staker := range delegators {
+			if info, ok := stakersInfo[staker.SelfCommitteePubkey]; ok {
+				if _, has := delegated[staker.SelfCommitteePubkey]; (!has) && (strings.Contains(info.Queue, "pending") || strings.Contains(info.Queue, "committee")) {
+					res, err := node.RPC.ReDelegate(staker, beaconFixedNodes[i%len(beaconFixedNodes)].SelfCommitteePubkey)
+					fmt.Printf("Delegate to beacon %v using staker %v, result %v, err %+v\n", beaconFixedNodes[i%len(beaconFixedNodes)].Name, staker.Name, res, err)
+					if err == nil {
+						delegated[staker.SelfCommitteePubkey] = nil
+					}
+				}
+			}
+		}
+		node.GenerateBlock().NextRound()
+		// for _, staker := range stakers {
+		// 	reward, err := node.RPC.Client.GetRewardAmountByPublicKey(staker.PublicKey)
+		// 	fmt.Printf("Reward amount of acc %v is %+v err %v\n", staker.Name, reward, err)
+		// }
 		// committee2 := node.GetBlockchain().BeaconChain.GetAllCommittees()[common.BlsConsensus][common.GetShardChainKey(byte(0))]
 		//node.PrintAccountNameFromCPK(committee2)
 

@@ -668,17 +668,24 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	}
 
 	if len(totalRewardForBeacon) > 0 {
-		committeeOfEpoch, err := blockchain.GetBeaconCommitteeOfEpoch(epoch)
-		if err != nil {
-			return nil, nil, rewardForPdex, err
-		}
-		committeeGotReward, err := curView.beaconCommitteeState.GetNonSlashingRewardReceiver(committeeOfEpoch)
-		if err != nil {
-			return nil, nil, rewardForPdex, err
-		}
-		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon, committeeGotReward)
-		if err != nil {
-			return nil, nil, rewardForPdex, err
+		if blockVersion >= int(config.Param().FeatureVersion[config.DELEGATION_REWARD]) {
+			instRewardForBeacons, err = curView.distributeRewardForBeacon(blockchain, epoch, totalRewardForBeacon)
+			if err != nil {
+				return nil, nil, rewardForPdex, err
+			}
+		} else {
+			committeeOfEpoch, err := blockchain.GetBeaconCommitteeOfEpoch(epoch)
+			if err != nil {
+				return nil, nil, rewardForPdex, err
+			}
+			committeeGotReward, err := curView.beaconCommitteeState.GetNonSlashingRewardReceiver(committeeOfEpoch)
+			if err != nil {
+				return nil, nil, rewardForPdex, err
+			}
+			instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon, committeeGotReward)
+			if err != nil {
+				return nil, nil, rewardForPdex, err
+			}
 		}
 	}
 
@@ -709,6 +716,61 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards, delegationRewardInst)
 	return resInst, totalRewardForCustodian, rewardForPdex, nil
+}
+
+func (beaconBestState *BeaconBestState) distributeRewardForBeacon(blockchain *BlockChain, epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+	stateDB := beaconBestState.GetBeaconConsensusStateDB()
+	committeeData := statedb.GetCommitteeData(stateDB)
+
+	resInst := [][]string{}
+	committeeOfEpoch, err := blockchain.GetBeaconCommitteeOfEpoch(epoch)
+	if err != nil {
+		return nil, err
+	}
+	committeeGotReward, err := beaconBestState.beaconCommitteeState.GetNonSlashingRewardReceiverByCPK(committeeOfEpoch)
+	if err != nil {
+		return nil, err
+	}
+	totalBeaconCredit := uint64(0)
+	listGotReward := []string{}
+	for k := range committeeGotReward {
+		fmt.Println(k)
+		if v, ok := committeeData.LastEpoch[k]; ok {
+			listGotReward = append(listGotReward, k)
+			totalBeaconCredit += v.StakeAmount / common.SHARD_STAKING_AMOUNT
+		}
+	}
+	sort.Slice(listGotReward, func(i, j int) bool {
+		return listGotReward[i] < listGotReward[j]
+	})
+	if totalBeaconCredit != 0 {
+		baseRewards := map[common.Hash]uint64{}
+		for key, value := range totalReward {
+			baseRewards[key] = value / totalBeaconCredit
+		}
+		fmt.Printf("Start build beacon reward instruction for total credit %v, base reward %+v\n", totalBeaconCredit, baseRewards)
+		for _, cpk := range listGotReward {
+			info := committeeData.LastEpoch[cpk]
+			totalCredit := info.StakeAmount / common.SHARD_STAKING_AMOUNT
+			perf := info.Performance
+
+			rewards := map[common.Hash]uint64{}
+			for key, value := range baseRewards {
+				if value > 0 {
+					rewards[key] = value * totalCredit * perf / 1000
+					fmt.Printf("key %v has %v total credit and %v perfomance, reward for ID %v is %v; base reward %v\n", cpk, totalCredit, perf, key, rewards[key], value)
+				}
+			}
+			payment := committeeGotReward[cpk]
+			singleInst, err := metadata.BuildInstForBeaconReward(rewards, payment.Pk)
+			if err != nil {
+				Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, rewards)
+				return nil, err
+			}
+			resInst = append(resInst, singleInst)
+		}
+	}
+	return resInst, nil
 }
 
 // buildInstRewardForBeacons create reward instruction for beacons

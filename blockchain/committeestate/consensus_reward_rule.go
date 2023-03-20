@@ -198,7 +198,7 @@ func (r RewardSplitRuleV4) SplitReward(
 		rewardForAllShardCommittee := rewardForAll * shardCreditSize / env.TotalCreditSize
 		rewardForAllShard[coinID] = rewardForAllShardCommittee
 		rewardForBeacon[coinID] = rewardForAll * env.BeaconCreditSize / env.TotalCreditSize
-		fmt.Printf("Distribute reward: Total reward for token %v, beacon height %v, amount %v, each shard received %v, beacon and their delegator received %v\n", coinID.String(), env.BeaconHeight, rewardForAll, rewardForAllShardCommittee, rewardForAllShardCommittee*env.BeaconCreditSize)
+		fmt.Printf("Distribute reward: Total reward for token %v, beacon height %v, amount %v, each shard received %v, beacon only %v, beacon and their delegator received %v\n", coinID.String(), env.BeaconHeight, rewardForAll, rewardForAllShardCommittee, rewardForBeacon, rewardForAllShardCommittee*uint64(100-env.CommitteePercent)/100)
 	}
 
 	return rewardForBeacon, rewardForAllShard, rewardForIncDAO, rewardForCustodian, nil

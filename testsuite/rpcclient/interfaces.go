@@ -57,6 +57,7 @@ type ClientInterface interface {
 	GetBalanceByPrivateKey(privateKey string) (uint64, error)
 	GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, error)
 	GetRewardAmount(paymentAddress string) (map[string]uint64, error)
+	GetDelegationRewardAmount(paymentAddress string) (map[string]uint64, error)
 	GetRewardAmountByPublicKey(publicKey string) (map[string]uint64, error)
 	GetAllRewardAmount() (res map[string]map[string]uint64, err error)
 	WithdrawReward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (jsonresult.CreateTransactionResult, error)

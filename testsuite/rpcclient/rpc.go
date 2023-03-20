@@ -372,6 +372,8 @@ type AddStakingParam struct {
 type ReDelegateParam struct {
 	BurnAddr           string
 	StakerPrk          string
+	MinerPrk           string
+	MinerPaymentAddr   string
 	CommitteePublicKey string
 	NewDelegate        string
 }
@@ -439,6 +441,8 @@ func (r *RPCClient) ReDelegate(acc account.Account, newDelegate string) (*jsonre
 		BurnAddr:           "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA",
 		StakerPrk:          acc.PrivateKey,
 		CommitteePublicKey: acc.SelfCommitteePubkey,
+		MinerPrk:           acc.MiningKey,
+		MinerPaymentAddr:   acc.PaymentAddress,
 		NewDelegate:        newDelegate,
 	}
 	return r.API_SendTxReDelegate(stake1)
@@ -581,8 +585,9 @@ func (r *RPCClient) API_SendTxReDelegate(redelegateMeta ReDelegateParam) (*jsonr
 	burnAddr := redelegateMeta.BurnAddr
 
 	txResp, err := r.Client.CreateAndSendReDelegateTransaction(redelegateMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
-		"CommitteePublicKey": redelegateMeta.CommitteePublicKey,
-		"NewDelegate":        redelegateMeta.NewDelegate,
+		"PrivateSeed":             redelegateMeta.MinerPrk,
+		"CandidatePaymentAddress": redelegateMeta.MinerPaymentAddr,
+		"DelegateToBeacon":        redelegateMeta.NewDelegate,
 	})
 	if err != nil {
 		return nil, err
@@ -593,6 +598,18 @@ func (r *RPCClient) API_SendTxReDelegate(redelegateMeta ReDelegateParam) (*jsonr
 func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float64, error) {
 	result := make(map[string]float64)
 	rs, err := r.Client.GetRewardAmount(paymentAddress)
+	if err != nil {
+		return nil, err
+	}
+	for token, amount := range rs {
+		result[token] = float64(amount) / 1e9
+	}
+	return result, nil
+}
+
+func (r *RPCClient) API_GetDelegationRewardAmount(paymentAddress string) (map[string]float64, error) {
+	result := make(map[string]float64)
+	rs, err := r.Client.GetDelegationRewardAmount(paymentAddress)
 	if err != nil {
 		return nil, err
 	}
