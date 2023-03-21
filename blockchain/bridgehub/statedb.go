@@ -20,18 +20,20 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 	}
 	bridgeInfos := map[string]*BridgeInfo{}
 	for _, info := range listBridgeInfos {
-		pTokens, err := statedb.GetBridgeHubNetworkInfoByBridgeID(sDB, info.BriPubKey())
+		vaultAddrs, err := statedb.GetBridgeHubNetworkInfoByBridgeID(sDB, info.BriPubKey())
 		if err != nil {
 			return nil, err
 		}
-		pTokenMap := map[int]*statedb.BridgeHubNetworkState{}
-		for _, token := range pTokens {
-			pTokenMap[token.NetworkId()] = token
-		}
-
-		bridgeInfos[info.BriPubKey()] = &BridgeInfo{
-			Info:        info,
-			NetworkInfo: pTokenMap,
+		for _, networkInfo := range vaultAddrs {
+			pTokens, err := statedb.GetBridgeHubPToken(sDB, info.BriPubKey(), networkInfo.NetworkId())
+			if err != nil {
+				return nil, err
+			}
+			bridgeInfos[info.BriPubKey()].NetworkInfo[networkInfo.NetworkId()] = &BridgeNetwork{
+				networkId:    networkInfo.NetworkId(),
+				vaultAddress: networkInfo.VaultAddress(),
+				pTokens:      pTokens,
+			}
 		}
 	}
 

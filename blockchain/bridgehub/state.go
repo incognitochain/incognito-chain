@@ -2,6 +2,8 @@ package bridgehub
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
@@ -18,9 +20,15 @@ type BridgeHubState struct {
 	params *statedb.BridgeHubParamState
 }
 
+type BridgeNetwork struct {
+	vaultAddress string
+	networkId    int
+	pTokens      map[common.Hash]uint64 // pToken id -> amonut
+}
+
 type BridgeInfo struct {
 	Info        *statedb.BridgeInfoState
-	NetworkInfo map[int]*statedb.BridgeHubNetworkState // key: networkId
+	NetworkInfo map[int]*BridgeNetwork // key: networkId
 }
 
 // read only function
@@ -61,9 +69,13 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 		infoTmp := &BridgeInfo{}
 		infoTmp.Info = info.Info.Clone()
 
-		infoTmp.NetworkInfo = map[int]*statedb.BridgeHubNetworkState{}
+		infoTmp.NetworkInfo = map[int]*BridgeNetwork{}
 		for networkId, networkInfo := range info.NetworkInfo {
-			infoTmp.NetworkInfo[networkId] = networkInfo.Clone()
+			infoTmp.NetworkInfo[networkId].networkId = networkInfo.networkId
+			infoTmp.NetworkInfo[networkId].vaultAddress = networkInfo.vaultAddress
+			for k, v := range networkInfo.pTokens {
+				infoTmp.NetworkInfo[networkId].pTokens[k] = v
+			}
 		}
 		bridgeInfos[bridgeID] = infoTmp
 	}
@@ -104,7 +116,9 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 			// check list ptoken
 			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
 				isUpdate := true
-				if prePTokenInfo, found := preBridge.NetworkInfo[networkId]; found && !prePTokenInfo.IsDiff(networkInfo) {
+				if preNetworkInfo, found := preBridge.NetworkInfo[networkId]; found &&
+					preNetworkInfo.networkId == networkInfo.networkId && preNetworkInfo.vaultAddress == networkInfo.vaultAddress &&
+					reflect.DeepEqual(preNetworkInfo.pTokens, networkInfo.pTokens) {
 					isUpdate = false
 				}
 				if isUpdate {
@@ -112,7 +126,7 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 						newBridgeInfos[bridgeID] = &BridgeInfo{}
 					}
 					if newBridgeInfos[bridgeID].NetworkInfo == nil {
-						newBridgeInfos[bridgeID].NetworkInfo = map[int]*statedb.BridgeHubNetworkState{}
+						newBridgeInfos[bridgeID].NetworkInfo = map[int]*BridgeNetwork{}
 					}
 					newBridgeInfos[bridgeID].NetworkInfo[networkId] = networkInfo
 				}

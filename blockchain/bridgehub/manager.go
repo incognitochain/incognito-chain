@@ -172,9 +172,15 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 
 		if bridgeInfo.NetworkInfo != nil {
 			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
-				err := statedb.StoreBridgeHubNetworkInfo(sDB, bridgeID, networkId, networkInfo)
+				err := statedb.StoreBridgeHubNetworkInfoVault(sDB, bridgeID, networkId, statedb.NewBridgeHubNetworkVaultStateWithValue(networkInfo.vaultAddress, networkId))
 				if err != nil {
 					return err
+				}
+				for k, v := range networkInfo.pTokens {
+					err := statedb.StoreBridgeHubPTokenInfo(sDB, bridgeID, networkId, statedb.NewBridgeHubPTokenkStateWithValue(v, k))
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

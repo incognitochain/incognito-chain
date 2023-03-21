@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 // Get bridge hub param from statedb
@@ -54,13 +55,15 @@ func GetBridgeHubBridgeInfo(stateDB *StateDB) ([]*BridgeInfoState, error) {
 	return stateDB.iterateBridgeHubBridgeInfos(prefixHash)
 }
 
-func StoreBridgeHubNetworkInfo(stateDB *StateDB, bridgeID string, networkId int, state *BridgeHubNetworkState) error {
-	key := GenerateBridgeHubPTokenObjectKey(bridgeID, networkId)
+func StoreBridgeHubPTokenInfo(stateDB *StateDB, bridgeID string, networkId int, state *BridgeHubPTokenkState) error {
+	key := GenerateBridgeHubPTokenObjectKey(bridgeID, networkId, state.pTokenID)
 	return stateDB.SetStateObject(BridgeHubBridgeInfoNetworkObjectType, key, state)
 }
 
-func GetBridgeHubNetworkInfoByBridgeID(stateDB *StateDB, bridgeID string) (map[int]*BridgeHubNetworkState, error) {
+func GetBridgeHubPToken(stateDB *StateDB, bridgeID string, networkId int) (map[common.Hash]uint64, error) {
 	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
+	valueHash := common.HashH(common.IntToBytes(networkId))
+	prefixHash = append(prefixHash, valueHash[:][:prefixKeyLength/2]...)
 	return stateDB.iterateBridgeHubPTokens(prefixHash)
 }
 
@@ -72,4 +75,14 @@ func StoreBridgeHubStaking(stateDB *StateDB, validator string, state *BridgeStak
 func GetBridgeStakingInfo(stateDB *StateDB) ([]*BridgeStakingInfoState, error) {
 	prefixHash := GetBridgeHubStakingTxPrefix()
 	return stateDB.iterateBridgeHubBridgeStakingInfos(prefixHash)
+}
+
+func StoreBridgeHubNetworkInfoVault(stateDB *StateDB, bridgeID string, networkId int, state *BridgeHubNetworkVaultState) error {
+	key := GenerateBridgeHubVaultObjectKey(bridgeID, networkId)
+	return stateDB.SetStateObject(BridgeHubVaultObjectType, key, state)
+}
+
+func GetBridgeHubNetworkInfoByBridgeID(stateDB *StateDB, bridgeID string) (map[int]*BridgeHubNetworkVaultState, error) {
+	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
+	return stateDB.iterateBridgeVault(prefixHash)
 }

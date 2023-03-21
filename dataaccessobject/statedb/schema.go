@@ -120,6 +120,7 @@ var (
 	bridgeHubRegisterBridgeStatusPrefix = []byte("registerbridge-")
 	bridgeHubStakingPrefix              = []byte("stakingbridge-")
 	bridgeHubStakingStatusPrefix        = []byte("registerbridge-status-")
+	bridgeHubVaultPrefix                = []byte("bridgehub-vault-")
 
 	// portal
 	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
@@ -983,6 +984,11 @@ func BridgeHubRegisterBridgeStatusPrefix() []byte {
 
 func BridgeHubStakeBridgeStatusPrefix() []byte {
 	return bridgeHubStakingStatusPrefix
+}
+
+func GetBridgeHubVaultPrefix(bridgeID []byte) []byte {
+	h := common.HashH(append(bridgeHubVaultPrefix, bridgeID...))
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

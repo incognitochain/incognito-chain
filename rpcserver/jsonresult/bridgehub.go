@@ -6,12 +6,11 @@ import (
 )
 
 type BridgeHubState struct {
-	BeaconTimeStamp   int64                                      `json:"BeaconTimeStamp"`
-	StakingInfos      map[string]*statedb.BridgeStakingInfoState `json:"StakingInfos"`
-	StakingInfoDetail map[string]map[string]uint64               `json:"StakingInfoDetail"`
-	BridgeInfos       map[string]*bridgehub.BridgeInfo           `json:"BridgeInfos"`
-	TokenPrices       map[string]uint64                          `json:"TokenPrices"`
-	Params            *statedb.BridgeHubParamState               `json:"Params"`
+	BeaconTimeStamp int64                                      `json:"BeaconTimeStamp"`
+	StakingInfos    map[string]*statedb.BridgeStakingInfoState `json:"StakingInfos"`
+	BridgeInfos     map[string]*bridgehub.BridgeInfo           `json:"BridgeInfos"`
+	TokenPrices     map[string]uint64                          `json:"TokenPrices"`
+	Params          *statedb.BridgeHubParamState               `json:"Params"`
 }
 
 // type BridgeInfo struct {

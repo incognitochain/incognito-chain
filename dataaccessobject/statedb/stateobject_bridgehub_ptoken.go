@@ -8,72 +8,48 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type BridgeHubNetworkState struct {
+type BridgeHubPTokenkState struct {
 	pTokenID     common.Hash
 	pTokenAmount uint64 // pTokenID : amount
-	vaultAddress string
-	networkId    int
 }
 
-func (b BridgeHubNetworkState) NetworkId() int {
-	return b.networkId
-}
-
-func (b *BridgeHubNetworkState) SetNetworkId(networkId int) {
-	b.networkId = networkId
-}
-
-func (b BridgeHubNetworkState) PTokenAmount() uint64 {
+func (b BridgeHubPTokenkState) PTokenAmount() uint64 {
 	return b.pTokenAmount
 }
 
-func (b *BridgeHubNetworkState) SetPTokenAmount(pTokenAmount uint64) {
+func (b *BridgeHubPTokenkState) SetPTokenAmount(pTokenAmount uint64) {
 	b.pTokenAmount = pTokenAmount
 }
 
-func (b BridgeHubNetworkState) PTokenID() common.Hash {
+func (b BridgeHubPTokenkState) PTokenID() common.Hash {
 	return b.pTokenID
 }
 
-func (b *BridgeHubNetworkState) SetPTokenID(pTokenID common.Hash) {
+func (b *BridgeHubPTokenkState) SetPTokenID(pTokenID common.Hash) {
 	b.pTokenID = pTokenID
 }
 
-func (b BridgeHubNetworkState) VaultAddress() string {
-	return b.vaultAddress
-}
-
-func (b *BridgeHubNetworkState) SetVaultAddress(vaultAddress string) {
-	b.vaultAddress = vaultAddress
-}
-
-func (b BridgeHubNetworkState) Clone() *BridgeHubNetworkState {
-	return &BridgeHubNetworkState{
+func (b BridgeHubPTokenkState) Clone() *BridgeHubPTokenkState {
+	return &BridgeHubPTokenkState{
 		pTokenID:     b.pTokenID,
 		pTokenAmount: b.pTokenAmount,
-		vaultAddress: b.vaultAddress,
-		networkId:    b.networkId,
 	}
 }
 
-func (b *BridgeHubNetworkState) IsDiff(compareParam *BridgeHubNetworkState) bool {
+func (b *BridgeHubPTokenkState) IsDiff(compareParam *BridgeHubPTokenkState) bool {
 	if compareParam == nil {
 		return true
 	}
-	return b.pTokenAmount != compareParam.pTokenAmount || b.pTokenID != compareParam.pTokenID || b.vaultAddress != compareParam.vaultAddress || b.networkId != compareParam.networkId
+	return b.pTokenAmount != compareParam.pTokenAmount || b.pTokenID != compareParam.pTokenID
 }
 
-func (b BridgeHubNetworkState) MarshalJSON() ([]byte, error) {
+func (b BridgeHubPTokenkState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		PTokenID     common.Hash
 		PTokenAmount uint64
-		VaultAddress string
-		NetworkId    int
 	}{
 		PTokenID:     b.pTokenID,
 		PTokenAmount: b.pTokenAmount,
-		VaultAddress: b.vaultAddress,
-		NetworkId:    b.networkId,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -81,12 +57,10 @@ func (b BridgeHubNetworkState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (b *BridgeHubNetworkState) UnmarshalJSON(data []byte) error {
+func (b *BridgeHubPTokenkState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		PTokenID     common.Hash
 		PTokenAmount uint64
-		VaultAddress string
-		NetworkId    int
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -94,21 +68,17 @@ func (b *BridgeHubNetworkState) UnmarshalJSON(data []byte) error {
 	}
 	b.pTokenID = temp.PTokenID
 	b.pTokenAmount = temp.PTokenAmount
-	b.vaultAddress = temp.VaultAddress
-	b.networkId = temp.NetworkId
 	return nil
 }
 
-func NewBridgeHubNetworkState() *BridgeHubNetworkState {
-	return &BridgeHubNetworkState{}
+func NewBridgeHubPTokenkState() *BridgeHubPTokenkState {
+	return &BridgeHubPTokenkState{}
 }
 
-func NewBridgeHubNetworkStateWithValue(pTokenAmount uint64, pTokenID common.Hash, vaultAddress string, networkId int) *BridgeHubNetworkState {
-	return &BridgeHubNetworkState{
+func NewBridgeHubPTokenkStateWithValue(pTokenAmount uint64, pTokenID common.Hash) *BridgeHubPTokenkState {
+	return &BridgeHubPTokenkState{
 		pTokenID:     pTokenID,
 		pTokenAmount: pTokenAmount,
-		vaultAddress: vaultAddress,
-		networkId:    networkId,
 	}
 }
 
@@ -119,7 +89,7 @@ type BridgeHubNetworkObject struct {
 
 	version    int
 	hash       common.Hash
-	state      *BridgeHubNetworkState
+	state      *BridgeHubPTokenkState
 	objectType int
 	deleted    bool
 
@@ -136,14 +106,14 @@ func newBridgeHubNetworkObject(db *StateDB, hash common.Hash) *BridgeHubNetworkO
 		version:    defaultVersion,
 		db:         db,
 		hash:       hash,
-		state:      NewBridgeHubNetworkState(),
+		state:      NewBridgeHubPTokenkState(),
 		objectType: BridgeHubBridgeInfoNetworkObjectType,
 		deleted:    false,
 	}
 }
 
 func newBridgeHubNetworkObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BridgeHubNetworkObject, error) {
-	var newBridgePToken = NewBridgeHubNetworkState()
+	var newBridgePToken = NewBridgeHubPTokenkState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
@@ -152,7 +122,7 @@ func newBridgeHubNetworkObjectWithValue(db *StateDB, key common.Hash, data inter
 			return nil, err
 		}
 	} else {
-		newBridgePToken, ok = data.(*BridgeHubNetworkState)
+		newBridgePToken, ok = data.(*BridgeHubPTokenkState)
 		if !ok {
 			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeHubPTokenStateType, reflect.TypeOf(data))
 		}
@@ -167,10 +137,11 @@ func newBridgeHubNetworkObjectWithValue(db *StateDB, key common.Hash, data inter
 	}, nil
 }
 
-func GenerateBridgeHubPTokenObjectKey(bridgeID string, networkId int) common.Hash {
+func GenerateBridgeHubPTokenObjectKey(bridgeID string, networkId int, pTokenId common.Hash) common.Hash {
 	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
 	valueHash := common.HashH(common.IntToBytes(networkId))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+	pTokenHash := common.HashH(pTokenId.Bytes())
+	return common.BytesToHash(append(prefixHash, append(valueHash[:][:prefixKeyLength/2], pTokenHash[:][:prefixKeyLength/2]...)...))
 }
 
 func (t BridgeHubNetworkObject) GetVersion() int {
@@ -189,7 +160,7 @@ func (t BridgeHubNetworkObject) GetTrie(db DatabaseAccessWarper) Trie {
 }
 
 func (t *BridgeHubNetworkObject) SetValue(data interface{}) error {
-	newBridgeHubPToken, ok := data.(*BridgeHubNetworkState)
+	newBridgeHubPToken, ok := data.(*BridgeHubPTokenkState)
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeHubPTokenStateType, reflect.TypeOf(data))
 	}
@@ -202,7 +173,7 @@ func (t BridgeHubNetworkObject) GetValue() interface{} {
 }
 
 func (t BridgeHubNetworkObject) GetValueBytes() []byte {
-	bridgeHubPTokenState, ok := t.GetValue().(*BridgeHubNetworkState)
+	bridgeHubPTokenState, ok := t.GetValue().(*BridgeHubPTokenkState)
 	if !ok {
 		panic("wrong expected value type")
 	}
@@ -228,7 +199,7 @@ func (t *BridgeHubNetworkObject) MarkDelete() {
 
 // reset all shard committee value into default value
 func (t *BridgeHubNetworkObject) Reset() bool {
-	t.state = NewBridgeHubNetworkState()
+	t.state = NewBridgeHubPTokenkState()
 	return true
 }
 

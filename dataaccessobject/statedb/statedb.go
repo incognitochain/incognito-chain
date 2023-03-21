@@ -2758,20 +2758,20 @@ func (stateDB *StateDB) iterateBridgeHubBridgeInfos(prefix []byte) ([]*BridgeInf
 	return res, nil
 }
 
-func (stateDB *StateDB) iterateBridgeHubPTokens(prefix []byte) (map[int]*BridgeHubNetworkState, error) {
-	res := map[int]*BridgeHubNetworkState{}
+func (stateDB *StateDB) iterateBridgeHubPTokens(prefix []byte) (map[common.Hash]uint64, error) {
+	res := map[common.Hash]uint64{}
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next(true, false, true) {
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		pTokenState := NewBridgeHubNetworkState()
+		pTokenState := NewBridgeHubPTokenkState()
 		err := json.Unmarshal(newValue, &pTokenState)
 		if err != nil {
 			return nil, err
 		}
-		res[pTokenState.networkId] = pTokenState
+		res[pTokenState.pTokenID] = pTokenState.pTokenAmount
 	}
 	return res, nil
 }
@@ -2790,6 +2790,24 @@ func (stateDB *StateDB) iterateBridgeHubBridgeStakingInfos(prefix []byte) ([]*Br
 			return res, err
 		}
 		res = append(res, bridgeStakingInfoState)
+	}
+	return res, nil
+}
+
+func (stateDB *StateDB) iterateBridgeVault(prefix []byte) (map[int]*BridgeHubNetworkVaultState, error) {
+	res := map[int]*BridgeHubNetworkVaultState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next(true, false, true) {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		vaultState := NewBridgeHubNetworkVaultState()
+		err := json.Unmarshal(newValue, &vaultState)
+		if err != nil {
+			return nil, err
+		}
+		res[vaultState.networkId] = vaultState
 	}
 	return res, nil
 }
