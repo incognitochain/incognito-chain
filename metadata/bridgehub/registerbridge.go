@@ -24,8 +24,8 @@ type RegisterBridgeContentInst struct {
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
-	Signature        string   `json:"Signature"`        // TSS sig : TODO: 0xkraken: keep or remove?
-	TxReqID          string   `json:"TxReqID"`
+	//Signature        string   `json:"Signature"`        // TSS sig : TODO: 0xkraken: keep or remove?
+	TxReqID string `json:"TxReqID"`
 }
 
 type RegisterBridgeMsg struct {
@@ -38,7 +38,7 @@ func NewRegisterBridgeRequest(
 	bridgePoolPubKey string, // TSS pubkey
 	validatorPubKeys []string, // pubkey to build TSS key
 	vaultAddress string, // vault to receive external assets
-	//signature string, // TSS sig
+	// signature string, // TSS sig
 ) (*RegisterBridgeRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.BridgeHubRegisterBridgeMeta,

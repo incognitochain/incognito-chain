@@ -9,7 +9,7 @@ import (
 
 type BridgeHubState struct {
 	// TODO: staking asset is PRV or others?
-	stakingInfos map[string]*StakerInfo // bridgePubKey : Staker info
+	stakingInfos map[string]*statedb.BridgeStakingInfoState // bridgePubKey : Staker info
 
 	// bridgePubKey only belongs one Bridge
 	bridgeInfos map[string]*BridgeInfo // BridgePoolPubKey : BridgeInfo
@@ -19,21 +19,13 @@ type BridgeHubState struct {
 	params *statedb.BridgeHubParamState
 }
 
-type StakerInfo struct {
-	StakeAmount      uint64      `json:"StakeAmount"`
-	TokenID          common.Hash `json:"TokenID"`
-	TxReqID          string      `json:"TxReqID"`
-	BridgePubKey     string      `json:"BridgePubKey"`
-	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
-}
-
 type BridgeInfo struct {
 	Info          *statedb.BridgeInfoState
 	PTokenAmounts map[common.Hash]*statedb.BridgeHubPTokenState // key: pToken
 }
 
 // read only function
-func (s *BridgeHubState) StakingInfos() map[string]*StakerInfo {
+func (s *BridgeHubState) StakingInfos() map[string]*statedb.BridgeStakingInfoState {
 	return s.stakingInfos
 }
 
@@ -50,7 +42,7 @@ func (s *BridgeHubState) Params() *statedb.BridgeHubParamState {
 
 func NewBridgeHubState() *BridgeHubState {
 	return &BridgeHubState{
-		stakingInfos: make(map[string]*StakerInfo),
+		stakingInfos: make(map[string]*statedb.BridgeStakingInfoState),
 		bridgeInfos:  make(map[string]*BridgeInfo),
 		tokenPrices:  make(map[string]uint64),
 		params:       nil,
@@ -78,7 +70,19 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 	}
 	res.bridgeInfos = bridgeInfos
 
-	// TODO: coding for stakingInfo, tokenPrices
+	// clone stakingInfo
+	stakingInfos := map[string]*statedb.BridgeStakingInfoState{}
+	for bridgeHubKey, info := range s.stakingInfos {
+		stakingInfos[bridgeHubKey] = statedb.NewBridgeStakingInfoStateWithValue(
+			info.StakingAmount(),
+			info.TokenID(),
+			info.BridgePubKey(),
+			info.BridgePoolPubKey(),
+		)
+	}
+	res.stakingInfos = stakingInfos
+
+	// TODO: coding for tokenPrices
 
 	return res
 }
