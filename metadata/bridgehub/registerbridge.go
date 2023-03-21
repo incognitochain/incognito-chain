@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,19 +14,18 @@ import (
 
 // whoever can send this type of tx
 type RegisterBridgeRequest struct {
-	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
-	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
-	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
+	BridgePoolPubKey string         `json:"BridgePoolPubKey"` // TSS pubkey
+	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
+	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
 	//Signature        string   `json:"Signature"`        // TSS sig
 	metadataCommon.MetadataBase
 }
 
 type RegisterBridgeContentInst struct {
-	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
-	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
-	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
-	Signature        string   `json:"Signature"`        // TSS sig : TODO: 0xkraken: keep or remove?
-	TxReqID          string   `json:"TxReqID"`
+	BridgePoolPubKey string         `json:"BridgePoolPubKey"` // TSS pubkey
+	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
+	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
+	TxReqID          string         `json:"TxReqID"`
 }
 
 type RegisterBridgeMsg struct {
@@ -37,7 +37,7 @@ type RegisterBridgeMsg struct {
 func NewRegisterBridgeRequest(
 	bridgePoolPubKey string, // TSS pubkey
 	validatorPubKeys []string, // pubkey to build TSS key
-	vaultAddress string, // vault to receive external assets
+	vaultAddress map[int]string, // vault to receive external assets
 	//signature string, // TSS sig
 ) (*RegisterBridgeRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
@@ -99,8 +99,14 @@ func (bReq RegisterBridgeRequest) ValidateSanityData(
 	if bReq.BridgePoolPubKey == "" {
 		return false, false, errors.New("BridgePoolPubKey empty")
 	}
-	if bReq.VaultAddress == "" {
+	if len(bReq.VaultAddress) == 0 {
 		return false, false, errors.New("VaultAddress empty")
+	}
+	for k, v := range bReq.VaultAddress {
+		//TODO: verify if k is in list network
+		if v == "" {
+			return false, false, fmt.Errorf("network %v have empty vault address", k)
+		}
 	}
 	/*if bReq.Signature == "" {*/
 	/*return false, false, errors.New("Signature empty")*/

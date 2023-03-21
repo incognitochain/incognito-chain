@@ -187,13 +187,13 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeHubParamObjectWithValue(db, hash, value)
 	case BridgeHubBridgeInfoObjectType:
 		return newBridgeHubBridgeInfoObjectWithValue(db, hash, value)
-	case BridgeHubPTokenObjectType:
-		return newBridgeHubPTokenObjectWithValue(db, hash, value)
+	case BridgeHubBridgeInfoNetworkObjectType:
+		return newBridgeHubNetworkObjectWithValue(db, hash, value)
 	case BridgeHubStatusObjectType:
 		return newBridgeHubStatusObjectWithValue(db, hash, value)
 	case BridgeHubTxObjectType:
 		return newBridgeHubTxObjectWithValue(db, hash, value)
-	case BridgeStakingTxObjectType:
+	case BridgeHubStakerInfoObjectType:
 		return newBridgeHubStakingInfoObjectWithValue(db, hash, value)
 
 	default:
@@ -363,8 +363,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeHubParamObject(db, hash)
 	case BridgeHubBridgeInfoObjectType:
 		return newBridgeHubBridgeInfoObject(db, hash)
-	case BridgeHubBridgeInfoTokenAmountsObjectType:
-		return newBridgeHubPTokenObject(db, hash)
+	case BridgeHubBridgeInfoNetworkObjectType:
+		return newBridgeHubNetworkObject(db, hash)
 	case BridgeHubStatusObjectType:
 		return newBridgeHubStatusObject(db, hash)
 	case BridgeHubTxObjectType:

@@ -28,8 +28,8 @@ type StakerInfo struct {
 }
 
 type BridgeInfo struct {
-	Info          *statedb.BridgeInfoState
-	PTokenAmounts map[common.Hash]*statedb.BridgeHubPTokenState // key: pToken
+	Info        *statedb.BridgeInfoState
+	NetworkInfo map[int]*statedb.BridgeHubNetworkState // key: networkId
 }
 
 // read only function
@@ -70,9 +70,9 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 		infoTmp := &BridgeInfo{}
 		infoTmp.Info = info.Info.Clone()
 
-		infoTmp.PTokenAmounts = map[common.Hash]*statedb.BridgeHubPTokenState{}
-		for ptokenID, pTokenState := range info.PTokenAmounts {
-			infoTmp.PTokenAmounts[ptokenID] = pTokenState.Clone()
+		infoTmp.NetworkInfo = map[int]*statedb.BridgeHubNetworkState{}
+		for networkId, networkInfo := range info.NetworkInfo {
+			infoTmp.NetworkInfo[networkId] = networkInfo.Clone()
 		}
 		bridgeInfos[bridgeID] = infoTmp
 	}
@@ -99,19 +99,19 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 			isUpdateBridgeInfo = preBridge.Info.IsDiff(bridgeInfo.Info)
 
 			// check list ptoken
-			for pTokenID, pTokenInfo := range bridgeInfo.PTokenAmounts {
+			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
 				isUpdate := true
-				if prePTokenInfo, found := preBridge.PTokenAmounts[pTokenID]; found && !prePTokenInfo.IsDiff(pTokenInfo) {
+				if prePTokenInfo, found := preBridge.NetworkInfo[networkId]; found && !prePTokenInfo.IsDiff(networkInfo) {
 					isUpdate = false
 				}
 				if isUpdate {
 					if newBridgeInfos[bridgeID] == nil {
 						newBridgeInfos[bridgeID] = &BridgeInfo{}
 					}
-					if newBridgeInfos[bridgeID].PTokenAmounts == nil {
-						newBridgeInfos[bridgeID].PTokenAmounts = map[common.Hash]*statedb.BridgeHubPTokenState{}
+					if newBridgeInfos[bridgeID].NetworkInfo == nil {
+						newBridgeInfos[bridgeID].NetworkInfo = map[int]*statedb.BridgeHubNetworkState{}
 					}
-					newBridgeInfos[bridgeID].PTokenAmounts[pTokenID] = pTokenInfo
+					newBridgeInfos[bridgeID].NetworkInfo[networkId] = networkInfo
 				}
 			}
 

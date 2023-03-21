@@ -1,7 +1,6 @@
 package bridgehub
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -25,14 +24,14 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 		if err != nil {
 			return nil, err
 		}
-		pTokenMap := map[common.Hash]*statedb.BridgeHubPTokenState{}
+		pTokenMap := map[int]*statedb.BridgeHubNetworkState{}
 		for _, token := range pTokens {
-			pTokenMap[token.PTokenID()] = token
+			pTokenMap[token.NetworkId()] = token
 		}
 
 		bridgeInfos[info.BriPubKey()] = &BridgeInfo{
-			Info:          info,
-			PTokenAmounts: pTokenMap,
+			Info:        info,
+			NetworkInfo: pTokenMap,
 		}
 	}
 

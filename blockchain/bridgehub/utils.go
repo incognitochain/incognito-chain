@@ -12,11 +12,11 @@ import (
 )
 
 type RegisterBridgeStatus struct {
-	Status           byte     `json:"Status"`
-	BridgeID         string   `json:"BridgeID"`
-	BridgePoolPubKey string   `json:"BridgePoolPubKey"` // TSS pubkey
-	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
-	VaultAddress     string   `json:"VaultAddress"`     // vault to receive external assets
+	Status           byte           `json:"Status"`
+	BridgeID         string         `json:"BridgeID"`
+	BridgePoolPubKey string         `json:"BridgePoolPubKey"` // TSS pubkey
+	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
+	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
 	//Signature        string   `json:"Signature"`        // TSS sig
 	ErrorCode int `json:"ErrorCode,omitempty"`
 }
@@ -33,7 +33,6 @@ func buildBridgeHubRegisterBridgeInst(
 		ValidatorPubKeys: meta.ValidatorPubKeys,
 		VaultAddress:     meta.VaultAddress,
 		//Signature:        meta.Signature,
-		BridgeID:         bridgeID,
 		TxReqID:          txReqID.String(),
 		BridgePoolPubKey: meta.BridgePoolPubKey,
 	}

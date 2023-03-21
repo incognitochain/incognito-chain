@@ -63,8 +63,8 @@ func (sp *stateProcessor) registerBridge(
 	fmt.Printf("0xcryptolover log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
 		clonedState.bridgeInfos[contentInst.BridgePoolPubKey] = &BridgeInfo{
-			Info:          statedb.NewBridgeInfoStateWithValue(contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
-			PTokenAmounts: map[common.Hash]*statedb.BridgeHubPTokenState{},
+			Info:        statedb.NewBridgeInfoStateWithValue(contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
+			NetworkInfo: map[int]*statedb.BridgeHubNetworkState{},
 		}
 		fmt.Printf("0xcryptolover log state info %+v \n", clonedState.bridgeInfos)
 	}
