@@ -17,7 +17,6 @@ type RegisterBridgeRequest struct {
 	BridgePoolPubKey string         `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
-	//Signature        string   `json:"Signature"`        // TSS sig
 	metadataCommon.MetadataBase
 }
 

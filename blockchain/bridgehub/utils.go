@@ -25,14 +25,12 @@ func buildBridgeHubRegisterBridgeInst(
 	meta metadataBridgeHub.RegisterBridgeRequest,
 	shardID byte,
 	txReqID common.Hash,
-	bridgeID string,
 	status string,
 	errorType int,
 ) ([]string, error) {
 	content := metadataBridgeHub.RegisterBridgeContentInst{
 		ValidatorPubKeys: meta.ValidatorPubKeys,
 		VaultAddress:     meta.VaultAddress,
-		//Signature:        meta.Signature,
 		TxReqID:          txReqID.String(),
 		BridgePoolPubKey: meta.BridgePoolPubKey,
 	}
@@ -58,7 +56,6 @@ func buildBridgeHubRegisterBridgeInst(
 
 type StakeBridgeStatus struct {
 	Status           byte                   `json:"Status"`
-	ExtChainID       string                 `json:"ExtChainID"`
 	StakeAmount      uint64                 `json:"StakeAmount"` // must be equal to vout value
 	TokenID          common.Hash            `json:"TokenID"`
 	StakerAddress    privacy.PaymentAddress `json:"StakerAddress"`

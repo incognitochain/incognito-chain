@@ -9,30 +9,50 @@ import (
 )
 
 type BridgeStakingInfoState struct {
-	validator     string
-	stakingAmount uint64
+	stakeAmount      uint64
+	tokenID          common.Hash
+	bridgePubKey     string
+	bridgePoolPubKey string
 }
 
 func (b BridgeStakingInfoState) StakingAmount() uint64 {
-	return b.stakingAmount
+	return b.stakeAmount
 }
 
-func (b *BridgeStakingInfoState) SetStakingAmount(stakingAmount uint64) {
-	b.stakingAmount = stakingAmount
+func (b *BridgeStakingInfoState) SetStakingAmount(stakeAmount uint64) {
+	b.stakeAmount = stakeAmount
 }
 
-func (b BridgeStakingInfoState) Validator() string {
-	return b.validator
+func (b BridgeStakingInfoState) TokenID() common.Hash {
+	return b.tokenID
 }
 
-func (b *BridgeStakingInfoState) SetValidator(validator string) {
-	b.validator = validator
+func (b *BridgeStakingInfoState) SetTokenID(tokenID common.Hash) {
+	b.tokenID = tokenID
+}
+
+func (b BridgeStakingInfoState) BridgePubKey() string {
+	return b.bridgePubKey
+}
+
+func (b *BridgeStakingInfoState) SetBridgePubKey(bridgePubKet string) {
+	b.bridgePubKey = bridgePubKet
+}
+
+func (b BridgeStakingInfoState) BridgePoolPubKey() string {
+	return b.bridgePoolPubKey
+}
+
+func (b *BridgeStakingInfoState) SetBridgePoolPubKey(bridgePoolPubKey string) {
+	b.bridgePoolPubKey = bridgePoolPubKey
 }
 
 func (b BridgeStakingInfoState) Clone() *BridgeStakingInfoState {
 	return &BridgeStakingInfoState{
-		stakingAmount: b.stakingAmount,
-		validator:     b.validator,
+		stakeAmount:      b.stakeAmount,
+		tokenID:          b.tokenID,
+		bridgePubKey:     b.bridgePubKey,
+		bridgePoolPubKey: b.bridgePoolPubKey,
 	}
 }
 
@@ -40,16 +60,21 @@ func (b *BridgeStakingInfoState) IsDiff(compareParam *BridgeStakingInfoState) bo
 	if compareParam == nil {
 		return true
 	}
-	return b.stakingAmount != compareParam.stakingAmount || b.validator != compareParam.validator
+	return b.stakeAmount != compareParam.stakeAmount || b.tokenID != compareParam.tokenID ||
+		b.bridgePoolPubKey != compareParam.bridgePoolPubKey || b.bridgePubKey != compareParam.bridgePubKey
 }
 
 func (b BridgeStakingInfoState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		Validator     string
-		StakingAmount uint64
+		StakeAmount      uint64
+		TokenID          common.Hash
+		BridgePoolPubKey string
+		BridgePubKey     string
 	}{
-		Validator:     b.validator,
-		StakingAmount: b.stakingAmount,
+		StakeAmount:      b.stakeAmount,
+		TokenID:          b.tokenID,
+		BridgePubKey:     b.bridgePubKey,
+		BridgePoolPubKey: b.bridgePoolPubKey,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -59,15 +84,19 @@ func (b BridgeStakingInfoState) MarshalJSON() ([]byte, error) {
 
 func (b *BridgeStakingInfoState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		Validator     string
-		StakingAmount uint64
+		StakeAmount      uint64
+		TokenID          common.Hash
+		BridgePoolPubKey string
+		BridgePubKey     string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
-	b.validator = temp.Validator
-	b.stakingAmount = temp.StakingAmount
+	b.stakeAmount = temp.StakeAmount
+	b.tokenID = temp.TokenID
+	b.bridgePoolPubKey = temp.BridgePoolPubKey
+	b.bridgePubKey = temp.BridgePubKey
 	return nil
 }
 
@@ -75,10 +104,12 @@ func NewBridgeStakingInfoState() *BridgeStakingInfoState {
 	return &BridgeStakingInfoState{}
 }
 
-func NewBridgeStakingInfoStateWithValue(validator string, stakingAmount uint64) *BridgeStakingInfoState {
+func NewBridgeStakingInfoStateWithValue(stakingAmount uint64, tokenID common.Hash, bridgePubKey, bridgePoolPubKey string) *BridgeStakingInfoState {
 	return &BridgeStakingInfoState{
-		validator:     validator,
-		stakingAmount: stakingAmount,
+		stakeAmount:      stakingAmount,
+		tokenID:          tokenID,
+		bridgePubKey:     bridgePubKey,
+		bridgePoolPubKey: bridgePoolPubKey,
 	}
 }
 

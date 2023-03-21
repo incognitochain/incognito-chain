@@ -209,9 +209,9 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	if inst.Status == common.AcceptedStatusStr {
 		_, found := clonedState.stakingInfos[contentInst.BridgePubKey]
 		if !found {
-			clonedState.stakingInfos[contentInst.BridgePubKey] = &StakerInfo{}
+			clonedState.stakingInfos[contentInst.BridgePubKey] = &statedb.BridgeStakingInfoState{}
 		}
-		clonedState.stakingInfos[contentInst.BridgePubKey].StakeAmount += contentInst.StakeAmount
+		clonedState.stakingInfos[contentInst.BridgePubKey].SetStakingAmount(clonedState.stakingInfos[contentInst.BridgePubKey].StakingAmount() + contentInst.StakeAmount)
 		fmt.Printf("thachtb log state info %+v \n", clonedState.stakingInfos)
 	}
 

@@ -80,9 +80,9 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		BridgePoolPubKey string   `json:"BridgePoolPubKey"`
-		ValidatorPubKeys []string `json:"ValidatorPubKeys"`
-		VaultAddress     string   `json:"VaultAddress"`
+		BridgePoolPubKey string         `json:"BridgePoolPubKey"`
+		ValidatorPubKeys []string       `json:"ValidatorPubKeys"`
+		VaultAddress     map[int]string `json:"VaultAddress"`
 		//Signature        string   `json:"Signature"`
 	}{}
 	// parse params & metadata

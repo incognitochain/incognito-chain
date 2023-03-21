@@ -40,14 +40,14 @@ func (sp *stateProducer) registerBridge(
 
 	// check number of validators
 	if uint(len(meta.ValidatorPubKeys)) < state.params.MinNumberValidators() {
-		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidNumberValidatorError)
+		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, InvalidNumberValidatorError)
 		return [][]string{inst}, state, nil
 	}
 
 	// check all ValidatorPubKeys staked or not
 	for _, validatorPubKeyStr := range meta.ValidatorPubKeys {
-		if state.stakingInfos[validatorPubKeyStr].StakeAmount < state.params.MinStakedAmountValidator() {
-			inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, "", common.RejectedStatusStr, InvalidStakedAmountValidatorError)
+		if state.stakingInfos[validatorPubKeyStr].StakingAmount() < state.params.MinStakedAmountValidator() {
+			inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, InvalidStakedAmountValidatorError)
 			return [][]string{inst}, state, nil
 		}
 	}
@@ -56,9 +56,8 @@ func (sp *stateProducer) registerBridge(
 	bridgeID := meta.BridgePoolPubKey
 
 	if state.bridgeInfos[bridgeID] != nil {
-		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.RejectedStatusStr, BridgeIDExistedError)
+		inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDExistedError)
 		return [][]string{inst}, state, nil
-
 	}
 
 	// TODO: 0xkraken: if chainID is BTC, init pToken with pBTC ID from portal v4
@@ -71,7 +70,7 @@ func (sp *stateProducer) registerBridge(
 	}
 
 	// build accepted instruction
-	inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, bridgeID, common.AcceptedStatusStr, 0)
+	inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, common.AcceptedStatusStr, 0)
 	return [][]string{inst}, clonedState, nil
 }
 
@@ -201,9 +200,9 @@ func (sp *stateProducer) stake(
 	clonedState := state.Clone()
 	_, found := clonedState.stakingInfos[meta.BridgePubKey]
 	if !found {
-		clonedState.stakingInfos[meta.BridgePubKey] = &StakerInfo{}
+		clonedState.stakingInfos[meta.BridgePubKey] = &statedb.BridgeStakingInfoState{}
 	}
-	clonedState.stakingInfos[meta.BridgePubKey].StakeAmount += meta.StakeAmount
+	clonedState.stakingInfos[meta.BridgePubKey].SetStakingAmount(clonedState.stakingInfos[meta.BridgePubKey].StakingAmount() + meta.StakeAmount)
 
 	// build accepted instruction
 	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.AcceptedStatusStr, 0)

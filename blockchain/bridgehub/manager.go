@@ -163,16 +163,16 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 	// store new/updated bridge info
 	for bridgeID, bridgeInfo := range m.state.bridgeInfos {
 		// TODO: 0xkraken recheck this condition
-		if bridgeInfo.Info != nil && bridgeInfo.Info.BridgeID() != "" {
+		if bridgeInfo.Info != nil && bridgeInfo.Info.BriPubKey() != "" {
 			err := statedb.StoreBridgeHubBridgeInfo(sDB, bridgeID, bridgeInfo.Info)
 			if err != nil {
 				return err
 			}
 		}
 
-		if bridgeInfo.PTokenAmounts != nil {
-			for pTokenID, pTokenInfo := range bridgeInfo.PTokenAmounts {
-				err := statedb.StoreBridgeHubPTokenAmount(sDB, bridgeID, pTokenID, pTokenInfo)
+		if bridgeInfo.NetworkInfo != nil {
+			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
+				err := statedb.StoreBridgeHubNetworkInfo(sDB, bridgeID, networkId, networkInfo)
 				if err != nil {
 					return err
 				}
@@ -188,11 +188,8 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 		}
 	}
 
-	temp := &statedb.BridgeStakingInfoState{}
 	for k, v := range m.state.stakingInfos {
-		temp.SetStakingAmount(v)
-		temp.SetValidator(k)
-		err := statedb.StoreBridgeHubStaking(sDB, k, temp)
+		err := statedb.StoreBridgeHubStaking(sDB, k, v)
 		if err != nil {
 			return err
 		}

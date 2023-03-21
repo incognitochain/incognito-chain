@@ -54,12 +54,12 @@ func GetBridgeHubBridgeInfo(stateDB *StateDB) ([]*BridgeInfoState, error) {
 	return stateDB.iterateBridgeHubBridgeInfos(prefixHash)
 }
 
-func StoreBridgeHubPTokenAmount(stateDB *StateDB, bridgeID string, networkId int, state *BridgeHubNetworkState) error {
+func StoreBridgeHubNetworkInfo(stateDB *StateDB, bridgeID string, networkId int, state *BridgeHubNetworkState) error {
 	key := GenerateBridgeHubPTokenObjectKey(bridgeID, networkId)
 	return stateDB.SetStateObject(BridgeHubBridgeInfoNetworkObjectType, key, state)
 }
 
-func GetBridgeHubPTokenByBridgeID(stateDB *StateDB, bridgeID string) (map[int]*BridgeHubNetworkState, error) {
+func GetBridgeHubNetworkInfoByBridgeID(stateDB *StateDB, bridgeID string) (map[int]*BridgeHubNetworkState, error) {
 	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
 	return stateDB.iterateBridgeHubPTokens(prefixHash)
 }

@@ -20,7 +20,7 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 	}
 	bridgeInfos := map[string]*BridgeInfo{}
 	for _, info := range listBridgeInfos {
-		pTokens, err := statedb.GetBridgeHubPTokenByBridgeID(sDB, info.BriPubKey())
+		pTokens, err := statedb.GetBridgeHubNetworkInfoByBridgeID(sDB, info.BriPubKey())
 		if err != nil {
 			return nil, err
 		}
@@ -42,13 +42,13 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 	}
 
 	// load staking info
-	stakingInfo := map[string]uint64{}
+	stakingInfo := map[string]*statedb.BridgeStakingInfoState{}
 	stakingInfos, err := statedb.GetBridgeStakingInfo(sDB)
 	if err != nil {
 		return nil, err
 	}
 	for _, v := range stakingInfos {
-		stakingInfo[v.Validator()] = v.StakingAmount()
+		stakingInfo[v.BridgePubKey()] = v
 	}
 
 	// TODO: load more
