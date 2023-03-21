@@ -187,13 +187,13 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeHubParamObjectWithValue(db, hash, value)
 	case BridgeHubBridgeInfoObjectType:
 		return newBridgeHubBridgeInfoObjectWithValue(db, hash, value)
-	case BridgeHubPTokenObjectType:
+	case BridgeHubBridgeInfoTokenAmountsObjectType:
 		return newBridgeHubPTokenObjectWithValue(db, hash, value)
 	case BridgeHubStatusObjectType:
 		return newBridgeHubStatusObjectWithValue(db, hash, value)
 	case BridgeHubTxObjectType:
 		return newBridgeHubTxObjectWithValue(db, hash, value)
-	case BridgeStakingTxObjectType:
+	case BridgeHubStakerInfoObjectType:
 		return newBridgeHubStakingInfoObjectWithValue(db, hash, value)
 
 	default:

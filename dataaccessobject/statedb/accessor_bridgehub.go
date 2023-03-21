@@ -58,7 +58,7 @@ func GetBridgeHubBridgeInfo(stateDB *StateDB) ([]*BridgeInfoState, error) {
 
 func StoreBridgeHubPTokenAmount(stateDB *StateDB, bridgeID string, pTokenID common.Hash, state *BridgeHubPTokenState) error {
 	key := GenerateBridgeHubPTokenObjectKey(bridgeID, pTokenID)
-	return stateDB.SetStateObject(BridgeHubPTokenObjectType, key, state)
+	return stateDB.SetStateObject(BridgeHubBridgeInfoTokenAmountsObjectType, key, state)
 }
 
 func GetBridgeHubPTokenByBridgeID(stateDB *StateDB, bridgeID string) ([]*BridgeHubPTokenState, error) {
@@ -68,7 +68,7 @@ func GetBridgeHubPTokenByBridgeID(stateDB *StateDB, bridgeID string) ([]*BridgeH
 
 func StoreBridgeHubStaking(stateDB *StateDB, validator string, state *BridgeStakingInfoState) error {
 	key := GenerateBridgeHubStakingInfoObjectKey(validator)
-	return stateDB.SetStateObject(BridgeStakingTxObjectType, key, state)
+	return stateDB.SetStateObject(BridgeHubStakerInfoObjectType, key, state)
 }
 
 func GetBridgeStakingInfo(stateDB *StateDB) ([]*BridgeStakingInfoState, error) {
