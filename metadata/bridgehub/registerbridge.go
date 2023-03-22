@@ -17,6 +17,7 @@ type RegisterBridgeRequest struct {
 	BridgePoolPubKey string         `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
+	Signature        string         `json:"Signature"`        // Bridge network signature to register
 	metadataCommon.MetadataBase
 }
 
@@ -25,19 +26,21 @@ type RegisterBridgeContentInst struct {
 	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
 	TxReqID          string         `json:"TxReqID"`
+	Signature        string         `json:"Signature"`
 }
 
 type RegisterBridgeMsg struct {
 	BridgePoolPubKey string   `json:"BridgePoolPubKey"`
 	ValidatorPubKeys []string `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     string   `json:"VaultAddress"`
+	Signature        string   `json:"Signature"`
 }
 
 func NewRegisterBridgeRequest(
 	bridgePoolPubKey string, // TSS pubkey
 	validatorPubKeys []string, // pubkey to build TSS key
 	vaultAddress map[int]string, // vault to receive external assets
-	//signature string, // TSS sig
+	signature string, // TSS sig
 ) (*RegisterBridgeRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.BridgeHubRegisterBridgeMeta,
@@ -46,7 +49,7 @@ func NewRegisterBridgeRequest(
 		BridgePoolPubKey: bridgePoolPubKey,
 		ValidatorPubKeys: validatorPubKeys,
 		VaultAddress:     vaultAddress,
-		//Signature:        signature,
+		Signature:        signature,
 	}
 	registerReq.MetadataBase = metadataBase
 	return registerReq, nil

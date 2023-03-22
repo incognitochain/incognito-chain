@@ -44,14 +44,6 @@ func (sp *stateProducer) registerBridge(
 		return [][]string{inst}, state, nil
 	}
 
-	// check all ValidatorPubKeys staked or not
-	for _, validatorPubKeyStr := range meta.ValidatorPubKeys {
-		if state.stakingInfos[validatorPubKeyStr].StakingAmount() < state.params.MinStakedAmountValidator() {
-			inst, _ := buildBridgeHubRegisterBridgeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, InvalidStakedAmountValidatorError)
-			return [][]string{inst}, state, nil
-		}
-	}
-
 	// check bridgeID existed or not
 	bridgeID := meta.BridgePoolPubKey
 
@@ -188,11 +180,22 @@ func (sp *stateProducer) stake(
 		return [][]string{}, state, err
 	}
 	// todo: cryptolover add more validation
-	// check bridgeID existed or not
-	bridgeID := meta.BridgePubKey
 
-	if state.bridgeInfos[bridgeID] != nil {
-		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDExistedError)
+	if state.bridgeInfos[meta.BridgePoolPubKey] != nil {
+		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDNotExistedError)
+		return [][]string{inst}, state, nil
+	}
+
+	// check bridgeID existed or not
+	isBridgeKeyExist := false
+	for _, k := range state.bridgeInfos[meta.BridgePoolPubKey].Info.BriValidators() {
+		if k == meta.BridgePubKey {
+			isBridgeKeyExist = true
+			break
+		}
+	}
+	if !isBridgeKeyExist {
+		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeKeyNotMatchInValidatorList)
 		return [][]string{inst}, state, nil
 	}
 

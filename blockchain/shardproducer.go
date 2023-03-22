@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/bridgehub"
 	"reflect"
 	"strconv"
 	"strings"
@@ -513,7 +514,12 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildBridgeHubIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadataCommon.ShieldingBTCResponse, false)
 				}
-
+			case metadataCommon.StakePRVRequestMeta:
+				if len(inst) >= 4 && inst[2] == "rejected" {
+					newTx, err = bridgehub.TxBuilder{}.Build(
+						metaType, inst, producerPrivateKey, shardID, curView.GetCopiedTransactionStateDB(),
+					)
+				}
 			default:
 				if metadataCommon.IsPDEType(metaType) {
 					pdeTxBuilderV1 := pdex.TxBuilderV1{}

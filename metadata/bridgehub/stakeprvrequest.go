@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,19 +14,21 @@ import (
 )
 
 type StakePRVRequest struct {
-	StakeAmount      uint64      `json:"StakeAmount"` // must be equal to vout value
-	TokenID          common.Hash `json:"TokenID"`
-	BridgePubKey     string      `json:"BridgePubKey"` // staker's key
-	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+	StakeAmount      uint64              `json:"StakeAmount"` // must be equal to vout value
+	TokenID          common.Hash         `json:"TokenID"`
+	BridgePubKey     string              `json:"BridgePubKey"` // staker's key
+	BridgePoolPubKey string              `json:"BridgePoolPubKey"`
+	Staker           privacy.OTAReceiver `json:"Staker"`
 	metadataCommon.MetadataBase
 }
 
 type StakePRVRequestContentInst struct {
-	StakeAmount      uint64      `json:"StakeAmount"` // must be equal to vout value
-	TokenID          common.Hash `json:"TokenID"`
-	TxReqID          string      `json:"TxReqID"`
-	BridgePubKey     string      `json:"BridgePubKey"` // staker's key
-	BridgePoolPubKey string      `json:"BridgePoolPubKey"`
+	StakeAmount      uint64              `json:"StakeAmount"` // must be equal to vout value
+	TokenID          common.Hash         `json:"TokenID"`
+	TxReqID          string              `json:"TxReqID"`
+	BridgePubKey     string              `json:"BridgePubKey"` // staker's key
+	BridgePoolPubKey string              `json:"BridgePoolPubKey"`
+	Staker           privacy.OTAReceiver `json:"Staker"`
 }
 
 type StakeReqAction struct {
@@ -38,6 +41,7 @@ func NewStakePRVRequest(
 	stakeAmount uint64,
 	tokenID common.Hash,
 	bridgePoolPubKey string,
+	staker privacy.OTAReceiver,
 ) (*StakePRVRequest, error) {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metadataCommon.StakePRVRequestMeta,
@@ -47,6 +51,7 @@ func NewStakePRVRequest(
 		StakeAmount:      stakeAmount,
 		TokenID:          tokenID,
 		BridgePoolPubKey: bridgePoolPubKey,
+		Staker:           staker,
 	}
 	burningReq.MetadataBase = metadataBase
 	return burningReq, nil
@@ -88,6 +93,10 @@ func (bReq StakePRVRequest) ValidateSanityData(chainRetriever metadataCommon.Cha
 		return false, false, fmt.Errorf("bridgePoolPubKey cannot be empty")
 	}
 
+	if bReq.Staker.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("otaReceiver shardID is different from txShardID"))
+	}
+
 	return true, true, nil
 }
 
@@ -117,4 +126,12 @@ func (bReq *StakePRVRequest) BuildReqActions(tx metadataCommon.Transaction, chai
 
 func (bReq *StakePRVRequest) CalculateSize() uint64 {
 	return metadataCommon.CalculateSize(bReq)
+}
+
+func (bReq *StakePRVRequest) GetOTADeclarations() []metadataCommon.OTADeclaration {
+	var result []metadataCommon.OTADeclaration
+	result = append(result, metadataCommon.OTADeclaration{
+		PublicKey: bReq.Staker.PublicKey.ToBytes(), TokenID: common.ConfidentialAssetID,
+	})
+	return result
 }

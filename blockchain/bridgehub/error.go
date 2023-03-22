@@ -14,6 +14,8 @@ const (
 	InvalidStatusError
 	InvalidBTCShieldStatus
 	StoreShieldExtTxError
+	BridgeIDNotExistedError
+	BridgeKeyNotMatchInValidatorList
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -26,6 +28,8 @@ var ErrCodeMessage = map[int]struct {
 	BridgeIDExistedError:              {2002, "Bridge validator was registered before"},
 	InvalidStatusError:                {2003, "Invalid instruction status error"},
 	InvalidBTCShieldStatus:            {2004, "Invalid btc shield status"},
+	BridgeIDNotExistedError:           {2005, "Bridge pool validator key not found"},
+	BridgeKeyNotMatchInValidatorList:  {2006, "Validator key not match in validator list"},
 }
 
 type BridgeHubError struct {

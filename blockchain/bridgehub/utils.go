@@ -17,8 +17,8 @@ type RegisterBridgeStatus struct {
 	BridgePoolPubKey string         `json:"BridgePoolPubKey"` // TSS pubkey
 	ValidatorPubKeys []string       `json:"ValidatorPubKeys"` // pubkey to build TSS key
 	VaultAddress     map[int]string `json:"VaultAddress"`     // vault to receive external assets
-	//Signature        string   `json:"Signature"`        // TSS sig
-	ErrorCode int `json:"ErrorCode,omitempty"`
+	Signature        string         `json:"Signature"`        // TSS sig
+	ErrorCode        int            `json:"ErrorCode,omitempty"`
 }
 
 func buildBridgeHubRegisterBridgeInst(
@@ -33,6 +33,7 @@ func buildBridgeHubRegisterBridgeInst(
 		VaultAddress:     meta.VaultAddress,
 		TxReqID:          txReqID.String(),
 		BridgePoolPubKey: meta.BridgePoolPubKey,
+		Signature:        meta.Signature,
 	}
 	contentBytes, _ := json.Marshal(content)
 

@@ -74,9 +74,9 @@ func (sp *stateProcessor) registerBridge(
 		BridgePoolPubKey: contentInst.BridgePoolPubKey,
 		ValidatorPubKeys: contentInst.ValidatorPubKeys,
 		VaultAddress:     contentInst.VaultAddress,
-		//Signature:        contentInst.Signature,
-		Status:    status,
-		ErrorCode: errorCode,
+		Signature:        contentInst.Signature,
+		Status:           status,
+		ErrorCode:        errorCode,
 	}
 	trackStatusBytes, _ := json.Marshal(trackStatus)
 	txHash := &common.Hash{}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -83,7 +84,7 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 		BridgePoolPubKey string         `json:"BridgePoolPubKey"`
 		ValidatorPubKeys []string       `json:"ValidatorPubKeys"`
 		VaultAddress     map[int]string `json:"VaultAddress"`
-		//Signature        string   `json:"Signature"`
+		Signature        string         `json:"Signature"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -95,7 +96,7 @@ func (httpServer *HttpServer) createBridgeHubRegisterBridgeTx(
 		mdReader.BridgePoolPubKey,
 		mdReader.ValidatorPubKeys,
 		mdReader.VaultAddress,
-		//mdReader.Signature,
+		mdReader.Signature,
 	)
 
 	// create new param to build raw tx from param interface
@@ -181,11 +182,18 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
+	recv := privacy.OTAReceiver{}
+	err = recv.FromAddress(keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+
 	md, _ := metadataBridgeHub.NewStakePRVRequest(
 		mdReader.BridgePubKey,
 		mdReader.BurnAmount,
 		mdReader.TokenID,
 		mdReader.BridgePoolPubKey,
+		recv,
 	)
 
 	// create new param to build raw tx from param interface

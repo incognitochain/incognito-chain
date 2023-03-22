@@ -259,6 +259,7 @@ const (
 	StakePRVRequestMeta         = 373
 	BridgeHubUnshieldRequest    = 374
 	BridgeHubUnshieldConfirm    = 375
+	BridgeHubStakeResponse      = 376
 )
 
 var minerCreatedMetaTypes = []int{
@@ -316,6 +317,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingReshieldResponseMeta,
 	BurnForCallResponseMeta,
 	ShieldingBTCResponse,
+	BridgeHubStakeResponse,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

@@ -15,15 +15,6 @@ type BridgeInfoState struct {
 	// info of previous bridge validators that are used to slashing if they haven't completed their remain tasks
 	prevBriValidators []string // array of bridgePubKey
 	prevBriPubKey     string   // Public key of TSS that used to validate sig from validators by TSS
-	minPrvToStake     uint64   // min prv to stake for this bridge. Also this will be the init prv for registering bridge 1000 prv -> 1 btc
-}
-
-func (b BridgeInfoState) MinPrvToStake() uint64 {
-	return b.minPrvToStake
-}
-
-func (b *BridgeInfoState) SetMinPrvToStake(minPrvToStake uint64) {
-	b.minPrvToStake = minPrvToStake
 }
 
 func (b BridgeInfoState) BriValidators() []string {
