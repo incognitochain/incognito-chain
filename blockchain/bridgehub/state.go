@@ -2,6 +2,7 @@ package bridgehub
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 
@@ -71,8 +72,11 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 
 		infoTmp.NetworkInfo = map[int]*BridgeNetwork{}
 		for networkId, networkInfo := range info.NetworkInfo {
-			infoTmp.NetworkInfo[networkId].networkId = networkInfo.networkId
-			infoTmp.NetworkInfo[networkId].vaultAddress = networkInfo.vaultAddress
+			infoTmp.NetworkInfo[networkId] = &BridgeNetwork{
+				networkId:    networkInfo.networkId,
+				vaultAddress: networkInfo.vaultAddress,
+			}
+			infoTmp.NetworkInfo[networkId].pTokens = make(map[common.Hash]uint64)
 			for k, v := range networkInfo.pTokens {
 				infoTmp.NetworkInfo[networkId].pTokens[k] = v
 			}
@@ -109,26 +113,18 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 	newBridgeInfos := map[string]*BridgeInfo{}
 	for bridgeID, bridgeInfo := range s.bridgeInfos {
 		isUpdateBridgeInfo := false
+		isUpdateBridgeNetworkInfo := false
 		if preBridge, found := preState.bridgeInfos[bridgeID]; found {
 			// check info
 			isUpdateBridgeInfo = preBridge.Info.IsDiff(bridgeInfo.Info)
 
 			// check list ptoken
 			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
-				isUpdate := true
-				if preNetworkInfo, found := preBridge.NetworkInfo[networkId]; found &&
-					preNetworkInfo.networkId == networkInfo.networkId && preNetworkInfo.vaultAddress == networkInfo.vaultAddress &&
-					reflect.DeepEqual(preNetworkInfo.pTokens, networkInfo.pTokens) {
-					isUpdate = false
-				}
-				if isUpdate {
-					if newBridgeInfos[bridgeID] == nil {
-						newBridgeInfos[bridgeID] = &BridgeInfo{}
-					}
-					if newBridgeInfos[bridgeID].NetworkInfo == nil {
-						newBridgeInfos[bridgeID].NetworkInfo = map[int]*BridgeNetwork{}
-					}
-					newBridgeInfos[bridgeID].NetworkInfo[networkId] = networkInfo
+				if preNetworkInfo, found := preBridge.NetworkInfo[networkId]; !found ||
+					preNetworkInfo.networkId != networkInfo.networkId || preNetworkInfo.vaultAddress != networkInfo.vaultAddress ||
+					!reflect.DeepEqual(preNetworkInfo.pTokens, networkInfo.pTokens) {
+					isUpdateBridgeNetworkInfo = true
+					break
 				}
 			}
 
@@ -136,11 +132,17 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 			isUpdateBridgeInfo = true
 		}
 
-		if isUpdateBridgeInfo {
+		if isUpdateBridgeInfo || isUpdateBridgeNetworkInfo {
 			if newBridgeInfos[bridgeID] == nil {
 				newBridgeInfos[bridgeID] = &BridgeInfo{}
 			}
-			newBridgeInfos[bridgeID].Info = bridgeInfo.Info
+			if isUpdateBridgeInfo {
+				newBridgeInfos[bridgeID].Info = bridgeInfo.Info
+			}
+			if isUpdateBridgeNetworkInfo {
+				fmt.Printf("0xcrypto got in diff function")
+				newBridgeInfos[bridgeID].NetworkInfo = bridgeInfo.NetworkInfo
+			}
 		}
 	}
 	diffState.bridgeInfos = newBridgeInfos

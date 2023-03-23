@@ -64,7 +64,7 @@ func (sp *stateProcessor) registerBridge(
 	if inst.Status == common.AcceptedStatusStr {
 		clonedState.bridgeInfos[contentInst.BridgePoolPubKey] = &BridgeInfo{
 			Info:        statedb.NewBridgeInfoStateWithValue(contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
-			NetworkInfo: map[int]*BridgeNetwork{},
+			NetworkInfo: newBridgeHubNetworkInfo(contentInst.VaultAddress),
 		}
 		fmt.Printf("0xcryptolover log state info %+v \n", clonedState.bridgeInfos)
 	}

@@ -163,7 +163,9 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 	// store new/updated bridge info
 	for bridgeID, bridgeInfo := range m.state.bridgeInfos {
 		// TODO: 0xkraken recheck this condition
+		fmt.Printf("0xCryptoLover got her 1 %+v \n", bridgeInfo)
 		if bridgeInfo.Info != nil && bridgeInfo.Info.BriPubKey() != "" {
+			fmt.Printf("0xCryptoLover got her 1 1 %+v \n", bridgeInfo.Info)
 			err := statedb.StoreBridgeHubBridgeInfo(sDB, bridgeID, bridgeInfo.Info)
 			if err != nil {
 				return err
@@ -171,12 +173,15 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 		}
 
 		if bridgeInfo.NetworkInfo != nil {
+			fmt.Printf("0xCryptoLover got her 2 %+v \n", bridgeInfo.NetworkInfo)
 			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
+				fmt.Printf("0xCryptoLover got her 2 %+v \n", networkInfo)
 				err := statedb.StoreBridgeHubNetworkInfoVault(sDB, bridgeID, networkId, statedb.NewBridgeHubNetworkVaultStateWithValue(networkInfo.vaultAddress, networkId))
 				if err != nil {
 					return err
 				}
 				for k, v := range networkInfo.pTokens {
+					fmt.Printf("0xCryptoLover got her 3 %+v \n", v)
 					err := statedb.StoreBridgeHubPTokenInfo(sDB, bridgeID, networkId, statedb.NewBridgeHubPTokenkStateWithValue(v, k))
 					if err != nil {
 						return err

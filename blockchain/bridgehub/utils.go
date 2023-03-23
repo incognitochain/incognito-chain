@@ -98,3 +98,15 @@ func buildBridgeHubStakeInst(
 	)
 	return inst.StringSlice(), nil
 }
+
+func newBridgeHubNetworkInfo(vaultAddresses map[int]string) map[int]*BridgeNetwork {
+	temp := make(map[int]*BridgeNetwork)
+	for v, k := range vaultAddresses {
+		temp[v] = &BridgeNetwork{
+			vaultAddress: k,
+			networkId:    v,
+		}
+	}
+
+	return temp
+}
