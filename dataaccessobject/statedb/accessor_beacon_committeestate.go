@@ -229,3 +229,18 @@ func DeleteBeaconLocking(stateDB *StateDB, beaconLocking []incognitokey.Committe
 	}
 	return nil
 }
+
+//beacon share price
+func StoreBeaconSharePrice(stateDB *StateDB, committeeID string, price uint64) error {
+	key := GetBeaconSharePriceKey([]byte(committeeID))
+	err := stateDB.SetStateObject(BeaconSharePriceType, key, NewBeaconSharePriceWithValue(price))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetBeaconSharePrice(stateDB *StateDB, committeeID string) (*BeaconSharePrice, bool, error) {
+	key := GetBeaconSharePriceKey([]byte(committeeID))
+	return stateDB.getBeaconSharePriceInfo(key)
+}

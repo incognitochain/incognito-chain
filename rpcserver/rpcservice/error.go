@@ -54,6 +54,7 @@ const (
 	GetKeySetFromPrivateKeyError
 	GetPDEStateError
 	ListCommitteeRewardError
+	GetDelegationRewardAmountError
 	GetRewardAmountError
 	ListDecryptedOutputCoinsByKeyError
 	ListUnspentOutputCoinsByKeyError

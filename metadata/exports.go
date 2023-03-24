@@ -74,16 +74,20 @@ const (
 	BeaconRewardRequestMeta      = metadataCommon.BeaconRewardRequestMeta
 	BeaconSalaryResponseMeta     = metadataCommon.BeaconSalaryResponseMeta
 	ReturnStakingMeta            = metadataCommon.ReturnStakingMeta
+	MintDelegationRewardMeta     = metadataCommon.MintDelegationRewardMeta
 	ReturnBeaconStakingMeta      = metadataCommon.ReturnBeaconStakingMeta
 	IncDAORewardRequestMeta      = metadataCommon.IncDAORewardRequestMeta
 	WithDrawRewardRequestMeta    = metadataCommon.WithDrawRewardRequestMeta
 	WithDrawRewardResponseMeta   = metadataCommon.WithDrawRewardResponseMeta
+
+	WithdrawDelegationRewardRequestMeta = metadataCommon.WithdrawDelegationRewardRequestMeta
 	// staking
 	ShardStakingMeta    = metadataCommon.ShardStakingMeta
 	StopAutoStakingMeta = metadataCommon.StopAutoStakingMeta
 	BeaconStakingMeta   = metadataCommon.BeaconStakingMeta
 	UnStakingMeta       = metadataCommon.UnStakingMeta
 	AddStakingMeta      = metadataCommon.AddStakingMeta
+	ReDelegateMeta      = metadataCommon.ReDelegateMeta
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = metadataCommon.BeaconSwapConfirmMeta
 	BridgeSwapConfirmMeta = metadataCommon.BridgeSwapConfirmMeta
@@ -180,6 +184,7 @@ const (
 	AllShards                            = metadataCommon.AllShards
 	BeaconOnly                           = metadataCommon.BeaconOnly
 	StopAutoStakingAmount                = metadataCommon.StopAutoStakingAmount
+	ReDelegateFee                        = metadataCommon.ReDelegateFee
 	EVMConfirmationBlocks                = metadataCommon.EVMConfirmationBlocks
 	PLGConfirmationBlocks                = metadataCommon.PLGConfirmationBlocks
 	FantomConfirmationBlocks             = metadataCommon.FantomConfirmationBlocks
@@ -267,14 +272,18 @@ const (
 	StopAutoStakingRequestGetStakingTransactionError           = metadataCommon.StopAutoStakingRequestGetStakingTransactionError
 	StopAutoStakingRequestStakingTransactionNotFoundError      = metadataCommon.StopAutoStakingRequestStakingTransactionNotFoundError
 	StopAutoStakingRequestInvalidTransactionSenderError        = metadataCommon.StopAutoStakingRequestInvalidTransactionSenderError
-	StopAutoStakingRequestNoAutoStakingAvaiableError           = metadataCommon.StopAutoStakingRequestNoAutoStakingAvaiableError
-	StopAutoStakingRequestTypeAssertionError                   = metadataCommon.StopAutoStakingRequestTypeAssertionError
-	StopAutoStakingRequestAlreadyStopError                     = metadataCommon.StopAutoStakingRequestAlreadyStopError
-	WrongIncognitoDAOPaymentAddressError                       = metadataCommon.WrongIncognitoDAOPaymentAddressError
-	ConsensusMetadataTypeAssertionError                        = metadataCommon.ConsensusMetadataTypeAssertionError
-	ConsensusMetadataInvalidTransactionSenderError             = metadataCommon.StopAutoStakingRequestInvalidTransactionSenderError
-	AddStakingRequestNotInCommitteeListError                   = metadataCommon.AddStakingNotInCommitteeListError
-	AddStakingCommitteeNotFoundError                           = metadataCommon.AddStakingCommitteeNotFoundError
+
+	StopAutoStakingRequestNoAutoStakingAvaiableError = metadataCommon.StopAutoStakingRequestNoAutoStakingAvaiableError
+	StopAutoStakingRequestTypeAssertionError         = metadataCommon.StopAutoStakingRequestTypeAssertionError
+	StopAutoStakingRequestAlreadyStopError           = metadataCommon.StopAutoStakingRequestAlreadyStopError
+	WrongIncognitoDAOPaymentAddressError             = metadataCommon.WrongIncognitoDAOPaymentAddressError
+	ConsensusMetadataTypeAssertionError              = metadataCommon.ConsensusMetadataTypeAssertionError
+	ConsensusMetadataInvalidTransactionSenderError   = metadataCommon.StopAutoStakingRequestInvalidTransactionSenderError
+	AddStakingRequestNotInCommitteeListError         = metadataCommon.AddStakingNotInCommitteeListError
+	AddStakingCommitteeNotFoundError                 = metadataCommon.AddStakingCommitteeNotFoundError
+	ReDelegateRequestNotInCommitteeListError         = metadataCommon.ReDelegateNotInCommitteeListError
+	ReDelegateCommitteeNotFoundError                 = metadataCommon.ReDelegateCommitteeNotFoundError
+	ReDelegateInvalidTxError                         = metadataCommon.ReDelegateInvalidTxError
 	// pde
 	PDEWithdrawalRequestFromMapError    = metadataCommon.PDEWithdrawalRequestFromMapError
 	CouldNotGetExchangeRateError        = metadataCommon.CouldNotGetExchangeRateError

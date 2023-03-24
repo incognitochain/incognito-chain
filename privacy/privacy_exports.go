@@ -90,6 +90,14 @@ func GenerateViewingKey(privateKey []byte) ViewingKey {
 	return key.GenerateViewingKey(privateKey)
 }
 
+func GetShardIDFromPublicKey(pk PublicKey) byte {
+	if len(pk) == 0 {
+		return 255
+	}
+	lastByte := pk[len(pk)-1]
+	return common.GetShardIDFromLastByte(lastByte)
+}
+
 type SchnSignature = schnorr.SchnSignature
 type SchnorrPublicKey = schnorr.SchnorrPublicKey
 type SchnorrPrivateKey = schnorr.SchnorrPrivateKey

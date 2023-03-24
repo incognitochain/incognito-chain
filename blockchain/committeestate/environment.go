@@ -6,9 +6,15 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
+type BlockChain interface {
+	GetDelegationRewardAmount(stateDB *statedb.StateDB, pk key.PublicKey) (uint64, error)
+}
+
 type BeaconCommitteeStateEnvironment struct {
+	BlockChain                       BlockChain
 	EpochLengthV1                    uint64
 	BeaconHeight                     uint64
 	Epoch                            uint64

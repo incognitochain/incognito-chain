@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/bridgeagg"
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/config"
 
@@ -560,6 +562,16 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 		return nil, nil, err
 	}
 	responsedTxs = append(responsedTxs, returnStakingTxs...)
+	mintDRewardTxs, err := blockGenerator.chain.buildMintDRewardTxsFromBeaconInstructions(
+		curView,
+		beaconBlocks,
+		producerPrivateKey,
+		shardID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	responsedTxs = append(responsedTxs, mintDRewardTxs...)
 	errorInstructions = append(errorInstructions, errIns...)
 	return responsedTxs, errorInstructions, nil
 }
@@ -930,6 +942,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	addStake_amount := []uint64{}
 	addStake_tx := []string{}
 
+	reD_dgtor_pks := []string{}
+	reD_dgtee_pks := []string{}
+	reD_dgtee_uid := []string{}
+
+	receiversReqDReward := map[string]string{}
+
 	if shouldCollectPdexTxs {
 		pdexTxs = make(map[uint][]metadata.Transaction)
 	}
@@ -1010,6 +1028,44 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			addStake_cpk = append(addStake_cpk, stakingMetadata.CommitteePublicKey)
 			addStake_amount = append(addStake_amount, stakingMetadata.AddStakingAmount)
 			addStake_tx = append(addStake_tx, tx.Hash().String())
+		case metadata.ReDelegateMeta:
+			redelegateMetadata, ok := tx.GetMetadata().(*metadata.ReDelegateMetadata)
+			if !ok {
+				return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.ReDelegate but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			reD_dgtor_pks = append(reD_dgtor_pks, redelegateMetadata.CommitteePublicKey)
+			reD_dgtee_pks = append(reD_dgtee_pks, redelegateMetadata.NewDelegate)
+			reD_dgtee_uid = append(reD_dgtee_uid, redelegateMetadata.DelegateUID)
+		case metadata.WithDrawRewardRequestMeta, metadata.WithdrawDelegationRewardRequestMeta:
+			if bc.GetBeaconBestState().TriggeredFeature[config.DELEGATION_REWARD] <= beaconHeight {
+				var (
+					txRequest   string
+					paymentAddr privacy.PaymentAddress
+				)
+				txRequest = tx.Hash().String()
+				requestWithDrawRewardMetadata, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+				if !ok {
+					if requestWithdrawDelegationRewardMetadata, ok := tx.GetMetadata().(*metadata.WithdrawDelegationRewardRequest); !ok {
+						return nil, nil, fmt.Errorf("Expect metadata type to be *metadata.WithDrawRewardRequest or *metadata.WithdrawDelegationRewardRequest but get %+v", reflect.TypeOf(tx.GetMetadata()))
+					} else {
+						paymentAddr = requestWithdrawDelegationRewardMetadata.PaymentAddress
+					}
+				} else {
+					if requestWithDrawRewardMetadata.TokenID.IsEqual(&common.PRVCoinID) {
+						paymentAddr = requestWithDrawRewardMetadata.PaymentAddress
+					} else {
+						continue
+					}
+				}
+				wl := wallet.KeyWallet{}
+				wl.KeySet.PaymentAddress = paymentAddr
+				receiverAddr := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+				if _, ok := receiversReqDReward[receiverAddr]; !ok {
+					receiversReqDReward[receiverAddr] = txRequest
+				} else {
+					Logger.log.Infof("Found duplicate tx request withdraw delegation reward for receiver %v at beacon %v", receiverAddr, beaconHeight)
+				}
+			}
 		}
 	}
 
@@ -1055,6 +1111,30 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 		inst := instruction.NewAddStakingInstructionWithValue(addStake_cpk, addStake_amount, addStake_tx)
 		instructions = append(instructions, inst.ToString())
 	}
+
+	if len(reD_dgtor_pks) > 0 {
+		Logger.log.Infof("Got redelegate transaction %+v %+v %+v", reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
+		inst := instruction.NewReDelegateInstructionWithValue(reD_dgtor_pks, reD_dgtee_pks, reD_dgtee_uid)
+		instructions = append(instructions, inst.ToString())
+	}
+
+	if len(receiversReqDReward) > 0 {
+		keys := []string{}
+		txRequests := []string{}
+		for k := range receiversReqDReward {
+			keys = append(keys, k)
+		}
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i] < keys[j]
+		})
+		for _, k := range keys {
+			txRequests = append(txRequests, receiversReqDReward[k])
+		}
+		Logger.log.Infof("Got request delegation reward for pk %+v, tx requests %+V ", keys, txRequests)
+		inst := instruction.NewRequestDelegationRewardInstructionWithValue(keys, txRequests)
+		instructions = append(instructions, inst.ToString())
+	}
+
 	return instructions, pdexTxs, nil
 }
 

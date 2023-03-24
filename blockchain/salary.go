@@ -1,8 +1,10 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/key"
+	"fmt"
+	"log"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -19,6 +21,12 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
+
+type mintDelegationRewardInfo struct {
+	TxRequest       metadata.Transaction
+	ReceiverPayment privacy.PaymentAddress
+	RewardAmount    uint64
+}
 
 func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.BeaconBlock, rewardStateDB *statedb.StateDB, bestState *BeaconBestState) error {
 	//get shard block version that confirmed by this beacon block
@@ -429,12 +437,12 @@ func (blockchain *BlockChain) calculateReward(
 ) (map[common.Hash]uint64,
 	[]map[common.Hash]uint64,
 	map[common.Hash]uint64,
-	map[common.Hash]uint64, error,
+	map[common.Hash]uint64, uint64, error,
 ) {
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	currentBeaconYear, err := blockchain.GetYearOfBeacon(beaconHeight)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, 0, err
 	}
 	percentForIncognitoDAO := getPercentForIncognitoDAOV2(currentBeaconYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
@@ -442,7 +450,7 @@ func (blockchain *BlockChain) calculateReward(
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForIncDAO := map[common.Hash]uint64{}
 	totalRewardForCustodian := map[common.Hash]uint64{}
-
+	delegationReward := uint64(0)
 	for id := 0; id < numberOfActiveShards; id++ {
 		if totalRewards[id] == nil {
 			totalRewards[id] = map[common.Hash]uint64{}
@@ -454,7 +462,7 @@ func (blockchain *BlockChain) calculateReward(
 		for _, coinID := range allCoinID {
 			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, nil, 0, err
 			}
 			if totalRewards[id][coinID] == 0 {
 				delete(totalRewards[id], coinID)
@@ -474,7 +482,7 @@ func (blockchain *BlockChain) calculateReward(
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, 0, err
 		}
 
 		plusMap(rewardForBeacon, totalRewardForBeacon)
@@ -483,7 +491,7 @@ func (blockchain *BlockChain) calculateReward(
 		plusMap(rewardForCustodian, totalRewardForCustodian)
 	}
 
-	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, nil
+	return totalRewardForBeacon, totalRewardForShard, totalRewardForIncDAO, totalRewardForCustodian, delegationReward, nil
 }
 
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
@@ -502,7 +510,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-
+	var delegationRewardInst [][]string
 	beaconBestView := blockchain.BeaconChain.GetBestView().(*BeaconBestState)
 
 	totalRewardForBeacon := make(map[common.Hash]uint64)
@@ -511,7 +519,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 	rewardForPdex := uint64(0)
-
+	delegationReward := uint64(0)
 	if blockVersion >= types.BLOCK_PRODUCINGV3_VERSION && blockVersion < types.INSTANT_FINALITY_VERSION_V2 {
 		splitRewardRuleProcessor := committeestate.GetRewardSplitRule(blockVersion)
 		totalRewardForBeacon,
@@ -540,6 +548,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
+			delegationReward,
 			err = blockchain.calculateReward(
 			splitRewardRuleProcessor,
 			curView,
@@ -586,12 +595,20 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		}
 	}
 
-	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
+	if delegationReward > 0 {
+		Logger.log.Info("DelegationReward", delegationReward)
+		delegationRewardInst, err = curView.CalculateDelegationSharePrice(blockchain, delegationReward)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards, delegationRewardInst)
 	return resInst, totalRewardForCustodian, rewardForPdex, nil
 }
 
 // buildInstRewardForBeacons create reward instruction for beacons
-func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, rewardReceiver []key.PaymentAddress) ([][]string, error) {
+func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64, rewardReceiver []privacy.PaymentAddress) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
@@ -832,4 +849,325 @@ func plusMap(src, dst map[common.Hash]uint64) {
 			dst[key] += value
 		}
 	}
+}
+
+func (blockchain *BlockChain) buildMintDRewardTxsFromBeaconInstructions(
+	curView *ShardBestState,
+	beaconBlocks []*types.BeaconBlock,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (
+	[]metadata.Transaction,
+	error,
+) {
+	mintTxs := []metadata.Transaction{}
+	mintInfoByRequestPK, err := blockchain.getMintDRewardInfoFromBeaconInstructions(curView, beaconBlocks, shardID)
+	if err != nil {
+		return nil, err
+	}
+	pks := []string{}
+	for pk := range mintInfoByRequestPK {
+		pks = append(pks, pk)
+	}
+	sort.Slice(pks, func(i, j int) bool {
+		return pks[i] < pks[j]
+	})
+	for _, pk := range pks {
+		mintInfo := mintInfoByRequestPK[pk]
+		mintTx, amount, err := blockchain.buildMintDelegationRewardTransaction(
+			curView,
+			&mintInfo,
+			producerPrivateKey,
+			shardID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		Logger.log.Infof("Build tx mint delegation reward successful, txID %v, amount %v, for pk %v", mintTx.Hash().String(), amount, pk)
+		mintTxs = append(mintTxs, mintTx)
+	}
+	return mintTxs, nil
+}
+
+func (blockchain *BlockChain) getMintDRewardInfoFromBeaconInstructions(
+	curView *ShardBestState,
+	bBlocks []*types.BeaconBlock,
+	shardID byte,
+) (
+	map[string]mintDelegationRewardInfo, //pk request -> mint info
+	error,
+) {
+	mintInsts := getMintDRewardInstructionsFromBeaconBlocks(bBlocks)
+	if len(mintInsts) == 0 {
+		return nil, nil
+	}
+	mintInfoByRequestID := map[common.Hash]interface{}{}
+	mintInfoByRequestPK := map[string]mintDelegationRewardInfo{}
+	for _, inst := range mintInsts {
+		for idx, requestPayment := range inst.GetPaymentAddressesStruct() {
+			pkRequest := base58.Base58Check{}.Encode(requestPayment.Pk, common.Base58Version)
+			txRequestHash := inst.TxRequestIdHashes[idx]
+			if _, ok := mintInfoByRequestID[txRequestHash]; ok {
+				Logger.log.Infof("Duplicate request for the same tx request hash %v. Detail info: Pk %v, payment %v, reward amount %v", txRequestHash.String(), pkRequest, inst.PaymentAddresses[idx], inst.RewardAmount[idx])
+				continue
+			}
+			if _, ok := mintInfoByRequestPK[pkRequest]; ok {
+				Logger.log.Infof("Duplicate request for the same PK %v. Detail info: Tx request hash %v, payment %v, reward amount %v", pkRequest, txRequestHash.String(), inst.PaymentAddresses[idx], inst.RewardAmount[idx])
+				continue
+			}
+			if sID := privacy.GetShardIDFromPublicKey(requestPayment.Pk); sID != shardID {
+				Logger.log.Infof("SKIP This payment %v (shard %v) is not belong to current shard %v, tx request %v, amount %v", inst.PaymentAddresses[idx], sID, shardID, inst.TxRequestIDs[idx], inst.RewardAmount[idx])
+				continue
+			}
+			_, _, rawTxRequest, err := blockchain.GetTransactionByHashWithShardID(txRequestHash, shardID)
+			if err != nil {
+				Logger.log.Infof("SKIP This request (payment %v, dreward amount %v) belong to current shard %v, but can not find tx request %v in database,", inst.PaymentAddresses[idx], inst.RewardAmount[idx], shardID, inst.TxRequestIDs[idx])
+				continue
+			}
+			mInfo := mintDelegationRewardInfo{
+				TxRequest:       rawTxRequest,
+				ReceiverPayment: requestPayment,
+				RewardAmount:    inst.RewardAmount[idx],
+			}
+			mintInfoByRequestID[txRequestHash] = nil
+			mintInfoByRequestPK[pkRequest] = mInfo
+		}
+	}
+	if len(mintInfoByRequestID) != len(mintInfoByRequestPK) {
+		return nil, errors.Errorf("Get mint delegation reward info error, total txs request %v is different from total pk request %v", len(mintInfoByRequestID), len(mintInfoByRequestPK))
+	}
+	return mintInfoByRequestPK, nil
+}
+
+func (blockchain *BlockChain) ValidateMintDRewardTxsFromBeaconInstructions(
+	curView *ShardBestState,
+	beaconBlocks []*types.BeaconBlock,
+	shardBlock *types.ShardBlock,
+	shardID byte,
+) error {
+	mintInfoByRequestPKGot := map[string]mintDelegationRewardInfo{}
+	mintInfoByRequestPKExpected, err := blockchain.getMintDRewardInfoFromBeaconInstructions(curView, beaconBlocks, shardID)
+	if err != nil {
+		return err
+	}
+	mintDRewardTxs := map[common.Hash]struct{}{}
+
+	for _, tx := range shardBlock.Body.Transactions {
+		switch tx.GetMetadata().(type) {
+		case *metadata.MintDelegationRewardMetadata:
+			if tx.GetType() != common.TxRewardType {
+				return errors.Errorf("Wrong transaction type for metadata %v, expected type %v, got %v", tx.GetMetadata().GetType(), common.TxRewardType, tx.GetType())
+			}
+		default:
+			continue
+		}
+
+		md := tx.GetMetadata().(*metadata.MintDelegationRewardMetadata)
+		h, _ := common.Hash{}.NewHashFromStr(md.TxID)
+		_, _, txRequest, err := blockchain.GetTransactionByHashWithShardID(*h, shardID)
+		if err != nil {
+			err = NewBlockChainError(WrongShardIDError, fmt.Errorf("This request delegation reward tx %v not found in this shard %+v", md.TxID, shardID))
+			Logger.log.Error(err)
+			return err
+		}
+		receiverPK := base58.Base58Check{}.Encode(md.ReceiverAddress.Pk, common.Base58Version)
+		mintInfo := mintDelegationRewardInfo{
+			ReceiverPayment: md.ReceiverAddress,
+			TxRequest:       txRequest,
+			RewardAmount:    md.RewardAmount,
+		}
+		mintInfoByRequestPKGot[receiverPK] = mintInfo
+		txHash := txRequest.Hash()
+		if _, ok := mintDRewardTxs[*txHash]; ok {
+			return errors.Errorf("Double tx mint delegation reward from instruction for tx request %+v", tx)
+		}
+		mintDRewardTxs[*txHash] = struct{}{}
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted {
+			return errors.Errorf("this is not tx mint for mint delegation reward. Error %v", err)
+		}
+		if coinID.String() != common.PRVIDStr {
+			return errors.Errorf("Delegation reward tx only mints prv. Error token %v", coinID.String())
+		}
+		if ok := mintCoin.CheckCoinValid(mintInfo.ReceiverPayment, md.SharedRandom, mintInfo.RewardAmount); !ok {
+			return errors.Errorf("mint data is invalid: Address %v; Amount %v, StakeAmount: %v", mintInfo.ReceiverPayment, mintCoin.GetValue(), mintInfo.RewardAmount)
+		}
+
+	}
+
+	if len(mintInfoByRequestPKExpected) != len(mintInfoByRequestPKGot) {
+		return errors.Errorf("List mint delegation tx of producer (len %v) and validator (len %v) not match", len(mintInfoByRequestPKGot), len(mintInfoByRequestPKExpected))
+	}
+
+	for k, gotInfo := range mintInfoByRequestPKGot {
+		if expectedInfo, ok := mintInfoByRequestPKExpected[k]; !ok {
+			return errors.Errorf("Mint delegation reward for pk %v of producer (tx request %v, amount %v) and validator (not found) not match", k, gotInfo.TxRequest.Hash().String(), gotInfo.RewardAmount)
+		} else {
+			if (expectedInfo.RewardAmount != gotInfo.RewardAmount) ||
+				(expectedInfo.ReceiverPayment.String() != gotInfo.ReceiverPayment.String()) ||
+				(expectedInfo.TxRequest.Hash().String() != gotInfo.TxRequest.Hash().String()) {
+
+				return errors.Errorf("Mint delegation reward for pk %v of producer (tx request %v, amount %v, payment %v) and validator (tx request %v, amount %v, payment %v) not match",
+					k, gotInfo.TxRequest.Hash().String(), gotInfo.RewardAmount, gotInfo.ReceiverPayment.String(), expectedInfo.TxRequest.Hash().String(), expectedInfo.RewardAmount, expectedInfo.ReceiverPayment.String())
+			}
+		}
+	}
+	return nil
+}
+
+func getMintDRewardInstructionsFromBeaconBlocks(
+	bBlocks []*types.BeaconBlock,
+) []instruction.MintDelegationRewardInstruction {
+	res := []instruction.MintDelegationRewardInstruction{}
+	for _, bBlock := range bBlocks {
+		for _, inst := range bBlock.Body.Instructions {
+			if mI, err := instruction.ValidateAndImportMintDelegationRewardInstructionFromString(inst); err == nil {
+				res = append(res, *mI)
+			} else {
+				if inst[0] == instruction.MINT_DREWARD_ACTION {
+					Logger.log.Errorf("Can not parse instruction mint delegation reward from block %v-%v, inst %+v", bBlock.Header.Height, bBlock.Hash().String(), inst)
+				}
+			}
+		}
+	}
+	return res
+}
+
+func (blockchain *BlockChain) buildMintDelegationRewardTransaction(
+	curView *ShardBestState,
+	mintInfo *mintDelegationRewardInfo,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (
+	metadata.Transaction,
+	uint64,
+	error,
+) {
+
+	txRequestHash := mintInfo.TxRequest.Hash().String()
+	mintDRewardMeta := metadata.NewMintDelegationReward(
+		txRequestHash,
+		mintInfo.ReceiverPayment,
+		mintInfo.RewardAmount,
+		metadata.MintDelegationRewardMeta,
+	)
+	txParam := transaction.TxSalaryOutputParams{
+		Amount:          mintInfo.RewardAmount,
+		ReceiverAddress: &mintInfo.ReceiverPayment,
+		TokenID:         &common.PRVCoinID,
+		Type:            common.TxRewardType,
+	}
+
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			mintDRewardMeta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return mintDRewardMeta
+	}
+	mintDRewardTx, err := txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
+	if err != nil {
+		return nil, 0, errors.Errorf("cannot init mint delegation reward tx. Error %v", err)
+	}
+	return mintDRewardTx, mintInfo.RewardAmount, nil
+}
+func (blockchain *BlockChain) GetBeaconSharePriceByEpoch(epoch uint64, uid string) (uint64, error) {
+	blockHeight := (epoch - 1) * config.Param().EpochParam.NumberOfBlockInEpoch
+	beaconConsensusStateRootHash, err := blockchain.GetBeaconRootsHashFromBlockHeight(
+		blockHeight + 1,
+	)
+	if err != nil {
+		return 0, err
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, err
+	}
+
+	sharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, uid)
+	if err != nil {
+		return 0, err
+	}
+	return sharePrice.GetPrice(), nil
+
+}
+
+func (blockchain *BlockChain) GetDelegationRewardAmount(stateDB *statedb.StateDB, pk privacy.PublicKey) (uint64, error) {
+	rewardState, has, err := statedb.GetDelegationReward(stateDB, pk)
+	if err != nil {
+		return 0, err
+	}
+	if !has {
+		return 0, nil
+	}
+	reward := uint64(0)
+	for _, epochDelegate := range rewardState.Reward {
+		//sort epoch
+		epochSortList := []int{}
+		for epoch, _ := range epochDelegate {
+			epochSortList = append(epochSortList, epoch)
+		}
+		sort.Slice(epochSortList, func(i, j int) bool {
+			return epochSortList[i] < epochSortList[j]
+		})
+		for i, epoch := range epochSortList {
+			beaconID := epochDelegate[epoch].BeaconUID
+			if beaconID == "" { //end of list ~ shard return staking
+				break
+			}
+			amount := epochDelegate[epoch].Amount
+			startBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epoch), beaconID)
+			if err != nil {
+				return 0, errors.New("Can not get beacon share price")
+			}
+			unit := float64(amount) / float64(startBeaconSharePrice)
+			if i == len(epochSortList)-1 {
+				//last epoch
+				endBeaconSharePrice, _, err := statedb.GetBeaconSharePrice(stateDB, beaconID)
+				if err != nil {
+					return 0, errors.New("Can not get beacon share price")
+				}
+				endBeaconSharePrice.GetPrice()
+				reward += uint64(unit * float64(endBeaconSharePrice.GetPrice()-startBeaconSharePrice))
+				log.Println("lastBeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice.GetPrice(), reward)
+			} else {
+				endBeaconSharePrice, err := blockchain.GetBeaconSharePriceByEpoch(uint64(epochSortList[i+1]), beaconID)
+				if err != nil {
+					return 0, errors.New("Can not get beacon share price")
+				}
+				reward += uint64(unit * float64(endBeaconSharePrice-startBeaconSharePrice))
+				log.Println("BeaconID", beaconID, epoch, amount, startBeaconSharePrice, unit, endBeaconSharePrice, reward)
+			}
+		}
+	}
+	return reward, nil
+}
+
+func (blockchain *BlockChain) MintDelegationRewardFromInstructionRequests(insts []*instruction.RequestDelegationRewardInstruction, stateDB *statedb.StateDB) ([][]string, error) {
+	incurredInstructions := [][]string{}
+	mintPaymentAddresses := []string{}
+	mintRequestTxIDs := []string{}
+	mintRewardAmount := []uint64{}
+	for _, inst := range insts {
+		reqDRewardInstruction := inst
+		for i, payment := range reqDRewardInstruction.IncPaymentAddrStructs {
+			amount, err := blockchain.GetDelegationRewardAmount(stateDB, payment.Pk)
+			if err != nil { //will not generate instruction to withdraw delegation reward for this pk. Cannot get delegation reward because of calculation process! Wait next epoch!
+				Logger.log.Errorf("Cannot get delegation reward. SKIP. %+v", err)
+				continue
+			}
+			if amount == 0 {
+				continue
+			}
+			mintRewardAmount = append(mintRewardAmount, amount)
+			mintPaymentAddresses = append(mintPaymentAddresses, reqDRewardInstruction.IncPaymentAddrs[i])
+			mintRequestTxIDs = append(mintRequestTxIDs, reqDRewardInstruction.TxRequestIDs[i])
+		}
+	}
+	if len(mintPaymentAddresses) != 0 {
+		mintInst := instruction.NewMintDelegationRewardInsWithValue(mintRequestTxIDs, mintPaymentAddresses, mintRewardAmount)
+		incurredInstructions = append(incurredInstructions, mintInst.ToString())
+	}
+	return incurredInstructions, nil
 }
