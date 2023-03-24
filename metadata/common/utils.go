@@ -287,6 +287,7 @@ func buildMetaInfo() {
 	})
 	listNNoInNoOut := []int{
 		WithDrawRewardRequestMeta,
+		WithdrawDelegationRewardRequestMeta,
 		StopAutoStakingMeta,
 		UnStakingMeta,
 	}
@@ -432,6 +433,7 @@ func buildMetaInfo() {
 
 	listRequestShardMint := []int{
 		WithDrawRewardRequestMeta,
+		WithdrawDelegationRewardRequestMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{

@@ -640,7 +640,7 @@ func (blockchain *BlockChain) GetBeaconCommitteeOfEpoch(epoch uint64) ([]incogni
 
 // GetStakerInfo : Return staker info from statedb
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
-	return statedb.GetStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
+	return statedb.GetShardStakerInfo(beaconBestState.consensusStateDB.Copy(), stakerPubkey)
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconStakerInfo(stakerPubkey string) (*statedb.BeaconStakerInfo, bool, error) {

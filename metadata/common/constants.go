@@ -22,10 +22,13 @@ const (
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
 	ReturnBeaconStakingMeta      = 46
+	MintDelegationRewardMeta     = 47
 	IncDAORewardRequestMeta      = 42
 
 	WithDrawRewardRequestMeta  = 44
 	WithDrawRewardResponseMeta = 45
+
+	WithdrawDelegationRewardRequestMeta = 48
 
 	// staking
 	ShardStakingMeta    = 63
@@ -33,6 +36,7 @@ const (
 	BeaconStakingMeta   = 64
 	UnStakingMeta       = 210
 	AddStakingMeta      = 360
+	ReDelegateMeta      = 361
 
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = 70
@@ -306,6 +310,7 @@ var minerCreatedMetaTypes = []int{
 	BurningUnifiedTokenResponseMeta,
 	IssuingReshieldResponseMeta,
 	BurnForCallResponseMeta,
+	MintDelegationRewardMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -325,6 +330,7 @@ const (
 
 const (
 	StopAutoStakingAmount    = 0
+	ReDelegateFee            = 0
 	EVMConfirmationBlocks    = 15 // update to 32 when eth merge
 	PLGConfirmationBlocks    = 128
 	FantomConfirmationBlocks = 5
