@@ -83,6 +83,6 @@ func StoreBridgeHubNetworkInfoVault(stateDB *StateDB, bridgeID string, networkId
 }
 
 func GetBridgeHubNetworkInfoByBridgeID(stateDB *StateDB, bridgeID string) (map[int]*BridgeHubNetworkVaultState, error) {
-	prefixHash := GetBridgeHubPTokenPrefix([]byte(bridgeID))
+	prefixHash := GetBridgeHubVaultPrefix([]byte(bridgeID))
 	return stateDB.iterateBridgeVault(prefixHash)
 }

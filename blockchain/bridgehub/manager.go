@@ -2,7 +2,6 @@ package bridgehub
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -119,13 +118,10 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		switch inst.MetaType {
 		case metadataCommon.BridgeHubRegisterBridgeMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
-			fmt.Printf("thachtb log state info 2 %+v \n", m.state)
 		case metadataCommon.ShieldingBTCRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID, statedb.InsertBTCHubTxHashIssued)
-			fmt.Printf("thachtb log state info 2 %+v \n", m.state)
 		case metadataCommon.StakePRVRequestMeta:
 			m.state, updatingInfoByTokenID, err = m.processor.bridgeHubValidatorStake(*inst, m.state, sDB, updatingInfoByTokenID)
-			fmt.Printf("thachtb log stake state info 2 %+v \n", m.state)
 			// TODO: add more ...
 		}
 		if err != nil {
@@ -163,9 +159,7 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 	// store new/updated bridge info
 	for bridgeID, bridgeInfo := range m.state.bridgeInfos {
 		// TODO: 0xkraken recheck this condition
-		fmt.Printf("0xCryptoLover got her 1 %+v \n", bridgeInfo)
 		if bridgeInfo.Info != nil && bridgeInfo.Info.BriPubKey() != "" {
-			fmt.Printf("0xCryptoLover got her 1 1 %+v \n", bridgeInfo.Info)
 			err := statedb.StoreBridgeHubBridgeInfo(sDB, bridgeID, bridgeInfo.Info)
 			if err != nil {
 				return err
@@ -173,15 +167,12 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 		}
 
 		if bridgeInfo.NetworkInfo != nil {
-			fmt.Printf("0xCryptoLover got her 2 %+v \n", bridgeInfo.NetworkInfo)
 			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
-				fmt.Printf("0xCryptoLover got her 2 %+v \n", networkInfo)
-				err := statedb.StoreBridgeHubNetworkInfoVault(sDB, bridgeID, networkId, statedb.NewBridgeHubNetworkVaultStateWithValue(networkInfo.vaultAddress, networkId))
+				err := statedb.StoreBridgeHubNetworkInfoVault(sDB, bridgeID, networkId, statedb.NewBridgeHubNetworkVaultStateWithValue(networkInfo.VaultAddress, networkId))
 				if err != nil {
 					return err
 				}
-				for k, v := range networkInfo.pTokens {
-					fmt.Printf("0xCryptoLover got her 3 %+v \n", v)
+				for k, v := range networkInfo.PTokens {
 					err := statedb.StoreBridgeHubPTokenInfo(sDB, bridgeID, networkId, statedb.NewBridgeHubPTokenkStateWithValue(v, k))
 					if err != nil {
 						return err

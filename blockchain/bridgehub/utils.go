@@ -103,8 +103,8 @@ func newBridgeHubNetworkInfo(vaultAddresses map[int]string) map[int]*BridgeNetwo
 	temp := make(map[int]*BridgeNetwork)
 	for v, k := range vaultAddresses {
 		temp[v] = &BridgeNetwork{
-			vaultAddress: k,
-			networkId:    v,
+			VaultAddress: k,
+			NetworkId:    v,
 		}
 	}
 

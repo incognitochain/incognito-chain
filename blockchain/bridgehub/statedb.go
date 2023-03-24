@@ -18,8 +18,12 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 	if err != nil {
 		return nil, err
 	}
-	bridgeInfos := map[string]*BridgeInfo{}
+	bridgeInfos := make(map[string]*BridgeInfo)
 	for _, info := range listBridgeInfos {
+		if bridgeInfos[info.BriPubKey()] == nil {
+			bridgeInfos[info.BriPubKey()] = &BridgeInfo{}
+		}
+		bridgeInfos[info.BriPubKey()].Info = info
 		vaultAddrs, err := statedb.GetBridgeHubNetworkInfoByBridgeID(sDB, info.BriPubKey())
 		if err != nil {
 			return nil, err
@@ -29,10 +33,13 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 			if err != nil {
 				return nil, err
 			}
+			if bridgeInfos[info.BriPubKey()].NetworkInfo == nil {
+				bridgeInfos[info.BriPubKey()].NetworkInfo = make(map[int]*BridgeNetwork)
+			}
 			bridgeInfos[info.BriPubKey()].NetworkInfo[networkInfo.NetworkId()] = &BridgeNetwork{
-				networkId:    networkInfo.NetworkId(),
-				vaultAddress: networkInfo.VaultAddress(),
-				pTokens:      pTokens,
+				NetworkId:    networkInfo.NetworkId(),
+				VaultAddress: networkInfo.VaultAddress(),
+				PTokens:      pTokens,
 			}
 		}
 	}
@@ -56,7 +63,7 @@ func InitStateFromDB(sDB *statedb.StateDB) (*BridgeHubState, error) {
 	// TODO: load more
 
 	return &BridgeHubState{
-		stakingInfos: nil,
+		stakingInfos: stakingInfo,
 		bridgeInfos:  bridgeInfos,
 		params:       param,
 	}, nil

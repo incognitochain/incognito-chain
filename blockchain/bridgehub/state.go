@@ -22,9 +22,9 @@ type BridgeHubState struct {
 }
 
 type BridgeNetwork struct {
-	vaultAddress string
-	networkId    int
-	pTokens      map[common.Hash]uint64 // pToken id -> amonut
+	VaultAddress string
+	NetworkId    int
+	PTokens      map[common.Hash]uint64 // pToken id -> amonut
 }
 
 type BridgeInfo struct {
@@ -73,12 +73,12 @@ func (s *BridgeHubState) Clone() *BridgeHubState {
 		infoTmp.NetworkInfo = map[int]*BridgeNetwork{}
 		for networkId, networkInfo := range info.NetworkInfo {
 			infoTmp.NetworkInfo[networkId] = &BridgeNetwork{
-				networkId:    networkInfo.networkId,
-				vaultAddress: networkInfo.vaultAddress,
+				NetworkId:    networkInfo.NetworkId,
+				VaultAddress: networkInfo.VaultAddress,
 			}
-			infoTmp.NetworkInfo[networkId].pTokens = make(map[common.Hash]uint64)
-			for k, v := range networkInfo.pTokens {
-				infoTmp.NetworkInfo[networkId].pTokens[k] = v
+			infoTmp.NetworkInfo[networkId].PTokens = make(map[common.Hash]uint64)
+			for k, v := range networkInfo.PTokens {
+				infoTmp.NetworkInfo[networkId].PTokens[k] = v
 			}
 		}
 		bridgeInfos[bridgeID] = infoTmp
@@ -117,30 +117,31 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 		if preBridge, found := preState.bridgeInfos[bridgeID]; found {
 			// check info
 			isUpdateBridgeInfo = preBridge.Info.IsDiff(bridgeInfo.Info)
-
 			// check list ptoken
 			for networkId, networkInfo := range bridgeInfo.NetworkInfo {
 				if preNetworkInfo, found := preBridge.NetworkInfo[networkId]; !found ||
-					preNetworkInfo.networkId != networkInfo.networkId || preNetworkInfo.vaultAddress != networkInfo.vaultAddress ||
-					!reflect.DeepEqual(preNetworkInfo.pTokens, networkInfo.pTokens) {
+					preNetworkInfo.NetworkId != networkInfo.NetworkId || preNetworkInfo.VaultAddress != networkInfo.VaultAddress ||
+					!reflect.DeepEqual(preNetworkInfo.PTokens, networkInfo.PTokens) {
 					isUpdateBridgeNetworkInfo = true
 					break
 				}
 			}
 
 		} else {
+			isUpdateBridgeNetworkInfo = true
 			isUpdateBridgeInfo = true
 		}
-
+		fmt.Printf("0xcrypto got in diff function 1 %v, %v\n", isUpdateBridgeInfo, isUpdateBridgeNetworkInfo)
 		if isUpdateBridgeInfo || isUpdateBridgeNetworkInfo {
 			if newBridgeInfos[bridgeID] == nil {
 				newBridgeInfos[bridgeID] = &BridgeInfo{}
 			}
 			if isUpdateBridgeInfo {
+				fmt.Printf("0xcrypto got in diff function 2 2 %+v\n", bridgeInfo.Info)
 				newBridgeInfos[bridgeID].Info = bridgeInfo.Info
 			}
 			if isUpdateBridgeNetworkInfo {
-				fmt.Printf("0xcrypto got in diff function")
+				fmt.Printf("0xcrypto got in diff function 1 1 %+v\n", bridgeInfo.NetworkInfo)
 				newBridgeInfos[bridgeID].NetworkInfo = bridgeInfo.NetworkInfo
 			}
 		}
