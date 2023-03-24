@@ -66,7 +66,6 @@ func (sp *stateProcessor) registerBridge(
 			Info:        statedb.NewBridgeInfoStateWithValue(contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
 			NetworkInfo: newBridgeHubNetworkInfo(contentInst.VaultAddress),
 		}
-		fmt.Printf("0xcryptolover log state info %+v \n", clonedState.bridgeInfos)
 	}
 
 	// track status
@@ -205,14 +204,14 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	// TODO: 0xcryptolover add more information
 	// handle fail status
 	clonedState := state.Clone()
-	fmt.Printf("thachtb log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
 		_, found := clonedState.stakingInfos[contentInst.BridgePubKey]
 		if !found {
 			clonedState.stakingInfos[contentInst.BridgePubKey] = &statedb.BridgeStakingInfoState{}
 		}
 		clonedState.stakingInfos[contentInst.BridgePubKey].SetStakingAmount(clonedState.stakingInfos[contentInst.BridgePubKey].StakingAmount() + contentInst.StakeAmount)
-		fmt.Printf("thachtb log state info %+v \n", clonedState.stakingInfos)
+		clonedState.stakingInfos[contentInst.BridgePubKey].SetTokenID(contentInst.TokenID)
+		clonedState.stakingInfos[contentInst.BridgePubKey].SetBridgePubKey(contentInst.BridgePubKey)
 	}
 
 	// track status

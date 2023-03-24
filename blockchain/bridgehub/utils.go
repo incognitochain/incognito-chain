@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
@@ -79,6 +78,7 @@ func buildBridgeHubStakeInst(
 		BridgePubKey:     meta.BridgePubKey,
 		BridgePoolPubKey: meta.BridgePoolPubKey,
 		TxReqID:          txReqID.String(),
+		Staker:           meta.Staker,
 	}
 	contentBytes, _ := json.Marshal(content)
 	contentStr := ""

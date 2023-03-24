@@ -2,7 +2,6 @@ package bridgehub
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 
@@ -131,17 +130,14 @@ func (s *BridgeHubState) GetDiff(preState *BridgeHubState) (*BridgeHubState, err
 			isUpdateBridgeNetworkInfo = true
 			isUpdateBridgeInfo = true
 		}
-		fmt.Printf("0xcrypto got in diff function 1 %v, %v\n", isUpdateBridgeInfo, isUpdateBridgeNetworkInfo)
 		if isUpdateBridgeInfo || isUpdateBridgeNetworkInfo {
 			if newBridgeInfos[bridgeID] == nil {
 				newBridgeInfos[bridgeID] = &BridgeInfo{}
 			}
 			if isUpdateBridgeInfo {
-				fmt.Printf("0xcrypto got in diff function 2 2 %+v\n", bridgeInfo.Info)
 				newBridgeInfos[bridgeID].Info = bridgeInfo.Info
 			}
 			if isUpdateBridgeNetworkInfo {
-				fmt.Printf("0xcrypto got in diff function 1 1 %+v\n", bridgeInfo.NetworkInfo)
 				newBridgeInfos[bridgeID].NetworkInfo = bridgeInfo.NetworkInfo
 			}
 		}

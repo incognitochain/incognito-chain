@@ -174,7 +174,6 @@ func (httpServer *HttpServer) createBridgeHubStakeTx(
 		TokenID          common.Hash `json:"TokenID"`
 		BurnAmount       uint64      `json:"BurnAmount"`
 		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
-		BridgePubKeys    []string    `json:"BridgePubKeys"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)

@@ -180,8 +180,7 @@ func (sp *stateProducer) stake(
 		return [][]string{}, state, err
 	}
 	// todo: cryptolover add more validation
-
-	if state.bridgeInfos[meta.BridgePoolPubKey] != nil {
+	if state.bridgeInfos[meta.BridgePoolPubKey] == nil {
 		inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.RejectedStatusStr, BridgeIDNotExistedError)
 		return [][]string{inst}, state, nil
 	}
@@ -206,7 +205,6 @@ func (sp *stateProducer) stake(
 		clonedState.stakingInfos[meta.BridgePubKey] = &statedb.BridgeStakingInfoState{}
 	}
 	clonedState.stakingInfos[meta.BridgePubKey].SetStakingAmount(clonedState.stakingInfos[meta.BridgePubKey].StakingAmount() + meta.StakeAmount)
-
 	// build accepted instruction
 	inst, _ := buildBridgeHubStakeInst(*meta, shardID, action.TxReqID, common.AcceptedStatusStr, 0)
 	return [][]string{inst}, clonedState, nil

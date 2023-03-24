@@ -190,8 +190,8 @@ func (m *Manager) UpdateToDB(sDB *statedb.StateDB) error {
 		}
 	}
 
-	for k, v := range m.state.stakingInfos {
-		err := statedb.StoreBridgeHubStaking(sDB, k, v)
+	for _, v := range m.state.stakingInfos {
+		err := statedb.StoreBridgeHubStaking(sDB, v.BridgePubKey(), v)
 		if err != nil {
 			return err
 		}

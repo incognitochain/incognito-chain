@@ -1,7 +1,6 @@
 package bridgehub
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -49,15 +48,22 @@ func buildIssuingResponse(
 		return nil, nil
 	}
 	Logger.log.Info("[BridgeHub] Starting...")
-	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	// decode failed content
+	instData := metadataCommon.RejectContent{}
+	err := instData.FromString(inst.Content)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occurred while decoding reject content: ", err)
+		return nil, nil
+	}
+
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while decoding content string of Reshield accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var bridgeHubStakeFailed bridgehub.StakePRVRequestContentInst
-	err = json.Unmarshal(contentBytes, &bridgeHubStakeFailed)
+	err = json.Unmarshal(instData.Data, &bridgeHubStakeFailed)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occurred while unmarshaling EVM accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling stake failed issuance instruction: ", err)
 		return nil, nil
 	}
 

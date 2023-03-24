@@ -2,7 +2,6 @@ package bridgehub
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -94,13 +93,16 @@ func (iRes BridgeHubStakingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mi
 		if tempInst.Status != common.RejectedStatusStr {
 			continue
 		}
-		contentBytes, err := base64.StdEncoding.DecodeString(tempInst.Content)
+
+		instData := metadataCommon.RejectContent{}
+		err = instData.FromString(tempInst.Content)
 		if err != nil {
-			metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			metadataCommon.Logger.Log.Error("WARNING: an error occurred while decoding reject content: ", err)
 			continue
 		}
+
 		failedContent := StakePRVRequestContentInst{}
-		err = json.Unmarshal(contentBytes, &failedContent)
+		err = json.Unmarshal(instData.Data, &failedContent)
 		if err != nil {
 			continue
 		}

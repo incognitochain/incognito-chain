@@ -112,8 +112,8 @@ func (bReq StakePRVRequest) Hash() *common.Hash {
 
 func (bReq *StakePRVRequest) BuildReqActions(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := map[string]interface{}{
-		"meta":          *bReq,
-		"RequestedTxID": tx.Hash(),
+		"meta":    *bReq,
+		"TxReqID": tx.Hash(),
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
