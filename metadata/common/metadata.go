@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -97,6 +98,7 @@ type ChainRetriever interface {
 	GetFinalBeaconHeight() uint64
 	GetPdexv3Cached(common.Hash) interface{}
 	GetBeaconChainDatabase() incdb.Database
+	GetDelegationRewardAmount(stateDB *statedb.StateDB, pk key.PublicKey) (uint64, error)
 }
 
 type BeaconViewRetriever interface {
@@ -110,6 +112,8 @@ type BeaconViewRetriever interface {
 	GetBeaconSlashStateDB() *statedb.StateDB
 	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
 	GetBeaconStakerInfo(stakerPubkey string) (*statedb.BeaconStakerInfo, bool, error)
+	GetShardCommitteeFlattenList() []string
+	GetShardPendingFlattenList() []string
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
@@ -135,6 +139,8 @@ type ShardViewRetriever interface {
 	GetHeight() uint64
 	GetBlockVersion() int
 	GetTriggeredFeature() map[string]uint64
+	GetShardCommittee() []incognitokey.CommitteePublicKey
+	GetShardPendingValidator() []incognitokey.CommitteePublicKey
 }
 
 type ValidationEnviroment interface {

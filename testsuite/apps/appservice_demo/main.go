@@ -54,6 +54,18 @@ func StakeBeacon(client *devframework.RemoteRPCClient, privateKey string, mining
 	return &txResp, err
 }
 
+func WithdrawDelegateReward(client *devframework.RemoteRPCClient, privateKey string, rewardPrivateKey string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+
+	miningWl, _ := wallet.Base58CheckDeserialize(rewardPrivateKey)
+	candidatePaymentAddress := miningWl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	txResp, err := client.WithdrawDelegateReward(privateKey, map[string]interface{}{burnAddr: 0}, -1, -1, map[string]interface{}{
+		"PaymentAddress": candidatePaymentAddress,
+	})
+	return &txResp, err
+}
+
 func AddStake(client *devframework.RemoteRPCClient, privateKey string, miningPrivateKey string, stakeAmount uint64) (*jsonresult.CreateTransactionResult, error) {
 	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
 
@@ -70,6 +82,19 @@ func AddStake(client *devframework.RemoteRPCClient, privateKey string, miningPri
 	return &txResp, err
 }
 
+func WithdrawReward(client *devframework.RemoteRPCClient, privateKey string, rewardPrivateKey string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+
+	miningWl, _ := wallet.Base58CheckDeserialize(rewardPrivateKey)
+	candidatePaymentAddress := miningWl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	txResp, err := client.WithdrawReward(privateKey, map[string]interface{}{burnAddr: 0}, -1, -1, map[string]interface{}{
+		"PaymentAddress": candidatePaymentAddress,
+		"TokenID":        common.PRVCoinID,
+	})
+	return &txResp, err
+}
+
 func UnStake(client *devframework.RemoteRPCClient, privateKey string, miningPrivateKey string) (*jsonresult.CreateTransactionResult, error) {
 	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
 	miningWl, _ := wallet.Base58CheckDeserialize(miningPrivateKey)
@@ -81,6 +106,35 @@ func UnStake(client *devframework.RemoteRPCClient, privateKey string, miningPriv
 		"CandidatePaymentAddress": candidatePaymentAddress,
 		"PrivateSeed":             privateSeed,
 		"UnStakingType":           210,
+	})
+	return &txResp, err
+}
+
+func Delegate(client *devframework.RemoteRPCClient, privateKey string, rewardPrivateKey string, beaconCPK string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+
+	miningWl, _ := wallet.Base58CheckDeserialize(rewardPrivateKey)
+	candidatePaymentAddress := miningWl.Base58CheckSerialize(wallet.PaymentAddressType)
+	privateSeedBytes := common.HashB(common.HashB(miningWl.KeySet.PrivateKey))
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+
+	txResp, err := client.Redelegate(privateKey, map[string]interface{}{burnAddr: 0}, -1, -1, map[string]interface{}{
+		"CandidatePaymentAddress": candidatePaymentAddress,
+		"PrivateSeed":             privateSeed,
+		"DelegateToBeacon":        beaconCPK,
+	})
+	return &txResp, err
+}
+
+func WithdrawReward(client *devframework.RemoteRPCClient, privateKey string, rewardPrivateKey string) (*jsonresult.CreateTransactionResult, error) {
+	burnAddr := "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+
+	miningWl, _ := wallet.Base58CheckDeserialize(rewardPrivateKey)
+	candidatePaymentAddress := miningWl.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	txResp, err := client.WithdrawReward(privateKey, map[string]interface{}{burnAddr: 0}, -1, -1, map[string]interface{}{
+		"PaymentAddress": candidatePaymentAddress,
+		"TokenID":        common.PRVCoinID,
 	})
 	return &txResp, err
 }
@@ -158,7 +212,7 @@ func main() {
 	fixNode := []account.Account{f1, f2, f3, f4}
 
 	for i, staker := range stakers {
-		fmt.Println("Shard", i, staker.MiningKey)
+		fmt.Println("Shard", i, staker.MiningKey, staker.PaymentAddress)
 	}
 
 	type AccountData struct {
@@ -174,7 +228,7 @@ func main() {
 		beaconStakerBalance, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
 		publicKeyString := base58.Base58Check{}.Encode(staker.Keyset.PaymentAddress.Pk, common.ZeroByte)
 		s, _ := json.Marshal(staker.Keyset.PaymentAddress)
-		fmt.Println("Beacon", i, int(float64(beaconStakerBalance)*1e-9), staker.SelfCommitteePubkey, publicKeyString, string(s))
+		fmt.Println("Beacon", i, int(float64(beaconStakerBalance)*1e-9), staker.SelfCommitteePubkey, publicKeyString, string(s), staker.PaymentAddress)
 	}
 
 	submitKey := func() {
@@ -343,80 +397,51 @@ func main() {
 	}
 
 	unstake := func() {
-		stakeRes, err := UnStake(&shard0RPC, beaconStaker[0].PrivateKey, beaconStaker[0].PrivateKey)
-		fmt.Println(stakeRes, err)
-		stakeRes, err = UnStake(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey)
-		fmt.Println(stakeRes, err)
+		//stakeRes, err := UnStake(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey)
+		//fmt.Println(stakeRes, err)
+		//stakeRes, err = UnStake(&shard0RPC, beaconStaker[1].PrivateKey, beaconStaker[1].PrivateKey)
+		//fmt.Println(stakeRes, err)
 		//stakeRes, err := UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[2].PrivateKey)
 		//fmt.Println(stakeRes, err)
-		//stakeRes, err = UnStake(&shard0RPC, icoAccount.PrivateKey, beaconStaker[3].PrivateKey)
-		//fmt.Println(stakeRes, err)
+		stakeRes, err := UnStake(&shard0RPC, stakers[6].PrivateKey, stakers[6].PrivateKey)
+		fmt.Println(stakeRes, err)
 	}
 
-	submitKey()
-	time.Sleep(time.Second * 15)
-	send_prv()
-	time.Sleep(time.Second * 15)
-	add_stake_fixnode()
-	stake_shard()
-	stake_beacon()
-	add_stake()
+	delegate := func() {
+		for i, staker := range stakers {
+			if i > 4 {
+				break
+			}
+			fmt.Println("Delegate shard shard", i)
+			delegateRes, err := Delegate(&shard0RPC, staker.PrivateKey, staker.PrivateKey, fixNode[i%3].SelfCommitteePubkey)
+			fmt.Println(delegateRes, err)
+		}
+	}
+
+	withdrawReward := func() {
+		staker := stakers[0]
+		stakerBalance1, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
+		fmt.Println(stakerBalance1)
+		withdraw, err := WithdrawReward(&shard0RPC, staker.PrivateKey, staker.PrivateKey)
+		fmt.Println(withdraw, err)
+		time.Sleep(time.Second * 15)
+		stakerBalance2, _ := shard0RPC.GetBalanceByPrivateKey(staker.PrivateKey)
+		fmt.Println(stakerBalance2 - stakerBalance1)
+	}
+
+	//submitKey()
+	//time.Sleep(time.Second * 15)
+	//send_prv()
+	//time.Sleep(time.Second * 15)
+	//add_stake_fixnode()
+	//stake_shard()
+	//stake_beacon()
+	delegate()
+	//withdrawReward()
+	//stake_beacon()
+	//add_stake()
 	//time.Sleep(time.Second * 10)
 
-	//unstake()
-	go func() {
-		for {
-			bs, _ := fullnodeRPC.GetBeaconBestState()
-			//fmt.Println(bs.CandidateShardWaitingForCurrentRandom)
-			//fmt.Println(bs.CandidateShardWaitingForNextRandom)
-			for i, staker := range beaconStaker {
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.ShardCommittee[0]) != -1 {
-					fmt.Println("beacon", i, "in committee shard 0")
-				}
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.ShardCommittee[1]) != -1 {
-					fmt.Println("beacon", i, "in committee shard 1")
-				}
-
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.ShardPendingValidator[0]) != -1 {
-					fmt.Println("beacon", i, "in pending shard 0")
-				}
-
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.ShardPendingValidator[1]) != -1 {
-					fmt.Println("beacon", i, "in pending shard 1")
-				}
-
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.SyncingValidators[0]) != -1 {
-					fmt.Println("beacon", i, "in sync shard 0")
-				}
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.SyncingValidators[1]) != -1 {
-					fmt.Println("beacon", i, "in sync shard 1")
-				}
-			}
-
-			for i, staker := range beaconStaker {
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.BeaconCommittee) != -1 {
-					fmt.Println("beacon", i, "in committee")
-				}
-			}
-			for i, staker := range beaconStaker {
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.BeaconPendingValidator) != -1 {
-					fmt.Println("beacon", i, "in pending")
-				}
-			}
-			for i, staker := range beaconStaker {
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.BeaconWaiting) != -1 {
-					fmt.Println("beacon", i, "in waiting")
-				}
-			}
-			for i, staker := range beaconStaker {
-				if common.IndexOfStr(staker.SelfCommitteePubkey, bs.BeaconLocking) != -1 {
-					fmt.Println("beacon", i, "in locking")
-				}
-			}
-
-			time.Sleep(time.Second * 5)
-		}
-	}()
 	select {}
 
 	return
@@ -427,5 +452,8 @@ func main() {
 	add_stake()
 	unstake()
 	add_stake_fixnode()
+	withdrawReward()
+	delegate()
+
 	select {}
 }

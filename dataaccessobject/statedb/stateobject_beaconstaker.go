@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -40,6 +41,7 @@ type BeaconStakerInfo struct {
 	lockingEpoch        uint64
 	unlockingEpoch      uint64
 	lockingReason       int
+	totalDelegators     uint64
 }
 
 func (c BeaconStakerInfo) ToString() string {
@@ -60,6 +62,7 @@ func (c BeaconStakerInfo) ToString() string {
 		LockingEpoch        uint64
 		UnlockingEpoch      uint64
 		LockingReason       int
+		TotalDelegators     uint64
 	}{
 		FunderAddress:       c.funderAddress.String(),
 		RewardReceiver:      c.rewardReceiver.String(),
@@ -73,6 +76,7 @@ func (c BeaconStakerInfo) ToString() string {
 		UnlockingEpoch:      c.unlockingEpoch,
 		LockingReason:       c.lockingReason,
 		FinishSync:          c.finishSync,
+		TotalDelegators:     c.totalDelegators,
 	})
 	return string(data)
 }
@@ -97,6 +101,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		LockingEpoch        uint64
 		UnlockingEpoch      uint64
 		LockingReason       int
+		TotalDelegators     uint64
 	}{
 		FunderAddress:       c.funderAddress,
 		RewardReceiver:      c.rewardReceiver,
@@ -110,6 +115,7 @@ func (c BeaconStakerInfo) MarshalJSON() ([]byte, error) {
 		UnlockingEpoch:      c.unlockingEpoch,
 		LockingReason:       c.lockingReason,
 		FinishSync:          c.finishSync,
+		TotalDelegators:     c.totalDelegators,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -131,6 +137,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 		UnlockingEpoch      uint64
 		LockingReason       int
 		FinishSync          bool
+		TotalDelegators     uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -148,6 +155,7 @@ func (c *BeaconStakerInfo) UnmarshalJSON(data []byte) error {
 	c.finishSync = temp.FinishSync
 	c.funderAddress = temp.FunderAddress
 	c.enterTime = temp.EnterTime
+	c.totalDelegators = temp.TotalDelegators
 	return nil
 }
 func (s *BeaconStakerInfo) SetUnstaking() {
@@ -170,6 +178,9 @@ func (s *BeaconStakerInfo) SetEnterTime(t int64) {
 func (s BeaconStakerInfo) GetEnterTime() int64 {
 	return s.enterTime
 }
+func (s BeaconStakerInfo) GetBeaconConfirmTime() int64 {
+	return s.beaconConfirmTime
+}
 
 func (s *BeaconStakerInfo) FinishSync() bool {
 	return s.finishSync
@@ -179,12 +190,28 @@ func (s *BeaconStakerInfo) AddStaking(tx common.Hash, height uint64, amount uint
 	s.stakingTx[tx] = StakingTxInfo{amount, height}
 }
 
+func (s *BeaconStakerInfo) AddDelegator(total uint64) {
+	s.totalDelegators += total
+}
+
+func (s *BeaconStakerInfo) RemoveDelegator(total uint64) error {
+	if (s.totalDelegators == 0) || (s.totalDelegators < total) {
+		return errors.Errorf("Can not remove more delegator than current total delegator, current total delegator is %v, requested %v", s.totalDelegators, total)
+	}
+	s.totalDelegators -= total
+	return nil
+}
+
 func (s BeaconStakerInfo) TotalStakingAmount() uint64 {
 	total := uint64(0)
 	for _, info := range s.stakingTx {
 		total += info.Amount
 	}
 	return total
+}
+
+func (s BeaconStakerInfo) TotalDelegators() uint64 {
+	return s.totalDelegators
 }
 
 func (s BeaconStakerInfo) Unstaking() bool {
@@ -211,6 +238,9 @@ func (s BeaconStakerInfo) ShardActiveTime() int {
 }
 
 func (s *BeaconStakerInfo) SetShardActiveTime(t int) {
+	if t < 0 {
+		t = 0
+	}
 	s.shardActiveTime = t
 }
 

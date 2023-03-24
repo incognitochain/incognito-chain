@@ -31,6 +31,7 @@ type BeaconCommitteeState interface {
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
 	GetNumberOfActiveShards() int
+	GetBeaconCandidateUID(candidatePK string) (string, error)
 	GetShardCommonPool() []incognitokey.CommitteePublicKey
 	GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 

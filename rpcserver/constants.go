@@ -100,6 +100,7 @@ const (
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendAddStakingTransaction         = "createandsendaddstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
+	createAndSendReDelegateTransaction         = "createandsendredelegatetransaction"
 	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 	randomCommitmentsAndPublicKeys             = "randomcommitmentsandpublickeys"
@@ -135,6 +136,8 @@ const (
 	setAutoEnableFeatureConfig         = "setautoenablefeatureconfig"
 	getAutoEnableFeatureConfig         = "getautoenablefeatureconfig"
 	getCommitteeState                  = "getcommitteestate"
+	getDelegationDetail                = "getdelegationdetail"
+	getDelegationRewardDetail          = "getdelegationrewarddetail"
 	convertPaymentAddress              = "convertpaymentaddress"
 	getTotalBlockInEpoch               = "gettotalblockinepoch"
 	getDetailBlocksOfEpoch             = "getdetailblocksofepoch"
@@ -245,10 +248,12 @@ const (
 	getPrvBurnProof          = "getprvburnproof"
 
 	// reward
-	CreateRawWithDrawTransaction = "withdrawreward"
-	getRewardAmount              = "getrewardamount"
-	getRewardAmountByPublicKey   = "getrewardamountbypublickey"
-	listRewardAmount             = "listrewardamount"
+	CreateRawWithDrawTransaction                 = "withdrawreward"
+	CreateRawWithDrawDelegationRewardTransaction = "withdrawdelegationreward"
+
+	getRewardAmount            = "getrewardamount"
+	getRewardAmountByPublicKey = "getrewardamountbypublickey"
+	listRewardAmount           = "listrewardamount"
 
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
@@ -451,6 +456,7 @@ const (
 	getBeaconStaker         = "getbeaconstaker"
 	getShardStaker          = "getshardstaker"
 	getBeaconCommitteeState = "getbeaconcommitteestate"
+	getBeaconCandidateUID   = "getbeaconcandidateuid"
 	// prune
 	prune          = "pruneState"
 	getPruneState  = "getPruneState"

@@ -94,8 +94,10 @@ var (
 	defaultLogDir      = DefaultLogDirname
 )
 
-//feature
+// feature
 const (
 	BEACON_STAKING_FLOW_V4 = "beacon_staking_flow_v4"
+	DELEGATION_REWARD      = "delegation_reward"
 	SLASH_TO_SYNC          = "slash2sync"
+	DELEGATION             = "delegation"
 )

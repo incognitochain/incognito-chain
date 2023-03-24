@@ -3,10 +3,11 @@ package rpcserver
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	common2 "github.com/incognitochain/incognito-chain/metadata/common"
 	"reflect"
+
+	common2 "github.com/incognitochain/incognito-chain/metadata/common"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -368,7 +369,7 @@ func (httpServer *HttpServer) handleGetEncodedTransactionsByHashes(params interf
 	return httpServer.txService.GetEncodedTransactionsByHashes(txHashList)
 }
 
-//Get transaction by serial numbers
+// Get transaction by serial numbers
 func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	arrayParams := common.InterfaceSlice(params)
@@ -1576,10 +1577,115 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	return result, nil
 }
 
+// handleCreateAndSendReDelegateTransaction
 // handleCreateRawStopAutoStakingTransaction - RPC create and send stop auto stake tx to network
 func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
 	data, err := httpServer.handleCreateRawStopAutoStakingTransaction(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	return result, nil
+}
+
+// handleCreateRawReDelegateTransaction - RPC create redelegate tx
+func (httpServer *HttpServer) handleCreateRawReDelegateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
+	}
+
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	keyWallet := new(wallet.KeyWallet)
+	keyWallet.KeySet = *createRawTxParam.SenderKeySet
+
+	//Get data to create meta data
+	data, ok := paramsArray[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
+	}
+
+	// Get staking type
+	beaconDelegateePK, ok := data["DelegateToBeacon"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Cannot get beacon delegate public key from transaction %+v", data["DelegateToBeacon"]))
+	}
+
+	//Get Candidate Payment Address
+	candidatePaymentAddress, ok := data["CandidatePaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", data["CandidatePaymentAddress"]))
+	}
+	// Get private seed, a.k.a mining key
+	privateSeed, ok := data["PrivateSeed"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Private Seed for Staking Transaction %+v", data["PrivateSeed"]))
+	}
+	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
+	if (err != nil) || (ver != common.ZeroByte) {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Decode privateseed failed!"))
+	}
+
+	// Get candidate publickey
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	delegatorPK, err := committeePK.ToBase58()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	beaconview := httpServer.blockService.BlockChain.BeaconChain.GetFinalView()
+	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
+	beaconDelegateePKUID, err := beaconFinalView.GetBeaconCandidateUID(beaconDelegateePK)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.Errorf("Can not find beacon candidate %v in current view %v", beaconDelegateePK, beaconview.GetBlock().Hash().String()))
+	}
+
+	reDelegateMetadata, err := metadata.NewReDelegateMetadata(delegatorPK, beaconDelegateePK, beaconDelegateePKUID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, reDelegateMetadata)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	result := jsonresult.CreateTransactionResult{
+		TxID:            txID.String(),
+		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
+		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendReDelegateTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	data, err := httpServer.handleCreateRawReDelegateTransaction(params, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
