@@ -3,6 +3,7 @@ package blsbft
 import (
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -102,7 +103,7 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	valid := CheckValidationDataWithCommittee(valData, committee)
 	if !valid {
 		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
-		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committeeStr)))
+		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %+v len(%+v) is not valid with this committee %v", valData.ValidatiorsIdx, len(valData.ValidatiorsIdx), committeeStr)))
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {

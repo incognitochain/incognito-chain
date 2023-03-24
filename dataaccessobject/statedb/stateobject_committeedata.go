@@ -8,12 +8,24 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type CommitteeBeginEPochInfo struct {
-	Score       uint64
-	Performance uint64
+type CurrentEpochCommitteeAndPendingInfo struct {
+	Score         uint64
+	Performance   uint64
+	StakeAmount   uint64
+	Delegators    uint64
+	BeaconStakeID string
 }
+
+type LastEpochCommitteeAndPendingInfo struct {
+	Performance   uint64
+	StakeAmount   uint64
+	Delegators    uint64
+	BeaconStakeID string
+}
+
 type CommitteeData struct {
-	BeginEpochInfo map[string]CommitteeBeginEPochInfo //this is in order of statedb get all beacon committee result
+	BeginEpochInfo map[string]CurrentEpochCommitteeAndPendingInfo //this is in order of statedb get all beacon committee result
+	LastEpoch      map[string]LastEpochCommitteeAndPendingInfo
 }
 
 func NewCommitteeData() *CommitteeData {

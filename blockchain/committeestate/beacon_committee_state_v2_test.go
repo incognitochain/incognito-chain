@@ -176,7 +176,7 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 			if !reflect.DeepEqual(b.stakingTx, tt.wantSideEffect.beaconCommitteeStateSlashingBase.beaconCommitteeStateBase.stakingTx) {
 				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), stakingTx = %v, want %v", got, tt.want)
 			}
-			_, has, _ := statedb.GetStakerInfo(tt.args.env.ConsensusStateDB, key)
+			_, has, _ := statedb.GetShardStakerInfo(tt.args.env.ConsensusStateDB, key)
 			if has {
 				t.Errorf("BeaconCommitteeStateV2.processStakeInstruction(), StoreStakerInfo found, %+v", key)
 			}

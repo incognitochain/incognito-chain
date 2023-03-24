@@ -111,10 +111,12 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 
 	for _, tx := range shardBlock.Body.Transactions {
 		switch tx.GetMetadata().(type) {
-		case *metadata.ReturnStakingMetadata:
-		case *metadata.ReturnBeaconStakingMetadata:
+		case *metadata.ReturnStakingMetadata, *metadata.ReturnBeaconStakingMetadata:
+			if tx.GetType() != common.TxReturnStakingType {
+				return errors.Errorf("Wrong transaction type for metadata %v, expected type %v, got %v", tx.GetMetadata().GetType(), common.TxReturnStakingType, tx.GetType())
+			}
 		default:
-			return nil
+			continue
 		}
 
 		txHash := tx.Hash()
@@ -318,7 +320,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 
 					//dont have shard candidate for next epoch => kickout => return staking amount
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
+					stakerInfo, has, err := statedb.GetShardStakerInfo(beaconConsensusStateDB, outPublicKey)
 					if err != nil || !has || stakerInfo == nil {
 						Logger.log.Errorf("fmt.Errorf(\"Cannot get staker info for outpubickey %v\", outPublicKey), error %+v", outPublicKey, err)
 						//return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot get staker info for outpubickey %v", outPublicKey))

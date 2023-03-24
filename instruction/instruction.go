@@ -45,7 +45,10 @@ func IsConsensusInstruction(action string) bool {
 		action == BEACON_INST ||
 		action == RETURN_ACTION ||
 		action == RETURN_BEACON_ACTION ||
-		action == ADD_STAKING_ACTION
+		action == ADD_STAKING_ACTION ||
+		action == RE_DELEGATE ||
+		action == REQ_DREWARD_ACTION ||
+		action == MINT_DREWARD_ACTION
 }
 
 // the order of instruction must always be maintain
@@ -108,6 +111,8 @@ func ValidateAndImportInstructionFromString(inst []string) (
 		buildInstructionFromString = BuildReturnStakingInstructionFromString
 	case RETURN_BEACON_ACTION:
 		buildInstructionFromString = BuildReturnBeaconStakingInstructionFromString
+	case RE_DELEGATE:
+		buildInstructionFromString = BuildReDelegateInstructionFromString
 	default:
 		panic(action)
 	}

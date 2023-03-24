@@ -261,6 +261,40 @@ func (r *LocalRPCClient) GetRewardAmount(paymentAddress string) (res map[string]
 	}
 	return resI.(map[string]uint64), nil
 }
+
+func (r *LocalRPCClient) GetRewardAmountByPublicKey(publicKey string) (res map[string]uint64, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getrewardamountbypublickey"]
+	resI, rpcERR := c(httpServer, []interface{}{publicKey}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(map[string]uint64), nil
+}
+func (r *LocalRPCClient) GetAllRewardAmount() (res map[string]map[string]uint64, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["listrewardamount"]
+	resI, rpcERR := c(httpServer, []interface{}{}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	resTmp, ok := resI.(map[string]map[common.Hash]uint64)
+	if !ok {
+		return nil, errors.New("Can not convert result to map[string]map[common.Hash]uint64")
+	}
+	res = map[string]map[string]uint64{}
+	for k, v := range resTmp {
+		vNew := map[string]uint64{}
+		for tokenID, amount := range v {
+			vNew[tokenID.String()] = amount
+		}
+		if len(vNew) > 0 {
+			res[k] = vNew
+		}
+	}
+	return res, nil
+}
+
 func (r *LocalRPCClient) WithdrawReward(privateKey string, receivers map[string]interface{}, amount float64, privacy float64, info map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["withdrawreward"]
@@ -288,6 +322,26 @@ func (r *LocalRPCClient) CreateAndSendStopAutoStakingTransaction(privateKey stri
 	}
 	return resI.(jsonresult.CreateTransactionResult), nil
 }
+
+func (r *LocalRPCClient) CreateAndSendAddStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, addStakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createandsendaddstakingtransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey, receivers, fee, privacy, addStakeInfo}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionResult), nil
+}
+
+func (r *LocalRPCClient) CreateAndSendUnStakingTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, unstakeInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createunstaketransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey, receivers, fee, privacy, unstakeInfo}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionResult), nil
+}
 func (r *LocalRPCClient) CreateAndSendTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64) (res jsonresult.CreateTransactionResult, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendtransaction"]
@@ -306,6 +360,17 @@ func (r *LocalRPCClient) CreateAndSendPrivacyCustomTokenTransaction(privateKey s
 	}
 	return resI.(jsonresult.CreateTransactionTokenResult), nil
 }
+
+func (r *LocalRPCClient) CreateAndSendReDelegateTransaction(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, redelegateInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createandsendredelegatetransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey, receivers, fee, privacy, redelegateInfo}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionResult), nil
+}
+
 func (r *LocalRPCClient) CreateAndSendTxWithWithdrawalReqV2(privateKey string, receivers map[string]interface{}, fee float64, privacy float64, reqInfo map[string]interface{}) (res jsonresult.CreateTransactionResult, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createandsendtxwithwithdrawalreqv2"]

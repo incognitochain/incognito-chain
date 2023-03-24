@@ -385,7 +385,7 @@ func (b *beaconCommitteeStateSlashingBase) classifyValidatorsByAutoStake(
 	candidates := []string{}
 	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
 	for index, outPublicKey := range outPublicKeys {
-		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
+		stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, outPublicKey)
 		if err != nil {
 			return candidates, committeeChange, returnStakingInstruction, err
 		}
@@ -438,7 +438,7 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 ) (*instruction.ReturnStakeInstruction, *CommitteeChange, error) {
 	slashingPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(slashingPublicKeys)
 	for index, outPublicKey := range slashingPublicKeys {
-		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
+		stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, outPublicKey)
 		if err != nil {
 			return returnStakingInstruction, committeeChange, err
 		}
@@ -474,7 +474,7 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 		} else {
 			indexCandidate := common.IndexOfStr(publicKey, b.shardCommonPool)
 			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
-			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, publicKey)
+			stakerInfo, has, err := statedb.GetShardStakerInfo(env.ConsensusStateDB, publicKey)
 			if err != nil {
 				return committeeChange, returnStakingInstruction, err
 			}
