@@ -11,15 +11,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type IssuingBTCResponse struct {
 	metadataCommon.MetadataBase
-	RequestedTxID   common.Hash `json:"RequestedTxID"`
-	UniqTx          []byte      `json:"UniqBTCTx"`
-	ExternalTokenID []byte      `json:"ExternalTokenID"`
-	SharedRandom    []byte      `json:"SharedRandom,omitempty"`
+	RequestedTxID common.Hash `json:"RequestedTxID"`
+	UniqTx        []byte      `json:"UniqBTCTx"`
+	SharedRandom  []byte      `json:"SharedRandom,omitempty"`
 }
 
 type IssuingBTCResAction struct {
@@ -30,17 +28,15 @@ type IssuingBTCResAction struct {
 func NewIssuingBTCResponse(
 	requestedTxID common.Hash,
 	uniqTx []byte,
-	externalTokenID []byte,
 	metaType int,
 ) *IssuingBTCResponse {
 	metadataBase := metadataCommon.MetadataBase{
 		Type: metaType,
 	}
 	return &IssuingBTCResponse{
-		RequestedTxID:   requestedTxID,
-		UniqTx:          uniqTx,
-		ExternalTokenID: externalTokenID,
-		MetadataBase:    metadataBase,
+		RequestedTxID: requestedTxID,
+		UniqTx:        uniqTx,
+		MetadataBase:  metadataBase,
 	}
 }
 
@@ -99,7 +95,6 @@ func (iRes IssuingBTCResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 
 		if !bytes.Equal(iRes.RequestedTxID[:], ShieldingBTCAcceptedInst.TxReqID[:]) ||
 			!bytes.Equal(iRes.UniqTx, ShieldingBTCAcceptedInst.UniqTx) ||
-			!bytes.Equal(iRes.ExternalTokenID, ShieldingBTCAcceptedInst.ExternalTokenID) ||
 			shardID != ShieldingBTCAcceptedInst.ShardID {
 			continue
 		}
@@ -109,8 +104,7 @@ func (iRes IssuingBTCResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			continue
 		}
 
-		otaReceiver := new(privacy.OTAReceiver)
-		err = otaReceiver.FromString(ShieldingBTCAcceptedInst.Receiver)
+		otaReceiver := ShieldingBTCAcceptedInst.Receiver
 		if err != nil || !otaReceiver.IsValid() {
 			metadataCommon.Logger.Log.Errorf("%v parse OTAReceiver error: %v\n", prefix, err)
 			continue

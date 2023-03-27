@@ -60,7 +60,6 @@ func (sp *stateProcessor) registerBridge(
 	// update state
 	// TODO: 0xkraken: if chainID is BTC, init pToken with pBTC ID from portal v4
 	clonedState := state.Clone()
-	fmt.Printf("0xcryptolover log state info 1 %+v \n", contentInst)
 	if inst.Status == common.AcceptedStatusStr {
 		clonedState.bridgeInfos[contentInst.BridgePoolPubKey] = &BridgeInfo{
 			Info:        statedb.NewBridgeInfoStateWithValue(contentInst.ValidatorPubKeys, contentInst.BridgePoolPubKey, []string{}, ""),
@@ -124,6 +123,15 @@ func (sp *stateProcessor) shield(
 			Logger.log.Errorf("Can not unmarshal content shield instruction %v", err)
 			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
 		}
+
+		// update state
+		clonedState := state.Clone()
+		if clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey] == nil || clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID] == nil {
+			Logger.log.Errorf("Can not unmarshal content shield instruction %v", err)
+			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
+		}
+		clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID].PTokens[(&common.Hash{}).NewHash2(acceptedInst.UniqTx)] += acceptedInst.IssuingAmount
+
 		txReqID = acceptedInst.TxReqID
 		// track bridge tx req status
 		err = statedb.TrackBridgeReqWithStatus(sDB, txReqID, common.BridgeRequestAcceptedStatus)
@@ -143,11 +151,10 @@ func (sp *stateProcessor) shield(
 			updatingInfo.CountUpAmt += acceptedInst.IssuingAmount
 		} else {
 			updatingInfo = metadata.UpdatingInfo{
-				CountUpAmt:      acceptedInst.IssuingAmount,
-				DeductAmt:       0,
-				TokenID:         acceptedInst.IncTokenID,
-				ExternalTokenID: acceptedInst.ExternalTokenID,
-				IsCentralized:   false,
+				CountUpAmt:    acceptedInst.IssuingAmount,
+				DeductAmt:     0,
+				TokenID:       acceptedInst.IncTokenID,
+				IsCentralized: false,
 			}
 		}
 		updatingInfoByTokenID[acceptedInst.IncTokenID] = updatingInfo

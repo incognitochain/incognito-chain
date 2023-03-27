@@ -14,9 +14,6 @@ import (
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/metadata/tss"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 )
 
 type stateProducer struct{}
@@ -80,12 +77,8 @@ func (sp *stateProducer) shield(
 		return [][]string{}, state, ac, err
 	}
 
-	var receiver string
 	var receivingShardID byte
-	var depositKeyBytes []byte
-	otaReceiver := new(privacy.OTAReceiver)
-	_ = otaReceiver.FromString(issuingBTCHubReqAction.Meta.Receiver) // error has been handle at shard side
-	otaReceiverBytes, _ := otaReceiver.Bytes()
+	otaReceiver := issuingBTCHubReqAction.Meta.Receiver
 	pkBytes := otaReceiver.PublicKey.ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pkBytes[len(pkBytes)-1])
 	inst := metadataCommon.NewInstructionWithValue(
@@ -100,29 +93,33 @@ func (sp *stateProducer) shield(
 		return [][]string{rejectedInst}, state, ac, err
 	}
 
-	depositPubKey, err := new(operation.Point).FromBytesS(depositKeyBytes)
-	if err != nil {
-		Logger.log.Warn("[Bridge hub] WARNING: invalid OTDepositPubKey %v", issuingBTCHubReqAction.Meta.Receiver)
-		return [][]string{rejectedInst}, state, ac, err
-	}
-	sigPubKey := new(privacy.SchnorrPublicKey)
-	sigPubKey.Set(depositPubKey)
+	// 	otaReceiverBytes, _ := otaReceiver.Bytes()
+	//depositPubKey, err := new(operation.Point).FromBytesS(otaReceiverBytes)
+	//if err != nil {
+	//	Logger.log.Warn("[Bridge hub] WARNING: invalid OTDepositPubKey %v", issuingBTCHubReqAction.Meta.Receiver)
+	//	return [][]string{rejectedInst}, state, ac, err
+	//}
+	//sigPubKey := new(privacy.SchnorrPublicKey)
+	//sigPubKey.Set(depositPubKey)
+	//
+	//tmpSig := new(schnorr.SchnSignature)
+	//sigInBytes, err := base64.StdEncoding.DecodeString(issuingBTCHubReqAction.Meta.Signature)
+	//if err != nil {
+	//	return [][]string{rejectedInst}, state, ac, errors.New("[Bridge hub] WARNING: can not decode signature")
+	//}
+	//_ = tmpSig.SetBytes(sigInBytes) // error has been handle at shard side
+	//
+	//if isValid := sigPubKey.Verify(tmpSig, common.HashB(otaReceiverBytes)); !isValid {
+	//	Logger.log.Warn("[Bridge hub] invalid signature", issuingBTCHubReqAction.Meta.Signature)
+	//	return [][]string{rejectedInst}, state, ac, err
+	//}
 
-	tmpSig := new(schnorr.SchnSignature)
-	_ = tmpSig.SetBytes(issuingBTCHubReqAction.Meta.Signature) // error has been handle at shard side
-
-	if isValid := sigPubKey.Verify(tmpSig, common.HashB(otaReceiverBytes)); !isValid {
-		Logger.log.Warn("[Bridge hub] invalid signature", issuingBTCHubReqAction.Meta.Signature)
-		return [][]string{rejectedInst}, state, ac, err
-	}
-
-	receiver = issuingBTCHubReqAction.Meta.Receiver
 	receivingShardID = otaReceiver.GetShardID()
 
 	md := issuingBTCHubReqAction.Meta
 	Logger.log.Infof("[Bridge hub] Processing for tx: %s, tokenid: %s", issuingBTCHubReqAction.TxReqID.String(), md.IncTokenID.String())
 	// todo: validate the request
-	ok, err := tss.VerifyTSSSig("", "", base64.StdEncoding.EncodeToString(issuingBTCHubReqAction.Meta.Signature))
+	ok, err := tss.VerifyTSSSig("", "", issuingBTCHubReqAction.Meta.Signature)
 	if err != nil || !ok {
 		Logger.log.Warn("[Bridge hub] WARNING: an issue occurred verify signature: ", err, ok)
 		if err != nil {
@@ -142,14 +139,22 @@ func (sp *stateProducer) shield(
 	// todo: verify token id must be btc token
 	// todo: add logic update the collateral and amount shielded
 
+	// update state
+	clonedState := state.Clone()
+	if clonedState.bridgeInfos[md.BridgePoolPubKey] == nil || clonedState.bridgeInfos[md.BridgePoolPubKey].NetworkInfo[md.ExtChainID] == nil {
+		return [][]string{rejectedInst}, state, ac, errors.New("[Bridge Hub] The bridge pool pub key, external chain id is non-existing")
+	}
+	clonedState.bridgeInfos[md.BridgePoolPubKey].NetworkInfo[md.ExtChainID].PTokens[md.BTCTxID] += md.Amount
+
 	issuingAcceptedInst := metadataBridgeHub.ShieldingBTCAcceptedInst{
-		ShardID:         receivingShardID,
-		IssuingAmount:   issuingBTCHubReqAction.Meta.Amount,
-		Receiver:        receiver,
-		IncTokenID:      md.IncTokenID,
-		TxReqID:         issuingBTCHubReqAction.TxReqID,
-		UniqTx:          issuingBTCHubReqAction.Meta.BTCTxID.Bytes(),
-		ExternalTokenID: issuingBTCHubReqAction.Meta.IncTokenID.Bytes(),
+		ShardID:          receivingShardID,
+		IssuingAmount:    issuingBTCHubReqAction.Meta.Amount,
+		Receiver:         issuingBTCHubReqAction.Meta.Receiver,
+		IncTokenID:       md.IncTokenID,
+		TxReqID:          issuingBTCHubReqAction.TxReqID,
+		UniqTx:           issuingBTCHubReqAction.Meta.BTCTxID.Bytes(),
+		ExtChainID:       md.ExtChainID,
+		BridgePoolPubKey: md.BridgePoolPubKey,
 	}
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {

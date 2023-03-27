@@ -482,7 +482,6 @@ func (blockGenerator *BlockGenerator) buildBridgeHubIssuanceTx(
 	issuingEVMRes := bridgehub.NewIssuingBTCResponse(
 		issuingBridgeHubAcceptedInst.TxReqID,
 		issuingBridgeHubAcceptedInst.UniqTx,
-		issuingBridgeHubAcceptedInst.ExternalTokenID,
 		metatype,
 	)
 	tokenID := issuingBridgeHubAcceptedInst.IncTokenID
@@ -496,8 +495,7 @@ func (blockGenerator *BlockGenerator) buildBridgeHubIssuanceTx(
 		TokenID: &tokenID,
 	}
 
-	otaReceiver := new(privacy.OTAReceiver)
-	err = otaReceiver.FromString(issuingBridgeHubAcceptedInst.Receiver)
+	otaReceiver := issuingBridgeHubAcceptedInst.Receiver
 	if err != nil {
 		return nil, fmt.Errorf("parseOTA receiver from %v error: %v", issuingBridgeHubAcceptedInst.Receiver, err)
 	}

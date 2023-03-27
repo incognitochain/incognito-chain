@@ -266,12 +266,12 @@ func (httpServer *HttpServer) createBridgeHubShieldingTx(
 
 	// metadata object format to read from RPC parameters
 	mdReader := &struct {
-		Amount     uint64      `json:"Amount"`
-		Signature  []byte      `json:"Signature"`
-		BtcTx      common.Hash `json:"BtcTx"`
-		IncTokenID common.Hash `json:"IncTokenID"`
-		Receiver   string      `json:"Receiver"`
-		ExtChainID string      `json:"ExtChainID"`
+		Amount           uint64      `json:"Amount"`
+		Signature        string      `json:"Signature"`
+		BtcTx            common.Hash `json:"BtcTx"`
+		IncTokenID       common.Hash `json:"IncTokenID"`
+		ExtChainID       int         `json:"ExtChainID"`
+		BridgePoolPubKey string      `json:"BridgePoolPubKey"`
 	}{}
 	// parse params & metadata
 	_, err = httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
@@ -279,13 +279,20 @@ func (httpServer *HttpServer) createBridgeHubShieldingTx(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
 	}
 
+	recv := privacy.OTAReceiver{}
+	err = recv.FromAddress(keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+
 	md, _ := metadataBridgeHub.NewShieldingBTCRequest(
 		mdReader.Amount,
 		mdReader.BtcTx,
 		mdReader.IncTokenID,
-		mdReader.Receiver,
+		recv,
 		mdReader.Signature,
 		mdReader.ExtChainID,
+		mdReader.BridgePoolPubKey,
 	)
 
 	// create new param to build raw tx from param interface
