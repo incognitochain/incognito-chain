@@ -1037,7 +1037,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			reD_dgtee_pks = append(reD_dgtee_pks, redelegateMetadata.NewDelegate)
 			reD_dgtee_uid = append(reD_dgtee_uid, redelegateMetadata.DelegateUID)
 		case metadata.WithDrawRewardRequestMeta, metadata.WithdrawDelegationRewardRequestMeta:
-			if bc.GetBeaconBestState().TriggeredFeature[config.DELEGATION_REWARD] <= beaconHeight {
+			if bc.GetBeaconBestState().TriggeredFeature[config.DELEGATION_REWARD] != 0 && bc.GetBeaconBestState().TriggeredFeature[config.DELEGATION_REWARD] <= beaconHeight {
 				var (
 					txRequest   string
 					paymentAddr privacy.PaymentAddress
