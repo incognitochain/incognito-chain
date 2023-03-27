@@ -185,7 +185,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
 	if stakingMetadata.Type == BeaconStakingMeta && ((amount < common.BEACON_MIN_STAKING_AMOUNT) || (amount%common.SHARD_STAKING_AMOUNT != 0)) {
-		return false, false, errors.New("invalid Stake Beacon Amount")
+		return false, false, errors.Errorf("invalid Stake Beacon Amount %+v %+v", amount, common.BEACON_MIN_STAKING_AMOUNT)
 	}
 	if stakingMetadata.Type == BeaconStakingMeta && !stakingMetadata.AutoReStaking {
 		return false, false, errors.New("staking beacon must always set restaking")

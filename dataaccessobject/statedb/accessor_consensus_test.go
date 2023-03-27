@@ -224,7 +224,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 			t.Fatalf("want %+v, got %+v", wantC, gotShardCommitteeStruct[index])
 		}
 		cString, _ := wantC.ToBase58()
-		s, ok, err := GetStakerInfo(sDB, cString)
+		s, ok, err := GetShardStakerInfo(sDB, cString)
 		if err != nil {
 			t.Fatal(err)
 		}

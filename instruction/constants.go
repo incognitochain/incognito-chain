@@ -4,6 +4,7 @@ const (
 	SWAP_SHARD_ACTION              = "swapshard"
 	SWAP_ACTION                    = "swap"
 	RANDOM_ACTION                  = "random"
+	RE_DELEGATE                    = "redelegate"
 	STAKE_ACTION                   = "stake"
 	BEACON_STAKE_ACTION            = "bstake"
 	ASSIGN_ACTION                  = "assign"
@@ -20,6 +21,9 @@ const (
 	TRUE                           = "true"
 	FALSE                          = "false"
 	FINISH_SYNC_ACTION             = "finishsync"
+	REQ_DREWARD_ACTION             = "reqdreward"
+	MINT_DREWARD_ACTION            = "mintdreward"
+	SHARE_PRICE                    = "shareprice"
 	ENABLE_FEATURE                 = "enablefeature"
 	DEQUEUE                        = "dequeue"
 	OUTDATED_DEQUEUE_REASON        = "outdated"
@@ -35,7 +39,7 @@ const (
 	BEACON_CHAIN_ID = -1
 )
 
-//Swap Instruction Sub Type
+// Swap Instruction Sub Type
 const (
 	SWAP_BY_END_EPOCH = iota
 	SWAP_BY_SLASHING

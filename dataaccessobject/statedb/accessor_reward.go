@@ -1,13 +1,16 @@
 package statedb
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/trie"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
-//AddShardRewardRequestMultiset
+// AddShardRewardRequestMultiset
 func AddShardRewardRequestMultiset(
 	stateDB *StateDB,
 	epoch uint64,
@@ -193,8 +196,96 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 	return nil
 }
 
-//================================= Testing ======================================
+// ================================= Testing ======================================
 func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardRequestState {
 	_, rewardRequestStates := stateDB.getAllRewardRequestState(epoch)
 	return rewardRequestStates
+}
+
+// ================================= Delegation Reward =============================
+func StoreDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, incognitoPaymentAddress key.PaymentAddress, shardCPK string, epoch int, beaconUID string, amount uint64) error {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
+	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
+	reward, _, err := GetDelegationReward(stateDB, incognitoPublicKeyBytes)
+	if err != nil {
+		return err
+	}
+	reward.incognitoPublicKey = incognitoPublicKey
+	reward.incognitoPaymentAddress = incognitoPaymentAddress
+	if reward.Reward[shardCPK] == nil {
+		reward.Reward[shardCPK] = map[int]DelegateInfo{}
+	}
+	reward.Reward[shardCPK][epoch] = DelegateInfo{
+		beaconUID, amount,
+	}
+	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
+	if err != nil {
+		return NewStatedbError(StoreDelegationRewardError, err)
+	}
+	return nil
+}
+
+func ResetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, incognitoPaymentAddress key.PaymentAddress, epoch int) error {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
+	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
+	reward, _, err := GetDelegationReward(stateDB, incognitoPublicKeyBytes)
+	if err != nil {
+		return err
+	}
+	reward.incognitoPublicKey = incognitoPublicKey
+	reward.incognitoPaymentAddress = incognitoPaymentAddress
+	for shardCPK, dInfoByEpoch := range reward.Reward {
+		latestDelegateEpoch := 0
+		for k, _ := range dInfoByEpoch {
+			if latestDelegateEpoch < k {
+				latestDelegateEpoch = k
+			}
+		}
+		latestInfo := dInfoByEpoch[latestDelegateEpoch]
+		dInfoByEpoch = map[int]DelegateInfo{}
+		if latestInfo.BeaconUID != "" {
+			dInfoByEpoch = map[int]DelegateInfo{
+				epoch: latestInfo,
+			}
+		}
+		reward.Reward[shardCPK] = dInfoByEpoch
+	}
+	err = stateDB.SetStateObject(DelegationRewardObjectType, key, reward)
+	if err != nil {
+		return NewStatedbError(StoreDelegationRewardError, err)
+	}
+	return nil
+}
+
+func GetDelegationReward(stateDB *StateDB, incognitoPublicKeyBytes []byte) (*DelegationRewardState, bool, error) {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
+	key, err := GenerateDelegateRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return nil, false, err
+	}
+	return stateDB.getDelegationRewardState(key)
+}
+
+func ListDelegationReward(stateDB *StateDB) (map[string]*DelegationRewardState, error) {
+	m := map[string]*DelegationRewardState{}
+	keys := []common.Hash{}
+	prefixHash := GetDelegationRewardPrefix()
+	temp := stateDB.trie.NodeIterator(prefixHash)
+	it := trie.NewIterator(temp)
+	for it.Next(true, false, true) {
+		key := it.Key
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		keys = append(keys, common.BytesToHash(newKey))
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		delegateRewardState := NewDelegationRewardState()
+		err := json.Unmarshal(newValue, delegateRewardState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[delegateRewardState.incognitoPublicKey] = delegateRewardState
+	}
+	return m, nil
 }

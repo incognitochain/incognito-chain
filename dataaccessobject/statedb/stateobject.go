@@ -27,6 +27,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newCommitteeObjectWithValue(db, hash, value)
 	case CommitteeRewardObjectType:
 		return newCommitteeRewardObjectWithValue(db, hash, value)
+	case DelegationRewardObjectType:
+		return newDelegationRewardObjectWithValue(db, hash, value)
 	case RewardRequestObjectType:
 		return newRewardRequestObjectWithValue(db, hash, value)
 	case RewardRequestV3ObjectType:
@@ -109,6 +111,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newStakerObjectWithValue(db, hash, value)
 	case BeaconStakerObjectType:
 		return newBeaconStakerObjectWithValue(db, hash, value)
+	case BeaconSharePriceType:
+		return newBeaconSharePriceWithValue(db, hash, value)
 	case CommitteeDataObjectType:
 		return newCommitteeStateDataObjectWithValue(db, hash, value)
 	case PortalV4StatusObjectType:
@@ -197,6 +201,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newCommitteeObject(db, hash)
 	case CommitteeRewardObjectType:
 		return newCommitteeRewardObject(db, hash)
+	case DelegationRewardObjectType:
+		return newDelegationRewardObject(db, hash)
 	case RewardRequestObjectType:
 		return newRewardRequestObject(db, hash)
 	case RewardRequestV3ObjectType:
@@ -271,6 +277,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newStakerObject(db, hash)
 	case BeaconStakerObjectType:
 		return newBeaconStakerObject(db, hash)
+	case BeaconSharePriceType:
+		return newBeaconSharePriceObject(db, hash)
 	case CommitteeDataObjectType:
 		return newCommitteeStateDataObject(db, hash)
 	case PortalV4StatusObjectType:

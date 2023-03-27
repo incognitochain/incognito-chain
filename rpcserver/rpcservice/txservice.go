@@ -314,7 +314,7 @@ func (txService TxService) chooseOutsCoinVer2ByKeyset(
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
 			switch metadataType {
-			case metadata.WithDrawRewardRequestMeta:
+			case metadata.WithDrawRewardRequestMeta, metadata.WithdrawDelegationRewardRequestMeta:
 				{
 					return nil, realFee, nil
 				}
@@ -465,7 +465,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
 			switch metadataType {
-			case metadata.WithDrawRewardRequestMeta:
+			case metadata.WithDrawRewardRequestMeta, metadata.WithdrawDelegationRewardRequestMeta:
 				{
 					return nil, realFee, nil
 				}

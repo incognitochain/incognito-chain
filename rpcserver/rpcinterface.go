@@ -83,6 +83,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendAddStakingTransaction:      (*HttpServer).handleCreateAndSendAddStakingTransaction,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
+	createAndSendReDelegateTransaction:      (*HttpServer).handleCreateAndSendReDelegateTransaction,
 	createAndSendTokenInitTransaction:       (*HttpServer).handleCreateAndSendTokenInitTx,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                        (*HttpServer).handleHasSerialNumbers,
@@ -108,6 +109,8 @@ var HttpHandler = map[string]httpHandler{
 	setAutoEnableFeatureConfig:         (*HttpServer).handleSetAutoEnableFeatureConfig,
 	getAutoEnableFeatureConfig:         (*HttpServer).handleGetAutoEnableFeatureConfig,
 	getCommitteeState:                  (*HttpServer).handleGetCommitteeState,
+	getDelegationDetail:                (*HttpServer).handleGetDelegationDetail,
+	getDelegationRewardDetail:          (*HttpServer).handleGetDelegationRewardDetail,
 	convertPaymentAddress:              (*HttpServer).handleConvertPaymentAddress,
 	getTotalBlockInEpoch:               (*HttpServer).handleGetTotalBlockInEpoch,
 	getDetailBlocksOfEpoch:             (*HttpServer).handleGetDetailBlocksOfEpoch,
@@ -222,10 +225,11 @@ var HttpHandler = map[string]httpHandler{
 	getPrvBurnProof:          (*HttpServer).handleGetPRVBurnProof,
 
 	//reward
-	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
-	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
-	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
-	listRewardAmount:             (*HttpServer).handleListRewardAmount,
+	CreateRawWithDrawTransaction:                 (*HttpServer).handleCreateAndSendWithDrawTransaction,
+	CreateRawWithDrawDelegationRewardTransaction: (*HttpServer).handleCreateAndSendWithdrawDelegationRewardTransaction,
+	getRewardAmount:                              (*HttpServer).handleGetRewardAmount,
+	getRewardAmountByPublicKey:                   (*HttpServer).handleGetRewardAmountByPublicKey,
+	listRewardAmount:                             (*HttpServer).handleListRewardAmount,
 
 	// mining info
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
@@ -426,6 +430,7 @@ var HttpHandler = map[string]httpHandler{
 	getBeaconStaker:         (*HttpServer).handleGetBeaconStakerInfo,
 	getShardStaker:          (*HttpServer).handleGetShardStakerInfo,
 	getBeaconCommitteeState: (*HttpServer).handleGetBeaconCommitteeState,
+	getBeaconCandidateUID:   (*HttpServer).handleGetBeaconCandidateUID,
 
 	// prune
 	prune:          (*HttpServer).handlePrune,
