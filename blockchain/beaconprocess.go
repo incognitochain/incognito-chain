@@ -676,10 +676,14 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
+		blockchain,
 		beaconBlock.Header,
 		beaconBlock.Body.Instructions,
 		isFoundRandomInstruction, isBeginRandom,
 	)
+	for _, v := range beaconBlock.Body.Instructions {
+		Logger.log.Infof("Beacon instructions: %+v", v)
+	}
 
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
@@ -772,7 +776,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconBestState.pdeStates, err = pdex.InitStatesFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain, genesisBeaconBlock.Header, genesisBeaconBlock.Body.Instructions, false, false)
 	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
 		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
@@ -1104,7 +1108,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if newBestState.bridgeAggManager != nil {
 		diffState, newVaults, err := newBestState.bridgeAggManager.GetDiffState(curView.bridgeAggManager.State())
-		fmt.Println("HHH : diffState", diffState)
+		// fmt.Println("HHH : diffState", diffState)
 		if err != nil {
 			Logger.log.Errorf("Error get diff bridge agg: %v", err)
 			return err

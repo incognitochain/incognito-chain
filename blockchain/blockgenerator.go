@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/config"
-	"log"
 	"sync/atomic"
 
 	// "strconv"
@@ -99,7 +98,7 @@ func (s *PreFetchTx) Start(curView *ShardBestState) {
 	}
 
 	if s.Ctx.running {
-		log.Println("debugprefetch: pre fetch already running")
+		//log.Println("debugprefetch: pre fetch already running")
 		return
 	}
 	Logger.log.Info("debugprefetch: running...")

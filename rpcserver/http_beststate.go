@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -101,11 +102,11 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 }
 
 /*
-	Tell a public key can stake or not
-	Compare this public key with database only
-	param #1: public key
-	return #1: true (can stake), false (can't stake)
-	return #2: error
+Tell a public key can stake or not
+Compare this public key with database only
+param #1: public key
+return #1: true (can stake), false (can't stake)
+return #2: error
 */
 func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -221,23 +222,38 @@ func (httpServer *HttpServer) handleGetBeaconStakerInfo(params interface{}, clos
 	return res, nil
 }
 
+func (httpServer *HttpServer) handleGetBeaconCandidateUID(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	stakerPubkey := arrayParams[0].(string)
+	bcBestState := httpServer.GetBlockchain().GetBeaconBestState()
+	uid, err := bcBestState.GetBeaconCandidateUID(stakerPubkey)
+
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return uid, nil
+
+}
+
 func (httpServer *HttpServer) handleGetShardStakerInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	height := uint64(arrayParams[0].(float64))
-	stakerPubkey := arrayParams[0].(string)
-
-	beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
-		height,
-	)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	stakerPubkey := arrayParams[1].(string)
+	stateDB := httpServer.config.BlockChain.GetBeaconBestState().GetBeaconConsensusStateDB()
+	if height != 0 {
+		beaconConsensusStateRootHash, err := httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
+			height,
+		)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		stateDB, err = statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
 	}
-	stateDB, err := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
-		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	res, found, err := statedb.GetStakerInfo(stateDB, stakerPubkey)
+	res, found, err := statedb.GetShardStakerInfo(stateDB, stakerPubkey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

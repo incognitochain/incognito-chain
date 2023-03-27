@@ -284,6 +284,18 @@ func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string 
 	return committees
 }
 
+func (beaconBestState *BeaconBestState) GetShardPendingFlattenList() []string {
+	committees := []string{}
+	for _, committeeStructs := range beaconBestState.GetShardPendingValidator() {
+		for _, committee := range committeeStructs {
+			res, _ := committee.ToBase58()
+			committees = append(committees, res)
+		}
+	}
+
+	return committees
+}
+
 func (beaconBestState *BeaconBestState) getNewShardCommitteeFlattenList() []string {
 
 	committees := []string{}
@@ -716,6 +728,10 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlatten
 	return beaconBestState.beaconCommitteeState.GetAllCandidateSubstituteCommittee(), nil
 }
 
+func (beaconBestState *BeaconBestState) GetBeaconCandidateUID(candidatePK string) (string, error) {
+	return beaconBestState.beaconCommitteeState.GetBeaconCandidateUID(candidatePK)
+}
+
 func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, error) {
 	bridgeTokenIDs := []common.Hash{}
 	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
@@ -735,6 +751,7 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 }
 
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithValue(
+	bc *BlockChain,
 	header types.BeaconHeader,
 	beaconInstructions [][]string,
 	isFoundRandomInstruction bool,
@@ -757,6 +774,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	}
 
 	return &committeestate.BeaconCommitteeStateEnvironment{
+		BlockChain:                       bc,
 		BeaconHeader:                     header,
 		BeaconHeight:                     beaconBestState.BeaconHeight,
 		BeaconHash:                       beaconBestState.BestBlockHash,
@@ -784,6 +802,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 			AutoStakeHash:                   beaconBestState.BestBlock.Header.AutoStakingRoot,
 			ShardSyncValidatorsHash:         beaconBestState.BestBlock.Header.ShardSyncValidatorRoot,
 		},
+		TriggeredFeature: beaconBestState.TriggeredFeature,
 	}
 }
 
@@ -839,7 +858,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate,
 		currentEpochShardCandidate, _, _, syncingValidators,
-		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
+		rewardReceivers, autoStaking, stakingTx, _ := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
 	delete(substituteValidator, statedb.BeaconChainID)
@@ -876,7 +895,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) er
 			dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
 			consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
 			snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-				_, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+				_, _, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
 			snapshotShardCommonPool, _ := incognitokey.CommitteeKeyListToString(snapshotNextEpochShardCandidate)
 			snapshotShardCommittee := make(map[byte][]string)
 			snapshotShardSubstitute := make(map[byte][]string)

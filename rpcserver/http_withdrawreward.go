@@ -2,10 +2,12 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -33,7 +35,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 		paymentAddStr,
 		1,
 		metadata.WithDrawRewardRequestMeta,
-		)
+	)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
@@ -70,10 +72,66 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateRawTxWithWithdrawDelegationRewardReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get metadata from params
+	metaParam, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	paymentAddStr, ok := metaParam["PaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address string is invalid"))
+	}
+	txVersion, ok := metaParam["TxVersion"].(float64)
+	if !ok {
+		txVersion = 0
+	}
+	meta, err := metadata.NewWithdrawDelegationRewardRequest(
+		paymentAddStr,
+		1,
+		metadata.WithdrawDelegationRewardRequestMeta,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	if txVersion == 1 {
+		meta.PaymentAddress.OTAPublic = nil
+	}
+
+	param := map[string]interface{}{}
+	param["PaymentAddress"] = paymentAddStr
+	param["Version"] = common.SALARY_VER_FIX_HASH
+	arrayParams[4] = interface{}(param)
+	return httpServer.createRawTxWithMetadata(
+		arrayParams,
+		closeChan,
+		metadata.NewWithdrawDelegationRewardRequestFromRPC,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendWithdrawDelegationRewardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithWithdrawDelegationRewardReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token
 func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) != 1 {
+	if arrayParams == nil || len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
@@ -81,11 +139,51 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
 	}
-	rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+	mode := 2 //0: committee reward, 1: delegate reward, 2: total reward
+	if len(arrayParams) == 2 {
+		modeInput, ok := arrayParams[1].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("mode is invalid"))
+		}
+		mode = int(modeInput)
 	}
-	return rewardAmount, nil
+	switch mode {
+
+	case 0:
+		rewardAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+		}
+		return rewardAmount, nil
+	case 1:
+		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			panic(1)
+		}
+		receiverAddr := keyWallet.KeySet.PaymentAddress
+		rewardAmount, err := httpServer.GetBlockchain().GetDelegationRewardAmount(httpServer.GetBlockchain().GetBeaconBestState().GetBeaconConsensusStateDB(), receiverAddr.Pk)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetDelegationRewardAmountError, err)
+		}
+		return map[string]uint64{"PRV": rewardAmount}, nil
+	default:
+		rewardCAmount, err := httpServer.blockService.GetRewardAmount(paymentAddress)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetRewardAmountError, err)
+		}
+		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			panic(1)
+		}
+		receiverAddr := keyWallet.KeySet.PaymentAddress
+		rewardDAmount, err := httpServer.GetBlockchain().GetDelegationRewardAmount(httpServer.GetBlockchain().GetBeaconBestState().GetBeaconConsensusStateDB(), receiverAddr.Pk)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetDelegationRewardAmountError, err)
+		}
+
+		rewardCAmount["PRV"] += rewardDAmount
+		return rewardCAmount, nil
+	}
 }
 
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token

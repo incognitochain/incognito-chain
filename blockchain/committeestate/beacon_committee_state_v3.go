@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 
@@ -318,17 +319,21 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
-
 	// process slashing after normal swap out
-	returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
-		shardID,
-		env,
-		slashingCommittees,
-		returnStakingInstruction,
-		newCommitteeChange,
-	)
-	if err != nil {
-		return nil, returnStakingInstruction, err
+	if env.TriggeredFeature[config.SLASH_TO_SYNC] != 0 { //if feature slash to sync is enable -> add to sync pool
+		newCommitteeChange = b.assignToSyncPool(shardID, slashingCommittees, newCommitteeChange)
+		newCommitteeChange.AddSlashingCommittees(shardID, slashingCommittees)
+	} else {
+		returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
+			shardID,
+			env,
+			slashingCommittees,
+			returnStakingInstruction,
+			newCommitteeChange,
+		)
+		if err != nil {
+			return nil, returnStakingInstruction, err
+		}
 	}
 
 	return newCommitteeChange, returnStakingInstruction, nil

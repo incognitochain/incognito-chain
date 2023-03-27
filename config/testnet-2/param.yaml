@@ -201,6 +201,12 @@ auto_enable_feature:
   - pdao:
       min_trigger: 5926003
       require_percentage: 90
+  - slash2sync:
+      min_trigger: 6508800
+      require_percentage: 90
+  - delegation:
+      min_trigger: 6508800
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30

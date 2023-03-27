@@ -116,12 +116,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &StakingMetadata{}
 	case AddStakingMeta:
 		md = &AddStakingMetadata{}
+	case ReDelegateMeta:
+		md = &ReDelegateMetadata{}
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
 	case ReturnBeaconStakingMeta:
 		md = &ReturnBeaconStakingMetadata{}
+	case MintDelegationRewardMeta:
+		md = &MintDelegationRewardMetadata{}
 	case WithDrawRewardRequestMeta:
 		md = &WithDrawRewardRequest{}
+	case WithdrawDelegationRewardRequestMeta:
+		md = &WithdrawDelegationRewardRequest{}
 	case WithDrawRewardResponseMeta:
 		md = &WithDrawRewardResponse{}
 	case UnStakingMeta:

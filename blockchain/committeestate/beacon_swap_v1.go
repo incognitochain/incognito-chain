@@ -98,7 +98,7 @@ func beacon_swap_v1(pendingList []CandidateInfoV1, committeeList []CandidateInfo
 	return pendingList, committeeList
 }
 
-func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnvironment) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+func (s *BeaconCommitteeStateV4) beacon_swap_v1(env ProcessContext) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 
 	//swap pending <-> committee
 	newBeaconCommittee := []incognitokey.CommitteePublicKey{}
@@ -106,7 +106,7 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 	pendingList := []CandidateInfoV1{}
 	for _, cpk := range s.GetBeaconSubstitute() {
 		cpkString, _ := cpk.ToBase58()
-		stakerInfo := s.getStakerInfo(cpkString)
+		stakerInfo := s.getBeaconStakerInfo(cpkString)
 		score := s.config.DEFAULT_PERFORMING * stakerInfo.StakingAmount
 		pendingList = append(pendingList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "pending"})
 
@@ -116,7 +116,7 @@ func (s *BeaconCommitteeStateV4) beacon_swap_v1(env *BeaconCommitteeStateEnviron
 	fixNodeVotingPower := int64(0)
 	for _, cpk := range s.GetBeaconCommittee() {
 		cpkString, _ := cpk.ToBase58()
-		stakerInfo := s.getStakerInfo(cpkString)
+		stakerInfo := s.getBeaconStakerInfo(cpkString)
 		score := stakerInfo.Performance * stakerInfo.StakingAmount
 		if !stakerInfo.FixedNode {
 			committeeList = append(committeeList, CandidateInfoV1{stakerInfo.cpkStruct, cpkString, score, "committee"})
