@@ -8,7 +8,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 )
@@ -19,8 +18,7 @@ func (sp *stateProcessor) registerBridge(
 	inst metadataCommon.Instruction,
 	state *BridgeHubState,
 	sDB *statedb.StateDB,
-	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
-) (*BridgeHubState, map[common.Hash]metadata.UpdatingInfo, error) {
+) (*BridgeHubState, error) {
 	var status byte
 	var errorCode int
 
@@ -33,20 +31,20 @@ func (sp *stateProcessor) registerBridge(
 		contentBytes, err = base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
 			Logger.log.Errorf("Can not decode instruction convert: %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+			return state, NewBridgeHubErrorWithValue(OtherError, err)
 		}
 		status = common.AcceptedStatusByte
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			Logger.log.Errorf("Can not decode rejected instruction convert: %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+			return state, NewBridgeHubErrorWithValue(OtherError, err)
 		}
 		contentBytes = rejectContent.Data
 		status = common.RejectedStatusByte
 		errorCode = rejectContent.ErrorCode
 	default:
-		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(InvalidStatusError, errors.New("Can not recognize status"))
+		return state, NewBridgeHubErrorWithValue(InvalidStatusError, errors.New("Can not recognize status"))
 	}
 
 	// unmarshal inst content
@@ -54,7 +52,7 @@ func (sp *stateProcessor) registerBridge(
 	err = json.Unmarshal(contentBytes, &contentInst)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction register bridge: %v", err)
-		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+		return state, NewBridgeHubErrorWithValue(OtherError, err)
 	}
 
 	// update state
@@ -80,7 +78,7 @@ func (sp *stateProcessor) registerBridge(
 	txHash := &common.Hash{}
 	txHash, _ = txHash.NewHashFromStr(contentInst.TxReqID)
 
-	return clonedState, updatingInfoByTokenID, statedb.TrackBridgeHubStatus(
+	return clonedState, statedb.TrackBridgeHubStatus(
 		sDB,
 		statedb.BridgeHubRegisterBridgeStatusPrefix(),
 		txHash.Bytes(),
@@ -88,20 +86,19 @@ func (sp *stateProcessor) registerBridge(
 	)
 }
 
-// updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(curView, inst, updatingInfoByTokenID, statedb.InsertFTMTxHashIssued, false)
+// err = blockchain.processIssuingBridgeReq(curView, inst,  statedb.InsertFTMTxHashIssued, false)
 func (sp *stateProcessor) shield(
 	inst metadataCommon.Instruction,
 	state *BridgeHubState,
 	sDB *statedb.StateDB,
-	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 	insertEVMTxHashIssued func(*statedb.StateDB, []byte) error,
-) (*BridgeHubState, map[common.Hash]metadata.UpdatingInfo, error) {
+) (*BridgeHubState, error) {
 	var txReqID common.Hash
 	if inst.Status == common.RejectedStatusStr {
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			Logger.log.Errorf("Can not decode content rejected shield instruction %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not decode content rejected shield btc hub instruction - Error %v", err))
+			return state, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not decode content rejected shield btc hub instruction - Error %v", err))
 		}
 		txReqID = rejectContent.TxReqID
 		// track bridge tx req status
@@ -113,7 +110,7 @@ func (sp *stateProcessor) shield(
 		contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
 			Logger.log.Errorf("Can not decode content shield instruction %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not decode content shield instruction - Error %v", err))
+			return state, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not decode content shield instruction - Error %v", err))
 		}
 		Logger.log.Info("Processing inst content:", string(contentBytes))
 
@@ -121,14 +118,14 @@ func (sp *stateProcessor) shield(
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			Logger.log.Errorf("Can not unmarshal content shield instruction %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
+			return state, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
 		}
 
 		// update state
 		clonedState := state.Clone()
 		if clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey] == nil || clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID] == nil {
 			Logger.log.Errorf("Can not unmarshal content shield instruction %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
+			return state, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
 		}
 		clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID].PTokens[(&common.Hash{}).NewHash2(acceptedInst.UniqTx)] += acceptedInst.IssuingAmount
 
@@ -142,35 +139,20 @@ func (sp *stateProcessor) shield(
 		err = insertEVMTxHashIssued(sDB, acceptedInst.UniqTx)
 		if err != nil {
 			Logger.log.Warn("WARNING: an error occured while inserting BTC hub tx hash issued to leveldb: ", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(StoreShieldExtTxError, err)
+			return state, NewBridgeHubErrorWithValue(StoreShieldExtTxError, err)
 		}
-
-		// track shield req status
-		updatingInfo, found := updatingInfoByTokenID[acceptedInst.IncTokenID]
-		if found {
-			updatingInfo.CountUpAmt += acceptedInst.IssuingAmount
-		} else {
-			updatingInfo = metadata.UpdatingInfo{
-				CountUpAmt:    acceptedInst.IssuingAmount,
-				DeductAmt:     0,
-				TokenID:       acceptedInst.IncTokenID,
-				IsCentralized: false,
-			}
-		}
-		updatingInfoByTokenID[acceptedInst.IncTokenID] = updatingInfo
 	} else {
-		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(InvalidBTCShieldStatus, errors.New("Can not recognize status"))
+		return state, NewBridgeHubErrorWithValue(InvalidBTCShieldStatus, errors.New("Can not recognize status"))
 	}
 
-	return state, updatingInfoByTokenID, nil
+	return state, nil
 }
 
 func (sp *stateProcessor) bridgeHubValidatorStake(
 	inst metadataCommon.Instruction,
 	state *BridgeHubState,
 	sDB *statedb.StateDB,
-	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
-) (*BridgeHubState, map[common.Hash]metadata.UpdatingInfo, error) {
+) (*BridgeHubState, error) {
 	var status byte
 	var errorCode int
 
@@ -183,20 +165,20 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 		contentBytes, err = base64.StdEncoding.DecodeString(inst.Content)
 		if err != nil {
 			Logger.log.Errorf("Can not decode instruction convert: %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+			return state, NewBridgeHubErrorWithValue(OtherError, err)
 		}
 		status = common.AcceptedStatusByte
 	case common.RejectedStatusStr:
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
 			Logger.log.Errorf("Can not decode rejected instruction convert: %v", err)
-			return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+			return state, NewBridgeHubErrorWithValue(OtherError, err)
 		}
 		contentBytes = rejectContent.Data
 		status = common.RejectedStatusByte
 		errorCode = rejectContent.ErrorCode
 	default:
-		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(InvalidStatusError, errors.New("Can not recognize status"))
+		return state, NewBridgeHubErrorWithValue(InvalidStatusError, errors.New("Can not recognize status"))
 	}
 
 	// unmarshal inst content
@@ -204,7 +186,7 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	err = json.Unmarshal(contentBytes, &contentInst)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction stake bridge: %v", err)
-		return state, updatingInfoByTokenID, NewBridgeHubErrorWithValue(OtherError, err)
+		return state, NewBridgeHubErrorWithValue(OtherError, err)
 	}
 
 	// update state
@@ -234,7 +216,7 @@ func (sp *stateProcessor) bridgeHubValidatorStake(
 	txHash := &common.Hash{}
 	txHash, _ = txHash.NewHashFromStr(contentInst.TxReqID)
 
-	return clonedState, updatingInfoByTokenID, statedb.TrackBridgeHubStatus(
+	return clonedState, statedb.TrackBridgeHubStatus(
 		sDB,
 		statedb.BridgeHubStakeBridgeStatusPrefix(),
 		txHash.Bytes(),

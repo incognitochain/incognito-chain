@@ -10,6 +10,8 @@ func IsBridgeHubMetaType(metaType int) bool {
 		return true
 	case metadataCommon.StakePRVRequestMeta:
 		return true
+	case metadataCommon.BridgeHubSubmitPrices:
+		return true
 	// TODO 0xkraken: add more metadata
 	default:
 		return false

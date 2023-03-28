@@ -192,4 +192,5 @@ bridge_agg_param:
 bridge_hub_param:
   min_number_validators: 4
   min_validator_staking_amount: 1000000000000 # 1000 PRV
+  bridge_hub_oracle_addr: "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN"
 bc_height_break_point_coin_origin: 1

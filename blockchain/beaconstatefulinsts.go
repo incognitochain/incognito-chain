@@ -96,7 +96,8 @@ func collectStatefulActions(
 			metadataCommon.BurningUnifiedTokenRequestMeta,
 			metadataCommon.BridgeHubRegisterBridgeMeta,
 			metadataCommon.ShieldingBTCRequestMeta,
-			metadataCommon.StakePRVRequestMeta: // TODO: add more
+			metadataCommon.StakePRVRequestMeta,
+			metadataCommon.BridgeHubSubmitPrices: // TODO: add more
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -199,6 +200,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	bridgeHubRegisterBridgeActions := make([][]string, beaconBestState.ActiveShards)
 	bridgeHubShieldActions := make([][]string, beaconBestState.ActiveShards)
 	bridgeHubUnshieldActions := make([][]string, beaconBestState.ActiveShards)
+	bridgeHubSubmitPricesActions := make([][]string, beaconBestState.ActiveShards)
 
 	newInsts, newAccumulatedValues, err := beaconBestState.bridgeAggManager.BuildAddTokenInstruction(beaconHeight, sDBs, accumulatedValues, beaconBestState.TriggeredFeature)
 	if err != nil {
@@ -420,6 +422,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				bridgeHubShieldActions[shardID] = append(bridgeHubShieldActions[shardID], contentStr)
 			case metadataCommon.StakePRVRequestMeta:
 				bridgeHubStakeActions[shardID] = append(bridgeHubStakeActions[shardID], contentStr)
+			case metadataCommon.BridgeHubSubmitPrices:
+				bridgeHubSubmitPricesActions[shardID] = append(bridgeHubSubmitPricesActions[shardID], contentStr)
 			// TODO: add more
 			default:
 				continue

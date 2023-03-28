@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -94,7 +93,6 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 	}
 
 	// process insts
-	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 	for _, content := range insts {
 		if len(content) == 0 {
 			continue // Empty instruction
@@ -117,11 +115,11 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 
 		switch inst.MetaType {
 		case metadataCommon.BridgeHubRegisterBridgeMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.registerBridge(*inst, m.state, sDB, updatingInfoByTokenID)
+			m.state, err = m.processor.registerBridge(*inst, m.state, sDB)
 		case metadataCommon.ShieldingBTCRequestMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.shield(*inst, m.state, sDB, updatingInfoByTokenID, statedb.InsertBTCHubTxHashIssued)
+			m.state, err = m.processor.shield(*inst, m.state, sDB, statedb.InsertBTCHubTxHashIssued)
 		case metadataCommon.StakePRVRequestMeta:
-			m.state, updatingInfoByTokenID, err = m.processor.bridgeHubValidatorStake(*inst, m.state, sDB, updatingInfoByTokenID)
+			m.state, err = m.processor.bridgeHubValidatorStake(*inst, m.state, sDB)
 			// TODO: add more ...
 		}
 		if err != nil {
@@ -129,29 +127,6 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		}
 	}
 
-	for _, updatingInfo := range updatingInfoByTokenID {
-		var updatingAmt uint64
-		var updatingType string
-		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
-			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
-			updatingType = "+"
-		}
-		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
-			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
-			updatingType = "-"
-		}
-		err := statedb.UpdateBridgeTokenInfo(
-			sDB,
-			updatingInfo.TokenID,
-			updatingInfo.ExternalTokenID,
-			updatingInfo.IsCentralized,
-			updatingAmt,
-			updatingType,
-		)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

@@ -260,6 +260,7 @@ const (
 	BridgeHubUnshieldRequest    = 374
 	BridgeHubUnshieldConfirm    = 375
 	BridgeHubStakeResponse      = 376
+	BridgeHubSubmitPrices       = 377
 )
 
 var minerCreatedMetaTypes = []int{

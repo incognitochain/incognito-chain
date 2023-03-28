@@ -424,6 +424,7 @@ type bridgeAggParam struct {
 }
 
 type bridgeHubParam struct {
+	BridgeHubOracleAddr       string `mapstructure:"bridge_hub_oracle_addr"`
 	MinNumberValidators       uint   `mapstructure:"min_number_validators"`
 	MinValidatorStakingAmount uint64 `mapstructure:"min_validator_staking_amount"`
 }

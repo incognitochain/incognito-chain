@@ -319,6 +319,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataBridgeHub.RegisterBridgeRequest{}
 	case metadataCommon.ShieldingBTCRequestMeta:
 		md = &metadataBridgeHub.ShieldingBTCRequest{}
+	case metadataCommon.BridgeHubSubmitPrices:
+		md = &metadataBridgeHub.SubmitPriceRequest{}
 	default:
 		Logger.log.Debug("parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)

@@ -13,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataBridgeHub "github.com/incognitochain/incognito-chain/metadata/bridgehub"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
-	"github.com/incognitochain/incognito-chain/metadata/tss"
 )
 
 type stateProducer struct{}
@@ -93,40 +92,19 @@ func (sp *stateProducer) shield(
 		return [][]string{rejectedInst}, state, ac, err
 	}
 
-	// 	otaReceiverBytes, _ := otaReceiver.Bytes()
-	//depositPubKey, err := new(operation.Point).FromBytesS(otaReceiverBytes)
-	//if err != nil {
-	//	Logger.log.Warn("[Bridge hub] WARNING: invalid OTDepositPubKey %v", issuingBTCHubReqAction.Meta.Receiver)
-	//	return [][]string{rejectedInst}, state, ac, err
-	//}
-	//sigPubKey := new(privacy.SchnorrPublicKey)
-	//sigPubKey.Set(depositPubKey)
-	//
-	//tmpSig := new(schnorr.SchnSignature)
-	//sigInBytes, err := base64.StdEncoding.DecodeString(issuingBTCHubReqAction.Meta.Signature)
-	//if err != nil {
-	//	return [][]string{rejectedInst}, state, ac, errors.New("[Bridge hub] WARNING: can not decode signature")
-	//}
-	//_ = tmpSig.SetBytes(sigInBytes) // error has been handle at shard side
-	//
-	//if isValid := sigPubKey.Verify(tmpSig, common.HashB(otaReceiverBytes)); !isValid {
-	//	Logger.log.Warn("[Bridge hub] invalid signature", issuingBTCHubReqAction.Meta.Signature)
-	//	return [][]string{rejectedInst}, state, ac, err
-	//}
-
 	receivingShardID = otaReceiver.GetShardID()
 
 	md := issuingBTCHubReqAction.Meta
 	Logger.log.Infof("[Bridge hub] Processing for tx: %s, tokenid: %s", issuingBTCHubReqAction.TxReqID.String(), md.IncTokenID.String())
 	// todo: validate the request
-	ok, err := tss.VerifyTSSSig("", "", issuingBTCHubReqAction.Meta.Signature)
-	if err != nil || !ok {
-		Logger.log.Warn("[Bridge hub] WARNING: an issue occurred verify signature: ", err, ok)
-		if err != nil {
-			err = errors.New("invalid signature")
-		}
-		return [][]string{rejectedInst}, state, ac, err
-	}
+	//ok, err := tss.VerifyTSSSig("", "", issuingBTCHubReqAction.Meta.Signature)
+	//if err != nil || !ok {
+	//	Logger.log.Warn("[Bridge hub] WARNING: an issue occurred verify signature: ", err, ok)
+	//	if err != nil {
+	//		err = errors.New("invalid signature")
+	//	}
+	//	return [][]string{rejectedInst}, state, ac, err
+	//}
 	// todo: verify validators has enough collateral to mint more btc
 
 	// check tx issued
