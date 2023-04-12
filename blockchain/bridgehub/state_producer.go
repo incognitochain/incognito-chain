@@ -3,7 +3,7 @@ package bridgehub
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -71,31 +71,30 @@ func (sp *stateProducer) shield(
 ) ([][]string, *BridgeHubState, *metadata.AccumulatedValues, error) {
 	Logger.log.Info("[Bridge hub] Starting...")
 
-	issuingBTCHubReqAction, err := metadataBridgeHub.ParseBTCIssuingInstContent(contentStr)
-	if err != nil {
-		return [][]string{}, state, ac, err
-	}
+	//issuingBTCHubReqAction, err := metadataBridgeHub.ParseBTCIssuingInstContent(contentStr)
+	//if err != nil {
+	//	return [][]string{}, state, ac, err
+	//}
+	action := metadataCommon.NewAction()
+	meta := &metadataBridgeHub.ShieldingBTCRequest{}
+	action.Meta = meta
+	err := action.FromString(contentStr)
 
+	fmt.Println("0xCrypto got here 5")
 	var receivingShardID byte
-	otaReceiver := issuingBTCHubReqAction.Meta.Receiver
+	otaReceiver := meta.Receiver
 	pkBytes := otaReceiver.PublicKey.ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pkBytes[len(pkBytes)-1])
 	inst := metadataCommon.NewInstructionWithValue(
 		metadataCommon.ShieldingBTCRequestMeta,
 		common.RejectedStatusStr,
 		shardID,
-		issuingBTCHubReqAction.TxReqID.String(),
+		action.TxReqID.String(),
 	)
 	rejectedInst := inst.StringSlice()
-	if err != nil {
-		Logger.log.Warn("[Bridge hub] WARNING: an issue occurred while parsing issuing action content: ", err)
-		return [][]string{rejectedInst}, state, ac, err
-	}
-
 	receivingShardID = otaReceiver.GetShardID()
 
-	md := issuingBTCHubReqAction.Meta
-	Logger.log.Infof("[Bridge hub] Processing for tx: %s, tokenid: %s", issuingBTCHubReqAction.TxReqID.String(), md.IncTokenID.String())
+	Logger.log.Infof("[Bridge hub] Processing for tx: %s, tokenid: %s", action.TxReqID.String(), meta.IncTokenID.String())
 	// todo: validate the request
 	//ok, err := tss.VerifyTSSSig("", "", issuingBTCHubReqAction.Meta.Signature)
 	//if err != nil || !ok {
@@ -108,41 +107,43 @@ func (sp *stateProducer) shield(
 	// todo: verify validators has enough collateral to mint more btc
 
 	// check tx issued
-	isIssued, err := isTxHashIssued(stateDBs[common.BeaconChainID], issuingBTCHubReqAction.Meta.BTCTxID.Bytes())
-	if err != nil || !isIssued {
-		Logger.log.Warn("WARNING: an issue occured while checking the bridge tx hash is issued or not: %v ", err)
-		return [][]string{rejectedInst}, state, ac, err
+	isIssued, err := isTxHashIssued(stateDBs[common.BeaconChainID], meta.BTCTxID.Bytes())
+	if err != nil || isIssued {
+		Logger.log.Warn("WARNING: an issue occured while checking the bridge tx hash is issued or not: %v %v ", err, meta.BTCTxID)
+		return [][]string{rejectedInst}, state, ac, nil
 	}
+	fmt.Println("0xCrypto got here 6")
 
 	// todo: verify token id must be btc token
 	// todo: add logic update the collateral and amount shielded
 
 	// update state
 	clonedState := state.Clone()
-	if clonedState.bridgeInfos[md.BridgePoolPubKey] == nil || clonedState.bridgeInfos[md.BridgePoolPubKey].NetworkInfo[md.ExtChainID] == nil {
-		return [][]string{rejectedInst}, state, ac, errors.New("[Bridge Hub] The bridge pool pub key, external chain id is non-existing")
+	if clonedState.bridgeInfos[meta.BridgePoolPubKey] == nil || clonedState.bridgeInfos[meta.BridgePoolPubKey].NetworkInfo[meta.ExtChainID] == nil {
+		Logger.log.Warn("[Bridge Hub] The bridge pool pub key, external chain id is non-existing %v %v ", err, meta.BridgePoolPubKey)
+		return [][]string{rejectedInst}, state, ac, nil
 	}
-	clonedState.bridgeInfos[md.BridgePoolPubKey].NetworkInfo[md.ExtChainID].PTokens[md.BTCTxID] += md.Amount
+	clonedState.bridgeInfos[meta.BridgePoolPubKey].NetworkInfo[meta.ExtChainID].PTokens[meta.IncTokenID] += meta.Amount
 
 	issuingAcceptedInst := metadataBridgeHub.ShieldingBTCAcceptedInst{
 		ShardID:          receivingShardID,
-		IssuingAmount:    issuingBTCHubReqAction.Meta.Amount,
-		Receiver:         issuingBTCHubReqAction.Meta.Receiver,
-		IncTokenID:       md.IncTokenID,
-		TxReqID:          issuingBTCHubReqAction.TxReqID,
-		UniqTx:           issuingBTCHubReqAction.Meta.BTCTxID.Bytes(),
-		ExtChainID:       md.ExtChainID,
-		BridgePoolPubKey: md.BridgePoolPubKey,
+		IssuingAmount:    meta.Amount,
+		Receiver:         meta.Receiver,
+		IncTokenID:       meta.IncTokenID,
+		TxReqID:          action.TxReqID,
+		UniqTx:           meta.BTCTxID.Bytes(),
+		ExtChainID:       meta.ExtChainID,
+		BridgePoolPubKey: meta.BridgePoolPubKey,
 	}
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occurred while marshaling issuingBridgeAccepted instruction: ", err)
-		return [][]string{rejectedInst}, state, ac, err
+		return [][]string{rejectedInst}, state, ac, nil
 	}
 	inst.Status = common.AcceptedStatusStr
 	inst.Content = base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes)
 	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
-	return [][]string{inst.StringSlice()}, state, ac, err
+	return [][]string{inst.StringSlice()}, state, ac, nil
 }
 
 func (sp *stateProducer) stake(

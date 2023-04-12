@@ -2,6 +2,7 @@ package bridgehub
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/config"
@@ -112,11 +113,12 @@ func (m *Manager) Process(insts [][]string, sDB *statedb.StateDB) error {
 		if err := inst.FromStringSlice(content); err != nil {
 			return err
 		}
-
+		fmt.Println("0xCrypto got here manager 1")
 		switch inst.MetaType {
 		case metadataCommon.BridgeHubRegisterBridgeMeta:
 			m.state, err = m.processor.registerBridge(*inst, m.state, sDB)
 		case metadataCommon.ShieldingBTCRequestMeta:
+			fmt.Println("0xCrypto got here manager 2")
 			m.state, err = m.processor.shield(*inst, m.state, sDB, statedb.InsertBTCHubTxHashIssued)
 		case metadataCommon.StakePRVRequestMeta:
 			m.state, err = m.processor.bridgeHubValidatorStake(*inst, m.state, sDB)

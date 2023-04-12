@@ -94,6 +94,7 @@ func (sp *stateProcessor) shield(
 	insertEVMTxHashIssued func(*statedb.StateDB, []byte) error,
 ) (*BridgeHubState, error) {
 	var txReqID common.Hash
+	fmt.Println("0xCrypto got here")
 	if inst.Status == common.RejectedStatusStr {
 		rejectContent := metadataCommon.NewRejectContent()
 		if err := rejectContent.FromString(inst.Content); err != nil {
@@ -129,6 +130,7 @@ func (sp *stateProcessor) shield(
 		}
 		clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID].PTokens[(&common.Hash{}).NewHash2(acceptedInst.UniqTx)] += acceptedInst.IssuingAmount
 
+		fmt.Println("0xCrypto got here 2")
 		txReqID = acceptedInst.TxReqID
 		// track bridge tx req status
 		err = statedb.TrackBridgeReqWithStatus(sDB, txReqID, common.BridgeRequestAcceptedStatus)
@@ -144,6 +146,7 @@ func (sp *stateProcessor) shield(
 	} else {
 		return state, NewBridgeHubErrorWithValue(InvalidBTCShieldStatus, errors.New("Can not recognize status"))
 	}
+	fmt.Println("0xCrypto got here 3")
 
 	return state, nil
 }
