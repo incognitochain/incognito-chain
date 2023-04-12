@@ -71,10 +71,6 @@ func (sp *stateProducer) shield(
 ) ([][]string, *BridgeHubState, *metadata.AccumulatedValues, error) {
 	Logger.log.Info("[Bridge hub] Starting...")
 
-	//issuingBTCHubReqAction, err := metadataBridgeHub.ParseBTCIssuingInstContent(contentStr)
-	//if err != nil {
-	//	return [][]string{}, state, ac, err
-	//}
 	action := metadataCommon.NewAction()
 	meta := &metadataBridgeHub.ShieldingBTCRequest{}
 	action.Meta = meta

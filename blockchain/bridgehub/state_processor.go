@@ -128,7 +128,7 @@ func (sp *stateProcessor) shield(
 			Logger.log.Errorf("Can not unmarshal content shield instruction %v", err)
 			return state, NewBridgeHubErrorWithValue(OtherError, fmt.Errorf("Can not unmarshal content shield instruction - Error %v", err))
 		}
-		clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID].PTokens[(&common.Hash{}).NewHash2(acceptedInst.UniqTx)] += acceptedInst.IssuingAmount
+		clonedState.bridgeInfos[acceptedInst.BridgePoolPubKey].NetworkInfo[acceptedInst.ExtChainID].PTokens[acceptedInst.IncTokenID] += acceptedInst.IssuingAmount
 
 		fmt.Println("0xCrypto got here 2")
 		txReqID = acceptedInst.TxReqID
