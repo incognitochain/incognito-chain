@@ -1,6 +1,7 @@
 package bridgehub
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -26,11 +27,22 @@ func (txBuilder TxBuilder) Build(
 	var err error
 	switch metaType {
 	case metadataCommon.StakePRVRequestMeta:
+		if inst[2] != "rejected" {
+			// continue
+			return nil, nil
+		}
 		if len(inst) != 4 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 4, len(inst))
 		}
 		tx, err = buildIssuingResponse(inst, producerPrivateKey, shardID, transactionStateDB)
+	case metadataCommon.ShieldingBTCRequestMeta:
+		if len(inst) >= 4 && inst[2] == "accepted" {
+			fmt.Println("0xcrypto got into tx builder")
+			//metadataCommon.ShieldingBTCResponse
+			tx, err = buildBridgeHubShieldingRequest(inst, producerPrivateKey, shardID, transactionStateDB)
+		}
 	}
+
 	return tx, err
 }
 
@@ -84,4 +96,44 @@ func buildIssuingResponse(
 	var recv = bridgeHubStakeFailed.Staker
 	txParam := transaction.TxSalaryOutputParams{Amount: bridgeHubStakeFailed.StakeAmount, ReceiverAddress: nil, PublicKey: recv.PublicKey, TxRandom: &recv.TxRandom, TokenID: &bridgeHubStakeFailed.TokenID}
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadataCommon.Metadata { return issuingReshieldRes })
+}
+
+func buildBridgeHubShieldingRequest(
+	content []string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
+	fmt.Println("0xcrypto got into tx builder 2")
+	var otaReceiver privacy.OTAReceiver
+	inst := metadataCommon.NewInstruction()
+	if err := inst.FromStringSlice(content); err != nil {
+		return nil, err
+	}
+	if inst.ShardID != shardID {
+		return nil, nil
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(inst.Content)
+	if err != nil {
+		return nil, err
+	}
+	acceptedContent := bridgehub.ShieldingBTCAcceptedInst{}
+	err = json.Unmarshal(contentBytes, &acceptedContent)
+	if err != nil {
+		return nil, err
+	}
+	txParam := transaction.TxSalaryOutputParams{
+		Amount:          acceptedContent.IssuingAmount,
+		ReceiverAddress: nil,
+		PublicKey:       otaReceiver.PublicKey,
+		TxRandom:        &otaReceiver.TxRandom,
+		TokenID:         &acceptedContent.IncTokenID,
+		Info:            []byte{},
+	}
+	fmt.Println("0xcrypto got into tx builder 3")
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB,
+		func(c privacy.Coin) metadataCommon.Metadata {
+			return bridgehub.NewIssuingBTCResponse(acceptedContent.TxReqID, acceptedContent.UniqTx, metadataCommon.ShieldingBTCResponse)
+		},
+	)
 }
