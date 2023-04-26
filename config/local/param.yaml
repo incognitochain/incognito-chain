@@ -166,6 +166,9 @@ auto_enable_feature:
       min_trigger: 1
       force_trigger: 1
       require_percentage: 100
+  - fixbulletproof:
+      min_trigger: 20
+      require_percentage: 85
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime20": 20

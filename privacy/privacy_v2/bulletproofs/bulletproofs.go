@@ -20,6 +20,7 @@ type AggregatedRangeWitness struct {
 // AggregatedRangeProof is the struct for Bulletproof.
 // The statement being proven is that output coins' values are in the uint64 range.
 type AggregatedRangeProof struct {
+	version           uint8
 	cmsValue          []*operation.Point
 	a                 *operation.Point
 	s                 *operation.Point
@@ -42,6 +43,10 @@ type bulletproofParams struct {
 
 // AggParam contains global Bulletproofs parameters `g, h, u, cs`
 var AggParam = newBulletproofParams(privacy_util.MaxOutputCoin)
+
+func (proof AggregatedRangeProof) GetVersion() uint8 {
+	return proof.version
+}
 
 // ValidateSanity performs sanity checks for this proof.
 func (proof AggregatedRangeProof) ValidateSanity() bool {
@@ -70,6 +75,7 @@ func (proof *AggregatedRangeProof) Init() {
 	proof.tHat = new(operation.Scalar)
 	proof.mu = new(operation.Scalar)
 	proof.innerProductProof = new(InnerProductProof).Init()
+	proof.version = 2
 }
 
 // IsNil returns true if any field in this proof is nil
@@ -107,6 +113,10 @@ func (proof *AggregatedRangeProof) SetCommitments(cmsValue []*operation.Point) {
 // Bytes marshals the proof into a byte slice
 func (proof AggregatedRangeProof) Bytes() []byte {
 	var res []byte
+	if proof.version >= 2 {
+		res = append(res, byte(0))
+		res = append(res, byte(proof.version))
+	}
 
 	if proof.IsNil() {
 		return []byte{}
@@ -134,6 +144,14 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
+	}
+
+	if bytes[0] == 0 {
+		// parse version
+		proof.version = uint8(bytes[1])
+		bytes = bytes[2:]
+	} else {
+		proof.version = 1
 	}
 
 	lenValues := int(bytes[0])
@@ -228,6 +246,7 @@ func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scala
 
 func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof := new(AggregatedRangeProof)
+	proof.Init()
 	numValue := len(wit.values)
 	if numValue > privacy_util.MaxOutputCoin {
 		return nil, fmt.Errorf("output count exceeds MaxOutputCoin")
@@ -251,8 +270,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// Pedersen commitments: V = g^v * h^r
 	proof.cmsValue = make([]*operation.Point, numValue)
+	initChal := aggParam.cs.ToBytesS()
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(values[i]), rands[i], operation.PedersenValueIndex)
+		if proof.version >= 2 {
+			initChal = append(initChal, proof.cmsValue[i].ToBytesS()...)
+		}
 	}
 	// Convert values to binary array
 	aL := make([]*operation.Scalar, N)
@@ -290,7 +313,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.s = mbuilder.Eval()
 
 	// challenge y, z
-	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
+	y := generateChallenge(initChal, []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
 
 	// LINE 51-54
@@ -421,12 +444,18 @@ func (proof AggregatedRangeProof) simpleVerify() (bool, error) {
 	aggParam := setAggregateParams(N)
 
 	cmsValue := proof.cmsValue
+	initChal := aggParam.cs.ToBytesS()
+	for i := 0; i < numValue; i++ {
+		if proof.version >= 2 {
+			initChal = append(initChal, proof.cmsValue[i].ToBytesS()...)
+		}
+	}
 	for i := numValue; i < numValuePad; i++ {
 		cmsValue = append(cmsValue, operation.NewIdentityPoint())
 	}
 
 	// recalculate challenge y, z
-	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
+	y := generateChallenge(initChal, []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	zSquare := new(operation.Scalar).Mul(z, z)
 	zNeg := new(operation.Scalar).Sub(new(operation.Scalar).FromUint64(0), z)
@@ -524,9 +553,15 @@ func (proof AggregatedRangeProof) buildVerify(gval *operation.Point) (*operation
 	for i := numValue; i < numValuePad; i++ {
 		cmsValue = append(cmsValue, operation.NewIdentityPoint())
 	}
+	initChal := aggParam.cs.ToBytesS()
+	for i := 0; i < numValue; i++ {
+		if proof.version >= 2 {
+			initChal = append(initChal, proof.cmsValue[i].ToBytesS()...)
+		}
+	}
 
 	// recalculate challenge y, z
-	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
+	y := generateChallenge(initChal, []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
 	zSquare := new(operation.Scalar).Mul(z, z)
 	zNeg := new(operation.Scalar).Sub(new(operation.Scalar).FromUint64(0), z)
