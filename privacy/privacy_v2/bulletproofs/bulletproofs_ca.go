@@ -24,6 +24,7 @@ func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point, error) {
 // ProveUsingBase runs like the Bulletproof Prove function, except it sets a Pedersen base point before proving.
 func (wit AggregatedRangeWitness) ProveUsingBase(gval *operation.Point) (*AggregatedRangeProof, error) {
 	proof := new(AggregatedRangeProof)
+	proof.Init()
 	numValue := len(wit.values)
 	if numValue > privacy_util.MaxOutputCoin {
 		return nil, fmt.Errorf("output count exceeds MaxOutputCoin")
@@ -46,8 +47,12 @@ func (wit AggregatedRangeWitness) ProveUsingBase(gval *operation.Point) (*Aggreg
 	}
 
 	proof.cmsValue = make([]*operation.Point, numValue)
+	initChal := aggParam.cs.ToBytesS()
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = new(operation.Point).AddPedersen(new(operation.Scalar).FromUint64(values[i]), gval, rands[i], operation.PedCom.G[operation.PedersenRandomnessIndex])
+		if proof.version >= 2 {
+			initChal = append(initChal, proof.cmsValue[i].ToBytesS()...)
+		}
 	}
 	// Convert values to binary array
 	aL := make([]*operation.Scalar, N)
@@ -85,7 +90,7 @@ func (wit AggregatedRangeWitness) ProveUsingBase(gval *operation.Point) (*Aggreg
 	mbuilder.AppendSingle(rho, operation.HBase)
 	proof.s = mbuilder.Eval()
 	// challenge y, z
-	y := generateChallenge(aggParam.cs.ToBytesS(), []*operation.Point{proof.a, proof.s})
+	y := generateChallenge(initChal, []*operation.Point{proof.a, proof.s})
 	z := generateChallenge(y.ToBytesS(), []*operation.Point{proof.a, proof.s})
 
 	// LINE 51-54
