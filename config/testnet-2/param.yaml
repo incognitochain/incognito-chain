@@ -207,6 +207,9 @@ auto_enable_feature:
   - delegation:
       min_trigger: 6508800
       require_percentage: 90
+  - fixbulletproof:
+      min_trigger: 6766908
+      require_percentage: 85
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime30s_23_8": 30

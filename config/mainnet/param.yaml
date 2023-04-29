@@ -173,6 +173,9 @@ auto_enable_feature:
   - delegation:
       min_trigger: 3160740
       require_percentage: 85
+  - fixbulletproof:
+      min_trigger: 1e9
+      require_percentage: 85
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
@@ -193,3 +196,4 @@ bridge_agg_param:
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 750 # 0.075% * 1e6
 bc_height_break_point_coin_origin: 2087774
+bc_height_break_point_agg_proof_v2: 3322000

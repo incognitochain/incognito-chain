@@ -591,6 +591,18 @@ func (proof PaymentProofV2) Verify(boolParams map[string]bool, _ key.PublicKey, 
 		isBatch = false
 	}
 
+	hasVersion, ok := boolParams["isAggProofV2"]
+	if !ok {
+		hasVersion = true
+	}
+	arp, ok := proof.GetAggregatedRangeProof().(*bulletproofs.AggregatedRangeProof)
+	if !ok {
+		return false, errors.New("AggregatedRangeProof of PaymentProofV2 must be AggregatedRangeProofV2")
+	}
+	if hasVersion && arp.GetVersion() < 2 {
+		return false, errors.New("AggregatedRangeProofV2 of PaymentProofV2 must be version 2 or higher")
+	}
+
 	inputCoins := proof.GetInputCoins()
 	dupMap := make(map[string]bool)
 	for _, inCoin := range inputCoins {
