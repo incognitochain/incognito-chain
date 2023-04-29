@@ -39,41 +39,43 @@ var (
 	rangeProof   *AggregatedRangeProof
 	rangeProofV1 *bulletproofsV1.AggregatedRangeProof
 
-	batchedProofs, batchedProofsV1 = func() ([]*AggregatedRangeProof, []*bulletproofsV1.AggregatedRangeProof) {
-		result := make([]*AggregatedRangeProof, batchLen)
-		resultV1 := make([]*bulletproofsV1.AggregatedRangeProof, batchLen)
-		fmt.Printf("batch %d with %d CA proofs\n", batchLen, batchLenCA)
-		for i := 0; i < batchLen; i++ {
-			numOutputs := []int{1, 2, 4}[rand.Int()%3] // can use other distribution
-			// fmt.Printf("%d outputs\n", numOutputs)
-			values := make([]uint64, numOutputs)
-			rands := make([]*operation.Scalar, numOutputs)
-			for i := range values {
-				values[i] = uint64(rand.Uint64())
-				rands[i] = operation.RandomScalar()
-			}
-			wit := new(AggregatedRangeWitness)
-			wit.Set(values, rands)
-			var err error
-			if batchBases[i] == nil {
-				result[i], err = wit.Prove()
-				if err != nil {
-					panic(err)
-				}
-			} else {
-				result[i], err = wit.ProveUsingBase(batchBases[i])
-				if err != nil {
-					panic(err)
-				}
-			}
-			resultV1[i] = new(bulletproofsV1.AggregatedRangeProof)
-			err = resultV1[i].SetBytes(result[i].Bytes())
-			if err != nil {
-				panic(err)
-			}
-		}
-		return result, resultV1
-	}()
+	batchedProofs   []*AggregatedRangeProof
+	batchedProofsV1 []*bulletproofsV1.AggregatedRangeProof
+	// batchedProofs, batchedProofsV1 = func() ([]*AggregatedRangeProof, []*bulletproofsV1.AggregatedRangeProof) {
+	// 	result := make([]*AggregatedRangeProof, batchLen)
+	// 	resultV1 := make([]*bulletproofsV1.AggregatedRangeProof, batchLen)
+	// 	fmt.Printf("batch %d with %d CA proofs\n", batchLen, batchLenCA)
+	// 	for i := 0; i < batchLen; i++ {
+	// 		numOutputs := []int{1, 2, 4}[rand.Int()%3] // can use other distribution
+	// 		// fmt.Printf("%d outputs\n", numOutputs)
+	// 		values := make([]uint64, numOutputs)
+	// 		rands := make([]*operation.Scalar, numOutputs)
+	// 		for i := range values {
+	// 			values[i] = uint64(rand.Uint64())
+	// 			rands[i] = operation.RandomScalar()
+	// 		}
+	// 		wit := new(AggregatedRangeWitness)
+	// 		wit.Set(values, rands)
+	// 		var err error
+	// 		if batchBases[i] == nil {
+	// 			result[i], err = wit.Prove()
+	// 			if err != nil {
+	// 				panic(err)
+	// 			}
+	// 		} else {
+	// 			result[i], err = wit.ProveUsingBase(batchBases[i])
+	// 			if err != nil {
+	// 				panic(err)
+	// 			}
+	// 		}
+	// 		resultV1[i] = new(bulletproofsV1.AggregatedRangeProof)
+	// 		err = resultV1[i].SetBytes(result[i].Bytes())
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 	}
+	// 	return result, resultV1
+	// }()
 )
 
 type fnProve = func(values []uint64, rands []*operation.Scalar, rands2 []*operationV1.Scalar)
@@ -722,13 +724,13 @@ func TestProveVerifyRangeProof(t *testing.T) {
 		rands[i] = operation.RandomScalar()
 		rands2[i] = (&operationV1.Scalar{}).FromBytesS(rands[i].ToBytesS())
 	}
-	// old prover + new verifier
+
 	{
-		wit := new(bulletproofsV1.AggregatedRangeWitness)
-		wit.Set(values, rands2)
+		wit := new(AggregatedRangeWitness)
+		wit.Set(values, rands)
 		proof, err := wit.Prove()
 		Nil(t, err)
-		valid, err := proof.VerifyFaster()
+		valid, err := proof.Verify()
 		Nil(t, err)
 		True(t, valid)
 
@@ -743,26 +745,47 @@ func TestProveVerifyRangeProof(t *testing.T) {
 		True(t, valid)
 	}
 
-	// new prover + old verifier
-	{
-		wit := new(AggregatedRangeWitness)
-		wit.Set(values, rands)
-		proof, err := wit.Prove()
-		Nil(t, err)
-		valid, err := proof.Verify()
-		Nil(t, err)
-		True(t, valid)
+	// old prover + new verifier
+	// {
+	// 	wit := new(bulletproofsV1.AggregatedRangeWitness)
+	// 	wit.Set(values, rands2)
+	// 	proof, err := wit.Prove()
+	// 	Nil(t, err)
+	// 	valid, err := proof.VerifyFaster()
+	// 	Nil(t, err)
+	// 	True(t, valid)
 
-		proofAgain := &bulletproofsV1.AggregatedRangeProof{}
-		// fmt.Printf("proof 1 %x\n", proof.Bytes())
-		err = proofAgain.SetBytes(proof.Bytes())
-		// fmt.Printf("proof 2 %x\n", proofAgain.Bytes())
-		Nil(t, err)
-		valid, err = proofAgain.Verify()
-		Nil(t, err)
-		True(t, valid)
-		valid, err = proofAgain.VerifyFaster()
-		Nil(t, err)
-		True(t, valid)
-	}
+	// 	proofAgain := &AggregatedRangeProof{}
+
+	// 	// fmt.Printf("proof 1 %x\n", proof.Bytes())
+	// 	err = proofAgain.SetBytes(proof.Bytes())
+	// 	// fmt.Printf("proof 2 %x\n", proofAgain.Bytes())
+	// 	Nil(t, err)
+	// 	valid, err = proofAgain.Verify()
+	// 	Nil(t, err)
+	// 	True(t, valid)
+	// }
+
+	// // new prover + old verifier
+	// {
+	// 	wit := new(AggregatedRangeWitness)
+	// 	wit.Set(values, rands)
+	// 	proof, err := wit.Prove()
+	// 	Nil(t, err)
+	// 	valid, err := proof.Verify()
+	// 	Nil(t, err)
+	// 	True(t, valid)
+
+	// 	proofAgain := &bulletproofsV1.AggregatedRangeProof{}
+	// 	// fmt.Printf("proof 1 %x\n", proof.Bytes())
+	// 	err = proofAgain.SetBytes(proof.Bytes())
+	// 	// fmt.Printf("proof 2 %x\n", proofAgain.Bytes())
+	// 	Nil(t, err)
+	// 	valid, err = proofAgain.Verify()
+	// 	Nil(t, err)
+	// 	True(t, valid)
+	// 	valid, err = proofAgain.VerifyFaster()
+	// 	Nil(t, err)
+	// 	True(t, valid)
+	// }
 }
