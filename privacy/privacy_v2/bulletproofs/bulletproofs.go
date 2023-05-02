@@ -146,8 +146,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	const emptyAggregatedRangeProofV2Len = 708
-	if bytes[0] == 0 && len(bytes) >= emptyAggregatedRangeProofV2Len {
+	if bytes[0] == 0 && len(bytes) % operation.Ed25519KeySize == 4 {
 		// parse version
 		proof.version = uint8(bytes[1])
 		bytes = bytes[2:]
