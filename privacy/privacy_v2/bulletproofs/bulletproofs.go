@@ -140,19 +140,30 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	return res
 }
 
+var EnableFixBulletProofv2 = false
+
 // SetBytes unmarshals the proof from a byte slice
 func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return nil
 	}
 
-	const emptyAggregatedRangeProofLen = 322
-	if bytes[0] == 0 && len(bytes) > emptyAggregatedRangeProofLen {
-		// parse version
-		proof.version = uint8(bytes[1])
-		bytes = bytes[2:]
+	if EnableFixBulletProofv2 {
+		if bytes[0] == 0 && len(bytes)%operation.Ed25519KeySize == 4 {
+			// parse version
+			proof.version = uint8(bytes[1])
+			bytes = bytes[2:]
+		} else {
+			proof.version = 1
+		}
 	} else {
-		proof.version = 1
+		if bytes[0] == 0 {
+			// parse version
+			proof.version = uint8(bytes[1])
+			bytes = bytes[2:]
+		} else {
+			proof.version = 1
+		}
 	}
 
 	lenValues := int(bytes[0])
