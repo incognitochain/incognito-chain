@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"io"
 	"io/ioutil"
 	"path"
@@ -709,7 +710,11 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				return err
 			}
 		}
+		if beaconState.TriggeredFeature["fixbulletproofv2"] != 0 {
+			bulletproofs.EnableFixBulletProofv2 = true
+		}
 	}
+
 	return nil
 }
 
