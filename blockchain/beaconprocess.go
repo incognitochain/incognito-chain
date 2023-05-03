@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"reflect"
 	"sort"
 	"strconv"
@@ -189,6 +190,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
 	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
+	if newBestState.TriggeredFeature["fixbulletproofv2"] != 0 {
+		bulletproofs.EnableFixBulletProofv2 = true
+	}
 	return nil
 }
 
