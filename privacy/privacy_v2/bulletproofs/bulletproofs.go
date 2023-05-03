@@ -4,6 +4,7 @@ package bulletproofs
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"math"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -146,12 +147,22 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	if bytes[0] == 0 && len(bytes) % operation.Ed25519KeySize == 4 {
-		// parse version
-		proof.version = uint8(bytes[1])
-		bytes = bytes[2:]
+	if blockchain.EnableFixBulletProofv2 {
+		if bytes[0] == 0 && len(bytes)%operation.Ed25519KeySize == 4 {
+			// parse version
+			proof.version = uint8(bytes[1])
+			bytes = bytes[2:]
+		} else {
+			proof.version = 1
+		}
 	} else {
-		proof.version = 1
+		if bytes[0] == 0 {
+			// parse version
+			proof.version = uint8(bytes[1])
+			bytes = bytes[2:]
+		} else {
+			proof.version = 1
+		}
 	}
 
 	lenValues := int(bytes[0])
