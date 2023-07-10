@@ -102,7 +102,7 @@ var _ = func() (_ struct{}) {
 		feeEstimator[shardID] = NewFeeEstimator(
 			DefaultEstimateFeeMaxRollback,
 			DefaultEstimateFeeMinRegisteredBlocks,
-			1000000, 0.1*1e9)
+			1000000, 0.1*1e9, 10*1e9, 1*1e9, 10*1e9)
 	}
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {

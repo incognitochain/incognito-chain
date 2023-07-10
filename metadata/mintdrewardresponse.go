@@ -34,7 +34,7 @@ func NewMintDelegationReward(
 	}
 }
 
-func (sbsRes MintDelegationRewardMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+func (sbsRes MintDelegationRewardMetadata) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }

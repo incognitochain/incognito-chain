@@ -816,12 +816,38 @@ func IsBridgeAggUnshieldMetaType(metadataType int) bool {
 	}
 }
 
-// NOTE: append metadata types need to specify network fee
-func IsSpecifiedFeeMetaType(metaType int) bool {
+const (
+	SpecifiedTxType1 = 1 // only defined min fee per tx, use default min fee per KB
+	SpecifiedTxType2 = 2 // BOTH min fee per tx and min fee per KB are defined
+)
+
+// // NOTE: append metadata types need to specify network fee
+// func IsSpecifiedFeeMetaType(metaType int) bool {
+// 	switch metaType {
+// 	case InitTokenRequestMeta:
+// 		return true
+// 	default:
+// 		return false
+// 	}
+// }
+
+// // NOTE: append metadata types need to specify network fee
+// func IsSpecifiedFeeMetaTypeV2(metaType int) bool {
+// 	switch metaType {
+// 	case InscribeRequestMeta:
+// 		return true
+// 	default:
+// 		return false
+// 	}
+// }
+
+func GetSpecifiedFeeTxType(metaType int) int {
 	switch metaType {
 	case InitTokenRequestMeta:
-		return true
+		return SpecifiedTxType1
+	case InscribeRequestMeta:
+		return SpecifiedTxType2
 	default:
-		return false
+		return -1
 	}
 }

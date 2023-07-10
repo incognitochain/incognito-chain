@@ -329,12 +329,12 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	return txDesc, err
 }
 
-//MaybeAcceptSalaryTransactionForBlockProducing performs the following validations on minteable transactions
+// MaybeAcceptSalaryTransactionForBlockProducing performs the following validations on minteable transactions
 //
-//	- Validate transaction sanity
-//	- Validate transaction with current mempool
-//	- Validate transaction by itself
-//	- Validate transaction with blockchain
+//   - Validate transaction sanity
+//   - Validate transaction with current mempool
+//   - Validate transaction by itself
+//   - Validate transaction with blockchain
 func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	Logger.log.Infof("Verifying tx salary %v\n", tx.Hash().String())
 	tp.mtx.Lock()
@@ -467,14 +467,16 @@ func (tp *TxPool) checkFees(
 ) bool {
 	Logger.log.Info("Beacon height for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
-	limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
-	minFeePerTx := tp.config.FeeEstimator[shardID].GetMinFeePerTx()
-	specifiedFeeTx := tp.config.FeeEstimator[shardID].GetSpecifiedFeeTx()
+	limitFee, minFeePerTx := blockchain.GetFeeInfo(tx.GetMetadata(), tp.config.FeeEstimator[shardID])
 
-	// set min fee for specified tx metadata types
-	if tx.GetMetadata() != nil && metadataCommon.IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
-		minFeePerTx = specifiedFeeTx
-	}
+	// limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
+	// minFeePerTx := tp.config.FeeEstimator[shardID].GetMinFeePerTx()
+	// specifiedFeeTx := tp.config.FeeEstimator[shardID].GetSpecifiedFeeTx()
+
+	// // set min fee for specified tx metadata types
+	// if tx.GetMetadata() != nil && metadataCommon.IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
+	// 	minFeePerTx = specifiedFeeTx
+	// }
 
 	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
 		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainID])
@@ -489,7 +491,7 @@ func (tp *TxPool) checkFees(
 		meta := tx.GetMetadata()
 		// verify at metadata level
 		if meta != nil {
-			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, beaconStateDB)
+			ok := meta.CheckTransactionFee(tx, limitFee, minFeePerTx, beaconHeight, beaconStateDB)
 			if !ok {
 				Logger.log.Errorf("Error: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: Invalid fee metadata",
@@ -538,7 +540,7 @@ func (tp *TxPool) checkFees(
 		if limitFee > 0 {
 			meta := tx.GetMetadata()
 			if meta != nil {
-				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, beaconView.GetBeaconFeatureStateDB())
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, minFeePerTx, beaconHeight, beaconView.GetBeaconFeatureStateDB())
 				if !ok {
 					Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 						fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
@@ -952,13 +954,14 @@ func (tp *TxPool) RemoveStuckTx(txHash common.Hash, tx metadata.Transaction) {
 }
 
 /*
-	- Remove transaction out of pool
-		+ Tx Description pool
-		+ List Serial Number Pool
-		+ Hash of List Serial Number Pool
-	- Transaction want to be removed maybe replaced by another transaction:
-		+ New tx (Replacement tx) still exist in pool
-		+ Using the same list serial number to delete new transaction out of pool
+- Remove transaction out of pool
+  - Tx Description pool
+  - List Serial Number Pool
+  - Hash of List Serial Number Pool
+
+- Transaction want to be removed maybe replaced by another transaction:
+  - New tx (Replacement tx) still exist in pool
+  - Using the same list serial number to delete new transaction out of pool
 */
 func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
@@ -1048,7 +1051,7 @@ func (tp *TxPool) RemoveRequestStopStakingList(requestStopStakings []string) {
 	}
 }
 
-//=======================Service for other package
+// =======================Service for other package
 // SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.mtx.RLock()
@@ -1153,6 +1156,7 @@ func (tp *TxPool) MaxFee() uint64 {
 
 /*
 // LastUpdated returns the last time a transaction was added to or
+
 	// removed from the source pool.
 */
 func (tp *TxPool) LastUpdated() time.Time {
@@ -1161,6 +1165,7 @@ func (tp *TxPool) LastUpdated() time.Time {
 
 /*
 // HaveTransaction returns whether or not the passed transaction hash
+
 	// exists in the source pool.
 */
 func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
