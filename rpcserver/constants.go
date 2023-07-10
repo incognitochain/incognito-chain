@@ -292,6 +292,8 @@ const (
 
 	// pDex v3
 	pdexv3MintNft                         = "pdexv3_txMintNft"
+	inscribeRequest                       = "pdexv3_txInscribeRequest"
+	getInscription                        = "pdexv3_getInscription"
 	getPdexv3State                        = "pdexv3_getState"
 	createAndSendTxWithPdexv3ModifyParams = "pdexv3_txModifyParams"
 	getPdexv3ParamsModifyingStatus        = "pdexv3_getParamsModifyingStatus"

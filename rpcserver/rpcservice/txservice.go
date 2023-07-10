@@ -411,6 +411,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	if numBlock == 0 {
 		numBlock = 1000
 	}
+
 	// calculate total amount to send
 	totalAmmount := uint64(0)
 	for _, receiver := range paymentInfos {
@@ -461,6 +462,9 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
 	realFee := estFeeRes.EstimateFee
+	if realFee < 1000000000 {
+		realFee = 1000000000
+	}
 	if totalAmmount == 0 && realFee == 0 {
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
@@ -2258,7 +2262,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	return tx, nil
 }
 
-//calculateOutputCoinsByMinValue
+// calculateOutputCoinsByMinValue
 func (txService TxService) calculateOutputCoinsByMinValue(outCoins []coin.PlainCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]coin.PlainCoin, uint64) {
 	outCoinsTmp := make([]coin.PlainCoin, 0)
 	amount := uint64(0)

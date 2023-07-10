@@ -150,6 +150,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 			if err != nil {
 				continue
 			}
+		case metadataCommon.InscribeRequestMeta:
+			_, err = s.processor.inscribe(env.StateDB(), inst)
+			if err != nil {
+				Logger.log.Errorf("Error when inscribe: %v", err)
+				continue
+			}
 		case metadataCommon.Pdexv3ModifyParamsMeta:
 			s.params, s.stakingPoolStates, err = s.processor.modifyParams(
 				env.StateDB(),
@@ -250,6 +256,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	unstakingTxs := []metadata.Transaction{}
 	withdrawStakingRewardTxs := []metadata.Transaction{}
 
+	inscribeTxs := []metadata.Transaction{}
+
 	beaconHeight := env.PrevBeaconHeight() + 1
 
 	var err error
@@ -288,6 +296,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				unstakingTxs = append(unstakingTxs, tx)
 			case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
 				withdrawStakingRewardTxs = append(withdrawStakingRewardTxs, tx)
+			case metadataCommon.InscribeRequestMeta:
+				inscribeTxs = append(inscribeTxs, tx)
 			}
 		}
 	}
@@ -478,6 +488,14 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, mintNftInstructions...)
+
+	inscribeInstructions := [][]string{}
+	inscribeInstructions, err = s.producer.inscribe(
+		inscribeTxs, env.StateDB(), beaconHeight)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, inscribeInstructions...)
 
 	if burningPRVAmount > 0 {
 		var mintInstructions [][]string

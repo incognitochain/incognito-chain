@@ -166,6 +166,56 @@ func StorePdexv3NftIDs(stateDB *StateDB, nftIDs map[string]uint64) error {
 	return nil
 }
 
+func StorePdexv3InscriptionTokenID(stateDB *StateDB, tokenID common.Hash, txID common.Hash) error {
+	key := GeneratePdexv3InscriptionObjectKey(tokenID)
+
+	err := stateDB.SetStateObject(InscriptionTokenIDObjectType, key, txID)
+	if err != nil {
+		return NewStatedbError(StorePdexv3NftsError, err)
+	}
+	return nil
+}
+
+func GetPdexv3InscriptionTokenID(stateDB *StateDB, tokenID common.Hash) (*InscriptionTokenIDState, error) {
+	key := GeneratePdexv3InscriptionObjectKey(tokenID)
+	s, has, err := stateDB.getPdexv3InscriptionTokenIDState(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPdexv3ParamsError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPdexv3ParamsError, fmt.Errorf("inscription tokenID non-existent"))
+	}
+	return s, nil
+}
+
+func StorePdexv3InscriptionNumber(stateDB *StateDB, num uint64) error {
+	key := GeneratePdexv3InscriptionNumberObjectKey()
+
+	err := stateDB.SetStateObject(InscriptionNumberObjectType, key, num)
+	if err != nil {
+		return NewStatedbError(StorePdexv3NftsError, err)
+	}
+	return nil
+}
+
+func GetPdexv3InscriptionNumber(stateDB *StateDB) (*InscriptionNumberState, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			dataaccessobject.Logger.Log.Errorf("GetPdexv3InscriptionNumber exception recovered: %v", r)
+		}
+	}()
+
+	key := GeneratePdexv3InscriptionNumberObjectKey()
+	s, has, err := stateDB.getPdexv3InscriptionNumberState(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPdexv3ParamsError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPdexv3ParamsError, fmt.Errorf("inscription number non-existent"))
+	}
+	return s, nil
+}
+
 func StorePdexv3Staker(stateDB *StateDB, stakingPoolID, nftID string, state *Pdexv3StakerState) error {
 	key := GeneratePdexv3StakerObjectKey(stakingPoolID, nftID)
 	return stateDB.SetStateObject(Pdexv3StakerObjectType, key, state)

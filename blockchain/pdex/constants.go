@@ -33,7 +33,8 @@ const (
 
 // nft hash prefix
 var (
-	hashPrefix = []byte("pdex-v3")
+	hashPrefix            = []byte("pdex-v3")
+	inscriptionHashPrefix = []byte("inscription-")
 
 	BaseLPFeesPerShare = new(big.Int).SetUint64(1e18)
 

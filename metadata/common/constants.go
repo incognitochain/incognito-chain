@@ -254,6 +254,9 @@ const (
 	// pdao feature
 	BurningPRVRequestMeta        = 338
 	BurningPRVRequestConfirmMeta = 164
+
+	InscribeRequestMeta  = 363
+	InscribeResponseMeta = 364
 )
 
 var minerCreatedMetaTypes = []int{
@@ -311,6 +314,7 @@ var minerCreatedMetaTypes = []int{
 	IssuingReshieldResponseMeta,
 	BurnForCallResponseMeta,
 	MintDelegationRewardMeta,
+	InscribeResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

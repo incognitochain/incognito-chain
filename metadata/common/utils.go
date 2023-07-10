@@ -153,6 +153,8 @@ func buildMetaInfo() {
 		BurningPBSCForDepositToSCRequestMeta,
 		BurningPLGRequestMeta,
 		BurningPLGForDepositToSCRequestMeta,
+
+		InscribeRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNormal,
@@ -273,6 +275,8 @@ func buildMetaInfo() {
 		PortalV4FeeReplacementRequestMeta,
 		PortalV4SubmitConfirmedTxMeta,
 		PortalV4ConvertVaultRequestMeta,
+
+		InscribeRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNormal,
@@ -353,6 +357,7 @@ func buildMetaInfo() {
 		Pdexv3MintBlockRewardMeta,
 		Pdexv3DistributeStakingRewardMeta,
 		Pdexv3WithdrawStakingRewardResponseMeta,
+		InscribeResponseMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -702,6 +707,8 @@ func IsPdexv3Type(metadataType int) bool {
 	case Pdexv3WithdrawStakingRewardResponseMeta:
 		return true
 	case Pdexv3DistributeMiningOrderRewardMeta:
+		return true
+	case InscribeRequestMeta, InscribeResponseMeta:
 		return true
 	default:
 		return false

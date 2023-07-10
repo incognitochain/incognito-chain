@@ -81,6 +81,8 @@ var (
 	pdexv3WithdrawalStakingRewardPrefix     = []byte("pdexv3-withdrawalstakingrewardstatus-")
 	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
 	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
+	pdexv3InscriptionPrefix                 = []byte("pdexv3-inscriptions-")
+	pdexv3InscriptionNumberPrefix           = []byte("pdexv3-inscriptionnumber-")
 	pdexv3WithdrawLiquidityStatusPrefix     = []byte("pdexv3-withdrawliquidity-statuses-")
 	pdexv3WaitingContributionStatusPrefix   = []byte("pdexv3-waitingContribution-statuses-")
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
@@ -756,6 +758,16 @@ func GetPdexv3OrdersPrefix() []byte {
 
 func GetPdexv3NftPrefix() []byte {
 	hash := common.HashH(pdexv3MintNftPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3InscriptionPrefix() []byte {
+	hash := common.HashH(pdexv3InscriptionPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3InscriptionNumberPrefix() []byte {
+	hash := common.HashH(pdexv3InscriptionNumberPrefix)
 	return hash[:prefixHashKeyLength]
 }
 
