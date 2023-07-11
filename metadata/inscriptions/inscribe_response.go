@@ -164,18 +164,6 @@ func (response *InscribeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var amount uint64
 		var otaReceiver privacy.OTAReceiver
 		switch inst[1] {
-		case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
-			// var instContent refundUserMintNft
-			// err := json.Unmarshal(contentBytes, &instContent)
-			// if err != nil {
-			// 	metadataCommon.Logger.Log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-			// 	continue
-			// }
-			// instShardID = instContent.ShardID
-			// tokenID = common.PRVCoinID
-			// otaReceiverStr = instContent.OtaReceiver
-			// amount = instContent.Amount
-			// txReqID = instContent.TxReqID.String()
 		case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
 			var instContent struct {
 				Content InscribeAcceptedAction

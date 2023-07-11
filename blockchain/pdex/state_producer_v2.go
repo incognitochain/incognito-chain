@@ -1211,15 +1211,13 @@ func (sp *stateProducerV2) userMintNft(
 func (sp *stateProducerV2) inscribe(
 	txs []metadata.Transaction,
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
+	inscriptionNumberState *statedb.InscriptionNumberState,
+	isInscriptionsEnabled bool,
 ) ([][]string, error) {
 	res := [][]string{}
 	var insNumber uint64
-	insNumberObj, err := statedb.GetPdexv3InscriptionNumber(stateDB)
-	if insNumberObj == nil || err != nil {
-		insNumber = 0
-	} else {
-		insNumber = insNumberObj.Number()
+	if isInscriptionsEnabled {
+		insNumber = inscriptionNumberState.Number() + 1
 	}
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
@@ -1227,15 +1225,8 @@ func (sp *stateProducerV2) inscribe(
 		txReqID := *tx.Hash()
 		inst := []string{}
 		var err error
-		// TODO
-		if false { // !sp.featureState.Inscription {
-			// inst, err = instruction.NewRejectUserMintNftWithValue(
-			// 	metaData.OtaReceiver(), metaData.Amount(), shardID, txReqID,
-			// ).StringSlice()
-			if err != nil {
-				return res, err
-			}
-		} else {
+
+		if isInscriptionsEnabled {
 			tokenID := GetInscriptionTokenID(insNumber)
 			insNumber++
 			inst = instruction.NewAction(
@@ -1243,6 +1234,16 @@ func (sp *stateProducerV2) inscribe(
 					TokenID:  tokenID,
 					Receiver: md.Receiver,
 				},
+				txReqID,
+				shardID,
+			).StringSlice()
+
+			if err != nil {
+				return res, err
+			}
+		} else {
+			inst = instruction.NewAction(
+				&metadataIns.InscribeRejectedAction{},
 				txReqID,
 				shardID,
 			).StringSlice()

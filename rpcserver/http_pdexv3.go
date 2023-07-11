@@ -1251,14 +1251,15 @@ func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan
 	}
 	txID := data.ID()
 	var result struct {
+		TokenID         string          `json:"tokenId"`
 		TxHash          string          `json:"txHash"`
 		InscriptionData json.RawMessage `json:"inscriptionData"`
 		BlockHash       string          `json:"blockHash"`
 	}
 	result.TxHash = txID.String()
-	txDetail, err := httpServer.txService.GetTransactionByHash(txID.String())
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	txDetail, err1 := httpServer.txService.GetTransactionByHash(txID.String())
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err1)
 	}
 	var mdHolder struct {
 		Data json.RawMessage `json:"data"`
@@ -1269,6 +1270,7 @@ func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan
 	}
 	result.InscriptionData = mdHolder.Data
 	result.BlockHash = txDetail.BlockHash
+	result.TokenID = tokenID.String()
 	return result, nil
 }
 

@@ -1045,7 +1045,7 @@ func (sp *stateProcessorV2) userMintNft(
 }
 
 func (sp *stateProcessorV2) inscribe(
-	stateDB *statedb.StateDB, inst []string,
+	stateDB *statedb.StateDB, inst []string, inscriptionNumberState *statedb.InscriptionNumberState,
 ) (*v2.MintNftStatus, error) {
 	Logger.log.Infof("Process the instruction: %v", inst)
 	if len(inst) != 5 {
@@ -1059,12 +1059,12 @@ func (sp *stateProcessorV2) inscribe(
 	}
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
-		refundInst := instruction.NewRejectUserMintNft()
-		err := refundInst.FromStringSlice(inst)
+		rejectedInst := &instruction.Action{Content: &metadataIns.InscribeRejectedAction{}}
+		err := rejectedInst.FromStringSlice(inst)
 		if err != nil {
 			return nil, err
 		}
-		txReqID = refundInst.TxReqID()
+		txReqID = rejectedInst.RequestTxID()
 		status = common.Pdexv3RejectStatus
 	case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
 		md := &metadataIns.InscribeAcceptedAction{}
@@ -1075,17 +1075,17 @@ func (sp *stateProcessorV2) inscribe(
 		}
 		nftID = md.TokenID.String()
 		txReqID = acceptInst.RequestTxID()
-		tmp, err := statedb.GetPdexv3InscriptionNumber(stateDB)
-		var inscriptionNumber uint64
-		if tmp == nil || err != nil {
-			inscriptionNumber = 0
-		} else {
-			inscriptionNumber = tmp.Number() + 1
+
+		var inscriptionNumber uint64 = inscriptionNumberState.Number() + 1
+		tokenID := GetInscriptionTokenID(inscriptionNumber)
+		if !md.TokenID.IsEqual(&tokenID) {
+			return nil, fmt.Errorf("inscription tokenID mismatch")
 		}
 		err = statedb.StorePdexv3InscriptionNumber(stateDB, inscriptionNumber)
 		if err != nil {
 			return nil, err
 		}
+		inscriptionNumberState.SetNumber(inscriptionNumber)
 		err = statedb.StorePdexv3InscriptionTokenID(stateDB, md.TokenID, txReqID)
 		if err != nil {
 			return nil, err

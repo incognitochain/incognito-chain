@@ -27,6 +27,7 @@ type stateV2 struct {
 	params                      *Params
 	stakingPoolStates           map[string]*StakingPoolState // tokenID -> StakingPoolState
 	nftIDs                      map[string]uint64
+	inscriptionNumberState      *statedb.InscriptionNumberState
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
@@ -49,6 +50,7 @@ func newStateV2() *stateV2 {
 		poolPairs:                   make(map[string]*PoolPairState),
 		stakingPoolStates:           make(map[string]*StakingPoolState),
 		nftIDs:                      make(map[string]uint64),
+		inscriptionNumberState:      statedb.NewInscriptionNumberStateWithValue(0),
 	}
 }
 
@@ -59,6 +61,7 @@ func newStateV2WithValue(
 	params *Params,
 	stakingPoolStates map[string]*StakingPoolState,
 	nftIDs map[string]uint64,
+	inscriptionNumberState *statedb.InscriptionNumberState,
 ) *stateV2 {
 	return &stateV2{
 		waitingContributions:        waitingContributions,
@@ -67,6 +70,7 @@ func newStateV2WithValue(
 		stakingPoolStates:           stakingPoolStates,
 		params:                      params,
 		nftIDs:                      nftIDs,
+		inscriptionNumberState:      inscriptionNumberState,
 	}
 }
 
@@ -92,6 +96,9 @@ func (s *stateV2) Clone() State {
 	}
 	for k, v := range s.nftIDs {
 		res.nftIDs[k] = v
+	}
+	if s.inscriptionNumberState != nil {
+		res.inscriptionNumberState = s.inscriptionNumberState.Clone()
 	}
 	res.producer = s.producer
 	res.processor = s.processor
@@ -151,7 +158,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				continue
 			}
 		case metadataCommon.InscribeRequestMeta:
-			_, err = s.processor.inscribe(env.StateDB(), inst)
+			_, err = s.processor.inscribe(env.StateDB(), inst, s.inscriptionNumberState)
 			if err != nil {
 				Logger.log.Errorf("Error when inscribe: %v", err)
 				continue
@@ -491,7 +498,7 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 
 	inscribeInstructions := [][]string{}
 	inscribeInstructions, err = s.producer.inscribe(
-		inscribeTxs, env.StateDB(), beaconHeight)
+		inscribeTxs, env.StateDB(), s.inscriptionNumberState, env.IsInscriptionFeatureEnabled())
 	if err != nil {
 		return instructions, err
 	}

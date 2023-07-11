@@ -36,7 +36,8 @@ var (
 	hashPrefix            = []byte("pdex-v3")
 	inscriptionHashPrefix = []byte("inscription-")
 
-	BaseLPFeesPerShare = new(big.Int).SetUint64(1e18)
+	INSCRIPTIONS_FEATURE = "inscriptions"
+	BaseLPFeesPerShare   = new(big.Int).SetUint64(1e18)
 
 	TotalPDEXReward         = MintingBlockReward * math.Pow(10, common.PDEXDenominatingDecimal)
 	DecayRate               = float64(DecayRateBPS) / float64(BPS)

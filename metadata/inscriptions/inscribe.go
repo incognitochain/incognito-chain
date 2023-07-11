@@ -29,31 +29,29 @@ func (acn *InscribeAcceptedAction) GetType() int {
 	return metadataCommon.InscribeRequestMeta
 }
 
+type InscribeRejectedAction struct{}
+
+func (acn *InscribeRejectedAction) GetStatus() int {
+	return 0
+}
+
+func (acn *InscribeRejectedAction) GetType() int {
+	return metadataCommon.InscribeRequestMeta
+}
+
 func (iReq InscribeRequest) ValidateTxWithBlockChain(tx metadataCommon.Transaction, chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	return true, nil
 }
 
 func (iReq InscribeRequest) ValidateSanityData(chainRetriever metadataCommon.ChainRetriever, shardViewRetriever metadataCommon.ShardViewRetriever, beaconViewRetriever metadataCommon.BeaconViewRetriever, beaconHeight uint64, tx metadataCommon.Transaction) (bool, bool, error) {
-	// if shardViewRetriever.GetBlockVersion() < metadataCommon.InscribeMinBlockVersion {
-	// 	return false, false, fmt.Errorf("Inscribe feature not supported in block version %d, want %d", shardViewRetriever.GetBlockVersion(), metadataCommon.InscribeMinBlockVersion)
-	// }
-
-	// isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
-	// if err != nil || !isBurned {
-	// 	return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burn missing from tx %s - %v", tx.Hash(), err))
-	// }
-	// if *burnedTokenID != common.PRVCoinID {
-	// 	return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burned tokenID mismatch - %s", burnedTokenID.String()))
-	// }
-	// burnAmount := burnCoin.GetValue()
-	// if burnAmount < 1000000000 {
-	// 	return false, false, metadataCommon.NewMetadataTxError(metadataCommon.BridgeAggUnshieldValidateSanityDataError, fmt.Errorf("burn amount too small - %d", burnAmount))
-	// }
 	if !iReq.Receiver.IsValid() {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("invalid receiver"))
 	}
 	if iReq.Receiver.GetShardID() != byte(tx.GetValidationEnv().ShardID()) {
 		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("otaReceiver shardID is different from txShardID"))
+	}
+	if tx.GetType() != common.TxNormalType {
+		return false, false, metadataCommon.NewMetadataTxError(metadataCommon.PDEInvalidMetadataValueError, fmt.Errorf("invalid tx type, expect %v", common.TxNormalType))
 	}
 	return true, true, nil
 }

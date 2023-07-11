@@ -170,14 +170,19 @@ auto_enable_feature:
   - fixbulletproof:
       min_trigger: 20
       require_percentage: 85
+  - beacon_staking_flow_v4:
+      min_trigger: 1000000000
+      require_percentage: 90
+  - inscriptions:
+      min_trigger: 50
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
-  - beacon_staking_flow_v4 : 13
-
+  - beacon_staking_flow_v4: 13
 transactions_param:
   lowerbound: 15
   upperbound: 1000

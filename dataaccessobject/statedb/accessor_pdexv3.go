@@ -168,8 +168,8 @@ func StorePdexv3NftIDs(stateDB *StateDB, nftIDs map[string]uint64) error {
 
 func StorePdexv3InscriptionTokenID(stateDB *StateDB, tokenID common.Hash, txID common.Hash) error {
 	key := GeneratePdexv3InscriptionObjectKey(tokenID)
-
-	err := stateDB.SetStateObject(InscriptionTokenIDObjectType, key, txID)
+	value := NewInscriptionTokenIDStateWithValue(txID)
+	err := stateDB.SetStateObject(InscriptionTokenIDObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(StorePdexv3NftsError, err)
 	}
@@ -190,8 +190,8 @@ func GetPdexv3InscriptionTokenID(stateDB *StateDB, tokenID common.Hash) (*Inscri
 
 func StorePdexv3InscriptionNumber(stateDB *StateDB, num uint64) error {
 	key := GeneratePdexv3InscriptionNumberObjectKey()
-
-	err := stateDB.SetStateObject(InscriptionNumberObjectType, key, num)
+	value := NewInscriptionNumberStateWithValue(num)
+	err := stateDB.SetStateObject(InscriptionNumberObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(StorePdexv3NftsError, err)
 	}

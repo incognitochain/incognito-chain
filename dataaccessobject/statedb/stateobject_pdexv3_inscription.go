@@ -196,6 +196,10 @@ func (state *InscriptionNumberState) Number() uint64 {
 	return state.number
 }
 
+func (state *InscriptionNumberState) SetNumber(number uint64) {
+	state.number = number
+}
+
 func (state *InscriptionNumberState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		Number uint64 `json:"number"`
@@ -322,7 +326,7 @@ func (object *InscriptionNumberObject) GetValue() interface{} {
 }
 
 func (object *InscriptionNumberObject) GetValueBytes() []byte {
-	state, ok := object.GetValue().(*InscriptionTokenIDState)
+	state, ok := object.GetValue().(*InscriptionNumberState)
 	if !ok {
 		panic("wrong expected value type")
 	}

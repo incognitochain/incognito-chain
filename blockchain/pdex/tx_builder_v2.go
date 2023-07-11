@@ -49,7 +49,6 @@ func (txBuilder *TxBuilderV2) Build(
 		}
 		tx, err = buildUserMintNftTx(inst, producerPrivateKey, shardID, transactionStateDB)
 	case metadataCommon.InscribeRequestMeta:
-		Logger.log.Info("Build inscribe request tx")
 		switch inst[1] {
 		case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
 			md := &metadataIns.InscribeAcceptedAction{}
@@ -58,20 +57,13 @@ func (txBuilder *TxBuilderV2) Build(
 			if err != nil {
 				return tx, err
 			}
-			// recvStr, _ := md.Receiver.String()
 			metaData := metadataIns.NewInscribeResponseWithValue(strconv.Itoa(metadataPdexv3.OrderAcceptedStatus), action.RequestTxID().String())
 			tx, err = buildMintTokenTx(md.TokenID, 1, md.Receiver, producerPrivateKey, transactionStateDB, metaData)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 			}
 		case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
-			panic("not implemented")
-			// action := instruction.Action{Content: &metadataPdexv3.RefundedTrade{}}
-			// err := action.FromStringSlice(inst)
-			// if err != nil {
-			// 	return tx, err
-			// }
-			// tx, err = v2.TradeRefundTx(action, producerPrivateKey, shardID, transactionStateDB)
+			return nil, nil
 		default:
 			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
 		}
