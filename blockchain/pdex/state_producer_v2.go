@@ -1225,7 +1225,6 @@ func (sp *stateProducerV2) inscribe(
 		md, _ := tx.GetMetadata().(*metadataIns.InscribeRequest)
 		txReqID := *tx.Hash()
 		inst := []string{}
-		var err error
 
 		if isInscriptionsEnabled {
 			tokenID := GetInscriptionTokenID(insNumber)
@@ -1238,20 +1237,12 @@ func (sp *stateProducerV2) inscribe(
 				txReqID,
 				shardID,
 			).StringSlice()
-
-			if err != nil {
-				return res, err
-			}
 		} else {
 			inst = instruction.NewAction(
 				&metadataIns.InscribeRejectedAction{},
 				txReqID,
 				shardID,
 			).StringSlice()
-
-			if err != nil {
-				return res, err
-			}
 		}
 		res = append(res, inst)
 	}

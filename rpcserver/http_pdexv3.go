@@ -1232,19 +1232,39 @@ func (httpServer *HttpServer) createInscribeRequestTransaction(
 }
 
 func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var tmp []uint64
+	type param struct {
+		Hash   string
+		Number uint64
+	}
+	var tmp []param
 	// params to raw bytes
 	paramsBytes, _ := json.Marshal(params)
 	err := json.Unmarshal(paramsBytes, &tmp)
 	if err != nil || len(tmp) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	num := tmp[0]
+	if len(tmp[0].Hash) > 0 {
+		return getInscriptionStatus(httpServer, tmp[0].Hash, closeChan)
+	}
 
+	num := tmp[0].Number
 	Logger.log.Debugf("handleGetInscription params: %+v", num)
-	tokenID := pdex.GetInscriptionTokenID(num)
 
 	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	if num == 0 {
+		data, err := statedb.GetPdexv3InscriptionNumber(stateDB)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		result := struct {
+			Number uint64 `json:"number"`
+		}{
+			Number: data.Number(),
+		}
+		return result, nil
+	}
+
+	tokenID := pdex.GetInscriptionTokenID(num)
 	data, err := statedb.GetPdexv3InscriptionTokenID(stateDB, tokenID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1272,6 +1292,30 @@ func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan
 	result.BlockHash = txDetail.BlockHash
 	result.TokenID = tokenID.String()
 	return result, nil
+}
+
+func getInscriptionStatus(httpServer *HttpServer, s string, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.InscriptionStatusPrefix(),
+		txID.Bytes(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	var res json.RawMessage
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handleGetPdexv3WithdrawLiquidityStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
