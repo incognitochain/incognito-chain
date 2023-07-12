@@ -113,7 +113,7 @@ func NewWithdrawDelegationRewardRequestFromRPC(data map[string]interface{}) (Met
 	return result, nil
 }
 
-func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+func (withdrawDelegationRewardRequest WithdrawDelegationRewardRequest) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	return true
 }
 

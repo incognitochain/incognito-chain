@@ -94,6 +94,25 @@ func (v *TxsVerifier) PrepareDataForTxs(
 	return true, nil
 }
 
+func GetFeeInfo(md metadata.Metadata, feeEstimator FeeEstimator) (minFeePerKB uint64, minFeePerTx uint64) {
+	minFeePerKB = feeEstimator.GetLimitFeeForNativeToken()
+	minFeePerTx = feeEstimator.GetMinFeePerTx()
+	if md != nil {
+		mdType := md.GetType()
+		txFeeType := metadataCommon.GetSpecifiedFeeTxType(mdType)
+
+		switch txFeeType {
+		case metadataCommon.SpecifiedTxType1:
+			minFeePerTx = feeEstimator.GetSpecifiedFeeTx()
+		case metadataCommon.SpecifiedTxType2:
+			minFeePerKB = feeEstimator.GetSpecifiedFeePerKBType2()
+			minFeePerTx = feeEstimator.GetSpecifiedFeePerTxType2()
+		}
+	}
+
+	return
+}
+
 func (v *TxsVerifier) checkFees(
 	beaconHeight uint64,
 	tx metadata.Transaction,
@@ -102,21 +121,14 @@ func (v *TxsVerifier) checkFees(
 ) bool {
 	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
-	limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
-	minFeePerTx := v.feeEstimator.GetMinFeePerTx()
-	specifiedFeeTx := v.feeEstimator.GetSpecifiedFeeTx()
-
-	// set min fee for specified tx metadata types
-	if tx.GetMetadata() != nil && metadataCommon.IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
-		minFeePerTx = specifiedFeeTx
-	}
+	limitFee, minFeePerTx := GetFeeInfo(tx.GetMetadata(), v.feeEstimator)
 
 	if txType == common.TxCustomTokenPrivacyType {
 		// check transaction fee for meta data
 		meta := tx.GetMetadata()
 		// verify at metadata level
 		if meta != nil {
-			ok := meta.CheckTransactionFee(tx, limitFee, int64(beaconHeight), beaconStateDB)
+			ok := meta.CheckTransactionFee(tx, limitFee, minFeePerTx, int64(beaconHeight), beaconStateDB)
 			if !ok {
 				Logger.log.Errorf("Error: %+v", fmt.Errorf("transaction %+v: Invalid fee metadata",
 					tx.Hash().String()))
@@ -164,7 +176,7 @@ func (v *TxsVerifier) checkFees(
 		if limitFee > 0 {
 			meta := tx.GetMetadata()
 			if meta != nil {
-				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, int64(beaconHeight), beaconStateDB)
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, minFeePerTx, int64(beaconHeight), beaconStateDB)
 				if !ok {
 					Logger.log.Errorf("ERROR: %+v", fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 						tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))

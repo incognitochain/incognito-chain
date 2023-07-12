@@ -123,6 +123,9 @@ const (
 
 	// Near bridge
 	BridgeNEARTxObjectType = 77
+
+	InscriptionTokenIDObjectType = 86
+	InscriptionNumberObjectType  = 87
 )
 
 // Prefix length

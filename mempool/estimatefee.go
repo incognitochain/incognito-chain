@@ -159,23 +159,28 @@ type FeeEstimator struct {
 
 	// specified fee for special transactions
 	specifiedFeeTx uint64
+
+	specifiedFeePerTxType2 uint64
+	specifiedFeePerKBType2 uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee, minFeePerTx, specifiedFeeTx uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee, minFeePerTx, specifiedFeeTx, specifiedFeePerKBType2, specifiedFeePerTxType2 uint64) *FeeEstimator {
 	return &FeeEstimator{
-		maxRollback:         maxRollback,
-		minRegisteredBlocks: minRegisteredBlocks,
-		lastKnownHeight:     unminedHeight,
-		binSize:             estimateFeeBinSize,
-		maxReplacements:     estimateFeeMaxReplacements,
-		observed:            make(map[common.Hash]*observedTransaction),
-		dropped:             make([]*registeredBlock, 0, maxRollback),
-		limitFee:            limitFee,
-		minFeePerTx:         minFeePerTx,
-		specifiedFeeTx:      specifiedFeeTx,
+		maxRollback:            maxRollback,
+		minRegisteredBlocks:    minRegisteredBlocks,
+		lastKnownHeight:        unminedHeight,
+		binSize:                estimateFeeBinSize,
+		maxReplacements:        estimateFeeMaxReplacements,
+		observed:               make(map[common.Hash]*observedTransaction),
+		dropped:                make([]*registeredBlock, 0, maxRollback),
+		limitFee:               limitFee,
+		minFeePerTx:            minFeePerTx,
+		specifiedFeeTx:         specifiedFeeTx,
+		specifiedFeePerKBType2: specifiedFeePerKBType2,
+		specifiedFeePerTxType2: specifiedFeePerTxType2,
 	}
 }
 
@@ -814,4 +819,14 @@ func (ef FeeEstimator) GetMinFeePerTx() uint64 {
 // returns the specified fee tx
 func (ef FeeEstimator) GetSpecifiedFeeTx() uint64 {
 	return ef.specifiedFeeTx
+}
+
+// returns the specified fee per KB type 2
+func (ef FeeEstimator) GetSpecifiedFeePerKBType2() uint64 {
+	return ef.specifiedFeePerKBType2
+}
+
+// returns the specified fee per Tx type 2
+func (ef FeeEstimator) GetSpecifiedFeePerTxType2() uint64 {
+	return ef.specifiedFeePerTxType2
 }

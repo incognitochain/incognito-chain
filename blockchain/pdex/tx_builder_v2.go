@@ -12,6 +12,7 @@ import (
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataIns "github.com/incognitochain/incognito-chain/metadata/inscriptions"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -47,6 +48,25 @@ func (txBuilder *TxBuilderV2) Build(
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))
 		}
 		tx, err = buildUserMintNftTx(inst, producerPrivateKey, shardID, transactionStateDB)
+	case metadataCommon.InscribeRequestMeta:
+		switch inst[1] {
+		case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
+			md := &metadataIns.InscribeAcceptedAction{}
+			action := instruction.Action{Content: md}
+			err := action.FromStringSlice(inst)
+			if err != nil {
+				return tx, err
+			}
+			metaData := metadataIns.NewInscribeResponseWithValue(strconv.Itoa(metadataPdexv3.OrderAcceptedStatus), action.RequestTxID().String())
+			tx, err = buildMintTokenTx(md.TokenID, 1, md.Receiver, producerPrivateKey, transactionStateDB, metaData)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
+			}
+		case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
+			return nil, nil
+		default:
+			return nil, fmt.Errorf("Invalid status %s from instruction", inst[1])
+		}
 	case metadataCommon.Pdexv3MintNftRequestMeta:
 		if len(inst) != 3 {
 			return tx, fmt.Errorf("Length of instruction is invalid expect equal or greater than %v but get %v", 3, len(inst))

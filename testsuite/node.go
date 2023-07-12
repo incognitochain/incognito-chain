@@ -209,7 +209,7 @@ func (sim *NodeEngine) Init() {
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
 			mempool.DefaultEstimateFeeMinRegisteredBlocks,
-			config.Config().LimitFee, config.Config().MinFeePerTx, 0)
+			config.Config().LimitFee, config.Config().MinFeePerTx, 0, 0, 0)
 	}
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
