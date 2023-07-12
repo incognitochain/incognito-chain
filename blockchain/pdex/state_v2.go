@@ -158,7 +158,7 @@ func (s *stateV2) Process(env StateEnvironment) error {
 				continue
 			}
 		case metadataCommon.InscribeRequestMeta:
-			_, err = s.processor.inscribe(env.StateDB(), inst, s.inscriptionNumberState)
+			err = s.processor.inscribe(env.StateDB(), inst, s.inscriptionNumberState)
 			if err != nil {
 				Logger.log.Errorf("Error when inscribe: %v", err)
 				continue

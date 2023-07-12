@@ -90,6 +90,7 @@ var (
 	pdexv3StakingStatusPrefix               = []byte("pdexv3-staking-status-")
 	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-status-")
 	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-status-")
+	inscriptionStatusPrefix                 = []byte("inscription-status-")
 	pdexv3PoolPairLpFeePerSharePrefix       = []byte("pdexv3-poolpair-lpfeepershare-")
 	pdexv3PoolPairLmRewardPerSharePrefix    = []byte("pdexv3-poolpair-lmewardpershare-")
 	pdexv3PoolPairProtocolFeePrefix         = []byte("pdexv3-poolpair-protocolfee-")
@@ -853,6 +854,10 @@ func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
 // pDex v3 prefix for mintnft status
 func Pdexv3UserMintNftStatusPrefix() []byte {
 	return pdexv3UserMintNftStatusPrefix
+}
+
+func InscriptionStatusPrefix() []byte {
+	return inscriptionStatusPrefix
 }
 
 // pDex v3 prefix for contribution status

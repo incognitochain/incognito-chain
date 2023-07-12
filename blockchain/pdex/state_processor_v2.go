@@ -1046,69 +1046,74 @@ func (sp *stateProcessorV2) userMintNft(
 
 func (sp *stateProcessorV2) inscribe(
 	stateDB *statedb.StateDB, inst []string, inscriptionNumberState *statedb.InscriptionNumberState,
-) (*v2.MintNftStatus, error) {
+) error {
 	Logger.log.Infof("Process the instruction: %v", inst)
 	if len(inst) != 5 {
-		return nil, fmt.Errorf("Expect length of instruction is %v but get %v", 5, len(inst))
+		return fmt.Errorf("Expect length of instruction is %v but get %v", 5, len(inst))
 	}
-	status := byte(0)
+	status := "rejected"
+	var inscriptionNumber uint64 = 0
 	nftID := utils.EmptyString
 	txReqID := common.Hash{}
 	if inst[0] != strconv.Itoa(metadataCommon.InscribeRequestMeta) {
-		return nil, fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
+		return fmt.Errorf("Expect metaType is %v but get %s", metadataCommon.Pdexv3UserMintNftRequestMeta, inst[1])
 	}
 	switch inst[1] {
 	case strconv.Itoa(metadataPdexv3.OrderRefundedStatus):
 		rejectedInst := &instruction.Action{Content: &metadataIns.InscribeRejectedAction{}}
 		err := rejectedInst.FromStringSlice(inst)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		txReqID = rejectedInst.RequestTxID()
-		status = common.Pdexv3RejectStatus
 	case strconv.Itoa(metadataPdexv3.OrderAcceptedStatus):
 		md := &metadataIns.InscribeAcceptedAction{}
 		acceptInst := &instruction.Action{Content: md}
 		err := acceptInst.FromStringSlice(inst)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		nftID = md.TokenID.String()
 		txReqID = acceptInst.RequestTxID()
 
-		var inscriptionNumber uint64 = inscriptionNumberState.Number() + 1
+		inscriptionNumber = inscriptionNumberState.Number() + 1
 		tokenID := GetInscriptionTokenID(inscriptionNumber)
 		if !md.TokenID.IsEqual(&tokenID) {
-			return nil, fmt.Errorf("inscription tokenID mismatch")
+			return fmt.Errorf("inscription tokenID mismatch")
 		}
 		err = statedb.StorePdexv3InscriptionNumber(stateDB, inscriptionNumber)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		inscriptionNumberState.SetNumber(inscriptionNumber)
 		err = statedb.StorePdexv3InscriptionTokenID(stateDB, md.TokenID, txReqID)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		status = common.Pdexv3AcceptStatus
+		status = "accepted"
 	default:
-		return nil, errors.New("Can not recognize status")
+		return errors.New("Can not recognize status")
 	}
-	mintNftStatus := v2.MintNftStatus{
-		NftID:  nftID,
-		Status: status,
+	mintNftStatus := struct {
+		TokenID string
+		Status  string
+		Number  uint64
+	}{
+		TokenID: nftID,
+		Status:  status,
+		Number:  inscriptionNumber,
 	}
 	data, err := json.Marshal(mintNftStatus)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	statedb.TrackPdexv3Status(
 		stateDB,
-		statedb.Pdexv3UserMintNftStatusPrefix(),
+		statedb.InscriptionStatusPrefix(),
 		txReqID.Bytes(),
 		data,
 	)
-	return &mintNftStatus, nil
+	return nil
 }
 
 func (sp *stateProcessorV2) staking(
