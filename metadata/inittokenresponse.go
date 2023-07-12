@@ -27,7 +27,7 @@ func NewInitTokenResponse(requestedTxID common.Hash, metaType int) *InitTokenRes
 	}
 }
 
-func (iRes InitTokenResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes InitTokenResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
@@ -37,8 +37,8 @@ func (iRes InitTokenResponse) ValidateTxWithBlockChain(tx Transaction, chainRetr
 	return true, nil
 }
 
-//ValidateSanityData performs the following verification:
-//	1. Check transaction type
+// ValidateSanityData performs the following verification:
+//  1. Check transaction type
 func (iRes InitTokenResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	//Step 1
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
@@ -66,18 +66,19 @@ func (iRes *InitTokenResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-//VerifyMinerCreatedTxBeforeGettingInBlock validates if the response is a reply to an instruction from the beacon chain.
-//The response is valid for a specific instruction if
-//	1. the instruction has a valid metadata type
-//	2. the requested txIDs match
+// VerifyMinerCreatedTxBeforeGettingInBlock validates if the response is a reply to an instruction from the beacon chain.
+// The response is valid for a specific instruction if
+//  1. the instruction has a valid metadata type
+//  2. the requested txIDs match
 //  3. the tokenID has not been accumulated (i.e, not seen in the current block)
-//	4. the minted public key and the one in the instruction match
-//	5. the minted tx random and the one in the instruction match
-//	6. the minted amount and the requested amount match
-//	7. the minted and requested tokens match
-//It returns false if no instruction from the beacon satisfies the above conditions.
+//  4. the minted public key and the one in the instruction match
+//  5. the minted tx random and the one in the instruction match
+//  6. the minted amount and the requested amount match
+//  7. the minted and requested tokens match
 //
-//TODO: reviewers should double-check if the above conditions are sufficient
+// It returns false if no instruction from the beacon satisfies the above conditions.
+//
+// TODO: reviewers should double-check if the above conditions are sufficient
 func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData,
 	shardID byte,
 	tx Transaction,
@@ -137,7 +138,7 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 			return false, fmt.Errorf("cannot get minted data of txResp %v: %v", tx.Hash().String(), err)
 		}
 
-		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()){
+		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()) {
 			Logger.log.Infof("public keys mismatch: %v != %v\n", mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS())
 			continue
 		}

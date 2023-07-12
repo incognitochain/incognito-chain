@@ -26,6 +26,7 @@ committee_size:
   beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
   number_of_fixed_shard_validators_v2: 4
+  number_of_fixed_beacon_block_validators: 4
   increase_max_shard_committee_size:
     - 1000000000000: 48
 block_time:
@@ -169,13 +170,19 @@ auto_enable_feature:
   - fixbulletproof:
       min_trigger: 20
       require_percentage: 85
+  - beacon_staking_flow_v4:
+      min_trigger: 1000000000
+      require_percentage: 90
+  - inscriptions:
+      min_trigger: 50
+      require_percentage: 90
 blocktime_param:
   - "blocktimedef": 10
   - "blocktime20": 20
   - "blocktime10": 10
 feature_version:
   - blocktime20: 9
-
+  - beacon_staking_flow_v4: 13
 transactions_param:
   lowerbound: 15
   upperbound: 1000
@@ -186,3 +193,4 @@ bridge_agg_param:
   percent_fee_decimal: 1e6
   default_percent_fee_with_decimal: 100 # 0.01% * 1e6
 bc_height_break_point_coin_origin: 1
+bc_height_break_point_agg_proof_v2: 1

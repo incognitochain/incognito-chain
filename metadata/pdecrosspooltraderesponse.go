@@ -33,7 +33,7 @@ func NewPDECrossPoolTradeResponse(
 	}
 }
 
-func (iRes PDECrossPoolTradeResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PDECrossPoolTradeResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
@@ -69,7 +69,7 @@ func (iRes *PDECrossPoolTradeResponse) CalculateSize() uint64 {
 func (iRes PDECrossPoolTradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
 
-	for i, inst := range mintData.Insts  {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDETradeRequest or PDECrossPoolTradeRequestMeta instruction
 			continue
 		}

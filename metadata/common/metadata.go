@@ -28,7 +28,7 @@ type Metadata interface {
 	VerifyMetadataSignature([]byte, Transaction) (bool, error)
 	Hash() *common.Hash
 	HashWithoutSig() *common.Hash
-	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
+	CheckTransactionFee(Transaction, uint64, uint64, int64, *statedb.StateDB) bool
 	ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error)
 	ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool

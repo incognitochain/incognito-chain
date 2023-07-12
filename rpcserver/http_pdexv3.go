@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataIns "github.com/incognitochain/incognito-chain/metadata/inscriptions"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -286,7 +287,7 @@ func (httpServer *HttpServer) handleGetPdexv3ParamsModifyingRequestStatus(params
 }
 
 /*
-	Fee Management
+Fee Management
 */
 func (httpServer *HttpServer) handleGetPdexv3EstimatedLPValue(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -1103,7 +1104,7 @@ func (httpServer *HttpServer) createPdexv3MintNftTransaction(
 
 	// burn selling amount for order, plus fee
 	burnPayments := []*privacy.PaymentInfo{
-		&privacy.PaymentInfo{
+		{
 			PaymentAddress: burnAddr,
 			Amount:         md.Amount(),
 		},
@@ -1124,6 +1125,195 @@ func (httpServer *HttpServer) createPdexv3MintNftTransaction(
 	res := &jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleInscribeRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var res interface{}
+	data, err := httpServer.createInscribeRequestTransaction(params)
+	if err != nil {
+		return nil, err
+	}
+	base58CheckData := data.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+
+	res, err = sendCreatedTransaction(httpServer, newParam, true, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) createInscribeRequestTransaction(
+	params interface{},
+) (*jsonresult.CreateTransactionResult, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+	privacyDetect, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("privacy detection param need to be int"))
+	}
+	if int(privacyDetect) <= 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx has to be a privacy tx"))
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private"))
+	}
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid private key"))
+	}
+	if len(arrayParams) != 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid length of rpc expect %v but get %v", 5, len(arrayParams)))
+	}
+
+	otaReceiver := privacy.OTAReceiver{}
+	err = otaReceiver.FromAddress(keyWallet.KeySet.PaymentAddress)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GenerateOTAFailError, err)
+	}
+	// metadata object format to read from RPC parameters
+	mdReader := &struct {
+		Data json.RawMessage `json:"data"`
+	}{}
+
+	// parse params & metadata
+	paramSelect, err := httpServer.pdexTxService.ReadParamsFrom(params, mdReader)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize parameters %v", err))
+	}
+	paramSelect.SetTokenID(common.PRVCoinID)
+
+	// get burning address
+	bc := httpServer.pdexTxService.BlockChain
+	bestState, err := bc.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+	temp := bc.GetBurningAddress(bestState.BeaconHeight)
+	w, _ := wallet.Base58CheckDeserialize(temp)
+	burnAddr := w.KeySet.PaymentAddress
+	amount := uint64(100) // bc.GetBeaconBestState().PdeState(pdex.AmplifierVersion).Reader().Params().MintNftRequireAmount
+
+	md := &metadataIns.InscribeRequest{Receiver: otaReceiver, Data: mdReader.Data,
+		MetadataBase: metadataCommon.MetadataBase{Type: metadataCommon.InscribeRequestMeta}}
+	paramSelect.SetMetadata(md)
+
+	// burn selling amount for order, plus fee
+	burnPayments := []*privacy.PaymentInfo{
+		{
+			PaymentAddress: burnAddr,
+			Amount:         amount,
+		},
+	}
+	paramSelect.PRV.PaymentInfos = burnPayments
+
+	// create transaction
+	tx, err1 := httpServer.pdexTxService.BuildTransaction(paramSelect, md)
+	// error must be of type *RPCError for equality
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
+	}
+
+	marshaledTx, err := json.Marshal(tx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	res := &jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(marshaledTx, 0x00),
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	type param struct {
+		Hash   string
+		Number uint64
+	}
+	var tmp []param
+	// params to raw bytes
+	paramsBytes, _ := json.Marshal(params)
+	err := json.Unmarshal(paramsBytes, &tmp)
+	if err != nil || len(tmp) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	if len(tmp[0].Hash) > 0 {
+		return getInscriptionStatus(httpServer, tmp[0].Hash, closeChan)
+	}
+
+	num := tmp[0].Number
+	Logger.log.Debugf("handleGetInscription params: %+v", num)
+
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	if num == 0 {
+		data, err := statedb.GetPdexv3InscriptionNumber(stateDB)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		result := struct {
+			Number uint64 `json:"number"`
+		}{
+			Number: data.Number(),
+		}
+		return result, nil
+	}
+
+	tokenID := pdex.GetInscriptionTokenID(num)
+	data, err := statedb.GetPdexv3InscriptionTokenID(stateDB, tokenID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	txID := data.ID()
+	var result struct {
+		TokenID         string          `json:"tokenId"`
+		TxHash          string          `json:"txHash"`
+		InscriptionData json.RawMessage `json:"inscriptionData"`
+		BlockHash       string          `json:"blockHash"`
+	}
+	result.TxHash = txID.String()
+	txDetail, err1 := httpServer.txService.GetTransactionByHash(txID.String())
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err1)
+	}
+	var mdHolder struct {
+		Data json.RawMessage `json:"data"`
+	}
+	err = json.Unmarshal([]byte(txDetail.Metadata), &mdHolder)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result.InscriptionData = mdHolder.Data
+	result.BlockHash = txDetail.BlockHash
+	result.TokenID = tokenID.String()
+	return result, nil
+}
+
+func getInscriptionStatus(httpServer *HttpServer, s string, closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	txID, err := common.Hash{}.NewHashFromStr(s)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,
+			errors.New("Invalid TxID from parameters"))
+	}
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPdexv3Status(
+		stateDB,
+		statedb.InscriptionStatusPrefix(),
+		txID.Bytes(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	var res json.RawMessage
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return res, nil
 }

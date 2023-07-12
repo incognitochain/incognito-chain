@@ -23,7 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
-	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -411,6 +410,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	if numBlock == 0 {
 		numBlock = 1000
 	}
+
 	// calculate total amount to send
 	totalAmmount := uint64(0)
 	for _, receiver := range paymentInfos {
@@ -527,17 +527,11 @@ func (txService TxService) EstimateFee(
 		estimateFeeCoinPerKb += uint64(txService.Wallet.GetConfig().IncrementalFee)
 	}
 
-	limitFee := uint64(0)
-	minFeePerTx := uint64(0)
-	specifiedFeeTx := uint64(0)
-	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-		limitFee = feeEstimator.GetLimitFeeForNativeToken()
-		minFeePerTx = feeEstimator.GetMinFeePerTx()
-		specifiedFeeTx = feeEstimator.GetSpecifiedFeeTx()
+	limitFee, minFeePerTx := blockchain.GetFeeInfo(metadata, txService.FeeEstimator[shardID])
+	if estimateFeeCoinPerKb < limitFee {
+		estimateFeeCoinPerKb = limitFee
 	}
-	if metadata != nil && metadataCommon.IsSpecifiedFeeMetaType(metadata.GetType()) && minFeePerTx < specifiedFeeTx {
-		minFeePerTx = specifiedFeeTx
-	}
+
 	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(version, len(candidatePlainCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	if realFee < minFeePerTx {
@@ -2258,7 +2252,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	return tx, nil
 }
 
-//calculateOutputCoinsByMinValue
+// calculateOutputCoinsByMinValue
 func (txService TxService) calculateOutputCoinsByMinValue(outCoins []coin.PlainCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]coin.PlainCoin, uint64) {
 	outCoinsTmp := make([]coin.PlainCoin, 0)
 	amount := uint64(0)

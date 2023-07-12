@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalRedeemLiquidateExchangeRatesResponse struct {
@@ -19,7 +20,7 @@ type PortalRedeemLiquidateExchangeRatesResponse struct {
 	RedeemAmount     uint64
 	Amount           uint64
 	TokenID          string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemLiquidateExchangeRatesResponse(
@@ -45,7 +46,7 @@ func NewPortalRedeemLiquidateExchangeRatesResponse(
 	}
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalRedeemLiquidateExchangeRatesResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
@@ -83,7 +84,6 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) Hash() *common.Hash {
 func (iRes *PortalRedeemLiquidateExchangeRatesResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
-
 
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	mintData *MintData,

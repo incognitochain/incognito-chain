@@ -19,6 +19,7 @@ type StateEnvBuilder interface {
 	BuildBCHeightBreakPointPrivacyV2(uint64) StateEnvBuilder
 	BuildPdexv3BreakPoint(uint64) StateEnvBuilder
 	BuildReward(uint64) StateEnvBuilder
+	BuildIsInscriptionFeatureEnabled(bool) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -40,6 +41,7 @@ type stateEnvironment struct {
 	bcHeightBreakPointPrivacyV2    uint64
 	reward                         uint64
 	pdexv3BreakPoint               uint64
+	isInscriptionEnabled           bool
 }
 
 func (env *stateEnvironment) BuildPdexv3BreakPoint(beaconHeight uint64) StateEnvBuilder {
@@ -107,6 +109,11 @@ func (env *stateEnvironment) BuildReward(reward uint64) StateEnvBuilder {
 	return env
 }
 
+func (env *stateEnvironment) BuildIsInscriptionFeatureEnabled(isEnabled bool) StateEnvBuilder {
+	env.isInscriptionEnabled = isEnabled
+	return env
+}
+
 func (env *stateEnvironment) Build() StateEnvironment {
 	return env
 }
@@ -125,6 +132,7 @@ type StateEnvironment interface {
 	BCHeightBreakPointPrivacyV2() uint64
 	Pdexv3BreakPoint() uint64
 	Reward() uint64
+	IsInscriptionFeatureEnabled() bool
 }
 
 func (env *stateEnvironment) ContributionActions() [][]string {
@@ -177,4 +185,8 @@ func (env *stateEnvironment) Pdexv3BreakPoint() uint64 {
 
 func (env *stateEnvironment) Reward() uint64 {
 	return env.reward
+}
+
+func (env *stateEnvironment) IsInscriptionFeatureEnabled() bool {
+	return env.isInscriptionEnabled
 }
