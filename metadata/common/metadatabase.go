@@ -132,20 +132,6 @@ func (mb MetadataBase) HashWithoutSig() *common.Hash {
 }
 
 func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64, minFeePerTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
-
-	// stateDB.
-	// mempool.NewFeeEstimator()
-
-	// limitFee, minFeePerTx := blockchain.GetFeeInfo(tx.GetMetadata(), tp.config.FeeEstimator[shardID])
-
-	// minFeePerTx := config.Config().MinFeePerTx
-	// specifiedFeeTx := config.Config().SpecifiedFeePerTx
-
-	// // set min fee for specified tx metadata types
-	// if tx.GetMetadata() != nil && IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
-	// 	minFeePerTx = specifiedFeeTx
-	// }
-
 	if tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 		feeNativeToken := tx.GetTxFee()
 		feePToken := tx.GetTxFeeToken()

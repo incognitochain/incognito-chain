@@ -461,9 +461,6 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
 	realFee := estFeeRes.EstimateFee
-	if realFee < 1000000000 {
-		realFee = 1000000000
-	}
 	if totalAmmount == 0 && realFee == 0 {
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
@@ -530,26 +527,11 @@ func (txService TxService) EstimateFee(
 		estimateFeeCoinPerKb += uint64(txService.Wallet.GetConfig().IncrementalFee)
 	}
 
-	// fmt.Printf("HHH estimateFeeCoinPerKb : %v\n", estimateFeeCoinPerKb)
-
 	limitFee, minFeePerTx := blockchain.GetFeeInfo(metadata, txService.FeeEstimator[shardID])
-	// fmt.Printf("HHH limitFee : %v\n", limitFee)
 	if estimateFeeCoinPerKb < limitFee {
 		estimateFeeCoinPerKb = limitFee
 	}
-	// fmt.Printf("HHH estimateFeeCoinPerKb after : %v\n", estimateFeeCoinPerKb)
 
-	// limitFee := uint64(0)
-	// minFeePerTx := uint64(0)
-	// specifiedFeeTx := uint64(0)
-	// if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-	// 	limitFee = feeEstimator.GetLimitFeeForNativeToken()
-	// 	minFeePerTx = feeEstimator.GetMinFeePerTx()
-	// 	specifiedFeeTx = feeEstimator.GetSpecifiedFeeTx()
-	// }
-	// if metadata != nil && metadataCommon.IsSpecifiedFeeMetaType(metadata.GetType()) && minFeePerTx < specifiedFeeTx {
-	// 	minFeePerTx = specifiedFeeTx
-	// }
 	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(version, len(candidatePlainCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	if realFee < minFeePerTx {

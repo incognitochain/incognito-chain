@@ -1219,6 +1219,7 @@ func (sp *stateProducerV2) inscribe(
 	if isInscriptionsEnabled {
 		insNumber = inscriptionNumberState.Number() + 1
 	}
+
 	for _, tx := range txs {
 		shardID := byte(tx.GetValidationEnv().ShardID())
 		md, _ := tx.GetMetadata().(*metadataIns.InscribeRequest)

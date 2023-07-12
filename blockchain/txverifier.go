@@ -94,7 +94,6 @@ func (v *TxsVerifier) PrepareDataForTxs(
 	return true, nil
 }
 
-// TODO: 0xkraken review
 func GetFeeInfo(md metadata.Metadata, feeEstimator FeeEstimator) (minFeePerKB uint64, minFeePerTx uint64) {
 	minFeePerKB = feeEstimator.GetLimitFeeForNativeToken()
 	minFeePerTx = feeEstimator.GetMinFeePerTx()
@@ -122,17 +121,7 @@ func (v *TxsVerifier) checkFees(
 ) bool {
 	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
-
 	limitFee, minFeePerTx := GetFeeInfo(tx.GetMetadata(), v.feeEstimator)
-
-	// limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
-	// minFeePerTx := v.feeEstimator.GetMinFeePerTx()
-	// specifiedFeeTx := v.feeEstimator.GetSpecifiedFeeTx()
-
-	// // set min fee for specified tx metadata types
-	// if tx.GetMetadata() != nil && metadataCommon.IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
-	// 	minFeePerTx = specifiedFeeTx
-	// }
 
 	if txType == common.TxCustomTokenPrivacyType {
 		// check transaction fee for meta data
