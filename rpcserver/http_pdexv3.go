@@ -1233,10 +1233,13 @@ func (httpServer *HttpServer) createInscribeRequestTransaction(
 
 func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	type param struct {
-		Hash   string
-		Number uint64
+		Hash    string
+		TokenID string
+		Number  uint64
 	}
 	var tmp []param
+	var tokenID common.Hash
+	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	// params to raw bytes
 	paramsBytes, _ := json.Marshal(params)
 	err := json.Unmarshal(paramsBytes, &tmp)
@@ -1245,29 +1248,42 @@ func (httpServer *HttpServer) handleGetInscription(params interface{}, closeChan
 	}
 	if len(tmp[0].Hash) > 0 {
 		return getInscriptionStatus(httpServer, tmp[0].Hash, closeChan)
-	}
-
-	num := tmp[0].Number
-	Logger.log.Debugf("handleGetInscription params: %+v", num)
-
-	stateDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
-	if num == 0 {
-		data, err := statedb.GetPdexv3InscriptionNumber(stateDB)
+	} else if len(tmp[0].TokenID) > 0 {
+		t, err := tokenID.NewHashFromStr(tmp[0].TokenID)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 		}
-		result := struct {
-			Number uint64 `json:"number"`
-		}{
-			Number: data.Number(),
+		tokenID = *t
+	} else {
+		num := tmp[0].Number
+		Logger.log.Debugf("handleGetInscription params: %+v", num)
+
+		if num == 0 {
+			data, err := statedb.GetPdexv3InscriptionNumber(stateDB)
+			if err != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+			}
+			result := struct {
+				Number uint64 `json:"number"`
+			}{
+				Number: data.Number(),
+			}
+			return result, nil
 		}
-		return result, nil
+
+		tokenID = pdex.GetInscriptionTokenID(num)
 	}
 
-	tokenID := pdex.GetInscriptionTokenID(num)
 	data, err := statedb.GetPdexv3InscriptionTokenID(stateDB, tokenID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		result := struct {
+			TokenID string `json:"tokenId"`
+			Message string `json:"message"`
+		}{
+			TokenID: tokenID.String(),
+			Message: "Inscription token ID not found",
+		}
+		return result, nil
 	}
 	txID := data.ID()
 	var result struct {
