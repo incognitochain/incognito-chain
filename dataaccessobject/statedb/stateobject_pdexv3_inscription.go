@@ -368,5 +368,7 @@ func (object *InscriptionNumberObject) IsEmpty() bool {
 
 func GeneratePdexv3InscriptionNumberObjectKey() common.Hash {
 	prefixHash := GetPdexv3InscriptionNumberPrefix()
-	return common.BytesToHash(prefixHash)
+	valueHash := common.HashH([]byte{})
+	result := common.BytesToHash(append(prefixHash, valueHash[:prefixKeyLength]...))
+	return result
 }
