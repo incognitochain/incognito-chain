@@ -48,6 +48,8 @@ tx_pool_max_tx: 100000 #
 limit_fee: 1000000 # 0.001 PRV
 min_fee_per_tx: 100000000 # 0.1 PRV
 specified_fee_per_tx: 10000000000 # 10 PRV
+specified_min_fee_per_kb_type2: 1000000000 # 1 PRV
+specified_min_fee_per_tx_type2: 10000000000 # 10 PRV
 is_load_from_mem_pool: true #
 is_persist_mem_pool: false #
 enable_mining: true #

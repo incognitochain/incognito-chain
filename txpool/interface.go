@@ -2,12 +2,13 @@ package txpool
 
 import (
 	"context"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"time"
 )
 
 type BeaconViewRetriever interface {
@@ -96,6 +97,8 @@ type FeeEstimator interface {
 	GetLimitFeeForNativeToken() uint64
 	GetMinFeePerTx() uint64
 	GetSpecifiedFeeTx() uint64
+	GetSpecifiedFeePerKBType2() uint64
+	GetSpecifiedFeePerTxType2() uint64
 }
 
 type TxVerifier interface {

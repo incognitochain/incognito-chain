@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalCustodianWithdrawResponse struct {
@@ -17,7 +18,7 @@ type PortalCustodianWithdrawResponse struct {
 	ReqTxID        common.Hash
 	PaymentAddress string
 	Amount         uint64
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom   []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalCustodianWithdrawResponse(
@@ -38,7 +39,7 @@ func NewPortalCustodianWithdrawResponse(
 	}
 }
 
-func (responseMeta PortalCustodianWithdrawResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (responseMeta PortalCustodianWithdrawResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }

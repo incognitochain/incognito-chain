@@ -81,6 +81,8 @@ var (
 	pdexv3WithdrawalStakingRewardPrefix     = []byte("pdexv3-withdrawalstakingrewardstatus-")
 	pdexv3OrdersPrefix                      = []byte("pdexv3-orders-")
 	pdexv3MintNftPrefix                     = []byte("pdexv3-nfts-")
+	pdexv3InscriptionPrefix                 = []byte("pdexv3-inscriptions-")
+	pdexv3InscriptionNumberPrefix           = []byte("pdexv3-inscriptionnumber-")
 	pdexv3WithdrawLiquidityStatusPrefix     = []byte("pdexv3-withdrawliquidity-statuses-")
 	pdexv3WaitingContributionStatusPrefix   = []byte("pdexv3-waitingContribution-statuses-")
 	pdexv3StakingPoolsPrefix                = []byte("pdexv3-stakingpools-")
@@ -88,6 +90,7 @@ var (
 	pdexv3StakingStatusPrefix               = []byte("pdexv3-staking-status-")
 	pdexv3UnstakingStatusPrefix             = []byte("pdexv3-unstaking-status-")
 	pdexv3UserMintNftStatusPrefix           = []byte("pdexv3-usermintnft-status-")
+	inscriptionStatusPrefix                 = []byte("inscription-status-")
 	pdexv3PoolPairLpFeePerSharePrefix       = []byte("pdexv3-poolpair-lpfeepershare-")
 	pdexv3PoolPairLmRewardPerSharePrefix    = []byte("pdexv3-poolpair-lmewardpershare-")
 	pdexv3PoolPairProtocolFeePrefix         = []byte("pdexv3-poolpair-protocolfee-")
@@ -759,6 +762,16 @@ func GetPdexv3NftPrefix() []byte {
 	return hash[:prefixHashKeyLength]
 }
 
+func GetPdexv3InscriptionPrefix() []byte {
+	hash := common.HashH(pdexv3InscriptionPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
+func GetPdexv3InscriptionNumberPrefix() []byte {
+	hash := common.HashH(pdexv3InscriptionNumberPrefix)
+	return hash[:prefixHashKeyLength]
+}
+
 func GetPdexv3StakingPoolsPrefix() []byte {
 	hash := common.HashH(pdexv3StakingPoolsPrefix)
 	return hash[:prefixHashKeyLength]
@@ -841,6 +854,10 @@ func Pdexv3WithdrawLiquidityStatusPrefix() []byte {
 // pDex v3 prefix for mintnft status
 func Pdexv3UserMintNftStatusPrefix() []byte {
 	return pdexv3UserMintNftStatusPrefix
+}
+
+func InscriptionStatusPrefix() []byte {
+	return inscriptionStatusPrefix
 }
 
 // pDex v3 prefix for contribution status

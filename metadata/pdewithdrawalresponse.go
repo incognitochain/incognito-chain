@@ -15,7 +15,7 @@ type PDEWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
 	TokenIDStr    string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPDEWithdrawalResponse(
@@ -33,7 +33,7 @@ func NewPDEWithdrawalResponse(
 	}
 }
 
-func (iRes PDEWithdrawalResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PDEWithdrawalResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }

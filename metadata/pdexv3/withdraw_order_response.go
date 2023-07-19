@@ -42,8 +42,8 @@ func (md AcceptedWithdrawOrder) GetStatus() int {
 }
 
 type RejectedWithdrawOrder struct {
-	PoolPairID string              `json:"PoolPairID"`
-	OrderID    string              `json:"OrderID"`
+	PoolPairID string `json:"PoolPairID"`
+	OrderID    string `json:"OrderID"`
 }
 
 func (md RejectedWithdrawOrder) GetType() int {
@@ -54,7 +54,7 @@ func (md RejectedWithdrawOrder) GetStatus() int {
 	return WithdrawOrderRejectedStatus
 }
 
-func (res WithdrawOrderResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (res WithdrawOrderResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }

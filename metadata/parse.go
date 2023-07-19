@@ -5,6 +5,7 @@ import (
 
 	metadataBridge "github.com/incognitochain/incognito-chain/metadata/bridge"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataIns "github.com/incognitochain/incognito-chain/metadata/inscriptions"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/pkg/errors"
 )
@@ -294,6 +295,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &metadataPdexv3.WithdrawalStakingRewardRequest{}
 	case metadataCommon.Pdexv3WithdrawStakingRewardResponseMeta:
 		md = &metadataPdexv3.WithdrawalStakingRewardResponse{}
+	case metadataCommon.InscribeRequestMeta:
+		md = &metadataIns.InscribeRequest{}
+	case metadataCommon.InscribeResponseMeta:
+		md = &metadataIns.InscribeResponse{}
 	case metadataCommon.BridgeAggModifyParamMeta:
 		md = &metadataBridge.ModifyBridgeAggParamReq{}
 	case metadataCommon.BridgeAggConvertTokenToUnifiedTokenRequestMeta:

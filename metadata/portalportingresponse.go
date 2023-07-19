@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
+
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -16,7 +17,7 @@ type PortalFeeRefundResponse struct {
 	MetadataBase
 	PortingRequestStatus string
 	ReqTxID              common.Hash
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom         []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalFeeRefundResponse(
@@ -34,7 +35,7 @@ func NewPortalFeeRefundResponse(
 	}
 }
 
-func (iRes PortalFeeRefundResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalFeeRefundResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }

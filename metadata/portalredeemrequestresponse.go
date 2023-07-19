@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
+
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -19,7 +20,7 @@ type PortalRedeemRequestResponse struct {
 	RequesterAddrStr string
 	Amount           uint64
 	IncTokenID       string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom     []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemRequestResponse(
@@ -43,7 +44,7 @@ func NewPortalRedeemRequestResponse(
 	}
 }
 
-func (iRes PortalRedeemRequestResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalRedeemRequestResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
