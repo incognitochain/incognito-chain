@@ -27,6 +27,7 @@ type stateV2 struct {
 	params                      *Params
 	stakingPoolStates           map[string]*StakingPoolState // tokenID -> StakingPoolState
 	nftIDs                      map[string]uint64
+	inscriptionNumberState      *statedb.InscriptionNumberState
 	producer                    stateProducerV2
 	processor                   stateProcessorV2
 }
@@ -49,6 +50,7 @@ func newStateV2() *stateV2 {
 		poolPairs:                   make(map[string]*PoolPairState),
 		stakingPoolStates:           make(map[string]*StakingPoolState),
 		nftIDs:                      make(map[string]uint64),
+		inscriptionNumberState:      statedb.NewInscriptionNumberStateWithValue(0),
 	}
 }
 
@@ -59,6 +61,7 @@ func newStateV2WithValue(
 	params *Params,
 	stakingPoolStates map[string]*StakingPoolState,
 	nftIDs map[string]uint64,
+	inscriptionNumberState *statedb.InscriptionNumberState,
 ) *stateV2 {
 	return &stateV2{
 		waitingContributions:        waitingContributions,
@@ -67,6 +70,7 @@ func newStateV2WithValue(
 		stakingPoolStates:           stakingPoolStates,
 		params:                      params,
 		nftIDs:                      nftIDs,
+		inscriptionNumberState:      inscriptionNumberState,
 	}
 }
 
@@ -92,6 +96,9 @@ func (s *stateV2) Clone() State {
 	}
 	for k, v := range s.nftIDs {
 		res.nftIDs[k] = v
+	}
+	if s.inscriptionNumberState != nil {
+		res.inscriptionNumberState = s.inscriptionNumberState.Clone()
 	}
 	res.producer = s.producer
 	res.processor = s.processor
@@ -148,6 +155,12 @@ func (s *stateV2) Process(env StateEnvironment) error {
 		case metadataCommon.Pdexv3UserMintNftRequestMeta:
 			s.nftIDs, _, err = s.processor.userMintNft(env.StateDB(), inst, s.nftIDs)
 			if err != nil {
+				continue
+			}
+		case metadataCommon.InscribeRequestMeta:
+			err = s.processor.inscribe(env.StateDB(), inst, s.inscriptionNumberState)
+			if err != nil {
+				Logger.log.Errorf("Error when inscribe: %v", err)
 				continue
 			}
 		case metadataCommon.Pdexv3ModifyParamsMeta:
@@ -250,6 +263,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	unstakingTxs := []metadata.Transaction{}
 	withdrawStakingRewardTxs := []metadata.Transaction{}
 
+	inscribeTxs := []metadata.Transaction{}
+
 	beaconHeight := env.PrevBeaconHeight() + 1
 
 	var err error
@@ -288,6 +303,8 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 				unstakingTxs = append(unstakingTxs, tx)
 			case metadataCommon.Pdexv3WithdrawStakingRewardRequestMeta:
 				withdrawStakingRewardTxs = append(withdrawStakingRewardTxs, tx)
+			case metadataCommon.InscribeRequestMeta:
+				inscribeTxs = append(inscribeTxs, tx)
 			}
 		}
 	}
@@ -478,6 +495,14 @@ func (s *stateV2) BuildInstructions(env StateEnvironment) ([][]string, error) {
 		return instructions, err
 	}
 	instructions = append(instructions, mintNftInstructions...)
+
+	inscribeInstructions := [][]string{}
+	inscribeInstructions, err = s.producer.inscribe(
+		inscribeTxs, env.StateDB(), s.inscriptionNumberState, env.IsInscriptionFeatureEnabled())
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, inscribeInstructions...)
 
 	if burningPRVAmount > 0 {
 		var mintInstructions [][]string

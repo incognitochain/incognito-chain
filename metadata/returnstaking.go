@@ -11,10 +11,10 @@ type ReturnStakingMetadata struct {
 	MetadataBase
 	TxID          string
 	StakerAddress privacy.PaymentAddress
-	SharedRandom []byte `json:"SharedRandom,omitempty"`
+	SharedRandom  []byte `json:"SharedRandom,omitempty"`
 }
 
-func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int, ) *ReturnStakingMetadata {
+func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int) *ReturnStakingMetadata {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -25,7 +25,7 @@ func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaT
 	}
 }
 
-func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
@@ -77,4 +77,3 @@ func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 func (sbsRes *ReturnStakingMetadata) SetSharedRandom(r []byte) {
 	sbsRes.SharedRandom = r
 }
-

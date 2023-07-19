@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-core/peer"
 
@@ -35,6 +36,8 @@ type FeeEstimator interface {
 	GetLimitFeeForNativeToken() uint64
 	GetMinFeePerTx() uint64
 	GetSpecifiedFeeTx() uint64
+	GetSpecifiedFeePerKBType2() uint64
+	GetSpecifiedFeePerTxType2() uint64
 }
 
 type ConsensusEngine interface {

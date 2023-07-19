@@ -580,7 +580,7 @@ func generatePoolPairKey(token0Name, token1Name, txReqID string) string {
 	return strings.Join([]string{token1Name, token0Name, txReqID}, "-")
 }
 
-//amplifier >= 10000
+// amplifier >= 10000
 func calculateVirtualAmount(amount0, amount1 uint64, amplifier uint) (*big.Int, *big.Int) {
 	if amplifier == metadataPdexv3.BaseAmplifier {
 		return big.NewInt(0).SetUint64(amount0), big.NewInt(0).SetUint64(amount1)
@@ -664,6 +664,11 @@ func TradePathFromState(
 func genNFT(index, beaconHeight uint64) common.Hash {
 	hash := append(common.Uint64ToBytes(index), common.Uint64ToBytes(beaconHeight)...)
 	return common.HashH(append(hashPrefix, hash...))
+}
+
+func GetInscriptionTokenID(index uint64) common.Hash {
+	hash := common.Uint64ToBytes(index)
+	return common.HashH(append(inscriptionHashPrefix, hash...))
 }
 
 func executeOperationUint64(amount0, amount1 uint64, operator byte) (uint64, error) {

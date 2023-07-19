@@ -56,7 +56,7 @@ func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	}
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	return true
 }
 
