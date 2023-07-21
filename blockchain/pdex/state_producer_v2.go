@@ -1226,23 +1226,33 @@ func (sp *stateProducerV2) inscribe(
 		txReqID := *tx.Hash()
 		inst := []string{}
 
-		if isInscriptionsEnabled {
-			tokenID := GetInscriptionTokenID(insNumber)
-			insNumber++
-			inst = instruction.NewAction(
-				&metadataIns.InscribeAcceptedAction{
-					TokenID:  tokenID,
-					Receiver: md.Receiver,
-				},
-				txReqID,
-				shardID,
-			).StringSlice()
-		} else {
+		var rawData []byte // expect data to be (base64-encoded) raw bytes
+		err := json.Unmarshal(md.Data, &rawData)
+		if err != nil || len(rawData) == 0 {
 			inst = instruction.NewAction(
 				&metadataIns.InscribeRejectedAction{},
 				txReqID,
 				shardID,
 			).StringSlice()
+		} else {
+			if isInscriptionsEnabled {
+				tokenID := GetInscriptionTokenID(insNumber)
+				insNumber++
+				inst = instruction.NewAction(
+					&metadataIns.InscribeAcceptedAction{
+						TokenID:  tokenID,
+						Receiver: md.Receiver,
+					},
+					txReqID,
+					shardID,
+				).StringSlice()
+			} else {
+				inst = instruction.NewAction(
+					&metadataIns.InscribeRejectedAction{},
+					txReqID,
+					shardID,
+				).StringSlice()
+			}
 		}
 		res = append(res, inst)
 	}
