@@ -57,6 +57,9 @@ func (txBuilder *TxBuilderV2) Build(
 			if err != nil {
 				return tx, err
 			}
+			if action.ShardID() != shardID {
+				return tx, nil
+			}
 			metaData := metadataIns.NewInscribeResponseWithValue(strconv.Itoa(metadataPdexv3.OrderAcceptedStatus), action.RequestTxID().String())
 			tx, err = buildMintTokenTx(md.TokenID, 1, md.Receiver, producerPrivateKey, transactionStateDB, metaData)
 			if err != nil {
