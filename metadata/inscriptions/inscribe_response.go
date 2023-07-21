@@ -213,6 +213,8 @@ func (response *InscribeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		metadataCommon.Logger.Log.Debugf("no InscribeResponse instruction tx %s", tx.Hash().String())
+		jsb, _ := json.MarshalIndent(tx, "", "\t")
+		metadataCommon.Logger.Log.Debugf("tx content: %s", string(jsb))
 		return false, fmt.Errorf(fmt.Sprintf("no InscribeResponse instruction tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
