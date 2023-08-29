@@ -2190,6 +2190,28 @@ func (stateDB *StateDB) getPdexv3NftIDState(key common.Hash) (*Pdexv3NftState, b
 	return NewPdexv3NftState(), false, nil
 }
 
+func (stateDB *StateDB) getPdexv3InscriptionTokenIDState(key common.Hash) (*InscriptionTokenIDState, bool, error) {
+	obj, err := stateDB.getStateObject(InscriptionTokenIDObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*InscriptionTokenIDState), true, nil
+	}
+	return NewInscriptionTokenIDState(), false, nil
+}
+
+func (stateDB *StateDB) getPdexv3InscriptionNumberState(key common.Hash) (*InscriptionNumberState, bool, error) {
+	obj, err := stateDB.getStateObject(InscriptionNumberObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if obj != nil {
+		return obj.GetValue().(*InscriptionNumberState), true, nil
+	}
+	return NewInscriptionNumberState(), false, nil
+}
+
 func (stateDB *StateDB) iterateWithPdexv3Contributions(prefix []byte) (map[string]rawdbv2.Pdexv3Contribution, error) {
 	res := map[string]rawdbv2.Pdexv3Contribution{}
 	temp := stateDB.trie.NodeIterator(prefix)

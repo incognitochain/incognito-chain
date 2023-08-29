@@ -142,7 +142,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	return result, nil
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	return true
 }
 

@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -132,15 +131,7 @@ func (mb MetadataBase) HashWithoutSig() *common.Hash {
 	return mb.Hash()
 }
 
-func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
-	minFeePerTx := config.Config().MinFeePerTx
-	specifiedFeeTx := config.Config().SpecifiedFeePerTx
-
-	// set min fee for specified tx metadata types
-	if tx.GetMetadata() != nil && IsSpecifiedFeeMetaType(tx.GetMetadataType()) && minFeePerTx < specifiedFeeTx {
-		minFeePerTx = specifiedFeeTx
-	}
-
+func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64, minFeePerTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	if tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 		feeNativeToken := tx.GetTxFee()
 		feePToken := tx.GetTxFeeToken()

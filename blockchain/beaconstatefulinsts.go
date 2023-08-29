@@ -426,6 +426,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildBCHeightBreakPointPrivacyV2(config.Param().BCHeightBreakPointPrivacyV2).
 		BuildPdexv3BreakPoint(config.Param().PDexParams.Pdexv3BreakPointHeight).
 		BuildReward(pdexReward).
+		BuildIsInscriptionFeatureEnabled(beaconBestState.TriggeredFeature[pdex.INSCRIPTIONS_FEATURE] > 0).
 		Build()
 
 	for _, version := range pdeVersions {

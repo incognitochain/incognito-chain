@@ -17,6 +17,7 @@ import (
 	instruction "github.com/incognitochain/incognito-chain/instruction/pdexv3"
 	"github.com/incognitochain/incognito-chain/metadata"
 	metadataCommon "github.com/incognitochain/incognito-chain/metadata/common"
+	metadataIns "github.com/incognitochain/incognito-chain/metadata/inscriptions"
 	metadataPdexv3 "github.com/incognitochain/incognito-chain/metadata/pdexv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/utils"
@@ -152,10 +153,10 @@ func (sp *stateProducerV2) addLiquidity(
 			)
 			if err != nil {
 				insts, err := v2utils.BuildRefundAddLiquidityInstructions(
-						waitingContributionState, incomingContributionState,
+					waitingContributionState, incomingContributionState,
 				)
 				if err != nil {
-						return res, poolPairs, waitingContributions, err
+					return res, poolPairs, waitingContributions, err
 				}
 				Logger.log.Warnf("tx %v add token not in pool", tx.Hash().String())
 				res = append(res, insts...)
@@ -1205,6 +1206,57 @@ func (sp *stateProducerV2) userMintNft(
 		res = append(res, inst)
 	}
 	return res, nftIDs, burningPRVAmount, nil
+}
+
+func (sp *stateProducerV2) inscribe(
+	txs []metadata.Transaction,
+	stateDB *statedb.StateDB,
+	inscriptionNumberState *statedb.InscriptionNumberState,
+	isInscriptionsEnabled bool,
+) ([][]string, error) {
+	res := [][]string{}
+	var insNumber uint64
+	if isInscriptionsEnabled {
+		insNumber = inscriptionNumberState.Number() + 1
+	}
+
+	for _, tx := range txs {
+		shardID := byte(tx.GetValidationEnv().ShardID())
+		md, _ := tx.GetMetadata().(*metadataIns.InscribeRequest)
+		txReqID := *tx.Hash()
+		inst := []string{}
+
+		var rawData []byte // expect data to be (base64-encoded) raw bytes
+		err := json.Unmarshal(md.Data, &rawData)
+		if err != nil || len(rawData) == 0 {
+			inst = instruction.NewAction(
+				&metadataIns.InscribeRejectedAction{},
+				txReqID,
+				shardID,
+			).StringSlice()
+		} else {
+			if isInscriptionsEnabled {
+				tokenID := GetInscriptionTokenID(insNumber)
+				insNumber++
+				inst = instruction.NewAction(
+					&metadataIns.InscribeAcceptedAction{
+						TokenID:  tokenID,
+						Receiver: md.Receiver,
+					},
+					txReqID,
+					shardID,
+				).StringSlice()
+			} else {
+				inst = instruction.NewAction(
+					&metadataIns.InscribeRejectedAction{},
+					txReqID,
+					shardID,
+				).StringSlice()
+			}
+		}
+		res = append(res, inst)
+	}
+	return res, nil
 }
 
 func (sp *stateProducerV2) staking(

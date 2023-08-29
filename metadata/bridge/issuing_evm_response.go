@@ -44,7 +44,7 @@ func NewIssuingEVMResponse(
 	}
 }
 
-func (iRes IssuingEVMResponse) CheckTransactionFee(tr metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes IssuingEVMResponse) CheckTransactionFee(tr metadataCommon.Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }

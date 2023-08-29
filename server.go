@@ -367,7 +367,8 @@ func (serverObj *Server) NewServer(
 					serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
-						cfg.LimitFee, cfg.MinFeePerTx, cfg.SpecifiedFeePerTx)
+						cfg.LimitFee, cfg.MinFeePerTx, cfg.SpecifiedFeePerTx,
+						cfg.SpecifiedMinFeePerKBType2, cfg.SpecifiedMinFeePerTxType2)
 				} else {
 					serverObj.feeEstimator[byte(shardID)] = feeEstimator
 				}
@@ -377,7 +378,8 @@ func (serverObj *Server) NewServer(
 				serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
-					cfg.LimitFee, cfg.MinFeePerTx, cfg.SpecifiedFeePerTx)
+					cfg.LimitFee, cfg.MinFeePerTx, cfg.SpecifiedFeePerTx,
+					cfg.SpecifiedMinFeePerKBType2, cfg.SpecifiedMinFeePerTxType2)
 			}
 		}
 	} else {
@@ -982,7 +984,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 
 var finishSyncMessageHistory = metrics.NewRegisteredCounter("message/finish-sync", nil)
 
-//OnFinishSync handle finish sync message
+// OnFinishSync handle finish sync message
 func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
 	Logger.log.Info("Receive a MsgFinishSync", msg.CommitteePublicKey)
 	finishSyncMessageHistory.Inc(1)
@@ -991,7 +993,7 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 	}
 }
 
-//OnFeatureMsg handle feature message
+// OnFeatureMsg handle feature message
 func (serverObj *Server) OnFeatureMsg(p *peer.PeerConn, msg *wire.MessageFeature) {
 	blockchain.DefaultFeatureStat.ReceiveMsg(msg)
 }

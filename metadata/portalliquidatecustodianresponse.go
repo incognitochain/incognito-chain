@@ -3,11 +3,12 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalLiquidateCustodianResponse struct {
@@ -16,7 +17,7 @@ type PortalLiquidateCustodianResponse struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom           []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalLiquidateCustodianResponse(
@@ -38,7 +39,7 @@ func NewPortalLiquidateCustodianResponse(
 	}
 }
 
-func (iRes PortalLiquidateCustodianResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalLiquidateCustodianResponse) CheckTransactionFee(tr Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
@@ -83,7 +84,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(PortalLiquidateCustodianMeta) &&
-			instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
+				instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
 			continue
 		}
 

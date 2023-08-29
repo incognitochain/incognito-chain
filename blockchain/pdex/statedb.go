@@ -103,13 +103,17 @@ func initStateV2FromDB(
 	if err != nil {
 		return nil, err
 	}
+	inscriptionNumberState, err := statedb.GetPdexv3InscriptionNumber(stateDB)
+	if err != nil {
+		inscriptionNumberState = statedb.NewInscriptionNumberStateWithValue(0)
+	}
 	stakingPools, err := initStakingPoolsFromDB(params.StakingPoolsShare, stateDB)
 	if err != nil {
 		return nil, err
 	}
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs, params, stakingPools, nftIDs,
+		poolPairs, params, stakingPools, nftIDs, inscriptionNumberState,
 	), nil
 }
 
@@ -580,8 +584,13 @@ func InitStateV2FromDBWithoutNftIDs(stateDB *statedb.StateDB, beaconHeight uint6
 	if err != nil {
 		return nil, err
 	}
+	inscriptionNumberState, err := statedb.GetPdexv3InscriptionNumber(stateDB)
+	if err != nil {
+		inscriptionNumberState = statedb.NewInscriptionNumberStateWithValue(0)
+	}
+
 	return newStateV2WithValue(
 		waitingContributions, make(map[string]rawdbv2.Pdexv3Contribution),
-		poolPairs, params, stakingPools, map[string]uint64{},
+		poolPairs, params, stakingPools, map[string]uint64{}, inscriptionNumberState,
 	), nil
 }

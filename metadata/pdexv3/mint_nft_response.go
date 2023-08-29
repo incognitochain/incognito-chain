@@ -38,7 +38,7 @@ func NewMintNftResponseWithValue(nftID, otaReceiver string) *MintNftResponse {
 	}
 }
 
-func (response *MintNftResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (response *MintNftResponse) CheckTransactionFee(tx metadataCommon.Transaction, minFeePerKb uint64, minFeePerTx uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
