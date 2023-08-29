@@ -179,6 +179,9 @@ auto_enable_feature:
   - fixbulletproofv2:
       min_trigger: 1e9
       require_percentage: 75
+  - inscriptions:
+      min_trigger: 4047609
+      require_percentage: 85
 blocktime_param:
   - "blocktimedef": 40
   - "blocktime20s_15_9": 20
